@@ -1,0 +1,36 @@
+overwrite: true
+schema:
+  - "src/graphql/schema.graphql"
+documents: "src/graphql/**/*.graphql"
+generates:
+  src/generated/graphql.ts:
+    plugins:
+      - "typescript"
+      - "typescript-operations"
+      - "typescript-react-apollo"
+    config:
+      withHooks: true
+      withComponent: false
+      withHOC: false
+      withMutationFn: true
+      apolloReactHooksImportFrom: "@apollo/client"
+      apolloReactCommonImportFrom: "@apollo/client"
+      skipTypename: false
+      withRefetchFn: false
+      withResultType: true
+      withMutationOptionsType: true
+      withSubscriptionOptionsType: true
+      addDocBlocks: true
+      maybeValue: T | null
+      inputMaybeValue: T | null
+      scalars:
+        ID: string
+        String: string
+        Boolean: boolean
+        Int: number
+        Float: number
+        DateTime: string
+        Date: string
+hooks:
+  afterOneFileWrite:
+    - prettier --write

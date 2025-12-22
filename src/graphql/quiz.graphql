@@ -1,0 +1,98 @@
+# Quiz-related Queries and Mutations
+
+query UserQuizHistory {
+  userQuizHistory {
+    id
+    name
+    subject {
+      id
+      name
+    }
+    score
+    totalQuestions
+    completedAt
+    isPassed
+  }
+}
+
+query SubjectsForUserGrade {
+  subjectsForUserGrade {
+    id
+    name
+    description
+    chaptersCount
+  }
+}
+
+query LessonsForSubject($subjectId: ID!) {
+  lessonsForSubject(subjectId: $subjectId) {
+    id
+    name
+    description
+    chapter {
+      id
+      name
+      order
+    }
+  }
+}
+
+query Quiz($quizId: ID!) {
+  quiz(id: $quizId) {
+    id
+    name
+    questions {
+      id
+      question
+      answers
+      questionNumber
+    }
+  }
+}
+
+query QuizResults($quizId: ID!) {
+  quizResults(quizId: $quizId) {
+    quiz {
+      id
+      name
+    }
+    score
+    totalQuestions
+    isPassed
+    answers {
+      question {
+        id
+        question
+        answer_1
+        explanation
+      }
+      selectedAnswer
+      isCorrect
+    }
+  }
+}
+
+mutation StartQuiz($subjectId: ID!, $lessonIds: [ID!]!) {
+  startQuiz(subjectId: $subjectId, lessonIds: $lessonIds) {
+    id
+    name
+    questions {
+      id
+      question
+      answers
+      questionNumber
+    }
+  }
+}
+
+mutation SubmitQuizAnswers($quizId: ID!, $answers: [QuestionAnswerInput!]!) {
+  submitQuizAnswers(quizId: $quizId, answers: $answers) {
+    quiz {
+      id
+      name
+    }
+    score
+    totalQuestions
+    isPassed
+  }
+}

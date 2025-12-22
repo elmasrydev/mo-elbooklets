@@ -1,0 +1,35 @@
+# Authentication Mutations
+
+mutation Login($email: String!, $password: String!) {
+  login(email: $email, password: $password) {
+    access_token
+    token_type
+    expires_in
+    user {
+      id
+      name
+      email
+      grade {
+        id
+        name
+      }
+    }
+  }
+}
+
+mutation Register($name: String!, $email: String!, $password: String!, $password_confirmation: String!, $grade_id: ID!) {
+  register(name: $name, email: $email, password: $password, password_confirmation: $password_confirmation, grade_id: $grade_id) {
+    access_token
+    token_type
+    expires_in
+    user {
+      id
+      name
+      email
+      grade {
+        id
+        name
+      }
+    }
+  }
+}

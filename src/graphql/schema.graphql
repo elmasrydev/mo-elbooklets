@@ -1,0 +1,112 @@
+scalar DateTime
+scalar Date
+
+type Query {
+  userQuizHistory: [UserQuizHistory!]!
+  subjectsForUserGrade: [Subject!]!
+  lessonsForSubject(subjectId: ID!): [Lesson!]!
+  quiz(id: ID!): Quiz
+  quizResults(quizId: ID!): QuizResult
+}
+
+type Mutation {
+  login(email: String!, password: String!): AuthPayload!
+  register(name: String!, email: String!, password: String!, password_confirmation: String!, grade_id: ID!): AuthPayload!
+  startQuiz(subjectId: ID!, lessonIds: [ID!]!): Quiz!
+  submitQuizAnswers(quizId: ID!, answers: [QuestionAnswerInput!]!): QuizSubmissionResult!
+}
+
+type User {
+  id: ID!
+  name: String!
+  email: String!
+  grade: Grade!
+}
+
+type Grade {
+  id: ID!
+  name: String!
+}
+
+type AuthPayload {
+  access_token: String!
+  token_type: String!
+  expires_in: Int!
+  user: User!
+}
+
+type Subject {
+  id: ID!
+  name: String!
+  description: String
+  chaptersCount: Int!
+}
+
+type Chapter {
+  id: ID!
+  name: String!
+  order: Int!
+}
+
+type Lesson {
+  id: ID!
+  name: String!
+  description: String
+  chapter: Chapter!
+}
+
+type Quiz {
+  id: ID!
+  name: String!
+  questions: [QuizQuestion!]!
+}
+
+type QuizQuestion {
+  id: ID!
+  question: String!
+  answers: [String!]!
+  questionNumber: Int!
+}
+
+type UserQuizHistory {
+  id: ID!
+  name: String!
+  subject: Subject!
+  score: Int!
+  totalQuestions: Int!
+  completedAt: DateTime!
+  isPassed: Boolean!
+}
+
+type QuizResult {
+  quiz: Quiz!
+  score: Int!
+  totalQuestions: Int!
+  isPassed: Boolean!
+  answers: [UserQuizAnswer!]!
+}
+
+type UserQuizAnswer {
+  question: Question!
+  selectedAnswer: String!
+  isCorrect: Boolean!
+}
+
+type Question {
+  id: ID!
+  question: String!
+  answer_1: String!
+  explanation: String
+}
+
+type QuizSubmissionResult {
+  quiz: Quiz!
+  score: Int!
+  totalQuestions: Int!
+  isPassed: Boolean!
+}
+
+input QuestionAnswerInput {
+  questionId: ID!
+  selectedAnswer: String
+}
