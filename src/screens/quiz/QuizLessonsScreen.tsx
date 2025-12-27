@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '../../context/ThemeContext';
 import { tryFetchWithFallback } from '../../config/api';
 // import { useQuery } from '@apollo/client';
 // import { LESSONS_FOR_SUBJECT_QUERY, Subject, Chapter, Lesson } from '../../lib/graphql';
@@ -31,6 +32,7 @@ interface QuizLessonsScreenProps {
 }
 
 const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({ subject, onLessonsSelect, onBack }) => {
+  const { theme } = useTheme();
   const [selectedLessons, setSelectedLessons] = useState<Set<string>>(new Set());
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [loading, setLoading] = useState(true);
@@ -119,16 +121,16 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({ subject, onLesson
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={onBack}>
-            <Text style={styles.backButtonText}>← Back</Text>
+      <View style={styles(theme).container}>
+        <View style={styles(theme).header}>
+          <TouchableOpacity style={styles(theme).backButton} onPress={onBack}>
+            <Text style={styles(theme).backButtonText}>← Back</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Choose Lessons</Text>
+          <Text style={styles(theme).headerTitle}>Choose Lessons</Text>
         </View>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Loading lessons...</Text>
+        <View style={styles(theme).loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={styles(theme).loadingText}>Loading lessons...</Text>
         </View>
       </View>
     );
@@ -136,19 +138,19 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({ subject, onLesson
 
   if (error) {
     return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={onBack}>
-            <Text style={styles.backButtonText}>← Back</Text>
+      <View style={styles(theme).container}>
+        <View style={styles(theme).header}>
+          <TouchableOpacity style={styles(theme).backButton} onPress={onBack}>
+            <Text style={styles(theme).backButtonText}>← Back</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Choose Lessons</Text>
+          <Text style={styles(theme).headerTitle}>Choose Lessons</Text>
         </View>
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorIcon}>⚠️</Text>
-          <Text style={styles.errorTitle}>Error Loading Lessons</Text>
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={fetchLessons}>
-            <Text style={styles.retryButtonText}>Try Again</Text>
+        <View style={styles(theme).errorContainer}>
+          <Text style={styles(theme).errorIcon}>⚠️</Text>
+          <Text style={styles(theme).errorTitle}>Error Loading Lessons</Text>
+          <Text style={styles(theme).errorText}>{error}</Text>
+          <TouchableOpacity style={styles(theme).retryButton} onPress={fetchLessons}>
+            <Text style={styles(theme).retryButtonText}>Try Again</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -158,16 +160,16 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({ subject, onLesson
   // chapters state is already defined above
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Text style={styles.backButtonText}>← Back</Text>
+    <View style={styles(theme).container}>
+      <View style={styles(theme).header}>
+        <TouchableOpacity style={styles(theme).backButton} onPress={onBack}>
+          <Text style={styles(theme).backButtonText}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Choose Lessons</Text>
-        <Text style={styles.headerSubtitle}>{subject.name}</Text>
+        <Text style={styles(theme).headerTitle}>Choose Lessons</Text>
+        <Text style={styles(theme).headerSubtitle}>{subject.name}</Text>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles(theme).content} showsVerticalScrollIndicator={false}>
         {chapters.map((chapter: Chapter) => {
           const chapterLessonIds = chapter.lessons.map(lesson => lesson.id);
           const selectedInChapter = chapterLessonIds.filter(id => selectedLessons.has(id)).length;
@@ -175,43 +177,46 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({ subject, onLesson
           const someSelected = selectedInChapter > 0;
 
           return (
-            <View key={chapter.id} style={styles.chapterCard}>
+            <View key={chapter.id} style={styles(theme).chapterCard}>
               <TouchableOpacity
-                style={styles.chapterHeader}
+                style={styles(theme).chapterHeader}
                 onPress={() => handleChapterToggle(chapter)}
               >
-                <View style={styles.chapterLeft}>
+                <View style={styles(theme).chapterLeft}>
                   <View style={[
-                    styles.checkbox,
-                    allSelected && styles.checkboxSelected,
-                    someSelected && !allSelected && styles.checkboxPartial
+                    styles(theme).checkbox,
+                    allSelected && styles(theme).checkboxSelected,
+                    someSelected && !allSelected && styles(theme).checkboxPartial
                   ]}>
-                    {allSelected && <Text style={styles.checkmark}>✓</Text>}
-                    {someSelected && !allSelected && <Text style={styles.partialMark}>−</Text>}
+                    {allSelected && <Text style={styles(theme).checkmark}>✓</Text>}
+                    {someSelected && !allSelected && <Text style={styles(theme).partialMark}>−</Text>}
                   </View>
-                  <View style={styles.chapterInfo}>
-                    <Text style={styles.chapterName}>{chapter.name}</Text>
-                    <Text style={styles.chapterStats}>
+                  <View style={styles(theme).chapterInfo}>
+                    <Text style={styles(theme).chapterName}>{chapter.name}</Text>
+                    <Text style={styles(theme).chapterStats}>
                       {selectedInChapter}/{chapterLessonIds.length} lessons selected
                     </Text>
                   </View>
                 </View>
               </TouchableOpacity>
 
-              <View style={styles.lessonsContainer}>
+              <View style={styles(theme).lessonsContainer}>
                 {chapter.lessons.map((lesson: Lesson) => {
                   const isSelected = selectedLessons.has(lesson.id);
                   
                   return (
                     <TouchableOpacity
                       key={lesson.id}
-                      style={styles.lessonItem}
+                      style={styles(theme).lessonItem}
                       onPress={() => handleLessonToggle(lesson.id)}
                     >
-                      <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-                        {isSelected && <Text style={styles.checkmark}>✓</Text>}
+                      <View style={[
+                        styles(theme).checkbox,
+                        isSelected && styles(theme).checkboxSelected
+                      ]}>
+                        {isSelected && <Text style={styles(theme).checkmark}>✓</Text>}
                       </View>
-                      <Text style={styles.lessonName}>{lesson.name}</Text>
+                      <Text style={styles(theme).lessonName}>{lesson.name}</Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -221,10 +226,10 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({ subject, onLesson
         })}
 
         {chapters.length === 0 && (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateIcon}>📚</Text>
-            <Text style={styles.emptyStateTitle}>No Lessons Available</Text>
-            <Text style={styles.emptyStateSubtitle}>
+          <View style={styles(theme).emptyState}>
+            <Text style={styles(theme).emptyStateIcon}>📚</Text>
+            <Text style={styles(theme).emptyStateTitle}>No Lessons Available</Text>
+            <Text style={styles(theme).emptyStateSubtitle}>
               No lessons are available for this subject at the moment.
             </Text>
           </View>
@@ -233,9 +238,9 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({ subject, onLesson
 
       {/* Start Quiz Button */}
       {selectedLessons.size > 0 && (
-        <View style={styles.footer}>
-          <TouchableOpacity style={styles.startQuizButton} onPress={handleStartQuiz}>
-            <Text style={styles.startQuizButtonText}>
+        <View style={styles(theme).footer}>
+          <TouchableOpacity style={styles(theme).startQuizButton} onPress={handleStartQuiz}>
+            <Text style={styles(theme).startQuizButtonText}>
               Start Quiz ({selectedLessons.size} lesson{selectedLessons.size !== 1 ? 's' : ''})
             </Text>
           </TouchableOpacity>
@@ -245,34 +250,34 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({ subject, onLesson
   );
 };
 
-const styles = StyleSheet.create({
+const styles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
   header: {
-    backgroundColor: '#007AFF',
     padding: 20,
     paddingTop: 50,
+    backgroundColor: theme.colors.headerBackground,
   },
   backButton: {
     marginBottom: 16,
   },
   backButtonText: {
-    color: '#ffffff',
     fontSize: 16,
     fontWeight: '500',
+    color: theme.colors.headerText,
   },
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: theme.colors.headerText,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: '#ffffff',
     opacity: 0.9,
     marginTop: 4,
+    color: theme.colors.headerSubtitle,
   },
   content: {
     flex: 1,
@@ -286,7 +291,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666666',
+    color: theme.colors.textSecondary,
   },
   errorContainer: {
     flex: 1,
@@ -301,19 +306,19 @@ const styles = StyleSheet.create({
   errorTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333333',
     marginBottom: 8,
+    color: theme.colors.text,
   },
   errorText: {
     fontSize: 14,
-    color: '#666666',
     textAlign: 'center',
+    color: theme.colors.textSecondary,
   },
   chapterCard: {
-    backgroundColor: '#ffffff',
     borderRadius: 12,
     marginBottom: 16,
-    shadowColor: '#000',
+    backgroundColor: theme.colors.card,
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -322,7 +327,7 @@ const styles = StyleSheet.create({
   chapterHeader: {
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: theme.colors.border,
   },
   chapterLeft: {
     flexDirection: 'row',
@@ -335,12 +340,12 @@ const styles = StyleSheet.create({
   chapterName: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333333',
     marginBottom: 4,
+    color: theme.colors.text,
   },
   chapterStats: {
     fontSize: 12,
-    color: '#666666',
+    color: theme.colors.textSecondary,
   },
   lessonsContainer: {
     padding: 16,
@@ -353,60 +358,59 @@ const styles = StyleSheet.create({
   },
   lessonName: {
     fontSize: 14,
-    color: '#333333',
     marginLeft: 12,
     flex: 1,
+    color: theme.colors.text,
   },
   checkbox: {
     width: 24,
     height: 24,
     borderRadius: 4,
     borderWidth: 2,
-    borderColor: '#cccccc',
     justifyContent: 'center',
     alignItems: 'center',
+    borderColor: theme.colors.checkboxBorder,
   },
   checkboxSelected: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: theme.colors.checkboxSelected,
+    borderColor: theme.colors.checkboxSelected,
   },
   checkboxPartial: {
-    backgroundColor: '#FFA500',
-    borderColor: '#FFA500',
+    borderColor: theme.colors.checkboxPartial,
   },
   checkmark: {
-    color: '#ffffff',
+    color: theme.colors.checkboxSelectedText,
     fontSize: 14,
     fontWeight: 'bold',
   },
   partialMark: {
-    color: '#ffffff',
     fontSize: 16,
     fontWeight: 'bold',
+    color: theme.colors.checkboxPartial,
   },
   footer: {
     padding: 20,
-    backgroundColor: '#ffffff',
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
   startQuizButton: {
-    backgroundColor: '#007AFF',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
+    backgroundColor: theme.colors.buttonPrimary,
   },
   startQuizButtonText: {
-    color: '#ffffff',
+    color: theme.colors.buttonPrimaryText,
     fontSize: 16,
     fontWeight: 'bold',
   },
   emptyState: {
-    backgroundColor: '#ffffff',
     padding: 40,
     borderRadius: 16,
     alignItems: 'center',
     marginTop: 40,
+    backgroundColor: theme.colors.card,
   },
   emptyStateIcon: {
     fontSize: 48,
@@ -415,13 +419,24 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333333',
     marginBottom: 8,
+    color: theme.colors.text,
   },
   emptyStateSubtitle: {
     fontSize: 14,
-    color: '#666666',
     textAlign: 'center',
+    color: theme.colors.textSecondary,
+  },
+  retryButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: theme.colors.buttonPrimary,
+  },
+  retryButtonText: {
+    color: theme.colors.buttonPrimaryText,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

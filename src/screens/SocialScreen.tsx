@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTheme } from '../context/ThemeContext';
 import { tryFetchWithFallback } from '../config/api';
 
 // Types matching GraphQL schema
@@ -46,6 +47,7 @@ interface TimelineActivity {
 }
 
 const SocialScreen: React.FC = () => {
+  const { theme } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Student[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -295,8 +297,8 @@ const SocialScreen: React.FC = () => {
 
   const renderAvatar = (name: string) => {
     return (
-      <View style={styles.avatarPlaceholder}>
-        <Text style={styles.avatarText}>{getInitials(name)}</Text>
+      <View style={styles(theme).avatarPlaceholder}>
+        <Text style={styles(theme).avatarText}>{getInitials(name)}</Text>
       </View>
     );
   };
@@ -304,21 +306,21 @@ const SocialScreen: React.FC = () => {
   const isSearching = searchQuery.length >= 2;
 
   return (
-    <View style={styles.container}>
+    <View style={styles(theme).container}>
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Social</Text>
-        <Text style={styles.headerSubtitle}>Connect with fellow learners</Text>
+      <View style={styles(theme).header}>
+        <Text style={styles(theme).headerTitle}>Social</Text>
+        <Text style={styles(theme).headerSubtitle}>Connect with fellow learners</Text>
       </View>
 
       {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchInputContainer}>
-          <Text style={styles.searchIcon}>🔍</Text>
+      <View style={styles(theme).searchContainer}>
+        <View style={styles(theme).searchInputContainer}>
+          <Text style={styles(theme).searchIcon}>🔍</Text>
           <TextInput
-            style={styles.searchInput}
+            style={styles(theme).searchInput}
             placeholder="Search for students to follow..."
-            placeholderTextColor="#999"
+            placeholderTextColor={theme.colors.textTertiary}
             value={searchQuery}
             onChangeText={handleSearchChange}
           />
@@ -328,47 +330,47 @@ const SocialScreen: React.FC = () => {
                 setSearchQuery('');
                 setSearchResults([]);
               }}
-              style={styles.clearButton}
+              style={styles(theme).clearButton}
             >
-              <Text style={styles.clearButtonText}>✕</Text>
+              <Text style={styles(theme).clearButtonText}>✕</Text>
             </TouchableOpacity>
           )}
         </View>
       </View>
 
       {/* Content */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles(theme).content} showsVerticalScrollIndicator={false}>
         {isSearching ? (
           // Search Results View
-          <View style={styles.searchResultsContainer}>
-            <Text style={styles.sectionTitle}>Search Results</Text>
+          <View style={styles(theme).searchResultsContainer}>
+            <Text style={styles(theme).sectionTitle}>Search Results</Text>
             {searchLoading ? (
-              <View style={styles.loadingState}>
-                <ActivityIndicator size="large" color="#007AFF" />
-                <Text style={styles.loadingText}>Searching...</Text>
+              <View style={styles(theme).loadingState}>
+                <ActivityIndicator size="large" color={theme.colors.primary} />
+                <Text style={styles(theme).loadingText}>Searching...</Text>
               </View>
             ) : searchResults.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyStateIcon}>🔍</Text>
-                <Text style={styles.emptyStateTitle}>No results found</Text>
-                <Text style={styles.emptyStateSubtitle}>
+              <View style={styles(theme).emptyState}>
+                <Text style={styles(theme).emptyStateIcon}>🔍</Text>
+                <Text style={styles(theme).emptyStateTitle}>No results found</Text>
+                <Text style={styles(theme).emptyStateSubtitle}>
                   Try searching with a different name or mobile number
                 </Text>
               </View>
             ) : (
               searchResults.map((student) => (
-                <View key={student.id} style={styles.studentCard}>
-                  <View style={styles.studentInfo}>
+                <View key={student.id} style={styles(theme).studentCard}>
+                  <View style={styles(theme).studentInfo}>
                     {renderAvatar(student.name)}
-                    <View style={styles.studentDetails}>
-                      <Text style={styles.studentName}>{student.name}</Text>
-                      <Text style={styles.studentGrade}>{student.grade.name}</Text>
-                      <View style={styles.studentStats}>
-                        <Text style={styles.studentStat}>
+                    <View style={styles(theme).studentDetails}>
+                      <Text style={styles(theme).studentName}>{student.name}</Text>
+                      <Text style={styles(theme).studentGrade}>{student.grade.name}</Text>
+                      <View style={styles(theme).studentStats}>
+                        <Text style={styles(theme).studentStat}>
                           {student.totalQuizzes} quizzes
                         </Text>
-                        <Text style={styles.studentStatSeparator}>•</Text>
-                        <Text style={styles.studentStat}>
+                        <Text style={styles(theme).studentStatSeparator}>•</Text>
+                        <Text style={styles(theme).studentStat}>
                           {student.avgScore}% avg
                         </Text>
                       </View>
@@ -376,15 +378,15 @@ const SocialScreen: React.FC = () => {
                   </View>
                   <TouchableOpacity
                     style={[
-                      styles.followButton,
-                      student.isFollowing && styles.followingButton,
+                      styles(theme).followButton,
+                      student.isFollowing && styles(theme).followButtonFollowing
                     ]}
                     onPress={() => handleFollowToggle(student)}
                   >
                     <Text
                       style={[
-                        styles.followButtonText,
-                        student.isFollowing && styles.followingButtonText,
+                        styles(theme).followButtonText,
+                        student.isFollowing && styles(theme).followButtonTextFollowing
                       ]}
                     >
                       {student.isFollowing ? 'Following' : 'Follow'}
@@ -396,42 +398,42 @@ const SocialScreen: React.FC = () => {
           </View>
         ) : (
           // Timeline View
-          <View style={styles.timelineContainer}>
-            <Text style={styles.sectionTitle}>Recent Activity</Text>
+          <View style={styles(theme).timelineContainer}>
+            <Text style={styles(theme).sectionTitle}>Recent Activity</Text>
             {timelineLoading ? (
-              <View style={styles.loadingState}>
-                <ActivityIndicator size="large" color="#007AFF" />
-                <Text style={styles.loadingText}>Loading activities...</Text>
+              <View style={styles(theme).loadingState}>
+                <ActivityIndicator size="large" color={theme.colors.primary} />
+                <Text style={styles(theme).loadingText}>Loading activities...</Text>
               </View>
             ) : timelineError ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyStateIcon}>⚠️</Text>
-                <Text style={styles.emptyStateTitle}>Error Loading Timeline</Text>
-                <Text style={styles.emptyStateSubtitle}>{timelineError}</Text>
-                <TouchableOpacity style={styles.retryButton} onPress={fetchTimeline}>
-                  <Text style={styles.retryButtonText}>Try Again</Text>
+              <View style={styles(theme).emptyState}>
+                <Text style={styles(theme).emptyStateIcon}>⚠️</Text>
+                <Text style={styles(theme).emptyStateTitle}>Error Loading Timeline</Text>
+                <Text style={styles(theme).emptyStateSubtitle}>{timelineError}</Text>
+                <TouchableOpacity style={styles(theme).retryButton} onPress={fetchTimeline}>
+                  <Text style={styles(theme).retryButtonText}>Try Again</Text>
                 </TouchableOpacity>
               </View>
             ) : timelineActivities.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyStateIcon}>👥</Text>
-                <Text style={styles.emptyStateTitle}>No activity yet</Text>
-                <Text style={styles.emptyStateSubtitle}>
+              <View style={styles(theme).emptyState}>
+                <Text style={styles(theme).emptyStateIcon}>👥</Text>
+                <Text style={styles(theme).emptyStateTitle}>No activity yet</Text>
+                <Text style={styles(theme).emptyStateSubtitle}>
                   Follow students to see their quiz activities here
                 </Text>
               </View>
             ) : (
               timelineActivities.map((activity) => (
-                <View key={activity.id} style={styles.timelineCard}>
+                <View key={activity.id} style={styles(theme).timelineCard}>
                   {/* User Info */}
-                  <View style={styles.timelineHeader}>
-                    <View style={styles.timelineUserInfo}>
+                  <View style={styles(theme).timelineHeader}>
+                    <View style={styles(theme).timelineUserInfo}>
                       {renderAvatar(activity.user.name)}
-                      <View style={styles.timelineUserDetails}>
-                        <Text style={styles.timelineUserName}>
+                      <View style={styles(theme).timelineUserDetails}>
+                        <Text style={styles(theme).timelineUserName}>
                           {activity.user.name}
                         </Text>
-                        <Text style={styles.timelineTime}>
+                        <Text style={styles(theme).timelineTime}>
                           {getTimeAgo(activity.completedAt)}
                         </Text>
                       </View>
@@ -439,17 +441,17 @@ const SocialScreen: React.FC = () => {
                   </View>
 
                   {/* Quiz Info */}
-                  <View style={styles.timelineQuizInfo}>
-                    <Text style={styles.timelineQuizName}>
+                  <View style={styles(theme).timelineQuizInfo}>
+                    <Text style={styles(theme).timelineQuizName}>
                       {activity.quiz.name}
                     </Text>
-                    <Text style={styles.timelineQuizSubject}>
+                    <Text style={styles(theme).timelineQuizSubject}>
                       {activity.quiz.subject.name}
                     </Text>
-                    <View style={styles.timelineScoreContainer}>
+                    <View style={styles(theme).timelineScoreContainer}>
                       <Text
                         style={[
-                          styles.timelineScore,
+                          styles(theme).timelineScore,
                           {
                             color: getScoreColor(
                               activity.score,
@@ -460,39 +462,39 @@ const SocialScreen: React.FC = () => {
                       >
                         {activity.score}/{activity.totalQuestions}
                       </Text>
-                      <Text style={styles.timelineScoreLabel}>Score</Text>
+                      <Text style={styles(theme).timelineScoreLabel}>Score</Text>
                     </View>
                   </View>
 
                   {/* Actions */}
-                  <View style={styles.timelineActions}>
+                  <View style={styles(theme).timelineActions}>
                     <TouchableOpacity
-                      style={styles.timelineActionButton}
+                      style={styles(theme).timelineActionButton}
                       onPress={() => handleLike(activity)}
                     >
                       <Text
                         style={[
-                          styles.timelineActionIcon,
-                          activity.isLiked && styles.timelineActionIconLiked,
+                          styles(theme).timelineActionIcon,
+                          activity.isLiked && styles(theme).timelineActionIconLiked,
                         ]}
                       >
                         {activity.isLiked ? '❤️' : '🤍'}
                       </Text>
                       <Text
                         style={[
-                          styles.timelineActionText,
-                          activity.isLiked && styles.timelineActionTextLiked,
+                          styles(theme).timelineActionText,
+                          activity.isLiked && styles(theme).timelineActionTextLiked
                         ]}
                       >
                         {activity.likes}
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={styles.timelineActionButton}
+                      style={styles(theme).timelineActionButton}
                       onPress={() => handleComment(activity)}
                     >
-                      <Text style={styles.timelineActionIcon}>💬</Text>
-                      <Text style={styles.timelineActionText}>
+                      <Text style={styles(theme).timelineActionIcon}>💬</Text>
+                      <Text style={styles(theme).timelineActionText}>
                         {activity.comments}
                       </Text>
                     </TouchableOpacity>
@@ -507,40 +509,40 @@ const SocialScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
   header: {
-    backgroundColor: '#007AFF',
     padding: 20,
     paddingTop: 50,
+    backgroundColor: theme.colors.headerBackground,
   },
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: theme.colors.headerText,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: '#ffffff',
     opacity: 0.9,
     marginTop: 4,
+    color: theme.colors.headerSubtitle,
   },
   searchContainer: {
-    backgroundColor: '#ffffff',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
+    backgroundColor: theme.colors.card,
   },
   searchIcon: {
     fontSize: 20,
@@ -549,15 +551,15 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#333',
+    color: theme.colors.text,
   },
   clearButton: {
     padding: 4,
   },
   clearButtonText: {
     fontSize: 18,
-    color: '#999',
     fontWeight: 'bold',
+    color: theme.colors.textTertiary,
   },
   content: {
     flex: 1,
@@ -565,17 +567,16 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333333',
     marginBottom: 16,
     paddingHorizontal: 16,
     paddingTop: 16,
+    color: theme.colors.text,
   },
   // Search Results Styles
   searchResultsContainer: {
     paddingBottom: 20,
   },
   studentCard: {
-    backgroundColor: '#ffffff',
     marginHorizontal: 16,
     marginBottom: 12,
     padding: 16,
@@ -583,7 +584,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    shadowColor: '#000',
+    backgroundColor: theme.colors.card,
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -598,13 +600,13 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#007AFF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+    backgroundColor: theme.colors.avatarBackground,
   },
   avatarText: {
-    color: '#ffffff',
+    color: theme.colors.avatarText,
     fontSize: 18,
     fontWeight: 'bold',
   },
@@ -614,13 +616,13 @@ const styles = StyleSheet.create({
   studentName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333333',
     marginBottom: 4,
+    color: theme.colors.text,
   },
   studentGrade: {
     fontSize: 14,
-    color: '#666666',
     marginBottom: 4,
+    color: theme.colors.textSecondary,
   },
   studentStats: {
     flexDirection: 'row',
@@ -628,41 +630,41 @@ const styles = StyleSheet.create({
   },
   studentStat: {
     fontSize: 14,
-    color: '#666666',
+    color: theme.colors.textSecondary,
   },
   studentStatSeparator: {
     fontSize: 14,
-    color: '#999999',
     marginHorizontal: 8,
+    color: theme.colors.textTertiary,
   },
   followButton: {
-    backgroundColor: '#007AFF',
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderRadius: 20,
+    backgroundColor: theme.colors.buttonPrimary,
   },
-  followingButton: {
-    backgroundColor: '#e0e0e0',
+  followButtonFollowing: {
+    backgroundColor: theme.colors.buttonSecondary,
   },
   followButtonText: {
-    color: '#ffffff',
     fontSize: 14,
     fontWeight: '600',
+    color: theme.colors.buttonPrimaryText,
   },
-  followingButtonText: {
-    color: '#666666',
+  followButtonTextFollowing: {
+    color: theme.colors.buttonSecondaryText,
   },
   // Timeline Styles
   timelineContainer: {
     paddingBottom: 20,
   },
   timelineCard: {
-    backgroundColor: '#ffffff',
     marginHorizontal: 16,
     marginBottom: 16,
     borderRadius: 12,
     padding: 16,
-    shadowColor: '#000',
+    backgroundColor: theme.colors.card,
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -682,29 +684,29 @@ const styles = StyleSheet.create({
   timelineUserName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333333',
     marginBottom: 2,
+    color: theme.colors.text,
   },
   timelineTime: {
     fontSize: 12,
-    color: '#999999',
+    color: theme.colors.textTertiary,
   },
   timelineQuizInfo: {
     marginBottom: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: theme.colors.border,
   },
   timelineQuizName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333333',
     marginBottom: 4,
+    color: theme.colors.text,
   },
   timelineQuizSubject: {
     fontSize: 14,
-    color: '#666666',
     marginBottom: 12,
+    color: theme.colors.textSecondary,
   },
   timelineScoreContainer: {
     flexDirection: 'row',
@@ -717,7 +719,7 @@ const styles = StyleSheet.create({
   },
   timelineScoreLabel: {
     fontSize: 14,
-    color: '#666666',
+    color: theme.colors.textSecondary,
   },
   timelineActions: {
     flexDirection: 'row',
@@ -737,19 +739,19 @@ const styles = StyleSheet.create({
   },
   timelineActionText: {
     fontSize: 14,
-    color: '#666666',
+    color: theme.colors.textSecondary,
   },
   timelineActionTextLiked: {
-    color: '#E91E63',
     fontWeight: '600',
+    color: '#E91E63',
   },
   loadingState: {
-    backgroundColor: '#ffffff',
     marginHorizontal: 16,
     padding: 40,
     borderRadius: 12,
     alignItems: 'center',
-    shadowColor: '#000',
+    backgroundColor: theme.colors.card,
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -758,15 +760,15 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 15,
     fontSize: 14,
-    color: '#666666',
+    color: theme.colors.textSecondary,
   },
   emptyState: {
-    backgroundColor: '#ffffff',
     marginHorizontal: 16,
     padding: 40,
     borderRadius: 12,
     alignItems: 'center',
-    shadowColor: '#000',
+    backgroundColor: theme.colors.card,
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -779,23 +781,23 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333333',
     marginBottom: 8,
+    color: theme.colors.text,
   },
   emptyStateSubtitle: {
     fontSize: 14,
-    color: '#666666',
     textAlign: 'center',
+    color: theme.colors.textSecondary,
   },
   retryButton: {
     marginTop: 15,
-    backgroundColor: '#007AFF',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
+    backgroundColor: theme.colors.buttonPrimary,
   },
   retryButtonText: {
-    color: '#ffffff',
+    color: theme.colors.buttonPrimaryText,
     fontSize: 14,
     fontWeight: '600',
   },

@@ -16,7 +16,7 @@ const PRODUCTION_URLS = [
 
 // Development fallback URLs for different network scenarios
 const DEVELOPMENT_URLS = [
-  // 'http://192.168.1.107:8001/graphql',  // Current WiFi network
+  // 'http://192.168.1.188:8001/graphql',  // Current WiFi network
   // 'http://169.254.105.59:8001/graphql', // Link-local address
   'http://10.0.2.2:8001/graphql',       // Android emulator
   // 'http://localhost:8001/graphql',      // iOS simulator

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '../../context/ThemeContext';
 import { tryFetchWithFallback } from '../../config/api';
 
 // Types
@@ -37,6 +38,7 @@ interface QuizResultsScreenProps {
 }
 
 const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({ quizId, onBack, onRetakeQuiz }) => {
+  const { theme } = useTheme();
   const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -101,16 +103,16 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({ quizId, onBack, o
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <View style={styles.header}>
+      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <View style={[styles.header, { backgroundColor: theme.colors.headerBackground }]}>
           <TouchableOpacity style={styles.backButton} onPress={onBack}>
-            <Text style={styles.backButtonText}>← Back</Text>
+            <Text style={[styles.backButtonText, { color: theme.colors.headerText }]}>← Back</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Loading Results...</Text>
+          <Text style={[styles.headerTitle, { color: theme.colors.headerText }]}>Loading Results...</Text>
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Loading quiz results...</Text>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>Loading quiz results...</Text>
         </View>
       </View>
     );
@@ -118,18 +120,18 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({ quizId, onBack, o
 
   if (error) {
     return (
-      <View style={styles.container}>
-        <View style={styles.header}>
+      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <View style={[styles.header, { backgroundColor: theme.colors.headerBackground }]}>
           <TouchableOpacity style={styles.backButton} onPress={onBack}>
-            <Text style={styles.backButtonText}>← Back</Text>
+            <Text style={[styles.backButtonText, { color: theme.colors.headerText }]}>← Back</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Results Error</Text>
+          <Text style={[styles.headerTitle, { color: theme.colors.headerText }]}>Results Error</Text>
         </View>
         <View style={styles.errorContainer}>
           <Text style={styles.errorIcon}>⚠️</Text>
-          <Text style={styles.errorTitle}>Error Loading Results</Text>
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={fetchQuizResults}>
+          <Text style={[styles.errorTitle, { color: theme.colors.text }]}>Error Loading Results</Text>
+          <Text style={[styles.errorText, { color: theme.colors.textSecondary }]}>{error}</Text>
+          <TouchableOpacity style={[styles.retryButton, { backgroundColor: theme.colors.primary }]} onPress={fetchQuizResults}>
             <Text style={styles.retryButtonText}>Try Again</Text>
           </TouchableOpacity>
         </View>
@@ -139,17 +141,17 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({ quizId, onBack, o
 
   if (!quizResult) {
     return (
-      <View style={styles.container}>
-        <View style={styles.header}>
+      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <View style={[styles.header, { backgroundColor: theme.colors.headerBackground }]}>
           <TouchableOpacity style={styles.backButton} onPress={onBack}>
-            <Text style={styles.backButtonText}>← Back</Text>
+            <Text style={[styles.backButtonText, { color: theme.colors.headerText }]}>← Back</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>No Results</Text>
+          <Text style={[styles.headerTitle, { color: theme.colors.headerText }]}>No Results</Text>
         </View>
         <View style={styles.errorContainer}>
           <Text style={styles.errorIcon}>📊</Text>
-          <Text style={styles.errorTitle}>No Results Available</Text>
-          <Text style={styles.errorText}>Quiz results are not available yet.</Text>
+          <Text style={[styles.errorTitle, { color: theme.colors.text }]}>No Results Available</Text>
+          <Text style={[styles.errorText, { color: theme.colors.textSecondary }]}>Quiz results are not available yet.</Text>
         </View>
       </View>
     );
@@ -159,64 +161,79 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({ quizId, onBack, o
   const correctAnswers = quizResult.userAnswers.filter(answer => answer.is_correct).length;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Text style={styles.backButtonText}>← Back</Text>
+    <View style={styles(theme).container}>
+      <View style={styles(theme).header}>
+        <TouchableOpacity style={styles(theme).backButton} onPress={onBack}>
+          <Text style={styles(theme).backButtonText}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Quiz Results</Text>
-        <Text style={styles.headerSubtitle}>{quizResult.quiz.name}</Text>
+        <Text style={styles(theme).headerTitle}>Quiz Results</Text>
+        <Text style={styles(theme).headerSubtitle}>{quizResult.quiz.name}</Text>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles(theme).content} showsVerticalScrollIndicator={false}>
         {/* Score Summary */}
-        <View style={styles.scoreContainer}>
-          <View style={[styles.scoreCircle, { borderColor: quizResult.isPassed ? '#28a745' : '#dc3545' }]}>
-            <Text style={[styles.scorePercentage, { color: quizResult.isPassed ? '#28a745' : '#dc3545' }]}>
+        <View style={styles(theme).scoreContainer}>
+          <View style={[
+            styles(theme).scoreCircle,
+            quizResult.isPassed ? styles(theme).scoreCirclePassed : styles(theme).scoreCircleFailed
+          ]}>
+            <Text style={[
+              styles(theme).scorePercentage,
+              quizResult.isPassed ? styles(theme).scorePercentagePassed : styles(theme).scorePercentageFailed
+            ]}>
               {percentage}%
             </Text>
-            <Text style={styles.scoreLabel}>Score</Text>
+            <Text style={styles(theme).scoreLabel}>Score</Text>
           </View>
           
-          <View style={styles.scoreDetails}>
-            <View style={styles.scoreItem}>
-              <Text style={styles.scoreNumber}>{correctAnswers}</Text>
-              <Text style={styles.scoreText}>Correct</Text>
+          <View style={styles(theme).scoreDetails}>
+            <View style={styles(theme).scoreItem}>
+              <Text style={styles(theme).scoreNumber}>{correctAnswers}</Text>
+              <Text style={styles(theme).scoreText}>Correct</Text>
             </View>
-            <View style={styles.scoreItem}>
-              <Text style={styles.scoreNumber}>{quizResult.totalQuestions - correctAnswers}</Text>
-              <Text style={styles.scoreText}>Incorrect</Text>
+            <View style={styles(theme).scoreItem}>
+              <Text style={styles(theme).scoreNumber}>{quizResult.totalQuestions - correctAnswers}</Text>
+              <Text style={styles(theme).scoreText}>Incorrect</Text>
             </View>
-            <View style={styles.scoreItem}>
-              <Text style={styles.scoreNumber}>{quizResult.totalQuestions}</Text>
-              <Text style={styles.scoreText}>Total</Text>
+            <View style={styles(theme).scoreItem}>
+              <Text style={styles(theme).scoreNumber}>{quizResult.totalQuestions}</Text>
+              <Text style={styles(theme).scoreText}>Total</Text>
             </View>
           </View>
         </View>
 
         {/* Pass/Fail Status */}
-        <View style={[styles.statusContainer, { backgroundColor: quizResult.isPassed ? '#d4edda' : '#f8d7da' }]}>
-          <Text style={[styles.statusIcon, { color: quizResult.isPassed ? '#28a745' : '#dc3545' }]}>
+        <View style={[
+          styles(theme).statusContainer,
+          quizResult.isPassed ? styles(theme).statusContainerPassed : styles(theme).statusContainerFailed
+        ]}>
+          <Text style={[
+            styles(theme).statusIcon,
+            quizResult.isPassed ? styles(theme).statusIconPassed : styles(theme).statusIconFailed
+          ]}>
             {quizResult.isPassed ? '✅' : '❌'}
           </Text>
-          <Text style={[styles.statusText, { color: quizResult.isPassed ? '#155724' : '#721c24' }]}>
+          <Text style={[
+            styles(theme).statusText,
+            quizResult.isPassed ? styles(theme).statusTextPassed : styles(theme).statusTextFailed
+          ]}>
             {quizResult.isPassed ? 'Congratulations! You passed!' : 'You need more practice. Try again!'}
           </Text>
         </View>
 
         {/* Question Review - Only Wrong Answers */}
-        <View style={styles.reviewContainer}>
-          <Text style={styles.reviewTitle}>Questions to Review</Text>
+        <View style={styles(theme).reviewContainer}>
+          <Text style={styles(theme).reviewTitle}>Questions to Review</Text>
 
           {(() => {
             const wrongAnswers = quizResult.userAnswers.filter(answer => !answer.is_correct);
 
             if (wrongAnswers.length === 0) {
               return (
-                <View style={styles.perfectScoreContainer}>
-                  <Text style={styles.perfectScoreIcon}>🎉</Text>
-                  <Text style={styles.perfectScoreTitle}>Perfect Score!</Text>
-                  <Text style={styles.perfectScoreText}>
+                <View style={styles(theme).perfectScoreContainer}>
+                  <Text style={styles(theme).perfectScoreIcon}>🎉</Text>
+                  <Text style={styles(theme).perfectScoreTitle}>Perfect Score!</Text>
+                  <Text style={styles(theme).perfectScoreText}>
                     You answered all questions correctly. Great job!
                   </Text>
                 </View>
@@ -228,38 +245,38 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({ quizId, onBack, o
               const correctAnswer = answer.question.answer_1;
 
               return (
-                <View key={answer.question.id} style={styles.questionReview}>
-                  <View style={styles.questionHeader}>
-                    <Text style={styles.questionNumber}>Question {index + 1}</Text>
-                    <View style={[styles.answerStatus, { backgroundColor: '#f8d7da' }]}>
-                      <Text style={[styles.answerStatusText, { color: '#721c24' }]}>
+                <View key={answer.question.id} style={styles(theme).questionReview}>
+                  <View style={styles(theme).questionHeader}>
+                    <Text style={styles(theme).questionNumber}>Question {index + 1}</Text>
+                    <View style={styles(theme).answerStatus}>
+                      <Text style={styles(theme).answerStatusText}>
                         Incorrect
                       </Text>
                     </View>
                   </View>
 
-                  <Text style={styles.questionText}>{answer.question.question}</Text>
+                  <Text style={styles(theme).questionText}>{answer.question.question}</Text>
 
                   {/* Your Wrong Answer */}
-                  <View style={styles.wrongAnswerContainer}>
-                    <Text style={styles.wrongAnswerLabel}>❌ Your Answer:</Text>
-                    <Text style={styles.wrongAnswerText}>
+                  <View style={styles(theme).wrongAnswerContainer}>
+                    <Text style={styles(theme).wrongAnswerLabel}>❌ Your Answer:</Text>
+                    <Text style={styles(theme).wrongAnswerText}>
                       {answer.selected_answer}
                     </Text>
                   </View>
 
                   {/* Correct Answer */}
-                  <View style={styles.correctAnswerContainer}>
-                    <Text style={styles.correctAnswerLabel}>✅ Correct Answer:</Text>
-                    <Text style={styles.correctAnswerText}>
+                  <View style={styles(theme).correctAnswerContainer}>
+                    <Text style={styles(theme).correctAnswerLabel}>✅ Correct Answer:</Text>
+                    <Text style={styles(theme).correctAnswerText}>
                      {answer.question.answer_1}
                     </Text>
                   </View>
 
                   {answer.question.explanation && (
-                    <View style={styles.explanationContainer}>
-                      <Text style={styles.explanationLabel}>💡 Explanation:</Text>
-                      <Text style={styles.explanationText}>{answer.question.explanation}</Text>
+                    <View style={styles(theme).explanationContainer}>
+                      <Text style={styles(theme).explanationLabel}>💡 Explanation:</Text>
+                      <Text style={styles(theme).explanationText}>{answer.question.explanation}</Text>
                     </View>
                   )}
                 </View>
@@ -270,47 +287,47 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({ quizId, onBack, o
       </ScrollView>
 
       {/* Action Buttons */}
-      <View style={styles.actionContainer}>
-        <TouchableOpacity style={styles.retakeButton} onPress={onRetakeQuiz}>
-          <Text style={styles.retakeButtonText}>Retake Quiz</Text>
+      <View style={styles(theme).actionContainer}>
+        <TouchableOpacity style={styles(theme).retakeButton} onPress={onRetakeQuiz}>
+          <Text style={styles(theme).retakeButtonText}>Retake Quiz</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.doneButton} onPress={onBack}>
-          <Text style={styles.doneButtonText}>Done</Text>
+        <TouchableOpacity style={styles(theme).doneButton} onPress={onBack}>
+          <Text style={styles(theme).doneButtonText}>Done</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
+const styles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
   header: {
-    backgroundColor: '#007AFF',
     padding: 20,
     paddingTop: 50,
+    backgroundColor: theme.colors.headerBackground,
   },
   backButton: {
     marginBottom: 16,
   },
   backButtonText: {
-    color: '#ffffff',
     fontSize: 16,
     fontWeight: '500',
+    color: theme.colors.headerText,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: theme.colors.headerText,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: '#ffffff',
     opacity: 0.9,
     marginTop: 4,
+    color: theme.colors.headerSubtitle,
   },
   content: {
     flex: 1,
@@ -324,7 +341,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666666',
+    color: theme.colors.textSecondary,
   },
   errorContainer: {
     flex: 1,
@@ -339,32 +356,32 @@ const styles = StyleSheet.create({
   errorTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333333',
     marginBottom: 8,
+    color: theme.colors.text,
   },
   errorText: {
     fontSize: 14,
-    color: '#666666',
     textAlign: 'center',
     marginBottom: 20,
+    color: theme.colors.textSecondary,
   },
   retryButton: {
-    backgroundColor: '#007AFF',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
+    backgroundColor: theme.colors.buttonPrimary,
   },
   retryButtonText: {
-    color: '#ffffff',
+    color: theme.colors.buttonPrimaryText,
     fontSize: 16,
     fontWeight: '600',
   },
   scoreContainer: {
-    backgroundColor: '#ffffff',
     padding: 24,
     borderRadius: 16,
     marginBottom: 20,
     alignItems: 'center',
+    backgroundColor: theme.colors.card,
   },
   scoreCircle: {
     width: 120,
@@ -375,14 +392,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
+  scoreCirclePassed: {
+    borderColor: theme.colors.success,
+  },
+  scoreCircleFailed: {
+    borderColor: theme.colors.error,
+  },
   scorePercentage: {
     fontSize: 32,
     fontWeight: 'bold',
   },
+  scorePercentagePassed: {
+    color: theme.colors.success,
+  },
+  scorePercentageFailed: {
+    color: theme.colors.error,
+  },
   scoreLabel: {
     fontSize: 14,
-    color: '#666666',
     marginTop: 4,
+    color: theme.colors.textSecondary,
   },
   scoreDetails: {
     flexDirection: 'row',
@@ -395,12 +424,12 @@ const styles = StyleSheet.create({
   scoreNumber: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333333',
+    color: theme.colors.text,
   },
   scoreText: {
     fontSize: 14,
-    color: '#666666',
     marginTop: 4,
+    color: theme.colors.textSecondary,
   },
   statusContainer: {
     flexDirection: 'row',
@@ -409,14 +438,32 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 20,
   },
+  statusContainerPassed: {
+    backgroundColor: theme.colors.successBackground,
+  },
+  statusContainerFailed: {
+    backgroundColor: theme.colors.errorBackground,
+  },
   statusIcon: {
     fontSize: 24,
     marginRight: 12,
+  },
+  statusIconPassed: {
+    color: theme.colors.success,
+  },
+  statusIconFailed: {
+    color: theme.colors.error,
   },
   statusText: {
     fontSize: 16,
     fontWeight: '600',
     flex: 1,
+  },
+  statusTextPassed: {
+    color: theme.colors.successText,
+  },
+  statusTextFailed: {
+    color: theme.colors.errorText,
   },
   reviewContainer: {
     marginBottom: 20,
@@ -424,14 +471,14 @@ const styles = StyleSheet.create({
   reviewTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333333',
     marginBottom: 16,
+    color: theme.colors.text,
   },
   questionReview: {
-    backgroundColor: '#ffffff',
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
+    backgroundColor: theme.colors.card,
   },
   questionHeader: {
     flexDirection: 'row',
@@ -442,89 +489,94 @@ const styles = StyleSheet.create({
   questionNumber: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#007AFF',
+    color: theme.colors.primary,
   },
   answerStatus: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
+    backgroundColor: theme.colors.errorBackground,
   },
   answerStatusText: {
     fontSize: 12,
     fontWeight: '600',
+    color: theme.colors.errorText,
   },
   questionText: {
     fontSize: 16,
-    color: '#333333',
     marginBottom: 12,
     lineHeight: 22,
+    color: theme.colors.text,
   },
   answerContainer: {
     marginBottom: 8,
   },
   answerLabel: {
     fontSize: 14,
-    color: '#666666',
     marginBottom: 4,
+    color: theme.colors.text,
   },
   answerText: {
     fontSize: 16,
     fontWeight: '500',
+    color: theme.colors.text,
   },
   explanationContainer: {
-    backgroundColor: '#f8f9fa',
     padding: 12,
     borderRadius: 8,
     marginTop: 8,
+    backgroundColor: theme.colors.surface,
   },
   explanationLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#495057',
     marginBottom: 4,
+    color: theme.colors.text,
   },
   explanationText: {
     fontSize: 14,
-    color: '#6c757d',
     lineHeight: 20,
+    color: theme.colors.textSecondary,
   },
   actionContainer: {
     flexDirection: 'row',
     padding: 20,
-    backgroundColor: '#ffffff',
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: theme.colors.border,
     gap: 12,
+    backgroundColor: theme.colors.surface,
   },
   retakeButton: {
     flex: 1,
-    backgroundColor: '#007AFF',
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
+    backgroundColor: theme.colors.buttonPrimary,
   },
   retakeButtonText: {
-    color: '#ffffff',
+    color: theme.colors.buttonPrimaryText,
     fontSize: 16,
     fontWeight: '600',
   },
   doneButton: {
     flex: 1,
-    backgroundColor: '#28a745',
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.card,
   },
   doneButtonText: {
-    color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
+    color: theme.colors.text,
   },
   perfectScoreContainer: {
     alignItems: 'center',
     padding: 40,
-    backgroundColor: '#ffffff',
     borderRadius: 12,
+    backgroundColor: theme.colors.card,
   },
   perfectScoreIcon: {
     fontSize: 48,
@@ -533,52 +585,52 @@ const styles = StyleSheet.create({
   perfectScoreTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#28a745',
     marginBottom: 8,
+    color: theme.colors.text,
   },
   perfectScoreText: {
     fontSize: 16,
-    color: '#666666',
     textAlign: 'center',
     lineHeight: 22,
+    color: theme.colors.textSecondary,
   },
   wrongAnswerContainer: {
-    backgroundColor: '#f8d7da',
     padding: 12,
     borderRadius: 8,
     marginBottom: 8,
     borderLeftWidth: 4,
-    borderLeftColor: '#dc3545',
+    borderLeftColor: theme.colors.error,
+    backgroundColor: theme.colors.errorBackground,
   },
   wrongAnswerLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#721c24',
     marginBottom: 4,
+    color: theme.colors.text,
   },
   wrongAnswerText: {
     fontSize: 16,
-    color: '#721c24',
     fontWeight: '500',
+    color: theme.colors.text,
   },
   correctAnswerContainer: {
-    backgroundColor: '#d4edda',
     padding: 12,
     borderRadius: 8,
     marginBottom: 8,
     borderLeftWidth: 4,
-    borderLeftColor: '#28a745',
+    borderLeftColor: theme.colors.success,
+    backgroundColor: theme.colors.successBackground,
   },
   correctAnswerLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#155724',
     marginBottom: 4,
+    color: theme.colors.text,
   },
   correctAnswerText: {
     fontSize: 16,
-    color: '#155724',
     fontWeight: '500',
+    color: theme.colors.text,
   },
 });
 

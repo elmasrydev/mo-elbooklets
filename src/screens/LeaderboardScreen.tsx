@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { tryFetchWithFallback } from '../config/api';
 
 // Types
@@ -27,6 +28,7 @@ interface Student {
 
 const LeaderboardScreen: React.FC = () => {
   const { user } = useAuth();
+  const { theme } = useTheme();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [selectedTab, setSelectedTab] = useState<string>('all');
   const [loading, setLoading] = useState(true);
@@ -121,12 +123,18 @@ const LeaderboardScreen: React.FC = () => {
       `, variables, token);
 
       if (result.data?.leaderboard) {
+        // Ensure isFollowing is properly set (default to false if missing)
+        const processedLeaderboard = result.data.leaderboard.map((student: Student) => ({
+          ...student,
+          isFollowing: student.isFollowing ?? false,
+        }));
+        
         if (tabId === 'all') {
-          setAllLeaderboard(result.data.leaderboard);
+          setAllLeaderboard(processedLeaderboard);
         } else {
           setSubjectLeaderboards((prev) => ({
             ...prev,
-            [tabId]: result.data.leaderboard,
+            [tabId]: processedLeaderboard,
           }));
         }
       } else {
@@ -206,10 +214,10 @@ const LeaderboardScreen: React.FC = () => {
   };
 
   const getRankBadgeStyle = (rank: number) => {
-    if (rank === 1) return styles.rankBadgeGold;
-    if (rank === 2) return styles.rankBadgeSilver;
-    if (rank === 3) return styles.rankBadgeBronze;
-    return styles.rankBadge;
+    if (rank === 1) return styles(theme).rankBadgeGold;
+    if (rank === 2) return styles(theme).rankBadgeSilver;
+    if (rank === 3) return styles(theme).rankBadgeBronze;
+    return styles(theme).rankBadge;
   };
 
   const getCurrentLeaderboard = (): Student[] => {
@@ -229,57 +237,69 @@ const LeaderboardScreen: React.FC = () => {
 
   const renderAvatar = (name: string) => {
     return (
-      <View style={styles.avatarPlaceholder}>
-        <Text style={styles.avatarText}>{getInitials(name)}</Text>
+      <View style={styles(theme).avatarPlaceholder}>
+        <Text style={styles(theme).avatarText}>{getInitials(name)}</Text>
       </View>
     );
   };
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Leaderboard</Text>
-          <Text style={styles.headerSubtitle}>See how you rank among peers</Text>
+      <View style={styles(theme).container}>
+        <View style={styles(theme).header}>
+          <Text style={styles(theme).headerTitle}>Leaderboard</Text>
+          <Text style={styles(theme).headerSubtitle}>See how you rank among peers</Text>
         </View>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Loading leaderboard...</Text>
+        <View style={styles(theme).loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={styles(theme).loadingText}>Loading leaderboard...</Text>
         </View>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={styles(theme).container}>
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Leaderboard</Text>
-        <Text style={styles.headerSubtitle}>See how you rank among peers</Text>
+      <View style={styles(theme).header}>
+        <Text style={styles(theme).headerTitle}>Leaderboard</Text>
+        <Text style={styles(theme).headerSubtitle}>See how you rank among peers</Text>
       </View>
 
       {/* Tab Bar */}
-      <View style={styles.tabBarContainer}>
+      <View style={styles(theme).tabBarContainer}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tabBarContent}
+          contentContainerStyle={styles(theme).tabBarContent}
         >
           <TouchableOpacity
-            style={[styles.tab, selectedTab === 'all' && styles.tabActive]}
+            style={[
+              styles(theme).tab,
+              selectedTab === 'all' && styles(theme).tabActive
+            ]}
             onPress={() => handleTabChange('all')}
           >
-            <Text style={[styles.tabText, selectedTab === 'all' && styles.tabTextActive]}>
+            <Text style={[
+              styles(theme).tabText,
+              selectedTab === 'all' ? styles(theme).tabTextActive : styles(theme).tabTextInactive
+            ]}>
               All
             </Text>
           </TouchableOpacity>
           {subjects.map((subject) => (
             <TouchableOpacity
               key={subject.id}
-              style={[styles.tab, selectedTab === subject.id && styles.tabActive]}
+              style={[
+                styles(theme).tab,
+                selectedTab === subject.id && styles(theme).tabActive
+              ]}
               onPress={() => handleTabChange(subject.id)}
             >
-              <Text style={[styles.tabText, selectedTab === subject.id && styles.tabTextActive]}>
+              <Text style={[
+                styles(theme).tabText,
+                selectedTab === subject.id ? styles(theme).tabTextActive : styles(theme).tabTextInactive
+              ]}>
                 {subject.name}
               </Text>
             </TouchableOpacity>
@@ -288,51 +308,51 @@ const LeaderboardScreen: React.FC = () => {
       </View>
 
       {/* Leaderboard Content */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.leaderboardContainer}>
-          <Text style={styles.sectionTitle}>{getCurrentTabName()}</Text>
+      <ScrollView style={styles(theme).content} showsVerticalScrollIndicator={false}>
+        <View style={styles(theme).leaderboardContainer}>
+          <Text style={styles(theme).sectionTitle}>{getCurrentTabName()}</Text>
           {leaderboardLoading ? (
-            <View style={styles.loadingState}>
-              <ActivityIndicator size="large" color="#007AFF" />
-              <Text style={styles.loadingText}>Loading leaderboard...</Text>
+            <View style={styles(theme).loadingState}>
+              <ActivityIndicator size="large" color={theme.colors.primary} />
+              <Text style={styles(theme).loadingText}>Loading leaderboard...</Text>
             </View>
           ) : leaderboardError ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateIcon}>⚠️</Text>
-              <Text style={styles.emptyStateTitle}>Error Loading Leaderboard</Text>
-              <Text style={styles.emptyStateSubtitle}>{leaderboardError}</Text>
+            <View style={styles(theme).emptyState}>
+              <Text style={styles(theme).emptyStateIcon}>⚠️</Text>
+              <Text style={styles(theme).emptyStateTitle}>Error Loading Leaderboard</Text>
+              <Text style={styles(theme).emptyStateSubtitle}>{leaderboardError}</Text>
               <TouchableOpacity
-                style={styles.retryButton}
+                style={styles(theme).retryButton}
                 onPress={() => fetchLeaderboard(selectedTab)}
               >
-                <Text style={styles.retryButtonText}>Try Again</Text>
+                <Text style={styles(theme).retryButtonText}>Try Again</Text>
               </TouchableOpacity>
             </View>
           ) : getCurrentLeaderboard().length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateIcon}>🏆</Text>
-              <Text style={styles.emptyStateTitle}>No rankings yet</Text>
-              <Text style={styles.emptyStateSubtitle}>
+            <View style={styles(theme).emptyState}>
+              <Text style={styles(theme).emptyStateIcon}>🏆</Text>
+              <Text style={styles(theme).emptyStateTitle}>No rankings yet</Text>
+              <Text style={styles(theme).emptyStateSubtitle}>
                 Be the first to complete quizzes and appear on the leaderboard!
               </Text>
             </View>
           ) : (
             getCurrentLeaderboard().map((student) => (
-              <View key={student.id} style={styles.studentCard}>
-                <View style={styles.studentLeft}>
-                  <View style={[styles.rankBadgeContainer, getRankBadgeStyle(student.rank)]}>
-                    <Text style={styles.rankBadgeText}>{getRankBadge(student.rank)}</Text>
+              <View key={student.id} style={styles(theme).studentCard}>
+                <View style={styles(theme).studentLeft}>
+                  <View style={[styles(theme).rankBadgeContainer, getRankBadgeStyle(student.rank)]}>
+                    <Text style={styles(theme).rankBadgeText}>{getRankBadge(student.rank)}</Text>
                   </View>
                   {renderAvatar(student.name)}
-                  <View style={styles.studentDetails}>
-                    <Text style={styles.studentName}>{student.name}</Text>
-                    <Text style={styles.studentGrade}>{student.grade.name}</Text>
-                    <View style={styles.studentStats}>
-                      <Text style={styles.studentStat}>
+                  <View style={styles(theme).studentDetails}>
+                    <Text style={styles(theme).studentName}>{student.name}</Text>
+                    <Text style={styles(theme).studentGrade}>{student.grade.name}</Text>
+                    <View style={styles(theme).studentStats}>
+                      <Text style={styles(theme).studentStat}>
                         {student.totalQuizzes} quizzes
                       </Text>
-                      <Text style={styles.studentStatSeparator}>•</Text>
-                      <Text style={styles.studentStat}>
+                      <Text style={styles(theme).studentStatSeparator}>•</Text>
+                      <Text style={styles(theme).studentStat}>
                         {student.avgScore.toFixed(1)}% avg
                       </Text>
                     </View>
@@ -340,15 +360,15 @@ const LeaderboardScreen: React.FC = () => {
                 </View>
                 <TouchableOpacity
                   style={[
-                    styles.followButton,
-                    student.isFollowing && styles.followingButton,
+                    styles(theme).followButton,
+                    student.isFollowing && styles(theme).followButtonFollowing
                   ]}
                   onPress={() => handleFollowToggle(student)}
                 >
                   <Text
                     style={[
-                      styles.followButtonText,
-                      student.isFollowing && styles.followingButtonText,
+                      styles(theme).followButtonText,
+                      student.isFollowing && styles(theme).followButtonTextFollowing
                     ]}
                   >
                     {student.isFollowing ? 'Following' : 'Follow'}
@@ -363,32 +383,32 @@ const LeaderboardScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
   header: {
-    backgroundColor: '#007AFF',
     padding: 20,
     paddingTop: 50,
+    backgroundColor: theme.colors.headerBackground,
   },
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: theme.colors.headerText,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: '#ffffff',
     opacity: 0.9,
     marginTop: 4,
+    color: theme.colors.headerSubtitle,
   },
   tabBarContainer: {
-    backgroundColor: '#ffffff',
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: theme.colors.border,
     maxHeight: 50,
+    backgroundColor: theme.colors.surface,
   },
   tabBarContent: {
     paddingHorizontal: 16,
@@ -399,18 +419,20 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     marginRight: 8,
     borderRadius: 20,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: 'transparent',
   },
   tabActive: {
-    backgroundColor: '#007AFF',
+    backgroundColor: theme.colors.tabActive,
   },
   tabText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666666',
   },
   tabTextActive: {
-    color: '#ffffff',
+    color: theme.colors.tabActiveText,
+  },
+  tabTextInactive: {
+    color: theme.colors.tabInactiveText,
   },
   content: {
     flex: 1,
@@ -421,13 +443,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333333',
     marginBottom: 16,
     paddingHorizontal: 16,
     paddingTop: 16,
+    color: theme.colors.text,
   },
   studentCard: {
-    backgroundColor: '#ffffff',
     marginHorizontal: 16,
     marginBottom: 12,
     padding: 16,
@@ -435,7 +456,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    shadowColor: '#000',
+    backgroundColor: theme.colors.card,
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -455,33 +477,33 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   rankBadge: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.border,
   },
   rankBadgeGold: {
-    backgroundColor: '#FFD700',
+    backgroundColor: theme.colors.gold,
   },
   rankBadgeSilver: {
-    backgroundColor: '#C0C0C0',
+    backgroundColor: theme.colors.silver,
   },
   rankBadgeBronze: {
-    backgroundColor: '#CD7F32',
+    backgroundColor: theme.colors.bronze,
   },
   rankBadgeText: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#333333',
+    color: theme.colors.rankBadgeText,
   },
   avatarPlaceholder: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#007AFF',
+    backgroundColor: theme.colors.avatarBackground,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
   avatarText: {
-    color: '#ffffff',
+    color: theme.colors.avatarText,
     fontSize: 18,
     fontWeight: 'bold',
   },
@@ -491,13 +513,13 @@ const styles = StyleSheet.create({
   studentName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333333',
     marginBottom: 4,
+    color: theme.colors.text,
   },
   studentGrade: {
     fontSize: 14,
-    color: '#666666',
     marginBottom: 4,
+    color: theme.colors.textSecondary,
   },
   studentStats: {
     flexDirection: 'row',
@@ -505,29 +527,29 @@ const styles = StyleSheet.create({
   },
   studentStat: {
     fontSize: 14,
-    color: '#666666',
+    color: theme.colors.textSecondary,
   },
   studentStatSeparator: {
     fontSize: 14,
-    color: '#999999',
     marginHorizontal: 8,
+    color: theme.colors.textTertiary,
   },
   followButton: {
-    backgroundColor: '#007AFF',
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderRadius: 20,
+    backgroundColor: theme.colors.buttonPrimary,
   },
-  followingButton: {
-    backgroundColor: '#e0e0e0',
+  followButtonFollowing: {
+    backgroundColor: theme.colors.buttonSecondary,
   },
   followButtonText: {
-    color: '#ffffff',
     fontSize: 14,
     fontWeight: '600',
+    color: theme.colors.buttonPrimaryText,
   },
-  followingButtonText: {
-    color: '#666666',
+  followButtonTextFollowing: {
+    color: theme.colors.buttonSecondaryText,
   },
   loadingContainer: {
     flex: 1,
@@ -537,27 +559,27 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666666',
+    color: theme.colors.textSecondary,
   },
   loadingState: {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.card,
     marginHorizontal: 16,
     padding: 40,
     borderRadius: 12,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
   emptyState: {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.card,
     marginHorizontal: 16,
     padding: 40,
     borderRadius: 12,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -570,23 +592,23 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333333',
     marginBottom: 8,
+    color: theme.colors.text,
   },
   emptyStateSubtitle: {
     fontSize: 14,
-    color: '#666666',
     textAlign: 'center',
+    color: theme.colors.textSecondary,
   },
   retryButton: {
     marginTop: 15,
-    backgroundColor: '#007AFF',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
+    backgroundColor: theme.colors.buttonPrimary,
   },
   retryButtonText: {
-    color: '#ffffff',
+    color: theme.colors.buttonPrimaryText,
     fontSize: 14,
     fontWeight: '600',
   },

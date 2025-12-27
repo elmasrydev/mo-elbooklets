@@ -1,6 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 import HomeScreen from '../screens/HomeScreen';
 import QuizScreen from '../screens/QuizScreen';
 import SocialScreen from '../screens/SocialScreen';
@@ -10,16 +11,18 @@ import MoreScreen from '../screens/MoreScreen';
 const Tab = createBottomTabNavigator();
 
 const TabNavigator: React.FC = () => {
+  const { theme } = useTheme();
+  
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#007AFF',
-        tabBarInactiveTintColor: '#8E8E93',
+        tabBarActiveTintColor: theme.colors.primary,
+        tabBarInactiveTintColor: theme.colors.textTertiary,
         tabBarStyle: {
-          backgroundColor: '#ffffff',
+          backgroundColor: theme.colors.surface,
           borderTopWidth: 1,
-          borderTopColor: '#E5E5EA',
+          borderTopColor: theme.colors.border,
           paddingBottom: 5,
           paddingTop: 5,
           height: 60,

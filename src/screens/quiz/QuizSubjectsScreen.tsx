@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '../../context/ThemeContext';
 import { tryFetchWithFallback } from '../../config/api';
 // import { useQuery } from '@apollo/client';
 // import { SUBJECTS_FOR_USER_GRADE_QUERY, Subject } from '../../lib/graphql';
@@ -18,6 +19,7 @@ interface QuizSubjectsScreenProps {
 }
 
 const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect, onBack }) => {
+  const { theme } = useTheme();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -67,16 +69,16 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={onBack}>
-            <Text style={styles.backButtonText}>← Back</Text>
+      <View style={styles(theme).container}>
+        <View style={styles(theme).header}>
+          <TouchableOpacity style={styles(theme).backButton} onPress={onBack}>
+            <Text style={styles(theme).backButtonText}>← Back</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Choose Subject</Text>
+          <Text style={styles(theme).headerTitle}>Choose Subject</Text>
         </View>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Loading subjects...</Text>
+        <View style={styles(theme).loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={styles(theme).loadingText}>Loading subjects...</Text>
         </View>
       </View>
     );
@@ -84,19 +86,19 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
 
   if (error) {
     return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={onBack}>
-            <Text style={styles.backButtonText}>← Back</Text>
+      <View style={styles(theme).container}>
+        <View style={styles(theme).header}>
+          <TouchableOpacity style={styles(theme).backButton} onPress={onBack}>
+            <Text style={styles(theme).backButtonText}>← Back</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Choose Subject</Text>
+          <Text style={styles(theme).headerTitle}>Choose Subject</Text>
         </View>
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorIcon}>⚠️</Text>
-          <Text style={styles.errorTitle}>Error Loading Subjects</Text>
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={fetchSubjects}>
-            <Text style={styles.retryButtonText}>Try Again</Text>
+        <View style={styles(theme).errorContainer}>
+          <Text style={styles(theme).errorIcon}>⚠️</Text>
+          <Text style={styles(theme).errorTitle}>Error Loading Subjects</Text>
+          <Text style={styles(theme).errorText}>{error}</Text>
+          <TouchableOpacity style={styles(theme).retryButton} onPress={fetchSubjects}>
+            <Text style={styles(theme).retryButtonText}>Try Again</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -104,34 +106,34 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Text style={styles.backButtonText}>← Back</Text>
+    <View style={styles(theme).container}>
+      <View style={styles(theme).header}>
+        <TouchableOpacity style={styles(theme).backButton} onPress={onBack}>
+          <Text style={styles(theme).backButtonText}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Choose Subject</Text>
-        <Text style={styles.headerSubtitle}>Select a subject to start your quiz</Text>
+        <Text style={styles(theme).headerTitle}>Choose Subject</Text>
+        <Text style={styles(theme).headerSubtitle}>Select a subject to start your quiz</Text>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.subjectsGrid}>
+      <ScrollView style={styles(theme).content} showsVerticalScrollIndicator={false}>
+        <View style={styles(theme).subjectsGrid}>
           {subjects.map((subject: Subject) => (
             <TouchableOpacity
               key={subject.id}
-              style={styles.subjectCard}
+              style={styles(theme).subjectCard}
               onPress={() => handleSubjectPress(subject)}
             >
-              <View style={styles.subjectIcon}>
-                <Text style={styles.subjectIconText}>
+              <View style={styles(theme).subjectIcon}>
+                <Text style={styles(theme).subjectIconText}>
                   {getSubjectIcon(subject.name)}
                 </Text>
               </View>
-              <Text style={styles.subjectName}>{subject.name}</Text>
-              <Text style={styles.subjectDescription}>
+              <Text style={styles(theme).subjectName}>{subject.name}</Text>
+              <Text style={styles(theme).subjectDescription}>
                 {subject.description || 'Test your knowledge'}
               </Text>
-              <View style={styles.subjectStats}>
-                <Text style={styles.subjectStatsText}>
+              <View style={styles(theme).subjectStats}>
+                <Text style={styles(theme).subjectStatsText}>
                   Tap to start quiz
                 </Text>
               </View>
@@ -140,10 +142,10 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
         </View>
 
         {subjects.length === 0 && (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateIcon}>📚</Text>
-            <Text style={styles.emptyStateTitle}>No Subjects Available</Text>
-            <Text style={styles.emptyStateSubtitle}>
+          <View style={styles(theme).emptyState}>
+            <Text style={styles(theme).emptyStateIcon}>📚</Text>
+            <Text style={styles(theme).emptyStateTitle}>No Subjects Available</Text>
+            <Text style={styles(theme).emptyStateSubtitle}>
               No subjects are available for your grade level at the moment.
             </Text>
           </View>
@@ -167,34 +169,34 @@ const getSubjectIcon = (subjectName: string): string => {
   return '📖';
 };
 
-const styles = StyleSheet.create({
+const styles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
   header: {
-    backgroundColor: '#007AFF',
     padding: 20,
     paddingTop: 50,
+    backgroundColor: theme.colors.headerBackground,
   },
   backButton: {
     marginBottom: 16,
   },
   backButtonText: {
-    color: '#ffffff',
     fontSize: 16,
     fontWeight: '500',
+    color: theme.colors.headerText,
   },
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: theme.colors.headerText,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: '#ffffff',
     opacity: 0.9,
     marginTop: 4,
+    color: theme.colors.headerSubtitle,
   },
   content: {
     flex: 1,
@@ -208,7 +210,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666666',
+    color: theme.colors.textSecondary,
   },
   errorContainer: {
     flex: 1,
@@ -223,23 +225,23 @@ const styles = StyleSheet.create({
   errorTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333333',
     marginBottom: 8,
+    color: theme.colors.text,
   },
   errorText: {
     fontSize: 14,
-    color: '#666666',
     textAlign: 'center',
     marginBottom: 20,
+    color: theme.colors.textSecondary,
   },
   retryButton: {
-    backgroundColor: '#007AFF',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
+    backgroundColor: theme.colors.buttonPrimary,
   },
   retryButtonText: {
-    color: '#ffffff',
+    color: theme.colors.buttonPrimaryText,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -250,11 +252,11 @@ const styles = StyleSheet.create({
   },
   subjectCard: {
     width: '47%',
-    backgroundColor: '#ffffff',
     padding: 20,
     borderRadius: 16,
     alignItems: 'center',
-    shadowColor: '#000',
+    backgroundColor: theme.colors.card,
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -264,10 +266,10 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#f0f8ff',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
+    backgroundColor: theme.colors.iconBackground,
   },
   subjectIconText: {
     fontSize: 28,
@@ -275,33 +277,32 @@ const styles = StyleSheet.create({
   subjectName: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333333',
     textAlign: 'center',
     marginBottom: 8,
+    color: theme.colors.text,
   },
   subjectDescription: {
     fontSize: 12,
-    color: '#666666',
     textAlign: 'center',
     marginBottom: 12,
+    color: theme.colors.textSecondary,
   },
   subjectStats: {
-    backgroundColor: '#f0f8ff',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
   },
   subjectStatsText: {
     fontSize: 12,
-    color: '#007AFF',
     fontWeight: '500',
+    color: theme.colors.primary,
   },
   emptyState: {
-    backgroundColor: '#ffffff',
     padding: 40,
     borderRadius: 16,
     alignItems: 'center',
     marginTop: 40,
+    backgroundColor: theme.colors.card,
   },
   emptyStateIcon: {
     fontSize: 48,
@@ -310,13 +311,13 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333333',
     marginBottom: 8,
+    color: theme.colors.text,
   },
   emptyStateSubtitle: {
     fontSize: 14,
-    color: '#666666',
     textAlign: 'center',
+    color: theme.colors.textSecondary,
   },
 });
 

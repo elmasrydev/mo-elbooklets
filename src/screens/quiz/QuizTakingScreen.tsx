@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '../../context/ThemeContext';
 import { tryFetchWithFallback } from '../../config/api';
 
 // Types
@@ -32,6 +33,7 @@ interface QuizTakingScreenProps {
 }
 
 const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizComplete, onBack }) => {
+  const { theme } = useTheme();
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -100,7 +102,21 @@ const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizCompl
   };
 
   const handleNextQuestion = () => {
-    if (currentQuestionIndex < (quiz?.questions.length || 0) - 1) {
+    if (!quiz) return;
+    
+    const currentQuestion = quiz.questions[currentQuestionIndex];
+    
+    // Check if current question is answered
+    if (!selectedAnswers[currentQuestion.id]) {
+      Alert.alert(
+        'Answer Required',
+        'Please select an answer before proceeding to the next question.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    
+    if (currentQuestionIndex < quiz.questions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
     }
   };
@@ -114,16 +130,25 @@ const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizCompl
   const handleSubmitQuiz = async () => {
     if (!quiz) return;
 
+    const currentQuestion = quiz.questions[currentQuestionIndex];
+    
+    // Check if current (last) question is answered
+    if (!selectedAnswers[currentQuestion.id]) {
+      Alert.alert(
+        'Answer Required',
+        'Please select an answer for this question before submitting the quiz.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     // Check if all questions are answered
     const unansweredQuestions = quiz.questions.filter(q => !selectedAnswers[q.id]);
     if (unansweredQuestions.length > 0) {
       Alert.alert(
         'Incomplete Quiz',
-        `You have ${unansweredQuestions.length} unanswered questions. Do you want to submit anyway?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Submit', onPress: submitAnswers }
-        ]
+        `You have ${unansweredQuestions.length} unanswered question${unansweredQuestions.length > 1 ? 's' : ''}. Please answer all questions before submitting.`,
+        [{ text: 'OK' }]
       );
       return;
     }
@@ -174,16 +199,16 @@ const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizCompl
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={onBack}>
-            <Text style={styles.backButtonText}>← Back</Text>
+      <View style={styles(theme).container}>
+        <View style={styles(theme).header}>
+          <TouchableOpacity style={styles(theme).backButton} onPress={onBack}>
+            <Text style={styles(theme).backButtonText}>← Back</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Loading Quiz...</Text>
+          <Text style={styles(theme).headerTitle}>Loading Quiz...</Text>
         </View>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Loading quiz questions...</Text>
+        <View style={styles(theme).loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={styles(theme).loadingText}>Loading quiz questions...</Text>
         </View>
       </View>
     );
@@ -191,19 +216,19 @@ const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizCompl
 
   if (error) {
     return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={onBack}>
-            <Text style={styles.backButtonText}>← Back</Text>
+      <View style={styles(theme).container}>
+        <View style={styles(theme).header}>
+          <TouchableOpacity style={styles(theme).backButton} onPress={onBack}>
+            <Text style={styles(theme).backButtonText}>← Back</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Quiz Error</Text>
+          <Text style={styles(theme).headerTitle}>Quiz Error</Text>
         </View>
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorIcon}>⚠️</Text>
-          <Text style={styles.errorTitle}>Error Loading Quiz</Text>
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={fetchQuiz}>
-            <Text style={styles.retryButtonText}>Try Again</Text>
+        <View style={styles(theme).errorContainer}>
+          <Text style={styles(theme).errorIcon}>⚠️</Text>
+          <Text style={styles(theme).errorTitle}>Error Loading Quiz</Text>
+          <Text style={styles(theme).errorText}>{error}</Text>
+          <TouchableOpacity style={styles(theme).retryButton} onPress={fetchQuiz}>
+            <Text style={styles(theme).retryButtonText}>Try Again</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -212,17 +237,17 @@ const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizCompl
 
   if (!quiz || quiz.questions.length === 0) {
     return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={onBack}>
-            <Text style={styles.backButtonText}>← Back</Text>
+      <View style={styles(theme).container}>
+        <View style={styles(theme).header}>
+          <TouchableOpacity style={styles(theme).backButton} onPress={onBack}>
+            <Text style={styles(theme).backButtonText}>← Back</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>No Questions</Text>
+          <Text style={styles(theme).headerTitle}>No Questions</Text>
         </View>
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorIcon}>📝</Text>
-          <Text style={styles.errorTitle}>No Questions Available</Text>
-          <Text style={styles.errorText}>This quiz doesn't have any questions yet.</Text>
+        <View style={styles(theme).errorContainer}>
+          <Text style={styles(theme).errorIcon}>📝</Text>
+          <Text style={styles(theme).errorTitle}>No Questions Available</Text>
+          <Text style={styles(theme).errorText}>This quiz doesn't have any questions yet.</Text>
         </View>
       </View>
     );
@@ -232,39 +257,45 @@ const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizCompl
   const progress = ((currentQuestionIndex + 1) / quiz.questions.length) * 100;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Text style={styles.backButtonText}>← Back</Text>
+    <View style={styles(theme).container}>
+      <View style={styles(theme).header}>
+        <TouchableOpacity style={styles(theme).backButton} onPress={onBack}>
+          <Text style={styles(theme).backButtonText}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{quiz.name}</Text>
-        <Text style={styles.headerSubtitle}>{quiz.subject.name}</Text>
+        <Text style={styles(theme).headerTitle}>{quiz.name}</Text>
+        <Text style={styles(theme).headerSubtitle}>{quiz.subject.name}</Text>
       </View>
 
-      <View style={styles.progressContainer}>
-        <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: `${progress}%` }]} />
+      <View style={styles(theme).progressContainer}>
+        <View style={styles(theme).progressBar}>
+          <View style={[styles(theme).progressFill, { width: `${progress}%` }]} />
         </View>
-        <Text style={styles.progressText}>
+        <Text style={styles(theme).progressText}>
           Question {currentQuestionIndex + 1} of {quiz.questions.length}
         </Text>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.questionContainer}>
-          <Text style={styles.questionNumber}>Question {currentQuestion.questionNumber}</Text>
-          <Text style={styles.questionText}>{currentQuestion.question}</Text>
+      <ScrollView style={styles(theme).content} showsVerticalScrollIndicator={false}>
+        <View style={styles(theme).questionContainer}>
+          <Text style={styles(theme).questionNumber}>Question {currentQuestion.questionNumber}</Text>
+          <Text style={styles(theme).questionText}>{currentQuestion.question}</Text>
           
-          <View style={styles.answersContainer}>
+          <View style={styles(theme).answersContainer}>
             {currentQuestion.answers.map((answer, index) => {
               const isSelected = selectedAnswers[currentQuestion.id] === answer;
               return (
                 <TouchableOpacity
                   key={index}
-                  style={[styles.answerButton, isSelected && styles.selectedAnswer]}
+                  style={[
+                    styles(theme).answerButton,
+                    isSelected && styles(theme).selectedAnswer
+                  ]}
                   onPress={() => handleAnswerSelect(currentQuestion.id, answer)}
                 >
-                  <Text style={[styles.answerText, isSelected && styles.selectedAnswerText]}>
+                  <Text style={[
+                    styles(theme).answerText,
+                    isSelected && styles(theme).selectedAnswerText
+                  ]}>
                     {String.fromCharCode(65 + index)}. {answer}
                   </Text>
                 </TouchableOpacity>
@@ -274,33 +305,44 @@ const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizCompl
         </View>
       </ScrollView>
 
-      <View style={styles.navigationContainer}>
+      <View style={styles(theme).navigationContainer}>
         <TouchableOpacity
-          style={[styles.navButton, currentQuestionIndex === 0 && styles.disabledButton]}
+          style={[
+            styles(theme).navButton,
+            styles(theme).navButtonSecondary,
+            currentQuestionIndex === 0 && styles(theme).disabledButton
+          ]}
           onPress={handlePreviousQuestion}
           disabled={currentQuestionIndex === 0}
         >
-          <Text style={[styles.navButtonText, currentQuestionIndex === 0 && styles.disabledButtonText]}>
+          <Text style={[
+            styles(theme).navButtonText,
+            styles(theme).navButtonTextSecondary,
+            currentQuestionIndex === 0 && styles(theme).disabledButtonText
+          ]}>
             Previous
           </Text>
         </TouchableOpacity>
 
         {currentQuestionIndex === quiz.questions.length - 1 ? (
           <TouchableOpacity
-            style={[styles.submitButton, submitting && styles.disabledButton]}
+            style={[
+              styles(theme).submitButton,
+              submitting && styles(theme).disabledButton
+            ]}
             onPress={handleSubmitQuiz}
             disabled={submitting}
           >
-            <Text style={styles.submitButtonText}>
+            <Text style={styles(theme).submitButtonText}>
               {submitting ? 'Submitting...' : 'Submit Quiz'}
             </Text>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
-            style={styles.navButton}
+            style={styles(theme).navButton}
             onPress={handleNextQuestion}
           >
-            <Text style={styles.navButtonText}>Next</Text>
+            <Text style={styles(theme).navButtonText}>Next</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -308,56 +350,56 @@ const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizCompl
   );
 };
 
-const styles = StyleSheet.create({
+const styles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
   header: {
-    backgroundColor: '#007AFF',
     padding: 20,
     paddingTop: 50,
+    backgroundColor: theme.colors.headerBackground,
   },
   backButton: {
     marginBottom: 16,
   },
   backButtonText: {
-    color: '#ffffff',
     fontSize: 16,
     fontWeight: '500',
+    color: theme.colors.headerText,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: theme.colors.headerText,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: '#ffffff',
     opacity: 0.9,
     marginTop: 4,
+    color: theme.colors.headerSubtitle,
   },
   progressContainer: {
-    backgroundColor: '#ffffff',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
   progressBar: {
     height: 8,
-    backgroundColor: '#e0e0e0',
     borderRadius: 4,
     marginBottom: 8,
+    backgroundColor: theme.colors.border,
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#007AFF',
     borderRadius: 4,
+    backgroundColor: theme.colors.primary,
   },
   progressText: {
     fontSize: 14,
-    color: '#666666',
     textAlign: 'center',
+    color: theme.colors.textSecondary,
   },
   content: {
     flex: 1,
@@ -371,7 +413,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666666',
+    color: theme.colors.textSecondary,
   },
   errorContainer: {
     flex: 1,
@@ -386,41 +428,41 @@ const styles = StyleSheet.create({
   errorTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333333',
     marginBottom: 8,
+    color: theme.colors.text,
   },
   errorText: {
     fontSize: 14,
-    color: '#666666',
     textAlign: 'center',
     marginBottom: 20,
+    color: theme.colors.textSecondary,
   },
   retryButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: theme.colors.buttonPrimary,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
   },
   retryButtonText: {
-    color: '#ffffff',
+    color: theme.colors.buttonPrimaryText,
     fontSize: 16,
     fontWeight: '600',
   },
   questionContainer: {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.card,
     padding: 20,
     borderRadius: 16,
     marginBottom: 20,
   },
   questionNumber: {
     fontSize: 14,
-    color: '#007AFF',
+    color: theme.colors.primary,
     fontWeight: '600',
     marginBottom: 8,
   },
   questionText: {
     fontSize: 18,
-    color: '#333333',
+    color: theme.colors.text,
     fontWeight: '500',
     marginBottom: 20,
     lineHeight: 24,
@@ -429,61 +471,68 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   answerButton: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: theme.colors.card,
     padding: 16,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#e9ecef',
+    borderColor: theme.colors.border,
   },
   selectedAnswer: {
-    backgroundColor: '#e3f2fd',
-    borderColor: '#007AFF',
+    backgroundColor: theme.colors.answerSelectedBackground,
+    borderColor: theme.colors.primary,
   },
   answerText: {
     fontSize: 16,
-    color: '#333333',
+    color: theme.colors.text,
   },
   selectedAnswerText: {
-    color: '#007AFF',
+    color: theme.colors.primary,
     fontWeight: '500',
   },
   navigationContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     padding: 20,
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.surface,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: theme.colors.border,
   },
   navButton: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: theme.colors.buttonPrimary,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
+  },
+  navButtonSecondary: {
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: '#dee2e6',
+    borderColor: theme.colors.border,
   },
   navButtonText: {
     fontSize: 16,
-    color: '#495057',
+    color: theme.colors.buttonPrimaryText,
     fontWeight: '500',
   },
+  navButtonTextSecondary: {
+    color: theme.colors.text,
+  },
   submitButton: {
-    backgroundColor: '#28a745',
+    backgroundColor: theme.colors.buttonPrimary,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
   },
   submitButtonText: {
     fontSize: 16,
-    color: '#ffffff',
+    color: theme.colors.buttonPrimaryText,
     fontWeight: '600',
   },
   disabledButton: {
+    backgroundColor: theme.colors.buttonDisabled,
     opacity: 0.5,
   },
   disabledButtonText: {
-    color: '#adb5bd',
+    color: theme.colors.buttonDisabledText,
   },
 });
 

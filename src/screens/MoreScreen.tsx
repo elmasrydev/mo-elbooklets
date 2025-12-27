@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Switch } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 interface MenuItem {
   id: string;
@@ -9,10 +10,12 @@ interface MenuItem {
   icon: string;
   action: () => void;
   color?: string;
+  isSwitch?: boolean;
 }
 
 const MoreScreen: React.FC = () => {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme, isDark } = useTheme();
 
   const handleEditProfile = () => {
     Alert.alert(
@@ -72,6 +75,14 @@ const MoreScreen: React.FC = () => {
       action: handleEditProfile,
     },
     {
+      id: 'theme',
+      title: 'Dark Mode',
+      subtitle: isDark ? 'Switch to light mode' : 'Switch to dark mode',
+      icon: isDark ? '🌙' : '☀️',
+      action: () => {}, // Handled by switch
+      isSwitch: true,
+    },
+    {
       id: 'settings',
       title: 'Settings',
       subtitle: 'App preferences and notifications',
@@ -103,102 +114,112 @@ const MoreScreen: React.FC = () => {
   ];
 
   return (
-    <View style={styles.container}>
+    <View style={styles(theme).container}>
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>More</Text>
-        <Text style={styles.headerSubtitle}>Account and app settings</Text>
+      <View style={styles(theme).header}>
+        <Text style={styles(theme).headerTitle}>More</Text>
+        <Text style={styles(theme).headerSubtitle}>Account and app settings</Text>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles(theme).content} showsVerticalScrollIndicator={false}>
         {/* User Info Card */}
-        <View style={styles.userCard}>
-          <View style={styles.userAvatar}>
-            <Text style={styles.userAvatarText}>
+        <View style={styles(theme).userCard}>
+          <View style={styles(theme).userAvatar}>
+            <Text style={styles(theme).userAvatarText}>
               {user?.name?.charAt(0).toUpperCase() || 'U'}
             </Text>
           </View>
-          <View style={styles.userInfo}>
-            <Text style={styles.userName}>{user?.name || 'User'}</Text>
-            <Text style={styles.userEmail}>{user?.email || 'No email'}</Text>
-            <Text style={styles.userGrade}>
+          <View style={styles(theme).userInfo}>
+            <Text style={styles(theme).userName}>{user?.name || 'User'}</Text>
+            <Text style={styles(theme).userEmail}>{user?.email || 'No email'}</Text>
+            <Text style={styles(theme).userGrade}>
               Grade: {user?.grade?.name || 'Not specified'}
             </Text>
           </View>
         </View>
 
         {/* Menu Items */}
-        <View style={styles.menuSection}>
+        <View style={styles(theme).menuSection}>
           {menuItems.map((item, index) => (
             <TouchableOpacity
               key={item.id}
               style={[
-                styles.menuItem,
-                index === menuItems.length - 1 && styles.lastMenuItem
+                styles(theme).menuItem,
+                index === menuItems.length - 1 && styles(theme).lastMenuItem
               ]}
-              onPress={item.action}
+              onPress={item.isSwitch ? undefined : item.action}
+              disabled={item.isSwitch}
             >
-              <View style={styles.menuItemLeft}>
-                <Text style={styles.menuIcon}>{item.icon}</Text>
-                <View style={styles.menuTextContainer}>
+              <View style={styles(theme).menuItemLeft}>
+                <Text style={styles(theme).menuIcon}>{item.icon}</Text>
+                <View style={styles(theme).menuTextContainer}>
                   <Text 
                     style={[
-                      styles.menuTitle,
-                      item.color && { color: item.color }
+                      styles(theme).menuTitle,
+                      item.id === 'logout' && styles(theme).menuTitleLogout
                     ]}
                   >
                     {item.title}
                   </Text>
-                  <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
+                  <Text style={styles(theme).menuSubtitle}>{item.subtitle}</Text>
                 </View>
               </View>
-              <Text style={styles.menuArrow}>›</Text>
+              {item.isSwitch ? (
+                <Switch
+                  value={isDark}
+                  onValueChange={toggleTheme}
+                  trackColor={{ false: '#767577', true: theme.colors.primary }}
+                  thumbColor={isDark ? '#f4f3f4' : '#f4f3f4'}
+                />
+              ) : (
+                <Text style={styles(theme).menuArrow}>›</Text>
+              )}
             </TouchableOpacity>
           ))}
         </View>
 
         {/* App Version */}
-        <View style={styles.versionContainer}>
-          <Text style={styles.versionText}>ElBooklets v1.0.0</Text>
+        <View style={styles(theme).versionContainer}>
+          <Text style={styles(theme).versionText}>ElBooklets v1.0.0</Text>
         </View>
       </ScrollView>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
+const styles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
   header: {
-    backgroundColor: '#007AFF',
     padding: 20,
     paddingTop: 50,
+    backgroundColor: theme.colors.headerBackground,
   },
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: theme.colors.headerText,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: '#ffffff',
-    opacity: 0.9,
     marginTop: 4,
+    color: theme.colors.headerSubtitle,
+    opacity: 0.9,
   },
   content: {
     flex: 1,
     padding: 20,
   },
   userCard: {
-    backgroundColor: '#ffffff',
     padding: 20,
     borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 24,
-    shadowColor: '#000',
+    backgroundColor: theme.colors.card,
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -208,15 +229,15 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#007AFF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
+    backgroundColor: theme.colors.avatarBackground,
   },
   userAvatarText: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: theme.colors.avatarText,
   },
   userInfo: {
     flex: 1,
@@ -224,24 +245,24 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333333',
     marginBottom: 4,
+    color: theme.colors.text,
   },
   userEmail: {
     fontSize: 14,
-    color: '#666666',
     marginBottom: 2,
+    color: theme.colors.textSecondary,
   },
   userGrade: {
     fontSize: 14,
-    color: '#007AFF',
     fontWeight: '500',
+    color: theme.colors.primary,
   },
   menuSection: {
-    backgroundColor: '#ffffff',
     borderRadius: 16,
     overflow: 'hidden',
-    shadowColor: '#000',
+    backgroundColor: theme.colors.card,
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -253,7 +274,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: theme.colors.border,
   },
   lastMenuItem: {
     borderBottomWidth: 0,
@@ -275,17 +296,20 @@ const styles = StyleSheet.create({
   menuTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333333',
     marginBottom: 2,
+    color: theme.colors.text,
+  },
+  menuTitleLogout: {
+    color: theme.colors.logoutColor,
   },
   menuSubtitle: {
     fontSize: 14,
-    color: '#666666',
+    color: theme.colors.textSecondary,
   },
   menuArrow: {
     fontSize: 20,
-    color: '#cccccc',
     fontWeight: 'bold',
+    color: theme.colors.textTertiary,
   },
   versionContainer: {
     alignItems: 'center',
@@ -294,7 +318,7 @@ const styles = StyleSheet.create({
   },
   versionText: {
     fontSize: 12,
-    color: '#999999',
+    color: theme.colors.textTertiary,
   },
 });
 

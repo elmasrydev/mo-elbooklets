@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIn
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { tryFetchWithFallback } from '../config/api';
 import QuizSubjectsScreen from './quiz/QuizSubjectsScreen';
 import QuizLessonsScreen from './quiz/QuizLessonsScreen';
@@ -36,6 +37,7 @@ type QuizFlowStep = 'history' | 'subjects' | 'lessons' | 'taking' | 'results';
 
 const QuizScreen: React.FC = () => {
   const { user } = useAuth();
+  const { theme } = useTheme();
   const [quizHistory, setQuizHistory] = useState<QuizHistory[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState<string | null>(null);
@@ -248,87 +250,87 @@ const QuizScreen: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={styles(theme).container}>
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Quiz Center</Text>
-        <Text style={styles.headerSubtitle}>Test your knowledge and track progress</Text>
+      <View style={styles(theme).header}>
+        <Text style={styles(theme).headerTitle}>Quiz Center</Text>
+        <Text style={styles(theme).headerSubtitle}>Test your knowledge and track progress</Text>
       </View>
 
       {/* Take Quiz Button */}
-      <View style={styles.actionSection}>
-        <TouchableOpacity style={styles.takeQuizButton} onPress={handleTakeQuiz}>
-          <Text style={styles.takeQuizIcon}>🧠</Text>
-          <Text style={styles.takeQuizText}>Take New Quiz</Text>
-          <Text style={styles.takeQuizSubtext}>Start a new quiz challenge</Text>
+      <View style={styles(theme).actionSection}>
+        <TouchableOpacity style={styles(theme).takeQuizButton} onPress={handleTakeQuiz}>
+          <Text style={styles(theme).takeQuizIcon}>🧠</Text>
+          <Text style={styles(theme).takeQuizText}>Take New Quiz</Text>
+          <Text style={styles(theme).takeQuizSubtext}>Start a new quiz challenge</Text>
         </TouchableOpacity>
       </View>
 
       {/* Quiz History */}
-      <View style={styles.historySection}>
-        <Text style={styles.sectionTitle}>Quiz History</Text>
+      <View style={styles(theme).historySection}>
+        <Text style={styles(theme).sectionTitle}>Quiz History</Text>
 
         {historyLoading ? (
-          <View style={styles.loadingState}>
-            <ActivityIndicator size="large" color="#007AFF" />
-            <Text style={styles.loadingText}>Loading quiz history...</Text>
+          <View style={styles(theme).loadingState}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <Text style={styles(theme).loadingText}>Loading quiz history...</Text>
           </View>
         ) : historyError ? (
-          <View style={styles.errorState}>
-            <Text style={styles.errorStateIcon}>⚠️</Text>
-            <Text style={styles.errorStateTitle}>Error Loading History</Text>
-            <Text style={styles.errorStateSubtitle}>{historyError}</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={fetchQuizHistory}>
-              <Text style={styles.retryButtonText}>Try Again</Text>
+          <View style={styles(theme).errorState}>
+            <Text style={styles(theme).errorStateIcon}>⚠️</Text>
+            <Text style={styles(theme).errorStateTitle}>Error Loading History</Text>
+            <Text style={styles(theme).errorStateSubtitle}>{historyError}</Text>
+            <TouchableOpacity style={styles(theme).retryButton} onPress={fetchQuizHistory}>
+              <Text style={styles(theme).retryButtonText}>Try Again</Text>
             </TouchableOpacity>
           </View>
         ) : quizHistory.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateIcon}>📝</Text>
-            <Text style={styles.emptyStateTitle}>No quizzes taken yet</Text>
-            <Text style={styles.emptyStateSubtitle}>
+          <View style={styles(theme).emptyState}>
+            <Text style={styles(theme).emptyStateIcon}>📝</Text>
+            <Text style={styles(theme).emptyStateTitle}>No quizzes taken yet</Text>
+            <Text style={styles(theme).emptyStateSubtitle}>
               Take your first quiz to see your progress here
             </Text>
           </View>
         ) : (
-          <ScrollView style={styles.historyList} showsVerticalScrollIndicator={false}>
+          <ScrollView style={styles(theme).historyList} showsVerticalScrollIndicator={false}>
             {quizHistory.map((quiz) => (
-              <View key={quiz.id} style={styles.historyCard}>
-                <View style={styles.historyHeader}>
-                  <Text style={styles.quizName}>{quiz.name}</Text>
-                  <Text style={styles.quizSubject}>{quiz.subject.name}</Text>
+              <View key={quiz.id} style={styles(theme).historyCard}>
+                <View style={styles(theme).historyHeader}>
+                  <Text style={styles(theme).quizName}>{quiz.name}</Text>
+                  <Text style={styles(theme).quizSubject}>{quiz.subject.name}</Text>
                 </View>
                 
-                <View style={styles.historyDetails}>
-                  <View style={styles.scoreContainer}>
+                <View style={styles(theme).historyDetails}>
+                  <View style={styles(theme).scoreContainer}>
                     <Text 
                       style={[
-                        styles.scoreText,
+                        styles(theme).scoreText,
                         { color: getScoreColor(quiz.score, quiz.totalQuestions) }
                       ]}
                     >
                       {quiz.score}/{quiz.totalQuestions}
                     </Text>
-                    <Text style={styles.scoreLabel}>Score</Text>
+                    <Text style={styles(theme).scoreLabel}>Score</Text>
                   </View>
                   
-                  <View style={styles.statusContainer}>
+                  <View style={styles(theme).statusContainer}>
                     <View 
                       style={[
-                        styles.statusBadge,
-                        { backgroundColor: quiz.isPassed ? '#E8F5E8' : '#FFEBEE' }
+                        styles(theme).statusBadge,
+                        quiz.isPassed ? styles(theme).statusBadgePassed : styles(theme).statusBadgeFailed
                       ]}
                     >
                       <Text 
                         style={[
-                          styles.statusText,
-                          { color: quiz.isPassed ? '#4CAF50' : '#F44336' }
+                          styles(theme).statusText,
+                          quiz.isPassed ? styles(theme).statusTextPassed : styles(theme).statusTextFailed
                         ]}
                       >
                         {quiz.isPassed ? 'Passed' : 'Failed'}
                       </Text>
                     </View>
-                    <Text style={styles.dateText}>{formatDate(quiz.completedAt)}</Text>
+                    <Text style={styles(theme).dateText}>{formatDate(quiz.completedAt)}</Text>
                   </View>
                 </View>
               </View>
@@ -340,36 +342,36 @@ const QuizScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
   header: {
-    backgroundColor: '#007AFF',
     padding: 20,
     paddingTop: 50,
+    backgroundColor: theme.colors.headerBackground,
   },
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: theme.colors.headerText,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: '#ffffff',
     opacity: 0.9,
     marginTop: 4,
+    color: theme.colors.headerSubtitle,
   },
   actionSection: {
     padding: 20,
   },
   takeQuizButton: {
-    backgroundColor: '#ffffff',
     padding: 24,
     borderRadius: 16,
     alignItems: 'center',
-    shadowColor: '#000',
+    backgroundColor: theme.colors.card,
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -382,12 +384,12 @@ const styles = StyleSheet.create({
   takeQuizText: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#007AFF',
     marginBottom: 4,
+    color: theme.colors.primary,
   },
   takeQuizSubtext: {
     fontSize: 14,
-    color: '#666666',
+    color: theme.colors.textSecondary,
   },
   historySection: {
     flex: 1,
@@ -397,15 +399,15 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333333',
     marginBottom: 16,
+    color: theme.colors.text,
   },
   emptyState: {
-    backgroundColor: '#ffffff',
     padding: 40,
     borderRadius: 12,
     alignItems: 'center',
-    shadowColor: '#000',
+    backgroundColor: theme.colors.card,
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -418,23 +420,23 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333333',
     marginBottom: 8,
+    color: theme.colors.text,
   },
   emptyStateSubtitle: {
     fontSize: 14,
-    color: '#666666',
     textAlign: 'center',
+    color: theme.colors.textSecondary,
   },
   historyList: {
     flex: 1,
   },
   historyCard: {
-    backgroundColor: '#ffffff',
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
-    shadowColor: '#000',
+    backgroundColor: theme.colors.card,
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -446,13 +448,13 @@ const styles = StyleSheet.create({
   quizName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333333',
     marginBottom: 4,
+    color: theme.colors.text,
   },
   quizSubject: {
     fontSize: 14,
-    color: '#007AFF',
     fontWeight: '500',
+    color: theme.colors.textSecondary,
   },
   historyDetails: {
     flexDirection: 'row',
@@ -468,8 +470,8 @@ const styles = StyleSheet.create({
   },
   scoreLabel: {
     fontSize: 12,
-    color: '#666666',
     marginTop: 2,
+    color: theme.colors.textSecondary,
   },
   statusContainer: {
     alignItems: 'flex-end',
@@ -480,28 +482,54 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 4,
   },
+  statusBadgePassed: {
+    backgroundColor: theme.colors.passBackground,
+  },
+  statusBadgeFailed: {
+    backgroundColor: theme.colors.failBackground,
+  },
   statusText: {
     fontSize: 12,
     fontWeight: '600',
   },
+  statusTextPassed: {
+    color: theme.colors.passText,
+  },
+  statusTextFailed: {
+    color: theme.colors.failText,
+  },
   dateText: {
     fontSize: 12,
-    color: '#666666',
+    color: theme.colors.textSecondary,
   },
   loadingState: {
     alignItems: 'center',
     justifyContent: 'center',
     padding: 40,
+    borderRadius: 12,
+    backgroundColor: theme.colors.card,
+    shadowColor: theme.colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666666',
+    color: theme.colors.textSecondary,
   },
   errorState: {
     alignItems: 'center',
     justifyContent: 'center',
     padding: 40,
+    borderRadius: 12,
+    backgroundColor: theme.colors.card,
+    shadowColor: theme.colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   errorStateIcon: {
     fontSize: 48,
@@ -510,23 +538,23 @@ const styles = StyleSheet.create({
   errorStateTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333333',
     marginBottom: 8,
+    color: theme.colors.text,
   },
   errorStateSubtitle: {
     fontSize: 14,
-    color: '#666666',
     textAlign: 'center',
     marginBottom: 20,
+    color: theme.colors.textSecondary,
   },
   retryButton: {
-    backgroundColor: '#007AFF',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
+    backgroundColor: theme.colors.buttonPrimary,
   },
   retryButtonText: {
-    color: '#ffffff',
+    color: theme.colors.buttonPrimaryText,
     fontSize: 16,
     fontWeight: '600',
   },
