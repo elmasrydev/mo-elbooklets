@@ -123,11 +123,44 @@ const LeaderboardScreen: React.FC = () => {
       `, variables, token);
 
       if (result.data?.leaderboard) {
-        // Ensure isFollowing is properly set (default to false if missing)
-        const processedLeaderboard = result.data.leaderboard.map((student: Student) => ({
-          ...student,
-          isFollowing: student.isFollowing ?? false,
-        }));
+        // Ensure isFollowing is properly set as a boolean (handle null, undefined, string, etc.)
+        const processedLeaderboard = result.data.leaderboard.map((student: any) => {
+          // Convert isFollowing to proper boolean
+          // Handle all possible truthy/falsy values
+          let isFollowing = false;
+          
+          // Check for truthy values
+          if (student.isFollowing === true || 
+              student.isFollowing === 1 || 
+              student.isFollowing === '1' || 
+              student.isFollowing === 'true' ||
+              student.isFollowing === 'True' ||
+              student.isFollowing === 'TRUE') {
+            isFollowing = true;
+          }
+          
+          // Explicitly set false for falsy values (null, undefined, false, 0, '0', 'false', etc.)
+          if (student.isFollowing === false || 
+              student.isFollowing === 0 || 
+              student.isFollowing === '0' || 
+              student.isFollowing === 'false' ||
+              student.isFollowing === 'False' ||
+              student.isFollowing === 'FALSE' ||
+              student.isFollowing === null ||
+              student.isFollowing === undefined) {
+            isFollowing = false;
+          }
+          
+          return {
+            id: student.id,
+            name: student.name,
+            grade: student.grade,
+            totalQuizzes: student.totalQuizzes,
+            avgScore: student.avgScore,
+            rank: student.rank,
+            isFollowing: Boolean(isFollowing), // Force boolean conversion
+          };
+        });
         
         if (tabId === 'all') {
           setAllLeaderboard(processedLeaderboard);
@@ -171,15 +204,18 @@ const LeaderboardScreen: React.FC = () => {
       `, { userId: student.id }, token);
 
       if (result.data?.followUser?.success) {
-        // Update local state for all leaderboards
+        const newIsFollowing = result.data.followUser.isFollowing;
+        
+        // Update local state for all leaderboards using functional updates
         const updateStudentInList = (list: Student[]) =>
           list.map((s) =>
             s.id === student.id
-              ? { ...s, isFollowing: result.data.followUser.isFollowing }
+              ? { ...s, isFollowing: newIsFollowing }
               : s
           );
 
-        setAllLeaderboard(updateStudentInList(allLeaderboard));
+        // Use functional update to ensure we have the latest state
+        setAllLeaderboard((prev) => updateStudentInList(prev));
         
         setSubjectLeaderboards((prev) => {
           const updated: { [key: string]: Student[] } = {};
