@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { useTranslation } from 'react-i18next';
 import { tryFetchWithFallback } from '../../config/api';
-// import { useQuery } from '@apollo/client';
-// import { SUBJECTS_FOR_USER_GRADE_QUERY, Subject } from '../../lib/graphql';
 
-// Temporary type for testing
 interface Subject {
   id: string;
   name: string;
@@ -20,6 +19,8 @@ interface QuizSubjectsScreenProps {
 
 const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect, onBack }) => {
   const { theme } = useTheme();
+  const { isRTL } = useLanguage();
+  const { t } = useTranslation();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,8 +29,6 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
     fetchSubjects();
   }, []);
 
-
-
   const fetchSubjects = async () => {
     try {
       setLoading(true);
@@ -37,7 +36,7 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
 
       const token = await AsyncStorage.getItem('auth_token');
       if (!token) {
-        setError('Authentication required');
+        setError(t('common.error'));
         return;
       }
 
@@ -53,11 +52,11 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
       if (result.data?.subjectsForUserGrade) {
         setSubjects(result.data.subjectsForUserGrade);
       } else {
-        setError(result.errors?.[0]?.message || 'Failed to load subjects');
+        setError(result.errors?.[0]?.message || t('quiz_subjects.error_loading_subjects'));
       }
     } catch (err: any) {
       console.error('Fetch subjects error:', err);
-      setError(err.message || 'An error occurred while loading subjects');
+      setError(err.message || t('quiz_subjects.error_loading_subjects'));
     } finally {
       setLoading(false);
     }
@@ -67,18 +66,20 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
     onSubjectSelect(subject);
   };
 
+  const currentStyles = styles(theme, isRTL);
+
   if (loading) {
     return (
-      <View style={styles(theme).container}>
-        <View style={styles(theme).header}>
-          <TouchableOpacity style={styles(theme).backButton} onPress={onBack}>
-            <Text style={styles(theme).backButtonText}>← Back</Text>
+      <View style={currentStyles.container}>
+        <View style={currentStyles.header}>
+          <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
+            <Text style={currentStyles.backButtonText}>{isRTL ? '→' : '←'} {t('common.back')}</Text>
           </TouchableOpacity>
-          <Text style={styles(theme).headerTitle}>Choose Subject</Text>
+          <Text style={currentStyles.headerTitle}>{t('quiz_subjects.header_title')}</Text>
         </View>
-        <View style={styles(theme).loadingContainer}>
+        <View style={currentStyles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles(theme).loadingText}>Loading subjects...</Text>
+          <Text style={currentStyles.loadingText}>{t('quiz_subjects.loading_subjects')}</Text>
         </View>
       </View>
     );
@@ -86,19 +87,19 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
 
   if (error) {
     return (
-      <View style={styles(theme).container}>
-        <View style={styles(theme).header}>
-          <TouchableOpacity style={styles(theme).backButton} onPress={onBack}>
-            <Text style={styles(theme).backButtonText}>← Back</Text>
+      <View style={currentStyles.container}>
+        <View style={currentStyles.header}>
+          <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
+            <Text style={currentStyles.backButtonText}>{isRTL ? '→' : '←'} {t('common.back')}</Text>
           </TouchableOpacity>
-          <Text style={styles(theme).headerTitle}>Choose Subject</Text>
+          <Text style={currentStyles.headerTitle}>{t('quiz_subjects.header_title')}</Text>
         </View>
-        <View style={styles(theme).errorContainer}>
-          <Text style={styles(theme).errorIcon}>⚠️</Text>
-          <Text style={styles(theme).errorTitle}>Error Loading Subjects</Text>
-          <Text style={styles(theme).errorText}>{error}</Text>
-          <TouchableOpacity style={styles(theme).retryButton} onPress={fetchSubjects}>
-            <Text style={styles(theme).retryButtonText}>Try Again</Text>
+        <View style={currentStyles.errorContainer}>
+          <Text style={currentStyles.errorIcon}>⚠️</Text>
+          <Text style={currentStyles.errorTitle}>{t('quiz_subjects.error_loading_subjects')}</Text>
+          <Text style={currentStyles.errorText}>{error}</Text>
+          <TouchableOpacity style={currentStyles.retryButton} onPress={fetchSubjects}>
+            <Text style={currentStyles.retryButtonText}>{t('home_screen.try_again')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -106,35 +107,35 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
   }
 
   return (
-    <View style={styles(theme).container}>
-      <View style={styles(theme).header}>
-        <TouchableOpacity style={styles(theme).backButton} onPress={onBack}>
-          <Text style={styles(theme).backButtonText}>← Back</Text>
+    <View style={currentStyles.container}>
+      <View style={currentStyles.header}>
+        <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
+          <Text style={currentStyles.backButtonText}>{isRTL ? '→' : '←'} {t('common.back')}</Text>
         </TouchableOpacity>
-        <Text style={styles(theme).headerTitle}>Choose Subject</Text>
-        <Text style={styles(theme).headerSubtitle}>Select a subject to start your quiz</Text>
+        <Text style={currentStyles.headerTitle}>{t('quiz_subjects.header_title')}</Text>
+        <Text style={currentStyles.headerSubtitle}>{t('quiz_subjects.header_subtitle')}</Text>
       </View>
 
-      <ScrollView style={styles(theme).content} showsVerticalScrollIndicator={false}>
-        <View style={styles(theme).subjectsGrid}>
+      <ScrollView style={currentStyles.content} showsVerticalScrollIndicator={false}>
+        <View style={currentStyles.subjectsGrid}>
           {subjects.map((subject: Subject) => (
             <TouchableOpacity
               key={subject.id}
-              style={styles(theme).subjectCard}
+              style={currentStyles.subjectCard}
               onPress={() => handleSubjectPress(subject)}
             >
-              <View style={styles(theme).subjectIcon}>
-                <Text style={styles(theme).subjectIconText}>
+              <View style={currentStyles.subjectIcon}>
+                <Text style={currentStyles.subjectIconText}>
                   {getSubjectIcon(subject.name)}
                 </Text>
               </View>
-              <Text style={styles(theme).subjectName}>{subject.name}</Text>
-              <Text style={styles(theme).subjectDescription}>
-                {subject.description || 'Test your knowledge'}
+              <Text style={currentStyles.subjectName}>{subject.name}</Text>
+              <Text style={currentStyles.subjectDescription}>
+                {subject.description || t('quiz_subjects.test_knowledge')}
               </Text>
-              <View style={styles(theme).subjectStats}>
-                <Text style={styles(theme).subjectStatsText}>
-                  Tap to start quiz
+              <View style={currentStyles.subjectStats}>
+                <Text style={currentStyles.subjectStatsText}>
+                  {t('quiz_subjects.tap_to_start')}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -142,11 +143,11 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
         </View>
 
         {subjects.length === 0 && (
-          <View style={styles(theme).emptyState}>
-            <Text style={styles(theme).emptyStateIcon}>📚</Text>
-            <Text style={styles(theme).emptyStateTitle}>No Subjects Available</Text>
-            <Text style={styles(theme).emptyStateSubtitle}>
-              No subjects are available for your grade level at the moment.
+          <View style={currentStyles.emptyState}>
+            <Text style={currentStyles.emptyStateIcon}>📚</Text>
+            <Text style={currentStyles.emptyStateTitle}>{t('quiz_subjects.no_subjects_available')}</Text>
+            <Text style={currentStyles.emptyStateSubtitle}>
+              {t('quiz_subjects.no_subjects_for_grade')}
             </Text>
           </View>
         )}
@@ -155,21 +156,20 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
   );
 };
 
-// Helper function to get subject icon
 const getSubjectIcon = (subjectName: string): string => {
   const name = subjectName.toLowerCase();
-  if (name.includes('math')) return '🔢';
-  if (name.includes('english') || name.includes('language')) return '📝';
-  if (name.includes('science')) return '🔬';
-  if (name.includes('history') || name.includes('social')) return '📜';
-  if (name.includes('art')) return '🎨';
-  if (name.includes('music')) return '🎵';
-  if (name.includes('physical') || name.includes('sport')) return '⚽';
-  if (name.includes('computer') || name.includes('tech')) return '💻';
+  if (name.includes('math') || name.includes('رياضيات')) return '🔢';
+  if (name.includes('english') || name.includes('language') || name.includes('لغة')) return '📝';
+  if (name.includes('science') || name.includes('علوم')) return '🔬';
+  if (name.includes('history') || name.includes('social') || name.includes('تاريخ')) return '📜';
+  if (name.includes('art') || name.includes('فن')) return '🎨';
+  if (name.includes('music') || name.includes('موسيقى')) return '🎵';
+  if (name.includes('physical') || name.includes('sport') || name.includes('رياضة')) return '⚽';
+  if (name.includes('computer') || name.includes('tech') || name.includes('حاسوب')) return '💻';
   return '📖';
 };
 
-const styles = (theme: any) => StyleSheet.create({
+const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
@@ -178,6 +178,7 @@ const styles = (theme: any) => StyleSheet.create({
     padding: 20,
     paddingTop: 50,
     backgroundColor: theme.colors.headerBackground,
+    alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   backButton: {
     marginBottom: 16,

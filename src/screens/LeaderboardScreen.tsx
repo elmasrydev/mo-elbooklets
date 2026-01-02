@@ -4,9 +4,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
+import { useTranslation } from 'react-i18next';
 import { tryFetchWithFallback } from '../config/api';
 
-// Types
 interface Subject {
   id: string;
   name: string;
@@ -29,6 +30,8 @@ interface Student {
 const LeaderboardScreen: React.FC = () => {
   const { user } = useAuth();
   const { theme } = useTheme();
+  const { isRTL } = useLanguage();
+  const { t } = useTranslation();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [selectedTab, setSelectedTab] = useState<string>('all');
   const [loading, setLoading] = useState(true);
@@ -98,7 +101,7 @@ const LeaderboardScreen: React.FC = () => {
 
       const token = await AsyncStorage.getItem('auth_token');
       if (!token) {
-        setLeaderboardError('Authentication required');
+        setLeaderboardError(t('common.error'));
         return;
       }
 
@@ -123,13 +126,9 @@ const LeaderboardScreen: React.FC = () => {
       `, variables, token);
 
       if (result.data?.leaderboard) {
-        // Ensure isFollowing is properly set as a boolean (handle null, undefined, string, etc.)
         const processedLeaderboard = result.data.leaderboard.map((student: any) => {
-          // Convert isFollowing to proper boolean
-          // Handle all possible truthy/falsy values
           let isFollowing = false;
           
-          // Check for truthy values
           if (student.isFollowing === true || 
               student.isFollowing === 1 || 
               student.isFollowing === '1' || 
@@ -139,7 +138,6 @@ const LeaderboardScreen: React.FC = () => {
             isFollowing = true;
           }
           
-          // Explicitly set false for falsy values (null, undefined, false, 0, '0', 'false', etc.)
           if (student.isFollowing === false || 
               student.isFollowing === 0 || 
               student.isFollowing === '0' || 
@@ -158,7 +156,7 @@ const LeaderboardScreen: React.FC = () => {
             totalQuizzes: student.totalQuizzes,
             avgScore: student.avgScore,
             rank: student.rank,
-            isFollowing: Boolean(isFollowing), // Force boolean conversion
+            isFollowing: Boolean(isFollowing),
           };
         });
         
@@ -171,11 +169,11 @@ const LeaderboardScreen: React.FC = () => {
           }));
         }
       } else {
-        setLeaderboardError(result.errors?.[0]?.message || 'Failed to load leaderboard');
+        setLeaderboardError(result.errors?.[0]?.message || t('leaderboard_screen.error_loading_leaderboard'));
       }
     } catch (err: any) {
       console.error('Fetch leaderboard error:', err);
-      setLeaderboardError(err.message || 'An error occurred while loading leaderboard');
+      setLeaderboardError(err.message || t('leaderboard_screen.error_loading_leaderboard'));
     } finally {
       setLeaderboardLoading(false);
     }
@@ -189,7 +187,7 @@ const LeaderboardScreen: React.FC = () => {
     try {
       const token = await AsyncStorage.getItem('auth_token');
       if (!token) {
-        Alert.alert('Error', 'Authentication required');
+        Alert.alert(t('common.error'), t('common.error'));
         return;
       }
 
@@ -206,7 +204,6 @@ const LeaderboardScreen: React.FC = () => {
       if (result.data?.followUser?.success) {
         const newIsFollowing = result.data.followUser.isFollowing;
         
-        // Update local state for all leaderboards using functional updates
         const updateStudentInList = (list: Student[]) =>
           list.map((s) =>
             s.id === student.id
@@ -214,7 +211,6 @@ const LeaderboardScreen: React.FC = () => {
               : s
           );
 
-        // Use functional update to ensure we have the latest state
         setAllLeaderboard((prev) => updateStudentInList(prev));
         
         setSubjectLeaderboards((prev) => {
@@ -225,11 +221,11 @@ const LeaderboardScreen: React.FC = () => {
           return updated;
         });
       } else {
-        Alert.alert('Error', result.errors?.[0]?.message || 'Failed to update follow status');
+        Alert.alert(t('common.error'), result.errors?.[0]?.message || t('common.unexpected_error'));
       }
     } catch (err: any) {
       console.error('Follow toggle error:', err);
-      Alert.alert('Error', err.message || 'An error occurred');
+      Alert.alert(t('common.error'), err.message || t('common.unexpected_error'));
     }
   };
 
@@ -250,10 +246,10 @@ const LeaderboardScreen: React.FC = () => {
   };
 
   const getRankBadgeStyle = (rank: number) => {
-    if (rank === 1) return styles(theme).rankBadgeGold;
-    if (rank === 2) return styles(theme).rankBadgeSilver;
-    if (rank === 3) return styles(theme).rankBadgeBronze;
-    return styles(theme).rankBadge;
+    if (rank === 1) return currentStyles.rankBadgeGold;
+    if (rank === 2) return currentStyles.rankBadgeSilver;
+    if (rank === 3) return currentStyles.rankBadgeBronze;
+    return currentStyles.rankBadge;
   };
 
   const getCurrentLeaderboard = (): Student[] => {
@@ -265,76 +261,78 @@ const LeaderboardScreen: React.FC = () => {
 
   const getCurrentTabName = (): string => {
     if (selectedTab === 'all') {
-      return 'All Subjects';
+      return t('common.all_subjects');
     }
     const subject = subjects.find((s) => s.id === selectedTab);
-    return subject?.name || 'Leaderboard';
+    return subject?.name || t('common.leaderboard');
   };
 
   const renderAvatar = (name: string) => {
     return (
-      <View style={styles(theme).avatarPlaceholder}>
-        <Text style={styles(theme).avatarText}>{getInitials(name)}</Text>
+      <View style={currentStyles.avatarPlaceholder}>
+        <Text style={currentStyles.avatarText}>{getInitials(name)}</Text>
       </View>
     );
   };
 
+  const currentStyles = styles(theme, isRTL);
+
   if (loading) {
     return (
-      <View style={styles(theme).container}>
-        <View style={styles(theme).header}>
-          <Text style={styles(theme).headerTitle}>Leaderboard</Text>
-          <Text style={styles(theme).headerSubtitle}>See how you rank among peers</Text>
+      <View style={currentStyles.container}>
+        <View style={currentStyles.header}>
+          <Text style={currentStyles.headerTitle}>{t('leaderboard_screen.header_title')}</Text>
+          <Text style={currentStyles.headerSubtitle}>{t('leaderboard_screen.header_subtitle')}</Text>
         </View>
-        <View style={styles(theme).loadingContainer}>
+        <View style={currentStyles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles(theme).loadingText}>Loading leaderboard...</Text>
+          <Text style={currentStyles.loadingText}>{t('leaderboard_screen.loading_leaderboard')}</Text>
         </View>
       </View>
     );
   }
 
   return (
-    <View style={styles(theme).container}>
+    <View style={currentStyles.container}>
       {/* Header */}
-      <View style={styles(theme).header}>
-        <Text style={styles(theme).headerTitle}>Leaderboard</Text>
-        <Text style={styles(theme).headerSubtitle}>See how you rank among peers</Text>
+      <View style={currentStyles.header}>
+        <Text style={currentStyles.headerTitle}>{t('leaderboard_screen.header_title')}</Text>
+        <Text style={currentStyles.headerSubtitle}>{t('leaderboard_screen.header_subtitle')}</Text>
       </View>
 
       {/* Tab Bar */}
-      <View style={styles(theme).tabBarContainer}>
+      <View style={currentStyles.tabBarContainer}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles(theme).tabBarContent}
+          contentContainerStyle={currentStyles.tabBarContent}
         >
           <TouchableOpacity
             style={[
-              styles(theme).tab,
-              selectedTab === 'all' && styles(theme).tabActive
+              currentStyles.tab,
+              selectedTab === 'all' && currentStyles.tabActive
             ]}
             onPress={() => handleTabChange('all')}
           >
             <Text style={[
-              styles(theme).tabText,
-              selectedTab === 'all' ? styles(theme).tabTextActive : styles(theme).tabTextInactive
+              currentStyles.tabText,
+              selectedTab === 'all' ? currentStyles.tabTextActive : currentStyles.tabTextInactive
             ]}>
-              All
+              {t('common.all')}
             </Text>
           </TouchableOpacity>
           {subjects.map((subject) => (
             <TouchableOpacity
               key={subject.id}
               style={[
-                styles(theme).tab,
-                selectedTab === subject.id && styles(theme).tabActive
+                currentStyles.tab,
+                selectedTab === subject.id && currentStyles.tabActive
               ]}
               onPress={() => handleTabChange(subject.id)}
             >
               <Text style={[
-                styles(theme).tabText,
-                selectedTab === subject.id ? styles(theme).tabTextActive : styles(theme).tabTextInactive
+                currentStyles.tabText,
+                selectedTab === subject.id ? currentStyles.tabTextActive : currentStyles.tabTextInactive
               ]}>
                 {subject.name}
               </Text>
@@ -344,70 +342,70 @@ const LeaderboardScreen: React.FC = () => {
       </View>
 
       {/* Leaderboard Content */}
-      <ScrollView style={styles(theme).content} showsVerticalScrollIndicator={false}>
-        <View style={styles(theme).leaderboardContainer}>
-          <Text style={styles(theme).sectionTitle}>{getCurrentTabName()}</Text>
+      <ScrollView style={currentStyles.content} showsVerticalScrollIndicator={false}>
+        <View style={currentStyles.leaderboardContainer}>
+          <Text style={currentStyles.sectionTitle}>{getCurrentTabName()}</Text>
           {leaderboardLoading ? (
-            <View style={styles(theme).loadingState}>
+            <View style={currentStyles.loadingState}>
               <ActivityIndicator size="large" color={theme.colors.primary} />
-              <Text style={styles(theme).loadingText}>Loading leaderboard...</Text>
+              <Text style={currentStyles.loadingText}>{t('leaderboard_screen.loading_leaderboard')}</Text>
             </View>
           ) : leaderboardError ? (
-            <View style={styles(theme).emptyState}>
-              <Text style={styles(theme).emptyStateIcon}>⚠️</Text>
-              <Text style={styles(theme).emptyStateTitle}>Error Loading Leaderboard</Text>
-              <Text style={styles(theme).emptyStateSubtitle}>{leaderboardError}</Text>
+            <View style={currentStyles.emptyState}>
+              <Text style={currentStyles.emptyStateIcon}>⚠️</Text>
+              <Text style={currentStyles.emptyStateTitle}>{t('leaderboard_screen.error_loading_leaderboard')}</Text>
+              <Text style={currentStyles.emptyStateSubtitle}>{leaderboardError}</Text>
               <TouchableOpacity
-                style={styles(theme).retryButton}
+                style={currentStyles.retryButton}
                 onPress={() => fetchLeaderboard(selectedTab)}
               >
-                <Text style={styles(theme).retryButtonText}>Try Again</Text>
+                <Text style={currentStyles.retryButtonText}>{t('home_screen.try_again')}</Text>
               </TouchableOpacity>
             </View>
           ) : getCurrentLeaderboard().length === 0 ? (
-            <View style={styles(theme).emptyState}>
-              <Text style={styles(theme).emptyStateIcon}>🏆</Text>
-              <Text style={styles(theme).emptyStateTitle}>No rankings yet</Text>
-              <Text style={styles(theme).emptyStateSubtitle}>
-                Be the first to complete quizzes and appear on the leaderboard!
+            <View style={currentStyles.emptyState}>
+              <Text style={currentStyles.emptyStateIcon}>🏆</Text>
+              <Text style={currentStyles.emptyStateTitle}>{t('leaderboard_screen.no_rankings_yet')}</Text>
+              <Text style={currentStyles.emptyStateSubtitle}>
+                {t('leaderboard_screen.be_first_hint')}
               </Text>
             </View>
           ) : (
             getCurrentLeaderboard().map((student) => (
-              <View key={student.id} style={styles(theme).studentCard}>
-                <View style={styles(theme).studentLeft}>
-                  <View style={[styles(theme).rankBadgeContainer, getRankBadgeStyle(student.rank)]}>
-                    <Text style={styles(theme).rankBadgeText}>{getRankBadge(student.rank)}</Text>
+              <View key={student.id} style={currentStyles.studentCard}>
+                <View style={currentStyles.studentLeft}>
+                  <View style={[currentStyles.rankBadgeContainer, getRankBadgeStyle(student.rank)]}>
+                    <Text style={currentStyles.rankBadgeText}>{getRankBadge(student.rank)}</Text>
                   </View>
                   {renderAvatar(student.name)}
-                  <View style={styles(theme).studentDetails}>
-                    <Text style={styles(theme).studentName}>{student.name}</Text>
-                    <Text style={styles(theme).studentGrade}>{student.grade.name}</Text>
-                    <View style={styles(theme).studentStats}>
-                      <Text style={styles(theme).studentStat}>
-                        {student.totalQuizzes} quizzes
+                  <View style={currentStyles.studentDetails}>
+                    <Text style={currentStyles.studentName}>{student.name}</Text>
+                    <Text style={currentStyles.studentGrade}>{student.grade.name}</Text>
+                    <View style={currentStyles.studentStats}>
+                      <Text style={currentStyles.studentStat}>
+                        {student.totalQuizzes} {t('common.quizzes')}
                       </Text>
-                      <Text style={styles(theme).studentStatSeparator}>•</Text>
-                      <Text style={styles(theme).studentStat}>
-                        {student.avgScore.toFixed(1)}% avg
+                      <Text style={currentStyles.studentStatSeparator}>•</Text>
+                      <Text style={currentStyles.studentStat}>
+                        {student.avgScore.toFixed(1)}% {t('common.avg')}
                       </Text>
                     </View>
                   </View>
                 </View>
                 <TouchableOpacity
                   style={[
-                    styles(theme).followButton,
-                    student.isFollowing && styles(theme).followButtonFollowing
+                    currentStyles.followButton,
+                    student.isFollowing && currentStyles.followButtonFollowing
                   ]}
                   onPress={() => handleFollowToggle(student)}
                 >
                   <Text
                     style={[
-                      styles(theme).followButtonText,
-                      student.isFollowing && styles(theme).followButtonTextFollowing
+                      currentStyles.followButtonText,
+                      student.isFollowing && currentStyles.followButtonTextFollowing
                     ]}
                   >
-                    {student.isFollowing ? 'Following' : 'Follow'}
+                    {student.isFollowing ? t('common.following') : t('common.follow')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -419,7 +417,7 @@ const LeaderboardScreen: React.FC = () => {
   );
 };
 
-const styles = (theme: any) => StyleSheet.create({
+const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
@@ -428,6 +426,7 @@ const styles = (theme: any) => StyleSheet.create({
     padding: 20,
     paddingTop: 50,
     backgroundColor: theme.colors.headerBackground,
+    alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   headerTitle: {
     fontSize: 28,
@@ -449,11 +448,13 @@ const styles = (theme: any) => StyleSheet.create({
   tabBarContent: {
     paddingHorizontal: 16,
     paddingVertical: 8,
+    flexDirection: isRTL ? 'row-reverse' : 'row',
   },
   tab: {
     paddingHorizontal: 16,
     paddingVertical: 6,
-    marginRight: 8,
+    marginRight: isRTL ? 0 : 8,
+    marginLeft: isRTL ? 8 : 0,
     borderRadius: 20,
     backgroundColor: 'transparent',
   },
@@ -483,13 +484,14 @@ const styles = (theme: any) => StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     color: theme.colors.text,
+    textAlign: isRTL ? 'right' : 'left',
   },
   studentCard: {
     marginHorizontal: 16,
     marginBottom: 12,
     padding: 16,
     borderRadius: 12,
-    flexDirection: 'row',
+    flexDirection: isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: theme.colors.card,
@@ -500,7 +502,7 @@ const styles = (theme: any) => StyleSheet.create({
     elevation: 3,
   },
   studentLeft: {
-    flexDirection: 'row',
+    flexDirection: isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
     flex: 1,
   },
@@ -510,7 +512,8 @@ const styles = (theme: any) => StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: isRTL ? 0 : 12,
+    marginLeft: isRTL ? 12 : 0,
   },
   rankBadge: {
     backgroundColor: theme.colors.border,
@@ -536,7 +539,8 @@ const styles = (theme: any) => StyleSheet.create({
     backgroundColor: theme.colors.avatarBackground,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: isRTL ? 0 : 12,
+    marginLeft: isRTL ? 12 : 0,
   },
   avatarText: {
     color: theme.colors.avatarText,
@@ -545,6 +549,7 @@ const styles = (theme: any) => StyleSheet.create({
   },
   studentDetails: {
     flex: 1,
+    alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   studentName: {
     fontSize: 16,
@@ -558,7 +563,7 @@ const styles = (theme: any) => StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   studentStats: {
-    flexDirection: 'row',
+    flexDirection: isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
   },
   studentStat: {

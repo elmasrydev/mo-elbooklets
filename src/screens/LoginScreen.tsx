@@ -12,6 +12,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import { useTranslation } from 'react-i18next';
 
 interface LoginScreenProps {
   onNavigateToRegister: () => void;
@@ -23,10 +25,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister }) => {
   const [isLoading, setIsLoading] = useState(false);
   
   const { login } = useAuth();
+  const { isRTL } = useLanguage();
+  const { t } = useTranslation();
 
   const handleLogin = async () => {
     if (!mobile.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert(t('common.error'), t('auth.fill_all_fields'));
       return;
     }
 
@@ -36,72 +40,75 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister }) => {
       const result = await login({ mobile: mobile.trim(), password });
       
       if (!result.success) {
-        Alert.alert('Login Failed', result.error || 'Invalid credentials');
+        Alert.alert(t('auth.login_failed'), result.error || t('auth.invalid_credentials'));
       }
-      // If successful, the AuthContext will handle navigation
     } catch (error) {
-      Alert.alert('Error', 'An unexpected error occurred');
+      Alert.alert(t('common.error'), t('common.unexpected_error'));
     } finally {
       setIsLoading(false);
     }
   };
 
+  const currentStyles = styles(isRTL);
+
   return (
     <KeyboardAvoidingView 
-      style={styles.container}
+      style={currentStyles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.header}>
-          <Text style={styles.logo}>📚</Text>
-          <Text style={styles.title}>Welcome Back</Text>
-          <Text style={styles.subtitle}>Sign in to your account</Text>
+      <ScrollView contentContainerStyle={currentStyles.scrollContainer}>
+        <View style={currentStyles.header}>
+          <Text style={currentStyles.logo}>📚</Text>
+          <Text style={currentStyles.title}>{t('auth.welcome_back')}</Text>
+          <Text style={currentStyles.subtitle}>{t('auth.sign_in_subtitle')}</Text>
         </View>
 
-        <View style={styles.form}>
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Mobile Number</Text>
+        <View style={currentStyles.form}>
+          <View style={currentStyles.inputContainer}>
+            <Text style={currentStyles.label}>{t('auth.mobile_number')}</Text>
             <TextInput
-              style={styles.input}
+              style={currentStyles.input}
               value={mobile}
               onChangeText={setMobile}
-              placeholder="Enter your mobile number"
+              placeholder={t('auth.mobile_placeholder')}
               keyboardType="phone-pad"
               autoCapitalize="none"
               editable={!isLoading}
+              textAlign={isRTL ? 'right' : 'left'}
             />
           </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Password</Text>
+          <View style={currentStyles.inputContainer}>
+            <Text style={currentStyles.label}>{t('auth.password')}</Text>
             <TextInput
-              style={styles.input}
+              style={currentStyles.input}
               value={password}
               onChangeText={setPassword}
-              placeholder="Enter your password"
+              placeholder={t('auth.password_placeholder')}
               secureTextEntry
               autoCapitalize="none"
               editable={!isLoading}
+              textAlign={isRTL ? 'right' : 'left'}
             />
           </View>
 
           <TouchableOpacity 
-            style={[styles.loginButton, isLoading && styles.disabledButton]}
+            style={[currentStyles.loginButton, isLoading && currentStyles.disabledButton]}
             onPress={handleLogin}
             disabled={isLoading}
           >
             {isLoading ? (
               <ActivityIndicator color="#ffffff" />
             ) : (
-              <Text style={styles.loginButtonText}>Sign In</Text>
+              <Text style={currentStyles.loginButtonText}>{t('auth.sign_in')}</Text>
             )}
           </TouchableOpacity>
         </View>
 
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Don't have an account? </Text>
+        <View style={currentStyles.footer}>
+          <Text style={currentStyles.footerText}>{t('auth.dont_have_account')} </Text>
           <TouchableOpacity onPress={onNavigateToRegister} disabled={isLoading}>
-            <Text style={styles.linkText}>Sign Up</Text>
+            <Text style={currentStyles.linkText}>{t('auth.sign_up')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -109,7 +116,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = (isRTL: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
@@ -148,6 +155,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333333',
     marginBottom: 8,
+    textAlign: isRTL ? 'right' : 'left',
   },
   input: {
     borderWidth: 1,
@@ -173,7 +181,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   footer: {
-    flexDirection: 'row',
+    flexDirection: isRTL ? 'row-reverse' : 'row',
     justifyContent: 'center',
     alignItems: 'center',
   },

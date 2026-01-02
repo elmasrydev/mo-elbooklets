@@ -1,24 +1,57 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text } from 'react-native';
+import { Text, I18nManager } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import HomeScreen from '../screens/HomeScreen';
 import QuizScreen from '../screens/QuizScreen';
 import SocialScreen from '../screens/SocialScreen';
 import LeaderboardScreen from '../screens/LeaderboardScreen';
 import MoreScreen from '../screens/MoreScreen';
+import { useTranslation } from 'react-i18next';
 
 const Tab = createBottomTabNavigator();
 
+interface TabIconProps {
+  color: string;
+  focused: boolean;
+  icon: string;
+}
+
+const TabIcon: React.FC<TabIconProps> = ({ color, focused, icon }) => (
+  <Text style={{ fontSize: focused ? 26 : 24, color }}>{icon}</Text>
+);
+
+interface TabConfig {
+  name: string;
+  component: React.ComponentType<any>;
+  labelKey: string;
+  icon: string;
+}
+
 const TabNavigator: React.FC = () => {
   const { theme } = useTheme();
+  const { isRTL } = useLanguage();
+  const { t } = useTranslation();
+
+  // Define tabs in LTR order
+  const tabs: TabConfig[] = [
+    { name: 'Home', component: HomeScreen, labelKey: 'common.home', icon: '🏠' },
+    { name: 'Quiz', component: QuizScreen, labelKey: 'common.quiz', icon: '📝' },
+    { name: 'Social', component: SocialScreen, labelKey: 'common.social', icon: '👥' },
+    { name: 'Leaderboard', component: LeaderboardScreen, labelKey: 'common.leaderboard', icon: '🏆' },
+    { name: 'More', component: MoreScreen, labelKey: 'common.more', icon: '⚙️' },
+  ];
+
+  // Reverse order for RTL
+  const orderedTabs = isRTL || I18nManager.isRTL ? [...tabs].reverse() : tabs;
   
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: theme.colors.textTertiary,
+        tabBarInactiveTintColor: 'gray',
         tabBarStyle: {
           backgroundColor: theme.colors.surface,
           borderTopWidth: 1,
@@ -26,6 +59,7 @@ const TabNavigator: React.FC = () => {
           paddingBottom: 5,
           paddingTop: 5,
           height: 60,
+          flexDirection: isRTL ? 'row-reverse' : 'row',
         },
         tabBarLabelStyle: {
           fontSize: 12,
@@ -33,51 +67,17 @@ const TabNavigator: React.FC = () => {
         },
       }}
     >
-      <Tab.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <Text style={{ fontSize: focused ? 26 : 24, color }}>🏠</Text>
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Quiz"
-        component={QuizScreen}
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <Text style={{ fontSize: focused ? 26 : 24, color }}>🧠</Text>
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Social"
-        component={SocialScreen}
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <Text style={{ fontSize: focused ? 26 : 24, color }}>👥</Text>
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Leaderboard"
-        component={LeaderboardScreen}
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <Text style={{ fontSize: focused ? 26 : 24, color }}>🏆</Text>
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="More"
-        component={MoreScreen}
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <Text style={{ fontSize: focused ? 26 : 24, color }}>⋯</Text>
-          ),
-        }}
-      />
+      {orderedTabs.map((tab) => (
+        <Tab.Screen
+          key={tab.name}
+          name={tab.name}
+          component={tab.component}
+          options={{
+            tabBarLabel: t(tab.labelKey),
+            tabBarIcon: (props) => <TabIcon {...props} icon={tab.icon} />,
+          }}
+        />
+      ))}
     </Tab.Navigator>
   );
 };

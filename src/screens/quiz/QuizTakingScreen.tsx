@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { useTranslation } from 'react-i18next';
 import { tryFetchWithFallback } from '../../config/api';
 
-// Types
 interface QuizQuestion {
   id: string;
   question: string;
@@ -34,14 +35,14 @@ interface QuizTakingScreenProps {
 
 const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizComplete, onBack }) => {
   const { theme } = useTheme();
+  const { isRTL } = useLanguage();
+  const { t } = useTranslation();
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<{ [questionId: string]: string }>({});
   const [submitting, setSubmitting] = useState(false);
-
-
 
   useEffect(() => {
     fetchQuiz();
@@ -54,7 +55,7 @@ const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizCompl
       
       const token = await AsyncStorage.getItem('auth_token');
       if (!token) {
-        setError('Authentication required');
+        setError(t('common.error'));
         return;
       }
 
@@ -84,11 +85,11 @@ const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizCompl
       if (result.data?.quiz) {
         setQuiz(result.data.quiz);
       } else {
-        setError(result.errors?.[0]?.message || 'Failed to load quiz');
+        setError(result.errors?.[0]?.message || t('quiz_taking.error_loading_quiz'));
       }
     } catch (err: any) {
       console.error('Fetch quiz error:', err);
-      setError(err.message || 'An error occurred while loading the quiz');
+      setError(err.message || t('quiz_taking.error_loading_quiz'));
     } finally {
       setLoading(false);
     }
@@ -106,12 +107,11 @@ const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizCompl
     
     const currentQuestion = quiz.questions[currentQuestionIndex];
     
-    // Check if current question is answered
     if (!selectedAnswers[currentQuestion.id]) {
       Alert.alert(
-        'Answer Required',
-        'Please select an answer before proceeding to the next question.',
-        [{ text: 'OK' }]
+        t('quiz_taking.answer_required'),
+        t('quiz_taking.select_answer_first'),
+        [{ text: t('common.ok') }]
       );
       return;
     }
@@ -132,23 +132,21 @@ const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizCompl
 
     const currentQuestion = quiz.questions[currentQuestionIndex];
     
-    // Check if current (last) question is answered
     if (!selectedAnswers[currentQuestion.id]) {
       Alert.alert(
-        'Answer Required',
-        'Please select an answer for this question before submitting the quiz.',
-        [{ text: 'OK' }]
+        t('quiz_taking.answer_required'),
+        t('quiz_taking.select_answer_last'),
+        [{ text: t('common.ok') }]
       );
       return;
     }
 
-    // Check if all questions are answered
     const unansweredQuestions = quiz.questions.filter(q => !selectedAnswers[q.id]);
     if (unansweredQuestions.length > 0) {
       Alert.alert(
-        'Incomplete Quiz',
-        `You have ${unansweredQuestions.length} unanswered question${unansweredQuestions.length > 1 ? 's' : ''}. Please answer all questions before submitting.`,
-        [{ text: 'OK' }]
+        t('quiz_taking.incomplete_quiz'),
+        t('quiz_taking.unanswered_questions', { count: unansweredQuestions.length }),
+        [{ text: t('common.ok') }]
       );
       return;
     }
@@ -164,11 +162,10 @@ const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizCompl
       
       const token = await AsyncStorage.getItem('auth_token');
       if (!token) {
-        setError('Authentication required');
+        setError(t('common.error'));
         return;
       }
 
-      // Create answers for ALL questions, using null for unanswered ones
       const answers = quiz.questions.map(question => ({
         questionId: question.id,
         selectedAnswer: selectedAnswers[question.id] || null
@@ -187,28 +184,30 @@ const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizCompl
       if (result.data?.submitQuizAnswers) {
         onQuizComplete(quiz.id);
       } else {
-        setError(result.errors?.[0]?.message || 'Failed to submit quiz');
+        setError(result.errors?.[0]?.message || t('common.unexpected_error'));
       }
     } catch (err: any) {
       console.error('Submit quiz error:', err);
-      setError(err.message || 'An error occurred while submitting the quiz');
+      setError(err.message || t('common.unexpected_error'));
     } finally {
       setSubmitting(false);
     }
   };
 
+  const currentStyles = styles(theme, isRTL);
+
   if (loading) {
     return (
-      <View style={styles(theme).container}>
-        <View style={styles(theme).header}>
-          <TouchableOpacity style={styles(theme).backButton} onPress={onBack}>
-            <Text style={styles(theme).backButtonText}>← Back</Text>
+      <View style={currentStyles.container}>
+        <View style={currentStyles.header}>
+          <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
+            <Text style={currentStyles.backButtonText}>{isRTL ? '→' : '←'} {t('common.back')}</Text>
           </TouchableOpacity>
-          <Text style={styles(theme).headerTitle}>Loading Quiz...</Text>
+          <Text style={currentStyles.headerTitle}>{t('quiz_taking.loading_quiz')}</Text>
         </View>
-        <View style={styles(theme).loadingContainer}>
+        <View style={currentStyles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles(theme).loadingText}>Loading quiz questions...</Text>
+          <Text style={currentStyles.loadingText}>{t('quiz_taking.loading_quiz_questions')}</Text>
         </View>
       </View>
     );
@@ -216,19 +215,19 @@ const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizCompl
 
   if (error) {
     return (
-      <View style={styles(theme).container}>
-        <View style={styles(theme).header}>
-          <TouchableOpacity style={styles(theme).backButton} onPress={onBack}>
-            <Text style={styles(theme).backButtonText}>← Back</Text>
+      <View style={currentStyles.container}>
+        <View style={currentStyles.header}>
+          <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
+            <Text style={currentStyles.backButtonText}>{isRTL ? '→' : '←'} {t('common.back')}</Text>
           </TouchableOpacity>
-          <Text style={styles(theme).headerTitle}>Quiz Error</Text>
+          <Text style={currentStyles.headerTitle}>{t('quiz_taking.quiz_error')}</Text>
         </View>
-        <View style={styles(theme).errorContainer}>
-          <Text style={styles(theme).errorIcon}>⚠️</Text>
-          <Text style={styles(theme).errorTitle}>Error Loading Quiz</Text>
-          <Text style={styles(theme).errorText}>{error}</Text>
-          <TouchableOpacity style={styles(theme).retryButton} onPress={fetchQuiz}>
-            <Text style={styles(theme).retryButtonText}>Try Again</Text>
+        <View style={currentStyles.errorContainer}>
+          <Text style={currentStyles.errorIcon}>⚠️</Text>
+          <Text style={currentStyles.errorTitle}>{t('quiz_taking.error_loading_quiz')}</Text>
+          <Text style={currentStyles.errorText}>{error}</Text>
+          <TouchableOpacity style={currentStyles.retryButton} onPress={fetchQuiz}>
+            <Text style={currentStyles.retryButtonText}>{t('home_screen.try_again')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -237,17 +236,17 @@ const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizCompl
 
   if (!quiz || quiz.questions.length === 0) {
     return (
-      <View style={styles(theme).container}>
-        <View style={styles(theme).header}>
-          <TouchableOpacity style={styles(theme).backButton} onPress={onBack}>
-            <Text style={styles(theme).backButtonText}>← Back</Text>
+      <View style={currentStyles.container}>
+        <View style={currentStyles.header}>
+          <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
+            <Text style={currentStyles.backButtonText}>{isRTL ? '→' : '←'} {t('common.back')}</Text>
           </TouchableOpacity>
-          <Text style={styles(theme).headerTitle}>No Questions</Text>
+          <Text style={currentStyles.headerTitle}>{t('quiz_taking.no_questions')}</Text>
         </View>
-        <View style={styles(theme).errorContainer}>
-          <Text style={styles(theme).errorIcon}>📝</Text>
-          <Text style={styles(theme).errorTitle}>No Questions Available</Text>
-          <Text style={styles(theme).errorText}>This quiz doesn't have any questions yet.</Text>
+        <View style={currentStyles.errorContainer}>
+          <Text style={currentStyles.errorIcon}>📝</Text>
+          <Text style={currentStyles.errorTitle}>{t('quiz_taking.no_questions_available')}</Text>
+          <Text style={currentStyles.errorText}>{t('quiz_taking.no_questions_yet')}</Text>
         </View>
       </View>
     );
@@ -257,44 +256,46 @@ const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizCompl
   const progress = ((currentQuestionIndex + 1) / quiz.questions.length) * 100;
 
   return (
-    <View style={styles(theme).container}>
-      <View style={styles(theme).header}>
-        <TouchableOpacity style={styles(theme).backButton} onPress={onBack}>
-          <Text style={styles(theme).backButtonText}>← Back</Text>
+    <View style={currentStyles.container}>
+      <View style={currentStyles.header}>
+        <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
+          <Text style={currentStyles.backButtonText}>{isRTL ? '→' : '←'} {t('common.back')}</Text>
         </TouchableOpacity>
-        <Text style={styles(theme).headerTitle}>{quiz.name}</Text>
-        <Text style={styles(theme).headerSubtitle}>{quiz.subject.name}</Text>
+        <Text style={currentStyles.headerTitle}>{quiz.name}</Text>
+        <Text style={currentStyles.headerSubtitle}>{quiz.subject.name}</Text>
       </View>
 
-      <View style={styles(theme).progressContainer}>
-        <View style={styles(theme).progressBar}>
-          <View style={[styles(theme).progressFill, { width: `${progress}%` }]} />
+      <View style={currentStyles.progressContainer}>
+        <View style={currentStyles.progressBar}>
+          <View style={[currentStyles.progressFill, { width: `${progress}%` }]} />
         </View>
-        <Text style={styles(theme).progressText}>
-          Question {currentQuestionIndex + 1} of {quiz.questions.length}
+        <Text style={currentStyles.progressText}>
+          {t('quiz_taking.question_of', { current: currentQuestionIndex + 1, total: quiz.questions.length })}
         </Text>
       </View>
 
-      <ScrollView style={styles(theme).content} showsVerticalScrollIndicator={false}>
-        <View style={styles(theme).questionContainer}>
-          <Text style={styles(theme).questionNumber}>Question {currentQuestion.questionNumber}</Text>
-          <Text style={styles(theme).questionText}>{currentQuestion.question}</Text>
+      <ScrollView style={currentStyles.content} showsVerticalScrollIndicator={false}>
+        <View style={currentStyles.questionContainer}>
+          <Text style={currentStyles.questionNumber}>
+            {t('quiz_taking.question_number', { number: currentQuestion.questionNumber })}
+          </Text>
+          <Text style={currentStyles.questionText}>{currentQuestion.question}</Text>
           
-          <View style={styles(theme).answersContainer}>
+          <View style={currentStyles.answersContainer}>
             {currentQuestion.answers.map((answer, index) => {
               const isSelected = selectedAnswers[currentQuestion.id] === answer;
               return (
                 <TouchableOpacity
                   key={index}
                   style={[
-                    styles(theme).answerButton,
-                    isSelected && styles(theme).selectedAnswer
+                    currentStyles.answerButton,
+                    isSelected && currentStyles.selectedAnswer
                   ]}
                   onPress={() => handleAnswerSelect(currentQuestion.id, answer)}
                 >
                   <Text style={[
-                    styles(theme).answerText,
-                    isSelected && styles(theme).selectedAnswerText
+                    currentStyles.answerText,
+                    isSelected && currentStyles.selectedAnswerText
                   ]}>
                     {String.fromCharCode(65 + index)}. {answer}
                   </Text>
@@ -305,44 +306,44 @@ const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizCompl
         </View>
       </ScrollView>
 
-      <View style={styles(theme).navigationContainer}>
+      <View style={currentStyles.navigationContainer}>
         <TouchableOpacity
           style={[
-            styles(theme).navButton,
-            styles(theme).navButtonSecondary,
-            currentQuestionIndex === 0 && styles(theme).disabledButton
+            currentStyles.navButton,
+            currentStyles.navButtonSecondary,
+            currentQuestionIndex === 0 && currentStyles.disabledButton
           ]}
           onPress={handlePreviousQuestion}
           disabled={currentQuestionIndex === 0}
         >
           <Text style={[
-            styles(theme).navButtonText,
-            styles(theme).navButtonTextSecondary,
-            currentQuestionIndex === 0 && styles(theme).disabledButtonText
+            currentStyles.navButtonText,
+            currentStyles.navButtonTextSecondary,
+            currentQuestionIndex === 0 && currentStyles.disabledButtonText
           ]}>
-            Previous
+            {t('common.previous')}
           </Text>
         </TouchableOpacity>
 
         {currentQuestionIndex === quiz.questions.length - 1 ? (
           <TouchableOpacity
             style={[
-              styles(theme).submitButton,
-              submitting && styles(theme).disabledButton
+              currentStyles.submitButton,
+              submitting && currentStyles.disabledButton
             ]}
             onPress={handleSubmitQuiz}
             disabled={submitting}
           >
-            <Text style={styles(theme).submitButtonText}>
-              {submitting ? 'Submitting...' : 'Submit Quiz'}
+            <Text style={currentStyles.submitButtonText}>
+              {submitting ? t('quiz_taking.submitting') : t('quiz_taking.submit_quiz')}
             </Text>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
-            style={styles(theme).navButton}
+            style={currentStyles.navButton}
             onPress={handleNextQuestion}
           >
-            <Text style={styles(theme).navButtonText}>Next</Text>
+            <Text style={currentStyles.navButtonText}>{t('common.next')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -350,7 +351,7 @@ const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizCompl
   );
 };
 
-const styles = (theme: any) => StyleSheet.create({
+const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
@@ -359,6 +360,7 @@ const styles = (theme: any) => StyleSheet.create({
     padding: 20,
     paddingTop: 50,
     backgroundColor: theme.colors.headerBackground,
+    alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   backButton: {
     marginBottom: 16,
@@ -459,6 +461,7 @@ const styles = (theme: any) => StyleSheet.create({
     color: theme.colors.primary,
     fontWeight: '600',
     marginBottom: 8,
+    textAlign: isRTL ? 'right' : 'left',
   },
   questionText: {
     fontSize: 18,
@@ -466,6 +469,7 @@ const styles = (theme: any) => StyleSheet.create({
     fontWeight: '500',
     marginBottom: 20,
     lineHeight: 24,
+    textAlign: isRTL ? 'right' : 'left',
   },
   answersContainer: {
     gap: 12,
@@ -484,13 +488,14 @@ const styles = (theme: any) => StyleSheet.create({
   answerText: {
     fontSize: 16,
     color: theme.colors.text,
+    textAlign: isRTL ? 'right' : 'left',
   },
   selectedAnswerText: {
     color: theme.colors.primary,
     fontWeight: '500',
   },
   navigationContainer: {
-    flexDirection: 'row',
+    flexDirection: isRTL ? 'row-reverse' : 'row',
     justifyContent: 'space-between',
     padding: 20,
     backgroundColor: theme.colors.surface,

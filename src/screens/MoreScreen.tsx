@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Switch } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
+import { useTranslation } from 'react-i18next';
 
 interface MenuItem {
   id: string;
@@ -11,31 +13,34 @@ interface MenuItem {
   action: () => void;
   color?: string;
   isSwitch?: boolean;
+  isLanguageSelector?: boolean;
 }
 
 const MoreScreen: React.FC = () => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme, isDark } = useTheme();
+  const { language, setLanguage, isRTL } = useLanguage();
+  const { t } = useTranslation();
 
   const handleEditProfile = () => {
     Alert.alert(
-      'Edit Profile',
-      'Profile editing functionality will be implemented here.',
-      [{ text: 'OK' }]
+      t('more_screen.edit_profile'),
+      t('more_screen.update_profile_info'),
+      [{ text: t('common.ok') }]
     );
   };
 
   const handleLogout = () => {
     Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
+      t('common.logout'),
+      t('more_screen.logout_confirm'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         { 
-          text: 'Logout', 
+          text: t('common.logout'), 
           style: 'destructive',
-          onPress: async () => {
-            await logout();
+          onPress: () => {
+            logout();
           }
         }
       ]
@@ -44,150 +49,215 @@ const MoreScreen: React.FC = () => {
 
   const handleSettings = () => {
     Alert.alert(
-      'Settings',
-      'Settings functionality will be implemented here.',
-      [{ text: 'OK' }]
+      t('common.settings'),
+      t('more_screen.app_preferences'),
+      [{ text: t('common.ok') }]
     );
   };
 
   const handleHelp = () => {
     Alert.alert(
-      'Help & Support',
-      'Help and support functionality will be implemented here.',
-      [{ text: 'OK' }]
+      t('common.help'),
+      t('more_screen.contact_support'),
+      [{ text: t('common.ok') }]
     );
   };
 
   const handleAbout = () => {
     Alert.alert(
-      'About ElBooklets',
-      'ElBooklets Mobile App\nVersion 1.0.0\n\nYour digital learning companion for interactive education.',
-      [{ text: 'OK' }]
+      t('more_screen.about_title'),
+      t('more_screen.about_content'),
+      [{ text: t('common.ok') }]
+    );
+  };
+
+  const handleLanguageChange = (newLang: 'en' | 'ar') => {
+    if (newLang === language) return;
+    
+    Alert.alert(
+      t('common.switch_language'),
+      t('common.reload_message'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        { 
+          text: t('common.ok'), 
+          onPress: () => setLanguage(newLang)
+        }
+      ]
     );
   };
 
   const menuItems: MenuItem[] = [
     {
       id: 'profile',
-      title: 'Edit Profile',
-      subtitle: 'Update your personal information',
+      title: t('more_screen.edit_profile'),
+      subtitle: t('more_screen.update_profile_info'),
       icon: '👤',
       action: handleEditProfile,
     },
     {
+      id: 'language',
+      title: t('common.language'),
+      subtitle: '',
+      icon: '🌐',
+      action: () => {},
+      isLanguageSelector: true,
+    },
+    {
       id: 'theme',
-      title: 'Dark Mode',
-      subtitle: isDark ? 'Switch to light mode' : 'Switch to dark mode',
+      title: t('more_screen.dark_mode'),
+      subtitle: isDark ? t('more_screen.switch_light') : t('more_screen.switch_dark'),
       icon: isDark ? '🌙' : '☀️',
-      action: () => {}, // Handled by switch
+      action: () => {},
       isSwitch: true,
     },
     {
       id: 'settings',
-      title: 'Settings',
-      subtitle: 'App preferences and notifications',
+      title: t('common.settings'),
+      subtitle: t('more_screen.app_preferences'),
       icon: '⚙️',
       action: handleSettings,
     },
     {
       id: 'help',
-      title: 'Help & Support',
-      subtitle: 'Get help and contact support',
+      title: t('common.help'),
+      subtitle: t('more_screen.contact_support'),
       icon: '❓',
       action: handleHelp,
     },
     {
       id: 'about',
-      title: 'About',
-      subtitle: 'App information and version',
+      title: t('common.about'),
+      subtitle: t('more_screen.app_info'),
       icon: 'ℹ️',
       action: handleAbout,
     },
     {
       id: 'logout',
-      title: 'Logout',
-      subtitle: 'Sign out of your account',
+      title: t('common.logout'),
+      subtitle: t('more_screen.sign_out'),
       icon: '🚪',
       action: handleLogout,
       color: '#F44336',
     },
   ];
 
+  const currentStyles = styles(theme, isRTL);
+
+  const renderLanguageSelector = () => (
+    <View style={currentStyles.languageSelectorContainer}>
+      <TouchableOpacity
+        style={[
+          currentStyles.languageOption,
+          language === 'en' && currentStyles.languageOptionSelected
+        ]}
+        onPress={() => handleLanguageChange('en')}
+      >
+        <Text style={[
+          currentStyles.languageOptionText,
+          language === 'en' && currentStyles.languageOptionTextSelected
+        ]}>
+          English
+        </Text>
+        {language === 'en' && <Text style={currentStyles.checkmark}>✓</Text>}
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[
+          currentStyles.languageOption,
+          language === 'ar' && currentStyles.languageOptionSelected
+        ]}
+        onPress={() => handleLanguageChange('ar')}
+      >
+        <Text style={[
+          currentStyles.languageOptionText,
+          language === 'ar' && currentStyles.languageOptionTextSelected
+        ]}>
+          العربية
+        </Text>
+        {language === 'ar' && <Text style={currentStyles.checkmark}>✓</Text>}
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
-    <View style={styles(theme).container}>
+    <View style={currentStyles.container}>
       {/* Header */}
-      <View style={styles(theme).header}>
-        <Text style={styles(theme).headerTitle}>More</Text>
-        <Text style={styles(theme).headerSubtitle}>Account and app settings</Text>
+      <View style={currentStyles.header}>
+        <Text style={currentStyles.headerTitle}>{t('more_screen.header_title')}</Text>
+        <Text style={currentStyles.headerSubtitle}>{t('more_screen.header_subtitle')}</Text>
       </View>
 
-      <ScrollView style={styles(theme).content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={currentStyles.content} showsVerticalScrollIndicator={false}>
         {/* User Info Card */}
-        <View style={styles(theme).userCard}>
-          <View style={styles(theme).userAvatar}>
-            <Text style={styles(theme).userAvatarText}>
+        <View style={currentStyles.userCard}>
+          <View style={currentStyles.userAvatar}>
+            <Text style={currentStyles.userAvatarText}>
               {user?.name?.charAt(0).toUpperCase() || 'U'}
             </Text>
           </View>
-          <View style={styles(theme).userInfo}>
-            <Text style={styles(theme).userName}>{user?.name || 'User'}</Text>
-            <Text style={styles(theme).userEmail}>{user?.email || 'No email'}</Text>
-            <Text style={styles(theme).userGrade}>
-              Grade: {user?.grade?.name || 'Not specified'}
+          <View style={currentStyles.userInfo}>
+            <Text style={currentStyles.userName}>{user?.name || 'User'}</Text>
+            <Text style={currentStyles.userEmail}>{user?.email || 'No email'}</Text>
+            <Text style={currentStyles.userGrade}>
+              {t('more_screen.grade')}: {user?.grade?.name || t('more_screen.not_specified')}
             </Text>
           </View>
         </View>
 
         {/* Menu Items */}
-        <View style={styles(theme).menuSection}>
+        <View style={currentStyles.menuSection}>
           {menuItems.map((item, index) => (
-            <TouchableOpacity
-              key={item.id}
-              style={[
-                styles(theme).menuItem,
-                index === menuItems.length - 1 && styles(theme).lastMenuItem
-              ]}
-              onPress={item.isSwitch ? undefined : item.action}
-              disabled={item.isSwitch}
-            >
-              <View style={styles(theme).menuItemLeft}>
-                <Text style={styles(theme).menuIcon}>{item.icon}</Text>
-                <View style={styles(theme).menuTextContainer}>
-                  <Text 
-                    style={[
-                      styles(theme).menuTitle,
-                      item.id === 'logout' && styles(theme).menuTitleLogout
-                    ]}
-                  >
-                    {item.title}
-                  </Text>
-                  <Text style={styles(theme).menuSubtitle}>{item.subtitle}</Text>
+            <View key={item.id}>
+              <TouchableOpacity
+                style={[
+                  currentStyles.menuItem,
+                  index === menuItems.length - 1 && currentStyles.lastMenuItem
+                ]}
+                onPress={item.isSwitch || item.isLanguageSelector ? undefined : item.action}
+                disabled={item.isSwitch || item.isLanguageSelector}
+              >
+                <View style={currentStyles.menuItemLeft}>
+                  <Text style={currentStyles.menuIcon}>{item.icon}</Text>
+                  <View style={currentStyles.menuTextContainer}>
+                    <Text 
+                      style={[
+                        currentStyles.menuTitle,
+                        item.id === 'logout' && currentStyles.menuTitleLogout
+                      ]}
+                    >
+                      {item.title}
+                    </Text>
+                    {item.subtitle ? (
+                      <Text style={currentStyles.menuSubtitle}>{item.subtitle}</Text>
+                    ) : null}
+                  </View>
                 </View>
-              </View>
-              {item.isSwitch ? (
-                <Switch
-                  value={isDark}
-                  onValueChange={toggleTheme}
-                  trackColor={{ false: '#767577', true: theme.colors.primary }}
-                  thumbColor={isDark ? '#f4f3f4' : '#f4f3f4'}
-                />
-              ) : (
-                <Text style={styles(theme).menuArrow}>›</Text>
-              )}
-            </TouchableOpacity>
+                {item.isSwitch ? (
+                  <Switch
+                    value={isDark}
+                    onValueChange={toggleTheme}
+                    trackColor={{ false: '#767577', true: theme.colors.primary }}
+                    thumbColor="#f4f3f4"
+                  />
+                ) : item.isLanguageSelector ? null : (
+                  <Text style={currentStyles.menuArrow}>{isRTL ? '‹' : '›'}</Text>
+                )}
+              </TouchableOpacity>
+              {item.isLanguageSelector && renderLanguageSelector()}
+            </View>
           ))}
         </View>
 
         {/* App Version */}
-        <View style={styles(theme).versionContainer}>
-          <Text style={styles(theme).versionText}>ElBooklets v1.0.0</Text>
+        <View style={currentStyles.versionContainer}>
+          <Text style={currentStyles.versionText}>ElBooklets {t('common.version')} 1.0.0</Text>
         </View>
       </ScrollView>
     </View>
   );
 };
 
-const styles = (theme: any) => StyleSheet.create({
+const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
@@ -196,6 +266,7 @@ const styles = (theme: any) => StyleSheet.create({
     padding: 20,
     paddingTop: 50,
     backgroundColor: theme.colors.headerBackground,
+    alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   headerTitle: {
     fontSize: 28,
@@ -215,7 +286,7 @@ const styles = (theme: any) => StyleSheet.create({
   userCard: {
     padding: 20,
     borderRadius: 16,
-    flexDirection: 'row',
+    flexDirection: isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
     marginBottom: 24,
     backgroundColor: theme.colors.card,
@@ -231,7 +302,8 @@ const styles = (theme: any) => StyleSheet.create({
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: isRTL ? 0 : 16,
+    marginLeft: isRTL ? 16 : 0,
     backgroundColor: theme.colors.avatarBackground,
   },
   userAvatarText: {
@@ -241,6 +313,7 @@ const styles = (theme: any) => StyleSheet.create({
   },
   userInfo: {
     flex: 1,
+    alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   userName: {
     fontSize: 18,
@@ -269,7 +342,7 @@ const styles = (theme: any) => StyleSheet.create({
     elevation: 3,
   },
   menuItem: {
-    flexDirection: 'row',
+    flexDirection: isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
@@ -280,18 +353,20 @@ const styles = (theme: any) => StyleSheet.create({
     borderBottomWidth: 0,
   },
   menuItemLeft: {
-    flexDirection: 'row',
+    flexDirection: isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
     flex: 1,
   },
   menuIcon: {
     fontSize: 24,
-    marginRight: 16,
+    marginRight: isRTL ? 0 : 16,
+    marginLeft: isRTL ? 16 : 0,
     width: 32,
     textAlign: 'center',
   },
   menuTextContainer: {
     flex: 1,
+    alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   menuTitle: {
     fontSize: 16,
@@ -310,6 +385,46 @@ const styles = (theme: any) => StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: theme.colors.textTertiary,
+  },
+  languageSelectorContainer: {
+    flexDirection: isRTL ? 'row-reverse' : 'row',
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
+  languageOption: {
+    flex: 1,
+    flexDirection: isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginHorizontal: 4,
+    borderRadius: 12,
+    backgroundColor: theme.colors.background,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  languageOptionSelected: {
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primaryLight || theme.colors.background,
+  },
+  languageOptionText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: theme.colors.text,
+  },
+  languageOptionTextSelected: {
+    color: theme.colors.primary,
+    fontWeight: '600',
+  },
+  checkmark: {
+    marginLeft: isRTL ? 0 : 8,
+    marginRight: isRTL ? 8 : 0,
+    fontSize: 16,
+    color: theme.colors.primary,
+    fontWeight: 'bold',
   },
   versionContainer: {
     alignItems: 'center',

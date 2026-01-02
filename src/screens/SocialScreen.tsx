@@ -3,9 +3,10 @@ import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Activi
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
+import { useTranslation } from 'react-i18next';
 import { tryFetchWithFallback } from '../config/api';
 
-// Types matching GraphQL schema
 interface Student {
   id: string;
   name: string;
@@ -48,6 +49,8 @@ interface TimelineActivity {
 
 const SocialScreen: React.FC = () => {
   const { theme } = useTheme();
+  const { isRTL, language } = useLanguage();
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Student[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -62,7 +65,7 @@ const SocialScreen: React.FC = () => {
 
       const token = await AsyncStorage.getItem('auth_token');
       if (!token) {
-        setTimelineError('Authentication required');
+        setTimelineError(t('common.error'));
         return;
       }
 
@@ -100,15 +103,15 @@ const SocialScreen: React.FC = () => {
       if (result.data?.socialTimeline) {
         setTimelineActivities(result.data.socialTimeline);
       } else {
-        setTimelineError(result.errors?.[0]?.message || 'Failed to load timeline');
+        setTimelineError(result.errors?.[0]?.message || t('social_screen.error_loading_timeline'));
       }
     } catch (err: any) {
       console.error('Fetch timeline error:', err);
-      setTimelineError(err.message || 'An error occurred while loading timeline');
+      setTimelineError(err.message || t('social_screen.error_loading_timeline'));
     } finally {
       setTimelineLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchTimeline();
@@ -122,7 +125,6 @@ const SocialScreen: React.FC = () => {
     }, [searchQuery, fetchTimeline])
   );
 
-  // Debounced search
   useEffect(() => {
     if (searchQuery.length < 2) {
       setSearchResults([]);
@@ -180,7 +182,7 @@ const SocialScreen: React.FC = () => {
     try {
       const token = await AsyncStorage.getItem('auth_token');
       if (!token) {
-        Alert.alert('Error', 'Authentication required');
+        Alert.alert(t('common.error'), t('common.error'));
         return;
       }
 
@@ -195,7 +197,6 @@ const SocialScreen: React.FC = () => {
       `, { userId: student.id }, token);
 
       if (result.data?.followUser?.success) {
-        // Update local state
         setSearchResults(prev =>
           prev.map(s =>
             s.id === student.id
@@ -204,16 +205,15 @@ const SocialScreen: React.FC = () => {
           )
         );
         
-        // Refresh timeline if we're not searching
         if (searchQuery.length === 0) {
           fetchTimeline();
         }
       } else {
-        Alert.alert('Error', result.errors?.[0]?.message || 'Failed to update follow status');
+        Alert.alert(t('common.error'), result.errors?.[0]?.message || t('common.unexpected_error'));
       }
     } catch (err: any) {
       console.error('Follow toggle error:', err);
-      Alert.alert('Error', err.message || 'An error occurred');
+      Alert.alert(t('common.error'), err.message || t('common.unexpected_error'));
     }
   };
 
@@ -221,7 +221,7 @@ const SocialScreen: React.FC = () => {
     try {
       const token = await AsyncStorage.getItem('auth_token');
       if (!token) {
-        Alert.alert('Error', 'Authentication required');
+        Alert.alert(t('common.error'), t('common.error'));
         return;
       }
 
@@ -237,7 +237,6 @@ const SocialScreen: React.FC = () => {
       `, { quizUserId: activity.id }, token);
 
       if (result.data?.likeActivity?.success) {
-        // Update local state
         setTimelineActivities(prev =>
           prev.map(a =>
             a.id === activity.id
@@ -250,17 +249,16 @@ const SocialScreen: React.FC = () => {
           )
         );
       } else {
-        Alert.alert('Error', result.errors?.[0]?.message || 'Failed to update like');
+        Alert.alert(t('common.error'), result.errors?.[0]?.message || t('common.unexpected_error'));
       }
     } catch (err: any) {
       console.error('Like error:', err);
-      Alert.alert('Error', err.message || 'An error occurred');
+      Alert.alert(t('common.error'), err.message || t('common.unexpected_error'));
     }
   };
 
   const handleComment = (activity: TimelineActivity) => {
-    // TODO: Implement comment modal/dialog
-    Alert.alert('Comment', 'Comment functionality coming soon!');
+    Alert.alert('Comment', t('social_screen.comment_coming_soon'));
   };
 
   const getInitials = (name: string) => {
@@ -277,12 +275,12 @@ const SocialScreen: React.FC = () => {
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-    if (diffInSeconds < 60) return 'Just now';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    if (diffInSeconds < 60) return t('time.just_now');
+    if (diffInSeconds < 3600) return t('time.minutes_ago', { count: Math.floor(diffInSeconds / 60) });
+    if (diffInSeconds < 86400) return t('time.hours_ago', { count: Math.floor(diffInSeconds / 3600) });
+    if (diffInSeconds < 604800) return t('time.days_ago', { count: Math.floor(diffInSeconds / 86400) });
     
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', {
       month: 'short',
       day: 'numeric',
     });
@@ -297,32 +295,34 @@ const SocialScreen: React.FC = () => {
 
   const renderAvatar = (name: string) => {
     return (
-      <View style={styles(theme).avatarPlaceholder}>
-        <Text style={styles(theme).avatarText}>{getInitials(name)}</Text>
+      <View style={currentStyles.avatarPlaceholder}>
+        <Text style={currentStyles.avatarText}>{getInitials(name)}</Text>
       </View>
     );
   };
 
   const isSearching = searchQuery.length >= 2;
+  const currentStyles = styles(theme, isRTL);
 
   return (
-    <View style={styles(theme).container}>
+    <View style={currentStyles.container}>
       {/* Header */}
-      <View style={styles(theme).header}>
-        <Text style={styles(theme).headerTitle}>Social</Text>
-        <Text style={styles(theme).headerSubtitle}>Connect with fellow learners</Text>
+      <View style={currentStyles.header}>
+        <Text style={currentStyles.headerTitle}>{t('social_screen.header_title')}</Text>
+        <Text style={currentStyles.headerSubtitle}>{t('social_screen.header_subtitle')}</Text>
       </View>
 
       {/* Search Bar */}
-      <View style={styles(theme).searchContainer}>
-        <View style={styles(theme).searchInputContainer}>
-          <Text style={styles(theme).searchIcon}>🔍</Text>
+      <View style={currentStyles.searchContainer}>
+        <View style={currentStyles.searchInputContainer}>
+          <Text style={currentStyles.searchIcon}>🔍</Text>
           <TextInput
-            style={styles(theme).searchInput}
-            placeholder="Search for students to follow..."
+            style={currentStyles.searchInput}
+            placeholder={t('social_screen.search_placeholder')}
             placeholderTextColor={theme.colors.textTertiary}
             value={searchQuery}
             onChangeText={handleSearchChange}
+            textAlign={isRTL ? 'right' : 'left'}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity
@@ -330,66 +330,65 @@ const SocialScreen: React.FC = () => {
                 setSearchQuery('');
                 setSearchResults([]);
               }}
-              style={styles(theme).clearButton}
+              style={currentStyles.clearButton}
             >
-              <Text style={styles(theme).clearButtonText}>✕</Text>
+              <Text style={currentStyles.clearButtonText}>✕</Text>
             </TouchableOpacity>
           )}
         </View>
       </View>
 
       {/* Content */}
-      <ScrollView style={styles(theme).content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={currentStyles.content} showsVerticalScrollIndicator={false}>
         {isSearching ? (
-          // Search Results View
-          <View style={styles(theme).searchResultsContainer}>
-            <Text style={styles(theme).sectionTitle}>Search Results</Text>
+          <View style={currentStyles.searchResultsContainer}>
+            <Text style={currentStyles.sectionTitle}>{t('social_screen.search_results')}</Text>
             {searchLoading ? (
-              <View style={styles(theme).loadingState}>
+              <View style={currentStyles.loadingState}>
                 <ActivityIndicator size="large" color={theme.colors.primary} />
-                <Text style={styles(theme).loadingText}>Searching...</Text>
+                <Text style={currentStyles.loadingText}>{t('social_screen.searching')}</Text>
               </View>
             ) : searchResults.length === 0 ? (
-              <View style={styles(theme).emptyState}>
-                <Text style={styles(theme).emptyStateIcon}>🔍</Text>
-                <Text style={styles(theme).emptyStateTitle}>No results found</Text>
-                <Text style={styles(theme).emptyStateSubtitle}>
-                  Try searching with a different name or mobile number
+              <View style={currentStyles.emptyState}>
+                <Text style={currentStyles.emptyStateIcon}>🔍</Text>
+                <Text style={currentStyles.emptyStateTitle}>{t('social_screen.no_results')}</Text>
+                <Text style={currentStyles.emptyStateSubtitle}>
+                  {t('social_screen.try_different_search')}
                 </Text>
               </View>
             ) : (
               searchResults.map((student) => (
-                <View key={student.id} style={styles(theme).studentCard}>
-                  <View style={styles(theme).studentInfo}>
+                <View key={student.id} style={currentStyles.studentCard}>
+                  <View style={currentStyles.studentInfo}>
                     {renderAvatar(student.name)}
-                    <View style={styles(theme).studentDetails}>
-                      <Text style={styles(theme).studentName}>{student.name}</Text>
-                      <Text style={styles(theme).studentGrade}>{student.grade.name}</Text>
-                      <View style={styles(theme).studentStats}>
-                        <Text style={styles(theme).studentStat}>
-                          {student.totalQuizzes} quizzes
+                    <View style={currentStyles.studentDetails}>
+                      <Text style={currentStyles.studentName}>{student.name}</Text>
+                      <Text style={currentStyles.studentGrade}>{student.grade.name}</Text>
+                      <View style={currentStyles.studentStats}>
+                        <Text style={currentStyles.studentStat}>
+                          {student.totalQuizzes} {t('common.quizzes')}
                         </Text>
-                        <Text style={styles(theme).studentStatSeparator}>•</Text>
-                        <Text style={styles(theme).studentStat}>
-                          {student.avgScore}% avg
+                        <Text style={currentStyles.studentStatSeparator}>•</Text>
+                        <Text style={currentStyles.studentStat}>
+                          {student.avgScore}% {t('common.avg')}
                         </Text>
                       </View>
                     </View>
                   </View>
                   <TouchableOpacity
                     style={[
-                      styles(theme).followButton,
-                      student.isFollowing && styles(theme).followButtonFollowing
+                      currentStyles.followButton,
+                      student.isFollowing && currentStyles.followButtonFollowing
                     ]}
                     onPress={() => handleFollowToggle(student)}
                   >
                     <Text
                       style={[
-                        styles(theme).followButtonText,
-                        student.isFollowing && styles(theme).followButtonTextFollowing
+                        currentStyles.followButtonText,
+                        student.isFollowing && currentStyles.followButtonTextFollowing
                       ]}
                     >
-                      {student.isFollowing ? 'Following' : 'Follow'}
+                      {student.isFollowing ? t('common.following') : t('common.follow')}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -397,61 +396,58 @@ const SocialScreen: React.FC = () => {
             )}
           </View>
         ) : (
-          // Timeline View
-          <View style={styles(theme).timelineContainer}>
-            <Text style={styles(theme).sectionTitle}>Recent Activity</Text>
+          <View style={currentStyles.timelineContainer}>
+            <Text style={currentStyles.sectionTitle}>{t('social_screen.recent_activity')}</Text>
             {timelineLoading ? (
-              <View style={styles(theme).loadingState}>
+              <View style={currentStyles.loadingState}>
                 <ActivityIndicator size="large" color={theme.colors.primary} />
-                <Text style={styles(theme).loadingText}>Loading activities...</Text>
+                <Text style={currentStyles.loadingText}>{t('social_screen.loading_activities')}</Text>
               </View>
             ) : timelineError ? (
-              <View style={styles(theme).emptyState}>
-                <Text style={styles(theme).emptyStateIcon}>⚠️</Text>
-                <Text style={styles(theme).emptyStateTitle}>Error Loading Timeline</Text>
-                <Text style={styles(theme).emptyStateSubtitle}>{timelineError}</Text>
-                <TouchableOpacity style={styles(theme).retryButton} onPress={fetchTimeline}>
-                  <Text style={styles(theme).retryButtonText}>Try Again</Text>
+              <View style={currentStyles.emptyState}>
+                <Text style={currentStyles.emptyStateIcon}>⚠️</Text>
+                <Text style={currentStyles.emptyStateTitle}>{t('social_screen.error_loading_timeline')}</Text>
+                <Text style={currentStyles.emptyStateSubtitle}>{timelineError}</Text>
+                <TouchableOpacity style={currentStyles.retryButton} onPress={fetchTimeline}>
+                  <Text style={currentStyles.retryButtonText}>{t('home_screen.try_again')}</Text>
                 </TouchableOpacity>
               </View>
             ) : timelineActivities.length === 0 ? (
-              <View style={styles(theme).emptyState}>
-                <Text style={styles(theme).emptyStateIcon}>👥</Text>
-                <Text style={styles(theme).emptyStateTitle}>No activity yet</Text>
-                <Text style={styles(theme).emptyStateSubtitle}>
-                  Follow students to see their quiz activities here
+              <View style={currentStyles.emptyState}>
+                <Text style={currentStyles.emptyStateIcon}>👥</Text>
+                <Text style={currentStyles.emptyStateTitle}>{t('social_screen.no_activity_yet')}</Text>
+                <Text style={currentStyles.emptyStateSubtitle}>
+                  {t('social_screen.follow_students_hint')}
                 </Text>
               </View>
             ) : (
               timelineActivities.map((activity) => (
-                <View key={activity.id} style={styles(theme).timelineCard}>
-                  {/* User Info */}
-                  <View style={styles(theme).timelineHeader}>
-                    <View style={styles(theme).timelineUserInfo}>
+                <View key={activity.id} style={currentStyles.timelineCard}>
+                  <View style={currentStyles.timelineHeader}>
+                    <View style={currentStyles.timelineUserInfo}>
                       {renderAvatar(activity.user.name)}
-                      <View style={styles(theme).timelineUserDetails}>
-                        <Text style={styles(theme).timelineUserName}>
+                      <View style={currentStyles.timelineUserDetails}>
+                        <Text style={currentStyles.timelineUserName}>
                           {activity.user.name}
                         </Text>
-                        <Text style={styles(theme).timelineTime}>
+                        <Text style={currentStyles.timelineTime}>
                           {getTimeAgo(activity.completedAt)}
                         </Text>
                       </View>
                     </View>
                   </View>
 
-                  {/* Quiz Info */}
-                  <View style={styles(theme).timelineQuizInfo}>
-                    <Text style={styles(theme).timelineQuizName}>
+                  <View style={currentStyles.timelineQuizInfo}>
+                    <Text style={currentStyles.timelineQuizName}>
                       {activity.quiz.name}
                     </Text>
-                    <Text style={styles(theme).timelineQuizSubject}>
+                    <Text style={currentStyles.timelineQuizSubject}>
                       {activity.quiz.subject.name}
                     </Text>
-                    <View style={styles(theme).timelineScoreContainer}>
+                    <View style={currentStyles.timelineScoreContainer}>
                       <Text
                         style={[
-                          styles(theme).timelineScore,
+                          currentStyles.timelineScore,
                           {
                             color: getScoreColor(
                               activity.score,
@@ -462,39 +458,38 @@ const SocialScreen: React.FC = () => {
                       >
                         {activity.score}/{activity.totalQuestions}
                       </Text>
-                      <Text style={styles(theme).timelineScoreLabel}>Score</Text>
+                      <Text style={currentStyles.timelineScoreLabel}>{t('home_screen.score')}</Text>
                     </View>
                   </View>
 
-                  {/* Actions */}
-                  <View style={styles(theme).timelineActions}>
+                  <View style={currentStyles.timelineActions}>
                     <TouchableOpacity
-                      style={styles(theme).timelineActionButton}
+                      style={currentStyles.timelineActionButton}
                       onPress={() => handleLike(activity)}
                     >
                       <Text
                         style={[
-                          styles(theme).timelineActionIcon,
-                          activity.isLiked && styles(theme).timelineActionIconLiked,
+                          currentStyles.timelineActionIcon,
+                          activity.isLiked && currentStyles.timelineActionIconLiked,
                         ]}
                       >
                         {activity.isLiked ? '❤️' : '🤍'}
                       </Text>
                       <Text
                         style={[
-                          styles(theme).timelineActionText,
-                          activity.isLiked && styles(theme).timelineActionTextLiked
+                          currentStyles.timelineActionText,
+                          activity.isLiked && currentStyles.timelineActionTextLiked
                         ]}
                       >
                         {activity.likes}
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={styles(theme).timelineActionButton}
+                      style={currentStyles.timelineActionButton}
                       onPress={() => handleComment(activity)}
                     >
-                      <Text style={styles(theme).timelineActionIcon}>💬</Text>
-                      <Text style={styles(theme).timelineActionText}>
+                      <Text style={currentStyles.timelineActionIcon}>💬</Text>
+                      <Text style={currentStyles.timelineActionText}>
                         {activity.comments}
                       </Text>
                     </TouchableOpacity>
@@ -509,7 +504,7 @@ const SocialScreen: React.FC = () => {
   );
 };
 
-const styles = (theme: any) => StyleSheet.create({
+const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
@@ -518,6 +513,7 @@ const styles = (theme: any) => StyleSheet.create({
     padding: 20,
     paddingTop: 50,
     backgroundColor: theme.colors.headerBackground,
+    alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   headerTitle: {
     fontSize: 28,
@@ -537,7 +533,7 @@ const styles = (theme: any) => StyleSheet.create({
     backgroundColor: theme.colors.surface,
   },
   searchInputContainer: {
-    flexDirection: 'row',
+    flexDirection: isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
     borderRadius: 12,
     paddingHorizontal: 16,
@@ -546,7 +542,8 @@ const styles = (theme: any) => StyleSheet.create({
   },
   searchIcon: {
     fontSize: 20,
-    marginRight: 10,
+    marginRight: isRTL ? 0 : 10,
+    marginLeft: isRTL ? 10 : 0,
   },
   searchInput: {
     flex: 1,
@@ -571,8 +568,8 @@ const styles = (theme: any) => StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     color: theme.colors.text,
+    textAlign: isRTL ? 'right' : 'left',
   },
-  // Search Results Styles
   searchResultsContainer: {
     paddingBottom: 20,
   },
@@ -581,7 +578,7 @@ const styles = (theme: any) => StyleSheet.create({
     marginBottom: 12,
     padding: 16,
     borderRadius: 12,
-    flexDirection: 'row',
+    flexDirection: isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: theme.colors.card,
@@ -592,7 +589,7 @@ const styles = (theme: any) => StyleSheet.create({
     elevation: 3,
   },
   studentInfo: {
-    flexDirection: 'row',
+    flexDirection: isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
     flex: 1,
   },
@@ -602,7 +599,8 @@ const styles = (theme: any) => StyleSheet.create({
     borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: isRTL ? 0 : 12,
+    marginLeft: isRTL ? 12 : 0,
     backgroundColor: theme.colors.avatarBackground,
   },
   avatarText: {
@@ -612,6 +610,7 @@ const styles = (theme: any) => StyleSheet.create({
   },
   studentDetails: {
     flex: 1,
+    alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   studentName: {
     fontSize: 16,
@@ -625,7 +624,7 @@ const styles = (theme: any) => StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   studentStats: {
-    flexDirection: 'row',
+    flexDirection: isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
   },
   studentStat: {
@@ -654,7 +653,6 @@ const styles = (theme: any) => StyleSheet.create({
   followButtonTextFollowing: {
     color: theme.colors.buttonSecondaryText,
   },
-  // Timeline Styles
   timelineContainer: {
     paddingBottom: 20,
   },
@@ -674,12 +672,14 @@ const styles = (theme: any) => StyleSheet.create({
     marginBottom: 12,
   },
   timelineUserInfo: {
-    flexDirection: 'row',
+    flexDirection: isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
   },
   timelineUserDetails: {
-    marginLeft: 12,
+    marginLeft: isRTL ? 0 : 12,
+    marginRight: isRTL ? 12 : 0,
     flex: 1,
+    alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   timelineUserName: {
     fontSize: 16,
@@ -696,6 +696,7 @@ const styles = (theme: any) => StyleSheet.create({
     paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
+    alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   timelineQuizName: {
     fontSize: 18,
@@ -709,34 +710,35 @@ const styles = (theme: any) => StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   timelineScoreContainer: {
-    flexDirection: 'row',
+    flexDirection: isRTL ? 'row-reverse' : 'row',
     alignItems: 'baseline',
   },
   timelineScore: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginRight: 8,
+    marginRight: isRTL ? 0 : 8,
+    marginLeft: isRTL ? 8 : 0,
   },
   timelineScoreLabel: {
     fontSize: 14,
     color: theme.colors.textSecondary,
   },
   timelineActions: {
-    flexDirection: 'row',
+    flexDirection: isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
   },
   timelineActionButton: {
-    flexDirection: 'row',
+    flexDirection: isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
-    marginRight: 24,
+    marginRight: isRTL ? 0 : 24,
+    marginLeft: isRTL ? 24 : 0,
   },
   timelineActionIcon: {
     fontSize: 20,
-    marginRight: 6,
+    marginRight: isRTL ? 0 : 6,
+    marginLeft: isRTL ? 6 : 0,
   },
-  timelineActionIconLiked: {
-    // Already using emoji
-  },
+  timelineActionIconLiked: {},
   timelineActionText: {
     fontSize: 14,
     color: theme.colors.textSecondary,

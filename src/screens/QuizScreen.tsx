@@ -4,14 +4,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
+import { useTranslation } from 'react-i18next';
 import { tryFetchWithFallback } from '../config/api';
 import QuizSubjectsScreen from './quiz/QuizSubjectsScreen';
 import QuizLessonsScreen from './quiz/QuizLessonsScreen';
 import QuizTakingScreen from './quiz/QuizTakingScreen';
 import QuizResultsScreen from './quiz/QuizResultsScreen';
-// import { Subject } from '../lib/graphql';
 
-// Temporary type for testing
 interface Subject {
   id: string;
   name: string;
@@ -31,13 +31,13 @@ interface QuizHistory {
   isPassed: boolean;
 }
 
-
-
 type QuizFlowStep = 'history' | 'subjects' | 'lessons' | 'taking' | 'results';
 
 const QuizScreen: React.FC = () => {
   const { user } = useAuth();
   const { theme } = useTheme();
+  const { isRTL, language } = useLanguage();
+  const { t } = useTranslation();
   const [quizHistory, setQuizHistory] = useState<QuizHistory[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState<string | null>(null);
@@ -46,22 +46,17 @@ const QuizScreen: React.FC = () => {
   const [selectedLessons, setSelectedLessons] = useState<string[]>([]);
   const [currentQuizId, setCurrentQuizId] = useState<string | null>(null);
 
-  // Fetch quiz history on component mount
   useEffect(() => {
     fetchQuizHistory();
   }, []);
 
-  // Auto-refresh quiz history when tab is focused
   useFocusEffect(
     useCallback(() => {
-      // Only refresh if we're on the history step
       if (currentStep === 'history') {
         fetchQuizHistory();
       }
     }, [currentStep])
   );
-
-
 
   const fetchQuizHistory = async () => {
     try {
@@ -70,7 +65,7 @@ const QuizScreen: React.FC = () => {
 
       const token = await AsyncStorage.getItem('auth_token');
       if (!token) {
-        setHistoryError('Authentication required');
+        setHistoryError(t('common.error'));
         return;
       }
 
@@ -94,11 +89,11 @@ const QuizScreen: React.FC = () => {
       if (result.data?.userQuizHistory) {
         setQuizHistory(result.data.userQuizHistory);
       } else {
-        setHistoryError(result.errors?.[0]?.message || 'Failed to load quiz history');
+        setHistoryError(result.errors?.[0]?.message || t('quiz_screen.error_loading_history'));
       }
     } catch (err: any) {
       console.error('Fetch quiz history error:', err);
-      setHistoryError(err.message || 'An error occurred while loading quiz history');
+      setHistoryError(err.message || t('quiz_screen.error_loading_history'));
     } finally {
       setHistoryLoading(false);
     }
@@ -119,16 +114,15 @@ const QuizScreen: React.FC = () => {
     setSelectedLessons(lessonIds);
 
     try {
-      // Start quiz using GraphQL mutation
       const result = await startQuiz(selectedSubject.id, lessonIds);
       if (result.success && result.quizId) {
         setCurrentQuizId(result.quizId);
         setCurrentStep('taking');
       } else {
-        Alert.alert('Error', result.error || 'Failed to start quiz');
+        Alert.alert(t('common.error'), result.error || t('quiz_screen.error_loading_history'));
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to start quiz. Please try again.');
+      Alert.alert(t('common.error'), t('quiz_screen.error_loading_history'));
     }
   };
 
@@ -136,7 +130,7 @@ const QuizScreen: React.FC = () => {
     try {
       const token = await AsyncStorage.getItem('auth_token');
       if (!token) {
-        return { success: false, error: 'Authentication required' };
+        return { success: false, error: t('common.error') };
       }
 
       const result = await tryFetchWithFallback(`
@@ -160,14 +154,14 @@ const QuizScreen: React.FC = () => {
       } else {
         return {
           success: false,
-          error: result.errors?.[0]?.message || 'Failed to start quiz'
+          error: result.errors?.[0]?.message || t('quiz_screen.error_loading_history')
         };
       }
     } catch (error: any) {
       console.error('Start quiz error:', error);
       return {
         success: false,
-        error: error.message || 'An error occurred while starting the quiz'
+        error: error.message || t('common.unexpected_error')
       };
     }
   };
@@ -184,7 +178,6 @@ const QuizScreen: React.FC = () => {
   const handleBackToHistory = () => {
     setCurrentStep('history');
     setSelectedSubject(null);
-    // Refresh quiz history when returning to history view
     fetchQuizHistory();
   };
 
@@ -192,7 +185,6 @@ const QuizScreen: React.FC = () => {
     setCurrentStep('subjects');
   };
 
-  // Render different screens based on current step
   if (currentStep === 'subjects') {
     return (
       <QuizSubjectsScreen
@@ -232,105 +224,106 @@ const QuizScreen: React.FC = () => {
     );
   }
 
-  // Default to history view
   const getScoreColor = (score: number, total: number) => {
     const percentage = (score / total) * 100;
-    if (percentage >= 70) return '#4CAF50'; // Green
-    if (percentage >= 50) return '#FF9800'; // Orange
-    return '#F44336'; // Red
+    if (percentage >= 70) return '#4CAF50';
+    if (percentage >= 50) return '#FF9800';
+    return '#F44336';
   };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
     });
   };
 
+  const currentStyles = styles(theme, isRTL);
+
   return (
-    <View style={styles(theme).container}>
+    <View style={currentStyles.container}>
       {/* Header */}
-      <View style={styles(theme).header}>
-        <Text style={styles(theme).headerTitle}>Quiz Center</Text>
-        <Text style={styles(theme).headerSubtitle}>Test your knowledge and track progress</Text>
+      <View style={currentStyles.header}>
+        <Text style={currentStyles.headerTitle}>{t('quiz_screen.header_title')}</Text>
+        <Text style={currentStyles.headerSubtitle}>{t('quiz_screen.header_subtitle')}</Text>
       </View>
 
       {/* Take Quiz Button */}
-      <View style={styles(theme).actionSection}>
-        <TouchableOpacity style={styles(theme).takeQuizButton} onPress={handleTakeQuiz}>
-          <Text style={styles(theme).takeQuizIcon}>🧠</Text>
-          <Text style={styles(theme).takeQuizText}>Take New Quiz</Text>
-          <Text style={styles(theme).takeQuizSubtext}>Start a new quiz challenge</Text>
+      <View style={currentStyles.actionSection}>
+        <TouchableOpacity style={currentStyles.takeQuizButton} onPress={handleTakeQuiz}>
+          <Text style={currentStyles.takeQuizIcon}>🧠</Text>
+          <Text style={currentStyles.takeQuizText}>{t('quiz_screen.take_new_quiz')}</Text>
+          <Text style={currentStyles.takeQuizSubtext}>{t('quiz_screen.start_new_challenge')}</Text>
         </TouchableOpacity>
       </View>
 
       {/* Quiz History */}
-      <View style={styles(theme).historySection}>
-        <Text style={styles(theme).sectionTitle}>Quiz History</Text>
+      <View style={currentStyles.historySection}>
+        <Text style={currentStyles.sectionTitle}>{t('quiz_screen.quiz_history')}</Text>
 
         {historyLoading ? (
-          <View style={styles(theme).loadingState}>
+          <View style={currentStyles.loadingState}>
             <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text style={styles(theme).loadingText}>Loading quiz history...</Text>
+            <Text style={currentStyles.loadingText}>{t('quiz_screen.loading_quiz_history')}</Text>
           </View>
         ) : historyError ? (
-          <View style={styles(theme).errorState}>
-            <Text style={styles(theme).errorStateIcon}>⚠️</Text>
-            <Text style={styles(theme).errorStateTitle}>Error Loading History</Text>
-            <Text style={styles(theme).errorStateSubtitle}>{historyError}</Text>
-            <TouchableOpacity style={styles(theme).retryButton} onPress={fetchQuizHistory}>
-              <Text style={styles(theme).retryButtonText}>Try Again</Text>
+          <View style={currentStyles.errorState}>
+            <Text style={currentStyles.errorStateIcon}>⚠️</Text>
+            <Text style={currentStyles.errorStateTitle}>{t('quiz_screen.error_loading_history')}</Text>
+            <Text style={currentStyles.errorStateSubtitle}>{historyError}</Text>
+            <TouchableOpacity style={currentStyles.retryButton} onPress={fetchQuizHistory}>
+              <Text style={currentStyles.retryButtonText}>{t('home_screen.try_again')}</Text>
             </TouchableOpacity>
           </View>
         ) : quizHistory.length === 0 ? (
-          <View style={styles(theme).emptyState}>
-            <Text style={styles(theme).emptyStateIcon}>📝</Text>
-            <Text style={styles(theme).emptyStateTitle}>No quizzes taken yet</Text>
-            <Text style={styles(theme).emptyStateSubtitle}>
-              Take your first quiz to see your progress here
+          <View style={currentStyles.emptyState}>
+            <Text style={currentStyles.emptyStateIcon}>📝</Text>
+            <Text style={currentStyles.emptyStateTitle}>{t('quiz_screen.no_quizzes_yet')}</Text>
+            <Text style={currentStyles.emptyStateSubtitle}>
+              {t('quiz_screen.take_first_quiz')}
             </Text>
           </View>
         ) : (
-          <ScrollView style={styles(theme).historyList} showsVerticalScrollIndicator={false}>
+          <ScrollView style={currentStyles.historyList} showsVerticalScrollIndicator={false}>
             {quizHistory.map((quiz) => (
-              <View key={quiz.id} style={styles(theme).historyCard}>
-                <View style={styles(theme).historyHeader}>
-                  <Text style={styles(theme).quizName}>{quiz.name}</Text>
-                  <Text style={styles(theme).quizSubject}>{quiz.subject.name}</Text>
+              <View key={quiz.id} style={currentStyles.historyCard}>
+                <View style={currentStyles.historyHeader}>
+                  <Text style={currentStyles.quizName}>{quiz.name}</Text>
+                  <Text style={currentStyles.quizSubject}>{quiz.subject.name}</Text>
                 </View>
                 
-                <View style={styles(theme).historyDetails}>
-                  <View style={styles(theme).scoreContainer}>
+                <View style={currentStyles.historyDetails}>
+                  <View style={currentStyles.scoreContainer}>
                     <Text 
                       style={[
-                        styles(theme).scoreText,
+                        currentStyles.scoreText,
                         { color: getScoreColor(quiz.score, quiz.totalQuestions) }
                       ]}
                     >
                       {quiz.score}/{quiz.totalQuestions}
                     </Text>
-                    <Text style={styles(theme).scoreLabel}>Score</Text>
+                    <Text style={currentStyles.scoreLabel}>{t('home_screen.score')}</Text>
                   </View>
                   
-                  <View style={styles(theme).statusContainer}>
+                  <View style={currentStyles.statusContainer}>
                     <View 
                       style={[
-                        styles(theme).statusBadge,
-                        quiz.isPassed ? styles(theme).statusBadgePassed : styles(theme).statusBadgeFailed
+                        currentStyles.statusBadge,
+                        quiz.isPassed ? currentStyles.statusBadgePassed : currentStyles.statusBadgeFailed
                       ]}
                     >
                       <Text 
                         style={[
-                          styles(theme).statusText,
-                          quiz.isPassed ? styles(theme).statusTextPassed : styles(theme).statusTextFailed
+                          currentStyles.statusText,
+                          quiz.isPassed ? currentStyles.statusTextPassed : currentStyles.statusTextFailed
                         ]}
                       >
-                        {quiz.isPassed ? 'Passed' : 'Failed'}
+                        {quiz.isPassed ? t('home_screen.passed') : t('home_screen.failed')}
                       </Text>
                     </View>
-                    <Text style={styles(theme).dateText}>{formatDate(quiz.completedAt)}</Text>
+                    <Text style={currentStyles.dateText}>{formatDate(quiz.completedAt)}</Text>
                   </View>
                 </View>
               </View>
@@ -342,7 +335,7 @@ const QuizScreen: React.FC = () => {
   );
 };
 
-const styles = (theme: any) => StyleSheet.create({
+const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
@@ -351,6 +344,7 @@ const styles = (theme: any) => StyleSheet.create({
     padding: 20,
     paddingTop: 50,
     backgroundColor: theme.colors.headerBackground,
+    alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   headerTitle: {
     fontSize: 28,
@@ -401,6 +395,7 @@ const styles = (theme: any) => StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 16,
     color: theme.colors.text,
+    textAlign: isRTL ? 'right' : 'left',
   },
   emptyState: {
     padding: 40,
@@ -444,6 +439,7 @@ const styles = (theme: any) => StyleSheet.create({
   },
   historyHeader: {
     marginBottom: 12,
+    alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   quizName: {
     fontSize: 16,
@@ -457,12 +453,12 @@ const styles = (theme: any) => StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   historyDetails: {
-    flexDirection: 'row',
+    flexDirection: isRTL ? 'row-reverse' : 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   scoreContainer: {
-    alignItems: 'center',
+    alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   scoreText: {
     fontSize: 20,
@@ -474,7 +470,7 @@ const styles = (theme: any) => StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   statusContainer: {
-    alignItems: 'flex-end',
+    alignItems: isRTL ? 'flex-start' : 'flex-end',
   },
   statusBadge: {
     paddingHorizontal: 12,

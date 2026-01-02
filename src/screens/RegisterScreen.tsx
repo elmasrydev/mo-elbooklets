@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -12,9 +12,9 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-// import { useQuery } from '@apollo/client';
 import { useAuth } from '../context/AuthContext';
-// import { GET_GRADES, Grade } from '../lib/graphql';
+import { useLanguage } from '../context/LanguageContext';
+import { useTranslation } from 'react-i18next';
 
 // Temporary mock grades
 interface Grade {
@@ -44,7 +44,8 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
   const [isLoading, setIsLoading] = useState(false);
   
   const { register } = useAuth();
-  // const { data: gradesData, loading: gradesLoading } = useQuery(GET_GRADES);
+  const { isRTL } = useLanguage();
+  const { t } = useTranslation();
 
   // Use mock data for now
   const gradesData = { grades: mockGrades };
@@ -53,17 +54,17 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
   const handleRegister = async () => {
     // Validation
     if (!name.trim() || !email.trim() || !mobile.trim() || !password.trim() || !selectedGrade) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert(t('common.error'), t('auth.fill_all_fields'));
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      Alert.alert(t('common.error'), t('auth.passwords_not_match'));
       return;
     }
 
     if (password.length < 8) {
-      Alert.alert('Error', 'Password must be at least 8 characters long');
+      Alert.alert(t('common.error'), t('auth.password_too_short'));
       return;
     }
 
@@ -79,83 +80,88 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
       });
       
       if (!result.success) {
-        Alert.alert('Registration Failed', result.error || 'Registration failed');
+        Alert.alert(t('auth.registration_failed'), result.error || t('auth.registration_error'));
       }
       // If successful, the AuthContext will handle navigation
     } catch (error) {
-      Alert.alert('Error', 'An unexpected error occurred');
+      Alert.alert(t('common.error'), t('common.unexpected_error'));
     } finally {
       setIsLoading(false);
     }
   };
 
+  const currentStyles = styles(isRTL);
+
   return (
     <KeyboardAvoidingView 
-      style={styles.container}
+      style={currentStyles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.header}>
-          <Text style={styles.logo}>📚</Text>
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Join ElBooklets Hub today</Text>
+      <ScrollView contentContainerStyle={currentStyles.scrollContainer}>
+        <View style={currentStyles.header}>
+          <Text style={currentStyles.logo}>📚</Text>
+          <Text style={currentStyles.title}>{t('auth.register')}</Text>
+          <Text style={currentStyles.subtitle}>{t('auth.sign_up_subtitle')}</Text>
         </View>
 
-        <View style={styles.form}>
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Full Name</Text>
+        <View style={currentStyles.form}>
+          <View style={currentStyles.inputContainer}>
+            <Text style={currentStyles.label}>{t('auth.name')}</Text>
             <TextInput
-              style={styles.input}
+              style={currentStyles.input}
               value={name}
               onChangeText={setName}
-              placeholder="Enter your full name"
+              placeholder={t('auth.name_placeholder')}
               autoCapitalize="words"
               editable={!isLoading}
+              textAlign={isRTL ? 'right' : 'left'}
             />
           </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email</Text>
+          <View style={currentStyles.inputContainer}>
+            <Text style={currentStyles.label}>{t('auth.email')}</Text>
             <TextInput
-              style={styles.input}
+              style={currentStyles.input}
               value={email}
               onChangeText={setEmail}
-              placeholder="Enter your email"
+              placeholder={t('auth.email_placeholder')}
               keyboardType="email-address"
               autoCapitalize="none"
               editable={!isLoading}
+              textAlign={isRTL ? 'right' : 'left'}
             />
           </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Mobile Number</Text>
+          <View style={currentStyles.inputContainer}>
+            <Text style={currentStyles.label}>{t('auth.mobile_number')}</Text>
             <TextInput
-              style={styles.input}
+              style={currentStyles.input}
               value={mobile}
               onChangeText={setMobile}
-              placeholder="Enter your mobile number"
+              placeholder={t('auth.mobile_placeholder')}
               keyboardType="phone-pad"
               autoCapitalize="none"
               editable={!isLoading}
+              textAlign={isRTL ? 'right' : 'left'}
             />
           </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Grade</Text>
+          <View style={currentStyles.inputContainer}>
+            <Text style={currentStyles.label}>{t('more_screen.grade')}</Text>
             {gradesLoading ? (
-              <View style={styles.loadingContainer}>
+              <View style={currentStyles.loadingContainer}>
                 <ActivityIndicator size="small" color="#007AFF" />
-                <Text style={styles.loadingText}>Loading grades...</Text>
+                <Text style={currentStyles.loadingText}>{t('home_screen.loading_activities')}</Text>
               </View>
             ) : (
-              <View style={styles.pickerContainer}>
+              <View style={currentStyles.pickerContainer}>
                 <Picker
                   selectedValue={selectedGrade}
                   onValueChange={setSelectedGrade}
                   enabled={!isLoading}
-                  style={styles.picker}
+                  style={currentStyles.picker}
                 >
-                  <Picker.Item label="Select your grade" value="" />
+                  <Picker.Item label={t('auth.select_grade')} value="" />
                   {gradesData?.grades?.map((grade: Grade) => (
                     <Picker.Item 
                       key={grade.id} 
@@ -168,49 +174,51 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
             )}
           </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Password</Text>
+          <View style={currentStyles.inputContainer}>
+            <Text style={currentStyles.label}>{t('auth.password')}</Text>
             <TextInput
-              style={styles.input}
+              style={currentStyles.input}
               value={password}
               onChangeText={setPassword}
-              placeholder="Enter your password"
+              placeholder={t('auth.password_placeholder')}
               secureTextEntry
               autoCapitalize="none"
               editable={!isLoading}
+              textAlign={isRTL ? 'right' : 'left'}
             />
           </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Confirm Password</Text>
+          <View style={currentStyles.inputContainer}>
+            <Text style={currentStyles.label}>{t('auth.confirm_password')}</Text>
             <TextInput
-              style={styles.input}
+              style={currentStyles.input}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
-              placeholder="Confirm your password"
+              placeholder={t('auth.confirm_password_placeholder')}
               secureTextEntry
               autoCapitalize="none"
               editable={!isLoading}
+              textAlign={isRTL ? 'right' : 'left'}
             />
           </View>
 
           <TouchableOpacity 
-            style={[styles.registerButton, isLoading && styles.disabledButton]}
+            style={[currentStyles.registerButton, isLoading && currentStyles.disabledButton]}
             onPress={handleRegister}
             disabled={isLoading}
           >
             {isLoading ? (
               <ActivityIndicator color="#ffffff" />
             ) : (
-              <Text style={styles.registerButtonText}>Create Account</Text>
+              <Text style={currentStyles.registerButtonText}>{t('auth.sign_up')}</Text>
             )}
           </TouchableOpacity>
         </View>
 
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Already have an account? </Text>
+        <View style={currentStyles.footer}>
+          <Text style={currentStyles.footerText}>{t('auth.already_have_account')} </Text>
           <TouchableOpacity onPress={onNavigateToLogin} disabled={isLoading}>
-            <Text style={styles.linkText}>Sign In</Text>
+            <Text style={currentStyles.linkText}>{t('auth.sign_in')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -218,7 +226,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
   );
 };
 
-const styles = StyleSheet.create({
+const styles = (isRTL: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
@@ -257,6 +265,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333333',
     marginBottom: 8,
+    textAlign: isRTL ? 'right' : 'left',
   },
   input: {
     borderWidth: 1,
@@ -276,7 +285,7 @@ const styles = StyleSheet.create({
     height: 50,
   },
   loadingContainer: {
-    flexDirection: 'row',
+    flexDirection: isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
     padding: 15,
     backgroundColor: '#f9f9f9',
@@ -285,7 +294,8 @@ const styles = StyleSheet.create({
     borderColor: '#dddddd',
   },
   loadingText: {
-    marginLeft: 10,
+    marginLeft: isRTL ? 0 : 10,
+    marginRight: isRTL ? 10 : 0,
     color: '#666666',
   },
   registerButton: {
@@ -304,7 +314,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   footer: {
-    flexDirection: 'row',
+    flexDirection: isRTL ? 'row-reverse' : 'row',
     justifyContent: 'center',
     alignItems: 'center',
   },

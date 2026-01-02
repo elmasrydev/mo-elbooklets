@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { useTranslation } from 'react-i18next';
 import { tryFetchWithFallback } from '../../config/api';
-// import { useQuery } from '@apollo/client';
-// import { LESSONS_FOR_SUBJECT_QUERY, Subject, Chapter, Lesson } from '../../lib/graphql';
 
-// Temporary types for testing
 interface Subject {
   id: string;
   name: string;
@@ -33,6 +32,8 @@ interface QuizLessonsScreenProps {
 
 const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({ subject, onLessonsSelect, onBack }) => {
   const { theme } = useTheme();
+  const { isRTL } = useLanguage();
+  const { t } = useTranslation();
   const [selectedLessons, setSelectedLessons] = useState<Set<string>>(new Set());
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,8 +43,6 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({ subject, onLesson
     fetchLessons();
   }, [subject.id]);
 
-
-
   const fetchLessons = async () => {
     try {
       setLoading(true);
@@ -51,7 +50,7 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({ subject, onLesson
 
       const token = await AsyncStorage.getItem('auth_token');
       if (!token) {
-        setError('Authentication required');
+        setError(t('common.error'));
         return;
       }
 
@@ -72,11 +71,11 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({ subject, onLesson
       if (result.data?.lessonsForSubject) {
         setChapters(result.data.lessonsForSubject);
       } else {
-        setError(result.errors?.[0]?.message || 'Failed to load lessons');
+        setError(result.errors?.[0]?.message || t('quiz_lessons.error_loading_lessons'));
       }
     } catch (err: any) {
       console.error('Fetch lessons error:', err);
-      setError(err.message || 'An error occurred while loading lessons');
+      setError(err.message || t('quiz_lessons.error_loading_lessons'));
     } finally {
       setLoading(false);
     }
@@ -96,14 +95,11 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({ subject, onLesson
     const chapterLessonIds = chapter.lessons.map(lesson => lesson.id);
     const newSelected = new Set(selectedLessons);
     
-    // Check if all lessons in chapter are selected
     const allSelected = chapterLessonIds.every(id => newSelected.has(id));
     
     if (allSelected) {
-      // Deselect all lessons in chapter
       chapterLessonIds.forEach(id => newSelected.delete(id));
     } else {
-      // Select all lessons in chapter
       chapterLessonIds.forEach(id => newSelected.add(id));
     }
     
@@ -112,25 +108,27 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({ subject, onLesson
 
   const handleStartQuiz = () => {
     if (selectedLessons.size === 0) {
-      Alert.alert('No Lessons Selected', 'Please select at least one lesson to start the quiz.');
+      Alert.alert(t('quiz_lessons.no_lessons_selected'), t('quiz_lessons.select_at_least_one'));
       return;
     }
     
     onLessonsSelect(Array.from(selectedLessons));
   };
 
+  const currentStyles = styles(theme, isRTL);
+
   if (loading) {
     return (
-      <View style={styles(theme).container}>
-        <View style={styles(theme).header}>
-          <TouchableOpacity style={styles(theme).backButton} onPress={onBack}>
-            <Text style={styles(theme).backButtonText}>← Back</Text>
+      <View style={currentStyles.container}>
+        <View style={currentStyles.header}>
+          <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
+            <Text style={currentStyles.backButtonText}>{isRTL ? '→' : '←'} {t('common.back')}</Text>
           </TouchableOpacity>
-          <Text style={styles(theme).headerTitle}>Choose Lessons</Text>
+          <Text style={currentStyles.headerTitle}>{t('quiz_lessons.header_title')}</Text>
         </View>
-        <View style={styles(theme).loadingContainer}>
+        <View style={currentStyles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles(theme).loadingText}>Loading lessons...</Text>
+          <Text style={currentStyles.loadingText}>{t('quiz_lessons.loading_lessons')}</Text>
         </View>
       </View>
     );
@@ -138,38 +136,36 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({ subject, onLesson
 
   if (error) {
     return (
-      <View style={styles(theme).container}>
-        <View style={styles(theme).header}>
-          <TouchableOpacity style={styles(theme).backButton} onPress={onBack}>
-            <Text style={styles(theme).backButtonText}>← Back</Text>
+      <View style={currentStyles.container}>
+        <View style={currentStyles.header}>
+          <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
+            <Text style={currentStyles.backButtonText}>{isRTL ? '→' : '←'} {t('common.back')}</Text>
           </TouchableOpacity>
-          <Text style={styles(theme).headerTitle}>Choose Lessons</Text>
+          <Text style={currentStyles.headerTitle}>{t('quiz_lessons.header_title')}</Text>
         </View>
-        <View style={styles(theme).errorContainer}>
-          <Text style={styles(theme).errorIcon}>⚠️</Text>
-          <Text style={styles(theme).errorTitle}>Error Loading Lessons</Text>
-          <Text style={styles(theme).errorText}>{error}</Text>
-          <TouchableOpacity style={styles(theme).retryButton} onPress={fetchLessons}>
-            <Text style={styles(theme).retryButtonText}>Try Again</Text>
+        <View style={currentStyles.errorContainer}>
+          <Text style={currentStyles.errorIcon}>⚠️</Text>
+          <Text style={currentStyles.errorTitle}>{t('quiz_lessons.error_loading_lessons')}</Text>
+          <Text style={currentStyles.errorText}>{error}</Text>
+          <TouchableOpacity style={currentStyles.retryButton} onPress={fetchLessons}>
+            <Text style={currentStyles.retryButtonText}>{t('home_screen.try_again')}</Text>
           </TouchableOpacity>
         </View>
       </View>
     );
   }
 
-  // chapters state is already defined above
-
   return (
-    <View style={styles(theme).container}>
-      <View style={styles(theme).header}>
-        <TouchableOpacity style={styles(theme).backButton} onPress={onBack}>
-          <Text style={styles(theme).backButtonText}>← Back</Text>
+    <View style={currentStyles.container}>
+      <View style={currentStyles.header}>
+        <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
+          <Text style={currentStyles.backButtonText}>{isRTL ? '→' : '←'} {t('common.back')}</Text>
         </TouchableOpacity>
-        <Text style={styles(theme).headerTitle}>Choose Lessons</Text>
-        <Text style={styles(theme).headerSubtitle}>{subject.name}</Text>
+        <Text style={currentStyles.headerTitle}>{t('quiz_lessons.header_title')}</Text>
+        <Text style={currentStyles.headerSubtitle}>{subject.name}</Text>
       </View>
 
-      <ScrollView style={styles(theme).content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={currentStyles.content} showsVerticalScrollIndicator={false}>
         {chapters.map((chapter: Chapter) => {
           const chapterLessonIds = chapter.lessons.map(lesson => lesson.id);
           const selectedInChapter = chapterLessonIds.filter(id => selectedLessons.has(id)).length;
@@ -177,46 +173,46 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({ subject, onLesson
           const someSelected = selectedInChapter > 0;
 
           return (
-            <View key={chapter.id} style={styles(theme).chapterCard}>
+            <View key={chapter.id} style={currentStyles.chapterCard}>
               <TouchableOpacity
-                style={styles(theme).chapterHeader}
+                style={currentStyles.chapterHeader}
                 onPress={() => handleChapterToggle(chapter)}
               >
-                <View style={styles(theme).chapterLeft}>
+                <View style={currentStyles.chapterLeft}>
                   <View style={[
-                    styles(theme).checkbox,
-                    allSelected && styles(theme).checkboxSelected,
-                    someSelected && !allSelected && styles(theme).checkboxPartial
+                    currentStyles.checkbox,
+                    allSelected && currentStyles.checkboxSelected,
+                    someSelected && !allSelected && currentStyles.checkboxPartial
                   ]}>
-                    {allSelected && <Text style={styles(theme).checkmark}>✓</Text>}
-                    {someSelected && !allSelected && <Text style={styles(theme).partialMark}>−</Text>}
+                    {allSelected && <Text style={currentStyles.checkmark}>✓</Text>}
+                    {someSelected && !allSelected && <Text style={currentStyles.partialMark}>−</Text>}
                   </View>
-                  <View style={styles(theme).chapterInfo}>
-                    <Text style={styles(theme).chapterName}>{chapter.name}</Text>
-                    <Text style={styles(theme).chapterStats}>
-                      {selectedInChapter}/{chapterLessonIds.length} lessons selected
+                  <View style={currentStyles.chapterInfo}>
+                    <Text style={currentStyles.chapterName}>{chapter.name}</Text>
+                    <Text style={currentStyles.chapterStats}>
+                      {selectedInChapter}/{chapterLessonIds.length} {t('quiz_lessons.lessons_selected', { count: selectedInChapter, total: chapterLessonIds.length }).split('/')[1]?.trim() || 'lessons selected'}
                     </Text>
                   </View>
                 </View>
               </TouchableOpacity>
 
-              <View style={styles(theme).lessonsContainer}>
+              <View style={currentStyles.lessonsContainer}>
                 {chapter.lessons.map((lesson: Lesson) => {
                   const isSelected = selectedLessons.has(lesson.id);
                   
                   return (
                     <TouchableOpacity
                       key={lesson.id}
-                      style={styles(theme).lessonItem}
+                      style={currentStyles.lessonItem}
                       onPress={() => handleLessonToggle(lesson.id)}
                     >
                       <View style={[
-                        styles(theme).checkbox,
-                        isSelected && styles(theme).checkboxSelected
+                        currentStyles.checkbox,
+                        isSelected && currentStyles.checkboxSelected
                       ]}>
-                        {isSelected && <Text style={styles(theme).checkmark}>✓</Text>}
+                        {isSelected && <Text style={currentStyles.checkmark}>✓</Text>}
                       </View>
-                      <Text style={styles(theme).lessonName}>{lesson.name}</Text>
+                      <Text style={currentStyles.lessonName}>{lesson.name}</Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -226,22 +222,23 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({ subject, onLesson
         })}
 
         {chapters.length === 0 && (
-          <View style={styles(theme).emptyState}>
-            <Text style={styles(theme).emptyStateIcon}>📚</Text>
-            <Text style={styles(theme).emptyStateTitle}>No Lessons Available</Text>
-            <Text style={styles(theme).emptyStateSubtitle}>
-              No lessons are available for this subject at the moment.
+          <View style={currentStyles.emptyState}>
+            <Text style={currentStyles.emptyStateIcon}>📚</Text>
+            <Text style={currentStyles.emptyStateTitle}>{t('quiz_lessons.no_lessons_available')}</Text>
+            <Text style={currentStyles.emptyStateSubtitle}>
+              {t('quiz_lessons.no_lessons_for_subject')}
             </Text>
           </View>
         )}
       </ScrollView>
 
-      {/* Start Quiz Button */}
       {selectedLessons.size > 0 && (
-        <View style={styles(theme).footer}>
-          <TouchableOpacity style={styles(theme).startQuizButton} onPress={handleStartQuiz}>
-            <Text style={styles(theme).startQuizButtonText}>
-              Start Quiz ({selectedLessons.size} lesson{selectedLessons.size !== 1 ? 's' : ''})
+        <View style={currentStyles.footer}>
+          <TouchableOpacity style={currentStyles.startQuizButton} onPress={handleStartQuiz}>
+            <Text style={currentStyles.startQuizButtonText}>
+              {selectedLessons.size === 1 
+                ? t('quiz_lessons.start_quiz_count', { count: selectedLessons.size })
+                : t('quiz_lessons.start_quiz_count_plural', { count: selectedLessons.size })}
             </Text>
           </TouchableOpacity>
         </View>
@@ -250,7 +247,7 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({ subject, onLesson
   );
 };
 
-const styles = (theme: any) => StyleSheet.create({
+const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
@@ -259,6 +256,7 @@ const styles = (theme: any) => StyleSheet.create({
     padding: 20,
     paddingTop: 50,
     backgroundColor: theme.colors.headerBackground,
+    alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   backButton: {
     marginBottom: 16,
@@ -330,12 +328,14 @@ const styles = (theme: any) => StyleSheet.create({
     borderBottomColor: theme.colors.border,
   },
   chapterLeft: {
-    flexDirection: 'row',
+    flexDirection: isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
   },
   chapterInfo: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: isRTL ? 0 : 12,
+    marginRight: isRTL ? 12 : 0,
+    alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   chapterName: {
     fontSize: 16,
@@ -352,15 +352,17 @@ const styles = (theme: any) => StyleSheet.create({
     paddingTop: 8,
   },
   lessonItem: {
-    flexDirection: 'row',
+    flexDirection: isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
     paddingVertical: 8,
   },
   lessonName: {
     fontSize: 14,
-    marginLeft: 12,
+    marginLeft: isRTL ? 0 : 12,
+    marginRight: isRTL ? 12 : 0,
     flex: 1,
     color: theme.colors.text,
+    textAlign: isRTL ? 'right' : 'left',
   },
   checkbox: {
     width: 24,

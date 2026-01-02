@@ -4,6 +4,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
+import { useTranslation } from 'react-i18next';
 import { tryFetchWithFallback } from '../config/api';
 
 interface QuizActivity {
@@ -28,6 +30,8 @@ interface ActivitiesData {
 const HomeScreen: React.FC = () => {
   const { user, logout } = useAuth();
   const { theme } = useTheme();
+  const { isRTL, language } = useLanguage();
+  const { t } = useTranslation();
   const [activitiesData, setActivitiesData] = useState<ActivitiesData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +47,7 @@ const HomeScreen: React.FC = () => {
 
       const token = await AsyncStorage.getItem('auth_token');
       if (!token) {
-        setError('Authentication required');
+        setError(t('home_screen.error_loading'));
         return;
       }
 
@@ -71,15 +75,15 @@ const HomeScreen: React.FC = () => {
       if (result.data?.activities) {
         setActivitiesData(result.data.activities);
       } else {
-        setError(result.errors?.[0]?.message || 'Failed to load activities');
+        setError(result.errors?.[0]?.message || t('home_screen.error_loading'));
       }
     } catch (err: any) {
       console.error('Fetch activities error:', err);
-      setError(err.message || 'An error occurred while loading activities');
+      setError(err.message || t('home_screen.error_loading'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchActivities();
@@ -91,69 +95,72 @@ const HomeScreen: React.FC = () => {
     }, [fetchActivities])
   );
 
+  const currentStyles = styles(theme, isRTL);
+
   return (
-    <ScrollView style={styles(theme).container}>
+    <ScrollView style={currentStyles.container}>
       {/* Header */}
-      <View style={styles(theme).header}>
-        <View style={styles(theme).welcomeSection}>
-          <Text style={styles(theme).welcomeText}>Welcome back,</Text>
-          <Text style={styles(theme).userName}>{user?.name}</Text>
-          <Text style={styles(theme).gradeText}>
-            Grade: {user?.grade?.name || 'Not specified'}
+      <View style={currentStyles.header}>
+        <View style={currentStyles.welcomeSection}>
+          <Text style={currentStyles.welcomeText}>{t('home_screen.welcome_back')}</Text>
+          <Text style={currentStyles.userName}>{user?.name}</Text>
+          <Text style={currentStyles.gradeText}>
+            {t('more_screen.grade')}: {user?.grade?.name || t('more_screen.not_specified')}
           </Text>
         </View>
-        <TouchableOpacity style={styles(theme).logoutButton} onPress={handleLogout}>
-          <Text style={styles(theme).logoutButtonText}>Logout</Text>
+        <TouchableOpacity style={currentStyles.logoutButton} onPress={handleLogout}>
+          <Text style={currentStyles.logoutButtonText}>{t('common.logout')}</Text>
         </TouchableOpacity>
       </View>
 
       {/* Quick Stats */}
-      <View style={styles(theme).statsContainer}>
-        <View style={styles(theme).statCard}>
-          <Text style={styles(theme).statNumber}>
+      <View style={currentStyles.statsContainer}>
+        <View style={currentStyles.statCard}>
+          <Text style={currentStyles.statNumber}>
             {loading ? '...' : (activitiesData?.total_quizzes ?? 0)}
           </Text>
-          <Text style={styles(theme).statLabel}>Quizzes</Text>
+          <Text style={currentStyles.statLabel}>{t('home_screen.quizzes')}</Text>
         </View>
-        <View style={styles(theme).statCard}>
-          <Text style={styles(theme).statNumber}>
+        <View style={currentStyles.statCard}>
+          <Text style={currentStyles.statNumber}>
             {loading ? '...' : (activitiesData?.avg_score ? `${activitiesData.avg_score}%` : '0%')}
           </Text>
-          <Text style={styles(theme).statLabel}>Completed</Text>
+          <Text style={currentStyles.statLabel}>{t('home_screen.completed')}</Text>
         </View>
       </View>
 
       {/* Recent Activity */}
-      <View style={styles(theme).section}>
-        <Text style={styles(theme).sectionTitle}>Recent Activity</Text>
+      <View style={currentStyles.section}>
+        <Text style={currentStyles.sectionTitle}>{t('home_screen.recent_activity')}</Text>
         {loading ? (
-          <View style={styles(theme).loadingState}>
+          <View style={currentStyles.loadingState}>
             <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text style={styles(theme).loadingText}>Loading activities...</Text>
+            <Text style={currentStyles.loadingText}>{t('home_screen.loading_activities')}</Text>
           </View>
         ) : error ? (
-          <View style={styles(theme).emptyState}>
-            <Text style={styles(theme).emptyStateText}>⚠️</Text>
-            <Text style={styles(theme).emptyStateTitle}>Error Loading Activities</Text>
-            <Text style={styles(theme).emptyStateSubtitle}>{error}</Text>
-            <TouchableOpacity style={styles(theme).retryButton} onPress={fetchActivities}>
-              <Text style={styles(theme).retryButtonText}>Try Again</Text>
+          <View style={currentStyles.emptyState}>
+            <Text style={currentStyles.emptyStateText}>⚠️</Text>
+            <Text style={currentStyles.emptyStateTitle}>{t('home_screen.error_loading')}</Text>
+            <Text style={currentStyles.emptyStateSubtitle}>{error}</Text>
+            <TouchableOpacity style={currentStyles.retryButton} onPress={fetchActivities}>
+              <Text style={currentStyles.retryButtonText}>{t('home_screen.try_again')}</Text>
             </TouchableOpacity>
           </View>
         ) : !activitiesData?.activities || activitiesData.activities.length === 0 ? (
-          <View style={styles(theme).emptyState}>
-            <Text style={styles(theme).emptyStateText}>📚</Text>
-            <Text style={styles(theme).emptyStateTitle}>No activity yet</Text>
-            <Text style={styles(theme).emptyStateSubtitle}>
-              Take your first quiz to see your activity here
+          <View style={currentStyles.emptyState}>
+            <Text style={currentStyles.emptyStateText}>📚</Text>
+            <Text style={currentStyles.emptyStateTitle}>{t('home_screen.no_activity')}</Text>
+            <Text style={currentStyles.emptyStateSubtitle}>
+              {t('home_screen.take_quiz_hint')}
             </Text>
           </View>
         ) : (
-          <View style={styles(theme).activitiesList}>
-            {activitiesData.activities.map((activity) => {
-              const percentage = activity.totalQuestions > 0 
-                ? (activity.score / activity.totalQuestions) * 100 
-                : 0;
+          <View style={currentStyles.activitiesList}>
+            {activitiesData.activities.map((activity: QuizActivity) => {
+              const total = activity.totalQuestions;
+              const score = activity.score;
+              const percentage = total > 0 ? (score / total) * 100 : 0;
+              
               const getScoreColor = () => {
                 if (percentage >= 70) return theme.colors.success;
                 if (percentage >= 50) return theme.colors.warning;
@@ -161,7 +168,7 @@ const HomeScreen: React.FC = () => {
               };
               const formatDate = (dateString: string) => {
                 const date = new Date(dateString);
-                return date.toLocaleDateString('en-US', {
+                return date.toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', {
                   month: 'short',
                   day: 'numeric',
                   year: 'numeric',
@@ -169,42 +176,46 @@ const HomeScreen: React.FC = () => {
               };
 
               return (
-                <View key={activity.id} style={styles(theme).activityCard}>
-                  <View style={styles(theme).activityHeader}>
-                    <Text style={styles(theme).activityName}>{activity.name}</Text>
-                    <Text style={styles(theme).activitySubject}>{activity.subject.name}</Text>
+                <View key={activity.id} style={currentStyles.activityCard}>
+                  <View style={currentStyles.activityHeader}>
+                    <Text style={currentStyles.activityName}>{activity.name}</Text>
+                    <Text style={currentStyles.activitySubject}>{activity.subject.name}</Text>
                   </View>
                   
-                  <View style={styles(theme).activityDetails}>
-                    <View style={styles(theme).activityScoreContainer}>
+                  <View style={currentStyles.activityDetails}>
+                    <View style={currentStyles.activityScoreContainer}>
                       <Text 
                         style={[
-                          styles(theme).activityScoreText,
+                          currentStyles.activityScoreText,
                           { color: getScoreColor() }
                         ]}
                       >
                         {activity.score}/{activity.totalQuestions}
                       </Text>
-                      <Text style={styles(theme).activityScoreLabel}>Score</Text>
+                      <Text style={currentStyles.activityScoreLabel}>{t('home_screen.score')}</Text>
                     </View>
                     
-                    <View style={styles(theme).activityStatusContainer}>
+                    <View style={currentStyles.activityStatusContainer}>
                       <View 
                         style={[
-                          styles(theme).activityStatusBadge,
-                          activity.isPassed ? styles(theme).activityStatusBadgePassed : styles(theme).activityStatusBadgeFailed
+                          currentStyles.activityStatusBadge,
+                          activity.isPassed 
+                            ? currentStyles.activityStatusBadgePassed 
+                            : currentStyles.activityStatusBadgeFailed
                         ]}
                       >
                         <Text 
                           style={[
-                            styles(theme).activityStatusText,
-                            activity.isPassed ? styles(theme).activityStatusTextPassed : styles(theme).activityStatusTextFailed
+                            currentStyles.activityStatusText,
+                            activity.isPassed 
+                              ? currentStyles.activityStatusTextPassed 
+                              : currentStyles.activityStatusTextFailed
                           ]}
                         >
-                          {activity.isPassed ? 'Passed' : 'Failed'}
+                          {activity.isPassed ? t('home_screen.passed') : t('home_screen.failed')}
                         </Text>
                       </View>
-                      <Text style={styles(theme).activityDateText}>{formatDate(activity.completedAt)}</Text>
+                      <Text style={currentStyles.activityDateText}>{formatDate(activity.completedAt)}</Text>
                     </View>
                   </View>
                 </View>
@@ -215,31 +226,31 @@ const HomeScreen: React.FC = () => {
       </View>
 
       {/* Quick Actions */}
-      <View style={styles(theme).section}>
-        <Text style={styles(theme).sectionTitle}>Quick Actions</Text>
-        <View style={styles(theme).actionsGrid}>
-          <TouchableOpacity style={styles(theme).actionCard}>
-            <Text style={styles(theme).actionIcon}>📖</Text>
-            <Text style={styles(theme).actionTitle}>Browse Booklets</Text>
-            <Text style={styles(theme).actionSubtitle}>Explore available content</Text>
+      <View style={currentStyles.section}>
+        <Text style={currentStyles.sectionTitle}>{t('home_screen.quick_actions')}</Text>
+        <View style={currentStyles.actionsGrid}>
+          <TouchableOpacity style={currentStyles.actionCard}>
+            <Text style={currentStyles.actionIcon}>📖</Text>
+            <Text style={currentStyles.actionTitle}>{t('home_screen.browse_booklets')}</Text>
+            <Text style={currentStyles.actionSubtitle}>{t('home_screen.explore_content')}</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles(theme).actionCard}>
-            <Text style={styles(theme).actionIcon}>📊</Text>
-            <Text style={styles(theme).actionTitle}>My Progress</Text>
-            <Text style={styles(theme).actionSubtitle}>Track your learning</Text>
+          <TouchableOpacity style={currentStyles.actionCard}>
+            <Text style={currentStyles.actionIcon}>📊</Text>
+            <Text style={currentStyles.actionTitle}>{t('home_screen.my_progress')}</Text>
+            <Text style={currentStyles.actionSubtitle}>{t('home_screen.track_learning')}</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles(theme).actionCard}>
-            <Text style={styles(theme).actionIcon}>⭐</Text>
-            <Text style={styles(theme).actionTitle}>Favorites</Text>
-            <Text style={styles(theme).actionSubtitle}>Your saved content</Text>
+          <TouchableOpacity style={currentStyles.actionCard}>
+            <Text style={currentStyles.actionIcon}>⭐</Text>
+            <Text style={currentStyles.actionTitle}>{t('home_screen.favorites')}</Text>
+            <Text style={currentStyles.actionSubtitle}>{t('home_screen.saved_content')}</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles(theme).actionCard}>
-            <Text style={styles(theme).actionIcon}>⚙️</Text>
-            <Text style={styles(theme).actionTitle}>Settings</Text>
-            <Text style={styles(theme).actionSubtitle}>Manage your account</Text>
+          <TouchableOpacity style={currentStyles.actionCard}>
+            <Text style={currentStyles.actionIcon}>⚙️</Text>
+            <Text style={currentStyles.actionTitle}>{t('common.settings')}</Text>
+            <Text style={currentStyles.actionSubtitle}>{t('home_screen.manage_account')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -247,7 +258,7 @@ const HomeScreen: React.FC = () => {
   );
 };
 
-const styles = (theme: any) => StyleSheet.create({
+const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
@@ -255,13 +266,14 @@ const styles = (theme: any) => StyleSheet.create({
   header: {
     padding: 20,
     paddingTop: 50,
-    flexDirection: 'row',
+    flexDirection: isRTL ? 'row-reverse' : 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     backgroundColor: theme.colors.headerBackground,
   },
   welcomeSection: {
     flex: 1,
+    alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   welcomeText: {
     fontSize: 16,
@@ -292,7 +304,7 @@ const styles = (theme: any) => StyleSheet.create({
     color: theme.colors.text,
   },
   statsContainer: {
-    flexDirection: 'row',
+    flexDirection: isRTL ? 'row-reverse' : 'row',
     padding: 20,
     gap: 15,
   },
@@ -320,12 +332,15 @@ const styles = (theme: any) => StyleSheet.create({
   },
   section: {
     padding: 20,
+    alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 15,
     color: theme.colors.text,
+    width: '100%',
+    textAlign: isRTL ? 'right' : 'left',
   },
   emptyState: {
     padding: 40,
@@ -337,6 +352,7 @@ const styles = (theme: any) => StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    width: '100%',
   },
   emptyStateText: {
     fontSize: 48,
@@ -354,7 +370,7 @@ const styles = (theme: any) => StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   actionsGrid: {
-    flexDirection: 'row',
+    flexDirection: isRTL ? 'row-reverse' : 'row',
     flexWrap: 'wrap',
     gap: 15,
   },
@@ -396,6 +412,7 @@ const styles = (theme: any) => StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    width: '100%',
   },
   loadingText: {
     marginTop: 15,
@@ -416,6 +433,7 @@ const styles = (theme: any) => StyleSheet.create({
   },
   activitiesList: {
     gap: 15,
+    width: '100%',
   },
   activityCard: {
     backgroundColor: theme.colors.card,
@@ -429,6 +447,7 @@ const styles = (theme: any) => StyleSheet.create({
   },
   activityHeader: {
     marginBottom: 12,
+    alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   activityName: {
     fontSize: 16,
@@ -441,12 +460,12 @@ const styles = (theme: any) => StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   activityDetails: {
-    flexDirection: 'row',
+    flexDirection: isRTL ? 'row-reverse' : 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   activityScoreContainer: {
-    alignItems: 'flex-start',
+    alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   activityScoreText: {
     fontSize: 24,
@@ -458,7 +477,7 @@ const styles = (theme: any) => StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   activityStatusContainer: {
-    alignItems: 'flex-end',
+    alignItems: isRTL ? 'flex-start' : 'flex-end',
   },
   activityStatusBadge: {
     paddingHorizontal: 12,
