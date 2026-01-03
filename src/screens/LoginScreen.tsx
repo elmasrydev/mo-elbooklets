@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 
 interface LoginScreenProps {
@@ -26,6 +27,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister }) => {
   
   const { login } = useAuth();
   const { isRTL } = useLanguage();
+  const { theme } = useTheme();
   const { t } = useTranslation();
 
   const handleLogin = async () => {
@@ -43,13 +45,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister }) => {
         Alert.alert(t('auth.login_failed'), result.error || t('auth.invalid_credentials'));
       }
     } catch (error) {
+      console.error('Login error:', error);
       Alert.alert(t('common.error'), t('common.unexpected_error'));
     } finally {
       setIsLoading(false);
     }
   };
 
-  const currentStyles = styles(isRTL);
+  const currentStyles = styles(isRTL, theme);
 
   return (
     <KeyboardAvoidingView 
@@ -71,6 +74,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister }) => {
               value={mobile}
               onChangeText={setMobile}
               placeholder={t('auth.mobile_placeholder')}
+              placeholderTextColor={theme.colors.textSecondary}
               keyboardType="phone-pad"
               autoCapitalize="none"
               editable={!isLoading}
@@ -85,6 +89,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister }) => {
               value={password}
               onChangeText={setPassword}
               placeholder={t('auth.password_placeholder')}
+              placeholderTextColor={theme.colors.textSecondary}
               secureTextEntry
               autoCapitalize="none"
               editable={!isLoading}
@@ -116,10 +121,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister }) => {
   );
 };
 
-const styles = (isRTL: boolean) => StyleSheet.create({
+const styles = (isRTL: boolean, theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.background,
   },
   scrollContainer: {
     flexGrow: 1,
@@ -137,12 +142,12 @@ const styles = (isRTL: boolean) => StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#333333',
+    color: theme.colors.text,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666666',
+    color: theme.colors.textSecondary,
   },
   form: {
     marginBottom: 30,
@@ -153,30 +158,31 @@ const styles = (isRTL: boolean) => StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333333',
+    color: theme.colors.text,
     marginBottom: 8,
     textAlign: isRTL ? 'right' : 'left',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#dddddd',
+    borderColor: theme.colors.border,
     borderRadius: 8,
     padding: 15,
     fontSize: 16,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: theme.colors.surface,
+    color: theme.colors.text,
   },
   loginButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: theme.colors.primary,
     borderRadius: 8,
     padding: 15,
     alignItems: 'center',
     marginTop: 10,
   },
   disabledButton: {
-    backgroundColor: '#cccccc',
+    backgroundColor: theme.colors.buttonDisabled,
   },
   loginButtonText: {
-    color: '#ffffff',
+    color: theme.colors.buttonPrimaryText,
     fontSize: 18,
     fontWeight: '600',
   },
@@ -187,11 +193,11 @@ const styles = (isRTL: boolean) => StyleSheet.create({
   },
   footerText: {
     fontSize: 16,
-    color: '#666666',
+    color: theme.colors.textSecondary,
   },
   linkText: {
     fontSize: 16,
-    color: '#007AFF',
+    color: theme.colors.primary,
     fontWeight: '600',
   },
 });

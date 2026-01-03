@@ -17,8 +17,20 @@ mutation Login($email: String!, $password: String!) {
   }
 }
 
-mutation Register($name: String!, $email: String!, $password: String!, $password_confirmation: String!, $grade_id: ID!) {
-  register(name: $name, email: $email, password: $password, password_confirmation: $password_confirmation, grade_id: $grade_id) {
+mutation Register(
+  $name: String!
+  $email: String!
+  $password: String!
+  $password_confirmation: String!
+  $grade_id: ID!
+) {
+  register(
+    name: $name
+    email: $email
+    password: $password
+    password_confirmation: $password_confirmation
+    grade_id: $grade_id
+  ) {
     access_token
     token_type
     expires_in
@@ -31,5 +43,12 @@ mutation Register($name: String!, $email: String!, $password: String!, $password
         name
       }
     }
+  }
+}
+
+query GetGrades {
+  grades {
+    id
+    name
   }
 }

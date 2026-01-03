@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,21 +14,10 @@ import {
 import { Picker } from '@react-native-picker/picker';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import { tryFetchWithFallback } from '../config/api';
 
-// Temporary mock grades
-interface Grade {
-  id: string;
-  name: string;
-}
-
-const mockGrades: Grade[] = [
-  { id: '1', name: 'Grade 1' },
-  { id: '2', name: 'Grade 2' },
-  { id: '3', name: 'Grade 3' },
-  { id: '4', name: 'Grade 4' },
-  { id: '5', name: 'Grade 5' },
-];
 
 interface RegisterScreenProps {
   onNavigateToLogin: () => void;
@@ -45,11 +34,36 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
   
   const { register } = useAuth();
   const { isRTL } = useLanguage();
+  const { theme } = useTheme();
   const { t } = useTranslation();
+  
+  const [gradesData, setGradesData] = useState<{ grades: any[] } | null>(null);
+  const [gradesLoading, setGradesLoading] = useState(true);
 
-  // Use mock data for now
-  const gradesData = { grades: mockGrades };
-  const gradesLoading = false;
+  useEffect(() => {
+    fetchGrades();
+  }, []);
+
+  const fetchGrades = async () => {
+    try {
+      setGradesLoading(true);
+      const result = await tryFetchWithFallback(`
+        query GetGrades {
+          grades {
+            id
+            name
+          }
+        }
+      `);
+      if (result.data) {
+        setGradesData(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching grades:', error);
+    } finally {
+      setGradesLoading(false);
+    }
+  };
 
   const handleRegister = async () => {
     // Validation
@@ -84,13 +98,14 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
       }
       // If successful, the AuthContext will handle navigation
     } catch (error) {
+      console.error('Registration error:', error);
       Alert.alert(t('common.error'), t('common.unexpected_error'));
     } finally {
       setIsLoading(false);
     }
   };
 
-  const currentStyles = styles(isRTL);
+  const currentStyles = styles(isRTL, theme);
 
   return (
     <KeyboardAvoidingView 
@@ -112,6 +127,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
               value={name}
               onChangeText={setName}
               placeholder={t('auth.name_placeholder')}
+              placeholderTextColor={theme.colors.textSecondary}
               autoCapitalize="words"
               editable={!isLoading}
               textAlign={isRTL ? 'right' : 'left'}
@@ -125,6 +141,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
               value={email}
               onChangeText={setEmail}
               placeholder={t('auth.email_placeholder')}
+              placeholderTextColor={theme.colors.textSecondary}
               keyboardType="email-address"
               autoCapitalize="none"
               editable={!isLoading}
@@ -139,6 +156,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
               value={mobile}
               onChangeText={setMobile}
               placeholder={t('auth.mobile_placeholder')}
+              placeholderTextColor={theme.colors.textSecondary}
               keyboardType="phone-pad"
               autoCapitalize="none"
               editable={!isLoading}
@@ -150,7 +168,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
             <Text style={currentStyles.label}>{t('more_screen.grade')}</Text>
             {gradesLoading ? (
               <View style={currentStyles.loadingContainer}>
-                <ActivityIndicator size="small" color="#007AFF" />
+                <ActivityIndicator size="small" color={theme.colors.primary} />
                 <Text style={currentStyles.loadingText}>{t('home_screen.loading_activities')}</Text>
               </View>
             ) : (
@@ -160,13 +178,18 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
                   onValueChange={setSelectedGrade}
                   enabled={!isLoading}
                   style={currentStyles.picker}
+                  dropdownIconColor={theme.colors.text}
+                  mode="dropdown" // Use dropdown mode on Android for better scrolling
                 >
-                  <Picker.Item label={t('auth.select_grade')} value="" />
-                  {gradesData?.grades?.map((grade: Grade) => (
+                  <Picker.Item 
+                    label={t('auth.select_grade')} 
+                    value="" 
+                  />
+                  {gradesData?.grades?.map((grade: any) => (
                     <Picker.Item 
                       key={grade.id} 
                       label={grade.name} 
-                      value={grade.id} 
+                      value={grade.id}
                     />
                   ))}
                 </Picker>
@@ -181,6 +204,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
               value={password}
               onChangeText={setPassword}
               placeholder={t('auth.password_placeholder')}
+              placeholderTextColor={theme.colors.textSecondary}
               secureTextEntry
               autoCapitalize="none"
               editable={!isLoading}
@@ -195,6 +219,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               placeholder={t('auth.confirm_password_placeholder')}
+              placeholderTextColor={theme.colors.textSecondary}
               secureTextEntry
               autoCapitalize="none"
               editable={!isLoading}
@@ -226,10 +251,10 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
   );
 };
 
-const styles = (isRTL: boolean) => StyleSheet.create({
+const styles = (isRTL: boolean, theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.background,
   },
   scrollContainer: {
     flexGrow: 1,
@@ -247,12 +272,12 @@ const styles = (isRTL: boolean) => StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#333333',
+    color: theme.colors.text,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666666',
+    color: theme.colors.textSecondary,
   },
   form: {
     marginBottom: 20,
@@ -263,53 +288,56 @@ const styles = (isRTL: boolean) => StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333333',
+    color: theme.colors.text,
     marginBottom: 8,
     textAlign: isRTL ? 'right' : 'left',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#dddddd',
+    borderColor: theme.colors.border,
     borderRadius: 8,
     padding: 15,
     fontSize: 16,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: theme.colors.surface,
+    color: theme.colors.text,
   },
   pickerContainer: {
     borderWidth: 1,
-    borderColor: '#dddddd',
+    borderColor: theme.colors.border,
     borderRadius: 8,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: theme.colors.surface,
   },
   picker: {
     height: 50,
+    color: theme.colors.text,
+    backgroundColor: theme.colors.surface,
   },
   loadingContainer: {
     flexDirection: isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
     padding: 15,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: theme.colors.surface,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#dddddd',
+    borderColor: theme.colors.border,
   },
   loadingText: {
     marginLeft: isRTL ? 0 : 10,
     marginRight: isRTL ? 10 : 0,
-    color: '#666666',
+    color: theme.colors.textSecondary,
   },
   registerButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: theme.colors.primary,
     borderRadius: 8,
     padding: 15,
     alignItems: 'center',
     marginTop: 10,
   },
   disabledButton: {
-    backgroundColor: '#cccccc',
+    backgroundColor: theme.colors.buttonDisabled,
   },
   registerButtonText: {
-    color: '#ffffff',
+    color: theme.colors.buttonPrimaryText,
     fontSize: 18,
     fontWeight: '600',
   },
@@ -320,11 +348,11 @@ const styles = (isRTL: boolean) => StyleSheet.create({
   },
   footerText: {
     fontSize: 16,
-    color: '#666666',
+    color: theme.colors.textSecondary,
   },
   linkText: {
     fontSize: 16,
-    color: '#007AFF',
+    color: theme.colors.primary,
     fontWeight: '600',
   },
 });

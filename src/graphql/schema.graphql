@@ -2,6 +2,7 @@ scalar DateTime
 scalar Date
 
 type Query {
+  grades: [Grade!]!
   userQuizHistory: [UserQuizHistory!]!
   subjectsForUserGrade: [Subject!]!
   lessonsForSubject(subjectId: ID!): [Lesson!]!
@@ -11,9 +12,18 @@ type Query {
 
 type Mutation {
   login(email: String!, password: String!): AuthPayload!
-  register(name: String!, email: String!, password: String!, password_confirmation: String!, grade_id: ID!): AuthPayload!
+  register(
+    name: String!
+    email: String!
+    password: String!
+    password_confirmation: String!
+    grade_id: ID!
+  ): AuthPayload!
   startQuiz(subjectId: ID!, lessonIds: [ID!]!): Quiz!
-  submitQuizAnswers(quizId: ID!, answers: [QuestionAnswerInput!]!): QuizSubmissionResult!
+  submitQuizAnswers(
+    quizId: ID!
+    answers: [QuestionAnswerInput!]!
+  ): QuizSubmissionResult!
 }
 
 type User {

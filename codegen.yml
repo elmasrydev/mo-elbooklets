@@ -13,9 +13,8 @@ generates:
       withComponent: false
       withHOC: false
       withMutationFn: true
-      apolloReactHooksImportFrom: "@apollo/client"
-      apolloReactCommonImportFrom: "@apollo/client"
       skipTypename: false
+      reactApolloVersion: 3
       withRefetchFn: false
       withResultType: true
       withMutationOptionsType: true
