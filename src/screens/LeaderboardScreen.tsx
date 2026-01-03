@@ -392,22 +392,24 @@ const LeaderboardScreen: React.FC = () => {
                     </View>
                   </View>
                 </View>
-                <TouchableOpacity
-                  style={[
-                    currentStyles.followButton,
-                    student.isFollowing && currentStyles.followButtonFollowing
-                  ]}
-                  onPress={() => handleFollowToggle(student)}
-                >
-                  <Text
+                {student.id !== user?.id && (
+                  <TouchableOpacity
                     style={[
-                      currentStyles.followButtonText,
-                      student.isFollowing && currentStyles.followButtonTextFollowing
+                      currentStyles.followButton,
+                      student.isFollowing && currentStyles.followButtonFollowing
                     ]}
+                    onPress={() => handleFollowToggle(student)}
                   >
-                    {student.isFollowing ? t('common.following') : t('common.follow')}
-                  </Text>
-                </TouchableOpacity>
+                    <Text
+                      style={[
+                        currentStyles.followButtonText,
+                        student.isFollowing && currentStyles.followButtonTextFollowing
+                      ]}
+                    >
+                      {student.isFollowing ? t('common.following') : t('common.follow')}
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
             ))
           )}
