@@ -59,7 +59,7 @@
   "home_screen": {
     "welcome_back": "Welcome back,",
     "quizzes": "Quizzes",
-    "completed": "Completed",
+    "completed": "AVG Score",
     "recent_activity": "Recent Activity",
     "loading_activities": "Loading activities...",
     "error_loading": "Error Loading Activities",
