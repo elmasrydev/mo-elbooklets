@@ -198,6 +198,8 @@
     "password_too_short": "يجب أن تكون كلمة المرور 8 أحرف على الأقل",
     "registration_error": "حدث خطأ أثناء التسجيل",
     "select_grade": "اختر سنتك الدراسية",
+    "educational_system": "النظام التعليمي",
+    "select_educational_system": "اختر نظامك التعليمي",
     "confirm_password": "تأكيد كلمة المرور",
     "confirm_password_placeholder": "أكد كلمة المرور"
   },

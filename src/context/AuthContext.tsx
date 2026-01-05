@@ -12,6 +12,8 @@ interface User {
   mobile: string;
   grade_id?: string;
   grade?: { id: string; name: string };
+  educational_system_id?: string;
+  educational_system?: { id: string; name: string };
 }
 
 interface LoginInput {
@@ -25,6 +27,7 @@ interface RegisterInput {
   mobile: string;
   password: string;
   grade_id: string;
+  educational_system_id: string;
 }
 
 interface AuthContextType {

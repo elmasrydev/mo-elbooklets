@@ -198,6 +198,8 @@
     "password_too_short": "Password must be at least 8 characters long",
     "registration_error": "An error occurred during registration",
     "select_grade": "Select your grade",
+    "educational_system": "Educational System",
+    "select_educational_system": "Select your educational system",
     "confirm_password": "Confirm Password",
     "confirm_password_placeholder": "Confirm your password"
   },

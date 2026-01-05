@@ -30,6 +30,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('');
+  const [selectedSystem, setSelectedSystem] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
   const { register } = useAuth();
@@ -38,10 +39,13 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
   const { t } = useTranslation();
   
   const [gradesData, setGradesData] = useState<{ grades: any[] } | null>(null);
+  const [systemsData, setSystemsData] = useState<{ educationalSystems: any[] } | null>(null);
   const [gradesLoading, setGradesLoading] = useState(true);
+  const [systemsLoading, setSystemsLoading] = useState(true);
 
   useEffect(() => {
     fetchGrades();
+    fetchSystems();
   }, []);
 
   const fetchGrades = async () => {
@@ -65,9 +69,30 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
     }
   };
 
+  const fetchSystems = async () => {
+    try {
+      setSystemsLoading(true);
+      const result = await tryFetchWithFallback(`
+        query GetSystems {
+          educationalSystems {
+            id
+            name
+          }
+        }
+      `);
+      if (result.data) {
+        setSystemsData(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching systems:', error);
+    } finally {
+      setSystemsLoading(false);
+    }
+  };
+
   const handleRegister = async () => {
     // Validation
-    if (!name.trim() || !email.trim() || !mobile.trim() || !password.trim() || !selectedGrade) {
+    if (!name.trim() || !email.trim() || !mobile.trim() || !password.trim() || !selectedGrade || !selectedSystem) {
       Alert.alert(t('common.error'), t('auth.fill_all_fields'));
       return;
     }
@@ -91,6 +116,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
         mobile: mobile.trim(),
         password,
         grade_id: selectedGrade,
+        educational_system_id: selectedSystem,
       });
       
       if (!result.success) {
@@ -190,6 +216,39 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
                       key={grade.id} 
                       label={grade.name} 
                       value={grade.id}
+                    />
+                  ))}
+                </Picker>
+              </View>
+            )}
+          </View>
+
+          <View style={currentStyles.inputContainer}>
+            <Text style={currentStyles.label}>{t('auth.educational_system')}</Text>
+            {systemsLoading ? (
+              <View style={currentStyles.loadingContainer}>
+                <ActivityIndicator size="small" color={theme.colors.primary} />
+                <Text style={currentStyles.loadingText}>{t('home_screen.loading_activities')}</Text>
+              </View>
+            ) : (
+              <View style={currentStyles.pickerContainer}>
+                <Picker
+                  selectedValue={selectedSystem}
+                  onValueChange={setSelectedSystem}
+                  enabled={!isLoading}
+                  style={currentStyles.picker}
+                  dropdownIconColor={theme.colors.text}
+                  mode="dropdown"
+                >
+                  <Picker.Item 
+                    label={t('auth.select_educational_system')} 
+                    value="" 
+                  />
+                  {systemsData?.educationalSystems?.map((system: any) => (
+                    <Picker.Item 
+                      key={system.id} 
+                      label={system.name} 
+                      value={system.id}
                     />
                   ))}
                 </Picker>
