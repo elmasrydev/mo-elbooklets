@@ -39,8 +39,11 @@
       "fallbackToCacheTimeout": 0
     },
     "runtimeVersion": "1.0.0",
-    "plugins": ["expo-localization"],
-    "extra": {  
+    "plugins": [
+      "expo-localization",
+      "expo-font"
+    ],
+    "extra": {
       "supportsRTL": true,
       "eas": {
         "projectId": "d4dcdf3d-7581-496d-96a9-c5acca79629d"

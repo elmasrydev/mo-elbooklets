@@ -39,7 +39,7 @@ interface QuizResultsScreenProps {
 }
 
 const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({ quizId, onBack, onRetakeQuiz }) => {
-  const { theme } = useTheme();
+  const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
@@ -102,7 +102,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({ quizId, onBack, o
     }
   };
 
-  const currentStyles = styles(theme, isRTL);
+  const currentStyles = styles(theme, isRTL, fontSizes, spacing, borderRadius);
 
   if (loading) {
     return (
@@ -302,39 +302,39 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({ quizId, onBack, o
   );
 };
 
-const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
+const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, borderRadius: any) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
   },
   header: {
-    padding: 20,
+    padding: spacing.xl,
     paddingTop: 50,
     backgroundColor: theme.colors.headerBackground,
     alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   backButton: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   backButtonText: {
-    fontSize: 16,
+    fontSize: fontSizes.base,
     fontWeight: '500',
     color: theme.colors.headerText,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: fontSizes['2xl'],
     fontWeight: 'bold',
     color: theme.colors.headerText,
   },
   headerSubtitle: {
-    fontSize: 16,
+    fontSize: fontSizes.base,
     opacity: 0.9,
-    marginTop: 4,
+    marginTop: spacing.xs,
     color: theme.colors.headerSubtitle,
   },
   content: {
     flex: 1,
-    padding: 20,
+    padding: spacing.xl,
   },
   loadingContainer: {
     flex: 1,
@@ -342,47 +342,47 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    marginTop: 16,
-    fontSize: 16,
+    marginTop: spacing.lg,
+    fontSize: fontSizes.base,
     color: theme.colors.textSecondary,
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: spacing.xl,
   },
   errorIcon: {
     fontSize: 48,
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   errorTitle: {
-    fontSize: 20,
+    fontSize: fontSizes.xl,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
     color: theme.colors.text,
   },
   errorText: {
-    fontSize: 14,
+    fontSize: fontSizes.sm,
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: spacing.xl,
     color: theme.colors.textSecondary,
   },
   retryButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingHorizontal: spacing['2xl'],
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
     backgroundColor: theme.colors.buttonPrimary,
   },
   retryButtonText: {
     color: theme.colors.buttonPrimaryText,
-    fontSize: 16,
+    fontSize: fontSizes.base,
     fontWeight: '600',
   },
   scoreContainer: {
-    padding: 24,
-    borderRadius: 16,
-    marginBottom: 20,
+    padding: spacing['2xl'],
+    borderRadius: borderRadius.xl,
+    marginBottom: spacing.xl,
     alignItems: 'center',
     backgroundColor: theme.colors.card,
   },
@@ -393,7 +393,7 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     borderWidth: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: spacing.xl,
   },
   scoreCirclePassed: {
     borderColor: theme.colors.success,
@@ -402,7 +402,7 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     borderColor: theme.colors.error,
   },
   scorePercentage: {
-    fontSize: 32,
+    fontSize: fontSizes['3xl'],
     fontWeight: 'bold',
   },
   scorePercentagePassed: {
@@ -412,8 +412,8 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     color: theme.colors.error,
   },
   scoreLabel: {
-    fontSize: 14,
-    marginTop: 4,
+    fontSize: fontSizes.sm,
+    marginTop: spacing.xs,
     color: theme.colors.textSecondary,
   },
   scoreDetails: {
@@ -425,21 +425,21 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     alignItems: 'center',
   },
   scoreNumber: {
-    fontSize: 24,
+    fontSize: fontSizes['2xl'],
     fontWeight: 'bold',
     color: theme.colors.text,
   },
   scoreText: {
-    fontSize: 14,
-    marginTop: 4,
+    fontSize: fontSizes.sm,
+    marginTop: spacing.xs,
     color: theme.colors.textSecondary,
   },
   statusContainer: {
     flexDirection: isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 20,
+    padding: spacing.lg,
+    borderRadius: borderRadius.lg,
+    marginBottom: spacing.xl,
   },
   statusContainerPassed: {
     backgroundColor: theme.colors.successBackground,
@@ -448,9 +448,9 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     backgroundColor: theme.colors.errorBackground,
   },
   statusIcon: {
-    fontSize: 24,
-    marginRight: isRTL ? 0 : 12,
-    marginLeft: isRTL ? 12 : 0,
+    fontSize: fontSizes['2xl'],
+    marginRight: isRTL ? 0 : spacing.md,
+    marginLeft: isRTL ? spacing.md : 0,
   },
   statusIconPassed: {
     color: theme.colors.success,
@@ -459,7 +459,7 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     color: theme.colors.error,
   },
   statusText: {
-    fontSize: 16,
+    fontSize: fontSizes.base,
     fontWeight: '600',
     flex: 1,
     textAlign: isRTL ? 'right' : 'left',
@@ -471,95 +471,100 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     color: theme.colors.errorText,
   },
   reviewContainer: {
-    marginBottom: 20,
+    marginBottom: spacing.xl,
   },
   reviewTitle: {
-    fontSize: 20,
+    fontSize: fontSizes.xl,
     fontWeight: 'bold',
-    marginBottom: 16,
+    marginBottom: spacing.lg,
     color: theme.colors.text,
     textAlign: isRTL ? 'right' : 'left',
   },
   questionReview: {
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    padding: spacing.lg,
+    borderRadius: borderRadius.lg,
+    marginBottom: spacing.md,
     backgroundColor: theme.colors.card,
   },
   questionHeader: {
     flexDirection: isRTL ? 'row-reverse' : 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   questionNumber: {
-    fontSize: 14,
+    fontSize: fontSizes.sm,
     fontWeight: '600',
     color: theme.colors.primary,
   },
   answerStatus: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.sm,
     backgroundColor: theme.colors.errorBackground,
   },
   answerStatusText: {
-    fontSize: 12,
+    fontSize: fontSizes.xs,
     fontWeight: '600',
     color: theme.colors.errorText,
   },
   questionText: {
-    fontSize: 16,
-    marginBottom: 12,
+    fontSize: fontSizes.base,
+    marginBottom: spacing.md,
     lineHeight: 22,
     color: theme.colors.text,
     textAlign: isRTL ? 'right' : 'left',
   },
   explanationContainer: {
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 8,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    marginTop: spacing.sm,
     backgroundColor: theme.colors.surface,
   },
   explanationLabel: {
-    fontSize: 14,
+    fontSize: fontSizes.sm,
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
     color: theme.colors.text,
     textAlign: isRTL ? 'right' : 'left',
   },
   explanationText: {
-    fontSize: 14,
+    fontSize: fontSizes.sm,
     lineHeight: 20,
     color: theme.colors.textSecondary,
     textAlign: isRTL ? 'right' : 'left',
   },
   actionContainer: {
     flexDirection: isRTL ? 'row-reverse' : 'row',
-    padding: 20,
+    padding: spacing.xl,
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
-    gap: 12,
+    gap: spacing.md,
     backgroundColor: theme.colors.surface,
   },
   retakeButton: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 8,
+    borderRadius: borderRadius.md,
     alignItems: 'center',
     backgroundColor: theme.colors.buttonPrimary,
+  },
+  retakeButtonText: {
+    fontSize: fontSizes.base,
+    fontWeight: '600',
+    color: theme.colors.buttonPrimaryText,
   },
   doneButton: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 8,
+    borderRadius: borderRadius.md,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: theme.colors.border,
     backgroundColor: theme.colors.card,
   },
   doneButtonText: {
-    fontSize: 16,
+    fontSize: fontSizes.base,
     fontWeight: '600',
     color: theme.colors.text,
   },

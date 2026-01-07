@@ -39,6 +39,7 @@ export const ENVIRONMENT_INFO = {
 // GraphQL endpoint path
 export const GRAPHQL_ENDPOINT = '/graphql';
 
+declare var __DEV__: boolean;
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Logout handler to be set by AuthContext
@@ -167,7 +168,7 @@ export const NetworkUtils = {
    * Test connectivity to all possible URLs
    */
   async testConnectivity(): Promise<{ url: string; status: 'success' | 'failed'; error?: string }[]> {
-    const results = [];
+    const results: { url: string; status: 'success' | 'failed'; error?: string }[] = [];
 
     for (const url of POSSIBLE_URLS) {
       try {
@@ -184,13 +185,13 @@ export const NetworkUtils = {
 
         results.push({
           url,
-          status: response.ok ? 'success' : 'failed',
+          status: (response.ok ? 'success' : 'failed') as 'success' | 'failed',
           error: response.ok ? undefined : `HTTP ${response.status}`
         });
       } catch (error: any) {
         results.push({
           url,
-          status: 'failed',
+          status: 'failed' as const,
           error: error.message
         });
       }

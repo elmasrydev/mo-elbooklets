@@ -1,5 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ColorTheme, getColorPalette, DEFAULT_COLOR_THEME, ColorPalette } from '../config/colors';
+import { fontSizes, spacing, borderRadius, fontFamilies } from '../config/fonts';
 
 type ThemeMode = 'light' | 'dark';
 
@@ -55,6 +57,18 @@ interface ThemeColors {
   logoutColor: string;
   logoutButtonBackground: string;
   shadow: string;
+  // Primary color palette
+  primary50: string;
+  primary100: string;
+  primary200: string;
+  primary300: string;
+  primary400: string;
+  primary500: string;
+  primary600: string;
+  primary700: string;
+  primary800: string;
+  primary900: string;
+  primaryLight: string;
 }
 
 interface Theme {
@@ -66,120 +80,150 @@ interface ThemeContextType {
   theme: Theme;
   toggleTheme: () => void;
   isDark: boolean;
+  colorTheme: ColorTheme;
+  setColorTheme: (theme: ColorTheme) => void;
+  fonts: typeof fontFamilies;
+  fontSizes: typeof fontSizes;
+  spacing: typeof spacing;
+  borderRadius: typeof borderRadius;
 }
 
-const lightTheme: Theme = {
-  mode: 'light',
-  colors: {
-    background: '#f5f5f5',
-    surface: '#ffffff',
-    text: '#333333',
-    textSecondary: '#666666',
-    textTertiary: '#999999',
-    border: '#e0e0e0',
-    primary: '#007AFF',
-    secondary: '#4CAF50',
-    card: '#ffffff',
-    headerBackground: '#007AFF',
-    headerText: '#ffffff',
-    headerSubtitle: '#ffffff',
-    tabActive: '#333333',
-    tabInactive: 'transparent',
-    tabActiveText: '#ffffff',
-    tabInactiveText: '#666666',
-    buttonPrimary: '#007AFF',
-    buttonPrimaryText: '#ffffff',
-    buttonSecondary: '#e0e0e0',
-    buttonSecondaryText: '#666666',
-    buttonDisabled: '#e0e0e0',
-    buttonDisabledText: '#999999',
-    avatarBackground: '#007AFF',
-    avatarText: '#ffffff',
-    rankBadgeText: '#000000',
-    gold: '#FFD700',
-    silver: '#C0C0C0',
-    bronze: '#CD7F32',
-    orange: '#FF9800',
-    success: '#28a745',
-    successBackground: '#d4edda',
-    successText: '#155724',
-    error: '#dc3545',
-    errorBackground: '#f8d7da',
-    errorText: '#721c24',
-    warning: '#FF9800',
-    warningBackground: '#fff3cd',
-    warningText: '#856404',
-    passBackground: '#E8F5E8',
-    passText: '#4CAF50',
-    failBackground: '#FFEBEE',
-    failText: '#F44336',
-    iconBackground: '#E3F2FD',
-    checkboxBorder: '#e0e0e0',
-    checkboxSelected: '#007AFF',
-    checkboxSelectedText: '#ffffff',
-    checkboxPartial: '#FFA500',
-    answerSelectedBackground: '#E3F2FD',
-    logoutColor: '#F44336',
-    logoutButtonBackground: '#E3F2FD',
-    shadow: '#000000',
-  },
-};
-
-const darkTheme: Theme = {
-  mode: 'dark',
-  colors: {
-    background: '#121212',
-    surface: '#1E1E1E',
-    text: '#FFFFFF',
-    textSecondary: '#B0B0B0',
-    textTertiary: '#808080',
-    border: '#333333',
-    primary: '#007AFF',
-    secondary: '#4CAF50',
-    card: '#2A2A2A',
-    headerBackground: '#1E1E1E',
-    headerText: '#FFFFFF',
-    headerSubtitle: '#FFFFFF',
-    tabActive: '#2A2A2A',
-    tabInactive: 'transparent',
-    tabActiveText: '#FFFFFF',
-    tabInactiveText: '#B0B0B0',
-    buttonPrimary: '#007AFF',
-    buttonPrimaryText: '#ffffff',
-    buttonSecondary: '#333333',
-    buttonSecondaryText: '#B0B0B0',
-    buttonDisabled: '#333333',
-    buttonDisabledText: '#808080',
-    avatarBackground: '#007AFF',
-    avatarText: '#ffffff',
-    rankBadgeText: '#000000',
-    gold: '#FFD700',
-    silver: '#C0C0C0',
-    bronze: '#CD7F32',
-    orange: '#FF9800',
-    success: '#28a745',
-    successBackground: '#1e3a1e',
-    successText: '#90EE90',
-    error: '#dc3545',
-    errorBackground: '#3a1e1e',
-    errorText: '#ff6b6b',
-    warning: '#FF9800',
-    warningBackground: '#3a2e1e',
-    warningText: '#FFB84D',
-    passBackground: '#1e3a1e',
-    passText: '#90EE90',
-    failBackground: '#3a1e1e',
-    failText: '#ff6b6b',
-    iconBackground: '#1a3a5a',
-    checkboxBorder: '#333333',
-    checkboxSelected: '#007AFF',
-    checkboxSelectedText: '#ffffff',
-    checkboxPartial: '#FF9800',
-    answerSelectedBackground: '#1a3a5a',
-    logoutColor: '#F44336',
-    logoutButtonBackground: '#1a3a5a',
-    shadow: '#000000',
-  },
+// Generate theme colors based on mode and color palette
+const generateThemeColors = (mode: ThemeMode, palette: ColorPalette): ThemeColors => {
+  if (mode === 'light') {
+    return {
+      background: '#f5f5f5',
+      surface: '#ffffff',
+      text: '#333333',
+      textSecondary: '#666666',
+      textTertiary: '#999999',
+      border: '#e0e0e0',
+      primary: palette.primary500,
+      secondary: '#4CAF50',
+      card: '#ffffff',
+      headerBackground: palette.primary500,
+      headerText: '#ffffff',
+      headerSubtitle: '#ffffff',
+      tabActive: '#333333',
+      tabInactive: 'transparent',
+      tabActiveText: '#ffffff',
+      tabInactiveText: '#666666',
+      buttonPrimary: palette.primary500,
+      buttonPrimaryText: '#ffffff',
+      buttonSecondary: '#e0e0e0',
+      buttonSecondaryText: '#666666',
+      buttonDisabled: '#e0e0e0',
+      buttonDisabledText: '#999999',
+      avatarBackground: palette.primary500,
+      avatarText: '#ffffff',
+      rankBadgeText: '#000000',
+      gold: '#FFD700',
+      silver: '#C0C0C0',
+      bronze: '#CD7F32',
+      orange: '#FF9800',
+      success: '#28a745',
+      successBackground: '#d4edda',
+      successText: '#155724',
+      error: '#dc3545',
+      errorBackground: '#f8d7da',
+      errorText: '#721c24',
+      warning: '#FF9800',
+      warningBackground: '#fff3cd',
+      warningText: '#856404',
+      passBackground: '#E8F5E8',
+      passText: '#4CAF50',
+      failBackground: '#FFEBEE',
+      failText: '#F44336',
+      iconBackground: palette.primary100,
+      checkboxBorder: '#e0e0e0',
+      checkboxSelected: palette.primary500,
+      checkboxSelectedText: '#ffffff',
+      checkboxPartial: '#FFA500',
+      answerSelectedBackground: palette.primary100,
+      logoutColor: '#F44336',
+      logoutButtonBackground: palette.primary100,
+      shadow: '#000000',
+      // Primary palette colors
+      primary50: palette.primary50,
+      primary100: palette.primary100,
+      primary200: palette.primary200,
+      primary300: palette.primary300,
+      primary400: palette.primary400,
+      primary500: palette.primary500,
+      primary600: palette.primary600,
+      primary700: palette.primary700,
+      primary800: palette.primary800,
+      primary900: palette.primary900,
+      primaryLight: palette.primary100,
+    };
+  } else {
+    // Dark mode
+    return {
+      background: '#020617', // Slate 950 (Dark Navy)
+      surface: '#0f172a',    // Slate 900
+      text: '#f8fafc',       // Slate 50
+      textSecondary: '#94a3b8', // Slate 400
+      textTertiary: '#64748b',  // Slate 500
+      border: '#1e293b',     // Slate 800
+      primary: palette.primary500,
+      secondary: '#10b981',
+      card: '#1e293b',       // Slate 800
+      headerBackground: '#020617',
+      headerText: '#f8fafc',
+      headerSubtitle: '#94a3b8',
+      tabActive: '#1e293b',
+      tabInactive: 'transparent',
+      tabActiveText: '#f8fafc',
+      tabInactiveText: '#64748b',
+      buttonPrimary: palette.primary500,
+      buttonPrimaryText: '#ffffff',
+      buttonSecondary: '#333333',
+      buttonSecondaryText: '#B0B0B0',
+      buttonDisabled: '#333333',
+      buttonDisabledText: '#808080',
+      avatarBackground: palette.primary500,
+      avatarText: '#ffffff',
+      rankBadgeText: '#000000',
+      gold: '#FFD700',
+      silver: '#C0C0C0',
+      bronze: '#CD7F32',
+      orange: '#FF9800',
+      success: '#28a745',
+      successBackground: '#1e3a1e',
+      successText: '#90EE90',
+      error: '#dc3545',
+      errorBackground: '#3a1e1e',
+      errorText: '#ff6b6b',
+      warning: '#FF9800',
+      warningBackground: '#3a2e1e',
+      warningText: '#FFB84D',
+      passBackground: '#1e3a1e',
+      passText: '#90EE90',
+      failBackground: '#3a1e1e',
+      failText: '#ff6b6b',
+      iconBackground: palette.primary900,
+      checkboxBorder: '#333333',
+      checkboxSelected: palette.primary500,
+      checkboxSelectedText: '#ffffff',
+      checkboxPartial: '#FF9800',
+      answerSelectedBackground: palette.primary900,
+      logoutColor: '#F44336',
+      logoutButtonBackground: palette.primary900,
+      shadow: '#000000',
+      // Primary palette colors
+      primary50: palette.primary50,
+      primary100: palette.primary100,
+      primary200: palette.primary200,
+      primary300: palette.primary300,
+      primary400: palette.primary400,
+      primary500: palette.primary500,
+      primary600: palette.primary600,
+      primary700: palette.primary700,
+      primary800: palette.primary800,
+      primary900: palette.primary900,
+      primaryLight: palette.primary900,
+    };
+  }
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -190,42 +234,72 @@ interface ThemeProviderProps {
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [themeMode, setThemeMode] = useState<ThemeMode>('dark'); // Default to dark
+  const [currentColorTheme, setCurrentColorTheme] = useState<ColorTheme>(DEFAULT_COLOR_THEME);
 
   useEffect(() => {
-    loadTheme();
+    const loadPreferences = async () => {
+      try {
+        const [savedTheme, savedColorTheme] = await Promise.all([
+          AsyncStorage.getItem('theme_mode'),
+          AsyncStorage.getItem('color_theme'),
+        ]);
+        
+        if (savedTheme === 'light' || savedTheme === 'dark') {
+          setThemeMode(savedTheme);
+        }
+        
+        if (savedColorTheme && ['green', 'purple', 'blue', 'orange'].includes(savedColorTheme)) {
+          setCurrentColorTheme(savedColorTheme as ColorTheme);
+        }
+      } catch (error) {
+        console.error('Error loading theme preferences:', error);
+      }
+    };
+    
+    loadPreferences();
   }, []);
 
-  const loadTheme = async () => {
-    try {
-      const savedTheme = await AsyncStorage.getItem('theme_mode');
-      if (savedTheme === 'light' || savedTheme === 'dark') {
-        setThemeMode(savedTheme);
-      }
-    } catch (error) {
-      console.error('Error loading theme:', error);
-    }
-  };
+  const toggleTheme = useCallback(() => {
+    setThemeMode((prevMode) => {
+      const newMode: ThemeMode = prevMode === 'light' ? 'dark' : 'light';
+      AsyncStorage.setItem('theme_mode', newMode).catch((error) => {
+        console.error('Error saving theme mode:', error);
+      });
+      return newMode;
+    });
+  }, []);
 
-  const toggleTheme = async () => {
-    const newMode: ThemeMode = themeMode === 'light' ? 'dark' : 'light';
-    setThemeMode(newMode);
-    try {
-      await AsyncStorage.setItem('theme_mode', newMode);
-    } catch (error) {
-      console.error('Error saving theme:', error);
-    }
-  };
+  const setColorTheme = useCallback((newColorTheme: ColorTheme) => {
+    setCurrentColorTheme(newColorTheme);
+    AsyncStorage.setItem('color_theme', newColorTheme).catch((error) => {
+      console.error('Error saving color theme:', error);
+    });
+  }, []);
 
-  const theme: Theme = themeMode === 'light' ? lightTheme : darkTheme;
+  // Generate theme based on current mode and color theme
+  const theme = useMemo<Theme>(() => {
+    const palette = getColorPalette(currentColorTheme);
+    const themeColors = generateThemeColors(themeMode, palette);
+    return {
+      mode: themeMode,
+      colors: themeColors,
+    };
+  }, [themeMode, currentColorTheme]);
+
+  const contextValue = useMemo<ThemeContextType>(() => ({
+    theme,
+    toggleTheme,
+    isDark: themeMode === 'dark',
+    colorTheme: currentColorTheme,
+    setColorTheme,
+    fonts: fontFamilies,
+    fontSizes,
+    spacing,
+    borderRadius,
+  }), [theme, toggleTheme, themeMode, currentColorTheme, setColorTheme]);
 
   return (
-    <ThemeContext.Provider
-      value={{
-        theme,
-        toggleTheme,
-        isDark: themeMode === 'dark',
-      }}
-    >
+    <ThemeContext.Provider value={contextValue}>
       {children}
     </ThemeContext.Provider>
   );
@@ -238,4 +312,3 @@ export const useTheme = (): ThemeContextType => {
   }
   return context;
 };
-

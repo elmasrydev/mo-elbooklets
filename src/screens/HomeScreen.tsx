@@ -29,7 +29,7 @@ interface ActivitiesData {
 
 const HomeScreen: React.FC = () => {
   const { user, logout } = useAuth();
-  const { theme } = useTheme();
+  const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { isRTL, language } = useLanguage();
   const { t } = useTranslation();
   const [activitiesData, setActivitiesData] = useState<ActivitiesData | null>(null);
@@ -95,7 +95,7 @@ const HomeScreen: React.FC = () => {
     }, [fetchActivities])
   );
 
-  const currentStyles = styles(theme, isRTL);
+  const currentStyles = styles(theme, isRTL, fontSizes, spacing, borderRadius);
 
   return (
     <ScrollView style={currentStyles.container}>
@@ -258,13 +258,13 @@ const HomeScreen: React.FC = () => {
   );
 };
 
-const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
+const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, borderRadius: any) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
   },
   header: {
-    padding: 20,
+    padding: spacing.xl,
     paddingTop: 50,
     flexDirection: isRTL ? 'row-reverse' : 'row',
     justifyContent: 'space-between',
@@ -276,42 +276,42 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   welcomeText: {
-    fontSize: 16,
+    fontSize: fontSizes.base,
     opacity: 0.9,
     color: theme.colors.headerText,
   },
   userName: {
-    fontSize: 24,
+    fontSize: fontSizes['2xl'],
     fontWeight: 'bold',
-    marginTop: 4,
+    marginTop: spacing.xs,
     color: theme.colors.headerText,
   },
   gradeText: {
-    fontSize: 14,
+    fontSize: fontSizes.sm,
     opacity: 0.8,
-    marginTop: 4,
+    marginTop: spacing.xs,
     color: theme.colors.headerSubtitle,
   },
   logoutButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.full,
     backgroundColor: theme.colors.logoutButtonBackground,
   },
   logoutButtonText: {
-    fontSize: 14,
+    fontSize: fontSizes.sm,
     fontWeight: '600',
     color: theme.colors.text,
   },
   statsContainer: {
     flexDirection: isRTL ? 'row-reverse' : 'row',
-    padding: 20,
-    gap: 15,
+    padding: spacing.xl,
+    gap: spacing.md,
   },
   statCard: {
     flex: 1,
-    padding: 20,
-    borderRadius: 12,
+    padding: spacing.xl,
+    borderRadius: borderRadius.lg,
     alignItems: 'center',
     backgroundColor: theme.colors.card,
     shadowColor: theme.colors.shadow,
@@ -321,30 +321,30 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     elevation: 3,
   },
   statNumber: {
-    fontSize: 28,
+    fontSize: fontSizes['2xl'],
     fontWeight: 'bold',
     color: theme.colors.primary,
   },
   statLabel: {
-    fontSize: 14,
-    marginTop: 4,
+    fontSize: fontSizes.sm,
+    marginTop: spacing.xs,
     color: theme.colors.textSecondary,
   },
   section: {
-    padding: 20,
+    padding: spacing.xl,
     alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: fontSizes.xl,
     fontWeight: 'bold',
-    marginBottom: 15,
+    marginBottom: spacing.lg,
     color: theme.colors.text,
     width: '100%',
     textAlign: isRTL ? 'right' : 'left',
   },
   emptyState: {
-    padding: 40,
-    borderRadius: 12,
+    padding: spacing['4xl'],
+    borderRadius: borderRadius.lg,
     alignItems: 'center',
     backgroundColor: theme.colors.card,
     shadowColor: theme.colors.shadow,
@@ -356,29 +356,29 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
   },
   emptyStateText: {
     fontSize: 48,
-    marginBottom: 15,
+    marginBottom: spacing.lg,
   },
   emptyStateTitle: {
-    fontSize: 18,
+    fontSize: fontSizes.lg,
     fontWeight: '600',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
     color: theme.colors.text,
   },
   emptyStateSubtitle: {
-    fontSize: 14,
+    fontSize: fontSizes.sm,
     textAlign: 'center',
     color: theme.colors.textSecondary,
   },
   actionsGrid: {
     flexDirection: isRTL ? 'row-reverse' : 'row',
     flexWrap: 'wrap',
-    gap: 15,
+    gap: spacing.md,
   },
   actionCard: {
     width: '47%',
     backgroundColor: theme.colors.card,
-    padding: 20,
-    borderRadius: 12,
+    padding: spacing.xl,
+    borderRadius: borderRadius.lg,
     alignItems: 'center',
     shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
@@ -388,24 +388,24 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
   },
   actionIcon: {
     fontSize: 32,
-    marginBottom: 10,
+    marginBottom: spacing.md,
   },
   actionTitle: {
-    fontSize: 16,
+    fontSize: fontSizes.base,
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
     textAlign: 'center',
     color: theme.colors.text,
   },
   actionSubtitle: {
-    fontSize: 12,
+    fontSize: fontSizes.xs,
     textAlign: 'center',
     color: theme.colors.textSecondary,
   },
   loadingState: {
     backgroundColor: theme.colors.card,
-    padding: 40,
-    borderRadius: 12,
+    padding: spacing['4xl'],
+    borderRadius: borderRadius.lg,
     alignItems: 'center',
     shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
@@ -415,30 +415,30 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     width: '100%',
   },
   loadingText: {
-    marginTop: 15,
-    fontSize: 14,
+    marginTop: spacing.lg,
+    fontSize: fontSizes.sm,
     color: theme.colors.textSecondary,
   },
   retryButton: {
-    marginTop: 15,
+    marginTop: spacing.lg,
     backgroundColor: theme.colors.buttonPrimary,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
   },
   retryButtonText: {
     color: theme.colors.buttonPrimaryText,
-    fontSize: 14,
+    fontSize: fontSizes.sm,
     fontWeight: '600',
   },
   activitiesList: {
-    gap: 15,
+    gap: spacing.md,
     width: '100%',
   },
   activityCard: {
     backgroundColor: theme.colors.card,
-    padding: 16,
-    borderRadius: 12,
+    padding: spacing.lg,
+    borderRadius: borderRadius.lg,
     shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -446,17 +446,17 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     elevation: 3,
   },
   activityHeader: {
-    marginBottom: 12,
+    marginBottom: spacing.md,
     alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   activityName: {
-    fontSize: 16,
+    fontSize: fontSizes.base,
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
     color: theme.colors.text,
   },
   activitySubject: {
-    fontSize: 14,
+    fontSize: fontSizes.sm,
     color: theme.colors.textSecondary,
   },
   activityDetails: {
@@ -468,11 +468,11 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   activityScoreText: {
-    fontSize: 24,
+    fontSize: fontSizes['2xl'],
     fontWeight: 'bold',
   },
   activityScoreLabel: {
-    fontSize: 12,
+    fontSize: fontSizes.xs,
     marginTop: 2,
     color: theme.colors.textSecondary,
   },
@@ -480,10 +480,10 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     alignItems: isRTL ? 'flex-start' : 'flex-end',
   },
   activityStatusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    marginBottom: 6,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.lg,
+    marginBottom: spacing.xs,
   },
   activityStatusBadgePassed: {
     backgroundColor: theme.colors.passBackground,
@@ -492,7 +492,7 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     backgroundColor: theme.colors.failBackground,
   },
   activityStatusText: {
-    fontSize: 12,
+    fontSize: fontSizes.xs,
     fontWeight: '600',
   },
   activityStatusTextPassed: {
@@ -502,7 +502,7 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     color: theme.colors.failText,
   },
   activityDateText: {
-    fontSize: 12,
+    fontSize: fontSizes.xs,
     color: theme.colors.textSecondary,
   },
 });

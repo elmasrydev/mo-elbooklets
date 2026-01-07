@@ -14,7 +14,7 @@ generates:
       withHOC: false
       withMutationFn: true
       skipTypename: false
-      reactApolloVersion: 3
+      reactApolloVersion: 4
       withRefetchFn: false
       withResultType: true
       withMutationOptionsType: true

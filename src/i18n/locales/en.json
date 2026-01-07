@@ -46,6 +46,8 @@
     "dark_mode": "Dark Mode",
     "switch_light": "Switch to light mode",
     "switch_dark": "Switch to dark mode",
+    "color_theme": "Color Theme",
+    "choose_accent_color": "Choose your accent color",
     "app_preferences": "App preferences and notifications",
     "contact_support": "Get help and contact support",
     "app_info": "App information and version",

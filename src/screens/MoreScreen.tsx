@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
+import ColorThemePicker from '../components/ColorThemePicker';
 
 interface MenuItem {
   id: string;
@@ -14,11 +15,12 @@ interface MenuItem {
   color?: string;
   isSwitch?: boolean;
   isLanguageSelector?: boolean;
+  isColorThemePicker?: boolean;
 }
 
 const MoreScreen: React.FC = () => {
   const { user, logout } = useAuth();
-  const { theme, toggleTheme, isDark } = useTheme();
+  const { theme, toggleTheme, isDark, fontSizes, spacing, borderRadius } = useTheme();
   const { language, setLanguage, isRTL } = useLanguage();
   const { t } = useTranslation();
 
@@ -112,6 +114,14 @@ const MoreScreen: React.FC = () => {
       isSwitch: true,
     },
     {
+      id: 'colorTheme',
+      title: t('more_screen.color_theme'),
+      subtitle: t('more_screen.choose_accent_color'),
+      icon: '🎨',
+      action: () => {},
+      isColorThemePicker: true,
+    },
+    {
       id: 'settings',
       title: t('common.settings'),
       subtitle: t('more_screen.app_preferences'),
@@ -142,7 +152,7 @@ const MoreScreen: React.FC = () => {
     },
   ];
 
-  const currentStyles = styles(theme, isRTL);
+  const currentStyles = styles(theme, isRTL, fontSizes, spacing, borderRadius);
 
   const renderLanguageSelector = () => (
     <View style={currentStyles.languageSelectorContainer}>
@@ -213,8 +223,8 @@ const MoreScreen: React.FC = () => {
                   currentStyles.menuItem,
                   index === menuItems.length - 1 && currentStyles.lastMenuItem
                 ]}
-                onPress={item.isSwitch || item.isLanguageSelector ? undefined : item.action}
-                disabled={item.isSwitch || item.isLanguageSelector}
+                onPress={item.isSwitch || item.isLanguageSelector || item.isColorThemePicker ? undefined : item.action}
+                disabled={item.isSwitch || item.isLanguageSelector || item.isColorThemePicker}
               >
                 <View style={currentStyles.menuItemLeft}>
                   <Text style={currentStyles.menuIcon}>{item.icon}</Text>
@@ -239,11 +249,16 @@ const MoreScreen: React.FC = () => {
                     trackColor={{ false: '#767577', true: theme.colors.primary }}
                     thumbColor="#f4f3f4"
                   />
-                ) : item.isLanguageSelector ? null : (
+                ) : item.isLanguageSelector || item.isColorThemePicker ? null : (
                   <Text style={currentStyles.menuArrow}>{isRTL ? '‹' : '›'}</Text>
                 )}
               </TouchableOpacity>
               {item.isLanguageSelector && renderLanguageSelector()}
+              {item.isColorThemePicker && (
+                <View style={currentStyles.colorThemeContainer}>
+                  <ColorThemePicker />
+                </View>
+              )}
             </View>
           ))}
         </View>
@@ -257,57 +272,54 @@ const MoreScreen: React.FC = () => {
   );
 };
 
-const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
+const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, borderRadius: any) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
   },
   header: {
-    padding: 20,
+    padding: spacing.xl,
     paddingTop: 50,
     backgroundColor: theme.colors.headerBackground,
     alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: fontSizes['2xl'],
     fontWeight: 'bold',
     color: theme.colors.headerText,
   },
   headerSubtitle: {
-    fontSize: 16,
-    marginTop: 4,
-    color: theme.colors.headerSubtitle,
+    fontSize: fontSizes.base,
     opacity: 0.9,
+    marginTop: spacing.xs,
+    color: theme.colors.headerSubtitle,
   },
   content: {
     flex: 1,
-    padding: 20,
+    padding: spacing.xl,
   },
   userCard: {
-    padding: 20,
-    borderRadius: 16,
+    padding: spacing.xl,
+    borderRadius: borderRadius.xl,
     flexDirection: isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: spacing.xl,
     backgroundColor: theme.colors.card,
-    shadowColor: theme.colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   userAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: isRTL ? 0 : 16,
-    marginLeft: isRTL ? 16 : 0,
+    marginRight: isRTL ? 0 : spacing.lg,
+    marginLeft: isRTL ? spacing.lg : 0,
     backgroundColor: theme.colors.avatarBackground,
   },
   userAvatarText: {
-    fontSize: 24,
+    fontSize: fontSizes.xl,
     fontWeight: 'bold',
     color: theme.colors.avatarText,
   },
@@ -316,36 +328,33 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   userName: {
-    fontSize: 18,
+    fontSize: fontSizes.lg,
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
     color: theme.colors.text,
   },
   userEmail: {
-    fontSize: 14,
+    fontSize: fontSizes.sm,
     marginBottom: 2,
     color: theme.colors.textSecondary,
   },
   userGrade: {
-    fontSize: 14,
+    fontSize: fontSizes.sm,
     fontWeight: '500',
     color: theme.colors.primary,
   },
   menuSection: {
-    borderRadius: 16,
+    borderRadius: borderRadius.xl,
     overflow: 'hidden',
     backgroundColor: theme.colors.card,
-    shadowColor: theme.colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   menuItem: {
     flexDirection: isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    padding: spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
   },
@@ -358,9 +367,9 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     flex: 1,
   },
   menuIcon: {
-    fontSize: 24,
-    marginRight: isRTL ? 0 : 16,
-    marginLeft: isRTL ? 16 : 0,
+    fontSize: fontSizes.xl,
+    marginRight: isRTL ? 0 : spacing.lg,
+    marginLeft: isRTL ? spacing.lg : 0,
     width: 32,
     textAlign: 'center',
   },
@@ -369,7 +378,7 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   menuTitle: {
-    fontSize: 16,
+    fontSize: fontSizes.base,
     fontWeight: '600',
     marginBottom: 2,
     color: theme.colors.text,
@@ -378,18 +387,18 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     color: theme.colors.logoutColor,
   },
   menuSubtitle: {
-    fontSize: 14,
+    fontSize: fontSizes.xs,
     color: theme.colors.textSecondary,
   },
   menuArrow: {
-    fontSize: 20,
+    fontSize: fontSizes.lg,
     fontWeight: 'bold',
     color: theme.colors.textTertiary,
   },
   languageSelectorContainer: {
     flexDirection: isRTL ? 'row-reverse' : 'row',
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
   },
@@ -398,10 +407,10 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     flexDirection: isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
     marginHorizontal: 4,
-    borderRadius: 12,
+    borderRadius: borderRadius.lg,
     backgroundColor: theme.colors.background,
     borderWidth: 2,
     borderColor: 'transparent',
@@ -411,7 +420,7 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     backgroundColor: theme.colors.primaryLight || theme.colors.background,
   },
   languageOptionText: {
-    fontSize: 15,
+    fontSize: fontSizes.sm,
     fontWeight: '500',
     color: theme.colors.text,
   },
@@ -420,19 +429,27 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     fontWeight: '600',
   },
   checkmark: {
-    marginLeft: isRTL ? 0 : 8,
-    marginRight: isRTL ? 8 : 0,
-    fontSize: 16,
+    marginLeft: isRTL ? 0 : spacing.sm,
+    marginRight: isRTL ? spacing.sm : 0,
+    fontSize: fontSizes.sm,
     color: theme.colors.primary,
     fontWeight: 'bold',
   },
+  colorThemeContainer: {
+    flexDirection: isRTL ? 'row-reverse' : 'row',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
   versionContainer: {
     alignItems: 'center',
-    marginTop: 32,
-    marginBottom: 20,
+    marginTop: spacing['3xl'],
+    marginBottom: spacing.xl,
   },
   versionText: {
-    fontSize: 12,
+    fontSize: fontSizes.xs,
     color: theme.colors.textTertiary,
   },
 });
