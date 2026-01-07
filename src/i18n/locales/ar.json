@@ -113,6 +113,7 @@
     "start_quiz_count_plural": "ابدأ الاختبار ({{count}} دروس)"
   },
   "quiz_taking": {
+    "quiz": "اختبار",
     "loading_quiz": "جارٍ تحميل الاختبار...",
     "loading_quiz_questions": "جارٍ تحميل أسئلة الاختبار...",
     "quiz_error": "خطأ في الاختبار",

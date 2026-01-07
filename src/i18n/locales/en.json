@@ -113,6 +113,7 @@
     "start_quiz_count_plural": "Start Quiz ({{count}} lessons)"
   },
   "quiz_taking": {
+    "quiz": "Quiz",
     "loading_quiz": "Loading Quiz...",
     "loading_quiz_questions": "Loading quiz questions...",
     "quiz_error": "Quiz Error",

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -37,6 +38,7 @@ const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizCompl
   const { theme } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -261,7 +263,7 @@ const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizCompl
         <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
           <Text style={currentStyles.backButtonText}>{isRTL ? '→' : '←'} {t('common.back')}</Text>
         </TouchableOpacity>
-        <Text style={currentStyles.headerTitle}>{quiz.name}</Text>
+        <Text style={currentStyles.headerTitle}>{t('quiz_taking.quiz')}</Text>
         <Text style={currentStyles.headerSubtitle}>{quiz.subject.name}</Text>
       </View>
 
@@ -306,7 +308,7 @@ const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizCompl
         </View>
       </ScrollView>
 
-      <View style={currentStyles.navigationContainer}>
+      <View style={[currentStyles.navigationContainer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
         <TouchableOpacity
           style={[
             currentStyles.navButton,

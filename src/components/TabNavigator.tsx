@@ -1,6 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text, I18nManager } from 'react-native';
+import { Text, I18nManager, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import HomeScreen from '../screens/HomeScreen';
@@ -33,6 +34,7 @@ const TabNavigator: React.FC = () => {
   const { theme } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
 
   // Define tabs in LTR order
   const tabs: TabConfig[] = [
@@ -46,6 +48,9 @@ const TabNavigator: React.FC = () => {
   // Reverse order for RTL
   const orderedTabs = isRTL || I18nManager.isRTL ? [...tabs].reverse() : tabs;
   
+  // Calculate tab bar height with safe area
+  const tabBarHeight = 60 + Math.max(insets.bottom, Platform.OS === 'android' ? 10 : 0);
+  
   return (
     <Tab.Navigator
       screenOptions={{
@@ -56,9 +61,9 @@ const TabNavigator: React.FC = () => {
           backgroundColor: theme.colors.surface,
           borderTopWidth: 1,
           borderTopColor: theme.colors.border,
-          paddingBottom: 5,
+          paddingBottom: Math.max(insets.bottom, 5),
           paddingTop: 5,
-          height: 60,
+          height: tabBarHeight,
           flexDirection: isRTL ? 'row-reverse' : 'row',
         },
         tabBarLabelStyle: {
