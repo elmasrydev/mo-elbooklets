@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { tryFetchWithFallback } from '../config/api';
+import { tryFetchWithFallback, setAuthErrorHandler } from '../config/api';
+import { setLogoutHandler } from '../lib/apollo';
 // import { useMutation } from '@apollo/client';
 // import { LOGIN_MUTATION, REGISTER_MUTATION, User, LoginInput, RegisterInput, AuthPayload } from '../lib/graphql';
 
@@ -56,6 +57,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Check if user is already logged in on app start
   useEffect(() => {
     checkAuthStatus();
+    
+    // Create logout function to share between handlers
+    const handleSessionExpired = () => {
+      console.log('Session expired - logging out');
+      setUser(null);
+    };
+    
+    // Register logout handler for Apollo error link
+    setLogoutHandler(handleSessionExpired);
+    
+    // Register logout handler for API fetch calls
+    setAuthErrorHandler(handleSessionExpired);
   }, []);
 
   const checkAuthStatus = async () => {
