@@ -23,6 +23,7 @@ interface Student {
   };
   totalQuizzes: number;
   avgScore: number;
+  xp: number;
   isFollowing: boolean;
   rank: number;
 }
@@ -119,6 +120,7 @@ const LeaderboardScreen: React.FC = () => {
             }
             totalQuizzes
             avgScore
+            xp
             isFollowing
             rank
           }
@@ -155,6 +157,7 @@ const LeaderboardScreen: React.FC = () => {
             grade: student.grade,
             totalQuizzes: student.totalQuizzes,
             avgScore: student.avgScore,
+            xp: student.xp || 0,
             rank: student.rank,
             isFollowing: Boolean(isFollowing),
           };
@@ -382,12 +385,12 @@ const LeaderboardScreen: React.FC = () => {
                     <Text style={currentStyles.studentName}>{student.name}</Text>
                     <Text style={currentStyles.studentGrade}>{student.grade.name}</Text>
                     <View style={currentStyles.studentStats}>
-                      <Text style={currentStyles.studentStat}>
-                        {student.totalQuizzes} {t('common.quizzes')}
+                      <Text style={currentStyles.studentStatXP}>
+                        {student.xp} XP
                       </Text>
                       <Text style={currentStyles.studentStatSeparator}>•</Text>
                       <Text style={currentStyles.studentStat}>
-                        {student.avgScore.toFixed(1)}% {t('common.avg')}
+                        {student.totalQuizzes} {t('common.quizzes')}
                       </Text>
                     </View>
                   </View>
@@ -571,6 +574,11 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
   studentStat: {
     fontSize: 14,
     color: theme.colors.textSecondary,
+  },
+  studentStatXP: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.primary,
   },
   studentStatSeparator: {
     fontSize: 14,
