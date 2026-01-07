@@ -123,7 +123,11 @@ const HomeScreen: React.FC = () => {
         </View>
         <View style={currentStyles.statCard}>
           <Text style={currentStyles.statNumber}>
-            {loading ? '...' : (activitiesData?.avg_score ? `${activitiesData.avg_score}%` : '0%')}
+            {(() => {
+              if (loading) return '...';
+              if (!activitiesData?.avg_score) return '0%';
+              return `${activitiesData.avg_score}%`;
+            })()}
           </Text>
           <Text style={currentStyles.statLabel}>{t('home_screen.completed')}</Text>
         </View>
@@ -132,97 +136,110 @@ const HomeScreen: React.FC = () => {
       {/* Recent Activity */}
       <View style={currentStyles.section}>
         <Text style={currentStyles.sectionTitle}>{t('home_screen.recent_activity')}</Text>
-        {loading ? (
-          <View style={currentStyles.loadingState}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text style={currentStyles.loadingText}>{t('home_screen.loading_activities')}</Text>
-          </View>
-        ) : error ? (
-          <View style={currentStyles.emptyState}>
-            <Text style={currentStyles.emptyStateText}>⚠️</Text>
-            <Text style={currentStyles.emptyStateTitle}>{t('home_screen.error_loading')}</Text>
-            <Text style={currentStyles.emptyStateSubtitle}>{error}</Text>
-            <TouchableOpacity style={currentStyles.retryButton} onPress={fetchActivities}>
-              <Text style={currentStyles.retryButtonText}>{t('home_screen.try_again')}</Text>
-            </TouchableOpacity>
-          </View>
-        ) : !activitiesData?.activities || activitiesData.activities.length === 0 ? (
-          <View style={currentStyles.emptyState}>
-            <Text style={currentStyles.emptyStateText}>📚</Text>
-            <Text style={currentStyles.emptyStateTitle}>{t('home_screen.no_activity')}</Text>
-            <Text style={currentStyles.emptyStateSubtitle}>
-              {t('home_screen.take_quiz_hint')}
-            </Text>
-          </View>
-        ) : (
-          <View style={currentStyles.activitiesList}>
-            {activitiesData.activities.map((activity: QuizActivity) => {
-              const total = activity.totalQuestions;
-              const score = activity.score;
-              const percentage = total > 0 ? (score / total) * 100 : 0;
-              
-              const getScoreColor = () => {
-                if (percentage >= 70) return theme.colors.success;
-                if (percentage >= 50) return theme.colors.warning;
-                return theme.colors.error;
-              };
-              const formatDate = (dateString: string) => {
-                const date = new Date(dateString);
-                return date.toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric',
-                });
-              };
+        {(() => {
+          if (loading) {
+            return (
+              <View style={currentStyles.loadingState}>
+                <ActivityIndicator size="large" color={theme.colors.primary} />
+                <Text style={currentStyles.loadingText}>{t('home_screen.loading_activities')}</Text>
+              </View>
+            );
+          }
 
-              return (
-                <View key={activity.id} style={currentStyles.activityCard}>
-                  <View style={currentStyles.activityHeader}>
-                    <Text style={currentStyles.activityName}>{activity.name}</Text>
-                    <Text style={currentStyles.activitySubject}>{activity.subject.name}</Text>
-                  </View>
-                  
-                  <View style={currentStyles.activityDetails}>
-                    <View style={currentStyles.activityScoreContainer}>
-                      <Text 
-                        style={[
-                          currentStyles.activityScoreText,
-                          { color: getScoreColor() }
-                        ]}
-                      >
-                        {activity.score}/{activity.totalQuestions}
-                      </Text>
-                      <Text style={currentStyles.activityScoreLabel}>{t('home_screen.score')}</Text>
+          if (error) {
+            return (
+              <View style={currentStyles.emptyState}>
+                <Text style={currentStyles.emptyStateText}>⚠️</Text>
+                <Text style={currentStyles.emptyStateTitle}>{t('home_screen.error_loading')}</Text>
+                <Text style={currentStyles.emptyStateSubtitle}>{error}</Text>
+                <TouchableOpacity style={currentStyles.retryButton} onPress={fetchActivities}>
+                  <Text style={currentStyles.retryButtonText}>{t('home_screen.try_again')}</Text>
+                </TouchableOpacity>
+              </View>
+            );
+          }
+
+          if (!activitiesData?.activities || activitiesData.activities.length === 0) {
+            return (
+              <View style={currentStyles.emptyState}>
+                <Text style={currentStyles.emptyStateText}>📚</Text>
+                <Text style={currentStyles.emptyStateTitle}>{t('home_screen.no_activity')}</Text>
+                <Text style={currentStyles.emptyStateSubtitle}>
+                  {t('home_screen.take_quiz_hint')}
+                </Text>
+              </View>
+            );
+          }
+
+          return (
+            <View style={currentStyles.activitiesList}>
+              {activitiesData.activities.map((activity: QuizActivity) => {
+                const total = activity.totalQuestions;
+                const score = activity.score;
+                const percentage = total > 0 ? (score / total) * 100 : 0;
+                
+                const getScoreColor = () => {
+                  if (percentage >= 70) return theme.colors.success;
+                  if (percentage >= 50) return theme.colors.warning;
+                  return theme.colors.error;
+                };
+                const formatDate = (dateString: string) => {
+                  const date = new Date(dateString);
+                  return date.toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  });
+                };
+
+                return (
+                  <View key={activity.id} style={currentStyles.activityCard}>
+                    <View style={currentStyles.activityHeader}>
+                      <Text style={currentStyles.activityName}>{activity.subject.name}</Text>
                     </View>
                     
-                    <View style={currentStyles.activityStatusContainer}>
-                      <View 
-                        style={[
-                          currentStyles.activityStatusBadge,
-                          activity.isPassed 
-                            ? currentStyles.activityStatusBadgePassed 
-                            : currentStyles.activityStatusBadgeFailed
-                        ]}
-                      >
+                    <View style={currentStyles.activityDetails}>
+                      <View style={currentStyles.activityScoreContainer}>
                         <Text 
                           style={[
-                            currentStyles.activityStatusText,
-                            activity.isPassed 
-                              ? currentStyles.activityStatusTextPassed 
-                              : currentStyles.activityStatusTextFailed
+                            currentStyles.activityScoreText,
+                            { color: getScoreColor() }
                           ]}
                         >
-                          {activity.isPassed ? t('home_screen.passed') : t('home_screen.failed')}
+                          {activity.score}/{activity.totalQuestions}
                         </Text>
+                        <Text style={currentStyles.activityScoreLabel}>{t('home_screen.score')}</Text>
                       </View>
-                      <Text style={currentStyles.activityDateText}>{formatDate(activity.completedAt)}</Text>
+                      
+                      <View style={currentStyles.activityStatusContainer}>
+                        <View 
+                          style={[
+                            currentStyles.activityStatusBadge,
+                            activity.isPassed 
+                              ? currentStyles.activityStatusBadgePassed 
+                              : currentStyles.activityStatusBadgeFailed
+                          ]}
+                        >
+                          <Text 
+                            style={[
+                              currentStyles.activityStatusText,
+                              activity.isPassed 
+                                ? currentStyles.activityStatusTextPassed 
+                                : currentStyles.activityStatusTextFailed
+                            ]}
+                          >
+                            {activity.isPassed ? t('home_screen.passed') : t('home_screen.failed')}
+                          </Text>
+                        </View>
+                        <Text style={currentStyles.activityDateText}>{formatDate(activity.completedAt)}</Text>
+                      </View>
                     </View>
                   </View>
-                </View>
-              );
-            })}
-          </View>
-        )}
+                );
+              })}
+            </View>
+          );
+        })()}
       </View>
 
       {/* Quick Actions */}

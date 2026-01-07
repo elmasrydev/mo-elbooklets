@@ -1,7 +1,8 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text, I18nManager, Platform } from 'react-native';
+import { I18nManager, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import HomeScreen from '../screens/HomeScreen';
@@ -16,18 +17,22 @@ const Tab = createBottomTabNavigator();
 interface TabIconProps {
   color: string;
   focused: boolean;
-  icon: string;
+  name: keyof typeof Ionicons.glyphMap;
 }
 
-const TabIcon: React.FC<TabIconProps> = ({ color, focused, icon }) => (
-  <Text style={{ fontSize: focused ? 26 : 24, color }}>{icon}</Text>
+const TabIcon: React.FC<TabIconProps> = ({ color, focused, name }) => (
+  <Ionicons 
+    name={focused ? name : `${name as any}-outline` as any} 
+    size={24} 
+    color={color} 
+  />
 );
 
 interface TabConfig {
   name: string;
   component: React.ComponentType<any>;
   labelKey: string;
-  icon: string;
+  icon: keyof typeof Ionicons.glyphMap;
 }
 
 const TabNavigator: React.FC = () => {
@@ -38,11 +43,11 @@ const TabNavigator: React.FC = () => {
 
   // Define tabs in LTR order
   const tabs: TabConfig[] = [
-    { name: 'Home', component: HomeScreen, labelKey: 'common.home', icon: '🏠' },
-    { name: 'Quiz', component: QuizScreen, labelKey: 'common.quiz', icon: '📝' },
-    { name: 'Social', component: SocialScreen, labelKey: 'common.social', icon: '👥' },
-    { name: 'Leaderboard', component: LeaderboardScreen, labelKey: 'common.leaderboard', icon: '🏆' },
-    { name: 'More', component: MoreScreen, labelKey: 'common.more', icon: '⚙️' },
+    { name: 'Home', component: HomeScreen, labelKey: 'common.home', icon: 'home' },
+    { name: 'Quiz', component: QuizScreen, labelKey: 'common.quiz', icon: 'book' },
+    { name: 'Social', component: SocialScreen, labelKey: 'common.social', icon: 'people' },
+    { name: 'Leaderboard', component: LeaderboardScreen, labelKey: 'common.leaderboard', icon: 'stats-chart' },
+    { name: 'More', component: MoreScreen, labelKey: 'common.more', icon: 'ellipsis-horizontal' },
   ];
 
   // Reverse order for RTL
@@ -56,7 +61,7 @@ const TabNavigator: React.FC = () => {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: 'gray',
+        tabBarInactiveTintColor: theme.colors.textTertiary || 'gray',
         tabBarStyle: {
           backgroundColor: theme.colors.surface,
           borderTopWidth: 1,
@@ -69,6 +74,7 @@ const TabNavigator: React.FC = () => {
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: '600',
+          marginTop: -5,
         },
       }}
     >
@@ -79,7 +85,7 @@ const TabNavigator: React.FC = () => {
           component={tab.component}
           options={{
             tabBarLabel: t(tab.labelKey),
-            tabBarIcon: (props) => <TabIcon {...props} icon={tab.icon} />,
+            tabBarIcon: (props) => <TabIcon {...props} name={tab.icon} />,
           }}
         />
       ))}

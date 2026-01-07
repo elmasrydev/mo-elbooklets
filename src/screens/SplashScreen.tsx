@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Image } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 interface SplashScreenProps {
   onFinish: (isAuthenticated: boolean) => void;
@@ -8,6 +9,7 @@ interface SplashScreenProps {
 
 const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   const { isLoading, isAuthenticated } = useAuth();
+  const { theme } = useTheme();
 
   useEffect(() => {
     if (!isLoading) {
@@ -20,37 +22,43 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
     }
   }, [isLoading, isAuthenticated, onFinish]);
 
+  const currentStyles = styles(theme);
+
   return (
-    <View style={styles.container}>
-      <View style={styles.content}>
+    <View style={currentStyles.container}>
+      <View style={currentStyles.content}>
         {/* App Logo/Icon */}
-        <View style={styles.logoContainer}>
-          <Text style={styles.logoText}>📚</Text>
-          <Text style={styles.appName}>ElBooklets</Text>
+        <View style={currentStyles.logoContainer}>
+          <Image 
+            source={require('../../assets/logo.png')} 
+            style={currentStyles.logo}
+            resizeMode="contain"
+          />
+          <Text style={currentStyles.appName}>ElBooklets</Text>
         </View>
         
         {/* Loading indicator */}
         <ActivityIndicator 
           size="large" 
-          color="#007AFF" 
-          style={styles.loader}
+          color={theme.colors.primary} 
+          style={currentStyles.loader}
         />
         
-        <Text style={styles.loadingText}>Loading...</Text>
+        <Text style={currentStyles.loadingText}>Loading...</Text>
       </View>
       
       {/* Footer */}
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>Welcome to ElBooklets Hub</Text>
+      <View style={currentStyles.footer}>
+        <Text style={currentStyles.footerText}>Welcome to ElBooklets Hub</Text>
       </View>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
+const styles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.primary100, // Dynamic light theme color
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -63,31 +71,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 50,
   },
-  logoText: {
-    fontSize: 80,
-    marginBottom: 10,
+  logo: {
+    width: 150,
+    height: 150,
+    marginBottom: 20,
   },
   appName: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: 'bold',
-    color: '#333333',
-    marginBottom: 10,
+    color: theme.colors.primary,
+    letterSpacing: 1,
   },
   loader: {
     marginVertical: 20,
   },
   loadingText: {
     fontSize: 16,
-    color: '#666666',
+    color: theme.colors.textSecondary,
     marginTop: 10,
+    fontWeight: '500',
   },
   footer: {
     paddingBottom: 50,
   },
   footerText: {
     fontSize: 14,
-    color: '#999999',
+    color: theme.colors.textTertiary,
     textAlign: 'center',
+    fontWeight: '500',
   },
 });
 

@@ -290,8 +290,7 @@ const QuizScreen: React.FC = () => {
             {quizHistory.map((quiz) => (
               <View key={quiz.id} style={currentStyles.historyCard}>
                 <View style={currentStyles.historyHeader}>
-                  <Text style={currentStyles.quizName}>{quiz.name}</Text>
-                  <Text style={currentStyles.quizSubject}>{quiz.subject.name}</Text>
+                  <Text style={currentStyles.quizName}>{quiz.subject.name}</Text>
                 </View>
                 
                 <View style={currentStyles.historyDetails}>

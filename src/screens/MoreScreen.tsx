@@ -401,6 +401,7 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
     paddingBottom: spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
+    paddingTop: spacing.lg,
   },
   languageOption: {
     flex: 1,

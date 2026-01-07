@@ -340,165 +340,188 @@ const SocialScreen: React.FC = () => {
 
       {/* Content */}
       <ScrollView style={currentStyles.content} showsVerticalScrollIndicator={false}>
-        {isSearching ? (
-          <View style={currentStyles.searchResultsContainer}>
-            <Text style={currentStyles.sectionTitle}>{t('social_screen.search_results')}</Text>
-            {searchLoading ? (
-              <View style={currentStyles.loadingState}>
-                <ActivityIndicator size="large" color={theme.colors.primary} />
-                <Text style={currentStyles.loadingText}>{t('social_screen.searching')}</Text>
-              </View>
-            ) : searchResults.length === 0 ? (
-              <View style={currentStyles.emptyState}>
-                <Text style={currentStyles.emptyStateIcon}>🔍</Text>
-                <Text style={currentStyles.emptyStateTitle}>{t('social_screen.no_results')}</Text>
-                <Text style={currentStyles.emptyStateSubtitle}>
-                  {t('social_screen.try_different_search')}
-                </Text>
-              </View>
-            ) : (
-              searchResults.map((student) => (
-                <View key={student.id} style={currentStyles.studentCard}>
-                  <View style={currentStyles.studentInfo}>
-                    {renderAvatar(student.name)}
-                    <View style={currentStyles.studentDetails}>
-                      <Text style={currentStyles.studentName}>{student.name}</Text>
-                      <Text style={currentStyles.studentGrade}>{student.grade.name}</Text>
-                      <View style={currentStyles.studentStats}>
-                        <Text style={currentStyles.studentStat}>
-                          {student.totalQuizzes} {t('common.quizzes')}
-                        </Text>
-                        <Text style={currentStyles.studentStatSeparator}>•</Text>
-                        <Text style={currentStyles.studentStat}>
-                          {student.avgScore}% {t('common.avg')}
+        {(() => {
+          if (isSearching) {
+            return (
+              <View style={currentStyles.searchResultsContainer}>
+                <Text style={currentStyles.sectionTitle}>{t('social_screen.search_results')}</Text>
+                {(() => {
+                  if (searchLoading) {
+                    return (
+                      <View style={currentStyles.loadingState}>
+                        <ActivityIndicator size="large" color={theme.colors.primary} />
+                        <Text style={currentStyles.loadingText}>{t('social_screen.searching')}</Text>
+                      </View>
+                    );
+                  }
+
+                  if (searchResults.length === 0) {
+                    return (
+                      <View style={currentStyles.emptyState}>
+                        <Text style={currentStyles.emptyStateIcon}>🔍</Text>
+                        <Text style={currentStyles.emptyStateTitle}>{t('social_screen.no_results')}</Text>
+                        <Text style={currentStyles.emptyStateSubtitle}>
+                          {t('social_screen.try_different_search')}
                         </Text>
                       </View>
+                    );
+                  }
+
+                  return searchResults.map((student) => (
+                    <View key={student.id} style={currentStyles.studentCard}>
+                      <View style={currentStyles.studentInfo}>
+                        {renderAvatar(student.name)}
+                        <View style={currentStyles.studentDetails}>
+                          <Text style={currentStyles.studentName}>{student.name}</Text>
+                          <Text style={currentStyles.studentGrade}>{student.grade.name}</Text>
+                          <View style={currentStyles.studentStats}>
+                            <Text style={currentStyles.studentStat}>
+                              {student.totalQuizzes} {t('common.quizzes')}
+                            </Text>
+                            <Text style={currentStyles.studentStatSeparator}>•</Text>
+                            <Text style={currentStyles.studentStat}>
+                              {student.avgScore}% {t('common.avg')}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                      <TouchableOpacity
+                        style={[
+                          currentStyles.followButton,
+                          student.isFollowing && currentStyles.followButtonFollowing
+                        ]}
+                        onPress={() => handleFollowToggle(student)}
+                      >
+                        <Text
+                          style={[
+                            currentStyles.followButtonText,
+                            student.isFollowing && currentStyles.followButtonTextFollowing
+                          ]}
+                        >
+                          {student.isFollowing ? t('common.following') : t('common.follow')}
+                        </Text>
+                      </TouchableOpacity>
                     </View>
-                  </View>
-                  <TouchableOpacity
-                    style={[
-                      currentStyles.followButton,
-                      student.isFollowing && currentStyles.followButtonFollowing
-                    ]}
-                    onPress={() => handleFollowToggle(student)}
-                  >
-                    <Text
-                      style={[
-                        currentStyles.followButtonText,
-                        student.isFollowing && currentStyles.followButtonTextFollowing
-                      ]}
-                    >
-                      {student.isFollowing ? t('common.following') : t('common.follow')}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              ))
-            )}
-          </View>
-        ) : (
-          <View style={currentStyles.timelineContainer}>
-            <Text style={currentStyles.sectionTitle}>{t('social_screen.recent_activity')}</Text>
-            {timelineLoading ? (
-              <View style={currentStyles.loadingState}>
-                <ActivityIndicator size="large" color={theme.colors.primary} />
-                <Text style={currentStyles.loadingText}>{t('social_screen.loading_activities')}</Text>
+                  ));
+                })()}
               </View>
-            ) : timelineError ? (
-              <View style={currentStyles.emptyState}>
-                <Text style={currentStyles.emptyStateIcon}>⚠️</Text>
-                <Text style={currentStyles.emptyStateTitle}>{t('social_screen.error_loading_timeline')}</Text>
-                <Text style={currentStyles.emptyStateSubtitle}>{timelineError}</Text>
-                <TouchableOpacity style={currentStyles.retryButton} onPress={fetchTimeline}>
-                  <Text style={currentStyles.retryButtonText}>{t('home_screen.try_again')}</Text>
-                </TouchableOpacity>
-              </View>
-            ) : timelineActivities.length === 0 ? (
-              <View style={currentStyles.emptyState}>
-                <Text style={currentStyles.emptyStateIcon}>👥</Text>
-                <Text style={currentStyles.emptyStateTitle}>{t('social_screen.no_activity_yet')}</Text>
-                <Text style={currentStyles.emptyStateSubtitle}>
-                  {t('social_screen.follow_students_hint')}
-                </Text>
-              </View>
-            ) : (
-              timelineActivities.map((activity) => (
-                <View key={activity.id} style={currentStyles.timelineCard}>
-                  <View style={currentStyles.timelineHeader}>
-                    <View style={currentStyles.timelineUserInfo}>
-                      {renderAvatar(activity.user.name)}
-                      <View style={currentStyles.timelineUserDetails}>
-                        <Text style={currentStyles.timelineUserName}>
-                          {activity.user.name}
-                        </Text>
-                        <Text style={currentStyles.timelineTime}>
-                          {getTimeAgo(activity.completedAt)}
-                        </Text>
+            );
+          }
+
+          return (
+            <View style={currentStyles.timelineContainer}>
+              <Text style={currentStyles.sectionTitle}>{t('social_screen.recent_activity')}</Text>
+              {(() => {
+                if (timelineLoading) {
+                  return (
+                    <View style={currentStyles.loadingState}>
+                      <ActivityIndicator size="large" color={theme.colors.primary} />
+                      <Text style={currentStyles.loadingText}>{t('social_screen.loading_activities')}</Text>
+                    </View>
+                  );
+                }
+
+                if (timelineError) {
+                  return (
+                    <View style={currentStyles.emptyState}>
+                      <Text style={currentStyles.emptyStateIcon}>⚠️</Text>
+                      <Text style={currentStyles.emptyStateTitle}>{t('social_screen.error_loading_timeline')}</Text>
+                      <Text style={currentStyles.emptyStateSubtitle}>{timelineError}</Text>
+                      <TouchableOpacity style={currentStyles.retryButton} onPress={fetchTimeline}>
+                        <Text style={currentStyles.retryButtonText}>{t('home_screen.try_again')}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  );
+                }
+
+                if (timelineActivities.length === 0) {
+                  return (
+                    <View style={currentStyles.emptyState}>
+                      <Text style={currentStyles.emptyStateIcon}>👥</Text>
+                      <Text style={currentStyles.emptyStateTitle}>{t('social_screen.no_activity_yet')}</Text>
+                      <Text style={currentStyles.emptyStateSubtitle}>
+                        {t('social_screen.follow_students_hint')}
+                      </Text>
+                    </View>
+                  );
+                }
+
+                return timelineActivities.map((activity) => (
+                  <View key={activity.id} style={currentStyles.timelineCard}>
+                    <View style={currentStyles.timelineHeader}>
+                      <View style={currentStyles.timelineUserInfo}>
+                        {renderAvatar(activity.user.name)}
+                        <View style={currentStyles.timelineUserDetails}>
+                          <Text style={currentStyles.timelineUserName}>
+                            {activity.user.name}
+                          </Text>
+                          <Text style={currentStyles.timelineTime}>
+                            {getTimeAgo(activity.completedAt)}
+                          </Text>
+                        </View>
                       </View>
                     </View>
-                  </View>
 
-                  <View style={currentStyles.timelineQuizInfo}>
-                    <Text style={currentStyles.timelineQuizName}>
-                      {activity.quiz.name}
-                    </Text>
-                    <Text style={currentStyles.timelineQuizSubject}>
-                      {activity.quiz.subject.name}
-                    </Text>
-                    <View style={currentStyles.timelineScoreContainer}>
-                      <Text
-                        style={[
-                          currentStyles.timelineScore,
-                          {
-                            color: getScoreColor(
-                              activity.score,
-                              activity.totalQuestions
-                            ),
-                          },
-                        ]}
-                      >
-                        {activity.score}/{activity.totalQuestions}
+                    <View style={currentStyles.timelineQuizInfo}>
+                      <Text style={currentStyles.timelineQuizName}>
+                        {activity.quiz.subject.name}
                       </Text>
-                      <Text style={currentStyles.timelineScoreLabel}>{t('home_screen.score')}</Text>
+                      <View style={currentStyles.timelineScoreContainer}>
+                        <Text
+                          style={[
+                            currentStyles.timelineScore,
+                            {
+                              color: getScoreColor(
+                                activity.score,
+                                activity.totalQuestions
+                              ),
+                            },
+                          ]}
+                        >
+                          {activity.score}/{activity.totalQuestions}
+                        </Text>
+                        <Text style={currentStyles.timelineScoreLabel}>{t('home_screen.score')}</Text>
+                      </View>
+                    </View>
+
+                    <View style={currentStyles.timelineActions}>
+                      <TouchableOpacity
+                        style={currentStyles.timelineActionButton}
+                        onPress={() => handleLike(activity)}
+                      >
+                        <Text
+                          style={[
+                            currentStyles.timelineActionIcon,
+                            activity.isLiked && currentStyles.timelineActionIconLiked,
+                          ]}
+                        >
+                          {activity.isLiked ? '❤️' : '🤍'}
+                        </Text>
+                        <Text
+                          style={[
+                            currentStyles.timelineActionText,
+                            activity.isLiked && currentStyles.timelineActionTextLiked
+                          ]}
+                        >
+                          {activity.likes}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={currentStyles.timelineActionButton}
+                        onPress={() => handleComment(activity)}
+                      >
+                        <Text style={currentStyles.timelineActionIcon}>💬</Text>
+                        <Text style={currentStyles.timelineActionText}>
+                          {activity.comments}
+                        </Text>
+                      </TouchableOpacity>
                     </View>
                   </View>
-
-                  <View style={currentStyles.timelineActions}>
-                    <TouchableOpacity
-                      style={currentStyles.timelineActionButton}
-                      onPress={() => handleLike(activity)}
-                    >
-                      <Text
-                        style={[
-                          currentStyles.timelineActionIcon,
-                          activity.isLiked && currentStyles.timelineActionIconLiked,
-                        ]}
-                      >
-                        {activity.isLiked ? '❤️' : '🤍'}
-                      </Text>
-                      <Text
-                        style={[
-                          currentStyles.timelineActionText,
-                          activity.isLiked && currentStyles.timelineActionTextLiked
-                        ]}
-                      >
-                        {activity.likes}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={currentStyles.timelineActionButton}
-                      onPress={() => handleComment(activity)}
-                    >
-                      <Text style={currentStyles.timelineActionIcon}>💬</Text>
-                      <Text style={currentStyles.timelineActionText}>
-                        {activity.comments}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ))
-            )}
-          </View>
-        )}
+                ));
+              })()}
+            </View>
+          );
+        })()}
       </ScrollView>
     </View>
   );

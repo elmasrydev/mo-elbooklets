@@ -10,6 +10,7 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -61,7 +62,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister }) => {
     >
       <ScrollView contentContainerStyle={currentStyles.scrollContainer}>
         <View style={currentStyles.header}>
-          <Text style={currentStyles.logo}>📚</Text>
+          <Image 
+            source={require('../../assets/logo.png')} 
+            style={currentStyles.logo}
+            resizeMode="contain"
+          />
           <Text style={currentStyles.title}>{t('auth.welcome_back')}</Text>
           <Text style={currentStyles.subtitle}>{t('auth.sign_in_subtitle')}</Text>
         </View>
@@ -136,7 +141,8 @@ const styles = (isRTL: boolean, theme: any) => StyleSheet.create({
     marginBottom: 40,
   },
   logo: {
-    fontSize: 60,
+    width: 100,
+    height: 100,
     marginBottom: 20,
   },
   title: {

@@ -10,6 +10,7 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useAuth } from '../context/AuthContext';
@@ -140,7 +141,11 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
     >
       <ScrollView contentContainerStyle={currentStyles.scrollContainer}>
         <View style={currentStyles.header}>
-          <Text style={currentStyles.logo}>📚</Text>
+          <Image 
+            source={require('../../assets/logo.png')} 
+            style={currentStyles.logo}
+            resizeMode="contain"
+          />
           <Text style={currentStyles.title}>{t('auth.register')}</Text>
           <Text style={currentStyles.subtitle}>{t('auth.sign_up_subtitle')}</Text>
         </View>
@@ -325,7 +330,8 @@ const styles = (isRTL: boolean, theme: any) => StyleSheet.create({
     marginBottom: 30,
   },
   logo: {
-    fontSize: 50,
+    width: 80,
+    height: 80,
     marginBottom: 15,
   },
   title: {

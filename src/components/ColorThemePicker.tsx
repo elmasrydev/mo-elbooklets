@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
   colorOption: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
@@ -72,11 +72,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 4,
+    marginTop:10,
   },
   colorOptionCompact: {
     width: 32,
     height: 32,
-    borderRadius: 8,
+    borderRadius: 16,
     borderWidth: 2,
   },
   colorOptionSelected: {
