@@ -261,10 +261,12 @@ const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizCompl
     <View style={currentStyles.container}>
       <View style={currentStyles.header}>
         <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
-          <Text style={currentStyles.backButtonText}>{isRTL ? '→' : '←'} {t('common.back')}</Text>
+          <Text style={currentStyles.backButtonText}>{isRTL ? '→' : '←'}</Text>
         </TouchableOpacity>
-        <Text style={currentStyles.headerTitle}>{t('quiz_taking.quiz')}</Text>
-        <Text style={currentStyles.headerSubtitle}>{quiz.subject.name}</Text>
+        <Text style={currentStyles.headerTitle} numberOfLines={1}>
+          {t('quiz_taking.quiz')} - {quiz.subject.name}
+        </Text>
+        <View style={currentStyles.headerPlaceholder} />
       </View>
 
       <View style={currentStyles.progressContainer}>
@@ -359,29 +361,32 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
   header: {
-    padding: 20,
+    flexDirection: isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
     paddingTop: 50,
+    paddingBottom: 12,
     backgroundColor: theme.colors.headerBackground,
-    alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   backButton: {
-    marginBottom: 16,
+    padding: 8,
+    minWidth: 40,
   },
   backButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 20,
+    fontWeight: '600',
     color: theme.colors.headerText,
   },
   headerTitle: {
-    fontSize: 24,
+    flex: 1,
+    fontSize: 18,
     fontWeight: 'bold',
     color: theme.colors.headerText,
+    textAlign: 'center',
   },
-  headerSubtitle: {
-    fontSize: 16,
-    opacity: 0.9,
-    marginTop: 4,
-    color: theme.colors.headerSubtitle,
+  headerPlaceholder: {
+    minWidth: 40,
   },
   progressContainer: {
     padding: 16,
@@ -499,15 +504,16 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
   navigationContainer: {
     flexDirection: isRTL ? 'row-reverse' : 'row',
     justifyContent: 'space-between',
-    padding: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     backgroundColor: theme.colors.surface,
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
   },
   navButton: {
     backgroundColor: theme.colors.buttonPrimary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     borderRadius: 8,
   },
   navButtonSecondary: {
@@ -516,7 +522,7 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     borderColor: theme.colors.border,
   },
   navButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     color: theme.colors.buttonPrimaryText,
     fontWeight: '500',
   },
@@ -525,8 +531,8 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
   },
   submitButton: {
     backgroundColor: theme.colors.buttonPrimary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     borderRadius: 8,
   },
   submitButtonText: {
