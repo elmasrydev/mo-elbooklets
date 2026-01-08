@@ -29,6 +29,12 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
           await i18n.changeLanguage(savedLang);
         }
         setLanguageState(savedLang as Language);
+        
+        const isAR = savedLang === 'ar';
+        if (I18nManager.isRTL !== isAR) {
+          I18nManager.allowRTL(true);
+          I18nManager.forceRTL(isAR);
+        }
       }
     } catch (error) {
       console.error('Error loading language:', error);
@@ -45,8 +51,8 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
 
       const isAR = lang === 'ar';
       if (I18nManager.isRTL !== isAR) {
+        I18nManager.allowRTL(true);
         I18nManager.forceRTL(isAR);
-        I18nManager.allowRTL(isAR);
         
         // Reload the app to apply RTL changes
         setTimeout(() => {

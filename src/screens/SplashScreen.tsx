@@ -16,7 +16,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
       // Add a small delay for better UX
       const timer = setTimeout(() => {
         onFinish(isAuthenticated);
-      }, 1500);
+      }, 800);
 
       return () => clearTimeout(timer);
     }

@@ -98,8 +98,8 @@ const HomeScreen: React.FC = () => {
   const currentStyles = styles(theme, isRTL, fontSizes, spacing, borderRadius);
 
   return (
-    <ScrollView style={currentStyles.container}>
-      {/* Header */}
+    <View style={currentStyles.container}>
+      {/* Header - Outside ScrollView to stay fixed */}
       <View style={currentStyles.header}>
         <View style={currentStyles.welcomeSection}>
           <Text style={currentStyles.welcomeText}>{t('home_screen.welcome_back')}</Text>
@@ -112,6 +112,8 @@ const HomeScreen: React.FC = () => {
           <Text style={currentStyles.logoutButtonText}>{t('common.logout')}</Text>
         </TouchableOpacity>
       </View>
+
+      <ScrollView style={currentStyles.scrollContainer} showsVerticalScrollIndicator={false}>
 
       {/* Quick Stats */}
       <View style={currentStyles.statsContainer}>
@@ -272,11 +274,16 @@ const HomeScreen: React.FC = () => {
         </View>
       </View>
     </ScrollView>
+    </View>
   );
 };
 
 const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, borderRadius: any) => StyleSheet.create({
   container: {
+    flex: 1,
+    backgroundColor: theme.colors.headerBackground, // Use header color for top bleed
+  },
+  scrollContainer: {
     flex: 1,
     backgroundColor: theme.colors.background,
   },
