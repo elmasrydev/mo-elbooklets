@@ -464,7 +464,7 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     backgroundColor: 'transparent',
   },
   tabActive: {
-    backgroundColor: theme.colors.tabActive,
+    backgroundColor: theme.colors.primary,
   },
   tabText: {
     fontSize: 14,
@@ -474,7 +474,7 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     color: theme.colors.tabActiveText,
   },
   tabTextInactive: {
-    color: theme.colors.tabInactiveText,
+    color: theme.colors.primary,
   },
   content: {
     flex: 1,
