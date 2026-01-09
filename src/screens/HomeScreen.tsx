@@ -97,7 +97,7 @@ const WeeklyPerformanceChart: React.FC<{ theme: any, isRTL: boolean, data: Weekl
       <View style={currentChartStyles(isRTL).chartLabels}>
         {data.map((item, index) => (
           <Text 
-            key={index} 
+            key={`${item.week}-${index}`} 
             style={[
               styles(theme, isRTL, {}, {}, {}).chartLabel, 
               index === data.length - 1 ? { color: theme.colors.primary, fontWeight: 'bold' } : {}
@@ -122,22 +122,19 @@ const currentChartStyles = (isRTL: boolean) => StyleSheet.create({
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<any>();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
-  const { isRTL, language } = useLanguage();
+  const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const [activitiesData, setActivitiesData] = useState<ActivitiesData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const fetchActivities = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
 
       const token = await AsyncStorage.getItem('auth_token');
       if (!token) {
-        setError(t('home_screen.error_loading'));
         return;
       }
 
@@ -170,12 +167,9 @@ const HomeScreen: React.FC = () => {
 
       if (result.data?.activities) {
         setActivitiesData(result.data.activities);
-      } else {
-        setError(result.errors?.[0]?.message || t('home_screen.error_loading'));
       }
     } catch (err: any) {
       console.error('Fetch activities error:', err);
-      setError(err.message || t('home_screen.error_loading'));
     } finally {
       setLoading(false);
     }
@@ -222,10 +216,8 @@ const HomeScreen: React.FC = () => {
         style={currentStyles.scrollContainer} 
         showsVerticalScrollIndicator={false} 
         contentContainerStyle={currentStyles.scrollContent}
-        bounces={false}
+        bounces={true}
       >
-        <View style={currentStyles.headerCurve} />
-        
         {/* Top Stats Cards */}
         <View style={currentStyles.topStatsRow}>
           <View style={currentStyles.topStatCard}>
@@ -380,18 +372,9 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 60,
-    paddingBottom: 40,
+    paddingBottom: 25,
     backgroundColor: theme.colors.primary,
-  },
-  headerCurve: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 100,
-    backgroundColor: theme.colors.primary,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    zIndex: 10,
   },
   headerLeft: {
     flexDirection: isRTL ? 'row-reverse' : 'row',
@@ -450,16 +433,17 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
   },
   scrollContainer: {
     flex: 1,
-    marginTop: -20,
   },
   scrollContent: {
-    paddingHorizontal: 20,
     paddingBottom: 100,
+    backgroundColor: theme.colors.background,
   },
   topStatsRow: {
     flexDirection: isRTL ? 'row-reverse' : 'row',
     justifyContent: 'space-between',
     marginBottom: 20,
+    paddingHorizontal: 20,
+    marginTop: 20,
     gap: 15,
   },
   topStatCard: {
@@ -498,6 +482,7 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
     backgroundColor: '#fff',
     borderRadius: 28,
     padding: 24,
+    marginHorizontal: 20,
     marginBottom: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -552,6 +537,7 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
   },
   section: {
     marginBottom: 24,
+    paddingHorizontal: 20,
   },
   sectionHeaderRow: {
     flexDirection: isRTL ? 'row-reverse' : 'row',
@@ -675,6 +661,7 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
     backgroundColor: '#9333EA',
     borderRadius: 24,
     padding: 30,
+    marginHorizontal: 20,
     alignItems: 'center',
     marginTop: 10,
   },
