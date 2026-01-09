@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import HomeScreen from '../screens/HomeScreen';
+import StudyScreen from '../screens/StudyScreen';
 import QuizScreen from '../screens/QuizScreen';
 import SocialScreen from '../screens/SocialScreen';
 import LeaderboardScreen from '../screens/LeaderboardScreen';
@@ -44,7 +45,8 @@ const TabNavigator: React.FC = () => {
   // Define tabs in LTR order
   const tabs: TabConfig[] = [
     { name: 'Home', component: HomeScreen, labelKey: 'common.home', icon: 'home' },
-    { name: 'Quiz', component: QuizScreen, labelKey: 'common.quiz', icon: 'book' },
+    { name: 'Study', component: StudyScreen, labelKey: 'common.study', icon: 'book' },
+    { name: 'Quiz', component: QuizScreen, labelKey: 'common.quiz', icon: 'help-circle' },
     { name: 'Social', component: SocialScreen, labelKey: 'common.social', icon: 'people' },
     { name: 'Leaderboard', component: LeaderboardScreen, labelKey: 'common.leaderboard', icon: 'stats-chart' },
     { name: 'More', component: MoreScreen, labelKey: 'common.more', icon: 'ellipsis-horizontal' },

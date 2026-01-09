@@ -62,6 +62,8 @@ type Lesson {
   id: ID!
   name: String!
   description: String
+  summary: String
+  points: [String!]
   chapter: Chapter!
 }
 

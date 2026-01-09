@@ -108,13 +108,13 @@ const QuizScreen: React.FC = () => {
     setCurrentStep('lessons');
   };
 
-  const handleLessonsSelect = async (lessonIds: string[]) => {
+  const handleLessonsSelect = async (lessonIds: string[], quizTypeId?: string) => {
     if (!selectedSubject) return;
 
     setSelectedLessons(lessonIds);
 
     try {
-      const result = await startQuiz(selectedSubject.id, lessonIds);
+      const result = await startQuiz(selectedSubject.id, lessonIds, quizTypeId);
       if (result.success && result.quizId) {
         setCurrentQuizId(result.quizId);
         setCurrentStep('taking');
@@ -126,7 +126,7 @@ const QuizScreen: React.FC = () => {
     }
   };
 
-  const startQuiz = async (subjectId: string, lessonIds: string[]): Promise<{ success: boolean; quizId?: string; error?: string }> => {
+  const startQuiz = async (subjectId: string, lessonIds: string[], quizTypeId?: string): Promise<{ success: boolean; quizId?: string; error?: string }> => {
     try {
       const token = await AsyncStorage.getItem('auth_token');
       if (!token) {
@@ -134,8 +134,8 @@ const QuizScreen: React.FC = () => {
       }
 
       const result = await tryFetchWithFallback(`
-        mutation StartQuiz($subjectId: ID!, $lessonIds: [ID!]!) {
-          startQuiz(subjectId: $subjectId, lessonIds: $lessonIds) {
+        mutation StartQuiz($subjectId: ID!, $lessonIds: [ID!]!, $quizTypeId: ID) {
+          startQuiz(subjectId: $subjectId, lessonIds: $lessonIds, quizTypeId: $quizTypeId) {
             id
             name
             subject {
@@ -144,7 +144,7 @@ const QuizScreen: React.FC = () => {
             }
           }
         }
-      `, { subjectId, lessonIds }, token);
+      `, { subjectId, lessonIds, quizTypeId }, token);
 
       if (result.data?.startQuiz) {
         return {

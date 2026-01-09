@@ -24,9 +24,17 @@ interface Chapter {
   lessons: Lesson[];
 }
 
+interface QuizType {
+  id: string;
+  name: string;
+  slug: string;
+  questionCount: number;
+  isDefault: boolean;
+}
+
 interface QuizLessonsScreenProps {
   subject: Subject;
-  onLessonsSelect: (lessonIds: string[]) => void;
+  onLessonsSelect: (lessonIds: string[], quizTypeId?: string) => void;
   onBack: () => void;
 }
 
@@ -36,14 +44,17 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({ subject, onLesson
   const { t } = useTranslation();
   const [selectedLessons, setSelectedLessons] = useState<Set<string>>(new Set());
   const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [quizTypes, setQuizTypes] = useState<QuizType[]>([]);
+  const [selectedQuizTypeId, setSelectedQuizTypeId] = useState<string | null>(null);
+  const [showQuizTypes, setShowQuizTypes] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchLessons();
+    fetchData();
   }, [subject.id]);
 
-  const fetchLessons = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -54,32 +65,67 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({ subject, onLesson
         return;
       }
 
-      const result = await tryFetchWithFallback(`
-        query LessonsForSubject($subjectId: ID!) {
-          lessonsForSubject(subjectId: $subjectId) {
-            id
-            name
-            description
-            lessons {
+      // Fetch lessons and quiz types in parallel
+      const [lessonsResult, quizTypesResult] = await Promise.all([
+        tryFetchWithFallback(`
+          query LessonsForSubject($subjectId: ID!) {
+            lessonsForSubject(subjectId: $subjectId) {
               id
               name
               description
+              lessons {
+                id
+                name
+                description
+              }
             }
           }
-        }
-      `, { subjectId: subject.id }, token);
-      if (result.data?.lessonsForSubject) {
-        setChapters(result.data.lessonsForSubject);
+        `, { subjectId: subject.id }, token),
+        tryFetchWithFallback(`
+          query QuizTypes {
+            quizTypes {
+              id
+              name
+              slug
+              question_count
+              is_default
+            }
+          }
+        `, undefined, token)
+      ]);
+
+      if (lessonsResult.data?.lessonsForSubject) {
+        setChapters(lessonsResult.data.lessonsForSubject);
       } else {
-        setError(result.errors?.[0]?.message || t('quiz_lessons.error_loading_lessons'));
+        setError(lessonsResult.errors?.[0]?.message || t('quiz_lessons.error_loading_lessons'));
+      }
+
+      if (quizTypesResult.data?.quizTypes) {
+        const types = quizTypesResult.data.quizTypes.map((qt: any) => ({
+          id: qt.id,
+          name: qt.name,
+          slug: qt.slug,
+          questionCount: qt.question_count,
+          isDefault: qt.is_default
+        }));
+        setQuizTypes(types);
+        // Set default quiz type
+        const defaultType = types.find((qt: QuizType) => qt.isDefault);
+        if (defaultType) {
+          setSelectedQuizTypeId(defaultType.id);
+        } else if (types.length > 0) {
+          setSelectedQuizTypeId(types[0].id);
+        }
       }
     } catch (err: any) {
-      console.error('Fetch lessons error:', err);
+      console.error('Fetch data error:', err);
       setError(err.message || t('quiz_lessons.error_loading_lessons'));
     } finally {
       setLoading(false);
     }
   };
+
+
 
   const handleLessonToggle = (lessonId: string) => {
     const newSelected = new Set(selectedLessons);
@@ -106,13 +152,20 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({ subject, onLesson
     setSelectedLessons(newSelected);
   };
 
-  const handleStartQuiz = () => {
+  const handlePrepareQuiz = () => {
     if (selectedLessons.size === 0) {
       Alert.alert(t('quiz_lessons.no_lessons_selected'), t('quiz_lessons.select_at_least_one'));
       return;
     }
-    
-    onLessonsSelect(Array.from(selectedLessons));
+    setShowQuizTypes(true);
+  };
+
+  const handleStartQuiz = () => {
+    onLessonsSelect(Array.from(selectedLessons), selectedQuizTypeId || undefined);
+  };
+
+  const handleBackToLessons = () => {
+    setShowQuizTypes(false);
   };
 
   const currentStyles = styles(theme, isRTL);
@@ -147,7 +200,7 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({ subject, onLesson
           <Text style={currentStyles.errorIcon}>⚠️</Text>
           <Text style={currentStyles.errorTitle}>{t('quiz_lessons.error_loading_lessons')}</Text>
           <Text style={currentStyles.errorText}>{error}</Text>
-          <TouchableOpacity style={currentStyles.retryButton} onPress={fetchLessons}>
+          <TouchableOpacity style={currentStyles.retryButton} onPress={fetchData}>
             <Text style={currentStyles.retryButtonText}>{t('home_screen.try_again')}</Text>
           </TouchableOpacity>
         </View>
@@ -232,13 +285,63 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({ subject, onLesson
         )}
       </ScrollView>
 
-      {selectedLessons.size > 0 && (
+      {/* Footer: Two-step quiz flow */}
+      {selectedLessons.size > 0 && !showQuizTypes && (
         <View style={currentStyles.footer}>
+          <TouchableOpacity style={currentStyles.startQuizButton} onPress={handlePrepareQuiz}>
+            <Text style={currentStyles.startQuizButtonText}>
+              {t('quiz_lessons.prepare_quiz')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Quiz Type Selection Step */}
+      {showQuizTypes && (
+        <View style={currentStyles.footer}>
+          <View style={currentStyles.quizTypeHeader}>
+            <TouchableOpacity onPress={handleBackToLessons}>
+              <Text style={currentStyles.backToLessonsText}>{isRTL ? '→' : '←'} {t('quiz_lessons.back_to_lessons')}</Text>
+            </TouchableOpacity>
+          </View>
+          {quizTypes.length > 0 && (
+            <View style={currentStyles.quizTypeSection}>
+              <Text style={currentStyles.quizTypeSectionTitle}>{t('quiz_lessons.select_quiz_type')}</Text>
+              <View style={currentStyles.quizTypeOptions}>
+                {quizTypes.map((quizType) => (
+                  <TouchableOpacity
+                    key={quizType.id}
+                    style={[
+                      currentStyles.quizTypeOption,
+                      selectedQuizTypeId === quizType.id && currentStyles.quizTypeOptionSelected
+                    ]}
+                    onPress={() => setSelectedQuizTypeId(quizType.id)}
+                  >
+                    <View style={[
+                      currentStyles.radioButton,
+                      selectedQuizTypeId === quizType.id && currentStyles.radioButtonSelected
+                    ]}>
+                      {selectedQuizTypeId === quizType.id && (
+                        <View style={currentStyles.radioButtonInner} />
+                      )}
+                    </View>
+                    <View style={currentStyles.quizTypeInfo}>
+                      <Text style={[
+                        currentStyles.quizTypeName,
+                        selectedQuizTypeId === quizType.id && currentStyles.quizTypeNameSelected
+                      ]}>{quizType.name}</Text>
+                      <Text style={currentStyles.quizTypeCount}>
+                        {quizType.questionCount} {t('quiz_lessons.questions')}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
           <TouchableOpacity style={currentStyles.startQuizButton} onPress={handleStartQuiz}>
             <Text style={currentStyles.startQuizButtonText}>
-              {selectedLessons.size === 1 
-                ? t('quiz_lessons.start_quiz_count', { count: selectedLessons.size })
-                : t('quiz_lessons.start_quiz_count_plural', { count: selectedLessons.size })}
+              {t('quiz_lessons.start_quiz')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -439,6 +542,80 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     color: theme.colors.buttonPrimaryText,
     fontSize: 16,
     fontWeight: '600',
+  },
+  // Quiz Type Selection Styles
+  quizTypeSection: {
+    marginBottom: 16,
+  },
+  quizTypeSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 12,
+    color: theme.colors.text,
+    textAlign: isRTL ? 'right' : 'left',
+  },
+  quizTypeOptions: {
+    flexDirection: 'column',
+    gap: 8,
+  },
+  quizTypeOption: {
+    flexDirection: isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.card,
+  },
+  quizTypeOptionSelected: {
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primaryLight || `${theme.colors.primary}15`,
+  },
+  radioButton: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: theme.colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  radioButtonSelected: {
+    borderColor: theme.colors.primary,
+  },
+  radioButtonInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: theme.colors.primary,
+  },
+  quizTypeInfo: {
+    flex: 1,
+    marginLeft: isRTL ? 0 : 12,
+    marginRight: isRTL ? 12 : 0,
+    alignItems: isRTL ? 'flex-end' : 'flex-start',
+  },
+  quizTypeName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: theme.colors.text,
+  },
+  quizTypeNameSelected: {
+    color: theme.colors.primary,
+  },
+  quizTypeCount: {
+    fontSize: 12,
+    marginTop: 2,
+    color: theme.colors.textSecondary,
+  },
+  quizTypeHeader: {
+    marginBottom: 12,
+    alignItems: isRTL ? 'flex-end' : 'flex-start',
+  },
+  backToLessonsText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: theme.colors.primary,
   },
 });
 

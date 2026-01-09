@@ -3,6 +3,7 @@
     "more": "المزيد",
     "home": "الرئيسية",
     "quiz": "اختبار",
+    "study": "المذاكرة",
     "booklets": "الكتيبات",
     "leaderboard": "لوحة المتصدرين",
     "social": "اجتماعي",
@@ -37,6 +38,32 @@
     "correct": "صحيح",
     "incorrect": "خطأ",
     "total": "الإجمالي"
+  },
+  "study_screen": {
+    "header_title": "المذاكرة",
+    "header_subtitle": "تعلم ومراجعة الدروس",
+    "loading_subjects": "جارٍ تحميل المواد...",
+    "error_loading_subjects": "خطأ في تحميل المواد",
+    "no_subjects_available": "لا توجد مواد متاحة",
+    "no_subjects_for_grade": "لا توجد مواد متاحة لمستوى سنتك الدراسية.",
+    "chapters": "فصول"
+  },
+  "study_chapters": {
+    "select_lesson": "اختر درسًا للمذاكرة",
+    "loading": "جارٍ تحميل الدروس...",
+    "error_loading": "خطأ في تحميل الدروس",
+    "lessons": "دروس",
+    "no_chapters": "لا توجد فصول متاحة",
+    "no_chapters_for_subject": "لا توجد فصول متاحة لهذه المادة."
+  },
+  "study_lesson": {
+    "summary": "الملخص",
+    "key_points": "النقاط الرئيسية",
+    "no_summary": "لا يوجد ملخص متاح لهذا الدرس.",
+    "no_key_points": "لا توجد نقاط رئيسية متاحة لهذا الدرس.",
+    "previous": "السابق",
+    "next": "التالي",
+    "back_to_chapters": "العودة للفصول"
   },
   "more_screen": {
     "header_title": "المزيد",
@@ -112,7 +139,11 @@
     "select_at_least_one": "يرجى اختيار درس واحد على الأقل لبدء الاختبار.",
     "start_quiz": "ابدأ الاختبار",
     "start_quiz_count": "ابدأ الاختبار ({{count}} درس)",
-    "start_quiz_count_plural": "ابدأ الاختبار ({{count}} دروس)"
+    "start_quiz_count_plural": "ابدأ الاختبار ({{count}} دروس)",
+    "select_quiz_type": "اختر نوع الاختبار",
+    "questions": "سؤال",
+    "prepare_quiz": "تحضير الاختبار",
+    "back_to_lessons": "العودة للدروس"
   },
   "quiz_taking": {
     "quiz": "اختبار",

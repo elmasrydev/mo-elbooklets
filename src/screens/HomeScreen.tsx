@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -28,6 +28,7 @@ interface ActivitiesData {
 }
 
 const HomeScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
   const { user, logout } = useAuth();
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { isRTL, language } = useLanguage();
@@ -248,13 +249,19 @@ const HomeScreen: React.FC = () => {
       <View style={currentStyles.section}>
         <Text style={currentStyles.sectionTitle}>{t('home_screen.quick_actions')}</Text>
         <View style={currentStyles.actionsGrid}>
-          <TouchableOpacity style={currentStyles.actionCard}>
+          <TouchableOpacity 
+            style={currentStyles.actionCard}
+            onPress={() => navigation.navigate('Study')}
+          >
             <Text style={currentStyles.actionIcon}>📖</Text>
             <Text style={currentStyles.actionTitle}>{t('home_screen.browse_booklets')}</Text>
             <Text style={currentStyles.actionSubtitle}>{t('home_screen.explore_content')}</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity style={currentStyles.actionCard}>
+          <TouchableOpacity 
+            style={currentStyles.actionCard}
+            onPress={() => navigation.navigate('Leaderboard')}
+          >
             <Text style={currentStyles.actionIcon}>📊</Text>
             <Text style={currentStyles.actionTitle}>{t('home_screen.my_progress')}</Text>
             <Text style={currentStyles.actionSubtitle}>{t('home_screen.track_learning')}</Text>
@@ -266,7 +273,10 @@ const HomeScreen: React.FC = () => {
             <Text style={currentStyles.actionSubtitle}>{t('home_screen.saved_content')}</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity style={currentStyles.actionCard}>
+          <TouchableOpacity 
+            style={currentStyles.actionCard}
+            onPress={() => navigation.navigate('More')}
+          >
             <Text style={currentStyles.actionIcon}>⚙️</Text>
             <Text style={currentStyles.actionTitle}>{t('common.settings')}</Text>
             <Text style={currentStyles.actionSubtitle}>{t('home_screen.manage_account')}</Text>

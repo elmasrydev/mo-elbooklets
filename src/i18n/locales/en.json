@@ -3,6 +3,7 @@
     "more": "More",
     "home": "Home",
     "quiz": "Quiz",
+    "study": "Study",
     "booklets": "Booklets",
     "leaderboard": "Leaderboard",
     "social": "Social",
@@ -37,6 +38,32 @@
     "correct": "Correct",
     "incorrect": "Incorrect",
     "total": "Total"
+  },
+  "study_screen": {
+    "header_title": "Study",
+    "header_subtitle": "Learn and review lessons",
+    "loading_subjects": "Loading subjects...",
+    "error_loading_subjects": "Error Loading Subjects",
+    "no_subjects_available": "No Subjects Available",
+    "no_subjects_for_grade": "No subjects are available for your grade level.",
+    "chapters": "chapters"
+  },
+  "study_chapters": {
+    "select_lesson": "Select a lesson to study",
+    "loading": "Loading lessons...",
+    "error_loading": "Error Loading Lessons",
+    "lessons": "lessons",
+    "no_chapters": "No Chapters Available",
+    "no_chapters_for_subject": "No chapters available for this subject."
+  },
+  "study_lesson": {
+    "summary": "Summary",
+    "key_points": "Key Points",
+    "no_summary": "No summary available for this lesson.",
+    "no_key_points": "No key points available for this lesson.",
+    "previous": "Previous",
+    "next": "Next",
+    "back_to_chapters": "Back to Chapters"
   },
   "more_screen": {
     "header_title": "More",
@@ -112,7 +139,11 @@
     "select_at_least_one": "Please select at least one lesson to start the quiz.",
     "start_quiz": "Start Quiz",
     "start_quiz_count": "Start Quiz ({{count}} lesson)",
-    "start_quiz_count_plural": "Start Quiz ({{count}} lessons)"
+    "start_quiz_count_plural": "Start Quiz ({{count}} lessons)",
+    "select_quiz_type": "Select Quiz Type",
+    "questions": "questions",
+    "prepare_quiz": "Prepare Quiz",
+    "back_to_lessons": "Back to Lessons"
   },
   "quiz_taking": {
     "quiz": "Quiz",
