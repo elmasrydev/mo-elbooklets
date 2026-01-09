@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Alert, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
@@ -38,6 +39,7 @@ interface TimelineActivity {
       id: string;
       name: string;
     };
+    type: string;
   };
   score: number;
   totalQuestions: number;
@@ -47,6 +49,43 @@ interface TimelineActivity {
   comments: number;
   isLiked: boolean;
 }
+
+const CircularProgress = ({ size, strokeWidth, percentage, color }: { size: number, strokeWidth: number, percentage: number, color: string }) => {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+
+  return (
+    <View style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }}>
+      <Svg width={size} height={size}>
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="rgba(0,0,0,0.05)"
+          strokeWidth={strokeWidth}
+          fill="none"
+        />
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke={color}
+          strokeWidth={strokeWidth}
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+          fill="none"
+          rotation="-90"
+          origin={`${size / 2}, ${size / 2}`}
+        />
+      </Svg>
+      <View style={{ position: 'absolute' }}>
+        <Text style={{ fontSize: size * 0.22, fontWeight: 'bold', color: color }}>{percentage}%</Text>
+      </View>
+    </View>
+  );
+};
 
 const SocialScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -89,6 +128,7 @@ const SocialScreen: React.FC = () => {
                 id
                 name
               }
+              type
             }
             score
             totalQuestions
@@ -287,17 +327,99 @@ const SocialScreen: React.FC = () => {
     });
   };
 
-  const getScoreColor = (score: number, total: number) => {
-    const percentage = (score / total) * 100;
-    if (percentage >= 70) return '#4CAF50';
-    if (percentage >= 50) return '#FF9800';
-    return '#F44336';
+
+  const renderAvatar = (name: string, size = 50, borderRadius?: number) => {
+    return (
+      <View style={[
+        currentStyles.avatarPlaceholder, 
+        { 
+          width: size, 
+          height: size, 
+          borderRadius: borderRadius ?? size / 2 
+        }
+      ]}>
+        <Text style={[currentStyles.avatarText, { fontSize: size * 0.4 }]}>{getInitials(name)}</Text>
+      </View>
+    );
   };
 
-  const renderAvatar = (name: string, size = 50) => {
+  const renderTimelineActivity = (activity: TimelineActivity) => {
+    const scorePercent = Math.round((activity.score / activity.totalQuestions) * 100);
+    
+    let color = '#EF4444'; // Failed
+    if (scorePercent >= 90) color = '#10B981'; // Excellent
+    else if (scorePercent >= 75) color = '#3B82F6'; // Good
+    else if (scorePercent >= 50) color = '#F59E0B'; // Passed
+
+    const rightAnswers = activity.score;
+    const wrongAnswers = activity.totalQuestions - activity.score;
+
     return (
-      <View style={[currentStyles.avatarPlaceholder, { width: size, height: size, borderRadius: size / 2 }]}>
-        <Text style={[currentStyles.avatarText, { fontSize: size * 0.4 }]}>{getInitials(name)}</Text>
+      <View key={activity.id} style={currentStyles.timelineCard}>
+        <View style={currentStyles.timelineMain}>
+          <View style={currentStyles.timelineLeft}>
+            {renderAvatar(activity.user.name, 60)}
+            <View style={currentStyles.timelineDetails}>
+              <Text style={currentStyles.timelineUserName}>{activity.user.name}</Text>
+              <Text style={currentStyles.timelineSubjectName}>{activity.quiz.subject.name}</Text>
+              
+              <View style={currentStyles.timelineStatsRow}>
+                <View style={currentStyles.timelineStatItem}>
+                  <Ionicons name="list-outline" size={14} color={theme.colors.textSecondary} />
+                  <Text style={currentStyles.timelineStatText}>{activity.quiz.type || 'Quiz'}</Text>
+                </View>
+                <View style={[currentStyles.timelineStatItem, { marginLeft: 12 }]}>
+                  <Ionicons name="checkmark-circle-outline" size={14} color="#10B981" />
+                  <Text style={[currentStyles.timelineStatText, { color: '#10B981' }]}>{rightAnswers}</Text>
+                </View>
+                <View style={[currentStyles.timelineStatItem, { marginLeft: 12 }]}>
+                  <Ionicons name="close-circle-outline" size={14} color="#EF4444" />
+                  <Text style={[currentStyles.timelineStatText, { color: '#EF4444' }]}>{wrongAnswers}</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+          
+          <View style={currentStyles.timelineRight}>
+            <CircularProgress 
+              size={64} 
+              strokeWidth={6} 
+              percentage={scorePercent} 
+              color={color} 
+            />
+            <Text style={currentStyles.timelineTime}>{getTimeAgo(activity.completedAt)}</Text>
+          </View>
+        </View>
+
+        <View style={currentStyles.timelineFooter}>
+          <TouchableOpacity
+            style={currentStyles.timelineActionButton}
+            onPress={() => handleLike(activity)}
+          >
+            <Ionicons 
+              name={activity.isLiked ? "heart" : "heart-outline"} 
+              size={22} 
+              color={activity.isLiked ? "#EF4444" : theme.colors.textSecondary} 
+            />
+            <Text
+              style={[
+                currentStyles.timelineActionText,
+                activity.isLiked && currentStyles.timelineActionTextLiked
+              ]}
+            >
+              {activity.likes}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={currentStyles.timelineActionButton}
+            onPress={() => handleComment(activity)}
+          >
+            <Text style={currentStyles.timelineActionText}>
+              {activity.comments}
+            </Text>
+            <Ionicons name="chatbubble-outline" size={20} color={theme.colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
       </View>
     );
   };
@@ -409,75 +531,7 @@ const SocialScreen: React.FC = () => {
     return (
       <View style={currentStyles.timelineContainer}>
         <Text style={currentStyles.sectionTitle}>{t('social_screen.recent_activity')}</Text>
-        {timelineActivities.map((activity) => (
-          <View key={activity.id} style={currentStyles.timelineCard}>
-            <View style={currentStyles.timelineHeader}>
-              <View style={currentStyles.timelineUserInfo}>
-                {renderAvatar(activity.user.name)}
-                <View style={currentStyles.timelineUserDetails}>
-                  <Text style={currentStyles.timelineUserName}>
-                    {activity.user.name}
-                  </Text>
-                  <Text style={currentStyles.timelineTime}>
-                    {getTimeAgo(activity.completedAt)}
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            <View style={currentStyles.timelineQuizInfo}>
-              <Text style={currentStyles.timelineQuizName}>
-                {activity.quiz.subject.name}: {activity.quiz.name}
-              </Text>
-              <View style={currentStyles.timelineScoreContainer}>
-                <Text
-                  style={[
-                    currentStyles.timelineScore,
-                    {
-                      color: getScoreColor(
-                        activity.score,
-                        activity.totalQuestions
-                      ),
-                    },
-                  ]}
-                >
-                  {activity.score}/{activity.totalQuestions}
-                </Text>
-                <Text style={currentStyles.timelineScoreLabel}>{t('home_screen.score')}</Text>
-              </View>
-            </View>
-
-            <View style={currentStyles.timelineActions}>
-              <TouchableOpacity
-                style={currentStyles.timelineActionButton}
-                onPress={() => handleLike(activity)}
-              >
-                <Ionicons 
-                  name={activity.isLiked ? "heart" : "heart-outline"} 
-                  size={22} 
-                  color={activity.isLiked ? "#EF4444" : theme.colors.textSecondary} 
-                />
-                <Text
-                  style={[
-                    currentStyles.timelineActionText,
-                    activity.isLiked && currentStyles.timelineActionTextLiked
-                  ]}
-                >
-                  {activity.likes}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={currentStyles.timelineActionButton}
-                onPress={() => handleComment(activity)}
-              >
-                <Ionicons name="chatbubble-outline" size={20} color={theme.colors.textSecondary} />
-                <Text style={currentStyles.timelineActionText}>
-                  {activity.comments}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ))}
+        {timelineActivities.map(renderTimelineActivity)}
       </View>
     );
   };
@@ -692,85 +746,87 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
   timelineCard: {
     marginHorizontal: 20,
     marginBottom: 20,
-    borderRadius: 28,
+    borderRadius: 32,
     padding: 24,
     backgroundColor: '#fff',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 3,
+    shadowRadius: 15,
+    elevation: 4,
   },
-  timelineHeader: {
-    marginBottom: 16,
-  },
-  timelineUserInfo: {
+  timelineMain: {
     flexDirection: isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
   },
-  timelineUserDetails: {
-    marginLeft: isRTL ? 0 : 12,
-    marginRight: isRTL ? 12 : 0,
+  timelineLeft: {
+    flexDirection: isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
     flex: 1,
+  },
+  timelineDetails: {
+    marginLeft: isRTL ? 0 : 16,
+    marginRight: isRTL ? 16 : 0,
     alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   timelineUserName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: theme.colors.text,
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#0F172A',
   },
-  timelineTime: {
-    fontSize: 12,
-    color: theme.colors.textTertiary,
+  timelineSubjectName: {
+    fontSize: 14,
+    color: theme.colors.primary,
+    fontWeight: '700',
     marginTop: 2,
   },
-  timelineQuizInfo: {
-    marginBottom: 16,
-    padding: 16,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 20,
-    alignItems: isRTL ? 'flex-end' : 'flex-start',
+  timelineTime: {
+    fontSize: 11,
+    color: '#94A3B8',
+    fontWeight: '700',
+    marginTop: 6,
+    textAlign: 'center',
   },
-  timelineQuizName: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-    marginBottom: 8,
+  timelineRight: {
+    alignItems: 'center',
+    marginLeft: isRTL ? 0 : 12,
+    marginRight: isRTL ? 12 : 0,
   },
-  timelineScoreContainer: {
+  timelineStatsRow: {
     flexDirection: isRTL ? 'row-reverse' : 'row',
-    alignItems: 'baseline',
+    alignItems: 'center',
+    marginTop: 6,
   },
-  timelineScore: {
-    fontSize: 28,
-    fontWeight: '800',
+  timelineStatItem: {
+    flexDirection: isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
   },
-  timelineScoreLabel: {
-    fontSize: 13,
+  timelineStatText: {
+    fontSize: 12,
+    fontWeight: '700',
     color: theme.colors.textSecondary,
-    marginLeft: isRTL ? 0 : 8,
-    marginRight: isRTL ? 8 : 0,
-    fontWeight: '600',
+    marginLeft: isRTL ? 0 : 4,
+    marginRight: isRTL ? 4 : 0,
   },
-  timelineActions: {
+  timelineFooter: {
     flexDirection: isRTL ? 'row-reverse' : 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    marginTop: 4,
+    borderTopColor: '#F1F5F9',
   },
   timelineActionButton: {
     flexDirection: isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
-    marginRight: isRTL ? 0 : 24,
-    marginLeft: isRTL ? 24 : 0,
   },
   timelineActionText: {
     fontSize: 14,
-    marginLeft: isRTL ? 0 : 6,
-    marginRight: isRTL ? 6 : 0,
-    color: theme.colors.textSecondary,
-    fontWeight: '600',
+    marginHorizontal: 8,
+    color: '#64748B',
+    fontWeight: '700',
   },
   timelineActionTextLiked: {
     color: '#EF4444',

@@ -207,7 +207,8 @@
     "error_loading_timeline": "خطأ في تحميل الجدول الزمني",
     "no_activity_yet": "لا يوجد نشاط بعد",
     "follow_students_hint": "تابع الطلاب لمشاهدة أنشطتهم هنا",
-    "comment_coming_soon": "ميزة التعليقات قريباً!"
+    "comment_coming_soon": "ميزة التعليقات قريباً!",
+    "completed_quiz": "أكمل اختباراً"
   },
   "leaderboard_screen": {
     "header_title": "لوحة المتصدرين",

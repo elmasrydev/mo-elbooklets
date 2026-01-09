@@ -207,7 +207,8 @@
     "error_loading_timeline": "Error Loading Timeline",
     "no_activity_yet": "No activity yet",
     "follow_students_hint": "Follow students to see their quiz activities here",
-    "comment_coming_soon": "Comment functionality coming soon!"
+    "comment_coming_soon": "Comment functionality coming soon!",
+    "completed_quiz": "completed a quiz"
   },
   "leaderboard_screen": {
     "header_title": "Leaderboard",
