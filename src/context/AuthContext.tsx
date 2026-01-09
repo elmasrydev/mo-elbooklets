@@ -2,8 +2,6 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { tryFetchWithFallback, setAuthErrorHandler } from '../config/api';
 import { setLogoutHandler } from '../lib/apollo';
-// import { useMutation } from '@apollo/client';
-// import { LOGIN_MUTATION, REGISTER_MUTATION, User, LoginInput, RegisterInput, AuthPayload } from '../lib/graphql';
 
 // Temporary types for testing
 interface User {
@@ -50,9 +48,6 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  // const [loginMutation] = useMutation(LOGIN_MUTATION);
-  // const [registerMutation] = useMutation(REGISTER_MUTATION);
 
   // Check if user is already logged in on app start
   useEffect(() => {
@@ -104,6 +99,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 id
                 name
               }
+              educational_system_id
+              educational_system {
+                id
+                name
+              }
             }
           }
         }
@@ -143,6 +143,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 id
                 name
               }
+              educational_system_id
+              educational_system {
+                id
+                name
+              }
             }
           }
         }
@@ -176,14 +181,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const value: AuthContextType = {
+  const value: AuthContextType = React.useMemo(() => ({
     user,
     isLoading,
     isAuthenticated: !!user,
     login,
     register,
     logout,
-  };
+  }), [user, isLoading, login, register, logout]);
 
   return (
     <AuthContext.Provider value={value}>

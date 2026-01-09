@@ -86,6 +86,8 @@
     "not_specified": "Not specified"
   },
   "home_screen": {
+    "hi": "Hi",
+    "lets_learn": "Let's learn something new.",
     "welcome_back": "Welcome back,",
     "quizzes": "Quizzes",
     "completed": "AVG Score",
@@ -105,7 +107,16 @@
     "track_learning": "Track your learning",
     "favorites": "Favorites",
     "saved_content": "Your saved content",
-    "manage_account": "Manage your account"
+    "manage_account": "Manage your account",
+    "progress": "Progress",
+    "performance": "Weekly Performance",
+    "excellent": "Excellent",
+    "schedule": "Schedule",
+    "groups": "Groups",
+    "view_all": "View All",
+    "review": "Review",
+    "start_quiz": "Start Quiz",
+    "subject_waiting": "{{subject}} waiting"
   },
   "quiz_screen": {
     "header_title": "Quiz Center",

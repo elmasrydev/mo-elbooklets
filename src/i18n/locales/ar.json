@@ -86,6 +86,8 @@
     "not_specified": "غير محدد"
   },
   "home_screen": {
+    "hi": "مرحباً",
+    "lets_learn": "لنتعلم شيئاً جديداً.",
     "welcome_back": "مرحباً بعودتك،",
     "quizzes": "الاختبارات",
     "completed": "متوسط النتائج",
@@ -105,7 +107,16 @@
     "track_learning": "تتبع تعلمك",
     "favorites": "المفضلة",
     "saved_content": "المحتوى المحفوظ الخاص بك",
-    "manage_account": "إدارة حسابك"
+    "manage_account": "إدارة حسابك",
+    "progress": "التقدم",
+    "performance": "الأداء الأسبوعي",
+    "excellent": "ممتاز",
+    "schedule": "الجدول",
+    "groups": "المجموعات",
+    "view_all": "عرض الكل",
+    "review": "مراجعة",
+    "start_quiz": "بدء اختبار",
+    "subject_waiting": "{{subject}} في الانتظار"
   },
   "quiz_screen": {
     "header_title": "مركز الاختبارات",
