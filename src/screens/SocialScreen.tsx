@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Alert, Dimensions } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
@@ -197,8 +198,8 @@ const SocialScreen: React.FC = () => {
       `, { userId: student.id }, token);
 
       if (result.data?.followUser?.success) {
-        setSearchResults(prev =>
-          prev.map(s =>
+        setSearchResults((prev: Student[]) =>
+          prev.map((s: Student) =>
             s.id === student.id
               ? { ...s, isFollowing: result.data.followUser.isFollowing }
               : s
@@ -237,8 +238,8 @@ const SocialScreen: React.FC = () => {
       `, { quizUserId: activity.id }, token);
 
       if (result.data?.likeActivity?.success) {
-        setTimelineActivities(prev =>
-          prev.map(a =>
+        setTimelineActivities((prev: TimelineActivity[]) =>
+          prev.map((a: TimelineActivity) =>
             a.id === activity.id
               ? {
                   ...a,
@@ -293,10 +294,10 @@ const SocialScreen: React.FC = () => {
     return '#F44336';
   };
 
-  const renderAvatar = (name: string) => {
+  const renderAvatar = (name: string, size = 50) => {
     return (
-      <View style={currentStyles.avatarPlaceholder}>
-        <Text style={currentStyles.avatarText}>{getInitials(name)}</Text>
+      <View style={[currentStyles.avatarPlaceholder, { width: size, height: size, borderRadius: size / 2 }]}>
+        <Text style={[currentStyles.avatarText, { fontSize: size * 0.4 }]}>{getInitials(name)}</Text>
       </View>
     );
   };
@@ -304,18 +305,200 @@ const SocialScreen: React.FC = () => {
   const isSearching = searchQuery.length >= 2;
   const currentStyles = styles(theme, isRTL);
 
+  const renderContent = () => {
+    if (isSearching) {
+      if (searchLoading) {
+        return (
+          <View style={currentStyles.loadingState}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <Text style={currentStyles.loadingText}>{t('social_screen.searching')}</Text>
+          </View>
+        );
+      }
+
+      if (searchResults.length === 0) {
+        return (
+          <View style={currentStyles.emptyState}>
+            <Ionicons name="search-outline" size={64} color={theme.colors.textTertiary} />
+            <Text style={currentStyles.emptyStateTitle}>{t('social_screen.no_results')}</Text>
+            <Text style={currentStyles.emptyStateSubtitle}>
+              {t('social_screen.try_different_search')}
+            </Text>
+          </View>
+        );
+      }
+
+      return (
+        <View style={currentStyles.searchResultsContainer}>
+          <Text style={currentStyles.sectionTitle}>{t('social_screen.search_results')}</Text>
+          {searchResults.map((student) => (
+            <View key={student.id} style={currentStyles.studentCard}>
+              <View style={currentStyles.studentInfo}>
+                {renderAvatar(student.name)}
+                <View style={currentStyles.studentDetails}>
+                  <Text style={currentStyles.studentName}>{student.name}</Text>
+                  <Text style={currentStyles.studentGrade}>{student.grade.name}</Text>
+                  <View style={currentStyles.studentStats}>
+                    <Text style={currentStyles.studentStat}>
+                      {student.totalQuizzes} {t('common.quizzes')}
+                    </Text>
+                    <Text style={currentStyles.studentStatSeparator}>•</Text>
+                    <Text style={currentStyles.studentStat}>
+                      {student.avgScore}% {t('common.avg')}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+              <TouchableOpacity
+                style={[
+                  currentStyles.followButton,
+                  student.isFollowing && currentStyles.followButtonFollowing
+                ]}
+                onPress={() => handleFollowToggle(student)}
+              >
+                <Text
+                  style={[
+                    currentStyles.followButtonText,
+                    student.isFollowing && currentStyles.followButtonTextFollowing
+                  ]}
+                >
+                  {student.isFollowing ? t('common.following') : t('common.follow')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      );
+    }
+
+    // Default Timeline View
+    if (timelineLoading) {
+      return (
+        <View style={currentStyles.loadingState}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={currentStyles.loadingText}>{t('social_screen.loading_activities')}</Text>
+        </View>
+      );
+    }
+
+    if (timelineError) {
+      return (
+        <View style={currentStyles.emptyState}>
+          <Ionicons name="alert-circle-outline" size={48} color={theme.colors.textSecondary} />
+          <Text style={currentStyles.emptyStateTitle}>{t('social_screen.error_loading_timeline')}</Text>
+          <Text style={currentStyles.emptyStateSubtitle}>{timelineError}</Text>
+          <TouchableOpacity style={currentStyles.retryButton} onPress={fetchTimeline}>
+            <Text style={currentStyles.retryButtonText}>{t('home_screen.try_again')}</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    if (timelineActivities.length === 0) {
+      return (
+        <View style={currentStyles.emptyState}>
+          <Ionicons name="people-outline" size={64} color={theme.colors.textTertiary} />
+          <Text style={currentStyles.emptyStateTitle}>{t('social_screen.no_activity_yet')}</Text>
+          <Text style={currentStyles.emptyStateSubtitle}>
+            {t('social_screen.follow_students_hint')}
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={currentStyles.timelineContainer}>
+        <Text style={currentStyles.sectionTitle}>{t('social_screen.recent_activity')}</Text>
+        {timelineActivities.map((activity) => (
+          <View key={activity.id} style={currentStyles.timelineCard}>
+            <View style={currentStyles.timelineHeader}>
+              <View style={currentStyles.timelineUserInfo}>
+                {renderAvatar(activity.user.name)}
+                <View style={currentStyles.timelineUserDetails}>
+                  <Text style={currentStyles.timelineUserName}>
+                    {activity.user.name}
+                  </Text>
+                  <Text style={currentStyles.timelineTime}>
+                    {getTimeAgo(activity.completedAt)}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={currentStyles.timelineQuizInfo}>
+              <Text style={currentStyles.timelineQuizName}>
+                {activity.quiz.subject.name}: {activity.quiz.name}
+              </Text>
+              <View style={currentStyles.timelineScoreContainer}>
+                <Text
+                  style={[
+                    currentStyles.timelineScore,
+                    {
+                      color: getScoreColor(
+                        activity.score,
+                        activity.totalQuestions
+                      ),
+                    },
+                  ]}
+                >
+                  {activity.score}/{activity.totalQuestions}
+                </Text>
+                <Text style={currentStyles.timelineScoreLabel}>{t('home_screen.score')}</Text>
+              </View>
+            </View>
+
+            <View style={currentStyles.timelineActions}>
+              <TouchableOpacity
+                style={currentStyles.timelineActionButton}
+                onPress={() => handleLike(activity)}
+              >
+                <Ionicons 
+                  name={activity.isLiked ? "heart" : "heart-outline"} 
+                  size={22} 
+                  color={activity.isLiked ? "#EF4444" : theme.colors.textSecondary} 
+                />
+                <Text
+                  style={[
+                    currentStyles.timelineActionText,
+                    activity.isLiked && currentStyles.timelineActionTextLiked
+                  ]}
+                >
+                  {activity.likes}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={currentStyles.timelineActionButton}
+                onPress={() => handleComment(activity)}
+              >
+                <Ionicons name="chatbubble-outline" size={20} color={theme.colors.textSecondary} />
+                <Text style={currentStyles.timelineActionText}>
+                  {activity.comments}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))}
+      </View>
+    );
+  };
+
   return (
     <View style={currentStyles.container}>
-      {/* Header */}
+      {/* Fixed Theme Header */}
       <View style={currentStyles.header}>
-        <Text style={currentStyles.headerTitle}>{t('social_screen.header_title')}</Text>
-        <Text style={currentStyles.headerSubtitle}>{t('social_screen.header_subtitle')}</Text>
+        <View style={currentStyles.headerLeft}>
+          <Text style={currentStyles.headerTitle}>{t('social_screen.header_title')}</Text>
+          <Text style={currentStyles.headerSubtitle}>{t('social_screen.header_subtitle')}</Text>
+        </View>
+        <TouchableOpacity style={currentStyles.notificationButton} onPress={fetchTimeline}>
+          <Ionicons name="refresh-outline" size={24} color="#fff" />
+        </TouchableOpacity>
       </View>
 
       {/* Search Bar */}
       <View style={currentStyles.searchContainer}>
         <View style={currentStyles.searchInputContainer}>
-          <Text style={currentStyles.searchIcon}>🔍</Text>
+          <Ionicons name="search-outline" size={20} color={theme.colors.textSecondary} style={{ marginRight: isRTL ? 0 : 10, marginLeft: isRTL ? 10 : 0 }} />
           <TextInput
             style={currentStyles.searchInput}
             placeholder={t('social_screen.search_placeholder')}
@@ -332,7 +515,7 @@ const SocialScreen: React.FC = () => {
               }}
               style={currentStyles.clearButton}
             >
-              <Text style={currentStyles.clearButtonText}>✕</Text>
+              <Ionicons name="close-circle" size={20} color={theme.colors.textTertiary} />
             </TouchableOpacity>
           )}
         </View>
@@ -340,188 +523,7 @@ const SocialScreen: React.FC = () => {
 
       {/* Content */}
       <ScrollView style={currentStyles.content} showsVerticalScrollIndicator={false}>
-        {(() => {
-          if (isSearching) {
-            return (
-              <View style={currentStyles.searchResultsContainer}>
-                <Text style={currentStyles.sectionTitle}>{t('social_screen.search_results')}</Text>
-                {(() => {
-                  if (searchLoading) {
-                    return (
-                      <View style={currentStyles.loadingState}>
-                        <ActivityIndicator size="large" color={theme.colors.primary} />
-                        <Text style={currentStyles.loadingText}>{t('social_screen.searching')}</Text>
-                      </View>
-                    );
-                  }
-
-                  if (searchResults.length === 0) {
-                    return (
-                      <View style={currentStyles.emptyState}>
-                        <Text style={currentStyles.emptyStateIcon}>🔍</Text>
-                        <Text style={currentStyles.emptyStateTitle}>{t('social_screen.no_results')}</Text>
-                        <Text style={currentStyles.emptyStateSubtitle}>
-                          {t('social_screen.try_different_search')}
-                        </Text>
-                      </View>
-                    );
-                  }
-
-                  return searchResults.map((student) => (
-                    <View key={student.id} style={currentStyles.studentCard}>
-                      <View style={currentStyles.studentInfo}>
-                        {renderAvatar(student.name)}
-                        <View style={currentStyles.studentDetails}>
-                          <Text style={currentStyles.studentName}>{student.name}</Text>
-                          <Text style={currentStyles.studentGrade}>{student.grade.name}</Text>
-                          <View style={currentStyles.studentStats}>
-                            <Text style={currentStyles.studentStat}>
-                              {student.totalQuizzes} {t('common.quizzes')}
-                            </Text>
-                            <Text style={currentStyles.studentStatSeparator}>•</Text>
-                            <Text style={currentStyles.studentStat}>
-                              {student.avgScore}% {t('common.avg')}
-                            </Text>
-                          </View>
-                        </View>
-                      </View>
-                      <TouchableOpacity
-                        style={[
-                          currentStyles.followButton,
-                          student.isFollowing && currentStyles.followButtonFollowing
-                        ]}
-                        onPress={() => handleFollowToggle(student)}
-                      >
-                        <Text
-                          style={[
-                            currentStyles.followButtonText,
-                            student.isFollowing && currentStyles.followButtonTextFollowing
-                          ]}
-                        >
-                          {student.isFollowing ? t('common.following') : t('common.follow')}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  ));
-                })()}
-              </View>
-            );
-          }
-
-          return (
-            <View style={currentStyles.timelineContainer}>
-              <Text style={currentStyles.sectionTitle}>{t('social_screen.recent_activity')}</Text>
-              {(() => {
-                if (timelineLoading) {
-                  return (
-                    <View style={currentStyles.loadingState}>
-                      <ActivityIndicator size="large" color={theme.colors.primary} />
-                      <Text style={currentStyles.loadingText}>{t('social_screen.loading_activities')}</Text>
-                    </View>
-                  );
-                }
-
-                if (timelineError) {
-                  return (
-                    <View style={currentStyles.emptyState}>
-                      <Text style={currentStyles.emptyStateIcon}>⚠️</Text>
-                      <Text style={currentStyles.emptyStateTitle}>{t('social_screen.error_loading_timeline')}</Text>
-                      <Text style={currentStyles.emptyStateSubtitle}>{timelineError}</Text>
-                      <TouchableOpacity style={currentStyles.retryButton} onPress={fetchTimeline}>
-                        <Text style={currentStyles.retryButtonText}>{t('home_screen.try_again')}</Text>
-                      </TouchableOpacity>
-                    </View>
-                  );
-                }
-
-                if (timelineActivities.length === 0) {
-                  return (
-                    <View style={currentStyles.emptyState}>
-                      <Text style={currentStyles.emptyStateIcon}>👥</Text>
-                      <Text style={currentStyles.emptyStateTitle}>{t('social_screen.no_activity_yet')}</Text>
-                      <Text style={currentStyles.emptyStateSubtitle}>
-                        {t('social_screen.follow_students_hint')}
-                      </Text>
-                    </View>
-                  );
-                }
-
-                return timelineActivities.map((activity) => (
-                  <View key={activity.id} style={currentStyles.timelineCard}>
-                    <View style={currentStyles.timelineHeader}>
-                      <View style={currentStyles.timelineUserInfo}>
-                        {renderAvatar(activity.user.name)}
-                        <View style={currentStyles.timelineUserDetails}>
-                          <Text style={currentStyles.timelineUserName}>
-                            {activity.user.name}
-                          </Text>
-                          <Text style={currentStyles.timelineTime}>
-                            {getTimeAgo(activity.completedAt)}
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-
-                    <View style={currentStyles.timelineQuizInfo}>
-                      <Text style={currentStyles.timelineQuizName}>
-                        {activity.quiz.subject.name}
-                      </Text>
-                      <View style={currentStyles.timelineScoreContainer}>
-                        <Text
-                          style={[
-                            currentStyles.timelineScore,
-                            {
-                              color: getScoreColor(
-                                activity.score,
-                                activity.totalQuestions
-                              ),
-                            },
-                          ]}
-                        >
-                          {activity.score}/{activity.totalQuestions}
-                        </Text>
-                        <Text style={currentStyles.timelineScoreLabel}>{t('home_screen.score')}</Text>
-                      </View>
-                    </View>
-
-                    <View style={currentStyles.timelineActions}>
-                      <TouchableOpacity
-                        style={currentStyles.timelineActionButton}
-                        onPress={() => handleLike(activity)}
-                      >
-                        <Text
-                          style={[
-                            currentStyles.timelineActionIcon,
-                            activity.isLiked && currentStyles.timelineActionIconLiked,
-                          ]}
-                        >
-                          {activity.isLiked ? '❤️' : '🤍'}
-                        </Text>
-                        <Text
-                          style={[
-                            currentStyles.timelineActionText,
-                            activity.isLiked && currentStyles.timelineActionTextLiked
-                          ]}
-                        >
-                          {activity.likes}
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={currentStyles.timelineActionButton}
-                        onPress={() => handleComment(activity)}
-                      >
-                        <Text style={currentStyles.timelineActionIcon}>💬</Text>
-                        <Text style={currentStyles.timelineActionText}>
-                          {activity.comments}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                ));
-              })()}
-            </View>
-          );
-        })()}
+        {renderContent()}
       </ScrollView>
     </View>
   );
@@ -533,53 +535,63 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
   header: {
-    padding: 20,
-    paddingTop: 50,
-    backgroundColor: theme.colors.headerBackground,
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 25,
+    backgroundColor: theme.colors.primary,
+    flexDirection: isRTL ? 'row-reverse' : 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  headerLeft: {
     alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
-    color: theme.colors.headerText,
+    color: '#fff',
   },
   headerSubtitle: {
-    fontSize: 16,
-    opacity: 0.9,
-    marginTop: 4,
-    color: theme.colors.headerSubtitle,
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: 2,
+  },
+  notificationButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   searchContainer: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
+    padding: 20,
+    backgroundColor: theme.colors.background,
   },
   searchInputContainer: {
     flexDirection: isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
-    borderRadius: 12,
+    borderRadius: 18,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: theme.colors.card,
-  },
-  searchIcon: {
-    fontSize: 20,
-    marginRight: isRTL ? 0 : 10,
-    marginLeft: isRTL ? 10 : 0,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
     color: theme.colors.text,
+    fontWeight: '500',
   },
   clearButton: {
     padding: 4,
-  },
-  clearButtonText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: theme.colors.textTertiary,
   },
   content: {
     flex: 1,
@@ -588,8 +600,7 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 16,
-    paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingHorizontal: 20,
     color: theme.colors.text,
     textAlign: isRTL ? 'right' : 'left',
   },
@@ -597,19 +608,19 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     paddingBottom: 20,
   },
   studentCard: {
-    marginHorizontal: 16,
+    marginHorizontal: 20,
     marginBottom: 12,
-    padding: 16,
-    borderRadius: 12,
+    padding: 18,
+    borderRadius: 24,
     flexDirection: isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: theme.colors.card,
-    shadowColor: theme.colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
   studentInfo: {
     flexDirection: isRTL ? 'row-reverse' : 'row',
@@ -617,82 +628,81 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     flex: 1,
   },
   avatarPlaceholder: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    backgroundColor: 'rgba(147, 51, 234, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: isRTL ? 0 : 12,
-    marginLeft: isRTL ? 12 : 0,
-    backgroundColor: theme.colors.avatarBackground,
+    borderWidth: 2,
+    borderColor: 'rgba(147, 51, 234, 0.1)',
   },
   avatarText: {
-    color: theme.colors.avatarText,
-    fontSize: 18,
+    color: theme.colors.primary,
     fontWeight: 'bold',
   },
   studentDetails: {
     flex: 1,
+    marginLeft: isRTL ? 0 : 12,
+    marginRight: isRTL ? 12 : 0,
     alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   studentName: {
     fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
+    fontWeight: 'bold',
     color: theme.colors.text,
   },
   studentGrade: {
-    fontSize: 14,
-    marginBottom: 4,
+    fontSize: 13,
     color: theme.colors.textSecondary,
+    marginTop: 2,
   },
   studentStats: {
     flexDirection: isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
+    marginTop: 4,
   },
   studentStat: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
+    fontSize: 12,
+    color: theme.colors.primary,
+    fontWeight: '600',
   },
   studentStatSeparator: {
-    fontSize: 14,
-    marginHorizontal: 8,
+    fontSize: 12,
+    marginHorizontal: 6,
     color: theme.colors.textTertiary,
   },
   followButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: theme.colors.buttonPrimary,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 14,
+    backgroundColor: theme.colors.primary,
   },
   followButtonFollowing: {
-    backgroundColor: theme.colors.buttonSecondary,
+    backgroundColor: '#F3F4F6',
   },
   followButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: theme.colors.buttonPrimaryText,
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#fff',
   },
   followButtonTextFollowing: {
-    color: theme.colors.buttonSecondaryText,
+    color: theme.colors.textSecondary,
   },
   timelineContainer: {
     paddingBottom: 20,
   },
   timelineCard: {
-    marginHorizontal: 16,
-    marginBottom: 16,
-    borderRadius: 12,
-    padding: 16,
-    backgroundColor: theme.colors.card,
-    shadowColor: theme.colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    marginHorizontal: 20,
+    marginBottom: 20,
+    borderRadius: 28,
+    padding: 24,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
     elevation: 3,
   },
   timelineHeader: {
-    marginBottom: 12,
+    marginBottom: 16,
   },
   timelineUserInfo: {
     flexDirection: isRTL ? 'row-reverse' : 'row',
@@ -706,49 +716,48 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
   },
   timelineUserName: {
     fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 2,
+    fontWeight: 'bold',
     color: theme.colors.text,
   },
   timelineTime: {
     fontSize: 12,
     color: theme.colors.textTertiary,
+    marginTop: 2,
   },
   timelineQuizInfo: {
     marginBottom: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    padding: 16,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 20,
     alignItems: isRTL ? 'flex-end' : 'flex-start',
   },
   timelineQuizName: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: 'bold',
-    marginBottom: 4,
     color: theme.colors.text,
-  },
-  timelineQuizSubject: {
-    fontSize: 14,
-    marginBottom: 12,
-    color: theme.colors.textSecondary,
+    marginBottom: 8,
   },
   timelineScoreContainer: {
     flexDirection: isRTL ? 'row-reverse' : 'row',
     alignItems: 'baseline',
   },
   timelineScore: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginRight: isRTL ? 0 : 8,
-    marginLeft: isRTL ? 8 : 0,
+    fontSize: 28,
+    fontWeight: '800',
   },
   timelineScoreLabel: {
-    fontSize: 14,
+    fontSize: 13,
     color: theme.colors.textSecondary,
+    marginLeft: isRTL ? 0 : 8,
+    marginRight: isRTL ? 8 : 0,
+    fontWeight: '600',
   },
   timelineActions: {
     flexDirection: isRTL ? 'row-reverse' : 'row',
-    alignItems: 'center',
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    marginTop: 4,
   },
   timelineActionButton: {
     flexDirection: isRTL ? 'row-reverse' : 'row',
@@ -756,75 +765,58 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
     marginRight: isRTL ? 0 : 24,
     marginLeft: isRTL ? 24 : 0,
   },
-  timelineActionIcon: {
-    fontSize: 20,
-    marginRight: isRTL ? 0 : 6,
-    marginLeft: isRTL ? 6 : 0,
-  },
-  timelineActionIconLiked: {},
   timelineActionText: {
     fontSize: 14,
+    marginLeft: isRTL ? 0 : 6,
+    marginRight: isRTL ? 6 : 0,
     color: theme.colors.textSecondary,
+    fontWeight: '600',
   },
   timelineActionTextLiked: {
-    fontWeight: '600',
-    color: '#E91E63',
+    color: '#EF4444',
   },
   loadingState: {
-    marginHorizontal: 16,
-    padding: 40,
-    borderRadius: 12,
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: theme.colors.card,
-    shadowColor: theme.colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    padding: 40,
   },
   loadingText: {
-    marginTop: 15,
-    fontSize: 14,
+    marginTop: 12,
+    fontSize: 16,
     color: theme.colors.textSecondary,
   },
   emptyState: {
-    marginHorizontal: 16,
-    padding: 40,
-    borderRadius: 12,
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: theme.colors.card,
-    shadowColor: theme.colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  emptyStateIcon: {
-    fontSize: 64,
-    marginBottom: 16,
+    padding: 40,
+    marginTop: 40,
   },
   emptyStateTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 8,
+    fontWeight: 'bold',
     color: theme.colors.text,
+    marginTop: 16,
+    textAlign: 'center',
   },
   emptyStateSubtitle: {
     fontSize: 14,
-    textAlign: 'center',
     color: theme.colors.textSecondary,
+    marginTop: 8,
+    textAlign: 'center',
+    lineHeight: 20,
   },
   retryButton: {
-    marginTop: 15,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: theme.colors.buttonPrimary,
+    marginTop: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: theme.colors.primary,
+    borderRadius: 12,
   },
   retryButtonText: {
-    color: theme.colors.buttonPrimaryText,
-    fontSize: 14,
-    fontWeight: '600',
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
 
