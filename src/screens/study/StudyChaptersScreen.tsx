@@ -12,11 +12,19 @@ interface Subject {
   description?: string;
 }
 
+interface LessonPoint {
+  id: string;
+  title: string;
+  explanation?: string;
+  order: number;
+}
+
 interface Lesson {
   id: string;
   name: string;
   summary?: string;
   points?: string[];
+  lessonPoints?: LessonPoint[];
   chapter: {
     id: string;
     name: string;
@@ -70,6 +78,12 @@ const StudyChaptersScreen: React.FC<StudyChaptersScreenProps> = ({ subject, onLe
               name
               summary
               points
+              lessonPoints {
+                id
+                title
+                explanation
+                order
+              }
             }
           }
         }

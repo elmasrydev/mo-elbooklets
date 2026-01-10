@@ -64,7 +64,15 @@ type Lesson {
   description: String
   summary: String
   points: [String!]
+  lessonPoints: [LessonPoint!]
   chapter: Chapter!
+}
+
+type LessonPoint {
+  id: ID!
+  title: String!
+  explanation: String
+  order: Int!
 }
 
 type Quiz {
