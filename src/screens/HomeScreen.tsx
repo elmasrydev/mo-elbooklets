@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { tryFetchWithFallback } from '../config/api';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
+import RecentActivityCard from '../components/RecentActivityCard';
 
 const { width } = Dimensions.get('window');
 
@@ -319,31 +320,11 @@ const HomeScreen: React.FC = () => {
           {loading ? (
              <ActivityIndicator size="small" color={theme.colors.primary} />
           ) : activitiesData?.activities.slice(0, 3).map((activity) => (
-            <TouchableOpacity key={activity.id} style={currentStyles.refinedActivityCard}>
-              <View style={[currentStyles.activityIconContainer, { backgroundColor: theme.colors.primary100 }]}>
-                <Ionicons name="book-outline" size={24} color={theme.colors.primary} />
-              </View>
-              <View style={currentStyles.refinedActivityInfo}>
-                <Text style={currentStyles.refinedActivityName}>{activity.subject.name}</Text>
-                <Text style={currentStyles.refinedActivityMeta}>
-                  {activity.subject.name} • 2 hrs ago
-                </Text>
-              </View>
-              <View style={currentStyles.refinedActivityRight}>
-                <Text style={currentStyles.refinedActivityScore}>{Math.round((activity.score / activity.totalQuestions) * 100)}%</Text>
-                <View style={[
-                  currentStyles.statusLabel,
-                  { backgroundColor: activity.isPassed ? '#ECFDF5' : '#FEF3C7' }
-                ]}>
-                  <Text style={[
-                    currentStyles.statusLabelText,
-                    { color: activity.isPassed ? '#10B981' : '#F59E0B' }
-                  ]}>
-                    {activity.isPassed ? t('home_screen.passed') : t('home_screen.review')}
-                  </Text>
-                </View>
-              </View>
-            </TouchableOpacity>
+            <RecentActivityCard 
+              key={activity.id} 
+              activity={activity} 
+              onPress={() => navigation.navigate('Leaderboard')}
+            />
           ))}
         </View>
 
@@ -602,60 +583,6 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
   squareActionSubtitle: {
     fontSize: 11,
     color: 'rgba(255,255,255,0.85)',
-  },
-  refinedActivityCard: {
-    flexDirection: isRTL ? 'row-reverse' : 'row',
-    backgroundColor: '#fff',
-    borderRadius: 24,
-    padding: 16,
-    alignItems: 'center',
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 6,
-    elevation: 1,
-  },
-  activityIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  refinedActivityInfo: {
-    flex: 1,
-    marginLeft: isRTL ? 0 : 12,
-    marginRight: isRTL ? 12 : 0,
-    alignItems: isRTL ? 'flex-end' : 'flex-start',
-  },
-  refinedActivityName: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-  },
-  refinedActivityMeta: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-    marginTop: 2,
-  },
-  refinedActivityRight: {
-    alignItems: isRTL ? 'flex-start' : 'flex-end',
-  },
-  refinedActivityScore: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-    marginBottom: 4,
-  },
-  statusLabel: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  statusLabelText: {
-    fontSize: 10,
-    fontWeight: 'bold',
   },
   quoteCard: {
     backgroundColor: '#9333EA',

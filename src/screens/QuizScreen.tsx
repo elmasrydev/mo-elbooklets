@@ -11,6 +11,7 @@ import QuizSubjectsScreen from './quiz/QuizSubjectsScreen';
 import QuizLessonsScreen from './quiz/QuizLessonsScreen';
 import QuizTakingScreen from './quiz/QuizTakingScreen';
 import QuizResultsScreen from './quiz/QuizResultsScreen';
+import RecentActivityCard from '../components/RecentActivityCard';
 
 interface Subject {
   id: string;
@@ -36,7 +37,7 @@ type QuizFlowStep = 'history' | 'subjects' | 'lessons' | 'taking' | 'results';
 const QuizScreen: React.FC = () => {
   const { user } = useAuth();
   const { theme } = useTheme();
-  const { isRTL, language } = useLanguage();
+  const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const [quizHistory, setQuizHistory] = useState<QuizHistory[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
@@ -224,22 +225,6 @@ const QuizScreen: React.FC = () => {
     );
   }
 
-  const getScoreColor = (score: number, total: number) => {
-    const percentage = (score / total) * 100;
-    if (percentage >= 70) return '#4CAF50';
-    if (percentage >= 50) return '#FF9800';
-    return '#F44336';
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
   const currentStyles = styles(theme, isRTL);
 
   return (
@@ -288,44 +273,11 @@ const QuizScreen: React.FC = () => {
         ) : (
           <ScrollView style={currentStyles.historyList} showsVerticalScrollIndicator={false}>
             {quizHistory.map((quiz) => (
-              <View key={quiz.id} style={currentStyles.historyCard}>
-                <View style={currentStyles.historyHeader}>
-                  <Text style={currentStyles.quizName}>{quiz.subject.name}</Text>
-                </View>
-                
-                <View style={currentStyles.historyDetails}>
-                  <View style={currentStyles.scoreContainer}>
-                    <Text 
-                      style={[
-                        currentStyles.scoreText,
-                        { color: getScoreColor(quiz.score, quiz.totalQuestions) }
-                      ]}
-                    >
-                      {quiz.score}/{quiz.totalQuestions}
-                    </Text>
-                    <Text style={currentStyles.scoreLabel}>{t('home_screen.score')}</Text>
-                  </View>
-                  
-                  <View style={currentStyles.statusContainer}>
-                    <View 
-                      style={[
-                        currentStyles.statusBadge,
-                        quiz.isPassed ? currentStyles.statusBadgePassed : currentStyles.statusBadgeFailed
-                      ]}
-                    >
-                      <Text 
-                        style={[
-                          currentStyles.statusText,
-                          quiz.isPassed ? currentStyles.statusTextPassed : currentStyles.statusTextFailed
-                        ]}
-                      >
-                        {quiz.isPassed ? t('home_screen.passed') : t('home_screen.failed')}
-                      </Text>
-                    </View>
-                    <Text style={currentStyles.dateText}>{formatDate(quiz.completedAt)}</Text>
-                  </View>
-                </View>
-              </View>
+              <RecentActivityCard 
+                key={quiz.id} 
+                activity={quiz} 
+                onPress={() => handleQuizComplete(quiz.id)}
+              />
             ))}
           </ScrollView>
         )}
@@ -424,78 +376,6 @@ const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
   },
   historyList: {
     flex: 1,
-  },
-  historyCard: {
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    backgroundColor: theme.colors.card,
-    shadowColor: theme.colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  historyHeader: {
-    marginBottom: 12,
-    alignItems: isRTL ? 'flex-end' : 'flex-start',
-  },
-  quizName: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-    color: theme.colors.text,
-  },
-  quizSubject: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: theme.colors.textSecondary,
-  },
-  historyDetails: {
-    flexDirection: isRTL ? 'row-reverse' : 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  scoreContainer: {
-    alignItems: isRTL ? 'flex-end' : 'flex-start',
-  },
-  scoreText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  scoreLabel: {
-    fontSize: 12,
-    marginTop: 2,
-    color: theme.colors.textSecondary,
-  },
-  statusContainer: {
-    alignItems: isRTL ? 'flex-start' : 'flex-end',
-  },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginBottom: 4,
-  },
-  statusBadgePassed: {
-    backgroundColor: theme.colors.passBackground,
-  },
-  statusBadgeFailed: {
-    backgroundColor: theme.colors.failBackground,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  statusTextPassed: {
-    color: theme.colors.passText,
-  },
-  statusTextFailed: {
-    color: theme.colors.failText,
-  },
-  dateText: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
   },
   loadingState: {
     alignItems: 'center',

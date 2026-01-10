@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-import Svg, { Circle } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
@@ -8,6 +7,9 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { tryFetchWithFallback } from '../config/api';
+import CircularProgress from '../components/CircularProgress';
+import { getScoreColor } from '../lib/scoreUtils';
+import { getTimeAgo } from '../lib/dateUtils';
 
 interface Student {
   id: string;
@@ -50,42 +52,7 @@ interface TimelineActivity {
   isLiked: boolean;
 }
 
-const CircularProgress = ({ size, strokeWidth, percentage, color }: { size: number, strokeWidth: number, percentage: number, color: string }) => {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = radius * 2 * Math.PI;
-  const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
-  return (
-    <View style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }}>
-      <Svg width={size} height={size}>
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke="rgba(0,0,0,0.05)"
-          strokeWidth={strokeWidth}
-          fill="none"
-        />
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke={color}
-          strokeWidth={strokeWidth}
-          strokeDasharray={circumference}
-          strokeDashoffset={strokeDashoffset}
-          strokeLinecap="round"
-          fill="none"
-          rotation="-90"
-          origin={`${size / 2}, ${size / 2}`}
-        />
-      </Svg>
-      <View style={{ position: 'absolute' }}>
-        <Text style={{ fontSize: size * 0.22, fontWeight: 'bold', color: color }}>{percentage}%</Text>
-      </View>
-    </View>
-  );
-};
 
 const SocialScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -311,21 +278,7 @@ const SocialScreen: React.FC = () => {
       .substring(0, 2);
   };
 
-  const getTimeAgo = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-    if (diffInSeconds < 60) return t('time.just_now');
-    if (diffInSeconds < 3600) return t('time.minutes_ago', { count: Math.floor(diffInSeconds / 60) });
-    if (diffInSeconds < 86400) return t('time.hours_ago', { count: Math.floor(diffInSeconds / 3600) });
-    if (diffInSeconds < 604800) return t('time.days_ago', { count: Math.floor(diffInSeconds / 86400) });
-    
-    return date.toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', {
-      month: 'short',
-      day: 'numeric',
-    });
-  };
 
 
   const renderAvatar = (name: string, size = 50, borderRadius?: number) => {
@@ -345,11 +298,7 @@ const SocialScreen: React.FC = () => {
 
   const renderTimelineActivity = (activity: TimelineActivity) => {
     const scorePercent = Math.round((activity.score / activity.totalQuestions) * 100);
-    
-    let color = '#EF4444'; // Failed
-    if (scorePercent >= 90) color = '#10B981'; // Excellent
-    else if (scorePercent >= 75) color = '#3B82F6'; // Good
-    else if (scorePercent >= 50) color = '#F59E0B'; // Passed
+    const color = getScoreColor(scorePercent);
 
     const rightAnswers = activity.score;
     const wrongAnswers = activity.totalQuestions - activity.score;
@@ -387,7 +336,7 @@ const SocialScreen: React.FC = () => {
               percentage={scorePercent} 
               color={color} 
             />
-            <Text style={currentStyles.timelineTime}>{getTimeAgo(activity.completedAt)}</Text>
+            <Text style={currentStyles.timelineTime}>{getTimeAgo(activity.completedAt, t, language)}</Text>
           </View>
         </View>
 
