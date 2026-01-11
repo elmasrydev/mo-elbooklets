@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "mobile-elbooklets",
+    "name": "El Booklets",
     "slug": "mobile-elbooklets",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -10,18 +10,22 @@
     "splash": {
       "image": "./assets/logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#10b981"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "ExpoLocalization_supportsRTL": true
+      }
     },
     "android": {
       "package": "com.elmasrydev.elbooklets",
-      "versionCode": 1,
+      "versionCode": 3,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logo.png",
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "allowRTL": true,
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "permissions": [

@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { ApolloProvider } from '@apollo/client/react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, I18nManager } from 'react-native';
 import { useFonts } from 'expo-font';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthProvider } from './src/context/AuthContext';
 import { ThemeProvider } from './src/context/ThemeContext';
 import apolloClient from './src/lib/apollo';
@@ -19,9 +20,41 @@ export default function App() {
     'Inter': require('./assets/fonts/Inter-Variable.ttf'),
     'Cairo': require('./assets/fonts/Cairo-Variable.ttf'),
   });
+  const [isRTLInitialized, setIsRTLInitialized] = useState(false);
+  const [needsRestart, setNeedsRestart] = useState(false);
 
-  // Show loading screen while fonts are loading
-  if (!fontsLoaded) {
+  // Initialize RTL before rendering the app
+  useEffect(() => {
+    const initializeRTL = async () => {
+      try {
+        const savedLang = await AsyncStorage.getItem('user_language');
+        const shouldBeRTL = savedLang === 'ar';
+        const currentRTL = I18nManager.isRTL;
+
+        console.log(`RTL Init: savedLang=${savedLang}, shouldBeRTL=${shouldBeRTL}, currentRTL=${currentRTL}`);
+
+        // Always allow RTL
+        I18nManager.allowRTL(true);
+
+        // Check if there's a mismatch between saved language and current RTL state
+        if (savedLang && currentRTL !== shouldBeRTL) {
+          // Set the RTL state - this takes effect on next restart
+          I18nManager.forceRTL(shouldBeRTL);
+          console.log('RTL mismatch detected, forcing RTL to:', shouldBeRTL);
+          // The app will restart via Updates.reloadAsync in LanguageContext if needed
+        }
+      } catch (error) {
+        console.error('Error initializing RTL:', error);
+      } finally {
+        setIsRTLInitialized(true);
+      }
+    };
+
+    initializeRTL();
+  }, []);
+
+  // Show loading screen while fonts and RTL are loading
+  if (!fontsLoaded || !isRTLInitialized) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#10b981" />
@@ -54,6 +87,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#020617',
+    backgroundColor: '#f5f5f5',
   },
 });
