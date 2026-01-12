@@ -208,7 +208,17 @@
     "no_activity_yet": "لا يوجد نشاط بعد",
     "follow_students_hint": "تابع الطلاب لمشاهدة أنشطتهم هنا",
     "comment_coming_soon": "ميزة التعليقات قريباً!",
-    "completed_quiz": "أكمل اختباراً"
+    "completed_quiz": "أكمل اختباراً",
+    "aced_quiz": "أتقن اختبار {{subject}}",
+    "quiz_description": "{{user}} أكمل درس {{lesson}} في {{subject}} بدقة مذهلة {{percent}}%.",
+    "connected": "متصلين",
+    "overall_ranking": "الترتيب العام",
+    "rank_1st": "الأول",
+    "rank_2nd": "الثاني",
+    "rank_3rd": "الثالث",
+    "rank_th": "",
+    "moved_to_rank": "انتقل من المركز #{{from}} إلى {{to}}",
+    "reached_rank": "حصل على المركز {{rank}}!"
   },
   "leaderboard_screen": {
     "header_title": "لوحة المتصدرين",

@@ -208,7 +208,17 @@
     "no_activity_yet": "No activity yet",
     "follow_students_hint": "Follow students to see their quiz activities here",
     "comment_coming_soon": "Comment functionality coming soon!",
-    "completed_quiz": "completed a quiz"
+    "completed_quiz": "completed a quiz",
+    "aced_quiz": "Aced the {{subject}} Quiz",
+    "quiz_description": "{{user}} completed the {{lesson}} lesson in {{subject}} with an impressive {{percent}}% accuracy.",
+    "connected": "Connected",
+    "overall_ranking": "Overall Ranking",
+    "rank_1st": "1st",
+    "rank_2nd": "2nd",
+    "rank_3rd": "3rd",
+    "rank_th": "th",
+    "moved_to_rank": "Moved from #{{from}} to {{to}} place",
+    "reached_rank": "Reached {{rank}} place!"
   },
   "leaderboard_screen": {
     "header_title": "Leaderboard",

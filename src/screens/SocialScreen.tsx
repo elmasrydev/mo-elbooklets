@@ -7,9 +7,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { tryFetchWithFallback } from '../config/api';
-import CircularProgress from '../components/CircularProgress';
-import { getScoreColor } from '../lib/scoreUtils';
-import { getTimeAgo } from '../lib/dateUtils';
+import { QuizCompletionCard, ConnectionCard, RankChangeCard } from '../components/feed';
 
 interface Student {
   id: string;
@@ -24,8 +22,10 @@ interface Student {
   isFollowing: boolean;
 }
 
-interface TimelineActivity {
+// News feed item interface supporting 3 types
+interface NewsFeedItem {
   id: string;
+  type: 'quiz_completion' | 'new_connection' | 'rank_change';
   user: {
     id: string;
     name: string;
@@ -34,19 +34,39 @@ interface TimelineActivity {
       name: string;
     };
   };
-  quiz: {
+  createdAt: string;
+  quizData?: {
+    quizUserId: string;
+    quiz: {
+      id: string;
+      name: string;
+      subject: {
+        id: string;
+        name: string;
+      };
+      type: string;
+    };
+    score: number;
+    totalQuestions: number;
+    isPassed: boolean;
+  };
+  connectedUser?: {
     id: string;
     name: string;
-    subject: {
+    grade: {
       id: string;
       name: string;
     };
-    type: string;
   };
-  score: number;
-  totalQuestions: number;
-  completedAt: string;
-  isPassed: boolean;
+  rankData?: {
+    previousRank?: number;
+    newRank: number;
+    subject?: {
+      id: string;
+      name: string;
+    };
+    isOverall: boolean;
+  };
   likes: number;
   comments: number;
   isLiked: boolean;
@@ -61,7 +81,7 @@ const SocialScreen: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Student[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [timelineActivities, setTimelineActivities] = useState<TimelineActivity[]>([]);
+  const [feedItems, setFeedItems] = useState<NewsFeedItem[]>([]);
   const [timelineLoading, setTimelineLoading] = useState(true);
   const [timelineError, setTimelineError] = useState<string | null>(null);
 
@@ -80,6 +100,7 @@ const SocialScreen: React.FC = () => {
         query SocialTimeline {
           socialTimeline {
             id
+            type
             user {
               id
               name
@@ -88,19 +109,39 @@ const SocialScreen: React.FC = () => {
                 name
               }
             }
-            quiz {
+            createdAt
+            quizData {
+              quizUserId
+              quiz {
+                id
+                name
+                subject {
+                  id
+                  name
+                }
+                type
+              }
+              score
+              totalQuestions
+              isPassed
+            }
+            connectedUser {
               id
               name
+              grade {
+                id
+                name
+              }
+            }
+            rankData {
+              previousRank
+              newRank
               subject {
                 id
                 name
               }
-              type
+              isOverall
             }
-            score
-            totalQuestions
-            completedAt
-            isPassed
             likes
             comments
             isLiked
@@ -109,7 +150,7 @@ const SocialScreen: React.FC = () => {
       `, undefined, token);
 
       if (result.data?.socialTimeline) {
-        setTimelineActivities(result.data.socialTimeline);
+        setFeedItems(result.data.socialTimeline);
       } else {
         setTimelineError(result.errors?.[0]?.message || t('social_screen.error_loading_timeline'));
       }
@@ -225,11 +266,16 @@ const SocialScreen: React.FC = () => {
     }
   };
 
-  const handleLike = async (activity: TimelineActivity) => {
+  const handleLike = async (feedItem: NewsFeedItem) => {
     try {
       const token = await AsyncStorage.getItem('auth_token');
       if (!token) {
         Alert.alert(t('common.error'), t('common.error'));
+        return;
+      }
+
+      // Only quiz completion items can be liked
+      if (feedItem.type !== 'quiz_completion' || !feedItem.quizData) {
         return;
       }
 
@@ -242,18 +288,18 @@ const SocialScreen: React.FC = () => {
             message
           }
         }
-      `, { quizUserId: activity.id }, token);
+      `, { quizUserId: feedItem.quizData.quizUserId }, token);
 
       if (result.data?.likeActivity?.success) {
-        setTimelineActivities((prev: TimelineActivity[]) =>
-          prev.map((a: TimelineActivity) =>
-            a.id === activity.id
+        setFeedItems((prev: NewsFeedItem[]) =>
+          prev.map((item: NewsFeedItem) =>
+            item.id === feedItem.id
               ? {
-                  ...a,
+                  ...item,
                   isLiked: result.data.likeActivity.isLiked,
                   likes: result.data.likeActivity.likeCount,
                 }
-              : a
+              : item
           )
         );
       } else {
@@ -265,7 +311,7 @@ const SocialScreen: React.FC = () => {
     }
   };
 
-  const handleComment = (activity: TimelineActivity) => {
+  const handleComment = (item: NewsFeedItem) => {
     Alert.alert('Comment', t('social_screen.comment_coming_soon'));
   };
 
@@ -278,17 +324,14 @@ const SocialScreen: React.FC = () => {
       .substring(0, 2);
   };
 
-
-
-
-  const renderAvatar = (name: string, size = 50, borderRadius?: number) => {
+  const renderAvatar = (name: string, size = 50) => {
     return (
       <View style={[
-        currentStyles.avatarPlaceholder, 
-        { 
-          width: size, 
-          height: size, 
-          borderRadius: borderRadius ?? size / 2 
+        currentStyles.avatarPlaceholder,
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2
         }
       ]}>
         <Text style={[currentStyles.avatarText, { fontSize: size * 0.4 }]}>{getInitials(name)}</Text>
@@ -296,81 +339,47 @@ const SocialScreen: React.FC = () => {
     );
   };
 
-  const renderTimelineActivity = (activity: TimelineActivity) => {
-    const scorePercent = Math.round((activity.score / activity.totalQuestions) * 100);
-    const color = getScoreColor(scorePercent);
-
-    const rightAnswers = activity.score;
-    const wrongAnswers = activity.totalQuestions - activity.score;
-
-    return (
-      <View key={activity.id} style={currentStyles.timelineCard}>
-        <View style={currentStyles.timelineMain}>
-          <View style={currentStyles.timelineLeft}>
-            {renderAvatar(activity.user.name, 60)}
-            <View style={currentStyles.timelineDetails}>
-              <Text style={currentStyles.timelineUserName}>{activity.user.name}</Text>
-              <Text style={currentStyles.timelineSubjectName}>{activity.quiz.subject.name}</Text>
-              
-              <View style={currentStyles.timelineStatsRow}>
-                <View style={currentStyles.timelineStatItem}>
-                  <Ionicons name="list-outline" size={14} color={theme.colors.textSecondary} />
-                  <Text style={currentStyles.timelineStatText}>{activity.quiz.type || 'Quiz'}</Text>
-                </View>
-                <View style={[currentStyles.timelineStatItem, { marginLeft: 12 }]}>
-                  <Ionicons name="checkmark-circle-outline" size={14} color="#10B981" />
-                  <Text style={[currentStyles.timelineStatText, { color: '#10B981' }]}>{rightAnswers}</Text>
-                </View>
-                <View style={[currentStyles.timelineStatItem, { marginLeft: 12 }]}>
-                  <Ionicons name="close-circle-outline" size={14} color="#EF4444" />
-                  <Text style={[currentStyles.timelineStatText, { color: '#EF4444' }]}>{wrongAnswers}</Text>
-                </View>
-              </View>
-            </View>
-          </View>
-          
-          <View style={currentStyles.timelineRight}>
-            <CircularProgress 
-              size={64} 
-              strokeWidth={6} 
-              percentage={scorePercent} 
-              color={color} 
-            />
-            <Text style={currentStyles.timelineTime}>{getTimeAgo(activity.completedAt, t, language)}</Text>
-          </View>
-        </View>
-
-        <View style={currentStyles.timelineFooter}>
-          <TouchableOpacity
-            style={currentStyles.timelineActionButton}
-            onPress={() => handleLike(activity)}
-          >
-            <Ionicons 
-              name={activity.isLiked ? "heart" : "heart-outline"} 
-              size={22} 
-              color={activity.isLiked ? "#EF4444" : theme.colors.textSecondary} 
-            />
-            <Text
-              style={[
-                currentStyles.timelineActionText,
-                activity.isLiked && currentStyles.timelineActionTextLiked
-              ]}
-            >
-              {activity.likes}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={currentStyles.timelineActionButton}
-            onPress={() => handleComment(activity)}
-          >
-            <Text style={currentStyles.timelineActionText}>
-              {activity.comments}
-            </Text>
-            <Ionicons name="chatbubble-outline" size={20} color={theme.colors.textSecondary} />
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
+  // Render feed item based on type using reusable components
+  const renderFeedItem = (item: NewsFeedItem) => {
+    switch (item.type) {
+      case 'quiz_completion':
+        if (!item.quizData) return null;
+        return (
+          <QuizCompletionCard
+            key={item.id}
+            item={{
+              ...item,
+              quizData: item.quizData,
+            }}
+            onLike={() => handleLike(item)}
+            onComment={() => handleComment(item)}
+          />
+        );
+      case 'new_connection':
+        if (!item.connectedUser) return null;
+        return (
+          <ConnectionCard
+            key={item.id}
+            item={{
+              ...item,
+              connectedUser: item.connectedUser,
+            }}
+          />
+        );
+      case 'rank_change':
+        if (!item.rankData) return null;
+        return (
+          <RankChangeCard
+            key={item.id}
+            item={{
+              ...item,
+              rankData: item.rankData,
+            }}
+          />
+        );
+      default:
+        return null;
+    }
   };
 
   const isSearching = searchQuery.length >= 2;
@@ -465,7 +474,7 @@ const SocialScreen: React.FC = () => {
       );
     }
 
-    if (timelineActivities.length === 0) {
+    if (feedItems.length === 0) {
       return (
         <View style={currentStyles.emptyState}>
           <Ionicons name="people-outline" size={64} color={theme.colors.textTertiary} />
@@ -480,7 +489,7 @@ const SocialScreen: React.FC = () => {
     return (
       <View style={currentStyles.timelineContainer}>
         <Text style={currentStyles.sectionTitle}>{t('social_screen.recent_activity')}</Text>
-        {timelineActivities.map(renderTimelineActivity)}
+        {feedItems.map(renderFeedItem)}
       </View>
     );
   };
