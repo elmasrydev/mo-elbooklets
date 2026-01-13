@@ -213,7 +213,6 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
           <Text style={[currentStyles.description, isRTL && { textAlign: 'right' }]}>
             {t('social_screen.quiz_description', {
               user: item.user.name,
-              lesson: item.quizData.quiz.name,
               subject: item.quizData.quiz.subject.name,
               percent: scorePercent,
             })}

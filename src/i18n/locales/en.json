@@ -210,7 +210,7 @@
     "comment_coming_soon": "Comment functionality coming soon!",
     "completed_quiz": "completed a quiz",
     "aced_quiz": "Aced the {{subject}} Quiz",
-    "quiz_description": "{{user}} completed the {{lesson}} lesson in {{subject}} with an impressive {{percent}}% accuracy.",
+    "quiz_description": "{{user}} completed the {{subject}} quiz with an impressive {{percent}}% accuracy.",
     "connected": "Connected",
     "overall_ranking": "Overall Ranking",
     "rank_1st": "1st",
