@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Switch } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -19,6 +20,7 @@ interface MenuItem {
 }
 
 const MoreScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
   const { user, logout } = useAuth();
   const { theme, toggleTheme, isDark, fontSizes, spacing, borderRadius } = useTheme();
   const { language, setLanguage, isRTL } = useLanguage();
@@ -120,6 +122,13 @@ const MoreScreen: React.FC = () => {
       icon: '🎨',
       action: () => {},
       isColorThemePicker: true,
+    },
+    {
+      id: 'study_calendar',
+      title: t('study_calendar.header_title'),
+      subtitle: t('study_calendar.header_subtitle'),
+      icon: '📅',
+      action: () => navigation.navigate('StudyCalendar'),
     },
     {
       id: 'settings',

@@ -10,6 +10,7 @@ import { tryFetchWithFallback } from '../config/api';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import RecentActivityCard from '../components/RecentActivityCard';
+import TodaysPlanWidget from '../components/TodaysPlanWidget';
 
 const { width } = Dimensions.get('window');
 
@@ -259,6 +260,11 @@ const HomeScreen: React.FC = () => {
             </View>
           </View>
           <WeeklyPerformanceChart theme={theme} isRTL={isRTL} data={activitiesData?.weekly_performance || []} />
+        </View>
+
+        {/* Today's Study Plan Widget */}
+        <View style={{ paddingHorizontal: 20 }}>
+          <TodaysPlanWidget />
         </View>
 
         {/* Quick Actions */}

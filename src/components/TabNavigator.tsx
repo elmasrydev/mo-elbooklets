@@ -1,5 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { I18nManager, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,9 +12,11 @@ import QuizScreen from '../screens/QuizScreen';
 import SocialScreen from '../screens/SocialScreen';
 import LeaderboardScreen from '../screens/LeaderboardScreen';
 import MoreScreen from '../screens/MoreScreen';
+import StudyCalendarScreen from '../screens/StudyCalendarScreen';
 import { useTranslation } from 'react-i18next';
 
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
 
 interface TabIconProps {
   color: string;
@@ -36,7 +39,7 @@ interface TabConfig {
   icon: keyof typeof Ionicons.glyphMap;
 }
 
-const TabNavigator: React.FC = () => {
+const TabScreens: React.FC = () => {
   const { theme } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
@@ -95,4 +98,14 @@ const TabNavigator: React.FC = () => {
   );
 };
 
+const TabNavigator: React.FC = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MainTabs" component={TabScreens} />
+      <Stack.Screen name="StudyCalendar" component={StudyCalendarScreen} />
+    </Stack.Navigator>
+  );
+};
+
 export default TabNavigator;
+

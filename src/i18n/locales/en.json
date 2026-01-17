@@ -264,5 +264,38 @@
     "minutes_ago": "{{count}}m ago",
     "hours_ago": "{{count}}h ago",
     "days_ago": "{{count}}d ago"
+  },
+  "study_calendar": {
+    "header_title": "Study Calendar",
+    "header_subtitle": "Plan your weekly study goals",
+    "today_plan": "Today's Plan",
+    "your_goals_today": "Your study goals for today",
+    "no_schedule": "No schedule for today",
+    "set_schedule_hint": "Set up your study calendar to see your daily goals.",
+    "set_schedule": "Set Schedule",
+    "edit_schedule": "Edit Schedule",
+    "save_schedule": "Save Schedule",
+    "schedule_saved": "Schedule saved successfully!",
+    "add_subject": "Add Subject",
+    "remove_subject": "Remove",
+    "lessons_goal": "Lessons",
+    "quizzes_goal": "Quizzes",
+    "notes": "Notes",
+    "notes_placeholder": "Optional notes...",
+    "complete": "Complete",
+    "in_progress": "In Progress",
+    "saturday": "Saturday",
+    "sunday": "Sunday",
+    "monday": "Monday",
+    "tuesday": "Tuesday",
+    "wednesday": "Wednesday",
+    "thursday": "Thursday",
+    "friday": "Friday",
+    "of": "of",
+    "loading_schedule": "Loading schedule...",
+    "loading_subjects": "Loading subjects...",
+    "error_loading": "Error loading schedule",
+    "no_subjects": "No subjects available"
   }
 }
+

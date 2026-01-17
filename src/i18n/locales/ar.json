@@ -264,5 +264,38 @@
     "minutes_ago": "منذ {{count}} دقيقة",
     "hours_ago": "منذ {{count}} ساعة",
     "days_ago": "منذ {{count}} يوم"
+  },
+  "study_calendar": {
+    "header_title": "جدول المذاكرة",
+    "header_subtitle": "خطط أهدافك الدراسية الأسبوعية",
+    "today_plan": "خطة اليوم",
+    "your_goals_today": "أهدافك الدراسية لليوم",
+    "no_schedule": "لا يوجد جدول لليوم",
+    "set_schedule_hint": "قم بإعداد جدول المذاكرة لرؤية أهدافك اليومية.",
+    "set_schedule": "إعداد الجدول",
+    "edit_schedule": "تعديل الجدول",
+    "save_schedule": "حفظ الجدول",
+    "schedule_saved": "تم حفظ الجدول بنجاح!",
+    "add_subject": "إضافة مادة",
+    "remove_subject": "حذف",
+    "lessons_goal": "الدروس",
+    "quizzes_goal": "الاختبارات",
+    "notes": "ملاحظات",
+    "notes_placeholder": "ملاحظات اختيارية...",
+    "complete": "مكتمل",
+    "in_progress": "جاري",
+    "saturday": "السبت",
+    "sunday": "الأحد",
+    "monday": "الاثنين",
+    "tuesday": "الثلاثاء",
+    "wednesday": "الأربعاء",
+    "thursday": "الخميس",
+    "friday": "الجمعة",
+    "of": "من",
+    "loading_schedule": "جارٍ تحميل الجدول...",
+    "loading_subjects": "جارٍ تحميل المواد...",
+    "error_loading": "خطأ في تحميل الجدول",
+    "no_subjects": "لا توجد مواد متاحة"
   }
 }
+

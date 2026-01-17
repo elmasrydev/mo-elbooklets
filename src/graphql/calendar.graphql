@@ -1,0 +1,54 @@
+# Study Calendar Queries and Mutations
+
+query StudySchedule {
+  studySchedule {
+    id
+    subject {
+      id
+      name
+    }
+    dayOfWeek
+    dayName
+    lessonGoal
+    quizGoal
+    notes
+  }
+}
+
+query TodaySchedule {
+  todaySchedule {
+    date
+    dayName
+    dayOfWeek
+    schedule {
+      id
+      subject {
+        id
+        name
+      }
+      dayOfWeek
+      lessonGoal
+      quizGoal
+      notes
+      lessonsCompleted
+      quizzesCompleted
+      completionPercentage
+      isComplete
+    }
+  }
+}
+
+mutation SaveStudySchedule($entries: [StudyScheduleInput!]!) {
+  saveStudySchedule(entries: $entries) {
+    id
+    subject {
+      id
+      name
+    }
+    dayOfWeek
+    dayName
+    lessonGoal
+    quizGoal
+    notes
+  }
+}
