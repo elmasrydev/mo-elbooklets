@@ -23,8 +23,8 @@ const authLink = setContext(async (_, { headers }) => {
       ...headers,
       authorization: token ? `Bearer ${token}` : '',
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    }
+      Accept: 'application/json',
+    },
   };
 });
 
@@ -32,13 +32,15 @@ const authLink = setContext(async (_, { headers }) => {
 const errorLink = onError((errorResponse: any) => {
   const graphQLErrors = errorResponse.graphQLErrors;
   const networkError = errorResponse.networkError;
-  
+
   if (graphQLErrors) {
     for (const err of graphQLErrors) {
       // Check for unauthenticated error
-      if (err.message === 'Unauthenticated.' || 
-          err.message.toLowerCase().includes('unauthenticated') ||
-          (err.extensions && err.extensions.code === 'UNAUTHENTICATED')) {
+      if (
+        err.message === 'Unauthenticated.' ||
+        err.message.toLowerCase().includes('unauthenticated') ||
+        (err.extensions && err.extensions.code === 'UNAUTHENTICATED')
+      ) {
         console.log('Auth error detected, logging out...');
         // Clear stored auth data
         AsyncStorage.removeItem('auth_token');

@@ -1,6 +1,6 @@
 /**
  * Font and Typography Configuration for ElBooklets Mobile
- * 
+ *
  * Defines font families, sizes, and spacing matching the web frontend design.
  * Uses Inter (Latin) and Cairo (Arabic) variable fonts from Google Fonts.
  */
@@ -12,7 +12,7 @@ export const fontFamilies = {
   medium: 'Inter',
   semiBold: 'Inter',
   bold: 'Inter',
-  
+
   // Arabic fonts (Cairo) - using variable font
   arabicRegular: 'Cairo',
   arabicMedium: 'Cairo',
@@ -31,7 +31,7 @@ export const fontWeights = {
 // Get appropriate font family based on language
 export const getFontFamily = (
   weight: 'regular' | 'medium' | 'semiBold' | 'bold',
-  isArabic: boolean = false
+  isArabic: boolean = false,
 ): string => {
   if (isArabic) {
     return fontFamilies.arabicRegular; // All weights use the same variable font
@@ -40,9 +40,7 @@ export const getFontFamily = (
 };
 
 // Get appropriate font weight
-export const getFontWeight = (
-  weight: 'regular' | 'medium' | 'semiBold' | 'bold'
-): string => {
+export const getFontWeight = (weight: 'regular' | 'medium' | 'semiBold' | 'bold'): string => {
   return fontWeights[weight];
 };
 
@@ -138,7 +136,7 @@ export const textStyles = {
     fontSize: fontSizes.xl,
     lineHeight: lineHeights.xl,
   },
-  
+
   // Body
   body: {
     fontSize: fontSizes.base,
@@ -148,7 +146,7 @@ export const textStyles = {
     fontSize: fontSizes.sm,
     lineHeight: lineHeights.sm,
   },
-  
+
   // Labels
   label: {
     fontSize: fontSizes.sm,
@@ -158,7 +156,7 @@ export const textStyles = {
     fontSize: fontSizes.xs,
     lineHeight: lineHeights.xs,
   },
-  
+
   // Buttons
   button: {
     fontSize: fontSizes.base,

@@ -1,220 +1,216 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import { useCommonStyles } from '../hooks/useCommonStyles';
+import { useLanguage } from '../context/LanguageContext';
+import { layout } from '../config/layout';
 
 const ProfileScreen: React.FC = () => {
   const { user, logout } = useAuth();
+  const { theme, spacing, fontSizes, borderRadius } = useTheme();
+  const common = useCommonStyles();
+  const { isRTL } = useLanguage();
 
   const handleLogout = async () => {
     await logout();
   };
 
+  const currentStyles = styles(theme, spacing, fontSizes, borderRadius, common, isRTL);
+
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Profile</Text>
-        <Text style={styles.subtitle}>Manage your account settings</Text>
+    <View style={common.container}>
+      {/* Standardized Header */}
+      <View style={common.header}>
+        <View style={common.headerTextWrapper}>
+          <Text style={common.headerTitle}>Profile</Text>
+          <Text style={common.headerSubtitle}>Manage your account settings</Text>
+        </View>
       </View>
 
-      <View style={styles.content}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: layout.screenPadding, paddingBottom: 100 }}
+      >
         {/* User Info Card */}
-        <View style={styles.userCard}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {user?.name?.charAt(0).toUpperCase()}
-            </Text>
+        <View style={currentStyles.userCard}>
+          <View style={currentStyles.avatar}>
+            <Text style={currentStyles.avatarText}>{user?.name?.charAt(0).toUpperCase()}</Text>
           </View>
-          <View style={styles.userInfo}>
-            <Text style={styles.userName}>{user?.name}</Text>
-            <Text style={styles.userEmail}>{user?.email}</Text>
-            <Text style={styles.userMobile}>{user?.mobile}</Text>
-            <Text style={styles.userGrade}>
+          <View style={currentStyles.userInfo}>
+            <Text style={currentStyles.userName}>{user?.name}</Text>
+            <Text style={currentStyles.userEmail}>{user?.email}</Text>
+            <Text style={currentStyles.userMobile}>{user?.mobile}</Text>
+            <Text style={currentStyles.userGrade}>
               Grade: {user?.grade?.name || 'Not specified'}
             </Text>
           </View>
         </View>
 
         {/* Settings Options */}
-        <View style={styles.settingsSection}>
-          <Text style={styles.sectionTitle}>Settings</Text>
-          
-          <TouchableOpacity style={styles.settingItem}>
-            <Text style={styles.settingIcon}>👤</Text>
-            <View style={styles.settingContent}>
-              <Text style={styles.settingTitle}>Edit Profile</Text>
-              <Text style={styles.settingSubtitle}>Update your personal information</Text>
+        <View style={currentStyles.settingsSection}>
+          <Text style={common.sectionTitle}>Settings</Text>
+
+          <TouchableOpacity style={currentStyles.settingItem}>
+            <Text style={currentStyles.settingIcon}>👤</Text>
+            <View style={currentStyles.settingContent}>
+              <Text style={currentStyles.settingTitle}>Edit Profile</Text>
+              <Text style={currentStyles.settingSubtitle}>Update your personal information</Text>
             </View>
-            <Text style={styles.settingArrow}>›</Text>
+            <Text style={currentStyles.settingArrow}>{isRTL ? '<' : '›'}</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.settingItem}>
-            <Text style={styles.settingIcon}>🔔</Text>
-            <View style={styles.settingContent}>
-              <Text style={styles.settingTitle}>Notifications</Text>
-              <Text style={styles.settingSubtitle}>Manage notification preferences</Text>
+          <TouchableOpacity style={currentStyles.settingItem}>
+            <Text style={currentStyles.settingIcon}>🔔</Text>
+            <View style={currentStyles.settingContent}>
+              <Text style={currentStyles.settingTitle}>Notifications</Text>
+              <Text style={currentStyles.settingSubtitle}>
+                Manage your notification preferences
+              </Text>
             </View>
-            <Text style={styles.settingArrow}>›</Text>
+            <Text style={currentStyles.settingArrow}>{isRTL ? '<' : '›'}</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.settingItem}>
-            <Text style={styles.settingIcon}>🔒</Text>
-            <View style={styles.settingContent}>
-              <Text style={styles.settingTitle}>Privacy & Security</Text>
-              <Text style={styles.settingSubtitle}>Password and privacy settings</Text>
+          <TouchableOpacity style={currentStyles.settingItem}>
+            <Text style={currentStyles.settingIcon}>🔒</Text>
+            <View style={currentStyles.settingContent}>
+              <Text style={currentStyles.settingTitle}>Privacy & Security</Text>
+              <Text style={currentStyles.settingSubtitle}>Password and privacy settings</Text>
             </View>
-            <Text style={styles.settingArrow}>›</Text>
+            <Text style={currentStyles.settingArrow}>{isRTL ? '<' : '›'}</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.settingItem}>
-            <Text style={styles.settingIcon}>❓</Text>
-            <View style={styles.settingContent}>
-              <Text style={styles.settingTitle}>Help & Support</Text>
-              <Text style={styles.settingSubtitle}>Get help and contact support</Text>
+          <TouchableOpacity style={currentStyles.settingItem}>
+            <Text style={currentStyles.settingIcon}>❓</Text>
+            <View style={currentStyles.settingContent}>
+              <Text style={currentStyles.settingTitle}>Help & Support</Text>
+              <Text style={currentStyles.settingSubtitle}>Get help and contact support</Text>
             </View>
-            <Text style={styles.settingArrow}>›</Text>
+            <Text style={currentStyles.settingArrow}>{isRTL ? '<' : '›'}</Text>
           </TouchableOpacity>
         </View>
 
         {/* Logout Button */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutButtonText}>Sign Out</Text>
+        <TouchableOpacity style={currentStyles.logoutButton} onPress={handleLogout}>
+          <Text style={currentStyles.logoutButtonText}>Sign Out</Text>
         </TouchableOpacity>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    backgroundColor: '#ffffff',
-    padding: 20,
-    paddingTop: 50,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333333',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666666',
-    marginTop: 4,
-  },
-  content: {
-    flex: 1,
-    padding: 20,
-  },
-  userCard: {
-    backgroundColor: '#ffffff',
-    padding: 20,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 30,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#007AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 15,
-  },
-  avatarText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#ffffff',
-  },
-  userInfo: {
-    flex: 1,
-  },
-  userName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333333',
-    marginBottom: 4,
-  },
-  userEmail: {
-    fontSize: 14,
-    color: '#666666',
-    marginBottom: 2,
-  },
-  userMobile: {
-    fontSize: 14,
-    color: '#666666',
-    marginBottom: 2,
-  },
-  userGrade: {
-    fontSize: 14,
-    color: '#007AFF',
-    fontWeight: '600',
-  },
-  settingsSection: {
-    marginBottom: 30,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333333',
-    marginBottom: 15,
-  },
-  settingItem: {
-    backgroundColor: '#ffffff',
-    padding: 15,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  settingIcon: {
-    fontSize: 24,
-    marginRight: 15,
-  },
-  settingContent: {
-    flex: 1,
-  },
-  settingTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333333',
-    marginBottom: 2,
-  },
-  settingSubtitle: {
-    fontSize: 14,
-    color: '#666666',
-  },
-  settingArrow: {
-    fontSize: 20,
-    color: '#cccccc',
-  },
-  logoutButton: {
-    backgroundColor: '#FF3B30',
-    padding: 15,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  logoutButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
+const styles = (
+  theme: any,
+  spacing: any,
+  fontSizes: any,
+  borderRadius: any,
+  common: any,
+  isRTL: boolean,
+) =>
+  StyleSheet.create({
+    content: {
+      flex: 1,
+      padding: layout.screenPadding,
+    },
+    userCard: {
+      backgroundColor: theme.colors.card,
+      padding: spacing.xl,
+      borderRadius: borderRadius.xl,
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      marginBottom: spacing.xl,
+      ...layout.shadow,
+    },
+    avatar: {
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      backgroundColor: theme.colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      ...common.marginEnd(spacing.lg),
+    },
+    avatarText: {
+      fontSize: fontSizes.xl,
+      fontWeight: 'bold',
+      color: '#ffffff',
+    },
+    userInfo: {
+      flex: 1,
+      alignItems: common.alignStart,
+    },
+    userName: {
+      fontSize: fontSizes.lg,
+      fontWeight: 'bold',
+      color: theme.colors.text,
+      marginBottom: 4,
+      textAlign: common.textAlign,
+    },
+    userEmail: {
+      fontSize: fontSizes.sm,
+      color: theme.colors.textSecondary,
+      marginBottom: 2,
+      textAlign: common.textAlign,
+    },
+    userMobile: {
+      fontSize: fontSizes.sm,
+      color: theme.colors.textSecondary,
+      marginBottom: 2,
+      textAlign: common.textAlign,
+    },
+    userGrade: {
+      fontSize: fontSizes.sm,
+      color: theme.colors.primary,
+      fontWeight: '600',
+      textAlign: common.textAlign,
+    },
+    settingsSection: {
+      marginBottom: spacing.xl,
+    },
+    settingItem: {
+      backgroundColor: theme.colors.card,
+      padding: spacing.lg,
+      borderRadius: borderRadius.lg,
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      marginBottom: spacing.md,
+      ...layout.shadow,
+    },
+    settingIcon: {
+      fontSize: 24,
+      ...common.marginEnd(spacing.lg),
+    },
+    settingContent: {
+      flex: 1,
+      alignItems: common.alignStart,
+    },
+    settingTitle: {
+      fontSize: fontSizes.base,
+      fontWeight: '600',
+      color: theme.colors.text,
+      marginBottom: 2,
+      textAlign: common.textAlign,
+    },
+    settingSubtitle: {
+      fontSize: fontSizes.sm,
+      color: theme.colors.textSecondary,
+      textAlign: common.textAlign,
+    },
+    settingArrow: {
+      fontSize: fontSizes.xl,
+      color: theme.colors.textTertiary,
+    },
+    logoutButton: {
+      backgroundColor: theme.colors.error || '#ef4444',
+      padding: spacing.lg,
+      borderRadius: borderRadius.lg,
+      alignItems: 'center',
+    },
+    logoutButtonText: {
+      color: '#ffffff',
+      fontSize: fontSizes.base,
+      fontWeight: '600',
+    },
+  });
 
 export default ProfileScreen;

@@ -1,4 +1,12 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  ReactNode,
+} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ColorTheme, getColorPalette, DEFAULT_COLOR_THEME, ColorPalette } from '../config/colors';
 import { fontSizes, spacing, borderRadius, fontFamilies } from '../config/fonts';
@@ -160,14 +168,14 @@ const generateThemeColors = (mode: ThemeMode, palette: ColorPalette): ThemeColor
     // Dark mode
     return {
       background: '#020617', // Slate 950 (Dark Navy)
-      surface: '#0f172a',    // Slate 900
-      text: '#f8fafc',       // Slate 50
+      surface: '#0f172a', // Slate 900
+      text: '#f8fafc', // Slate 50
       textSecondary: '#94a3b8', // Slate 400
-      textTertiary: '#64748b',  // Slate 500
-      border: '#1e293b',     // Slate 800
+      textTertiary: '#64748b', // Slate 500
+      border: '#1e293b', // Slate 800
       primary: palette.primary500,
       secondary: '#10b981',
-      card: '#1e293b',       // Slate 800
+      card: '#1e293b', // Slate 800
       headerBackground: '#020617',
       headerText: '#f8fafc',
       headerSubtitle: '#94a3b8',
@@ -243,11 +251,11 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
           AsyncStorage.getItem('theme_mode'),
           AsyncStorage.getItem('color_theme'),
         ]);
-        
+
         if (savedTheme === 'light' || savedTheme === 'dark') {
           setThemeMode(savedTheme);
         }
-        
+
         if (savedColorTheme && ['green', 'purple', 'blue', 'orange'].includes(savedColorTheme)) {
           setCurrentColorTheme(savedColorTheme as ColorTheme);
         }
@@ -255,7 +263,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         console.error('Error loading theme preferences:', error);
       }
     };
-    
+
     loadPreferences();
   }, []);
 
@@ -286,23 +294,22 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     };
   }, [themeMode, currentColorTheme]);
 
-  const contextValue = useMemo<ThemeContextType>(() => ({
-    theme,
-    toggleTheme,
-    isDark: themeMode === 'dark',
-    colorTheme: currentColorTheme,
-    setColorTheme,
-    fonts: fontFamilies,
-    fontSizes,
-    spacing,
-    borderRadius,
-  }), [theme, toggleTheme, themeMode, currentColorTheme, setColorTheme]);
-
-  return (
-    <ThemeContext.Provider value={contextValue}>
-      {children}
-    </ThemeContext.Provider>
+  const contextValue = useMemo<ThemeContextType>(
+    () => ({
+      theme,
+      toggleTheme,
+      isDark: themeMode === 'dark',
+      colorTheme: currentColorTheme,
+      setColorTheme,
+      fonts: fontFamilies,
+      fontSizes,
+      spacing,
+      borderRadius,
+    }),
+    [theme, toggleTheme, themeMode, currentColorTheme, setColorTheme],
   );
+
+  return <ThemeContext.Provider value={contextValue}>{children}</ThemeContext.Provider>;
 };
 
 export const useTheme = (): ThemeContextType => {

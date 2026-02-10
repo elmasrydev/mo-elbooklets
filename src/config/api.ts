@@ -11,15 +11,15 @@ const IS_PRODUCTION = !__DEV__; // Use production in release builds
 
 // Production API configuration
 const PRODUCTION_URLS = [
-  'https://elbooklets.com/graphql',  // Production backend
+  'https://elbooklets.com/graphql', // Production backend
 ];
 
 // Development fallback URLs for different network scenarios
 const DEVELOPMENT_URLS = [
   // 'http://192.168.1.188:8001/graphql',  // Current WiFi network
   // 'http://169.254.105.59:8001/graphql', // Link-local address
-  'http://10.0.2.2:8000/graphql',       // Android emulator
-  // 'http://localhost:8001/graphql',      // iOS simulator
+  'https://elbooklets.com/graphql', // Android emulator
+  'https://elbooklets.com/graphql', // iOS simulator
 ];
 
 // Select URLs based on environment
@@ -54,8 +54,10 @@ export const setAuthErrorHandler = (handler: () => void) => {
 const checkForAuthError = (data: any): boolean => {
   if (data?.errors) {
     for (const err of data.errors) {
-      if (err.message === 'Unauthenticated.' || 
-          err.message?.toLowerCase().includes('unauthenticated')) {
+      if (
+        err.message === 'Unauthenticated.' ||
+        err.message?.toLowerCase().includes('unauthenticated')
+      ) {
         return true;
       }
     }
@@ -82,14 +84,14 @@ const handleAuthError = async () => {
 export const tryFetchWithFallback = async (
   query: string,
   variables?: any,
-  token?: string
+  token?: string,
 ): Promise<any> => {
   let lastError: Error | null = null;
 
   // Try to get token from AsyncStorage if not provided
   let authToken = token;
   if (!authToken) {
-    authToken = await AsyncStorage.getItem('auth_token') || undefined;
+    authToken = (await AsyncStorage.getItem('auth_token')) || undefined;
   }
 
   for (const url of POSSIBLE_URLS) {
@@ -98,7 +100,7 @@ export const tryFetchWithFallback = async (
 
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
+        Accept: 'application/json',
       };
 
       if (authToken) {
@@ -110,19 +112,19 @@ export const tryFetchWithFallback = async (
         headers,
         body: JSON.stringify({
           query,
-          variables
-        })
+          variables,
+        }),
       });
 
       if (response.ok) {
         console.log(`Successfully connected to: ${url}`);
         const data = await response.json();
-        
+
         // Check for authentication errors in GraphQL response
         if (checkForAuthError(data)) {
           await handleAuthError();
         }
-        
+
         return data;
       } else {
         // Handle 401 HTTP status
@@ -156,8 +158,8 @@ export const API_CONFIG = {
   graphql: {
     endpoint: GRAPHQL_ENDPOINT,
     introspection: __DEV__, // Enable introspection in development
-    playground: __DEV__,    // Enable playground in development
-  }
+    playground: __DEV__, // Enable playground in development
+  },
 };
 
 /**
@@ -167,7 +169,9 @@ export const NetworkUtils = {
   /**
    * Test connectivity to all possible URLs
    */
-  async testConnectivity(): Promise<{ url: string; status: 'success' | 'failed'; error?: string }[]> {
+  async testConnectivity(): Promise<
+    { url: string; status: 'success' | 'failed'; error?: string }[]
+  > {
     const results: { url: string; status: 'success' | 'failed'; error?: string }[] = [];
 
     for (const url of POSSIBLE_URLS) {
@@ -176,23 +180,23 @@ export const NetworkUtils = {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Accept': 'application/json',
+            Accept: 'application/json',
           },
           body: JSON.stringify({
-            query: '{ __typename }'
-          })
+            query: '{ __typename }',
+          }),
         });
 
         results.push({
           url,
           status: (response.ok ? 'success' : 'failed') as 'success' | 'failed',
-          error: response.ok ? undefined : `HTTP ${response.status}`
+          error: response.ok ? undefined : `HTTP ${response.status}`,
         });
       } catch (error: any) {
         results.push({
           url,
           status: 'failed' as const,
-          error: error.message
+          error: error.message,
         });
       }
     }
@@ -210,11 +214,11 @@ export const NetworkUtils = {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Accept': 'application/json',
+            Accept: 'application/json',
           },
           body: JSON.stringify({
-            query: '{ __typename }'
-          })
+            query: '{ __typename }',
+          }),
         });
 
         if (response.ok) {
@@ -226,5 +230,5 @@ export const NetworkUtils = {
     }
 
     return null;
-  }
+  },
 };

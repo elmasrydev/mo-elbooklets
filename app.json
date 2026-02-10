@@ -16,7 +16,9 @@
       "supportsTablet": true,
       "infoPlist": {
         "ExpoLocalization_supportsRTL": true
-      }
+      },
+      "bundleIdentifier": "com.agmryde.app",
+      "buildNumber": "27"
     },
     "android": {
       "package": "com.elmasrydev.elbooklets",

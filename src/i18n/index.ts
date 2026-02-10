@@ -19,18 +19,16 @@ const getDeviceLanguage = () => {
   return 'en';
 };
 
-i18n
-  .use(initReactI18next)
-  .init({
-    resources,
-    lng: getDeviceLanguage(),
-    fallbackLng: 'en',
-    interpolation: {
-      escapeValue: false,
-    },
-    react: {
-      useSuspense: false,
-    },
-  });
+i18n.use(initReactI18next).init({
+  resources,
+  lng: getDeviceLanguage(),
+  fallbackLng: 'en',
+  interpolation: {
+    escapeValue: false,
+  },
+  react: {
+    useSuspense: false,
+  },
+});
 
 export default i18n;

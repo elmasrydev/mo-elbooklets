@@ -1,213 +1,102 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Switch } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Alert } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
+import { useCommonStyles } from '../hooks/useCommonStyles';
+import { layout } from '../config/layout';
 import ColorThemePicker from '../components/ColorThemePicker';
-
-interface MenuItem {
-  id: string;
-  title: string;
-  subtitle: string;
-  icon: string;
-  action: () => void;
-  color?: string;
-  isSwitch?: boolean;
-  isLanguageSelector?: boolean;
-  isColorThemePicker?: boolean;
-}
+import { marginStart } from '../lib/rtl';
 
 const MoreScreen: React.FC = () => {
-  const navigation = useNavigation<any>();
   const { user, logout } = useAuth();
   const { theme, toggleTheme, isDark, fontSizes, spacing, borderRadius } = useTheme();
   const { language, setLanguage, isRTL } = useLanguage();
   const { t } = useTranslation();
-
-  const handleEditProfile = () => {
-    Alert.alert(
-      t('more_screen.edit_profile'),
-      t('more_screen.update_profile_info'),
-      [{ text: t('common.ok') }]
-    );
-  };
+  const common = useCommonStyles();
 
   const handleLogout = () => {
-    Alert.alert(
-      t('common.logout'),
-      t('more_screen.logout_confirm'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        { 
-          text: t('common.logout'), 
-          style: 'destructive',
-          onPress: () => {
-            logout();
-          }
-        }
-      ]
-    );
+    Alert.alert(t('more_screen.logout'), t('more_screen.logout_confirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('more_screen.logout'), style: 'destructive', onPress: logout },
+    ]);
   };
 
-  const handleSettings = () => {
-    Alert.alert(
-      t('common.settings'),
-      t('more_screen.app_preferences'),
-      [{ text: t('common.ok') }]
-    );
-  };
-
-  const handleHelp = () => {
-    Alert.alert(
-      t('common.help'),
-      t('more_screen.contact_support'),
-      [{ text: t('common.ok') }]
-    );
-  };
-
-  const handleAbout = () => {
-    Alert.alert(
-      t('more_screen.about_title'),
-      t('more_screen.about_content'),
-      [{ text: t('common.ok') }]
-    );
-  };
-
-  const handleLanguageChange = (newLang: 'en' | 'ar') => {
-    if (newLang === language) return;
-    
-    Alert.alert(
-      t('common.switch_language'),
-      t('common.reload_message'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        { 
-          text: t('common.ok'), 
-          onPress: () => setLanguage(newLang)
-        }
-      ]
-    );
-  };
-
-  const menuItems: MenuItem[] = [
+  const menuItems = [
     {
       id: 'profile',
       title: t('more_screen.edit_profile'),
       subtitle: t('more_screen.update_profile_info'),
-      icon: '👤',
-      action: handleEditProfile,
+      icon: 'person-outline',
+      iconColor: theme.colors.primary,
+      iconBg: theme.colors.primaryLight || 'rgba(59, 130, 246, 0.1)',
+      action: () => {},
     },
     {
       id: 'language',
-      title: t('common.language'),
-      subtitle: '',
-      icon: '🌐',
-      action: () => {},
+      title: t('more_screen.language'),
+      subtitle: t('more_screen.choose_language'),
+      icon: 'language-outline',
+      iconColor: '#10B981',
+      iconBg: '#ECFDF5',
       isLanguageSelector: true,
     },
     {
       id: 'theme',
       title: t('more_screen.dark_mode'),
-      subtitle: isDark ? t('more_screen.switch_light') : t('more_screen.switch_dark'),
-      icon: isDark ? '🌙' : '☀️',
-      action: () => {},
+      subtitle: t('more_screen.switch_dark'),
+      icon: 'moon-outline',
+      iconColor: '#8B5CF6',
+      iconBg: '#F5F3FF',
       isSwitch: true,
     },
     {
-      id: 'colorTheme',
+      id: 'color_theme',
       title: t('more_screen.color_theme'),
-      subtitle: t('more_screen.choose_accent_color'),
-      icon: '🎨',
-      action: () => {},
+      subtitle: t('more_screen.choose_app_color'),
+      icon: 'color-palette-outline',
+      iconColor: '#F59E0B',
+      iconBg: '#FFFBEB',
       isColorThemePicker: true,
     },
     {
-      id: 'study_calendar',
-      title: t('study_calendar.header_title'),
-      subtitle: t('study_calendar.header_subtitle'),
-      icon: '📅',
-      action: () => navigation.navigate('StudyCalendar'),
-    },
-    {
-      id: 'settings',
-      title: t('common.settings'),
-      subtitle: t('more_screen.app_preferences'),
-      icon: '⚙️',
-      action: handleSettings,
-    },
-    {
       id: 'help',
-      title: t('common.help'),
-      subtitle: t('more_screen.contact_support'),
-      icon: '❓',
-      action: handleHelp,
-    },
-    {
-      id: 'about',
-      title: t('common.about'),
-      subtitle: t('more_screen.app_info'),
-      icon: 'ℹ️',
-      action: handleAbout,
+      title: t('more_screen.help_support'),
+      subtitle: t('more_screen.get_assistance'),
+      icon: 'help-circle-outline',
+      iconColor: '#EC4899',
+      iconBg: '#FDF2F8',
+      action: () => {},
     },
     {
       id: 'logout',
-      title: t('common.logout'),
-      subtitle: t('more_screen.sign_out'),
-      icon: '🚪',
+      title: t('more_screen.logout'),
+      icon: 'log-out-outline',
+      iconColor: '#EF4444',
+      iconBg: '#FEF2F2',
       action: handleLogout,
-      color: '#F44336',
+      isDestructive: true,
     },
   ];
 
-  const currentStyles = styles(theme, isRTL, fontSizes, spacing, borderRadius);
-
-  const renderLanguageSelector = () => (
-    <View style={currentStyles.languageSelectorContainer}>
-      <TouchableOpacity
-        style={[
-          currentStyles.languageOption,
-          language === 'en' && currentStyles.languageOptionSelected
-        ]}
-        onPress={() => handleLanguageChange('en')}
-      >
-        <Text style={[
-          currentStyles.languageOptionText,
-          language === 'en' && currentStyles.languageOptionTextSelected
-        ]}>
-          English
-        </Text>
-        {language === 'en' && <Text style={currentStyles.checkmark}>✓</Text>}
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={[
-          currentStyles.languageOption,
-          language === 'ar' && currentStyles.languageOptionSelected
-        ]}
-        onPress={() => handleLanguageChange('ar')}
-      >
-        <Text style={[
-          currentStyles.languageOptionText,
-          language === 'ar' && currentStyles.languageOptionTextSelected
-        ]}>
-          العربية
-        </Text>
-        {language === 'ar' && <Text style={currentStyles.checkmark}>✓</Text>}
-      </TouchableOpacity>
-    </View>
-  );
+  const currentStyles = styles(theme, fontSizes, spacing, borderRadius, common, isRTL);
 
   return (
     <View style={currentStyles.container}>
-      {/* Header */}
-      <View style={currentStyles.header}>
-        <Text style={currentStyles.headerTitle}>{t('more_screen.header_title')}</Text>
-        <Text style={currentStyles.headerSubtitle}>{t('more_screen.header_subtitle')}</Text>
+      <View style={common.header}>
+        <View style={common.headerTextWrapper}>
+          <Text style={common.headerTitle}> {t('more_screen.header_title')} </Text>
+          <Text style={common.headerSubtitle}> {t('more_screen.header_subtitle')} </Text>
+        </View>
       </View>
 
-      <ScrollView style={currentStyles.content} showsVerticalScrollIndicator={false}>
-        {/* User Info Card */}
+      <ScrollView
+        style={currentStyles.scrollView}
+        contentContainerStyle={currentStyles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={currentStyles.userCard}>
           <View style={currentStyles.userAvatar}>
             <Text style={currentStyles.userAvatarText}>
@@ -215,253 +104,299 @@ const MoreScreen: React.FC = () => {
             </Text>
           </View>
           <View style={currentStyles.userInfo}>
-            <Text style={currentStyles.userName}>{user?.name || 'User'}</Text>
-            <Text style={currentStyles.userEmail}>{user?.email || 'No email'}</Text>
+            <Text style={currentStyles.userName}> {user?.name || 'User'}</Text>
+            <Text style={currentStyles.userEmail}> {user?.email || 'No email'}</Text>
             <Text style={currentStyles.userGrade}>
               {t('more_screen.grade')}: {user?.grade?.name || t('more_screen.not_specified')}
             </Text>
           </View>
+          <TouchableOpacity style={currentStyles.editButton}>
+            <Ionicons name="pencil" size={20} color={theme.colors.primary} />
+          </TouchableOpacity>
         </View>
 
-        {/* Menu Items */}
         <View style={currentStyles.menuSection}>
-          {menuItems.map((item, index) => (
-            <View key={item.id}>
-              <TouchableOpacity
-                style={[
-                  currentStyles.menuItem,
-                  index === menuItems.length - 1 && currentStyles.lastMenuItem
-                ]}
-                onPress={item.isSwitch || item.isLanguageSelector || item.isColorThemePicker ? undefined : item.action}
-                disabled={item.isSwitch || item.isLanguageSelector || item.isColorThemePicker}
-              >
-                <View style={currentStyles.menuItemLeft}>
-                  <Text style={currentStyles.menuIcon}>{item.icon}</Text>
-                  <View style={currentStyles.menuTextContainer}>
-                    <Text 
-                      style={[
-                        currentStyles.menuTitle,
-                        item.id === 'logout' && currentStyles.menuTitleLogout
-                      ]}
+          {menuItems.map((item, index) => {
+            const isLast = index === menuItems.length - 1;
+            return (
+              <View key={item.id}>
+                <TouchableOpacity
+                  style={[
+                    currentStyles.menuItem,
+                    isLast &&
+                      !item.isLanguageSelector &&
+                      !item.isColorThemePicker &&
+                      currentStyles.lastMenuItem,
+                  ]}
+                  onPress={item.action}
+                  disabled={
+                    !!item.isSwitch || !!item.isLanguageSelector || !!item.isColorThemePicker
+                  }
+                  activeOpacity={0.7}
+                >
+                  <View style={currentStyles.menuItemContent}>
+                    <View
+                      style={[currentStyles.menuIconContainer, { backgroundColor: item.iconBg }]}
                     >
-                      {item.title}
-                    </Text>
-                    {item.subtitle ? (
-                      <Text style={currentStyles.menuSubtitle}>{item.subtitle}</Text>
-                    ) : null}
+                      <Ionicons name={item.icon as any} size={22} color={item.iconColor} />
+                    </View>
+                    <View style={currentStyles.menuTextContainer}>
+                      <Text
+                        style={[
+                          currentStyles.menuTitle,
+                          item.isDestructive && { color: item.iconColor },
+                        ]}
+                      >
+                        {item.title}
+                      </Text>
+                      {item.subtitle && !item.isLanguageSelector && !item.isColorThemePicker && (
+                        <Text style={currentStyles.menuSubtitle}> {item.subtitle} </Text>
+                      )}
+                    </View>
                   </View>
-                </View>
-                {item.isSwitch ? (
-                  <Switch
-                    value={isDark}
-                    onValueChange={toggleTheme}
-                    trackColor={{ false: '#767577', true: theme.colors.primary }}
-                    thumbColor="#f4f3f4"
-                  />
-                ) : item.isLanguageSelector || item.isColorThemePicker ? null : (
-                  <Text style={currentStyles.menuArrow}>{isRTL ? '‹' : '›'}</Text>
+
+                  {item.isSwitch ? (
+                    <View style={{ marginStart: spacing.md }}>
+                      <Switch
+                        value={isDark}
+                        onValueChange={toggleTheme}
+                        trackColor={{ false: '#E5E7EB', true: theme.colors.primary }}
+                        thumbColor={'#fff'}
+                      />
+                    </View>
+                  ) : item.isLanguageSelector || item.isColorThemePicker ? null : (
+                    <Ionicons
+                      name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                      size={20}
+                      color={theme.colors.textTertiary}
+                    />
+                  )}
+                </TouchableOpacity>
+
+                {item.isLanguageSelector && (
+                  <View style={currentStyles.languageSelector}>
+                    <TouchableOpacity
+                      style={[
+                        currentStyles.langOption,
+                        language === 'ar' && currentStyles.langSelected,
+                      ]}
+                      onPress={() => setLanguage('ar')}
+                    >
+                      <Text
+                        style={[
+                          currentStyles.langText,
+                          language === 'ar' && currentStyles.langTextSelected,
+                        ]}
+                      >
+                        العربية
+                      </Text>
+                      {language === 'ar' && (
+                        <Ionicons name="checkmark-circle" size={20} color={theme.colors.primary} />
+                      )}
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        currentStyles.langOption,
+                        language === 'en' && currentStyles.langSelected,
+                      ]}
+                      onPress={() => setLanguage('en')}
+                    >
+                      <Text
+                        style={[
+                          currentStyles.langText,
+                          language === 'en' && currentStyles.langTextSelected,
+                        ]}
+                      >
+                        English
+                      </Text>
+                      {language === 'en' && (
+                        <Ionicons name="checkmark-circle" size={20} color={theme.colors.primary} />
+                      )}
+                    </TouchableOpacity>
+                  </View>
                 )}
-              </TouchableOpacity>
-              {item.isLanguageSelector && renderLanguageSelector()}
-              {item.isColorThemePicker && (
-                <View style={currentStyles.colorThemeContainer}>
-                  <ColorThemePicker />
-                </View>
-              )}
-            </View>
-          ))}
+
+                {item.isColorThemePicker && (
+                  <View style={currentStyles.colorPickerContainer}>
+                    <ColorThemePicker />
+                  </View>
+                )}
+
+                {!isLast && <View style={currentStyles.separator} />}
+              </View>
+            );
+          })}
         </View>
 
-        {/* App Version */}
         <View style={currentStyles.versionContainer}>
-          <Text style={currentStyles.versionText}>ElBooklets {t('common.version')} 1.0.0</Text>
+          <Text style={currentStyles.versionText}> ElBooklets {t('common.version')} 1.0.0 </Text>
         </View>
       </ScrollView>
     </View>
   );
 };
 
-const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, borderRadius: any) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  header: {
-    padding: spacing.xl,
-    paddingTop: 50,
-    backgroundColor: theme.colors.headerBackground,
-    alignItems: isRTL ? 'flex-end' : 'flex-start',
-  },
-  headerTitle: {
-    fontSize: fontSizes['2xl'],
-    fontWeight: 'bold',
-    color: theme.colors.headerText,
-  },
-  headerSubtitle: {
-    fontSize: fontSizes.base,
-    opacity: 0.9,
-    marginTop: spacing.xs,
-    color: theme.colors.headerSubtitle,
-  },
-  content: {
-    flex: 1,
-    padding: spacing.xl,
-  },
-  userCard: {
-    padding: spacing.xl,
-    borderRadius: borderRadius.xl,
-    flexDirection: isRTL ? 'row-reverse' : 'row',
-    alignItems: 'center',
-    marginBottom: spacing.xl,
-    backgroundColor: theme.colors.card,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  userAvatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: isRTL ? 0 : spacing.lg,
-    marginLeft: isRTL ? spacing.lg : 0,
-    backgroundColor: theme.colors.avatarBackground,
-  },
-  userAvatarText: {
-    fontSize: fontSizes.xl,
-    fontWeight: 'bold',
-    color: theme.colors.avatarText,
-  },
-  userInfo: {
-    flex: 1,
-    alignItems: isRTL ? 'flex-end' : 'flex-start',
-  },
-  userName: {
-    fontSize: fontSizes.lg,
-    fontWeight: 'bold',
-    marginBottom: spacing.xs,
-    color: theme.colors.text,
-  },
-  userEmail: {
-    fontSize: fontSizes.sm,
-    marginBottom: 2,
-    color: theme.colors.textSecondary,
-  },
-  userGrade: {
-    fontSize: fontSizes.sm,
-    fontWeight: '500',
-    color: theme.colors.primary,
-  },
-  menuSection: {
-    borderRadius: borderRadius.xl,
-    overflow: 'hidden',
-    backgroundColor: theme.colors.card,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  menuItem: {
-    flexDirection: isRTL ? 'row-reverse' : 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
-  },
-  lastMenuItem: {
-    borderBottomWidth: 0,
-  },
-  menuItemLeft: {
-    flexDirection: isRTL ? 'row-reverse' : 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  menuIcon: {
-    fontSize: fontSizes.xl,
-    marginRight: isRTL ? 0 : spacing.lg,
-    marginLeft: isRTL ? spacing.lg : 0,
-    width: 32,
-    textAlign: 'center',
-  },
-  menuTextContainer: {
-    flex: 1,
-    alignItems: isRTL ? 'flex-end' : 'flex-start',
-  },
-  menuTitle: {
-    fontSize: fontSizes.base,
-    fontWeight: '600',
-    marginBottom: 2,
-    color: theme.colors.text,
-  },
-  menuTitleLogout: {
-    color: theme.colors.logoutColor,
-  },
-  menuSubtitle: {
-    fontSize: fontSizes.xs,
-    color: theme.colors.textSecondary,
-  },
-  menuArrow: {
-    fontSize: fontSizes.lg,
-    fontWeight: 'bold',
-    color: theme.colors.textTertiary,
-  },
-  languageSelectorContainer: {
-    flexDirection: isRTL ? 'row-reverse' : 'row',
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
-    paddingTop: spacing.lg,
-  },
-  languageOption: {
-    flex: 1,
-    flexDirection: isRTL ? 'row-reverse' : 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    marginHorizontal: 4,
-    borderRadius: borderRadius.lg,
-    backgroundColor: theme.colors.background,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  languageOptionSelected: {
-    borderColor: theme.colors.primary,
-    backgroundColor: theme.colors.primaryLight || theme.colors.background,
-  },
-  languageOptionText: {
-    fontSize: fontSizes.sm,
-    fontWeight: '500',
-    color: theme.colors.text,
-  },
-  languageOptionTextSelected: {
-    color: theme.colors.primary,
-    fontWeight: '600',
-  },
-  checkmark: {
-    marginLeft: isRTL ? 0 : spacing.sm,
-    marginRight: isRTL ? spacing.sm : 0,
-    fontSize: fontSizes.sm,
-    color: theme.colors.primary,
-    fontWeight: 'bold',
-  },
-  colorThemeContainer: {
-    flexDirection: isRTL ? 'row-reverse' : 'row',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
-  },
-  versionContainer: {
-    alignItems: 'center',
-    marginTop: spacing['3xl'],
-    marginBottom: spacing.xl,
-  },
-  versionText: {
-    fontSize: fontSizes.xs,
-    color: theme.colors.textTertiary,
-  },
-});
+const styles = (
+  theme: any,
+  fontSizes: any,
+  spacing: any,
+  borderRadius: any,
+  common: any,
+  isRTL: boolean,
+) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: theme.colors.background },
+    scrollView: {
+      flex: 1,
+      marginTop: -25,
+    },
+    contentContainer: {
+      padding: spacing.xl,
+      alignItems: 'stretch',
+    },
+    userCard: {
+      padding: spacing.md,
+      borderRadius: borderRadius.xl,
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      marginBottom: spacing.xl,
+      backgroundColor: theme.colors.card,
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.05,
+      shadowRadius: 10,
+      elevation: 2,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    userAvatar: {
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: theme.colors.primary,
+      ...common.marginEnd(spacing.md),
+      ...common.marginStart(spacing.sm),
+    },
+    userAvatarText: { fontSize: fontSizes['2xl'], fontWeight: 'bold', color: '#fff' },
+    userInfo: { flex: 1, alignItems: common.alignStart },
+    userName: {
+      fontSize: fontSizes.lg,
+      fontWeight: 'bold',
+      marginBottom: 2,
+      color: theme.colors.text,
+      textAlign: common.textAlign,
+    },
+    userEmail: {
+      fontSize: fontSizes.sm,
+      color: theme.colors.textSecondary,
+      textAlign: common.textAlign,
+    },
+    userGrade: {
+      fontSize: fontSizes.xs,
+      fontWeight: '600',
+      color: theme.colors.primary,
+      textAlign: common.textAlign,
+      marginTop: 6,
+      backgroundColor: theme.colors.primaryLight || 'rgba(59, 130, 246, 0.1)',
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 4,
+      overflow: 'hidden',
+    },
+    editButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: theme.colors.background,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    menuSection: {
+      borderRadius: borderRadius.xl,
+      backgroundColor: theme.colors.card,
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+      elevation: 2,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    menuItem: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: spacing.lg,
+    },
+    lastMenuItem: { borderBottomWidth: 0 },
+    separator: {
+      height: 1,
+      backgroundColor: theme.colors.border,
+      marginLeft: spacing.xl + 40, // Indent separator to match text start
+    },
+    menuItemContent: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      flex: 1,
+    },
+    menuIconContainer: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      justifyContent: 'center',
+      alignItems: 'center',
+      ...common.marginEnd(spacing.md),
+      ...common.marginStart(spacing.md),
+    },
+    menuTextContainer: { flex: 1, alignItems: common.alignStart },
+    menuTitle: {
+      fontSize: fontSizes.base,
+      fontWeight: '600',
+      color: theme.colors.text,
+      textAlign: common.textAlign,
+    },
+    menuSubtitle: {
+      fontSize: fontSizes.xs,
+      color: theme.colors.textSecondary,
+      marginTop: 2,
+      textAlign: common.textAlign,
+    },
+    languageSelector: {
+      flexDirection: common.rowDirection,
+      padding: spacing.md,
+      paddingTop: 0,
+      gap: 12,
+    },
+    langOption: {
+      flex: 1,
+      flexDirection: common.rowDirection,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: borderRadius.md,
+      backgroundColor: theme.colors.background,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      gap: 8,
+    },
+    langSelected: {
+      borderColor: theme.colors.primary,
+      backgroundColor: theme.colors.primaryLight || 'rgba(147, 51, 234, 0.05)',
+    },
+    langText: { fontSize: fontSizes.sm, color: theme.colors.text, fontWeight: '500' },
+    langTextSelected: { color: theme.colors.primary, fontWeight: 'bold' },
+    colorPickerContainer: {
+      padding: spacing.md,
+      paddingTop: 0,
+    },
+    versionContainer: { alignItems: 'center', marginTop: spacing['3xl'], marginBottom: spacing.xl },
+    versionText: { fontSize: fontSizes.xs, color: theme.colors.textTertiary, opacity: 0.7 },
+  });
 
 export default MoreScreen;

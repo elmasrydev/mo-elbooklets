@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { I18nManager, Platform } from 'react-native';
@@ -25,10 +25,11 @@ interface TabIconProps {
 }
 
 const TabIcon: React.FC<TabIconProps> = ({ color, focused, name }) => (
-  <Ionicons 
-    name={focused ? name : `${name as any}-outline` as any} 
-    size={24} 
-    color={color} 
+  <Ionicons
+    style={{ marginBottom: 5 }}
+    name={focused ? name : (`${name}-outline` as any)}
+    size={24}
+    color={color}
   />
 );
 
@@ -41,28 +42,47 @@ interface TabConfig {
 
 const TabScreens: React.FC = () => {
   const { theme } = useTheme();
-  const { isRTL } = useLanguage();
+  const { isRTL, language } = useLanguage();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
-  // Define tabs in LTR order
+  // Debugging Order
+  useEffect(() => {
+    console.log(
+      `TabNavigator Render: lang=${language}, isRTL=${isRTL}, nativeRTL=${I18nManager.isRTL}`,
+    );
+  }, [language, isRTL]);
+
+  // Define tabs in LTR order (Home -> More)
   const tabs: TabConfig[] = [
     { name: 'Home', component: HomeScreen, labelKey: 'common.home', icon: 'home' },
-    { name: 'Study', component: StudyScreen, labelKey: 'common.study', icon: 'book' },
+    { name: 'Study', component: StudyScreen, labelKey: 'common.study', icon: 'grid' },
     { name: 'Quiz', component: QuizScreen, labelKey: 'common.quiz', icon: 'help-circle' },
     { name: 'Social', component: SocialScreen, labelKey: 'common.social', icon: 'people' },
-    { name: 'Leaderboard', component: LeaderboardScreen, labelKey: 'common.leaderboard', icon: 'stats-chart' },
+    {
+      name: 'Leaderboard',
+      component: LeaderboardScreen,
+      labelKey: 'common.leaderboard',
+      icon: 'stats-chart',
+    },
     { name: 'More', component: MoreScreen, labelKey: 'common.more', icon: 'ellipsis-horizontal' },
   ];
 
-  // Reverse order for RTL
-  const orderedTabs = isRTL || I18nManager.isRTL ? [...tabs].reverse() : tabs;
-  
+  // Robust Direction Logic:
+  // If we have a mismatch (e.g. Native RTL in English App), Flex Row is RTL (Home on Right).
+  // We want Home on Left. This requires reversing the array so Home is the "last" item (Left in RTL).
+  // If we have Native LTR in Arabic App, Flex Row is LTR (Home on Left).
+  // We want Home on Right. This requires reversing the array so Home is the "last" item (Right in LTR).
+  // So: Mismatch -> Reverse Array. Match -> Standard Array.
+  const isMismatch = isRTL !== I18nManager.isRTL;
+  const orderedTabs = isMismatch ? [...tabs].reverse() : tabs;
+
   // Calculate tab bar height with safe area
   const tabBarHeight = 60 + Math.max(insets.bottom, Platform.OS === 'android' ? 10 : 0);
-  
+
   return (
     <Tab.Navigator
+      key={isRTL ? 'rtl' : 'ltr'} // Force re-mount on direction change
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: theme.colors.primary,
@@ -74,7 +94,8 @@ const TabScreens: React.FC = () => {
           paddingBottom: Math.max(insets.bottom, 5),
           paddingTop: 5,
           height: tabBarHeight,
-          flexDirection: isRTL ? 'row-reverse' : 'row',
+          // ALWAYS use standard 'row'. We handle the "flip" by reordering if mismatched.
+          flexDirection: 'row',
         },
         tabBarLabelStyle: {
           fontSize: 12,
@@ -108,4 +129,3 @@ const TabNavigator: React.FC = () => {
 };
 
 export default TabNavigator;
-

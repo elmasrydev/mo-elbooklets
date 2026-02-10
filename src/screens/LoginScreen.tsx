@@ -13,9 +13,9 @@ import {
   Image,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import { useCommonStyles } from '../hooks/useCommonStyles';
 
 interface LoginScreenProps {
   onNavigateToRegister: () => void;
@@ -25,45 +25,40 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister }) => {
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const { login } = useAuth();
-  const { isRTL } = useLanguage();
-  const { theme } = useTheme();
+  const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { t } = useTranslation();
+  const common = useCommonStyles();
 
   const handleLogin = async () => {
     if (!mobile.trim() || !password.trim()) {
       Alert.alert(t('common.error'), t('auth.fill_all_fields'));
       return;
     }
-
     setIsLoading(true);
-    
     try {
       const result = await login({ mobile: mobile.trim(), password });
-      
-      if (!result.success) {
+      if (!result.success)
         Alert.alert(t('auth.login_failed'), result.error || t('auth.invalid_credentials'));
-      }
     } catch (error) {
-      console.error('Login error:', error);
       Alert.alert(t('common.error'), t('common.unexpected_error'));
     } finally {
       setIsLoading(false);
     }
   };
 
-  const currentStyles = styles(isRTL, theme);
+  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius);
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       style={currentStyles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={currentStyles.scrollContainer}>
         <View style={currentStyles.header}>
-          <Image 
-            source={require('../../assets/logo.png')} 
+          <Image
+            source={require('../../assets/logo.png')}
             style={currentStyles.logo}
             resizeMode="contain"
           />
@@ -83,7 +78,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister }) => {
               keyboardType="phone-pad"
               autoCapitalize="none"
               editable={!isLoading}
-              textAlign={isRTL ? 'right' : 'left'}
+              textAlign={common.textAlign}
             />
           </View>
 
@@ -98,11 +93,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister }) => {
               secureTextEntry
               autoCapitalize="none"
               editable={!isLoading}
-              textAlign={isRTL ? 'right' : 'left'}
+              textAlign={common.textAlign}
             />
           </View>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[currentStyles.loginButton, isLoading && currentStyles.disabledButton]}
             onPress={handleLogin}
             disabled={isLoading}
@@ -126,86 +121,49 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister }) => {
   );
 };
 
-const styles = (isRTL: boolean, theme: any) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 20,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  logo: {
-    width: 100,
-    height: 100,
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: theme.colors.textSecondary,
-  },
-  form: {
-    marginBottom: 30,
-  },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: theme.colors.text,
-    marginBottom: 8,
-    textAlign: isRTL ? 'right' : 'left',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: 8,
-    padding: 15,
-    fontSize: 16,
-    backgroundColor: theme.colors.surface,
-    color: theme.colors.text,
-  },
-  loginButton: {
-    backgroundColor: theme.colors.primary,
-    borderRadius: 8,
-    padding: 15,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  disabledButton: {
-    backgroundColor: theme.colors.buttonDisabled,
-  },
-  loginButtonText: {
-    color: theme.colors.buttonPrimaryText,
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  footer: {
-    flexDirection: isRTL ? 'row-reverse' : 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  footerText: {
-    fontSize: 16,
-    color: theme.colors.textSecondary,
-  },
-  linkText: {
-    fontSize: 16,
-    color: theme.colors.primary,
-    fontWeight: '600',
-  },
-});
+const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRadius: any) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: theme.colors.background },
+    scrollContainer: { flexGrow: 1, justifyContent: 'center', padding: spacing.xl },
+    header: { alignItems: 'center', marginBottom: 40 },
+    logo: { width: 100, height: 100, marginBottom: 20 },
+    title: {
+      fontSize: fontSizes['3xl'],
+      fontWeight: 'bold',
+      color: theme.colors.text,
+      marginBottom: 8,
+    },
+    subtitle: { fontSize: fontSizes.base, color: theme.colors.textSecondary },
+    form: { marginBottom: 30 },
+    inputContainer: { marginBottom: 20 },
+    label: {
+      fontSize: fontSizes.base,
+      fontWeight: '600',
+      color: theme.colors.text,
+      marginBottom: 8,
+      textAlign: common.textAlign,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: borderRadius.md,
+      padding: 15,
+      fontSize: fontSizes.base,
+      backgroundColor: theme.colors.surface,
+      color: theme.colors.text,
+    },
+    loginButton: {
+      backgroundColor: theme.colors.primary,
+      borderRadius: borderRadius.md,
+      padding: 15,
+      alignItems: 'center',
+      marginTop: 10,
+    },
+    disabledButton: { backgroundColor: theme.colors.buttonDisabled },
+    loginButtonText: { color: '#fff', fontSize: fontSizes.lg, fontWeight: '600' },
+    footer: { flexDirection: common.rowDirection, justifyContent: 'center', alignItems: 'center' },
+    footerText: { fontSize: fontSizes.base, color: theme.colors.textSecondary },
+    linkText: { fontSize: fontSizes.base, color: theme.colors.primary, fontWeight: '600' },
+  });
 
 export default LoginScreen;

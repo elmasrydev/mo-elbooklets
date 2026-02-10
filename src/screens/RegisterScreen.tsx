@@ -14,11 +14,10 @@ import {
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useAuth } from '../context/AuthContext';
-import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import { useCommonStyles } from '../hooks/useCommonStyles';
 import { tryFetchWithFallback } from '../config/api';
-
 
 interface RegisterScreenProps {
   onNavigateToLogin: () => void;
@@ -33,12 +32,12 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
   const [selectedGrade, setSelectedGrade] = useState('');
   const [selectedSystem, setSelectedSystem] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const { register } = useAuth();
-  const { isRTL } = useLanguage();
-  const { theme } = useTheme();
+  const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { t } = useTranslation();
-  
+  const common = useCommonStyles();
+
   const [gradesData, setGradesData] = useState<{ grades: any[] } | null>(null);
   const [systemsData, setSystemsData] = useState<{ educationalSystems: any[] } | null>(null);
   const [gradesLoading, setGradesLoading] = useState(true);
@@ -52,17 +51,8 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
   const fetchGrades = async () => {
     try {
       setGradesLoading(true);
-      const result = await tryFetchWithFallback(`
-        query GetGrades {
-          grades {
-            id
-            name
-          }
-        }
-      `);
-      if (result.data) {
-        setGradesData(result.data);
-      }
+      const result = await tryFetchWithFallback(`query GetGrades { grades { id name } }`);
+      if (result.data) setGradesData(result.data);
     } catch (error) {
       console.error('Error fetching grades:', error);
     } finally {
@@ -73,17 +63,10 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
   const fetchSystems = async () => {
     try {
       setSystemsLoading(true);
-      const result = await tryFetchWithFallback(`
-        query GetSystems {
-          educationalSystems {
-            id
-            name
-          }
-        }
-      `);
-      if (result.data) {
-        setSystemsData(result.data);
-      }
+      const result = await tryFetchWithFallback(
+        `query GetSystems { educationalSystems { id name } }`,
+      );
+      if (result.data) setSystemsData(result.data);
     } catch (error) {
       console.error('Error fetching systems:', error);
     } finally {
@@ -92,24 +75,26 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
   };
 
   const handleRegister = async () => {
-    // Validation
-    if (!name.trim() || !email.trim() || !mobile.trim() || !password.trim() || !selectedGrade || !selectedSystem) {
+    if (
+      !name.trim() ||
+      !email.trim() ||
+      !mobile.trim() ||
+      !password.trim() ||
+      !selectedGrade ||
+      !selectedSystem
+    ) {
       Alert.alert(t('common.error'), t('auth.fill_all_fields'));
       return;
     }
-
     if (password !== confirmPassword) {
       Alert.alert(t('common.error'), t('auth.passwords_not_match'));
       return;
     }
-
     if (password.length < 8) {
       Alert.alert(t('common.error'), t('auth.password_too_short'));
       return;
     }
-
     setIsLoading(true);
-    
     try {
       const result = await register({
         name: name.trim(),
@@ -119,30 +104,26 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
         grade_id: selectedGrade,
         educational_system_id: selectedSystem,
       });
-      
-      if (!result.success) {
+      if (!result.success)
         Alert.alert(t('auth.registration_failed'), result.error || t('auth.registration_error'));
-      }
-      // If successful, the AuthContext will handle navigation
     } catch (error) {
-      console.error('Registration error:', error);
       Alert.alert(t('common.error'), t('common.unexpected_error'));
     } finally {
       setIsLoading(false);
     }
   };
 
-  const currentStyles = styles(isRTL, theme);
+  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius);
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       style={currentStyles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={currentStyles.scrollContainer}>
         <View style={currentStyles.header}>
-          <Image 
-            source={require('../../assets/logo.png')} 
+          <Image
+            source={require('../../assets/logo.png')}
             style={currentStyles.logo}
             resizeMode="contain"
           />
@@ -161,10 +142,9 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
               placeholderTextColor={theme.colors.textSecondary}
               autoCapitalize="words"
               editable={!isLoading}
-              textAlign={isRTL ? 'right' : 'left'}
+              textAlign={common.textAlign}
             />
           </View>
-
           <View style={currentStyles.inputContainer}>
             <Text style={currentStyles.label}>{t('auth.email')}</Text>
             <TextInput
@@ -176,10 +156,9 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
               keyboardType="email-address"
               autoCapitalize="none"
               editable={!isLoading}
-              textAlign={isRTL ? 'right' : 'left'}
+              textAlign={common.textAlign}
             />
           </View>
-
           <View style={currentStyles.inputContainer}>
             <Text style={currentStyles.label}>{t('auth.mobile_number')}</Text>
             <TextInput
@@ -191,7 +170,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
               keyboardType="phone-pad"
               autoCapitalize="none"
               editable={!isLoading}
-              textAlign={isRTL ? 'right' : 'left'}
+              textAlign={common.textAlign}
             />
           </View>
 
@@ -210,18 +189,11 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
                   enabled={!isLoading}
                   style={currentStyles.picker}
                   dropdownIconColor={theme.colors.text}
-                  mode="dropdown" // Use dropdown mode on Android for better scrolling
+                  mode="dropdown"
                 >
-                  <Picker.Item 
-                    label={t('auth.select_grade')} 
-                    value="" 
-                  />
+                  <Picker.Item label={t('auth.select_grade')} value="" />
                   {gradesData?.grades?.map((grade: any) => (
-                    <Picker.Item 
-                      key={grade.id} 
-                      label={grade.name} 
-                      value={grade.id}
-                    />
+                    <Picker.Item key={grade.id} label={grade.name} value={grade.id} />
                   ))}
                 </Picker>
               </View>
@@ -245,16 +217,9 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
                   dropdownIconColor={theme.colors.text}
                   mode="dropdown"
                 >
-                  <Picker.Item 
-                    label={t('auth.select_educational_system')} 
-                    value="" 
-                  />
+                  <Picker.Item label={t('auth.select_educational_system')} value="" />
                   {systemsData?.educationalSystems?.map((system: any) => (
-                    <Picker.Item 
-                      key={system.id} 
-                      label={system.name} 
-                      value={system.id}
-                    />
+                    <Picker.Item key={system.id} label={system.name} value={system.id} />
                   ))}
                 </Picker>
               </View>
@@ -272,10 +237,9 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
               secureTextEntry
               autoCapitalize="none"
               editable={!isLoading}
-              textAlign={isRTL ? 'right' : 'left'}
+              textAlign={common.textAlign}
             />
           </View>
-
           <View style={currentStyles.inputContainer}>
             <Text style={currentStyles.label}>{t('auth.confirm_password')}</Text>
             <TextInput
@@ -287,11 +251,11 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
               secureTextEntry
               autoCapitalize="none"
               editable={!isLoading}
-              textAlign={isRTL ? 'right' : 'left'}
+              textAlign={common.textAlign}
             />
           </View>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[currentStyles.registerButton, isLoading && currentStyles.disabledButton]}
             onPress={handleRegister}
             disabled={isLoading}
@@ -315,111 +279,66 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
   );
 };
 
-const styles = (isRTL: boolean, theme: any) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 20,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  logo: {
-    width: 80,
-    height: 80,
-    marginBottom: 15,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: theme.colors.textSecondary,
-  },
-  form: {
-    marginBottom: 20,
-  },
-  inputContainer: {
-    marginBottom: 15,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: theme.colors.text,
-    marginBottom: 8,
-    textAlign: isRTL ? 'right' : 'left',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: 8,
-    padding: 15,
-    fontSize: 16,
-    backgroundColor: theme.colors.surface,
-    color: theme.colors.text,
-  },
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: 8,
-    backgroundColor: theme.colors.surface,
-  },
-  picker: {
-    height: 50,
-    color: theme.colors.text,
-    backgroundColor: theme.colors.surface,
-  },
-  loadingContainer: {
-    flexDirection: isRTL ? 'row-reverse' : 'row',
-    alignItems: 'center',
-    padding: 15,
-    backgroundColor: theme.colors.surface,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  loadingText: {
-    marginLeft: isRTL ? 0 : 10,
-    marginRight: isRTL ? 10 : 0,
-    color: theme.colors.textSecondary,
-  },
-  registerButton: {
-    backgroundColor: theme.colors.primary,
-    borderRadius: 8,
-    padding: 15,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  disabledButton: {
-    backgroundColor: theme.colors.buttonDisabled,
-  },
-  registerButtonText: {
-    color: theme.colors.buttonPrimaryText,
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  footer: {
-    flexDirection: isRTL ? 'row-reverse' : 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  footerText: {
-    fontSize: 16,
-    color: theme.colors.textSecondary,
-  },
-  linkText: {
-    fontSize: 16,
-    color: theme.colors.primary,
-    fontWeight: '600',
-  },
-});
+const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRadius: any) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: theme.colors.background },
+    scrollContainer: { flexGrow: 1, justifyContent: 'center', padding: spacing.xl },
+    header: { alignItems: 'center', marginBottom: 30 },
+    logo: { width: 80, height: 80, marginBottom: 15 },
+    title: {
+      fontSize: fontSizes['3xl'],
+      fontWeight: 'bold',
+      color: theme.colors.text,
+      marginBottom: 8,
+    },
+    subtitle: { fontSize: fontSizes.base, color: theme.colors.textSecondary },
+    form: { marginBottom: 20 },
+    inputContainer: { marginBottom: 15 },
+    label: {
+      fontSize: fontSizes.base,
+      fontWeight: '600',
+      color: theme.colors.text,
+      marginBottom: 8,
+      textAlign: common.textAlign,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: borderRadius.md,
+      padding: 15,
+      fontSize: fontSizes.base,
+      backgroundColor: theme.colors.surface,
+      color: theme.colors.text,
+    },
+    pickerContainer: {
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: borderRadius.md,
+      backgroundColor: theme.colors.surface,
+    },
+    picker: { height: 50, color: theme.colors.text, backgroundColor: theme.colors.surface },
+    loadingContainer: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      padding: 15,
+      backgroundColor: theme.colors.surface,
+      borderRadius: borderRadius.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    loadingText: { ...common.marginStart(10), color: theme.colors.textSecondary },
+    registerButton: {
+      backgroundColor: theme.colors.primary,
+      borderRadius: borderRadius.md,
+      padding: 15,
+      alignItems: 'center',
+      marginTop: 10,
+    },
+    disabledButton: { backgroundColor: theme.colors.buttonDisabled },
+    registerButtonText: { color: '#fff', fontSize: fontSizes.lg, fontWeight: '600' },
+    footer: { flexDirection: common.rowDirection, justifyContent: 'center', alignItems: 'center' },
+    footerText: { fontSize: fontSizes.base, color: theme.colors.textSecondary },
+    linkText: { fontSize: fontSizes.base, color: theme.colors.primary, fontWeight: '600' },
+  });
 
 export default RegisterScreen;

@@ -15,13 +15,14 @@ import { I18nextProvider } from 'react-i18next';
 import i18n from './src/i18n';
 import { LanguageProvider } from './src/context/LanguageContext';
 
+import * as Updates from 'expo-updates';
+
 export default function App() {
   const [fontsLoaded] = useFonts({
     'Inter': require('./assets/fonts/Inter-Variable.ttf'),
     'Cairo': require('./assets/fonts/Cairo-Variable.ttf'),
   });
   const [isRTLInitialized, setIsRTLInitialized] = useState(false);
-  const [needsRestart, setNeedsRestart] = useState(false);
 
   // Initialize RTL before rendering the app
   useEffect(() => {
@@ -31,17 +32,35 @@ export default function App() {
         const shouldBeRTL = savedLang === 'ar';
         const currentRTL = I18nManager.isRTL;
 
-        console.log(`RTL Init: savedLang=${savedLang}, shouldBeRTL=${shouldBeRTL}, currentRTL=${currentRTL}`);
+        // console.log(`RTL Init: savedLang=${savedLang}, shouldBeRTL=${shouldBeRTL}, currentRTL=${currentRTL}`);
 
-        // Always allow RTL
-        I18nManager.allowRTL(true);
-
-        // Check if there's a mismatch between saved language and current RTL state
+        // Sync with saved language state
         if (savedLang && currentRTL !== shouldBeRTL) {
-          // Set the RTL state - this takes effect on next restart
+          console.log(`RTL mismatch detected: native=${currentRTL}, saved=${shouldBeRTL}. Aligning Native Engine...`);
+
+          // STRICT MODE RESTORED:
+          // We must DISALLOW RTL (allowRTL(false)) to strictly force LTR on some engines/versions.
+          // Simply calling forceRTL(false) while allowRTL(true) might respect device locale over override.
+          I18nManager.allowRTL(shouldBeRTL);
           I18nManager.forceRTL(shouldBeRTL);
-          console.log('RTL mismatch detected, forcing RTL to:', shouldBeRTL);
-          // The app will restart via Updates.reloadAsync in LanguageContext if needed
+
+          // Force a restart to ensure native layer (Yoga engine) is correct
+          setTimeout(() => {
+            try {
+              Updates.reloadAsync();
+            } catch (e) {
+              console.log('Boot restart failed:', e);
+              setIsRTLInitialized(true);
+            }
+          }, 300);
+          return;
+        } else if (!savedLang) {
+          // First run: Default to allowRTL(true) to respect device settings
+          I18nManager.allowRTL(true);
+        } else {
+          // Consistent state: Enforce strict mode to prevent drift
+          I18nManager.allowRTL(shouldBeRTL);
+          I18nManager.forceRTL(shouldBeRTL);
         }
       } catch (error) {
         console.error('Error initializing RTL:', error);
@@ -56,29 +75,29 @@ export default function App() {
   // Show loading screen while fonts and RTL are loading
   if (!fontsLoaded || !isRTLInitialized) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#10b981" />
-      </View>
+      <View style= { styles.loadingContainer } >
+      <ActivityIndicator size="large" color = "#10b981" />
+        </View>
     );
   }
 
   return (
     <SafeAreaProvider>
-      <ApolloProvider client={apolloClient}>
-        <ThemeProvider>
-          <LanguageProvider>
-            <I18nextProvider i18n={i18n}>
-              <AuthProvider>
-                <NavigationContainer>
-                  <AppNavigator />
-                </NavigationContainer>
-              </AuthProvider>
-            </I18nextProvider>
-          </LanguageProvider>
-        </ThemeProvider>
+    <ApolloProvider client= { apolloClient } >
+    <ThemeProvider>
+    <LanguageProvider>
+    <I18nextProvider i18n={ i18n }>
+      <AuthProvider>
+      <NavigationContainer>
+      <AppNavigator />
+      </NavigationContainer>
+      </AuthProvider>
+      </I18nextProvider>
+      </LanguageProvider>
+      </ThemeProvider>
       </ApolloProvider>
-      <StatusBar style="auto" />
-    </SafeAreaProvider>
+      < StatusBar style = "auto" />
+        </SafeAreaProvider>
   );
 }
 

@@ -21,14 +21,11 @@ const ColorThemePicker: React.FC<ColorThemePickerProps> = ({ compact = false }) 
   };
 
   return (
-    <View style={[
-      styles.container,
-      { flexDirection: isRTL ? 'row-reverse' : 'row' }
-    ]}>
+    <View style={[styles.container, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
       {COLOR_THEMES.map((themeOption) => {
         const isSelected = colorTheme === themeOption;
         const displayColor = COLOR_THEME_DISPLAY_COLORS[themeOption];
-        
+
         return (
           <TouchableOpacity
             key={themeOption}
@@ -42,9 +39,7 @@ const ColorThemePicker: React.FC<ColorThemePickerProps> = ({ compact = false }) 
             onPress={() => handleSelectTheme(themeOption)}
             activeOpacity={0.7}
           >
-            {isSelected && (
-              <Text style={styles.checkmark}>✓</Text>
-            )}
+            {isSelected && <Text style={styles.checkmark}>✓</Text>}
           </TouchableOpacity>
         );
       })}
@@ -56,13 +51,14 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 12,
-    paddingVertical: 8,
+    paddingVertical: 0,
   },
   colorOption: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
@@ -72,7 +68,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 4,
-    marginTop:10,
+    marginTop: 0,
   },
   colorOptionCompact: {
     width: 32,

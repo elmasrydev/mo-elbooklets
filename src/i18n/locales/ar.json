@@ -70,11 +70,16 @@
     "header_subtitle": "إعدادات الحساب والتطبيق",
     "edit_profile": "تعديل الملف الشخصي",
     "update_profile_info": "تحديث معلوماتك الشخصية",
+    "language": "اللغة",
+    "choose_language": "اختر لغتك المفضلة",
     "dark_mode": "الوضع الداكن",
     "switch_light": "التبديل إلى الوضع الفاتح",
     "switch_dark": "التبديل إلى الوضع الداكن",
     "color_theme": "سمة الألوان",
+    "choose_app_color": "اختر لون سمة التطبيق",
     "choose_accent_color": "اختر لونك المفضل",
+    "help_support": "المساعدة والدعم",
+    "get_assistance": "احصل على المساعدة وتواصل مع الدعم",
     "app_preferences": "تفضيلات التطبيق والإشعارات",
     "contact_support": "احصل على المساعدة وتواصل مع الدعم",
     "app_info": "معلومات التطبيق والإصدار",
@@ -83,7 +88,8 @@
     "about_title": "حول ElBooklets",
     "about_content": "تطبيق ElBooklets للجوال\nالإصدار 1.0.0\n\nرفيقك في التعلم الرقمي للتعليم التفاعلي.",
     "grade": "السنة الدراسية",
-    "not_specified": "غير محدد"
+    "not_specified": "غير محدد",
+    "logout": "تسجيل الخروج"
   },
   "home_screen": {
     "hi": "مرحباً",
@@ -298,4 +304,3 @@
     "no_subjects": "لا توجد مواد متاحة"
   }
 }
-
