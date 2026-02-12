@@ -7,10 +7,9 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
-  Image,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -19,8 +18,6 @@ import { getSubjectConfig } from '../utils/subjectTheme';
 import { useTranslation } from 'react-i18next';
 import { layout } from '../config/layout';
 import { tryFetchWithFallback } from '../config/api';
-import StudyChaptersScreen from './study/StudyChaptersScreen';
-import StudyLessonScreen from './study/StudyLessonScreen';
 
 interface Subject {
   id: string;
@@ -29,32 +26,15 @@ interface Subject {
   chapters: { id: string }[];
 }
 
-interface Lesson {
-  id: string;
-  name: string;
-  summary?: string;
-  points?: string[];
-  chapter: {
-    id: string;
-    name: string;
-    order: number;
-  };
-}
-
-type StudyFlowStep = 'subjects' | 'chapters' | 'lesson';
-
 const StudyScreen: React.FC = () => {
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
+  const navigation = useNavigation<any>();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentStep, setCurrentStep] = useState<StudyFlowStep>('subjects');
-  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
-  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
-  const [allLessons, setAllLessons] = useState<Lesson[]>([]);
 
   useEffect(() => {
     fetchSubjects();
@@ -62,10 +42,8 @@ const StudyScreen: React.FC = () => {
 
   useFocusEffect(
     useCallback(() => {
-      if (currentStep === 'subjects') {
-        fetchSubjects();
-      }
-    }, [currentStep]),
+      fetchSubjects();
+    }, []),
   );
 
   const fetchSubjects = async () => {
@@ -110,144 +88,104 @@ const StudyScreen: React.FC = () => {
   };
 
   const handleSubjectSelect = (subject: Subject) => {
-    setSelectedSubject(subject);
-    setCurrentStep('chapters');
+    navigation.navigate('StudyChapters', { subject });
   };
-
-  const handleLessonSelect = (lesson: Lesson, lessons: Lesson[]) => {
-    setSelectedLesson(lesson);
-    setAllLessons(lessons);
-    setCurrentStep('lesson');
-  };
-
-  const handleBackToSubjects = () => {
-    setCurrentStep('subjects');
-    setSelectedSubject(null);
-  };
-
-  const handleBackToChapters = () => {
-    setCurrentStep('chapters');
-    setSelectedLesson(null);
-  };
-
-  const handleNavigateLesson = (lesson: Lesson) => {
-    setSelectedLesson(lesson);
-  };
-
-  // Chapters screen
-  if (currentStep === 'chapters' && selectedSubject) {
-    return (
-      <StudyChaptersScreen
-        subject={selectedSubject}
-        onLessonSelect={handleLessonSelect}
-        onBack={handleBackToSubjects}
-      />
-    );
-  }
-
-  // Lesson detail screen
-  if (currentStep === 'lesson' && selectedLesson) {
-    return (
-      <StudyLessonScreen
-        lesson={selectedLesson}
-        allLessons={allLessons}
-        onBack={handleBackToChapters}
-        onNavigateLesson={handleNavigateLesson}
-      />
-    );
-  }
 
   const currentStyles = styles(theme, fontSizes, spacing, borderRadius, common, isRTL);
 
   return (
-    <View style={currentStyles.container}>
-      {/* Header */}
-      <View style={common.header}>
-        <View style={common.headerTextWrapper}>
-          <Text style={common.headerTitle}> {t('study_screen.header_title')} </Text>
-          <Text style={common.headerSubtitle}> {t('study_screen.header_subtitle')} </Text>
-        </View>
-      </View>
+    <View style= { currentStyles.container } >
+    {/* Header */ }
+    < View style = { common.header } >
+      <View style={ common.headerTextWrapper }>
+        <Text style={ common.headerTitle }> { t('study_screen.header_title') } </Text>
+          < Text style = { common.headerSubtitle } > { t('study_screen.header_subtitle') } </Text>
+            </View>
+            </View>
 
-      {/* Content */}
-      {loading && subjects.length === 0 ? (
-        <View style={currentStyles.loadingState}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={currentStyles.loadingText}> {t('study_screen.loading_subjects')} </Text>
-        </View>
+  {/* Content */ }
+  {
+    loading && subjects.length === 0 ? (
+      <View style= { currentStyles.loadingState } >
+      <ActivityIndicator size="large" color = { theme.colors.primary } />
+        <Text style={ currentStyles.loadingText }> { t('study_screen.loading_subjects') } </Text>
+          </View>
       ) : error ? (
-        <View style={currentStyles.errorState}>
-          <Text style={currentStyles.errorStateIcon}>⚠️</Text>
-          <Text style={currentStyles.errorStateTitle}>
-            {t('study_screen.error_loading_subjects')}
-          </Text>
-          <Text style={currentStyles.errorStateSubtitle}> {error} </Text>
-          <TouchableOpacity style={currentStyles.retryButton} onPress={fetchSubjects}>
-            <Text style={currentStyles.retryButtonText}> {t('home_screen.try_again')} </Text>
-          </TouchableOpacity>
-        </View>
+  <View style= { currentStyles.errorState } >
+  <Text style={ currentStyles.errorStateIcon }>⚠️</Text>
+    < Text style = { currentStyles.errorStateTitle } >
+      { t('study_screen.error_loading_subjects') }
+      </Text>
+      < Text style = { currentStyles.errorStateSubtitle } > { error } </Text>
+        < TouchableOpacity style = { currentStyles.retryButton } onPress = { fetchSubjects } >
+          <Text style={ currentStyles.retryButtonText }> { t('home_screen.try_again') } </Text>
+            </TouchableOpacity>
+            </View>
       ) : subjects.length === 0 ? (
-        <View style={currentStyles.emptyState}>
-          <Text style={currentStyles.emptyStateIcon}>📚</Text>
-          <Text style={currentStyles.emptyStateTitle}>
-            {t('study_screen.no_subjects_available')}
-          </Text>
-          <Text style={currentStyles.emptyStateSubtitle}>
-            {t('study_screen.no_subjects_for_grade')}
-          </Text>
+  <View style= { currentStyles.emptyState } >
+  <Text style={ currentStyles.emptyStateIcon }>📚</Text>
+    < Text style = { currentStyles.emptyStateTitle } >
+      { t('study_screen.no_subjects_available') }
+      </Text>
+      < Text style = { currentStyles.emptyStateSubtitle } >
+        { t('study_screen.no_subjects_for_grade') }
+        </Text>
         </View>
       ) : (
-        <ScrollView
-          style={currentStyles.content}
-          contentContainerStyle={{ padding: layout.screenPadding, paddingBottom: 100 }}
-          showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchSubjects} />}
+  <ScrollView
+          style= { currentStyles.content }
+contentContainerStyle = {{ padding: layout.screenPadding, paddingBottom: 100 }}
+showsVerticalScrollIndicator = { false}
+refreshControl = {< RefreshControl refreshing = { loading } onRefresh = { fetchSubjects } />}
         >
-          {subjects.map((subject) => {
-            const config = getSubjectConfig(subject.name, theme);
-            return (
-              <TouchableOpacity
-                key={subject.id}
-                style={[
-                  currentStyles.subjectCard,
-                  {
-                    shadowColor: theme.colors.shadow,
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 4,
-                    elevation: 3,
-                  },
+{
+  subjects.map((subject) => {
+    const config = getSubjectConfig(subject.name, theme);
+    return (
+      <TouchableOpacity
+                key= { subject.id }
+    style = {
+      [
+      currentStyles.subjectCard,
+      {
+        shadowColor: theme.colors.shadow,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+      },
                 ]}
-                onPress={() => handleSubjectSelect(subject)}
+    onPress = {() => handleSubjectSelect(subject)
+  }
               >
-                {/* Left Icon Box */}
-                <View style={[currentStyles.iconBox, { backgroundColor: config.bg }]}>
-                  <Ionicons name={config.icon} size={28} color={config.color} />
-                </View>
-
-                {/* Middle Info */}
-                <View style={currentStyles.subjectInfo}>
-                  <Text style={currentStyles.subjectName}> {subject.name} </Text>
-                  <Text style={currentStyles.subjectChapters}>
-                    {subject.chapters?.length || 0} {t('study_screen.chapters')}{' '}
-                    {subject.description ? `• ${subject.description}` : ''}
-                  </Text>
-                </View>
-
-                {/* Right Action */}
-                <View style={currentStyles.arrowContainer}>
-                  <Ionicons
-                    name={isRTL ? 'chevron-back' : 'chevron-forward'}
-                    size={20}
-                    color={theme.colors.textTertiary}
-                  />
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      )}
+    {/* Left Icon Box */ }
+    < View style = { [currentStyles.iconBox, { backgroundColor: config.bg }]} >
+    <Ionicons name={ config.icon } size = { 28} color = { config.color } />
     </View>
+
+                {/* Middle Info */ }
+    < View style = { currentStyles.subjectInfo } >
+    <Text style={ currentStyles.subjectName } > { subject.name } </Text>
+  < Text style = { currentStyles.subjectChapters } >
+  { subject.chapters?.length || 0 } { t('study_screen.chapters') }{ ' '}
+                    { subject.description ? `• ${subject.description}` : '' }
+    </Text>
+    </View>
+
+                {/* Right Action */ }
+    < View style = { currentStyles.arrowContainer } >
+    <Ionicons
+                    name={ isRTL? 'chevron-back': 'chevron-forward' }
+                    size = { 20}
+                    color = { theme.colors.textTertiary }
+    />
+    </View>
+    </TouchableOpacity>
+  );
+})}
+</ScrollView>
+      )}
+</View>
   );
 };
 
