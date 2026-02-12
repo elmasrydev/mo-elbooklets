@@ -2,10 +2,10 @@ import { I18nManager, FlexStyle, TextStyle } from 'react-native';
 
 /**
  * RTL Utilities for ElBooklets Mobile
- * 
+ *
  * Static utility functions for use outside of React components.
  * For component-level RTL support, prefer the `useRTL` hook or `useCommonStyles`.
- * 
+ *
  * Since I18nManager.isRTL is properly synced on app boot, all native
  * logical properties (marginStart, paddingStart, start/end, etc.)
  * work correctly without manual overrides.

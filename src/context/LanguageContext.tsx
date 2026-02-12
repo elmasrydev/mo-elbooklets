@@ -1,11 +1,4 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  ReactNode,
-  useMemo,
-  useCallback,
-} from 'react';
+import React, { createContext, useContext, useState, ReactNode, useMemo, useCallback } from 'react';
 import { I18nManager, Alert, NativeModules } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import i18n, { LANGUAGE_KEY } from '../i18n';
@@ -122,7 +115,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({
     [language, setLanguage],
   );
 
-  return <LanguageContext.Provider value={ value }> { children } </LanguageContext.Provider>;
+  return <LanguageContext.Provider value={value}> {children} </LanguageContext.Provider>;
 };
 
 export const useLanguage = () => {

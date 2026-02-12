@@ -76,35 +76,33 @@ const WeeklyPerformanceChart: React.FC<{ theme: any; common: any; data: WeeklyPe
   };
 
   return (
-    <View style= { chartStyles.chartContainer } >
-    <View style={ chartStyles.chartWrapper }>
-      <Svg height={ chartHeight } width = { chartWidth } >
-        <Path
-            d={ generateSmoothPath(points) }
-  fill = "none"
-  stroke = { theme.colors.primary }
-  strokeWidth = "3"
-  strokeLinecap = "round"
-    />
-    </Svg>
-    </View>
-    < View style = { [chartStyles.chartLabels, { flexDirection: common.rowDirection }]} >
-    {
-      data.map((item, index) => (
-        <Text
-            key= {`${item.week}-${index}`}
-  style = {
-    [
-      chartStyles.chartLabel,
-      { color: theme.colors.textSecondary },
-      index === data.length - 1 ? { color: theme.colors.primary, fontWeight: 'bold' } : {},
+    <View style={chartStyles.chartContainer}>
+      <View style={chartStyles.chartWrapper}>
+        <Svg height={chartHeight} width={chartWidth}>
+          <Path
+            d={generateSmoothPath(points)}
+            fill="none"
+            stroke={theme.colors.primary}
+            strokeWidth="3"
+            strokeLinecap="round"
+          />
+        </Svg>
+      </View>
+      <View style={[chartStyles.chartLabels, { flexDirection: common.rowDirection }]}>
+        {data.map((item, index) => (
+          <Text
+            key={`${item.week}-${index}`}
+            style={[
+              chartStyles.chartLabel,
+              { color: theme.colors.textSecondary },
+              index === data.length - 1 ? { color: theme.colors.primary, fontWeight: 'bold' } : {},
             ]}
-    >
-    { item.week }
-    </Text>
+          >
+            {item.week}
+          </Text>
         ))}
-</View>
-  </View>
+      </View>
+    </View>
   );
 };
 
@@ -163,182 +161,178 @@ const HomeScreen: React.FC = () => {
   const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius, isRTL);
 
   return (
-    <View style= { common.container } >
-    <View style={ common.header }>
-      <View style={ currentStyles.headerLeftContent }>
-        <View style={ currentStyles.avatarContainer }>
-          <View style={ currentStyles.initialsAvatar }>
-            <Text style={ currentStyles.initialsText }> { getInitials(user?.name || '')
-}</Text>
-  </View>
-  < View style = { currentStyles.onlineDot } />
-    </View>
-    < View style = { currentStyles.headerGreeting } >
-      <Text style={ common.headerTitle }>
-        { t('home_screen.hi') }, { user?.name?.split(' ')[0] || 'Alex' }! 👋
-</Text>
-  < Text style = { common.headerSubtitle } >
-    { user?.grade?.name || 'Grade'} • { user?.educational_system?.name || 'System' }
-</Text>
-  </View>
-  </View>
-  < TouchableOpacity style = { currentStyles.notificationButton } >
-    <Ionicons name="notifications-outline" size = { 24} color = "#fff" />
-      </TouchableOpacity>
-      </View>
-
-      < ScrollView
-style = { currentStyles.scrollContainer }
-showsVerticalScrollIndicator = { false}
-contentContainerStyle = { currentStyles.scrollContent }
-  >
-  <View style={ currentStyles.topStatsRow }>
-    <View style={ currentStyles.topStatCard }>
-      <View style={ [currentStyles.statIconContainer, { backgroundColor: '#FDF2F8' }] }>
-        <Ionicons name="briefcase" size = { 20} color = "#EC4899" />
+    <View style={common.container}>
+      <View style={common.header}>
+        <View style={currentStyles.headerLeftContent}>
+          <View style={currentStyles.avatarContainer}>
+            <View style={currentStyles.initialsAvatar}>
+              <Text style={currentStyles.initialsText}> {getInitials(user?.name || '')}</Text>
+            </View>
+            <View style={currentStyles.onlineDot} />
           </View>
-          < Text style = { currentStyles.statLabel } > { t('home_screen.quizzes') } </Text>
-            < Text style = { currentStyles.statValue } > { activitiesData?.total_quizzes ?? 0}</Text>
-              </View>
-              < View style = { currentStyles.topStatCard } >
-                <View style={ [currentStyles.statIconContainer, { backgroundColor: '#ECFDF5' }] }>
-                  <Ionicons name="trending-up" size = { 20} color = "#10B981" />
-                    </View>
-                    < Text style = { currentStyles.statLabel } > { t('home_screen.completed') } </Text>
-                      < Text style = { currentStyles.statValue } > { activitiesData?.avg_score ?? 0}% </Text>
-                        </View>
-                        </View>
-
-                        < View style = { common.card } >
-                          <View style={ currentStyles.performanceHeader }>
-                            <View>
-                            <Text style={ currentStyles.performanceTitle }> { t('home_screen.performance') } </Text>
-                              < Text style = { currentStyles.performanceStatus } >
-                                { activitiesData?.performance_status || t('home_screen.excellent')}
-</Text>
-  </View>
-  < View style = { currentStyles.trendBadge } >
-    <Ionicons
-                name={
-  Number.parseFloat(activitiesData?.performance_trend || '0') >= 0
-    ? 'trending-up'
-    : 'trending-down'
-}
-size = { 14}
-color = {
-  Number.parseFloat(activitiesData?.performance_trend || '0') >= 0
-    ? '#10B981'
-    : '#EF4444'
-}
-  />
-  <Text
-                style={
-  [
-    currentStyles.trendText,
-    {
-      color:
-        Number.parseFloat(activitiesData?.performance_trend || '0') >= 0
-          ? '#10B981'
-          : '#EF4444',
-    },
-  ]
-}
-              >
-  { activitiesData?.performance_trend || '+0%'}
-</Text>
-  </View>
-  </View>
-  < WeeklyPerformanceChart
-theme = { theme }
-common = { common }
-data = { activitiesData?.weekly_performance || []}
-          />
-  </View>
-
-  < View style = {{ marginBottom: spacing.xl }}>
-    <TodaysPlanWidget />
-    </View>
-
-    < View style = { currentStyles.section } >
-      <Text style={ common.sectionTitle }> { t('home_screen.quick_actions') } </Text>
-        < ScrollView
-horizontal
-showsHorizontalScrollIndicator = { false}
-contentContainerStyle = { currentStyles.quickActionsScroll }
-  >
-  <TouchableOpacity
-              style={ [currentStyles.quickActionButton, { backgroundColor: '#6366F1' }] }
-onPress = {() => navigation.navigate('Quiz')}
-            >
-  <View style={ currentStyles.quickActionIconWhite }>
-    <Ionicons name="play" size = { 20} color = "#fff" />
-      </View>
-      < Text style = { currentStyles.quickActionTitleWhite } > Start </Text>
-        < Text style = { currentStyles.quickActionSubtitle } > jump to quiz </Text>
-          </TouchableOpacity>
-          < TouchableOpacity
-style = { currentStyles.quickActionButton }
-onPress = {() => navigation.navigate('Study')}
-            >
-  <View style={ [currentStyles.quickActionIcon, { backgroundColor: '#EFF6FF' }] }>
-    <Ionicons name="book" size = { 20} color = "#3B82F6" />
-      </View>
-      < Text style = { currentStyles.quickActionTitle } > Browse </Text>
-        < Text style = { currentStyles.quickActionSubtitleDark } > Booklets </Text>
-          </TouchableOpacity>
-          < TouchableOpacity
-style = { currentStyles.quickActionButton }
-onPress = {() => navigation.navigate('Leaderboard')}
-            >
-  <View style={ [currentStyles.quickActionIcon, { backgroundColor: '#FDF2F8' }] }>
-    <Ionicons name="stats-chart" size = { 20} color = "#EC4899" />
-      </View>
-      < Text style = { currentStyles.quickActionTitle } > My </Text>
-        < Text style = { currentStyles.quickActionSubtitleDark } > Progress </Text>
-          </TouchableOpacity>
-          < TouchableOpacity
-style = { currentStyles.quickActionButton }
-onPress = {() => navigation.navigate('More')}
-            >
-  <View style={ [currentStyles.quickActionIcon, { backgroundColor: '#FFF7ED' }] }>
-    <Ionicons name="settings" size = { 20} color = "#F97316" />
-      </View>
-      < Text style = { currentStyles.quickActionTitle } > Settings </Text>
+          <View style={currentStyles.headerGreeting}>
+            <Text style={common.headerTitle}>
+              {t('home_screen.hi')}, {user?.name?.split(' ')[0] || 'Alex'}! 👋
+            </Text>
+            <Text style={common.headerSubtitle}>
+              {user?.grade?.name || 'Grade'} • {user?.educational_system?.name || 'System'}
+            </Text>
+          </View>
+        </View>
+        <TouchableOpacity style={currentStyles.notificationButton}>
+          <Ionicons name="notifications-outline" size={24} color="#fff" />
         </TouchableOpacity>
-        </ScrollView>
+      </View>
+
+      <ScrollView
+        style={currentStyles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={currentStyles.scrollContent}
+      >
+        <View style={currentStyles.topStatsRow}>
+          <View style={currentStyles.topStatCard}>
+            <View style={[currentStyles.statIconContainer, { backgroundColor: '#FDF2F8' }]}>
+              <Ionicons name="briefcase" size={20} color="#EC4899" />
+            </View>
+            <Text style={currentStyles.statLabel}> {t('home_screen.quizzes')} </Text>
+            <Text style={currentStyles.statValue}> {activitiesData?.total_quizzes ?? 0}</Text>
+          </View>
+          <View style={currentStyles.topStatCard}>
+            <View style={[currentStyles.statIconContainer, { backgroundColor: '#ECFDF5' }]}>
+              <Ionicons name="trending-up" size={20} color="#10B981" />
+            </View>
+            <Text style={currentStyles.statLabel}> {t('home_screen.completed')} </Text>
+            <Text style={currentStyles.statValue}> {activitiesData?.avg_score ?? 0}% </Text>
+          </View>
         </View>
 
-        < View style = { currentStyles.section } >
-          <View style={ currentStyles.sectionHeaderRow }>
-            <Text style={ common.sectionTitle }> { t('home_screen.recent_activity') } </Text>
-              < TouchableOpacity onPress = {() => navigation.navigate('Leaderboard')}>
-                <Text style={ currentStyles.viewAllText }> { t('home_screen.view_all') } </Text>
-                  </TouchableOpacity>
-                  </View>
-{
-  loading ? (
-    <ActivityIndicator size= "small" color = { theme.colors.primary } />
+        <View style={common.card}>
+          <View style={currentStyles.performanceHeader}>
+            <View>
+              <Text style={currentStyles.performanceTitle}> {t('home_screen.performance')} </Text>
+              <Text style={currentStyles.performanceStatus}>
+                {activitiesData?.performance_status || t('home_screen.excellent')}
+              </Text>
+            </View>
+            <View style={currentStyles.trendBadge}>
+              <Ionicons
+                name={
+                  Number.parseFloat(activitiesData?.performance_trend || '0') >= 0
+                    ? 'trending-up'
+                    : 'trending-down'
+                }
+                size={14}
+                color={
+                  Number.parseFloat(activitiesData?.performance_trend || '0') >= 0
+                    ? '#10B981'
+                    : '#EF4444'
+                }
+              />
+              <Text
+                style={[
+                  currentStyles.trendText,
+                  {
+                    color:
+                      Number.parseFloat(activitiesData?.performance_trend || '0') >= 0
+                        ? '#10B981'
+                        : '#EF4444',
+                  },
+                ]}
+              >
+                {activitiesData?.performance_trend || '+0%'}
+              </Text>
+            </View>
+          </View>
+          <WeeklyPerformanceChart
+            theme={theme}
+            common={common}
+            data={activitiesData?.weekly_performance || []}
+          />
+        </View>
+
+        <View style={{ marginBottom: spacing.xl }}>
+          <TodaysPlanWidget />
+        </View>
+
+        <View style={currentStyles.section}>
+          <Text style={common.sectionTitle}> {t('home_screen.quick_actions')} </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={currentStyles.quickActionsScroll}
+          >
+            <TouchableOpacity
+              style={[currentStyles.quickActionButton, { backgroundColor: '#6366F1' }]}
+              onPress={() => navigation.navigate('Quiz')}
+            >
+              <View style={currentStyles.quickActionIconWhite}>
+                <Ionicons name="play" size={20} color="#fff" />
+              </View>
+              <Text style={currentStyles.quickActionTitleWhite}> Start </Text>
+              <Text style={currentStyles.quickActionSubtitle}> jump to quiz </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={currentStyles.quickActionButton}
+              onPress={() => navigation.navigate('Study')}
+            >
+              <View style={[currentStyles.quickActionIcon, { backgroundColor: '#EFF6FF' }]}>
+                <Ionicons name="book" size={20} color="#3B82F6" />
+              </View>
+              <Text style={currentStyles.quickActionTitle}> Browse </Text>
+              <Text style={currentStyles.quickActionSubtitleDark}> Booklets </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={currentStyles.quickActionButton}
+              onPress={() => navigation.navigate('Leaderboard')}
+            >
+              <View style={[currentStyles.quickActionIcon, { backgroundColor: '#FDF2F8' }]}>
+                <Ionicons name="stats-chart" size={20} color="#EC4899" />
+              </View>
+              <Text style={currentStyles.quickActionTitle}> My </Text>
+              <Text style={currentStyles.quickActionSubtitleDark}> Progress </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={currentStyles.quickActionButton}
+              onPress={() => navigation.navigate('More')}
+            >
+              <View style={[currentStyles.quickActionIcon, { backgroundColor: '#FFF7ED' }]}>
+                <Ionicons name="settings" size={20} color="#F97316" />
+              </View>
+              <Text style={currentStyles.quickActionTitle}> Settings </Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+
+        <View style={currentStyles.section}>
+          <View style={currentStyles.sectionHeaderRow}>
+            <Text style={common.sectionTitle}> {t('home_screen.recent_activity')} </Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Leaderboard')}>
+              <Text style={currentStyles.viewAllText}> {t('home_screen.view_all')} </Text>
+            </TouchableOpacity>
+          </View>
+          {loading ? (
+            <ActivityIndicator size="small" color={theme.colors.primary} />
           ) : (
-    activitiesData?.activities
-      .slice(0, 3)
-      .map((a) => (
-        <RecentActivityCard
-                  key= { a.id }
-                  activity = { a }
-                  onPress = {() => navigation.navigate('Leaderboard')}
+            activitiesData?.activities
+              .slice(0, 3)
+              .map((a) => (
+                <RecentActivityCard
+                  key={a.id}
+                  activity={a}
+                  onPress={() => navigation.navigate('Leaderboard')}
                 />
               ))
           )}
-</View>
+        </View>
 
-  < View style = { currentStyles.quoteCard } >
-    <Text style={ currentStyles.quoteText }>
-      "Learning is a treasure that will follow its owner everywhere."
-      </Text>
-      < Text style = { currentStyles.quoteAuthor } > - CHINESE PROVERB </Text>
+        <View style={currentStyles.quoteCard}>
+          <Text style={currentStyles.quoteText}>
+            "Learning is a treasure that will follow its owner everywhere."
+          </Text>
+          <Text style={currentStyles.quoteAuthor}> - CHINESE PROVERB </Text>
         </View>
-        </ScrollView>
-        </View>
+      </ScrollView>
+    </View>
   );
 };
 

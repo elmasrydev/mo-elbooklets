@@ -135,136 +135,129 @@ const StudyChaptersScreen: React.FC = () => {
 
   if (loading) {
     return (
-      <View style= { common.container } >
-      <View style={ common.header }>
-        <BackButton />
-        < View style = { [common.headerTextWrapper, common.marginStart(12)]} >
-          <Text style={ common.headerTitle }> { subject.name } </Text>
-            </View>
-            </View>
-            < View style = { currentStyles.loadingContainer } >
-              <ActivityIndicator size="large" color = { theme.colors.primary } />
-                <Text style={ currentStyles.loadingText }> { t('study_chapters.loading') } </Text>
-                  </View>
-                  </View>
+      <View style={common.container}>
+        <View style={common.header}>
+          <BackButton />
+          <View style={[common.headerTextWrapper, common.marginStart(12)]}>
+            <Text style={common.headerTitle}> {subject.name} </Text>
+          </View>
+        </View>
+        <View style={currentStyles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={currentStyles.loadingText}> {t('study_chapters.loading')} </Text>
+        </View>
+      </View>
     );
   }
 
-if (error) {
-  return (
-    <View style= { common.container } >
-    <View style={ common.header }>
-      <BackButton />
-      < View style = { [common.headerTextWrapper, common.marginStart(12)]} >
-        <Text style={ common.headerTitle }> { subject.name } </Text>
+  if (error) {
+    return (
+      <View style={common.container}>
+        <View style={common.header}>
+          <BackButton />
+          <View style={[common.headerTextWrapper, common.marginStart(12)]}>
+            <Text style={common.headerTitle}> {subject.name} </Text>
           </View>
-          </View>
-          < View style = { currentStyles.errorContainer } >
-            <Ionicons
+        </View>
+        <View style={currentStyles.errorContainer}>
+          <Ionicons
             name="alert-circle"
-  size = { 48}
-  color = { theme.colors.error || '#EF4444' }
-  style = {{ marginBottom: 16 }
-}
+            size={48}
+            color={theme.colors.error || '#EF4444'}
+            style={{ marginBottom: 16 }}
           />
-  < Text style = { currentStyles.errorTitle } > { t('study_chapters.error_loading') } </Text>
-    < Text style = { currentStyles.errorText } > { error } </Text>
-      < TouchableOpacity style = { currentStyles.retryButton } onPress = { fetchLessons } >
-        <Text style={ currentStyles.retryButtonText }> { t('home_screen.try_again') } </Text>
+          <Text style={currentStyles.errorTitle}> {t('study_chapters.error_loading')} </Text>
+          <Text style={currentStyles.errorText}> {error} </Text>
+          <TouchableOpacity style={currentStyles.retryButton} onPress={fetchLessons}>
+            <Text style={currentStyles.retryButtonText}> {t('home_screen.try_again')} </Text>
           </TouchableOpacity>
-          </View>
-          </View>
+        </View>
+      </View>
     );
   }
 
-return (
-  <View style= { common.container } >
-  <View style={ common.header }>
-    <BackButton />
-    < View style = { [common.headerTextWrapper, common.marginStart(12)]} >
-      <Text style={ common.headerTitle }> { subject.name } </Text>
-        < Text style = { common.headerSubtitle } > { t('study_chapters.select_lesson') } </Text>
-          </View>
-          </View>
+  return (
+    <View style={common.container}>
+      <View style={common.header}>
+        <BackButton />
+        <View style={[common.headerTextWrapper, common.marginStart(12)]}>
+          <Text style={common.headerTitle}> {subject.name} </Text>
+          <Text style={common.headerSubtitle}> {t('study_chapters.select_lesson')} </Text>
+        </View>
+      </View>
 
-          < ScrollView
-style = { currentStyles.content }
-contentContainerStyle = {{ padding: layout.screenPadding, paddingBottom: 100 }}
-showsVerticalScrollIndicator = { false}
-  >
-{
-  chapters.map((chapter) => (
-    <View key= { chapter.id } style = { currentStyles.chapterCard } >
-    <View style={ currentStyles.chapterHeader } >
-  <View style={ currentStyles.chapterInfo } >
-  <Text style={ currentStyles.chapterName } > { chapter.name } </Text>
-  < Text style = { currentStyles.lessonCount } >
-  { chapter.lessons.length } { t('study_chapters.lessons') }
-  </Text>
-  </View>
-  < View style = { currentStyles.chapterIconContainer } >
-  <Ionicons name="folder-open-outline" size = { 20} color = { theme.colors.primary } />
-  </View>
-  </View>
+      <ScrollView
+        style={currentStyles.content}
+        contentContainerStyle={{ padding: layout.screenPadding, paddingBottom: 100 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {chapters.map((chapter) => (
+          <View key={chapter.id} style={currentStyles.chapterCard}>
+            <View style={currentStyles.chapterHeader}>
+              <View style={currentStyles.chapterInfo}>
+                <Text style={currentStyles.chapterName}> {chapter.name} </Text>
+                <Text style={currentStyles.lessonCount}>
+                  {chapter.lessons.length} {t('study_chapters.lessons')}
+                </Text>
+              </View>
+              <View style={currentStyles.chapterIconContainer}>
+                <Ionicons name="folder-open-outline" size={20} color={theme.colors.primary} />
+              </View>
+            </View>
 
-  < View style = { currentStyles.lessonsContainer } >
-  {
-    chapter.lessons.map((lesson) => (
-      <TouchableOpacity
-                  key= { lesson.id }
-                  style = { currentStyles.lessonItem }
-                  onPress = {() => handleLessonPress(lesson)}
-                  activeOpacity = { 0.7}
-    >
-    <View style={ currentStyles.lessonIconContainer } >
-  <Ionicons
+            <View style={currentStyles.lessonsContainer}>
+              {chapter.lessons.map((lesson) => (
+                <TouchableOpacity
+                  key={lesson.id}
+                  style={currentStyles.lessonItem}
+                  onPress={() => handleLessonPress(lesson)}
+                  activeOpacity={0.7}
+                >
+                  <View style={currentStyles.lessonIconContainer}>
+                    <Ionicons
                       name="document-text-outline"
-                      size = { 20}
-                      color = { theme.colors.textSecondary }
-    />
-    </View>
-    < View style = { currentStyles.lessonInfo } >
-    <Text style={ currentStyles.lessonName } numberOfLines = { 2} >
-    { ' '}
-                      { lesson.name }{ ' '}
-  </Text>
-                    {
-      lesson.summary && (
-        <Text style={ currentStyles.lessonSummary } numberOfLines = { 1} >
-        { lesson.summary }
-        </Text>
-  )
-}
-  </View>
-  < Ionicons
-name = { isRTL? 'chevron-back': 'chevron-forward' }
-size = { 16}
-color = { theme.colors.textTertiary }
-  />
-  </TouchableOpacity>
+                      size={20}
+                      color={theme.colors.textSecondary}
+                    />
+                  </View>
+                  <View style={currentStyles.lessonInfo}>
+                    <Text style={currentStyles.lessonName} numberOfLines={2}>
+                      {' '}
+                      {lesson.name}{' '}
+                    </Text>
+                    {lesson.summary && (
+                      <Text style={currentStyles.lessonSummary} numberOfLines={1}>
+                        {lesson.summary}
+                      </Text>
+                    )}
+                  </View>
+                  <Ionicons
+                    name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                    size={16}
+                    color={theme.colors.textTertiary}
+                  />
+                </TouchableOpacity>
               ))}
-</View>
-  </View>
+            </View>
+          </View>
         ))}
 
-{
-  chapters.length === 0 && (
-    <View style={ currentStyles.emptyState }>
-      <Ionicons
+        {chapters.length === 0 && (
+          <View style={currentStyles.emptyState}>
+            <Ionicons
               name="library-outline"
-  size = { 48}
-  color = { theme.colors.textSecondary }
-  style = {{ marginBottom: 16 }
-}
+              size={48}
+              color={theme.colors.textSecondary}
+              style={{ marginBottom: 16 }}
             />
-  < Text style = { currentStyles.emptyStateTitle } > { t('study_chapters.no_chapters') } </Text>
-    < Text style = { currentStyles.emptyStateSubtitle } >
-      { t('study_chapters.no_chapters_for_subject') }
-      </Text>
-      </View>
+            <Text style={currentStyles.emptyStateTitle}> {t('study_chapters.no_chapters')} </Text>
+            <Text style={currentStyles.emptyStateSubtitle}>
+              {t('study_chapters.no_chapters_for_subject')}
+            </Text>
+          </View>
         )}
-</ScrollView>
-  </View>
+      </ScrollView>
+    </View>
   );
 };
 

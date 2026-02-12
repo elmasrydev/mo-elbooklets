@@ -94,98 +94,94 @@ const StudyScreen: React.FC = () => {
   const currentStyles = styles(theme, fontSizes, spacing, borderRadius, common, isRTL);
 
   return (
-    <View style= { currentStyles.container } >
-    {/* Header */ }
-    < View style = { common.header } >
-      <View style={ common.headerTextWrapper }>
-        <Text style={ common.headerTitle }> { t('study_screen.header_title') } </Text>
-          < Text style = { common.headerSubtitle } > { t('study_screen.header_subtitle') } </Text>
-            </View>
-            </View>
+    <View style={currentStyles.container}>
+      {/* Header */}
+      <View style={common.header}>
+        <View style={common.headerTextWrapper}>
+          <Text style={common.headerTitle}> {t('study_screen.header_title')} </Text>
+          <Text style={common.headerSubtitle}> {t('study_screen.header_subtitle')} </Text>
+        </View>
+      </View>
 
-  {/* Content */ }
-  {
-    loading && subjects.length === 0 ? (
-      <View style= { currentStyles.loadingState } >
-      <ActivityIndicator size="large" color = { theme.colors.primary } />
-        <Text style={ currentStyles.loadingText }> { t('study_screen.loading_subjects') } </Text>
-          </View>
+      {/* Content */}
+      {loading && subjects.length === 0 ? (
+        <View style={currentStyles.loadingState}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={currentStyles.loadingText}> {t('study_screen.loading_subjects')} </Text>
+        </View>
       ) : error ? (
-  <View style= { currentStyles.errorState } >
-  <Text style={ currentStyles.errorStateIcon }>⚠️</Text>
-    < Text style = { currentStyles.errorStateTitle } >
-      { t('study_screen.error_loading_subjects') }
-      </Text>
-      < Text style = { currentStyles.errorStateSubtitle } > { error } </Text>
-        < TouchableOpacity style = { currentStyles.retryButton } onPress = { fetchSubjects } >
-          <Text style={ currentStyles.retryButtonText }> { t('home_screen.try_again') } </Text>
-            </TouchableOpacity>
-            </View>
+        <View style={currentStyles.errorState}>
+          <Text style={currentStyles.errorStateIcon}>⚠️</Text>
+          <Text style={currentStyles.errorStateTitle}>
+            {t('study_screen.error_loading_subjects')}
+          </Text>
+          <Text style={currentStyles.errorStateSubtitle}> {error} </Text>
+          <TouchableOpacity style={currentStyles.retryButton} onPress={fetchSubjects}>
+            <Text style={currentStyles.retryButtonText}> {t('home_screen.try_again')} </Text>
+          </TouchableOpacity>
+        </View>
       ) : subjects.length === 0 ? (
-  <View style= { currentStyles.emptyState } >
-  <Text style={ currentStyles.emptyStateIcon }>📚</Text>
-    < Text style = { currentStyles.emptyStateTitle } >
-      { t('study_screen.no_subjects_available') }
-      </Text>
-      < Text style = { currentStyles.emptyStateSubtitle } >
-        { t('study_screen.no_subjects_for_grade') }
-        </Text>
+        <View style={currentStyles.emptyState}>
+          <Text style={currentStyles.emptyStateIcon}>📚</Text>
+          <Text style={currentStyles.emptyStateTitle}>
+            {t('study_screen.no_subjects_available')}
+          </Text>
+          <Text style={currentStyles.emptyStateSubtitle}>
+            {t('study_screen.no_subjects_for_grade')}
+          </Text>
         </View>
       ) : (
-  <ScrollView
-          style= { currentStyles.content }
-contentContainerStyle = {{ padding: layout.screenPadding, paddingBottom: 100 }}
-showsVerticalScrollIndicator = { false}
-refreshControl = {< RefreshControl refreshing = { loading } onRefresh = { fetchSubjects } />}
+        <ScrollView
+          style={currentStyles.content}
+          contentContainerStyle={{ padding: layout.screenPadding, paddingBottom: 100 }}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchSubjects} />}
         >
-{
-  subjects.map((subject) => {
-    const config = getSubjectConfig(subject.name, theme);
-    return (
-      <TouchableOpacity
-                key= { subject.id }
-    style = {
-      [
-      currentStyles.subjectCard,
-      {
-        shadowColor: theme.colors.shadow,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-      },
+          {subjects.map((subject) => {
+            const config = getSubjectConfig(subject.name, theme);
+            return (
+              <TouchableOpacity
+                key={subject.id}
+                style={[
+                  currentStyles.subjectCard,
+                  {
+                    shadowColor: theme.colors.shadow,
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 4,
+                    elevation: 3,
+                  },
                 ]}
-    onPress = {() => handleSubjectSelect(subject)
-  }
+                onPress={() => handleSubjectSelect(subject)}
               >
-    {/* Left Icon Box */ }
-    < View style = { [currentStyles.iconBox, { backgroundColor: config.bg }]} >
-    <Ionicons name={ config.icon } size = { 28} color = { config.color } />
-    </View>
+                {/* Left Icon Box */}
+                <View style={[currentStyles.iconBox, { backgroundColor: config.bg }]}>
+                  <Ionicons name={config.icon} size={28} color={config.color} />
+                </View>
 
-                {/* Middle Info */ }
-    < View style = { currentStyles.subjectInfo } >
-    <Text style={ currentStyles.subjectName } > { subject.name } </Text>
-  < Text style = { currentStyles.subjectChapters } >
-  { subject.chapters?.length || 0 } { t('study_screen.chapters') }{ ' '}
-                    { subject.description ? `• ${subject.description}` : '' }
-    </Text>
-    </View>
+                {/* Middle Info */}
+                <View style={currentStyles.subjectInfo}>
+                  <Text style={currentStyles.subjectName}> {subject.name} </Text>
+                  <Text style={currentStyles.subjectChapters}>
+                    {subject.chapters?.length || 0} {t('study_screen.chapters')}{' '}
+                    {subject.description ? `• ${subject.description}` : ''}
+                  </Text>
+                </View>
 
-                {/* Right Action */ }
-    < View style = { currentStyles.arrowContainer } >
-    <Ionicons
-                    name={ isRTL? 'chevron-back': 'chevron-forward' }
-                    size = { 20}
-                    color = { theme.colors.textTertiary }
-    />
-    </View>
-    </TouchableOpacity>
-  );
-})}
-</ScrollView>
+                {/* Right Action */}
+                <View style={currentStyles.arrowContainer}>
+                  <Ionicons
+                    name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                    size={20}
+                    color={theme.colors.textTertiary}
+                  />
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       )}
-</View>
+    </View>
   );
 };
 

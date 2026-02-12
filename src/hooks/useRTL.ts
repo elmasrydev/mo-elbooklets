@@ -44,49 +44,44 @@ export const useRTL = () => {
     // If native matches → use logical properties (auto-flip)
     // If mismatch → use physical properties to force correct side
     marginStart: (val: number) =>
-      isMismatch
-        ? (isRTL ? { marginRight: val } : { marginLeft: val })
-        : ({ marginStart: val }),
+      isMismatch ? (isRTL ? { marginRight: val } : { marginLeft: val }) : { marginStart: val },
     marginEnd: (val: number) =>
-      isMismatch
-        ? (isRTL ? { marginLeft: val } : { marginRight: val })
-        : ({ marginEnd: val }),
+      isMismatch ? (isRTL ? { marginLeft: val } : { marginRight: val }) : { marginEnd: val },
 
     paddingStart: (val: number) =>
-      isMismatch
-        ? (isRTL ? { paddingRight: val } : { paddingLeft: val })
-        : ({ paddingStart: val }),
+      isMismatch ? (isRTL ? { paddingRight: val } : { paddingLeft: val }) : { paddingStart: val },
     paddingEnd: (val: number) =>
-      isMismatch
-        ? (isRTL ? { paddingLeft: val } : { paddingRight: val })
-        : ({ paddingEnd: val }),
+      isMismatch ? (isRTL ? { paddingLeft: val } : { paddingRight: val }) : { paddingEnd: val },
 
     borderStartWidth: (val: number) =>
       isMismatch
-        ? (isRTL ? { borderRightWidth: val } : { borderLeftWidth: val })
-        : ({ borderStartWidth: val }),
+        ? isRTL
+          ? { borderRightWidth: val }
+          : { borderLeftWidth: val }
+        : { borderStartWidth: val },
     borderEndWidth: (val: number) =>
       isMismatch
-        ? (isRTL ? { borderLeftWidth: val } : { borderRightWidth: val })
-        : ({ borderEndWidth: val }),
+        ? isRTL
+          ? { borderLeftWidth: val }
+          : { borderRightWidth: val }
+        : { borderEndWidth: val },
 
     borderStartColor: (val: string) =>
       isMismatch
-        ? (isRTL ? { borderRightColor: val } : { borderLeftColor: val })
-        : ({ borderStartColor: val }),
+        ? isRTL
+          ? { borderRightColor: val }
+          : { borderLeftColor: val }
+        : { borderStartColor: val },
     borderEndColor: (val: string) =>
       isMismatch
-        ? (isRTL ? { borderLeftColor: val } : { borderRightColor: val })
-        : ({ borderEndColor: val }),
+        ? isRTL
+          ? { borderLeftColor: val }
+          : { borderRightColor: val }
+        : { borderEndColor: val },
 
     start: (val: number) =>
-      isMismatch
-        ? (isRTL ? { right: val } : { left: val })
-        : ({ start: val }),
-    end: (val: number) =>
-      isMismatch
-        ? (isRTL ? { left: val } : { right: val })
-        : ({ end: val }),
+      isMismatch ? (isRTL ? { right: val } : { left: val }) : { start: val },
+    end: (val: number) => (isMismatch ? (isRTL ? { left: val } : { right: val }) : { end: val }),
 
     // ICONS
     arrowBack: isRTL ? 'chevron-forward' : 'chevron-back',

@@ -85,126 +85,113 @@ const StudyLessonScreen: React.FC = () => {
 
   // Prefer new lessonPoints over legacy points
   const hasNewPoints = currentLesson.lessonPoints && currentLesson.lessonPoints.length > 0;
-  const hasLegacyPoints =
-    !hasNewPoints && currentLesson.points && currentLesson.points.length > 0;
+  const hasLegacyPoints = !hasNewPoints && currentLesson.points && currentLesson.points.length > 0;
 
   return (
-    <View style= { currentStyles.container } >
-    {/* Header */ }
-    < View style = { currentStyles.header } >
-      <View style={ currentStyles.headerTopRow }>
-        <CloseButton />
-        < View style = { currentStyles.headerTitleArea } >
-          <Text style={ currentStyles.chapterBadge }> { currentLesson.chapter.name } </Text>
-            </View>
-            </View>
-            < Text style = { currentStyles.headerTitle } numberOfLines = { 2} >
-              { currentLesson.name }
-              </Text>
-              </View>
-
-              < ScrollView
-  style = {{ flex: 1 }
-}
-contentContainerStyle = {{ padding: layout.screenPadding, paddingBottom: 30 }}
-showsVerticalScrollIndicator = { false}
-  >
-  {/* Summary Section */ }
-  < View style = { currentStyles.section } >
-    <View style={ currentStyles.sectionHeader }>
-      <View style={ currentStyles.sectionIcon }>
-        <Text style={ currentStyles.sectionIconText }>📄</Text>
+    <View style={currentStyles.container}>
+      {/* Header */}
+      <View style={currentStyles.header}>
+        <View style={currentStyles.headerTopRow}>
+          <CloseButton />
+          <View style={currentStyles.headerTitleArea}>
+            <Text style={currentStyles.chapterBadge}> {currentLesson.chapter.name} </Text>
           </View>
-          < Text style = { currentStyles.sectionTitle } > { t('study_lesson.summary') } </Text>
-            </View>
-{
-  currentLesson.summary ? (
-    <Text style= { currentStyles.summaryText } > { currentLesson.summary } </Text>
-          ) : (
-    <Text style= { currentStyles.noContentText } > { t('study_lesson.no_summary') } </Text>
-          )
-}
-</View>
-
-{/* Key Points Section */ }
-<View style={ currentStyles.section }>
-  <View style={ currentStyles.sectionHeader }>
-    <View style={ [currentStyles.sectionIcon, currentStyles.pointsIcon] }>
-      <Text style={ currentStyles.sectionIconText }>✓</Text>
         </View>
-        < Text style = { currentStyles.sectionTitle } > { t('study_lesson.key_points') } </Text>
-          </View>
-
-{
-  hasNewPoints ? (
-    <View style= { currentStyles.pointsList } >
-    {
-      currentLesson.lessonPoints!.map((point) => {
-        const isExpanded = expandedPoints.has(point.id);
-        return (
-          <TouchableOpacity
-                    key= { point.id }
-        style = { currentStyles.pointItem }
-        onPress = {() => point.explanation && togglePoint(point.id)
-      }
-                    activeOpacity = { point.explanation ? 0.7 : 1 }
-        >
-        <View style={ currentStyles.pointHeader } >
-      <View style={ currentStyles.pointBullet } >
-      <Text style={ currentStyles.pointBulletText } >✓</Text>
+        <Text style={currentStyles.headerTitle} numberOfLines={2}>
+          {currentLesson.name}
+        </Text>
       </View>
-      < Text style = { currentStyles.pointText } > { point.title } </Text>
-                      {
-          point.explanation && (
-            <Ionicons
-                          name={ isExpanded? 'chevron-up': 'chevron-down' }
-                          size = { 16}
-                          color = { theme.colors.textSecondary }
-        />
-                      )
-    }
-    </View>
-                    {
-    isExpanded && point.explanation && (
-      <View style={ currentStyles.explanationContainer }>
-        <Text style={ currentStyles.explanationText }> { point.explanation } </Text>
-          </View>
-                    )
-  }
-  </TouchableOpacity>
-                );
-})}
-</View>
-          ) : hasLegacyPoints ? (
-  <View style= { currentStyles.pointsList } >
-  {
-    currentLesson.points!.map((point, index) => (
-      <View key= { index } style = { currentStyles.pointItem } >
-      <View style={ currentStyles.pointHeader } >
-    <View style={ currentStyles.pointBullet } >
-    <Text style={ currentStyles.pointBulletText } >✓</Text>
-    </View>
-    < Text style = { currentStyles.pointText } > { point } </Text>
-    </View>
-    </View>
-    ))
-  }
-  </View>
-          ) : (
-  <Text style= { currentStyles.noContentText } > { t('study_lesson.no_key_points') } </Text>
-          )}
-</View>
-  </ScrollView>
 
-{/* Bottom Navigation Bar */ }
-<LessonNavBar
-        currentIndex={ currentIndex }
-totalCount = { allLessons.length }
-onPrevious = { previousLesson?() => handleNavigateLesson(previousLesson): null }
-onNext = { nextLesson?() => handleNavigateLesson(nextLesson): null }
-onFinish = { handleClose }
-  />
-  </View>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: layout.screenPadding, paddingBottom: 30 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Summary Section */}
+        <View style={currentStyles.section}>
+          <View style={currentStyles.sectionHeader}>
+            <View style={currentStyles.sectionIcon}>
+              <Text style={currentStyles.sectionIconText}>📄</Text>
+            </View>
+            <Text style={currentStyles.sectionTitle}> {t('study_lesson.summary')} </Text>
+          </View>
+          {currentLesson.summary ? (
+            <Text style={currentStyles.summaryText}> {currentLesson.summary} </Text>
+          ) : (
+            <Text style={currentStyles.noContentText}> {t('study_lesson.no_summary')} </Text>
+          )}
+        </View>
+
+        {/* Key Points Section */}
+        <View style={currentStyles.section}>
+          <View style={currentStyles.sectionHeader}>
+            <View style={[currentStyles.sectionIcon, currentStyles.pointsIcon]}>
+              <Text style={currentStyles.sectionIconText}>✓</Text>
+            </View>
+            <Text style={currentStyles.sectionTitle}> {t('study_lesson.key_points')} </Text>
+          </View>
+
+          {hasNewPoints ? (
+            <View style={currentStyles.pointsList}>
+              {currentLesson.lessonPoints!.map((point) => {
+                const isExpanded = expandedPoints.has(point.id);
+                return (
+                  <TouchableOpacity
+                    key={point.id}
+                    style={currentStyles.pointItem}
+                    onPress={() => point.explanation && togglePoint(point.id)}
+                    activeOpacity={point.explanation ? 0.7 : 1}
+                  >
+                    <View style={currentStyles.pointHeader}>
+                      <View style={currentStyles.pointBullet}>
+                        <Text style={currentStyles.pointBulletText}>✓</Text>
+                      </View>
+                      <Text style={currentStyles.pointText}> {point.title} </Text>
+                      {point.explanation && (
+                        <Ionicons
+                          name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                          size={16}
+                          color={theme.colors.textSecondary}
+                        />
+                      )}
+                    </View>
+                    {isExpanded && point.explanation && (
+                      <View style={currentStyles.explanationContainer}>
+                        <Text style={currentStyles.explanationText}> {point.explanation} </Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          ) : hasLegacyPoints ? (
+            <View style={currentStyles.pointsList}>
+              {currentLesson.points!.map((point, index) => (
+                <View key={index} style={currentStyles.pointItem}>
+                  <View style={currentStyles.pointHeader}>
+                    <View style={currentStyles.pointBullet}>
+                      <Text style={currentStyles.pointBulletText}>✓</Text>
+                    </View>
+                    <Text style={currentStyles.pointText}> {point} </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <Text style={currentStyles.noContentText}> {t('study_lesson.no_key_points')} </Text>
+          )}
+        </View>
+      </ScrollView>
+
+      {/* Bottom Navigation Bar */}
+      <LessonNavBar
+        currentIndex={currentIndex}
+        totalCount={allLessons.length}
+        onPrevious={previousLesson ? () => handleNavigateLesson(previousLesson) : null}
+        onNext={nextLesson ? () => handleNavigateLesson(nextLesson) : null}
+        onFinish={handleClose}
+      />
+    </View>
   );
 };
 

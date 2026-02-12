@@ -28,10 +28,10 @@ interface TabIconProps {
 
 const TabIcon: React.FC<TabIconProps> = ({ color, focused, name }) => (
   <Ionicons
-    style= {{ marginBottom: 5 }}
-name = { focused? name: (`${name}-outline` as any) }
-size = { 24}
-color = { color }
+    style={{ marginBottom: 5 }}
+    name={focused ? name : (`${name}-outline` as any)}
+    size={24}
+    color={color}
   />
 );
 
@@ -81,65 +81,62 @@ const TabScreens: React.FC = () => {
 
   return (
     <Tab.Navigator
-      key= { isRTL? 'rtl': 'ltr' } // Force re-mount on direction change
-  screenOptions = {{
-    headerShown: false,
-      tabBarActiveTintColor: theme.colors.primary,
+      key={isRTL ? 'rtl' : 'ltr'} // Force re-mount on direction change
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.textTertiary || 'gray',
-          tabBarStyle: {
-      backgroundColor: theme.colors.surface,
-        borderTopWidth: 1,
+        tabBarStyle: {
+          backgroundColor: theme.colors.surface,
+          borderTopWidth: 1,
           borderTopColor: theme.colors.border,
-            paddingBottom: Math.max(insets.bottom, 5),
-              paddingTop: 5,
-                height: tabBarHeight,
+          paddingBottom: Math.max(insets.bottom, 5),
+          paddingTop: 5,
+          height: tabBarHeight,
         },
-    tabBarLabelStyle: {
-      fontSize: 12,
-        fontWeight: '600',
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '600',
           marginTop: -5,
         },
-  }
-}
+      }}
     >
-  {
-    orderedTabs.map((tab) => (
-      <Tab.Screen
-          key= { tab.name }
-          name = { tab.name }
-          component = { tab.component }
-          options = {{
-      tabBarLabel: t(tab.labelKey),
-      tabBarIcon: (props) => <TabIcon { ...props } name={ tab.icon } />,
-    }}
-  />
+      {orderedTabs.map((tab) => (
+        <Tab.Screen
+          key={tab.name}
+          name={tab.name}
+          component={tab.component}
+          options={{
+            tabBarLabel: t(tab.labelKey),
+            tabBarIcon: (props) => <TabIcon {...props} name={tab.icon} />,
+          }}
+        />
       ))}
-</Tab.Navigator>
+    </Tab.Navigator>
   );
 };
 
 const TabNavigator: React.FC = () => {
   return (
-    <Stack.Navigator screenOptions= {{ headerShown: false }
-}>
-  <Stack.Screen name="MainTabs" component = { TabScreens } />
-    <Stack.Screen name="StudyCalendar" component = { StudyCalendarScreen } />
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MainTabs" component={TabScreens} />
+      <Stack.Screen name="StudyCalendar" component={StudyCalendarScreen} />
       <Stack.Screen
         name="StudyChapters"
-component = { StudyChaptersScreen }
-options = {{
-  animation: 'slide_from_right',
+        component={StudyChaptersScreen}
+        options={{
+          animation: 'slide_from_right',
         }}
       />
-  < Stack.Screen
-name = "StudyLesson"
-component = { StudyLessonScreen }
-options = {{
-  presentation: 'fullScreenModal',
-    animation: 'slide_from_bottom',
+      <Stack.Screen
+        name="StudyLesson"
+        component={StudyLessonScreen}
+        options={{
+          presentation: 'fullScreenModal',
+          animation: 'slide_from_bottom',
         }}
       />
-  </Stack.Navigator>
+    </Stack.Navigator>
   );
 };
 
