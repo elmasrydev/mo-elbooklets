@@ -50,9 +50,7 @@ const TabScreens: React.FC = () => {
 
   // Debugging Order
   useEffect(() => {
-    console.log(
-      `TabNavigator Render: lang=${language}, isRTL=${isRTL}, nativeRTL=${I18nManager.isRTL}`,
-    );
+    console.log(`TabNavigator Render: lang=${language}, isRTL=${isRTL}`);
   }, [language, isRTL]);
 
   // Define tabs in LTR order (Home -> More)
@@ -70,12 +68,11 @@ const TabScreens: React.FC = () => {
     { name: 'More', component: MoreScreen, labelKey: 'common.more', icon: 'ellipsis-horizontal' },
   ];
 
-  // Robust Direction Logic:
-  // If we have a mismatch (e.g. Native RTL in English App), Flex Row is RTL (Home on Right).
-  // We want Home on Left. This requires reversing the array so Home is the "last" item (Left in RTL).
-  // If we have Native LTR in Arabic App, Flex Row is LTR (Home on Left).
-  // We want Home on Right. This requires reversing the array so Home is the "last" item (Right in LTR).
-  // So: Mismatch -> Reverse Array. Match -> Standard Array.
+  // Hybrid tab ordering:
+  // In production, I18nManager.isRTL matches isRTL → no reversal needed.
+  // In dev mode, there may be a mismatch after language switch
+  // (DevSettings.reload only reloads JS, not the native Activity).
+  // When mismatched, we reverse tabs so they appear in the correct visual order.
   const isMismatch = isRTL !== I18nManager.isRTL;
   const orderedTabs = isMismatch ? [...tabs].reverse() : tabs;
 
@@ -96,8 +93,6 @@ const TabScreens: React.FC = () => {
             paddingBottom: Math.max(insets.bottom, 5),
               paddingTop: 5,
                 height: tabBarHeight,
-                  // ALWAYS use standard 'row'. We handle the "flip" by reordering if mismatched.
-                  flexDirection: 'row',
         },
     tabBarLabelStyle: {
       fontSize: 12,

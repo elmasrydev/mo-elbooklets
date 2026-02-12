@@ -3,7 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { ApolloProvider } from '@apollo/client/react';
-import { View, ActivityIndicator, StyleSheet, I18nManager } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, I18nManager, NativeModules } from 'react-native';
 import { useFonts } from 'expo-font';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthProvider } from './src/context/AuthContext';
@@ -12,68 +12,114 @@ import apolloClient from './src/lib/apollo';
 import AppNavigator from './src/components/AppNavigator';
 
 import { I18nextProvider } from 'react-i18next';
-import i18n from './src/i18n';
+import i18n, { getInitialLanguage, initI18n, LANGUAGE_KEY } from './src/i18n';
 import { LanguageProvider } from './src/context/LanguageContext';
 
 import * as Updates from 'expo-updates';
+
+type Language = 'ar' | 'en';
+
+// Key to track whether we've already attempted an RTL sync + reload.
+// This prevents infinite reload loops in development where DevSettings.reload()
+// only reloads JS but doesn't restart the native Activity (so I18nManager.isRTL
+// remains unchanged even after forceRTL).
+const RTL_SYNC_ATTEMPTED_KEY = 'rtl_sync_attempted';
 
 export default function App() {
   const [fontsLoaded] = useFonts({
     'Inter': require('./assets/fonts/Inter-Variable.ttf'),
     'Cairo': require('./assets/fonts/Cairo-Variable.ttf'),
   });
-  const [isRTLInitialized, setIsRTLInitialized] = useState(false);
+  const [appReady, setAppReady] = useState(false);
+  const [initialLanguage, setInitialLanguage] = useState<Language>('en');
 
-  // Initialize RTL before rendering the app
   useEffect(() => {
-    const initializeRTL = async () => {
+    const bootstrap = async () => {
       try {
-        const savedLang = await AsyncStorage.getItem('user_language');
-        const shouldBeRTL = savedLang === 'ar';
-        const currentRTL = I18nManager.isRTL;
+        // Step 1: Determine what language should be active
+        const lang = await getInitialLanguage();
+        const shouldBeRTL = lang === 'ar';
+        const currentNativeRTL = I18nManager.isRTL;
 
-        // console.log(`RTL Init: savedLang=${savedLang}, shouldBeRTL=${shouldBeRTL}, currentRTL=${currentRTL}`);
+        console.log(
+          `[App] Bootstrap: lang=${lang}, shouldBeRTL=${shouldBeRTL}, nativeRTL=${currentNativeRTL}`,
+        );
 
-        // Sync with saved language state
-        if (savedLang && currentRTL !== shouldBeRTL) {
-          console.log(`RTL mismatch detected: native=${currentRTL}, saved=${shouldBeRTL}. Aligning Native Engine...`);
+        // Step 2: If native RTL doesn't match desired language → fix & reload
+        if (currentNativeRTL !== shouldBeRTL) {
+          // Check if we've already attempted the sync to prevent infinite loops.
+          // In dev, DevSettings.reload() only reloads JS — isRTL stays the same.
+          const syncAttempted = await AsyncStorage.getItem(RTL_SYNC_ATTEMPTED_KEY);
 
-          // STRICT MODE RESTORED:
-          // We must DISALLOW RTL (allowRTL(false)) to strictly force LTR on some engines/versions.
-          // Simply calling forceRTL(false) while allowRTL(true) might respect device locale over override.
-          I18nManager.allowRTL(shouldBeRTL);
-          I18nManager.forceRTL(shouldBeRTL);
+          if (syncAttempted === lang) {
+            // We already tried to sync for this language but the native layer
+            // didn't restart properly (common in dev mode).
+            // Proceed anyway — the useRTL hook will handle the mismatch via JS.
+            console.log(
+              `[App] RTL sync already attempted for "${lang}" — proceeding with JS-driven RTL.`,
+            );
+            // Clear the flag so next time we can try again
+            await AsyncStorage.removeItem(RTL_SYNC_ATTEMPTED_KEY);
+          } else {
+            // First time detecting this mismatch — attempt to fix it
+            console.log('[App] RTL mismatch detected — syncing and reloading...');
 
-          // Force a restart to ensure native layer (Yoga engine) is correct
-          setTimeout(() => {
-            try {
-              Updates.reloadAsync();
-            } catch (e) {
-              console.log('Boot restart failed:', e);
-              setIsRTLInitialized(true);
-            }
-          }, 300);
-          return;
-        } else if (!savedLang) {
-          // First run: Default to allowRTL(true) to respect device settings
-          I18nManager.allowRTL(true);
+            // Mark that we've attempted this sync
+            await AsyncStorage.setItem(RTL_SYNC_ATTEMPTED_KEY, lang);
+            // Save the language so it persists through the reload
+            await AsyncStorage.setItem(LANGUAGE_KEY, lang);
+
+            I18nManager.allowRTL(shouldBeRTL);
+            I18nManager.forceRTL(shouldBeRTL);
+
+            // Reload the native layer so Yoga engine picks up the new direction.
+            setTimeout(async () => {
+              if (__DEV__) {
+                const DevSettings = NativeModules.DevSettings;
+                if (DevSettings?.reload) {
+                  DevSettings.reload();
+                }
+              } else {
+                try {
+                  await Updates.reloadAsync();
+                } catch (e) {
+                  console.warn('[App] Reload failed:', e);
+                }
+              }
+            }, 200);
+
+            // Don't setAppReady since we're about to reload
+            return;
+          }
         } else {
-          // Consistent state: Enforce strict mode to prevent drift
-          I18nManager.allowRTL(shouldBeRTL);
-          I18nManager.forceRTL(shouldBeRTL);
+          // RTL is in sync — clear any pending sync flag
+          await AsyncStorage.removeItem(RTL_SYNC_ATTEMPTED_KEY);
         }
+
+        // Step 3: Ensure RTL stays locked to prevent drift
+        I18nManager.allowRTL(shouldBeRTL);
+        I18nManager.forceRTL(shouldBeRTL);
+
+        // Step 4: Initialize i18next with the correct language
+        await initI18n(lang);
+
+        // Step 5: Ready to render
+        setInitialLanguage(lang);
+        setAppReady(true);
       } catch (error) {
-        console.error('Error initializing RTL:', error);
-      } finally {
-        setIsRTLInitialized(true);
+        console.error('[App] Bootstrap error:', error);
+        // Fallback: try to show the app anyway
+        await initI18n('en');
+        setInitialLanguage('en');
+        setAppReady(true);
       }
     };
 
-    initializeRTL();
+    bootstrap();
   }, []);
 
-  // Show loading screen while fonts and RTL are loading
-  if (!fontsLoaded || !isRTLInitialized) {
+  // Show loading screen while fonts and i18n are loading
+  if (!fontsLoaded || !appReady) {
     return (
       <View style= { styles.loadingContainer } >
       <ActivityIndicator size="large" color = "#10b981" />
@@ -85,19 +131,19 @@ export default function App() {
     <SafeAreaProvider>
     <ApolloProvider client= { apolloClient } >
     <ThemeProvider>
-    <LanguageProvider>
-    <I18nextProvider i18n={ i18n }>
-      <AuthProvider>
-      <NavigationContainer>
-      <AppNavigator />
-      </NavigationContainer>
-      </AuthProvider>
-      </I18nextProvider>
-      </LanguageProvider>
-      </ThemeProvider>
-      </ApolloProvider>
-      < StatusBar style = "auto" />
-        </SafeAreaProvider>
+    <LanguageProvider initialLanguage={ initialLanguage }>
+      <I18nextProvider i18n={ i18n }>
+        <AuthProvider>
+        <NavigationContainer>
+        <AppNavigator />
+        </NavigationContainer>
+        </AuthProvider>
+        </I18nextProvider>
+        </LanguageProvider>
+        </ThemeProvider>
+        </ApolloProvider>
+        < StatusBar style = "auto" />
+          </SafeAreaProvider>
   );
 }
 

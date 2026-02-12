@@ -3,50 +3,90 @@ import { useLanguage } from '../context/LanguageContext';
 
 /**
  * useRTL Hook - Stable Hybrid Implementation
- * This hook leverages the "Stable Hybrid" pattern to ensure correct layout
- * even when the Native RTL state and JS Language state are out of sync.
+ *
+ * In PRODUCTION builds, I18nManager.isRTL is properly synced via
+ * Updates.reloadAsync() which fully restarts the native context.
+ * In that case, `isMismatch` is always false and everything uses
+ * standard 'row' / logical properties.
+ *
+ * In DEVELOPMENT, DevSettings.reload() only reloads JS, so
+ * I18nManager.isRTL may not match the desired language.
+ * When there's a mismatch, this hook compensates via JS-driven
+ * overrides (row-reverse, manual start/end) to ensure correct
+ * visual layout even without a native restart.
  */
 export const useRTL = () => {
   const { isRTL } = useLanguage();
   const nativeRTL = I18nManager.isRTL;
 
   // Detect if the native layer differs from our desired JS state.
-  // This happens briefly before an app restart after a language swap.
-  const isSyncMismatch = isRTL !== nativeRTL;
+  // This happens in dev mode when DevSettings.reload() can't restart the native Activity.
+  const isMismatch = isRTL !== nativeRTL;
 
   return {
     isRTL,
 
-    // STABLE DIRECTION
-    // If native is already flipped but we want LTR, we reverse back to Normal.
-    // If native is NOT flipped but we want RTL, we reverse to Force it.
-    rowDirection: (isSyncMismatch ? 'row-reverse' : 'row') as FlexStyle['flexDirection'],
+    // DIRECTION:
+    // If native matches → standard 'row' (RN auto-flips it)
+    // If mismatch → 'row-reverse' to manually compensate
+    rowDirection: (isMismatch ? 'row-reverse' : 'row') as FlexStyle['flexDirection'],
 
-    // STABLE ALIGNMENT
-    alignStart: (isSyncMismatch ? 'flex-end' : 'flex-start') as FlexStyle['alignItems'],
-    alignEnd: (isSyncMismatch ? 'flex-start' : 'flex-end') as FlexStyle['alignItems'],
+    // ALIGNMENT:
+    // If native matches → standard flex-start/end (RN auto-flips)
+    // If mismatch → swap them manually
+    alignStart: (isMismatch ? 'flex-end' : 'flex-start') as FlexStyle['alignItems'],
+    alignEnd: (isMismatch ? 'flex-start' : 'flex-end') as FlexStyle['alignItems'],
 
-    // STABLE TEXT ALIGNMENT
-    // React Native's textAlign does NOT automatically flip. We must explicitely set it.
+    // TEXT ALIGNMENT — RN never auto-flips textAlign, always manual
     textAlign: (isRTL ? 'right' : 'left') as TextStyle['textAlign'],
 
-    // STABLE MARGINS (Uses absolute properties to bypass native logical property flip)
-    marginStart: (val: number) => (isRTL ? { marginRight: val } : { marginLeft: val }),
-    marginEnd: (val: number) => (isRTL ? { marginLeft: val } : { marginRight: val }),
+    // MARGINS/PADDING:
+    // If native matches → use logical properties (auto-flip)
+    // If mismatch → use physical properties to force correct side
+    marginStart: (val: number) =>
+      isMismatch
+        ? (isRTL ? { marginRight: val } : { marginLeft: val })
+        : ({ marginStart: val }),
+    marginEnd: (val: number) =>
+      isMismatch
+        ? (isRTL ? { marginLeft: val } : { marginRight: val })
+        : ({ marginEnd: val }),
 
-    paddingStart: (val: number) => (isRTL ? { paddingRight: val } : { paddingLeft: val }),
-    paddingEnd: (val: number) => (isRTL ? { paddingLeft: val } : { paddingRight: val }),
+    paddingStart: (val: number) =>
+      isMismatch
+        ? (isRTL ? { paddingRight: val } : { paddingLeft: val })
+        : ({ paddingStart: val }),
+    paddingEnd: (val: number) =>
+      isMismatch
+        ? (isRTL ? { paddingLeft: val } : { paddingRight: val })
+        : ({ paddingEnd: val }),
 
     borderStartWidth: (val: number) =>
-      isRTL ? { borderRightWidth: val } : { borderLeftWidth: val },
-    borderEndWidth: (val: number) => (isRTL ? { borderLeftWidth: val } : { borderRightWidth: val }),
+      isMismatch
+        ? (isRTL ? { borderRightWidth: val } : { borderLeftWidth: val })
+        : ({ borderStartWidth: val }),
+    borderEndWidth: (val: number) =>
+      isMismatch
+        ? (isRTL ? { borderLeftWidth: val } : { borderRightWidth: val })
+        : ({ borderEndWidth: val }),
 
     borderStartColor: (val: string) =>
-      isRTL ? { borderRightColor: val } : { borderLeftColor: val },
-    borderEndColor: (val: string) => (isRTL ? { borderLeftColor: val } : { borderRightColor: val }),
+      isMismatch
+        ? (isRTL ? { borderRightColor: val } : { borderLeftColor: val })
+        : ({ borderStartColor: val }),
+    borderEndColor: (val: string) =>
+      isMismatch
+        ? (isRTL ? { borderLeftColor: val } : { borderRightColor: val })
+        : ({ borderEndColor: val }),
 
-    start: (val: number) => (isRTL ? { right: val } : { left: val }),
-    end: (val: number) => (isRTL ? { left: val } : { right: val }),
+    start: (val: number) =>
+      isMismatch
+        ? (isRTL ? { right: val } : { left: val })
+        : ({ start: val }),
+    end: (val: number) =>
+      isMismatch
+        ? (isRTL ? { left: val } : { right: val })
+        : ({ end: val }),
 
     // ICONS
     arrowBack: isRTL ? 'chevron-forward' : 'chevron-back',

@@ -15,7 +15,7 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "ExpoLocalization_supportsRTL": true
+        "CFBundleAllowMixedLocalizations": true
       },
       "bundleIdentifier": "com.agmryde.app",
       "buildNumber": "27"
@@ -27,7 +27,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "allowRTL": true,
+      "supportsRtl": true,
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "permissions": [
@@ -46,11 +46,9 @@
     },
     "runtimeVersion": "1.0.0",
     "plugins": [
-      "expo-localization",
       "expo-font"
     ],
     "extra": {
-      "supportsRTL": true,
       "eas": {
         "projectId": "d4dcdf3d-7581-496d-96a9-c5acca79629d"
       }

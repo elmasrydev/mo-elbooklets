@@ -2,17 +2,19 @@ import React, {
   createContext,
   useContext,
   useState,
-  useEffect,
   ReactNode,
   useMemo,
   useCallback,
 } from 'react';
-import { I18nManager, Platform, Alert } from 'react-native';
+import { I18nManager, Alert, NativeModules } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import i18n from '../i18n';
+import i18n, { LANGUAGE_KEY } from '../i18n';
 import * as Updates from 'expo-updates';
 
 type Language = 'en' | 'ar';
+
+// Must match the key used in App.tsx bootstrap
+const RTL_SYNC_ATTEMPTED_KEY = 'rtl_sync_attempted';
 
 interface LanguageContextType {
   language: Language;
@@ -22,44 +24,45 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Initialize with the actual RTL state from I18nManager
-  // Initialize from i18n directly, LanguageProvider should follow already-initialized settings
-  const [language, setLanguageState] = useState<Language>((i18n.language as Language) || 'en');
+/**
+ * Reload the app with RTL sync tracking.
+ * Sets a flag before reload so the bootstrap in App.tsx knows
+ * we've already attempted the sync (prevents infinite loops in dev).
+ */
+const reloadApp = async (lang: Language): Promise<void> => {
+  // Mark that we're attempting an RTL sync for this language
+  await AsyncStorage.setItem(RTL_SYNC_ATTEMPTED_KEY, lang);
 
-  useEffect(() => {
-    loadLanguage();
-  }, []);
-
-  const loadLanguage = async () => {
-    try {
-      const savedLang = await AsyncStorage.getItem('user_language');
-      if (savedLang === 'en' || savedLang === 'ar') {
-        // Update i18n
-        if (i18n.language !== savedLang) {
-          await i18n.changeLanguage(savedLang);
-        }
-        setLanguageState(savedLang as Language);
-
-        const shouldBeRTL = savedLang === 'ar';
-        if (I18nManager.isRTL !== shouldBeRTL) {
-          // Log it for transparency, but App.tsx should have handled the restart.
-          // If we reach here, it means the app is running in a mismatch state
-          // which the useRTL hook handles gracefully via JS-driven layouts.
-          console.log(`Native RTL mismatch: current=${I18nManager.isRTL}, expected=${shouldBeRTL}`);
-        }
-      } else {
-        // No saved language, sync with RTL state
-        if (I18nManager.isRTL) {
-          setLanguageState('ar');
-          await i18n.changeLanguage('ar');
-          await AsyncStorage.setItem('user_language', 'ar');
-        }
-      }
-    } catch (error) {
-      console.error('Error loading language:', error);
+  if (__DEV__) {
+    const DevSettings = NativeModules.DevSettings;
+    if (DevSettings?.reload) {
+      DevSettings.reload();
+    } else {
+      Alert.alert(
+        'Reload Required',
+        'Please reload the app manually to apply layout changes. (Shake device → Reload)',
+      );
     }
-  };
+  } else {
+    try {
+      await Updates.reloadAsync();
+    } catch (e) {
+      console.warn('Updates.reloadAsync failed:', e);
+      Alert.alert('Please restart the app to apply changes.');
+    }
+  }
+};
+
+interface LanguageProviderProps {
+  children: ReactNode;
+  initialLanguage: Language;
+}
+
+export const LanguageProvider: React.FC<LanguageProviderProps> = ({
+  children,
+  initialLanguage,
+}) => {
+  const [language, setLanguageState] = useState<Language>(initialLanguage);
 
   const setLanguage = useCallback(
     async (lang: Language) => {
@@ -67,28 +70,25 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
         if (lang === language) return;
 
         const performChange = async () => {
-          // Save the language
-          await AsyncStorage.setItem('user_language', lang);
+          // 1. Save preference first (must persist before reload)
+          await AsyncStorage.setItem(LANGUAGE_KEY, lang);
+
+          // 2. Update i18n language
           await i18n.changeLanguage(lang);
           setLanguageState(lang);
 
+          // 3. Set native RTL direction
           const shouldBeRTL = lang === 'ar';
-          // Always allow RTL capability
-          I18nManager.allowRTL(true);
-          // Toggle the actual direction
+          I18nManager.allowRTL(shouldBeRTL);
           I18nManager.forceRTL(shouldBeRTL);
 
-          // Ensure AsyncStorage is flushed before restart
-          setTimeout(() => {
-            try {
-              Updates.reloadAsync();
-            } catch (e) {
-              console.log('Restart failed:', e);
-            }
-          }, 500);
+          // 4. Reload to apply native RTL change
+          //    The Yoga layout engine only reads I18nManager.isRTL at startup.
+          //    Small delay to ensure AsyncStorage write is flushed.
+          setTimeout(() => reloadApp(lang), 300);
         };
 
-        // Show confirmation alert with OK/Cancel
+        // Show confirmation alert
         Alert.alert(
           lang === 'ar' ? 'تغيير اللغة' : 'Change Language',
           lang === 'ar'
@@ -117,12 +117,12 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
     () => ({
       language,
       setLanguage,
-      isRTL: language === 'ar', // JS-driven RTL state
+      isRTL: language === 'ar',
     }),
     [language, setLanguage],
   );
 
-  return <LanguageContext.Provider value={value}> {children} </LanguageContext.Provider>;
+  return <LanguageContext.Provider value={ value }> { children } </LanguageContext.Provider>;
 };
 
 export const useLanguage = () => {
