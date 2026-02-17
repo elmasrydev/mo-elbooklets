@@ -160,7 +160,20 @@
     "select_quiz_type": "Select Quiz Type",
     "questions": "questions",
     "prepare_quiz": "Prepare Quiz",
-    "back_to_lessons": "Back to Lessons"
+    "back_to_lessons": "Back to Lessons",
+    "quiz_settings": "Quiz Settings",
+    "customize_experience": "Customize your quiz experience",
+    "settings_info_text": "More settings coming soon!"
+  },
+  "quiz_start": {
+    "header_title": "Ready to Start",
+    "ready_to_go": "You're all set!",
+    "subject": "Subject",
+    "lessons_selected": "Lessons Selected",
+    "quiz_type": "Quiz Type",
+    "start_quiz": "Start Quiz",
+    "go_back": "Back",
+    "good_luck": "Good luck! Do your best."
   },
   "quiz_taking": {
     "quiz": "Quiz",
@@ -179,7 +192,11 @@
     "incomplete_quiz": "Incomplete Quiz",
     "unanswered_questions": "You have {{count}} unanswered question(s). Please answer all questions before submitting.",
     "submitting": "Submitting...",
-    "submit_quiz": "Submit Quiz"
+    "submit_quiz": "Submit Quiz",
+    "leave_quiz_title": "Leave Quiz?",
+    "leave_quiz_message": "Your progress will be lost if you leave now. Are you sure?",
+    "continue_quiz": "Continue",
+    "leave_quiz": "Leave Quiz"
   },
   "quiz_results": {
     "header_title": "Quiz Results",

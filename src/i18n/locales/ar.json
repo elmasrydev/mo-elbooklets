@@ -160,7 +160,20 @@
     "select_quiz_type": "اختر نوع الاختبار",
     "questions": "سؤال",
     "prepare_quiz": "تحضير الاختبار",
-    "back_to_lessons": "العودة للدروس"
+    "back_to_lessons": "العودة للدروس",
+    "quiz_settings": "إعدادات الاختبار",
+    "customize_experience": "خصّص تجربة الاختبار",
+    "settings_info_text": "المزيد من الإعدادات قريباً!"
+  },
+  "quiz_start": {
+    "header_title": "جاهز للبدء",
+    "ready_to_go": "أنت مستعد!",
+    "subject": "المادة",
+    "lessons_selected": "الدروس المختارة",
+    "quiz_type": "نوع الاختبار",
+    "start_quiz": "ابدأ الاختبار",
+    "go_back": "رجوع",
+    "good_luck": "بالتوفيق! ابذل قصارى جهدك."
   },
   "quiz_taking": {
     "quiz": "اختبار",
@@ -179,7 +192,11 @@
     "incomplete_quiz": "اختبار غير مكتمل",
     "unanswered_questions": "لديك {{count}} سؤال/أسئلة بدون إجابة. يرجى الإجابة على جميع الأسئلة قبل الإرسال.",
     "submitting": "جارٍ الإرسال...",
-    "submit_quiz": "إرسال الاختبار"
+    "submit_quiz": "إرسال الاختبار",
+    "leave_quiz_title": "مغادرة الاختبار؟",
+    "leave_quiz_message": "سيتم فقدان تقدمك إذا غادرت الآن. هل أنت متأكد؟",
+    "continue_quiz": "متابعة",
+    "leave_quiz": "مغادرة الاختبار"
   },
   "quiz_results": {
     "header_title": "نتائج الاختبار",

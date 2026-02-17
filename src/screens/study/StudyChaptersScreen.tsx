@@ -194,14 +194,14 @@ const StudyChaptersScreen: React.FC = () => {
         {chapters.map((chapter) => (
           <View key={chapter.id} style={currentStyles.chapterCard}>
             <View style={currentStyles.chapterHeader}>
+              <View style={currentStyles.chapterIconContainer}>
+                <Ionicons name="folder-open-outline" size={20} color={theme.colors.primary} />
+              </View>
               <View style={currentStyles.chapterInfo}>
                 <Text style={currentStyles.chapterName}> {chapter.name} </Text>
                 <Text style={currentStyles.lessonCount}>
                   {chapter.lessons.length} {t('study_chapters.lessons')}
                 </Text>
-              </View>
-              <View style={currentStyles.chapterIconContainer}>
-                <Ionicons name="folder-open-outline" size={20} color={theme.colors.primary} />
               </View>
             </View>
 
@@ -300,7 +300,7 @@ const styles = (theme: any, fontSizes: any, spacing: any, borderRadius: any, com
     chapterHeader: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      justifyContent: 'space-between',
+      // justifyContent: 'flex-start', // Default
       padding: spacing.md,
       backgroundColor: theme.colors.surface,
       borderBottomWidth: 1,
@@ -313,6 +313,7 @@ const styles = (theme: any, fontSizes: any, spacing: any, borderRadius: any, com
       backgroundColor: theme.colors.primaryLight || 'rgba(59, 130, 246, 0.1)',
       justifyContent: 'center',
       alignItems: 'center',
+      ...common.marginEnd(12),
     },
     chapterInfo: {
       flex: 1,

@@ -11,18 +11,17 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { useLanguage } from '../context/LanguageContext';
-import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { layout } from '../config/layout';
 import { tryFetchWithFallback } from '../config/api';
+import { useTranslation } from 'react-i18next';
 import QuizSubjectsScreen from './quiz/QuizSubjectsScreen';
 import QuizLessonsScreen from './quiz/QuizLessonsScreen';
-import QuizTakingScreen from './quiz/QuizTakingScreen';
 import QuizResultsScreen from './quiz/QuizResultsScreen';
+import QuizStartScreen from './quiz/QuizStartScreen';
 import RecentActivityCard from '../components/RecentActivityCard';
 
 interface Subject {
@@ -41,21 +40,30 @@ interface QuizHistory {
   isPassed: boolean;
 }
 
-type QuizFlowStep = 'history' | 'subjects' | 'lessons' | 'taking' | 'results';
+type QuizFlowStep = 'history' | 'ready';
 
 const QuizScreen: React.FC = () => {
   const { user } = useAuth();
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { t } = useTranslation();
   const common = useCommonStyles();
+  const navigation = useNavigation<any>();
+  const route = useRoute<any>();
 
   const [quizHistory, setQuizHistory] = useState<QuizHistory[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState<QuizFlowStep>('history');
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
+  const [selectedLessons, setSelectedLessons] = useState<string[]>([]);
+  const [selectedQuizTypeId, setSelectedQuizTypeId] = useState<string | undefined>(undefined);
+  const [selectedQuizTypeName, setSelectedQuizTypeName] = useState<string | undefined>(undefined);
   const [currentQuizId, setCurrentQuizId] = useState<string | null>(null);
+
+  // Modal visibility
   const [subjectModalVisible, setSubjectModalVisible] = useState(false);
+  const [lessonsModalVisible, setLessonsModalVisible] = useState(false);
+  const [resultsModalVisible, setResultsModalVisible] = useState(false);
 
   useEffect(() => {
     fetchQuizHistory();
@@ -63,8 +71,25 @@ const QuizScreen: React.FC = () => {
 
   useFocusEffect(
     useCallback(() => {
-      if (currentStep === 'history') fetchQuizHistory();
-    }, [currentStep]),
+      // Check if we returned from a completed quiz
+      if (route.params?.completedQuizId) {
+        const completedId = route.params.completedQuizId;
+        // Clear param to avoid loops
+        navigation.setParams({ completedQuizId: undefined });
+
+        // Handle completion
+        setCurrentStep('history');
+        setCurrentQuizId(completedId);
+        fetchQuizHistory(); // Refresh history
+
+        // Show results after standard delay
+        setTimeout(() => {
+          setResultsModalVisible(true);
+        }, 900);
+      } else {
+        if (currentStep === 'history') fetchQuizHistory();
+      }
+    }, [route.params?.completedQuizId, currentStep]),
   );
 
   const fetchQuizHistory = async () => {
@@ -88,16 +113,13 @@ const QuizScreen: React.FC = () => {
   };
 
   const handleLessonsSelect = async (lessonIds: string[], quizTypeId?: string) => {
-    if (!selectedSubject) return;
-    try {
-      const result = await startQuiz(selectedSubject.id, lessonIds, quizTypeId);
-      if (result.success && result.quizId) {
-        setCurrentQuizId(result.quizId);
-        setCurrentStep('taking');
-      } else Alert.alert(t('common.error'), result.error || t('quiz_screen.error_loading_history'));
-    } catch (error) {
-      Alert.alert(t('common.error'), t('quiz_screen.error_loading_history'));
-    }
+    setLessonsModalVisible(false);
+    setSelectedLessons(lessonIds);
+    setSelectedQuizTypeId(quizTypeId);
+    // Wait for lessons modal close animation before showing start screen
+    setTimeout(() => {
+      setCurrentStep('ready');
+    }, 500);
   };
 
   const startQuiz = async (
@@ -121,39 +143,79 @@ const QuizScreen: React.FC = () => {
     }
   };
 
-  if (currentStep === 'results' && currentQuizId)
-    return (
-      <QuizResultsScreen
-        quizId={currentQuizId}
-        onBack={() => {
-          setCurrentStep('history');
-          setSelectedSubject(null);
-          // fetchQuizHistory will trigger via useFocusEffect
-        }}
-        onRetakeQuiz={() => setCurrentStep('lessons')}
-      />
-    );
+  const handleStartQuiz = async () => {
+    if (!selectedSubject) return;
+    try {
+      const result = await startQuiz(selectedSubject.id, selectedLessons, selectedQuizTypeId);
+      if (result.success && result.quizId) {
+        setCurrentQuizId(result.quizId);
+        // Navigate to QuizTaking
+        navigation.navigate('QuizTaking', {
+          quizId: result.quizId,
+        });
+      } else {
+        Alert.alert(t('common.error'), result.error || t('quiz_screen.error_loading_history'));
+      }
+    } catch (error) {
+      Alert.alert(t('common.error'), t('quiz_screen.error_loading_history'));
+    }
+  };
 
-  if (currentStep === 'taking' && currentQuizId)
-    return (
-      <QuizTakingScreen
-        quizId={currentQuizId}
-        onQuizComplete={(id) => {
-          setCurrentQuizId(id);
-          setCurrentStep('results');
-        }}
-        onBack={() => setCurrentStep('lessons')}
-      />
-    );
+  const resetFlow = () => {
+    setSelectedSubject(null);
+    setSelectedLessons([]);
+    setSelectedQuizTypeId(undefined);
+    setSelectedQuizTypeName(undefined);
+    setCurrentQuizId(null);
+    setCurrentStep('history');
+  };
 
-  // Note: 'subjects' step is now handled via Modal, but we keep the step 'lessons' for the flow after modal.
-  if (currentStep === 'lessons' && selectedSubject)
+  // Quiz Start / Ready screen
+  if (currentStep === 'ready' && selectedSubject)
     return (
-      <QuizLessonsScreen
-        subject={selectedSubject}
-        onLessonsSelect={handleLessonsSelect}
-        onBack={() => setCurrentStep('history')}
-      />
+      <>
+        <QuizStartScreen
+          subjectName={selectedSubject.name}
+          lessonsCount={selectedLessons.length}
+          quizTypeName={selectedQuizTypeName}
+          onStart={handleStartQuiz}
+          onBack={() => {
+            setCurrentStep('history');
+            setLessonsModalVisible(true);
+          }}
+        />
+
+        {/* Results Modal */}
+        <Modal
+          visible={resultsModalVisible}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => {
+            setResultsModalVisible(false);
+            resetFlow();
+          }}
+        >
+          {currentQuizId && (
+            <QuizResultsScreen
+              quizId={currentQuizId}
+              onBack={() => {
+                setResultsModalVisible(false);
+                resetFlow();
+              }}
+              onRetakeQuiz={() => {
+                setResultsModalVisible(false);
+                if (selectedSubject) {
+                  setTimeout(() => {
+                    setLessonsModalVisible(true);
+                  }, 300);
+                } else {
+                  resetFlow();
+                }
+              }}
+            />
+          )}
+        </Modal>
+      </>
     );
 
   const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius);
@@ -176,8 +238,7 @@ const QuizScreen: React.FC = () => {
           <View style={currentStyles.takeQuizContent}>
             <Text style={currentStyles.takeQuizText}> {t('quiz_screen.take_new_quiz')} </Text>
             <Text style={currentStyles.takeQuizSubtext}>
-              {' '}
-              {t('quiz_screen.start_new_challenge')}{' '}
+              {t('quiz_screen.start_new_challenge')}
             </Text>
           </View>
           <View style={currentStyles.takeQuizIconContainer}>
@@ -197,8 +258,7 @@ const QuizScreen: React.FC = () => {
           <View style={currentStyles.errorState}>
             <Text style={currentStyles.errorStateIcon}>⚠️</Text>
             <Text style={currentStyles.errorStateTitle}>
-              {' '}
-              {t('quiz_screen.error_loading_history')}{' '}
+              {t('quiz_screen.error_loading_history')}
             </Text>
             <TouchableOpacity style={currentStyles.retryButton} onPress={fetchQuizHistory}>
               <Text style={currentStyles.retryButtonText}> {t('home_screen.try_again')} </Text>
@@ -208,10 +268,7 @@ const QuizScreen: React.FC = () => {
           <View style={currentStyles.emptyState}>
             <Text style={currentStyles.emptyStateIcon}>📝</Text>
             <Text style={currentStyles.emptyStateTitle}> {t('quiz_screen.no_quizzes_yet')} </Text>
-            <Text style={currentStyles.emptyStateSubtitle}>
-              {' '}
-              {t('quiz_screen.take_first_quiz')}{' '}
-            </Text>
+            <Text style={currentStyles.emptyStateSubtitle}>{t('quiz_screen.take_first_quiz')}</Text>
           </View>
         ) : (
           <ScrollView
@@ -225,7 +282,7 @@ const QuizScreen: React.FC = () => {
                   activity={quiz}
                   onPress={() => {
                     setCurrentQuizId(quiz.id);
-                    setCurrentStep('results');
+                    setResultsModalVisible(true);
                   }}
                 />
               </View>
@@ -234,6 +291,7 @@ const QuizScreen: React.FC = () => {
         )}
       </View>
 
+      {/* Subject Selection Modal */}
       <Modal
         visible={subjectModalVisible}
         animationType="slide"
@@ -243,14 +301,60 @@ const QuizScreen: React.FC = () => {
         <QuizSubjectsScreen
           onSubjectSelect={(s) => {
             setSubjectModalVisible(false);
-            // Small delay to allow modal to close smoothly before navigating
             setTimeout(() => {
               setSelectedSubject(s);
-              setCurrentStep('lessons');
+              setLessonsModalVisible(true);
             }, 300);
           }}
           onBack={() => setSubjectModalVisible(false)}
         />
+      </Modal>
+
+      {/* Lessons Selection Modal */}
+      <Modal
+        visible={lessonsModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setLessonsModalVisible(false)}
+      >
+        {selectedSubject && (
+          <QuizLessonsScreen
+            subject={selectedSubject}
+            onLessonsSelect={handleLessonsSelect}
+            onBack={() => setLessonsModalVisible(false)}
+          />
+        )}
+      </Modal>
+
+      {/* Results Modal (from history tap) */}
+      <Modal
+        visible={resultsModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => {
+          setResultsModalVisible(false);
+          resetFlow();
+        }}
+      >
+        {currentQuizId && (
+          <QuizResultsScreen
+            quizId={currentQuizId}
+            onBack={() => {
+              setResultsModalVisible(false);
+              resetFlow();
+            }}
+            onRetakeQuiz={() => {
+              setResultsModalVisible(false);
+              if (selectedSubject) {
+                setTimeout(() => {
+                  setLessonsModalVisible(true);
+                }, 300);
+              } else {
+                resetFlow();
+              }
+            }}
+          />
+        )}
       </Modal>
     </View>
   );
@@ -260,13 +364,13 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
   StyleSheet.create({
     actionSection: {
       padding: spacing.xl,
-      marginTop: -30, // Negative margin overlap
+      marginTop: -30,
     },
     takeQuizButton: {
       padding: 24,
       borderRadius: layout.borderRadius.xl,
       alignItems: 'center',
-      backgroundColor: '#6366F1', // Vibrant purple/indigo matching design
+      backgroundColor: '#6366F1',
       shadowColor: '#6366F1',
       shadowOffset: { width: 0, height: 6 },
       shadowOpacity: 0.35,

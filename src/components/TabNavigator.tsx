@@ -15,6 +15,7 @@ import MoreScreen from '../screens/MoreScreen';
 import StudyCalendarScreen from '../screens/StudyCalendarScreen';
 import StudyChaptersScreen from '../screens/study/StudyChaptersScreen';
 import StudyLessonScreen from '../screens/study/StudyLessonScreen';
+import QuizTakingScreen from '../screens/quiz/QuizTakingScreen';
 import { useTranslation } from 'react-i18next';
 
 const Tab = createBottomTabNavigator();
@@ -134,6 +135,13 @@ const TabNavigator: React.FC = () => {
         options={{
           presentation: 'fullScreenModal',
           animation: 'slide_from_bottom',
+        }}
+      />
+      <Stack.Screen
+        name="QuizTaking"
+        component={QuizTakingScreen}
+        options={{
+          animation: 'slide_from_right',
         }}
       />
     </Stack.Navigator>

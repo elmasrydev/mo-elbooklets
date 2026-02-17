@@ -9,6 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
@@ -39,18 +40,17 @@ interface Quiz {
   score?: number;
 }
 
-interface QuizTakingScreenProps {
-  quizId: string;
-  onQuizComplete: (quizId: string) => void;
-  onBack: () => void;
-}
+const QuizTakingScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const { quizId } = route.params || {};
 
-const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizComplete, onBack }) => {
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
   const insets = useSafeAreaInsets();
+
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,8 +58,24 @@ const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizCompl
   const [selectedAnswers, setSelectedAnswers] = useState<{ [questionId: string]: string }>({});
   const [submitting, setSubmitting] = useState(false);
 
+  const handleBackPress = () => {
+    Alert.alert(t('quiz_taking.leave_quiz_title'), t('quiz_taking.leave_quiz_message'), [
+      { text: t('quiz_taking.continue_quiz'), style: 'cancel' },
+      {
+        text: t('quiz_taking.leave_quiz'),
+        style: 'destructive',
+        onPress: () => navigation.goBack(),
+      },
+    ]);
+  };
+
   useEffect(() => {
-    fetchQuiz();
+    if (quizId) {
+      fetchQuiz();
+    } else {
+      setError(t('common.error'));
+      setLoading(false);
+    }
   }, [quizId]);
 
   const fetchQuiz = async () => {
@@ -169,14 +185,15 @@ const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizCompl
   };
 
   const submitAnswers = async () => {
-    if (!quiz) return;
+    if (!quiz || submitting) return;
 
     try {
       setSubmitting(true);
 
       const token = await AsyncStorage.getItem('auth_token');
       if (!token) {
-        setError(t('common.error'));
+        Alert.alert(t('common.error'), t('common.error'));
+        setSubmitting(false);
         return;
       }
 
@@ -200,17 +217,34 @@ const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizCompl
       );
 
       if (result.data?.submitQuizAnswers) {
-        onQuizComplete(quiz.id);
+        // Navigate back to the main tabs with completion param
+        // This ensures checking MainTabs > Quiz > route.params.completedQuizId
+        navigation.navigate('MainTabs', {
+          screen: 'Quiz',
+          params: { completedQuizId: quiz.id },
+        });
       } else {
-        setError(result.errors?.[0]?.message || t('common.unexpected_error'));
+        // Show alert for submission error instead of replacing screen with error view
+        const errorMessage = result.errors?.[0]?.message || t('common.unexpected_error');
+        Alert.alert(t('common.error'), errorMessage);
       }
     } catch (err: any) {
       console.error('Submit quiz error:', err);
-      setError(err.message || t('common.unexpected_error'));
+      Alert.alert(t('common.error'), err.message || t('common.unexpected_error'));
     } finally {
-      setSubmitting(false);
+      if (mountedRef.current) {
+        setSubmitting(false);
+      }
     }
   };
+
+  // Ref to track mount status for async state updates
+  const mountedRef = React.useRef(true);
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const currentStyles = styles(theme, fontSizes, spacing, borderRadius, common);
 
@@ -234,7 +268,7 @@ const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizCompl
     return (
       <View style={common.container}>
         <View style={common.header}>
-          <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
+          <TouchableOpacity style={currentStyles.backButton} onPress={() => navigation.goBack()}>
             <Ionicons
               name={isRTL ? 'arrow-forward' : 'arrow-back'}
               size={24}
@@ -266,7 +300,7 @@ const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizCompl
     return (
       <View style={common.container}>
         <View style={common.header}>
-          <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
+          <TouchableOpacity style={currentStyles.backButton} onPress={() => navigation.goBack()}>
             <Ionicons
               name={isRTL ? 'arrow-forward' : 'arrow-back'}
               size={24}
@@ -298,7 +332,7 @@ const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizCompl
     <View style={common.container}>
       {/* Header */}
       <View style={common.header}>
-        <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
+        <TouchableOpacity style={currentStyles.backButton} onPress={handleBackPress}>
           <Ionicons
             name={isRTL ? 'arrow-forward' : 'arrow-back'}
             size={24}
@@ -335,7 +369,6 @@ const QuizTakingScreen: React.FC<QuizTakingScreenProps> = ({ quizId, onQuizCompl
             <Text style={currentStyles.questionNumber}>
               {t('quiz_taking.question_number', { number: currentQuestion.questionNumber })}
             </Text>
-            {/* Show difficulty badge if possible, but schema doesn't seem to use it fully visually yet, keeping simple */}
           </View>
 
           <Text style={currentStyles.questionText}> {currentQuestion.question} </Text>
@@ -615,7 +648,7 @@ const styles = (theme: any, fontSizes: any, spacing: any, borderRadius: any, com
       backgroundColor: theme.colors.primary,
       paddingHorizontal: spacing.xl,
       paddingVertical: 12,
-      borderRadius: borderRadius.lg,
+      borderRadius: borderRadius.md, // changed from lg to md
     },
     navButtonSecondary: {
       backgroundColor: theme.colors.background,
@@ -623,33 +656,38 @@ const styles = (theme: any, fontSizes: any, spacing: any, borderRadius: any, com
       borderColor: theme.colors.border,
     },
     navButtonText: {
-      fontSize: fontSizes.base,
+      fontSize: fontSizes.sm, // Changed from base to sm
       color: '#FFFFFF',
       fontWeight: '600',
     },
     navButtonTextSecondary: {
       color: theme.colors.text,
     },
-    submitButton: {
-      flexDirection: common.rowDirection,
-      alignItems: 'center',
-      backgroundColor: theme.colors.success || '#10B981',
-      paddingHorizontal: spacing.xl,
-      paddingVertical: 12,
-      borderRadius: borderRadius.lg,
-    },
-    submitButtonText: {
-      fontSize: fontSizes.base,
-      color: '#FFFFFF',
-      fontWeight: '600',
-    },
     disabledButton: {
-      backgroundColor: theme.colors.disabled || '#E5E7EB',
-      borderColor: theme.colors.disabled || '#E5E7EB',
+      backgroundColor: theme.colors.border,
+      borderColor: theme.colors.border,
       opacity: 0.7,
     },
     disabledButtonText: {
       color: theme.colors.textTertiary,
+    },
+    submitButton: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      backgroundColor: '#10B981', // Emerald green
+      paddingHorizontal: spacing.xl,
+      paddingVertical: 12,
+      borderRadius: borderRadius.md, // changed from lg to md
+      shadowColor: '#10B981',
+      shadowOffset: { width: 0, height: 2 }, // Reduced
+      shadowOpacity: 0.2, // Reduced
+      shadowRadius: 4, // Reduced
+      elevation: 2, // Reduced
+    },
+    submitButtonText: {
+      fontSize: fontSizes.sm, // Changed from base to sm
+      color: '#FFFFFF',
+      fontWeight: '600', // Changed from bold to 600
     },
   });
 

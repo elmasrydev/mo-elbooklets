@@ -127,13 +127,13 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
             style={currentStyles.logo}
             resizeMode="contain"
           />
-          <Text style={currentStyles.title}>{t('auth.register')}</Text>
-          <Text style={currentStyles.subtitle}>{t('auth.sign_up_subtitle')}</Text>
+          <Text style={currentStyles.title}> {t('auth.register')} </Text>
+          <Text style={currentStyles.subtitle}> {t('auth.sign_up_subtitle')} </Text>
         </View>
 
         <View style={currentStyles.form}>
           <View style={currentStyles.inputContainer}>
-            <Text style={currentStyles.label}>{t('auth.name')}</Text>
+            <Text style={currentStyles.label}> {t('auth.name')} </Text>
             <TextInput
               style={currentStyles.input}
               value={name}
@@ -146,7 +146,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
             />
           </View>
           <View style={currentStyles.inputContainer}>
-            <Text style={currentStyles.label}>{t('auth.email')}</Text>
+            <Text style={currentStyles.label}> {t('auth.email')} </Text>
             <TextInput
               style={currentStyles.input}
               value={email}
@@ -160,7 +160,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
             />
           </View>
           <View style={currentStyles.inputContainer}>
-            <Text style={currentStyles.label}>{t('auth.mobile_number')}</Text>
+            <Text style={currentStyles.label}> {t('auth.mobile_number')} </Text>
             <TextInput
               style={currentStyles.input}
               value={mobile}
@@ -175,11 +175,14 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
           </View>
 
           <View style={currentStyles.inputContainer}>
-            <Text style={currentStyles.label}>{t('more_screen.grade')}</Text>
+            <Text style={currentStyles.label}> {t('more_screen.grade')} </Text>
             {gradesLoading ? (
               <View style={currentStyles.loadingContainer}>
                 <ActivityIndicator size="small" color={theme.colors.primary} />
-                <Text style={currentStyles.loadingText}>{t('home_screen.loading_activities')}</Text>
+                <Text style={currentStyles.loadingText}>
+                  {' '}
+                  {t('home_screen.loading_activities')}{' '}
+                </Text>
               </View>
             ) : (
               <View style={currentStyles.pickerContainer}>
@@ -201,11 +204,14 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
           </View>
 
           <View style={currentStyles.inputContainer}>
-            <Text style={currentStyles.label}>{t('auth.educational_system')}</Text>
+            <Text style={currentStyles.label}> {t('auth.educational_system')} </Text>
             {systemsLoading ? (
               <View style={currentStyles.loadingContainer}>
                 <ActivityIndicator size="small" color={theme.colors.primary} />
-                <Text style={currentStyles.loadingText}>{t('home_screen.loading_activities')}</Text>
+                <Text style={currentStyles.loadingText}>
+                  {' '}
+                  {t('home_screen.loading_activities')}{' '}
+                </Text>
               </View>
             ) : (
               <View style={currentStyles.pickerContainer}>
@@ -227,7 +233,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
           </View>
 
           <View style={currentStyles.inputContainer}>
-            <Text style={currentStyles.label}>{t('auth.password')}</Text>
+            <Text style={currentStyles.label}> {t('auth.password')} </Text>
             <TextInput
               style={currentStyles.input}
               value={password}
@@ -241,7 +247,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
             />
           </View>
           <View style={currentStyles.inputContainer}>
-            <Text style={currentStyles.label}>{t('auth.confirm_password')}</Text>
+            <Text style={currentStyles.label}> {t('auth.confirm_password')} </Text>
             <TextInput
               style={currentStyles.input}
               value={confirmPassword}
@@ -263,15 +269,15 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
             {isLoading ? (
               <ActivityIndicator color="#ffffff" />
             ) : (
-              <Text style={currentStyles.registerButtonText}>{t('auth.sign_up')}</Text>
+              <Text style={currentStyles.registerButtonText}> {t('auth.sign_up')} </Text>
             )}
           </TouchableOpacity>
         </View>
 
         <View style={currentStyles.footer}>
-          <Text style={currentStyles.footerText}>{t('auth.already_have_account')} </Text>
+          <Text style={currentStyles.footerText}> {t('auth.already_have_account')} </Text>
           <TouchableOpacity onPress={onNavigateToLogin} disabled={isLoading}>
-            <Text style={currentStyles.linkText}>{t('auth.sign_in')}</Text>
+            <Text style={currentStyles.linkText}> {t('auth.sign_in')} </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -330,12 +336,16 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
     registerButton: {
       backgroundColor: theme.colors.primary,
       borderRadius: borderRadius.md,
-      padding: 15,
+      padding: 12, // Reduced from 15
       alignItems: 'center',
       marginTop: 10,
     },
     disabledButton: { backgroundColor: theme.colors.buttonDisabled },
-    registerButtonText: { color: '#fff', fontSize: fontSizes.lg, fontWeight: '600' },
+    registerButtonText: {
+      color: '#fff',
+      fontSize: fontSizes.sm, // Changed from lg to sm
+      fontWeight: '600', // Changed from bold (if it was) to 600
+    },
     footer: { flexDirection: common.rowDirection, justifyContent: 'center', alignItems: 'center' },
     footerText: { fontSize: fontSizes.base, color: theme.colors.textSecondary },
     linkText: { fontSize: fontSizes.base, color: theme.colors.primary, fontWeight: '600' },

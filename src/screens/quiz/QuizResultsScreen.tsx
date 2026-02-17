@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,9 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
@@ -35,6 +37,13 @@ interface QuizResult {
     subject: {
       name: string;
     };
+    lessons: {
+      id: string;
+      name: string;
+      chapter: {
+        name: string;
+      };
+    }[];
   };
   score: number;
   totalQuestions: number;
@@ -53,6 +62,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({ quizId, onBack, o
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
+  const insets = useSafeAreaInsets();
   const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -81,6 +91,13 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({ quizId, onBack, o
               name
               subject {
                 name
+              }
+              lessons {
+                id
+                name
+                chapter {
+                  name
+                }
               }
             }
             score
@@ -117,7 +134,34 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({ quizId, onBack, o
     }
   };
 
-  const currentStyles = styles(theme, fontSizes, spacing, borderRadius, common);
+  const getBreadcrumbs = () => {
+    if (!quizResult?.quiz?.lessons || quizResult.quiz.lessons.length === 0) {
+      // Fallback for old quizzes or if lessons not available
+      return [{ title: quizResult?.quiz?.name || '', type: 'quiz' }];
+    }
+
+    const chapters = new Map<string, string[]>();
+    quizResult.quiz.lessons.forEach((lesson) => {
+      const chapterName = lesson.chapter?.name || t('common.unknown_unit');
+      if (!chapters.has(chapterName)) {
+        chapters.set(chapterName, []);
+      }
+      chapters.get(chapterName)?.push(lesson.name);
+    });
+
+    const crumbs: { title: string; subtitle?: string; type: 'chapter' | 'quiz' }[] = [];
+    chapters.forEach((lessons, chapterName) => {
+      crumbs.push({
+        title: chapterName,
+        subtitle: lessons.join(' + '),
+        type: 'chapter',
+      });
+    });
+    return crumbs;
+  };
+
+  const currentStyles = styles(theme, fontSizes, spacing, borderRadius, common, insets);
+  const breadcrumbs = quizResult ? getBreadcrumbs() : [];
 
   if (loading) {
     return (
@@ -201,7 +245,8 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({ quizId, onBack, o
 
   return (
     <View style={common.container}>
-      <View style={common.header}>
+      {/* Navbar Area */}
+      <View style={[currentStyles.header, { paddingTop: insets.top + spacing.sm }]}>
         <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
           <Ionicons
             name={isRTL ? 'arrow-forward' : 'arrow-back'}
@@ -210,8 +255,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({ quizId, onBack, o
           />
         </TouchableOpacity>
         <View style={common.headerTextWrapper}>
-          <Text style={common.headerTitle}> {t('quiz_results.header_title')} </Text>
-          <Text style={common.headerSubtitle}> {quizResult.quiz.name} </Text>
+          <Text style={currentStyles.headerTitle}> {t('quiz_results.header_title')} </Text>
         </View>
       </View>
 
@@ -220,6 +264,44 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({ quizId, onBack, o
         contentContainerStyle={currentStyles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
+        {/* Refined Breadcrumb: Vertical Stack */}
+        <View style={currentStyles.breadcrumbContainer}>
+          {/* Always show Subject first */}
+          <View style={currentStyles.breadcrumbRow}>
+            <View style={currentStyles.iconContainer}>
+              <Ionicons name="library" size={16} color={theme.colors.primary} />
+            </View>
+            <Text style={currentStyles.breadcrumbSubjectText}>
+              {quizResult?.quiz?.subject?.name}
+            </Text>
+          </View>
+
+          {/* Show Chapters and Lessons */}
+          {breadcrumbs.map((crumb, index) => (
+            <View key={index} style={currentStyles.breadcrumbRow}>
+              <View style={currentStyles.iconContainer}>
+                <Ionicons name="folder-open" size={16} color={theme.colors.textSecondary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={[
+                    currentStyles.breadcrumbQuizText,
+                    { color: theme.colors.textSecondary, fontSize: fontSizes.xs, marginBottom: 2 },
+                  ]}
+                >
+                  {crumb.title}
+                </Text>
+                <Text style={currentStyles.breadcrumbQuizText}>
+                  {
+                    crumb.subtitle ||
+                      crumb.title /* Handle fallback case, usually subtitle has content */
+                  }
+                </Text>
+              </View>
+            </View>
+          ))}
+        </View>
+
         {/* Score Summary */}
         <View style={currentStyles.scoreContainer}>
           <View
@@ -381,7 +463,14 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({ quizId, onBack, o
   );
 };
 
-const styles = (theme: any, fontSizes: any, spacing: any, borderRadius: any, common: any) =>
+const styles = (
+  theme: any,
+  fontSizes: any,
+  spacing: any,
+  borderRadius: any,
+  common: any,
+  insets: any,
+) =>
   StyleSheet.create({
     backButton: {
       padding: 4,
@@ -394,6 +483,47 @@ const styles = (theme: any, fontSizes: any, spacing: any, borderRadius: any, com
     contentContainer: {
       padding: layout.screenPadding,
       alignItems: 'stretch',
+    },
+    breadcrumbContainer: {
+      flexDirection: 'column',
+      backgroundColor: theme.colors.card,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      borderRadius: borderRadius.lg,
+      marginBottom: spacing.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      elevation: 1,
+      width: '100%',
+    },
+    breadcrumbRow: {
+      flexDirection: common.rowDirection,
+      alignItems: 'flex-start', // Top align icon with multiline text
+      marginBottom: 8,
+    },
+    iconContainer: {
+      marginTop: 2, // Fine tune alignment with text
+      marginRight: common.isRTL ? 0 : 8,
+      marginLeft: common.isRTL ? 8 : 0,
+    },
+    breadcrumbSubjectText: {
+      fontSize: fontSizes.xs,
+      fontWeight: '600',
+      color: theme.colors.primary,
+      flex: 1,
+      textAlign: common.textAlign,
+    },
+    breadcrumbQuizText: {
+      fontSize: fontSizes.sm, // Slightly larger for emphasis
+      fontWeight: 'bold',
+      color: theme.colors.text,
+      flex: 1,
+      lineHeight: 20,
+      textAlign: common.textAlign,
     },
     loadingContainer: {
       flex: 1,
@@ -564,107 +694,120 @@ const styles = (theme: any, fontSizes: any, spacing: any, borderRadius: any, com
       marginBottom: spacing.lg,
       lineHeight: 24,
       color: theme.colors.text,
-      textAlign: common.textAlign,
     },
     answerBoxWrong: {
       padding: spacing.md,
       borderRadius: borderRadius.md,
-      marginBottom: spacing.sm,
-      ...common.borderStartWidth(4),
-      ...common.borderStartColor(theme.colors.error),
       backgroundColor: theme.colors.errorBackground,
+      marginBottom: spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.error,
     },
     answerBoxCorrect: {
       padding: spacing.md,
       borderRadius: borderRadius.md,
-      marginBottom: spacing.md,
-      ...common.borderStartWidth(4),
-      ...common.borderStartColor(theme.colors.success),
       backgroundColor: theme.colors.successBackground,
+      marginBottom: spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.success,
     },
     answerLabel: {
-      fontSize: 12,
-      fontWeight: '700',
+      fontSize: fontSizes.xs,
+      fontWeight: 'bold',
       marginBottom: 4,
-      color: theme.colors.text,
-      textAlign: common.textAlign,
+      color: theme.colors.textSecondary,
     },
     answerText: {
       fontSize: fontSizes.base,
-      fontWeight: '500',
+      fontWeight: '600',
       color: theme.colors.text,
-      textAlign: common.textAlign,
     },
     explanationBox: {
+      marginTop: spacing.md,
       padding: spacing.md,
-      borderRadius: borderRadius.md,
-      marginTop: spacing.sm,
       backgroundColor: theme.colors.background,
+      borderRadius: borderRadius.md,
     },
     explanationLabel: {
-      fontSize: fontSizes.sm,
+      fontSize: fontSizes.xs,
       fontWeight: 'bold',
       marginBottom: 4,
-      color: theme.colors.text,
-      textAlign: common.textAlign,
+      color: theme.colors.primary,
     },
     explanationText: {
       fontSize: fontSizes.sm,
-      lineHeight: 20,
       color: theme.colors.textSecondary,
-      textAlign: common.textAlign,
+      lineHeight: 20,
     },
     perfectScoreCard: {
       alignItems: 'center',
-      padding: 40,
-      borderRadius: borderRadius.xl,
+      padding: spacing['2xl'],
       backgroundColor: theme.colors.card,
+      borderRadius: borderRadius.lg,
       ...layout.shadow,
     },
     perfectScoreTitle: {
       fontSize: fontSizes.xl,
       fontWeight: 'bold',
-      marginBottom: spacing.sm,
       color: theme.colors.text,
+      marginBottom: spacing.sm,
     },
     perfectScoreText: {
       fontSize: fontSizes.base,
-      textAlign: 'center',
       color: theme.colors.textSecondary,
+      textAlign: 'center',
     },
     footer: {
-      flexDirection: common.rowDirection,
-      padding: spacing.xl,
-      backgroundColor: theme.colors.card,
+      padding: spacing.md,
+      // Ensure we always have at least some padding, plus safe area
+      paddingBottom: Math.max(spacing.md, insets.bottom + spacing.xs),
+      backgroundColor: theme.colors.background,
       borderTopWidth: 1,
       borderTopColor: theme.colors.border,
+      flexDirection: common.rowDirection,
       gap: spacing.md,
     },
     retakeButton: {
       flex: 1,
-      paddingVertical: 16,
+      paddingVertical: 12,
       borderRadius: borderRadius.md,
+      backgroundColor: theme.colors.card,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
       alignItems: 'center',
-      backgroundColor: theme.colors.primary,
     },
     retakeButtonText: {
-      fontSize: fontSizes.base,
-      fontWeight: 'bold',
-      color: '#FFFFFF',
+      fontSize: fontSizes.sm,
+      fontWeight: '600',
+      color: theme.colors.text,
     },
     doneButton: {
       flex: 1,
-      paddingVertical: 16,
+      paddingVertical: 12,
       borderRadius: borderRadius.md,
+      backgroundColor: theme.colors.primary,
       alignItems: 'center',
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      backgroundColor: theme.colors.background,
     },
     doneButtonText: {
-      fontSize: fontSizes.base,
+      fontSize: fontSizes.sm,
+      fontWeight: '600',
+      color: '#FFFFFF',
+    },
+    // Custom Header
+    header: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      paddingHorizontal: layout.screenPadding,
+      paddingBottom: spacing.md,
+      backgroundColor: theme.colors.headerBackground,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border, // subtle separator for sleekness
+    },
+    headerTitle: {
+      fontSize: fontSizes.lg, // Smaller than 2xl
       fontWeight: 'bold',
-      color: theme.colors.text,
+      color: theme.colors.headerText,
+      textAlign: common.textAlign,
     },
   });
 

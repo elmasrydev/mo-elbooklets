@@ -192,12 +192,16 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
     loginButton: {
       backgroundColor: theme.colors.primary,
       borderRadius: borderRadius.md,
-      padding: 15,
+      padding: 12, // Reduced from 15
       alignItems: 'center',
       marginTop: 10,
     },
     disabledButton: { backgroundColor: theme.colors.buttonDisabled },
-    loginButtonText: { color: '#fff', fontSize: fontSizes.lg, fontWeight: '600' },
+    loginButtonText: {
+      color: '#fff',
+      fontSize: fontSizes.sm, // Changed from lg to sm
+      fontWeight: '600', // Changed from bold (if it was) to 600
+    },
     footer: { flexDirection: common.rowDirection, justifyContent: 'center', alignItems: 'center' },
     footerText: { fontSize: fontSizes.base, color: theme.colors.textSecondary },
     linkText: { fontSize: fontSizes.base, color: theme.colors.primary, fontWeight: '600' },

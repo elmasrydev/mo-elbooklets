@@ -7,6 +7,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
@@ -52,6 +53,7 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { t } = useTranslation();
   const common = useCommonStyles();
+  const insets = useSafeAreaInsets();
   const [selectedLessons, setSelectedLessons] = useState<Set<string>>(new Set());
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [quizTypes, setQuizTypes] = useState<QuizType[]>([]);
@@ -112,7 +114,10 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
 
   const handleStartQuiz = (quizTypeId: string) => {
     setSettingsModalVisible(false);
-    onLessonsSelect(Array.from(selectedLessons), quizTypeId);
+    // Wait for settings modal close animation before triggering parent
+    setTimeout(() => {
+      onLessonsSelect(Array.from(selectedLessons), quizTypeId);
+    }, 500);
   };
 
   const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius);
@@ -120,9 +125,9 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
   if (loading)
     return (
       <View style={common.container}>
-        <View style={common.header}>
+        <View style={[currentStyles.header, { paddingTop: insets.top + spacing.sm }]}>
           <View style={common.headerTextWrapper}>
-            <Text style={common.headerTitle}> {t('quiz_lessons.header_title')} </Text>
+            <Text style={currentStyles.headerTitle}> {t('quiz_lessons.header_title')} </Text>
           </View>
         </View>
         <View style={currentStyles.loadingContainer}>
@@ -134,7 +139,7 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
 
   return (
     <View style={common.container}>
-      <View style={common.header}>
+      <View style={[currentStyles.header, { paddingTop: insets.top + spacing.sm }]}>
         <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
           <Ionicons
             name={common.isRTL ? 'arrow-forward' : 'arrow-back'}
@@ -143,8 +148,8 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
           />
         </TouchableOpacity>
         <View style={common.headerTextWrapper}>
-          <Text style={common.headerTitle}> {t('quiz_lessons.header_title')} </Text>
-          <Text style={common.headerSubtitle}> {subject.name} </Text>
+          <Text style={currentStyles.headerTitle}> {t('quiz_lessons.header_title')} </Text>
+          <Text style={currentStyles.headerSubtitle}> {subject.name} </Text>
         </View>
       </View>
 
@@ -167,12 +172,6 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
                 onPress={() => handleChapterToggle(chapter)}
                 activeOpacity={0.7}
               >
-                <View style={currentStyles.chapterHeaderContent}>
-                  <Text style={currentStyles.chapterName}> {chapter.name} </Text>
-                  <Text style={currentStyles.chapterStats}>
-                    {selectedInChapter} / {chapterLessonIds.length}
-                  </Text>
-                </View>
                 <View style={currentStyles.chapterCheckbox}>
                   <Ionicons
                     name={
@@ -183,6 +182,12 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
                       allSelected || someSelected ? theme.colors.primary : theme.colors.textTertiary
                     }
                   />
+                </View>
+                <View style={currentStyles.chapterHeaderContent}>
+                  <Text style={currentStyles.chapterName}> {chapter.name} </Text>
+                  <Text style={currentStyles.chapterStats}>
+                    {selectedInChapter} / {chapterLessonIds.length}
+                  </Text>
                 </View>
               </TouchableOpacity>
 
@@ -286,10 +291,33 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       marginLeft: common.isRTL ? 16 : 0,
     },
 
+    // Custom Header
+    header: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      paddingHorizontal: layout.screenPadding,
+      paddingBottom: spacing.md,
+      backgroundColor: theme.colors.headerBackground,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+    },
+    headerTitle: {
+      fontSize: fontSizes.lg,
+      fontWeight: 'bold',
+      color: theme.colors.headerText,
+      textAlign: common.textAlign,
+    },
+    headerSubtitle: {
+      fontSize: fontSizes.sm,
+      color: theme.colors.headerSubtitle,
+      marginTop: 2,
+      opacity: 0.9,
+      textAlign: common.textAlign,
+    },
+
     // Content
     content: {
       flex: 1,
-      marginTop: -30,
     },
     chapterCard: {
       borderRadius: layout.borderRadius.xl,
@@ -307,7 +335,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
     chapterHeader: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      justifyContent: 'space-between',
+      // justifyContent: 'flex-start', // Default
       padding: spacing.lg,
       backgroundColor: '#FFFFFF',
       borderBottomWidth: 1,
@@ -319,6 +347,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
     },
     chapterCheckbox: {
       padding: 4,
+      ...common.marginEnd(12),
     },
     chapterName: {
       fontSize: fontSizes.base,
@@ -392,20 +421,20 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
     prepareButton: {
       flexDirection: common.rowDirection,
       backgroundColor: theme.colors.primary,
-      paddingVertical: 16,
-      borderRadius: borderRadius.xl,
+      paddingVertical: 12, // Reduced from 16
+      borderRadius: borderRadius.md, // changed from xl to md
       justifyContent: 'center',
       alignItems: 'center',
       shadowColor: theme.colors.primary,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
-      shadowRadius: 8,
-      elevation: 4,
+      shadowOffset: { width: 0, height: 2 }, // Reduced shadow
+      shadowOpacity: 0.2, // Reduced opacity
+      shadowRadius: 4, // Reduced radius
+      elevation: 2, // Reduced elevation
     },
     prepareButtonText: {
       color: '#fff',
-      fontSize: fontSizes.base,
-      fontWeight: 'bold',
+      fontSize: fontSizes.sm, // Changed from base to sm
+      fontWeight: '600', // Changed from bold to 600
     },
   });
 
