@@ -11,6 +11,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Image,
+  Modal,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useAuth } from '../context/AuthContext';
@@ -18,6 +19,8 @@ import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { tryFetchWithFallback } from '../config/api';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 
 interface RegisterScreenProps {
   onNavigateToLogin: () => void;
@@ -31,12 +34,14 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
   const [confirmPassword, setConfirmPassword] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('');
   const [selectedSystem, setSelectedSystem] = useState('');
+  const [pickerModalVisible, setPickerModalVisible] = useState<'grade' | 'system' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const { register } = useAuth();
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { t } = useTranslation();
   const common = useCommonStyles();
+  const insets = useSafeAreaInsets();
 
   const [gradesData, setGradesData] = useState<{ grades: any[] } | null>(null);
   const [systemsData, setSystemsData] = useState<{ educationalSystems: any[] } | null>(null);
@@ -117,9 +122,25 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
 
   return (
     <KeyboardAvoidingView
-      style={currentStyles.container}
+      style={[
+        currentStyles.container,
+        { paddingTop: insets.top, paddingBottom: insets.bottom + 15 },
+      ]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
+      {/* Floating Close Button */}
+      <TouchableOpacity
+        style={[
+          currentStyles.closeButton,
+          { top: insets.top + spacing.sm },
+          common.start(spacing.lg),
+        ]}
+        onPress={onNavigateToLogin}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
+        <Ionicons name="close" size={28} color={theme.colors.text} />
+      </TouchableOpacity>
+
       <ScrollView contentContainerStyle={currentStyles.scrollContainer}>
         <View style={currentStyles.header}>
           <Image
@@ -142,7 +163,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
               placeholderTextColor={theme.colors.textSecondary}
               autoCapitalize="words"
               editable={!isLoading}
-              textAlign={common.textAlign}
+              textAlign={common.textAlign as any}
             />
           </View>
           <View style={currentStyles.inputContainer}>
@@ -156,7 +177,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
               keyboardType="email-address"
               autoCapitalize="none"
               editable={!isLoading}
-              textAlign={common.textAlign}
+              textAlign={common.textAlign as any}
             />
           </View>
           <View style={currentStyles.inputContainer}>
@@ -170,7 +191,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
               keyboardType="phone-pad"
               autoCapitalize="none"
               editable={!isLoading}
-              textAlign={common.textAlign}
+              textAlign={common.textAlign as any}
             />
           </View>
 
@@ -184,6 +205,23 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
                   {t('home_screen.loading_activities')}{' '}
                 </Text>
               </View>
+            ) : Platform.OS === 'ios' ? (
+              <TouchableOpacity
+                style={currentStyles.input}
+                onPress={() => setPickerModalVisible('grade')}
+              >
+                <Text
+                  style={{
+                    color: selectedGrade ? theme.colors.text : theme.colors.textSecondary,
+                    textAlign: common.textAlign,
+                    width: '100%',
+                  }}
+                >
+                  {selectedGrade
+                    ? gradesData?.grades?.find((g: any) => g.id === selectedGrade)?.name
+                    : t('auth.select_grade')}
+                </Text>
+              </TouchableOpacity>
             ) : (
               <View style={currentStyles.pickerContainer}>
                 <Picker
@@ -213,6 +251,24 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
                   {t('home_screen.loading_activities')}{' '}
                 </Text>
               </View>
+            ) : Platform.OS === 'ios' ? (
+              <TouchableOpacity
+                style={currentStyles.input}
+                onPress={() => setPickerModalVisible('system')}
+              >
+                <Text
+                  style={{
+                    color: selectedSystem ? theme.colors.text : theme.colors.textSecondary,
+                    textAlign: common.textAlign,
+                    width: '100%',
+                  }}
+                >
+                  {selectedSystem
+                    ? systemsData?.educationalSystems?.find((s: any) => s.id === selectedSystem)
+                        ?.name
+                    : t('auth.select_educational_system')}
+                </Text>
+              </TouchableOpacity>
             ) : (
               <View style={currentStyles.pickerContainer}>
                 <Picker
@@ -243,7 +299,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
               secureTextEntry
               autoCapitalize="none"
               editable={!isLoading}
-              textAlign={common.textAlign}
+              textAlign={common.textAlign as any}
             />
           </View>
           <View style={currentStyles.inputContainer}>
@@ -257,7 +313,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
               secureTextEntry
               autoCapitalize="none"
               editable={!isLoading}
-              textAlign={common.textAlign}
+              textAlign={common.textAlign as any}
             />
           </View>
 
@@ -281,6 +337,53 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* iOS Picker Modal */}
+      {Platform.OS === 'ios' && (
+        <Modal
+          visible={pickerModalVisible !== null}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setPickerModalVisible(null)}
+        >
+          <View style={currentStyles.modalContainer}>
+            <View style={currentStyles.modalContent}>
+              <View style={currentStyles.modalHeader}>
+                <TouchableOpacity
+                  onPress={() => setPickerModalVisible(null)}
+                  style={currentStyles.modalDoneButton}
+                >
+                  <Text style={currentStyles.modalDoneText}> {t('common.done')} </Text>
+                </TouchableOpacity>
+              </View>
+              <Picker
+                selectedValue={pickerModalVisible === 'grade' ? selectedGrade : selectedSystem}
+                onValueChange={(itemValue) =>
+                  pickerModalVisible === 'grade'
+                    ? setSelectedGrade(itemValue)
+                    : setSelectedSystem(itemValue)
+                }
+              >
+                <Picker.Item
+                  label={
+                    pickerModalVisible === 'grade'
+                      ? t('auth.select_grade')
+                      : t('auth.select_educational_system')
+                  }
+                  value=""
+                />
+                {pickerModalVisible === 'grade'
+                  ? gradesData?.grades?.map((grade: any) => (
+                      <Picker.Item key={grade.id} label={grade.name} value={grade.id} />
+                    ))
+                  : systemsData?.educationalSystems?.map((system: any) => (
+                      <Picker.Item key={system.id} label={system.name} value={system.id} />
+                    ))}
+              </Picker>
+            </View>
+          </View>
+        </Modal>
+      )}
     </KeyboardAvoidingView>
   );
 };
@@ -349,6 +452,47 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
     footer: { flexDirection: common.rowDirection, justifyContent: 'center', alignItems: 'center' },
     footerText: { fontSize: fontSizes.base, color: theme.colors.textSecondary },
     linkText: { fontSize: fontSizes.base, color: theme.colors.primary, fontWeight: '600' },
+    closeButton: {
+      position: 'absolute',
+      zIndex: 10,
+      padding: 8,
+      borderRadius: 20,
+      backgroundColor: theme.colors.surface,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    modalContainer: {
+      flex: 1,
+      justifyContent: 'flex-end',
+      backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+    modalContent: {
+      backgroundColor: theme.colors.surface,
+      borderTopLeftRadius: borderRadius.lg,
+      borderTopRightRadius: borderRadius.lg,
+      paddingBottom: 20,
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      padding: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+      backgroundColor: theme.colors.surface, // Ensure header has background
+      borderTopLeftRadius: borderRadius.lg,
+      borderTopRightRadius: borderRadius.lg,
+    },
+    modalDoneButton: {
+      paddingHorizontal: 16,
+    },
+    modalDoneText: {
+      color: theme.colors.primary,
+      fontSize: fontSizes.lg,
+      fontWeight: '600',
+    },
   });
 
 export default RegisterScreen;
