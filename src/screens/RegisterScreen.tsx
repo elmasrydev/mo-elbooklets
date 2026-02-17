@@ -213,7 +213,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
                 <Text
                   style={{
                     color: selectedGrade ? theme.colors.text : theme.colors.textSecondary,
-                    textAlign: common.textAlign,
+                    textAlign: 'left',
                     width: '100%',
                   }}
                 >
@@ -259,7 +259,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
                 <Text
                   style={{
                     color: selectedSystem ? theme.colors.text : theme.colors.textSecondary,
-                    textAlign: common.textAlign,
+                    textAlign: 'left',
                     width: '100%',
                   }}
                 >
@@ -408,7 +408,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       fontWeight: '600',
       color: theme.colors.text,
       marginBottom: 8,
-      textAlign: common.textAlign,
+      textAlign: 'left',
     },
     input: {
       borderWidth: 1,
@@ -449,7 +449,12 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       fontSize: fontSizes.sm, // Changed from lg to sm
       fontWeight: '600', // Changed from bold (if it was) to 600
     },
-    footer: { flexDirection: common.rowDirection, justifyContent: 'center', alignItems: 'center' },
+    footer: {
+      flexDirection: common.rowDirection,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 20,
+    },
     footerText: { fontSize: fontSizes.base, color: theme.colors.textSecondary },
     linkText: { fontSize: fontSizes.base, color: theme.colors.primary, fontWeight: '600' },
     closeButton: {
