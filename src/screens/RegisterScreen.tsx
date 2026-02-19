@@ -45,6 +45,7 @@ const PickerTrigger = ({ value, placeholder, icon, onPress, theme, currentStyles
 );
 
 const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBack }) => {
+  const [currentStep, setCurrentStep] = useState(1);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [mobile, setMobile] = useState('');
@@ -58,7 +59,6 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
   const [confirmPassword, setConfirmPassword] = useState('');
   const [promoCode, setPromoCode] = useState('');
   
-  const [pickerModalVisible, setPickerModalVisible] = useState<'grade' | 'system' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -105,26 +105,65 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
     }
   };
 
+  const validateStep = (step: number) => {
+    switch (step) {
+      case 1:
+        if (!name.trim() || !email.trim() || !gender || !schoolName.trim()) {
+          Alert.alert(t('common.error'), t('auth.fill_all_fields'));
+          return false;
+        }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email.trim())) {
+          Alert.alert(t('common.error'), t('auth.invalid_email'));
+          return false;
+        }
+        return true;
+      case 2:
+        if (!selectedGrade || !selectedSystem) {
+          Alert.alert(t('common.error'), t('auth.fill_all_fields'));
+          return false;
+        }
+        return true;
+      case 3:
+        if (!mobile.trim() || !password.trim()) {
+          Alert.alert(t('common.error'), t('auth.fill_all_fields'));
+          return false;
+        }
+        if (password !== confirmPassword) {
+          Alert.alert(t('common.error'), t('auth.passwords_not_match'));
+          return false;
+        }
+        if (password.length < 8) {
+          Alert.alert(t('common.error'), t('auth.password_too_short'));
+          return false;
+        }
+        return true;
+      default:
+        return true;
+    }
+  };
+
+  const handleNext = () => {
+    if (validateStep(currentStep)) {
+      if (currentStep < 4) {
+        setCurrentStep(currentStep + 1);
+      } else {
+        handleRegister();
+      }
+    }
+  };
+
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    } else {
+      onBack();
+    }
+  };
+
   const handleRegister = async () => {
-    if (
-      !name.trim() ||
-      !email.trim() ||
-      !mobile.trim() ||
-      !gender ||
-      !selectedGrade ||
-      !selectedSystem ||
-      !parentMobile.trim() ||
-      !password.trim()
-    ) {
-      Alert.alert(t('common.error'), t('auth.fill_all_fields'));
-      return;
-    }
-    if (password !== confirmPassword) {
-      Alert.alert(t('common.error'), t('auth.passwords_not_match'));
-      return;
-    }
-    if (password.length < 8) {
-      Alert.alert(t('common.error'), t('auth.password_too_short'));
+    if (!parentMobile.trim()) {
+      Alert.alert(t('common.error'), t('auth.parent_mobile_required', 'Parent mobile number is required'));
       return;
     }
 
@@ -166,16 +205,32 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
 
   const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius, isRTL);
 
-
+  const StepIndicator = () => (
+    <View style={currentStyles.stepIndicatorContainer}>
+      <View style={currentStyles.stepDots}>
+        {[1, 2, 3, 4].map((s) => (
+          <View 
+            key={s} 
+            style={[
+              currentStyles.stepDot, 
+              s === currentStep && currentStyles.stepDotActive,
+              s < currentStep && currentStyles.stepDotCompleted
+            ]} 
+          />
+        ))}
+      </View>
+      <Text style={currentStyles.stepText}>{t('auth.step_x_of_y', { current: currentStep, total: 4 })}</Text>
+    </View>
+  );
 
   return (
     <KeyboardAvoidingView
       style={currentStyles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      {/* Floating Back Button */}
+      {/* Back Button */}
       <BackButton
-        onPress={onBack}
+        onPress={handleBack}
         style={[
           currentStyles.backButton,
           { top: insets.top + spacing.sm },
@@ -191,195 +246,243 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
             style={currentStyles.logo}
             resizeMode="contain"
           />
-          <Text style={currentStyles.title}>{t('auth.register')}</Text>
-          <Text style={currentStyles.subtitle}>{t('auth.sign_up_subtitle')}</Text>
+          <StepIndicator />
+          <Text style={currentStyles.title}>
+            {currentStep === 1 && t('auth.personal_info', 'Personal Info')}
+            {currentStep === 2 && t('auth.select_grade_title', 'Select Your Grade')}
+            {currentStep === 3 && t('auth.login_info', 'Login Info')}
+            {currentStep === 4 && t('auth.parent_data', 'Parent Data')}
+          </Text>
         </View>
 
         <View style={currentStyles.form}>
-          <View style={currentStyles.inputWrapper}>
-            <Ionicons name="person-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
-            <TextInput
-              style={currentStyles.input}
-              value={name}
-              onChangeText={setName}
-              placeholder={t('auth.name_placeholder')}
-              placeholderTextColor={theme.colors.textSecondary}
-              autoCapitalize="words"
-              editable={!isLoading}
-              textAlign={common.textAlign}
-            />
-          </View>
+          {currentStep === 1 && (
+            <>
+              <View style={currentStyles.inputWrapper}>
+                <Ionicons name="person-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
+                <TextInput
+                  style={currentStyles.input}
+                  value={name}
+                  onChangeText={setName}
+                  placeholder={t('auth.name_placeholder')}
+                  placeholderTextColor={theme.colors.textSecondary}
+                  autoCapitalize="words"
+                  editable={!isLoading}
+                  textAlign={common.textAlign}
+                />
+              </View>
 
-          <View style={currentStyles.inputWrapper}>
-            <Ionicons name="mail-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
-            <TextInput
-              style={currentStyles.input}
-              value={email}
-              onChangeText={setEmail}
-              placeholder={t('auth.email_placeholder')}
-              placeholderTextColor={theme.colors.textSecondary}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              editable={!isLoading}
-              textAlign={common.textAlign}
-            />
-          </View>
+              <View style={currentStyles.inputWrapper}>
+                <Ionicons name="mail-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
+                <TextInput
+                  style={currentStyles.input}
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder={t('auth.email_placeholder')}
+                  placeholderTextColor={theme.colors.textSecondary}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  editable={!isLoading}
+                  textAlign={common.textAlign}
+                />
+              </View>
 
-          <View style={currentStyles.inputWrapper}>
-            <Ionicons name="call-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
-            <TextInput
-              style={currentStyles.input}
-              value={mobile}
-              onChangeText={setMobile}
-              placeholder={t('auth.mobile_placeholder')}
-              placeholderTextColor={theme.colors.textSecondary}
-              keyboardType="phone-pad"
-              autoCapitalize="none"
-              editable={!isLoading}
-              textAlign={common.textAlign}
-            />
-          </View>
+              <View style={currentStyles.genderContainer}>
+                <Text style={currentStyles.sectionLabel}>{t('auth.gender')}</Text>
+                <View style={currentStyles.genderRow}>
+                  <TouchableOpacity
+                    style={[currentStyles.genderButton, gender === 'male' && currentStyles.genderButtonActive]}
+                    onPress={() => setGender('male')}
+                  >
+                    <Text style={currentStyles.genderEmoji}>👦</Text>
+                    <Text style={[currentStyles.genderText, gender === 'male' && currentStyles.genderTextActive]}>
+                      {t('auth.boy')}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[currentStyles.genderButton, gender === 'female' && currentStyles.genderButtonActive]}
+                    onPress={() => setGender('female')}
+                  >
+                    <Text style={currentStyles.genderEmoji}>👧</Text>
+                    <Text style={[currentStyles.genderText, gender === 'female' && currentStyles.genderTextActive]}>
+                      {t('auth.girl')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
 
-          {/* Gender Selection */}
-          <View style={currentStyles.genderContainer}>
-            <Text style={currentStyles.sectionLabel}>{t('auth.gender')}</Text>
-            <View style={currentStyles.genderRow}>
-              <TouchableOpacity
-                style={[currentStyles.genderButton, gender === 'male' && currentStyles.genderButtonActive]}
-                onPress={() => setGender('male')}
-              >
-                <Text style={currentStyles.genderEmoji}>👦</Text>
-                <Text style={[currentStyles.genderText, gender === 'male' && currentStyles.genderTextActive]}>
-                  {t('auth.boy')}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[currentStyles.genderButton, gender === 'female' && currentStyles.genderButtonActive]}
-                onPress={() => setGender('female')}
-              >
-                <Text style={currentStyles.genderEmoji}>👧</Text>
-                <Text style={[currentStyles.genderText, gender === 'female' && currentStyles.genderTextActive]}>
-                  {t('auth.girl')}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+              <View style={currentStyles.inputWrapper}>
+                <Ionicons name="business-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
+                <TextInput
+                  style={currentStyles.input}
+                  value={schoolName}
+                  onChangeText={setSchoolName}
+                  placeholder={t('auth.school_placeholder')}
+                  placeholderTextColor={theme.colors.textSecondary}
+                  editable={!isLoading}
+                  textAlign={common.textAlign}
+                />
+              </View>
+            </>
+          )}
 
-          <PickerTrigger 
-            icon="school-outline"
-            placeholder={t('auth.select_grade')}
-            value={gradesData?.grades?.find((g: any) => g.id === selectedGrade)?.name}
-            onPress={() => setPickerModalVisible('grade')}
-            theme={theme}
-            currentStyles={currentStyles}
-          />
+          {currentStep === 2 && (
+            <>
+              <View style={currentStyles.gridContainer}>
+                {gradesData?.grades?.map((grade: any) => (
+                  <TouchableOpacity 
+                    key={grade.id}
+                    style={[
+                      currentStyles.gridItem,
+                      selectedGrade === grade.id && currentStyles.gridItemActive
+                    ]}
+                    onPress={() => setSelectedGrade(grade.id)}
+                  >
+                    <Text style={[
+                      currentStyles.gridItemText,
+                      selectedGrade === grade.id && currentStyles.gridItemTextActive
+                    ]}>
+                      {grade.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
 
-          <PickerTrigger 
-            icon="book-outline"
-            placeholder={t('auth.select_educational_system')}
-            value={systemsData?.educationalSystems?.find((s: any) => s.id === selectedSystem)?.name}
-            onPress={() => setPickerModalVisible('system')}
-            theme={theme}
-            currentStyles={currentStyles}
-          />
+              <Text style={currentStyles.sectionTitle}>{t('auth.select_curriculum_type', 'Select Curriculum Type')}</Text>
+              <View style={currentStyles.systemsContainer}>
+                {systemsData?.educationalSystems?.map((system: any) => (
+                  <TouchableOpacity 
+                    key={system.id}
+                    style={[
+                      currentStyles.systemCard,
+                      selectedSystem === system.id && currentStyles.systemCardActive
+                    ]}
+                    onPress={() => setSelectedSystem(system.id)}
+                  >
+                    <Text style={[
+                      currentStyles.systemCardText,
+                      selectedSystem === system.id && currentStyles.systemCardTextActive
+                    ]}>
+                      {system.name}
+                    </Text>
+                    {selectedSystem === system.id && (
+                      <Ionicons name="checkmark-circle" size={20} color="#1E3A8A" style={currentStyles.checkIcon} />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          )}
 
-          <View style={currentStyles.inputWrapper}>
-            <Ionicons name="business-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
-            <TextInput
-              style={currentStyles.input}
-              value={schoolName}
-              onChangeText={setSchoolName}
-              placeholder={t('auth.school_placeholder')}
-              placeholderTextColor={theme.colors.textSecondary}
-              editable={!isLoading}
-              textAlign={common.textAlign}
-            />
-          </View>
+          {currentStep === 3 && (
+            <>
+              <View style={currentStyles.inputWrapper}>
+                <Ionicons name="call-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
+                <TextInput
+                  style={currentStyles.input}
+                  value={mobile}
+                  onChangeText={setMobile}
+                  placeholder={t('auth.mobile_placeholder')}
+                  placeholderTextColor={theme.colors.textSecondary}
+                  keyboardType="phone-pad"
+                  autoCapitalize="none"
+                  editable={!isLoading}
+                  textAlign={common.textAlign}
+                />
+              </View>
 
-          <View style={currentStyles.inputWrapper}>
-            <Ionicons name="people-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
-            <TextInput
-              style={currentStyles.input}
-              value={parentMobile}
-              onChangeText={setParentMobile}
-              placeholder={t('auth.parent_mobile_placeholder')}
-              placeholderTextColor={theme.colors.textSecondary}
-              keyboardType="phone-pad"
-              editable={!isLoading}
-              textAlign={common.textAlign}
-            />
-          </View>
+              <View style={currentStyles.inputWrapper}>
+                <Ionicons name="lock-closed-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
+                <TextInput
+                  style={currentStyles.input}
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder={t('auth.password_placeholder')}
+                  placeholderTextColor={theme.colors.textSecondary}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  editable={!isLoading}
+                  textAlign={common.textAlign}
+                />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                  <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={theme.colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
 
-          <View style={currentStyles.inputWrapper}>
-            <Ionicons name="people-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
-            <TextInput
-              style={currentStyles.input}
-              value={parentMobile2}
-              onChangeText={setParentMobile2}
-              placeholder={t('auth.second_parent_mobile')}
-              placeholderTextColor={theme.colors.textSecondary}
-              keyboardType="phone-pad"
-              editable={!isLoading}
-              textAlign={common.textAlign}
-            />
-          </View>
+              <View style={currentStyles.inputWrapper}>
+                <Ionicons name="shield-checkmark-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
+                <TextInput
+                  style={currentStyles.input}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  placeholder={t('auth.confirm_password_placeholder')}
+                  placeholderTextColor={theme.colors.textSecondary}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  editable={!isLoading}
+                  textAlign={common.textAlign}
+                />
+              </View>
+            </>
+          )}
 
-          <View style={currentStyles.inputWrapper}>
-            <Ionicons name="lock-closed-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
-            <TextInput
-              style={currentStyles.input}
-              value={password}
-              onChangeText={setPassword}
-              placeholder={t('auth.password_placeholder')}
-              placeholderTextColor={theme.colors.textSecondary}
-              secureTextEntry={!showPassword}
-              autoCapitalize="none"
-              editable={!isLoading}
-              textAlign={common.textAlign}
-            />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-              <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={theme.colors.textSecondary} />
-            </TouchableOpacity>
-          </View>
+          {currentStep === 4 && (
+            <>
+              <View style={currentStyles.inputWrapper}>
+                <Ionicons name="people-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
+                <TextInput
+                  style={currentStyles.input}
+                  value={parentMobile}
+                  onChangeText={setParentMobile}
+                  placeholder={t('auth.parent_mobile_placeholder')}
+                  placeholderTextColor={theme.colors.textSecondary}
+                  keyboardType="phone-pad"
+                  editable={!isLoading}
+                  textAlign={common.textAlign}
+                />
+              </View>
 
-          <View style={currentStyles.inputWrapper}>
-            <Ionicons name="shield-checkmark-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
-            <TextInput
-              style={currentStyles.input}
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              placeholder={t('auth.confirm_password_placeholder')}
-              placeholderTextColor={theme.colors.textSecondary}
-              secureTextEntry={!showPassword}
-              autoCapitalize="none"
-              editable={!isLoading}
-              textAlign={common.textAlign}
-            />
-          </View>
+              <View style={currentStyles.inputWrapper}>
+                <Ionicons name="people-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
+                <TextInput
+                  style={currentStyles.input}
+                  value={parentMobile2}
+                  onChangeText={setParentMobile2}
+                  placeholder={t('auth.second_parent_mobile')}
+                  placeholderTextColor={theme.colors.textSecondary}
+                  keyboardType="phone-pad"
+                  editable={!isLoading}
+                  textAlign={common.textAlign}
+                />
+              </View>
 
-          <View style={currentStyles.inputWrapper}>
-            <Ionicons name="gift-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
-            <TextInput
-              style={currentStyles.input}
-              value={promoCode}
-              onChangeText={setPromoCode}
-              placeholder={t('auth.promo_code_placeholder')}
-              placeholderTextColor={theme.colors.textSecondary}
-              autoCapitalize="characters"
-              editable={!isLoading}
-              textAlign={common.textAlign}
-            />
-          </View>
+              <View style={currentStyles.inputWrapper}>
+                <Ionicons name="gift-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
+                <TextInput
+                  style={currentStyles.input}
+                  value={promoCode}
+                  onChangeText={setPromoCode}
+                  placeholder={t('auth.promo_code_placeholder')}
+                  placeholderTextColor={theme.colors.textSecondary}
+                  autoCapitalize="characters"
+                  editable={!isLoading}
+                  textAlign={common.textAlign}
+                />
+              </View>
+            </>
+          )}
 
           <TouchableOpacity
             style={[currentStyles.registerButton, isLoading && currentStyles.disabledButton]}
-            onPress={handleRegister}
+            onPress={handleNext}
             disabled={isLoading}
           >
             {isLoading ? (
               <ActivityIndicator color="#ffffff" />
             ) : (
-              <Text style={currentStyles.registerButtonText}>{t('auth.sign_up')}</Text>
+              <Text style={currentStyles.registerButtonText}>
+                {currentStep === 4 ? t('auth.sign_up') : t('common.continue', 'Continue')}
+              </Text>
             )}
           </TouchableOpacity>
         </View>
@@ -418,53 +521,6 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
           </View>
         </View>
       </Modal>
-
-      {/* iOS Picker Modal */}
-      {Platform.OS === 'ios' && (
-        <Modal
-          visible={pickerModalVisible !== null}
-          transparent={true}
-          animationType="slide"
-          onRequestClose={() => setPickerModalVisible(null)}
-        >
-          <View style={currentStyles.modalContainer}>
-            <View style={currentStyles.modalContent}>
-              <View style={currentStyles.modalHeader}>
-                <TouchableOpacity
-                  onPress={() => setPickerModalVisible(null)}
-                  style={currentStyles.modalDoneButton}
-                >
-                  <Text style={currentStyles.modalDoneText}> {t('common.done')} </Text>
-                </TouchableOpacity>
-              </View>
-              <Picker
-                selectedValue={pickerModalVisible === 'grade' ? selectedGrade : selectedSystem}
-                onValueChange={(itemValue) =>
-                  pickerModalVisible === 'grade'
-                    ? setSelectedGrade(itemValue)
-                    : setSelectedSystem(itemValue)
-                }
-              >
-                <Picker.Item
-                  label={
-                    pickerModalVisible === 'grade'
-                      ? t('auth.select_grade')
-                      : t('auth.select_educational_system')
-                  }
-                  value=""
-                />
-                {pickerModalVisible === 'grade'
-                  ? gradesData?.grades?.map((grade: any) => (
-                      <Picker.Item key={grade.id} label={grade.name} value={grade.id} />
-                    ))
-                  : systemsData?.educationalSystems?.map((system: any) => (
-                      <Picker.Item key={system.id} label={system.name} value={system.id} />
-                    ))}
-              </Picker>
-            </View>
-          </View>
-        </Modal>
-      )}
     </KeyboardAvoidingView>
   );
 };
@@ -564,6 +620,112 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       shadowOpacity: 0.1,
       shadowRadius: 4,
       elevation: 3,
+    },
+    stepIndicatorContainer: {
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+    stepDots: {
+      flexDirection: 'row',
+      gap: 8,
+      marginBottom: 8,
+    },
+    stepDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: '#E2E8F0',
+    },
+    stepDotActive: {
+      backgroundColor: '#1E3A8A',
+      width: 24,
+    },
+    stepDotCompleted: {
+      backgroundColor: '#94A3B8',
+    },
+    stepText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: '#64748B',
+    },
+    gridContainer: {
+      flexDirection: isRTL ? 'row-reverse' : 'row',
+      flexWrap: 'wrap',
+      gap: 10,
+      marginBottom: 24,
+    },
+    gridItem: {
+      width: '31%',
+      backgroundColor: '#FFF',
+      borderWidth: 1.5,
+      borderColor: '#E2E8F0',
+      borderRadius: 16,
+      paddingVertical: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    gridItemActive: {
+      borderColor: '#1E3A8A',
+      backgroundColor: 'rgba(30, 58, 138, 0.05)',
+      elevation: 0,
+    },
+    gridItemText: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: '#64748B',
+    },
+    gridItemTextActive: {
+      color: '#1E3A8A',
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: '800',
+      color: '#0F172A',
+      marginTop: 8,
+      marginBottom: 16,
+      textAlign: isRTL ? 'right' : 'left',
+    },
+    systemsContainer: {
+      flexDirection: isRTL ? 'row-reverse' : 'row',
+      flexWrap: 'wrap',
+      gap: 12,
+      marginBottom: 24,
+    },
+    systemCard: {
+      width: '48%',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
+      alignItems: 'center',
+      padding: 16,
+      backgroundColor: '#FFF',
+      borderWidth: 1.5,
+      borderColor: '#E2E8F0',
+      borderRadius: 16,
+      justifyContent: 'center',
+      position: 'relative',
+    },
+    systemCardActive: {
+      borderColor: '#1E3A8A',
+      backgroundColor: 'rgba(30, 58, 138, 0.05)',
+    },
+    systemCardText: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: '#64748B',
+      textAlign: 'center',
+    },
+    systemCardTextActive: {
+      color: '#1E3A8A',
+    },
+    checkIcon: {
+      position: 'absolute',
+      top: 8,
+      right: isRTL ? undefined : 8,
+      left: isRTL ? 8 : undefined,
     },
     modalContainer: {
       flex: 1,

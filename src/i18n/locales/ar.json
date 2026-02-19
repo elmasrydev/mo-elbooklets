@@ -40,6 +40,7 @@
     "back": "رجوع",
     "next": "التالي",
     "previous": "السابق",
+    "continue": "متابعة",
     "submit": "إرسال",
     "done": "تم",
     "correct": "صحيح",
@@ -283,6 +284,12 @@
     "sign_up_subtitle": "انضم إلى آلاف الطلاب الذين يتقنون مناهجهم الدراسية.",
     "passwords_not_match": "كلمات المرور غير متطابقة",
     "password_too_short": "يجب أن تكون كلمة المرور 8 أحرف على الأقل",
+    "personal_info": "المعلومات الشخصية",
+    "select_grade_title": "اختر سنتك الدراسية",
+    "login_info": "بيانات الدخول",
+    "parent_data": "بيانات ولي الأمر",
+    "step_x_of_y": "الخطوة {{current}} من {{total}}",
+    "select_curriculum_type": "اختر نوع المنهج",
     "registration_error": "حدث خطأ أثناء التسجيل",
     "select_grade": "اختر سنتك الدراسية",
     "educational_system": "النظام التعليمي",
@@ -298,7 +305,9 @@
     "parent_mobile_placeholder": "أدخل رقم هاتف ولي الأمر",
     "second_parent_mobile": "رقم هاتف ولي أمر ثانٍ (اختياري)",
     "promo_code": "كود الدعوة (اختياري)",
-    "promo_code_placeholder": "أدخل الكود إذا كان لديك واحد"
+    "promo_code_placeholder": "أدخل الكود إذا كان لديك واحد",
+    "invalid_email": "يرجى إدخال بريد إلكتروني صحيح",
+    "parent_mobile_required": "رقم هاتف ولي الأمر مطلوب"
   },
   "time": {
     "just_now": "الآن",

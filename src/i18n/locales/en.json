@@ -40,6 +40,7 @@
     "back": "Back",
     "next": "Next",
     "previous": "Previous",
+    "continue": "Continue",
     "submit": "Submit",
     "done": "Done",
     "correct": "Correct",
@@ -283,6 +284,12 @@
     "sign_up_subtitle": "Join thousands of students mastering their curriculum.",
     "passwords_not_match": "Passwords do not match",
     "password_too_short": "Password must be at least 8 characters long",
+    "personal_info": "Personal Info",
+    "select_grade_title": "Select Your Grade",
+    "login_info": "Login Info",
+    "parent_data": "Parent Data",
+    "step_x_of_y": "Step {{current}} of {{total}}",
+    "select_curriculum_type": "Select Curriculum Type",
     "registration_error": "An error occurred during registration",
     "select_grade": "Select your grade",
     "educational_system": "Educational System",
@@ -298,7 +305,9 @@
     "parent_mobile_placeholder": "Enter parent's mobile number",
     "second_parent_mobile": "Second Parent's Mobile (Optional)",
     "promo_code": "Referral Code (Optional)",
-    "promo_code_placeholder": "Enter code if you have one"
+    "promo_code_placeholder": "Enter code if you have one",
+    "invalid_email": "Please enter a valid email address",
+    "parent_mobile_required": "Parent mobile number is required"
   },
   "time": {
     "just_now": "Just now",
