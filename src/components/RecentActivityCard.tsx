@@ -4,16 +4,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
+import { useCommonStyles } from '../hooks/useCommonStyles';
+import { layout } from '../config/layout';
 import CircularProgress from './CircularProgress';
 import { getTimeAgo } from '../lib/dateUtils';
 import { getScoreColor } from '../lib/scoreUtils';
 
+import { getSubjectConfig } from '../utils/subjectTheme';
+
 interface ActivityCardProps {
   activity: {
     id: string;
-    subject: {
-      name: string;
-    };
+    subject: { name: string };
     score: number;
     totalQuestions: number;
     completedAt: string;
@@ -23,86 +25,66 @@ interface ActivityCardProps {
 }
 
 const RecentActivityCard: React.FC<ActivityCardProps> = ({ activity, onPress }) => {
-  const { theme } = useTheme();
-  const { isRTL, language } = useLanguage();
+  const { theme, fontSizes, spacing, borderRadius } = useTheme();
+  const { language } = useLanguage();
   const { t } = useTranslation();
-  
+  const common = useCommonStyles();
+
   const scorePercent = Math.round((activity.score / activity.totalQuestions) * 100);
   const scoreColor = getScoreColor(scorePercent);
+  const subjectConfig = getSubjectConfig(activity.subject?.name, theme);
+  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius);
 
   return (
-    <TouchableOpacity 
-      style={styles(theme, isRTL).card} 
+    <TouchableOpacity
+      style={currentStyles.card}
       onPress={onPress}
       activeOpacity={onPress ? 0.7 : 1}
     >
-      <View style={[styles(theme, isRTL).iconContainer, { backgroundColor: theme.colors.primary100 }]}>
-        <Ionicons name="book-outline" size={24} color={theme.colors.primary} />
+      <View style={[currentStyles.iconContainer, { backgroundColor: subjectConfig.bg }]}>
+        <Ionicons name={subjectConfig.icon} size={24} color={subjectConfig.color} />
       </View>
-      
-      <View style={styles(theme, isRTL).infoContainer}>
-        <Text style={styles(theme, isRTL).subjectName}>{activity.subject.name}</Text>
-        <Text style={styles(theme, isRTL).timeText}>
-          {getTimeAgo(activity.completedAt, t, language)}
+      <View style={currentStyles.infoContainer}>
+        <Text style={currentStyles.subjectName}> {activity.subject.name} </Text>
+        <Text style={currentStyles.timeText}>
+          {' '}
+          {getTimeAgo(activity.completedAt, t, language)}{' '}
         </Text>
       </View>
-      
-      <View style={styles(theme, isRTL).rightContainer}>
-        <CircularProgress 
-          size={50} 
-          strokeWidth={5} 
-          percentage={scorePercent} 
-          color={scoreColor} 
-        />
+      <View style={currentStyles.rightContainer}>
+        <CircularProgress size={50} strokeWidth={5} percentage={scorePercent} color={scoreColor} />
       </View>
     </TouchableOpacity>
   );
 };
 
-const styles = (theme: any, isRTL: boolean) => StyleSheet.create({
-  card: {
-    flexDirection: isRTL ? 'row-reverse' : 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 20,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 10,
-    elevation: 2,
-  },
-  iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  infoContainer: {
-    flex: 1,
-    marginLeft: isRTL ? 0 : 12,
-    marginRight: isRTL ? 12 : 0,
-    alignItems: isRTL ? 'flex-end' : 'flex-start',
-  },
-  subjectName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-  },
-  timeText: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-    marginTop: 4,
-    fontWeight: '500',
-  },
-  rightContainer: {
-    marginLeft: isRTL ? 0 : 12,
-    marginRight: isRTL ? 12 : 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRadius: any) =>
+  StyleSheet.create({
+    card: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      backgroundColor: theme.colors.card,
+      padding: spacing.lg,
+      borderRadius: layout.borderRadius.xl,
+      marginBottom: spacing.md,
+      ...layout.shadow,
+    },
+    iconContainer: {
+      width: 48,
+      height: 48,
+      borderRadius: 14,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    infoContainer: { flex: 1, ...common.marginStart(12), alignItems: common.alignStart },
+    subjectName: { fontSize: fontSizes.base, fontWeight: 'bold', color: theme.colors.text },
+    timeText: {
+      fontSize: fontSizes.xs,
+      color: theme.colors.textSecondary,
+      marginTop: 4,
+      fontWeight: '500',
+    },
+    rightContainer: { ...common.marginStart(12), alignItems: 'center', justifyContent: 'center' },
+  });
 
 export default RecentActivityCard;

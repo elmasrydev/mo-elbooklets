@@ -4,44 +4,31 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
+import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { getTimeAgo } from '../../lib/dateUtils';
 
 interface RankChangeCardProps {
   item: {
     id: string;
-    user: {
-      id: string;
-      name: string;
-      grade: {
-        id: string;
-        name: string;
-      };
-    };
+    user: { id: string; name: string; grade: { id: string; name: string } };
     createdAt: string;
     rankData: {
       previousRank?: number;
       newRank: number;
-      subject?: {
-        id: string;
-        name: string;
-      };
+      subject?: { id: string; name: string };
       isOverall: boolean;
     };
   };
 }
 
 const RankChangeCard: React.FC<RankChangeCardProps> = ({ item }) => {
-  const { theme } = useTheme();
-  const { isRTL, language } = useLanguage();
+  const { theme, fontSizes, spacing, borderRadius } = useTheme();
+  const { language } = useLanguage();
   const { t } = useTranslation();
+  const common = useCommonStyles();
 
-  const rankColors: { [key: number]: string } = {
-    1: '#F59E0B', // Gold
-    2: '#94A3B8', // Silver
-    3: '#EA580C', // Bronze
-  };
+  const rankColors: { [key: number]: string } = { 1: '#F59E0B', 2: '#94A3B8', 3: '#EA580C' };
   const rankColor = rankColors[item.rankData.newRank] || '#EA580C';
-
   const getRankLabel = (rank: number) => {
     if (rank === 1) return t('social_screen.rank_1st');
     if (rank === 2) return t('social_screen.rank_2nd');
@@ -49,23 +36,20 @@ const RankChangeCard: React.FC<RankChangeCardProps> = ({ item }) => {
     return `${rank}${t('social_screen.rank_th')}`;
   };
 
-  const currentStyles = createStyles(theme, isRTL, rankColor);
+  const currentStyles = createStyles(theme, common, fontSizes, spacing, borderRadius, rankColor);
 
   return (
-    <View style={currentStyles.card}>
-      <View style={[currentStyles.contentRow, isRTL && { flexDirection: 'row-reverse' }]}>
-        <View style={[currentStyles.leftSection, isRTL && { flexDirection: 'row-reverse' }]}>
-          {/* Rank Badge */}
+    <View style={[common.card, currentStyles.cardBorder]}>
+      <View style={currentStyles.contentRow}>
+        <View style={currentStyles.leftSection}>
           <View style={currentStyles.rankBadge}>
             <Text style={currentStyles.rankNumber}>#{item.rankData.newRank}</Text>
           </View>
-
-          {/* User Info */}
-          <View style={[currentStyles.userInfo, isRTL && { alignItems: 'flex-end' }]}>
-            <Text style={[currentStyles.userName, isRTL && { textAlign: 'right' }]}>
+          <View style={currentStyles.userInfo}>
+            <Text style={[currentStyles.userName, { textAlign: common.textAlign }]}>
               {item.user.name}
             </Text>
-            <Text style={[currentStyles.rankChange, isRTL && { textAlign: 'right' }]}>
+            <Text style={[currentStyles.rankChange, { textAlign: common.textAlign }]}>
               {item.rankData.previousRank
                 ? t('social_screen.moved_to_rank', {
                     from: item.rankData.previousRank,
@@ -73,15 +57,13 @@ const RankChangeCard: React.FC<RankChangeCardProps> = ({ item }) => {
                   })
                 : t('social_screen.reached_rank', { rank: getRankLabel(item.rankData.newRank) })}
             </Text>
-            <Text style={[currentStyles.subjectLabel, isRTL && { textAlign: 'right' }]}>
+            <Text style={[currentStyles.subjectLabel, { textAlign: common.textAlign }]}>
               {item.rankData.isOverall
                 ? t('social_screen.overall_ranking')
                 : item.rankData.subject?.name || t('common.quiz')}
             </Text>
           </View>
         </View>
-
-        {/* Trophy and Time */}
         <View style={currentStyles.rightSection}>
           <Ionicons name="trophy" size={40} color={rankColor} />
           <Text style={currentStyles.timeAgo}>{getTimeAgo(item.createdAt, t, language)}</Text>
@@ -91,28 +73,22 @@ const RankChangeCard: React.FC<RankChangeCardProps> = ({ item }) => {
   );
 };
 
-const createStyles = (theme: any, isRTL: boolean, rankColor: string) =>
+const createStyles = (
+  theme: any,
+  common: any,
+  fontSizes: any,
+  spacing: any,
+  borderRadius: any,
+  rankColor: string,
+) =>
   StyleSheet.create({
-    card: {
-      backgroundColor: theme.colors.surface,
-      borderRadius: 24,
-      padding: 16,
-      marginHorizontal: 16,
-      marginBottom: 16,
-      borderLeftWidth: 4,
-      borderLeftColor: rankColor,
-    },
+    cardBorder: { ...common.borderStartWidth(4), ...common.borderStartColor(rankColor) },
     contentRow: {
-      flexDirection: 'row',
+      flexDirection: common.rowDirection,
       justifyContent: 'space-between',
       alignItems: 'center',
     },
-    leftSection: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-      flex: 1,
-    },
+    leftSection: { flexDirection: common.rowDirection, alignItems: 'center', gap: 12, flex: 1 },
     rankBadge: {
       width: 60,
       height: 60,
@@ -121,40 +97,13 @@ const createStyles = (theme: any, isRTL: boolean, rankColor: string) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    rankNumber: {
-      fontSize: 20,
-      fontWeight: '900',
-      color: '#fff',
-    },
-    userInfo: {
-      flex: 1,
-      gap: 4,
-    },
-    userName: {
-      fontSize: 16,
-      fontWeight: '800',
-      color: theme.colors.text,
-    },
-    rankChange: {
-      fontSize: 13,
-      fontWeight: '600',
-      color: theme.colors.textSecondary,
-    },
-    subjectLabel: {
-      fontSize: 12,
-      fontWeight: '700',
-      color: rankColor,
-      marginTop: 2,
-    },
-    rightSection: {
-      alignItems: 'center',
-      gap: 6,
-    },
-    timeAgo: {
-      fontSize: 11,
-      fontWeight: '700',
-      color: theme.colors.textTertiary,
-    },
+    rankNumber: { fontSize: 20, fontWeight: '900', color: '#fff' },
+    userInfo: { flex: 1, gap: 4, alignItems: common.alignStart },
+    userName: { fontSize: fontSizes.base, fontWeight: '800', color: theme.colors.text },
+    rankChange: { fontSize: 13, fontWeight: '600', color: theme.colors.textSecondary },
+    subjectLabel: { fontSize: 12, fontWeight: '700', color: rankColor, marginTop: 2 },
+    rightSection: { alignItems: 'center', gap: 6, ...common.marginStart(12) },
+    timeAgo: { fontSize: 11, fontWeight: '700', color: theme.colors.textTertiary },
   });
 
 export default RankChangeCard;

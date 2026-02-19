@@ -1,6 +1,6 @@
 /**
  * Color Configuration for ElBooklets Mobile
- * 
+ *
  * HSL-based color theme system matching the web frontend.
  * Each color theme is defined by a base hue value.
  */

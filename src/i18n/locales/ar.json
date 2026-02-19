@@ -70,11 +70,16 @@
     "header_subtitle": "إعدادات الحساب والتطبيق",
     "edit_profile": "تعديل الملف الشخصي",
     "update_profile_info": "تحديث معلوماتك الشخصية",
+    "language": "اللغة",
+    "choose_language": "اختر لغتك المفضلة",
     "dark_mode": "الوضع الداكن",
     "switch_light": "التبديل إلى الوضع الفاتح",
     "switch_dark": "التبديل إلى الوضع الداكن",
     "color_theme": "سمة الألوان",
+    "choose_app_color": "اختر لون سمة التطبيق",
     "choose_accent_color": "اختر لونك المفضل",
+    "help_support": "المساعدة والدعم",
+    "get_assistance": "احصل على المساعدة وتواصل مع الدعم",
     "app_preferences": "تفضيلات التطبيق والإشعارات",
     "contact_support": "احصل على المساعدة وتواصل مع الدعم",
     "app_info": "معلومات التطبيق والإصدار",
@@ -83,7 +88,8 @@
     "about_title": "حول ElBooklets",
     "about_content": "تطبيق ElBooklets للجوال\nالإصدار 1.0.0\n\nرفيقك في التعلم الرقمي للتعليم التفاعلي.",
     "grade": "السنة الدراسية",
-    "not_specified": "غير محدد"
+    "not_specified": "غير محدد",
+    "logout": "تسجيل الخروج"
   },
   "home_screen": {
     "hi": "مرحباً",
@@ -154,7 +160,20 @@
     "select_quiz_type": "اختر نوع الاختبار",
     "questions": "سؤال",
     "prepare_quiz": "تحضير الاختبار",
-    "back_to_lessons": "العودة للدروس"
+    "back_to_lessons": "العودة للدروس",
+    "quiz_settings": "إعدادات الاختبار",
+    "customize_experience": "خصّص تجربة الاختبار",
+    "settings_info_text": "المزيد من الإعدادات قريباً!"
+  },
+  "quiz_start": {
+    "header_title": "جاهز للبدء",
+    "ready_to_go": "أنت مستعد!",
+    "subject": "المادة",
+    "lessons_selected": "الدروس المختارة",
+    "quiz_type": "نوع الاختبار",
+    "start_quiz": "ابدأ الاختبار",
+    "go_back": "رجوع",
+    "good_luck": "بالتوفيق! ابذل قصارى جهدك."
   },
   "quiz_taking": {
     "quiz": "اختبار",
@@ -173,7 +192,11 @@
     "incomplete_quiz": "اختبار غير مكتمل",
     "unanswered_questions": "لديك {{count}} سؤال/أسئلة بدون إجابة. يرجى الإجابة على جميع الأسئلة قبل الإرسال.",
     "submitting": "جارٍ الإرسال...",
-    "submit_quiz": "إرسال الاختبار"
+    "submit_quiz": "إرسال الاختبار",
+    "leave_quiz_title": "مغادرة الاختبار؟",
+    "leave_quiz_message": "سيتم فقدان تقدمك إذا غادرت الآن. هل أنت متأكد؟",
+    "continue_quiz": "متابعة",
+    "leave_quiz": "مغادرة الاختبار"
   },
   "quiz_results": {
     "header_title": "نتائج الاختبار",
@@ -298,4 +321,3 @@
     "no_subjects": "لا توجد مواد متاحة"
   }
 }
-

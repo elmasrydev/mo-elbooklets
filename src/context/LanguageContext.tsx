@@ -1,10 +1,13 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback } from 'react';
-import { I18nManager, Platform, Alert } from 'react-native';
+import React, { createContext, useContext, useState, ReactNode, useMemo, useCallback } from 'react';
+import { I18nManager, Alert, NativeModules } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import i18n from '../i18n';
+import i18n, { LANGUAGE_KEY } from '../i18n';
 import * as Updates from 'expo-updates';
 
 type Language = 'en' | 'ar';
+
+// Must match the key used in App.tsx bootstrap
+const RTL_SYNC_ATTEMPTED_KEY = 'rtl_sync_attempted';
 
 interface LanguageContextType {
   language: Language;
@@ -14,102 +17,105 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Initialize with the actual RTL state from I18nManager
-  const [language, setLanguageState] = useState<Language>(
-    I18nManager.isRTL ? 'ar' : ((i18n.language as Language) || 'en')
-  );
+/**
+ * Reload the app with RTL sync tracking.
+ * Sets a flag before reload so the bootstrap in App.tsx knows
+ * we've already attempted the sync (prevents infinite loops in dev).
+ */
+const reloadApp = async (lang: Language): Promise<void> => {
+  // Mark that we're attempting an RTL sync for this language
+  await AsyncStorage.setItem(RTL_SYNC_ATTEMPTED_KEY, lang);
 
-  useEffect(() => {
-    loadLanguage();
-  }, []);
-
-  const loadLanguage = async () => {
-    try {
-      const savedLang = await AsyncStorage.getItem('user_language');
-      if (savedLang === 'en' || savedLang === 'ar') {
-        // Update i18n
-        if (i18n.language !== savedLang) {
-          await i18n.changeLanguage(savedLang);
-        }
-        setLanguageState(savedLang as Language);
-
-        // Check if RTL state matches the language
-        const shouldBeRTL = savedLang === 'ar';
-        if (I18nManager.isRTL !== shouldBeRTL) {
-          // RTL state is inconsistent - this shouldn't happen after reload
-          console.log(`RTL mismatch: I18nManager.isRTL=${I18nManager.isRTL}, shouldBeRTL=${shouldBeRTL}`);
-          I18nManager.allowRTL(true);
-          I18nManager.forceRTL(shouldBeRTL);
-        }
-      } else {
-        // No saved language, sync with RTL state
-        if (I18nManager.isRTL) {
-          setLanguageState('ar');
-          await i18n.changeLanguage('ar');
-          await AsyncStorage.setItem('user_language', 'ar');
-        }
-      }
-    } catch (error) {
-      console.error('Error loading language:', error);
+  if (__DEV__) {
+    const DevSettings = NativeModules.DevSettings;
+    if (DevSettings?.reload) {
+      DevSettings.reload();
+    } else {
+      Alert.alert(
+        'Reload Required',
+        'Please reload the app manually to apply layout changes. (Shake device → Reload)',
+      );
     }
-  };
-
-  const setLanguage = useCallback(async (lang: Language) => {
+  } else {
     try {
-      if (lang === language) return;
+      await Updates.reloadAsync();
+    } catch (e) {
+      console.warn('Updates.reloadAsync failed:', e);
+      Alert.alert('Please restart the app to apply changes.');
+    }
+  }
+};
 
-      // Save the language first
-      await AsyncStorage.setItem('user_language', lang);
-      await i18n.changeLanguage(lang);
-      setLanguageState(lang);
+interface LanguageProviderProps {
+  children: ReactNode;
+  initialLanguage: Language;
+}
 
-      const shouldBeRTL = lang === 'ar';
-      
-      // Only need to reload if RTL state needs to change
-      if (I18nManager.isRTL !== shouldBeRTL) {
-        I18nManager.allowRTL(true);
-        I18nManager.forceRTL(shouldBeRTL);
+export const LanguageProvider: React.FC<LanguageProviderProps> = ({
+  children,
+  initialLanguage,
+}) => {
+  const [language, setLanguageState] = useState<Language>(initialLanguage);
 
-        // Show alert and reload
+  const setLanguage = useCallback(
+    async (lang: Language) => {
+      try {
+        if (lang === language) return;
+
+        const performChange = async () => {
+          // 1. Save preference first (must persist before reload)
+          await AsyncStorage.setItem(LANGUAGE_KEY, lang);
+
+          // 2. Update i18n language
+          await i18n.changeLanguage(lang);
+          setLanguageState(lang);
+
+          // 3. Set native RTL direction
+          const shouldBeRTL = lang === 'ar';
+          I18nManager.allowRTL(shouldBeRTL);
+          I18nManager.forceRTL(shouldBeRTL);
+
+          // 4. Reload to apply native RTL change
+          //    The Yoga layout engine only reads I18nManager.isRTL at startup.
+          //    Small delay to ensure AsyncStorage write is flushed.
+          setTimeout(() => reloadApp(lang), 300);
+        };
+
+        // Show confirmation alert
         Alert.alert(
-          lang === 'ar' ? 'تغيير اللغة' : 'Language Changed',
-          lang === 'ar' 
-            ? 'سيتم إعادة تشغيل التطبيق لتطبيق التغييرات'
-            : 'The app will restart to apply the changes',
+          lang === 'ar' ? 'تغيير اللغة' : 'Change Language',
+          lang === 'ar'
+            ? 'هل تريد تغيير اللغة إلى العربية؟ سيتم إعادة تشغيل التطبيق لتطبيق التغييرات.'
+            : 'Do you want to change the language to English? The app will restart to apply changes.',
           [
             {
-              text: lang === 'ar' ? 'حسناً' : 'OK',
-              onPress: async () => {
-                // Small delay to ensure AsyncStorage is flushed
-                setTimeout(async () => {
-                  try {
-                    await Updates.reloadAsync();
-                  } catch (e) {
-                    console.log('Updates.reloadAsync not available, language will change on next launch');
-                  }
-                }, 300);
-              }
-            }
-          ]
+              text: lang === 'ar' ? 'إلغاء' : 'Cancel',
+              style: 'cancel',
+            },
+            {
+              text: lang === 'ar' ? 'موافق' : 'OK',
+              onPress: performChange,
+            },
+          ],
+          { cancelable: true },
         );
+      } catch (error) {
+        console.error('Error setting language:', error);
       }
-    } catch (error) {
-      console.error('Error setting language:', error);
-    }
-  }, [language]);
-
-  const value = useMemo(() => ({
-    language,
-    setLanguage,
-    isRTL: I18nManager.isRTL, // Use actual I18nManager state
-  }), [language, setLanguage]);
-
-  return (
-    <LanguageContext.Provider value={value}>
-      {children}
-    </LanguageContext.Provider>
+    },
+    [language],
   );
+
+  const value = useMemo(
+    () => ({
+      language,
+      setLanguage,
+      isRTL: language === 'ar',
+    }),
+    [language, setLanguage],
+  );
+
+  return <LanguageContext.Provider value={value}> {children} </LanguageContext.Provider>;
 };
 
 export const useLanguage = () => {
@@ -119,4 +125,3 @@ export const useLanguage = () => {
   }
   return context;
 };
-

@@ -9,7 +9,12 @@ interface CircularProgressProps {
   color: string;
 }
 
-const CircularProgress: React.FC<CircularProgressProps> = ({ size, strokeWidth, percentage, color }) => {
+const CircularProgress: React.FC<CircularProgressProps> = ({
+  size,
+  strokeWidth,
+  percentage,
+  color,
+}) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
@@ -40,7 +45,9 @@ const CircularProgress: React.FC<CircularProgressProps> = ({ size, strokeWidth, 
         />
       </Svg>
       <View style={{ position: 'absolute' }}>
-        <Text style={{ fontSize: size * 0.22, fontWeight: 'bold', color: color }}>{percentage}%</Text>
+        <Text style={{ fontSize: size * 0.22, fontWeight: 'bold', color: color }}>
+          {percentage}%
+        </Text>
       </View>
     </View>
   );

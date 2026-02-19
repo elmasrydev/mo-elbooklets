@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { I18nManager, Platform } from 'react-native';
@@ -13,6 +13,9 @@ import SocialScreen from '../screens/SocialScreen';
 import LeaderboardScreen from '../screens/LeaderboardScreen';
 import MoreScreen from '../screens/MoreScreen';
 import StudyCalendarScreen from '../screens/StudyCalendarScreen';
+import StudyChaptersScreen from '../screens/study/StudyChaptersScreen';
+import StudyLessonScreen from '../screens/study/StudyLessonScreen';
+import QuizTakingScreen from '../screens/quiz/QuizTakingScreen';
 import { useTranslation } from 'react-i18next';
 
 const Tab = createBottomTabNavigator();
@@ -25,10 +28,11 @@ interface TabIconProps {
 }
 
 const TabIcon: React.FC<TabIconProps> = ({ color, focused, name }) => (
-  <Ionicons 
-    name={focused ? name : `${name as any}-outline` as any} 
-    size={24} 
-    color={color} 
+  <Ionicons
+    style={{ marginBottom: 5 }}
+    name={focused ? name : (`${name}-outline` as any)}
+    size={24}
+    color={color}
   />
 );
 
@@ -41,28 +45,44 @@ interface TabConfig {
 
 const TabScreens: React.FC = () => {
   const { theme } = useTheme();
-  const { isRTL } = useLanguage();
+  const { isRTL, language } = useLanguage();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
-  // Define tabs in LTR order
+  // Debugging Order
+  useEffect(() => {
+    console.log(`TabNavigator Render: lang=${language}, isRTL=${isRTL}`);
+  }, [language, isRTL]);
+
+  // Define tabs in LTR order (Home -> More)
   const tabs: TabConfig[] = [
     { name: 'Home', component: HomeScreen, labelKey: 'common.home', icon: 'home' },
-    { name: 'Study', component: StudyScreen, labelKey: 'common.study', icon: 'book' },
+    { name: 'Study', component: StudyScreen, labelKey: 'common.study', icon: 'grid' },
     { name: 'Quiz', component: QuizScreen, labelKey: 'common.quiz', icon: 'help-circle' },
     { name: 'Social', component: SocialScreen, labelKey: 'common.social', icon: 'people' },
-    { name: 'Leaderboard', component: LeaderboardScreen, labelKey: 'common.leaderboard', icon: 'stats-chart' },
+    {
+      name: 'Leaderboard',
+      component: LeaderboardScreen,
+      labelKey: 'common.leaderboard',
+      icon: 'stats-chart',
+    },
     { name: 'More', component: MoreScreen, labelKey: 'common.more', icon: 'ellipsis-horizontal' },
   ];
 
-  // Reverse order for RTL
-  const orderedTabs = isRTL || I18nManager.isRTL ? [...tabs].reverse() : tabs;
-  
+  // Hybrid tab ordering:
+  // In production, I18nManager.isRTL matches isRTL → no reversal needed.
+  // In dev mode, there may be a mismatch after language switch
+  // (DevSettings.reload only reloads JS, not the native Activity).
+  // When mismatched, we reverse tabs so they appear in the correct visual order.
+  const isMismatch = isRTL !== I18nManager.isRTL;
+  const orderedTabs = isMismatch ? [...tabs].reverse() : tabs;
+
   // Calculate tab bar height with safe area
   const tabBarHeight = 60 + Math.max(insets.bottom, Platform.OS === 'android' ? 10 : 0);
-  
+
   return (
     <Tab.Navigator
+      key={isRTL ? 'rtl' : 'ltr'} // Force re-mount on direction change
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: theme.colors.primary,
@@ -74,7 +94,6 @@ const TabScreens: React.FC = () => {
           paddingBottom: Math.max(insets.bottom, 5),
           paddingTop: 5,
           height: tabBarHeight,
-          flexDirection: isRTL ? 'row-reverse' : 'row',
         },
         tabBarLabelStyle: {
           fontSize: 12,
@@ -103,9 +122,30 @@ const TabNavigator: React.FC = () => {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MainTabs" component={TabScreens} />
       <Stack.Screen name="StudyCalendar" component={StudyCalendarScreen} />
+      <Stack.Screen
+        name="StudyChapters"
+        component={StudyChaptersScreen}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="StudyLesson"
+        component={StudyLessonScreen}
+        options={{
+          presentation: 'fullScreenModal',
+          animation: 'slide_from_bottom',
+        }}
+      />
+      <Stack.Screen
+        name="QuizTaking"
+        component={QuizTakingScreen}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
     </Stack.Navigator>
   );
 };
 
 export default TabNavigator;
-

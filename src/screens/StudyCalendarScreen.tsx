@@ -1,8 +1,20 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useCommonStyles } from '../hooks/useCommonStyles';
+import { layout } from '../config/layout';
+
 import { useTranslation } from 'react-i18next';
 import { gql } from '@apollo/client';
 import { useQuery, useMutation } from '@apollo/client/react';
@@ -63,16 +75,21 @@ const StudyCalendarScreen: React.FC = () => {
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
-  
+  const common = useCommonStyles();
+
   const [selectedDay, setSelectedDay] = useState(0);
   const [scheduleData, setScheduleData] = useState<{ [key: number]: ScheduleEntry[] }>({});
 
-  const { data: scheduleResult, loading: loadingSchedule, refetch } = useQuery(STUDY_SCHEDULE_QUERY, {
+  const {
+    data: scheduleResult,
+    loading: loadingSchedule,
+    refetch,
+  } = useQuery<any>(STUDY_SCHEDULE_QUERY, {
     fetchPolicy: 'network-only',
   });
-  
-  const { data: subjectsResult, loading: loadingSubjects } = useQuery(SUBJECTS_QUERY);
-  
+
+  const { data: subjectsResult, loading: loadingSubjects } = useQuery<any>(SUBJECTS_QUERY);
+
   const [saveSchedule, { loading: saving }] = useMutation(SAVE_SCHEDULE_MUTATION, {
     onCompleted: () => {
       Alert.alert(t('study_calendar.schedule_saved'));
@@ -102,7 +119,7 @@ const StudyCalendarScreen: React.FC = () => {
         });
         setScheduleData(grouped);
       }
-    }, [scheduleResult])
+    }, [scheduleResult]),
   );
 
   const subjects: Subject[] = subjectsResult?.subjectsForUserGrade || [];
@@ -116,32 +133,32 @@ const StudyCalendarScreen: React.FC = () => {
       quizGoal: 2,
       notes: '',
     };
-    setScheduleData(prev => ({
+    setScheduleData((prev) => ({
       ...prev,
       [day]: [...(prev[day] || []), newEntry],
     }));
   };
 
   const removeEntry = (day: number, index: number) => {
-    setScheduleData(prev => ({
+    setScheduleData((prev) => ({
       ...prev,
       [day]: (prev[day] || []).filter((_, i) => i !== index),
     }));
   };
 
   const updateEntry = (day: number, index: number, field: keyof ScheduleEntry, value: any) => {
-    setScheduleData(prev => ({
+    setScheduleData((prev) => ({
       ...prev,
-      [day]: (prev[day] || []).map((entry, i) => 
-        i === index ? { ...entry, [field]: field === 'subjectId' ? String(value) : value } : entry
+      [day]: (prev[day] || []).map((entry, i) =>
+        i === index ? { ...entry, [field]: field === 'subjectId' ? String(value) : value } : entry,
       ),
     }));
   };
 
   const handleSave = () => {
     const allEntries: any[] = [];
-    Object.values(scheduleData).forEach(dayEntries => {
-      dayEntries.forEach(entry => {
+    Object.values(scheduleData).forEach((dayEntries) => {
+      dayEntries.forEach((entry) => {
         allEntries.push({
           subjectId: entry.subjectId,
           dayOfWeek: entry.dayOfWeek,
@@ -151,7 +168,7 @@ const StudyCalendarScreen: React.FC = () => {
         });
       });
     });
-    
+
     saveSchedule({ variables: { entries: allEntries } });
   };
 
@@ -171,63 +188,67 @@ const StudyCalendarScreen: React.FC = () => {
   return (
     <View style={currentStyles.container}>
       {/* Header with Back Button */}
-      <View style={currentStyles.header}>
-        <View style={currentStyles.headerRow}>
-          <TouchableOpacity 
-            style={currentStyles.backButton} 
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons 
-              name={isRTL ? "arrow-forward" : "arrow-back"} 
-              size={24} 
-              color={theme.colors.headerText || '#fff'} 
-            />
-          </TouchableOpacity>
-          <View style={currentStyles.headerTitleContainer}>
-            <Text style={currentStyles.headerTitle}>{t('study_calendar.header_title')}</Text>
-            <Text style={currentStyles.headerSubtitle}>{t('study_calendar.header_subtitle')}</Text>
-          </View>
+      <View style={common.header}>
+        <TouchableOpacity
+          style={[currentStyles.backButton, common.marginEnd(spacing.md)]}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons
+            name={isRTL ? 'arrow-forward' : 'arrow-back'}
+            size={24}
+            color={theme.colors.headerText || '#fff'}
+          />
+        </TouchableOpacity>
+        <View style={common.headerTextWrapper}>
+          <Text style={common.headerTitle}>{t('study_calendar.header_title')}</Text>
+          <Text style={common.headerSubtitle}>{t('study_calendar.header_subtitle')}</Text>
         </View>
       </View>
 
       {/* Day Tabs */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        style={currentStyles.dayTabsContainer}
-        contentContainerStyle={currentStyles.dayTabsContent}
-      >
-        {DAY_KEYS.map((dayKey, index) => (
-          <TouchableOpacity
-            key={dayKey}
-            style={[
-              currentStyles.dayTab,
-              selectedDay === index && currentStyles.dayTabActive,
-            ]}
-            onPress={() => setSelectedDay(index)}
-          >
-            <Text style={[
-              currentStyles.dayTabText,
-              selectedDay === index && currentStyles.dayTabTextActive,
-            ]}>
-              {t(`study_calendar.${dayKey}`)}
-            </Text>
-            {(scheduleData[index] || []).length > 0 && (
-              <View style={[
-                currentStyles.dayBadge,
-                selectedDay === index && currentStyles.dayBadgeActive,
-              ]}>
-                <Text style={currentStyles.dayBadgeText}>
-                  {(scheduleData[index] || []).length}
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      <View style={currentStyles.dayTabsContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={currentStyles.dayTabsContent}
+        >
+          {DAY_KEYS.map((dayKey, index) => (
+            <TouchableOpacity
+              key={dayKey}
+              style={[currentStyles.dayTab, selectedDay === index && currentStyles.dayTabActive]}
+              onPress={() => setSelectedDay(index)}
+            >
+              <Text
+                style={[
+                  currentStyles.dayTabText,
+                  selectedDay === index && currentStyles.dayTabTextActive,
+                ]}
+              >
+                {t(`study_calendar.${dayKey}`)}
+              </Text>
+              {(scheduleData[index] || []).length > 0 && (
+                <View
+                  style={[
+                    currentStyles.dayBadge,
+                    selectedDay === index && currentStyles.dayBadgeActive,
+                  ]}
+                >
+                  <Text style={currentStyles.dayBadgeText}>
+                    {(scheduleData[index] || []).length}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
 
       {/* Day Content */}
-      <ScrollView style={currentStyles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: layout.screenPadding, paddingBottom: 100 }}
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={currentStyles.dayTitle}>
           {t(`study_calendar.${DAY_KEYS[selectedDay]}`)} {t('common.schedule') || 'Schedule'}
         </Text>
@@ -238,7 +259,7 @@ const StudyCalendarScreen: React.FC = () => {
             <View style={currentStyles.entryRow}>
               <Text style={currentStyles.entryLabel}>{t('study_calendar.lessons_goal')}</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {subjects.map(subject => (
+                {subjects.map((subject) => (
                   <TouchableOpacity
                     key={subject.id}
                     style={[
@@ -247,10 +268,12 @@ const StudyCalendarScreen: React.FC = () => {
                     ]}
                     onPress={() => updateEntry(selectedDay, index, 'subjectId', subject.id)}
                   >
-                    <Text style={[
-                      currentStyles.subjectPillText,
-                      entry.subjectId === subject.id && currentStyles.subjectPillTextActive,
-                    ]}>
+                    <Text
+                      style={[
+                        currentStyles.subjectPillText,
+                        entry.subjectId === subject.id && currentStyles.subjectPillTextActive,
+                      ]}
+                    >
                       {subject.name}
                     </Text>
                   </TouchableOpacity>
@@ -266,7 +289,9 @@ const StudyCalendarScreen: React.FC = () => {
                   style={currentStyles.goalValue}
                   keyboardType="numeric"
                   value={String(entry.lessonGoal)}
-                  onChangeText={(text) => updateEntry(selectedDay, index, 'lessonGoal', parseInt(text) || 0)}
+                  onChangeText={(text) =>
+                    updateEntry(selectedDay, index, 'lessonGoal', parseInt(text) || 0)
+                  }
                 />
               </View>
               <View style={currentStyles.goalInput}>
@@ -275,7 +300,9 @@ const StudyCalendarScreen: React.FC = () => {
                   style={currentStyles.goalValue}
                   keyboardType="numeric"
                   value={String(entry.quizGoal)}
-                  onChangeText={(text) => updateEntry(selectedDay, index, 'quizGoal', parseInt(text) || 0)}
+                  onChangeText={(text) =>
+                    updateEntry(selectedDay, index, 'quizGoal', parseInt(text) || 0)
+                  }
                 />
               </View>
             </View>
@@ -294,7 +321,9 @@ const StudyCalendarScreen: React.FC = () => {
               style={currentStyles.removeButton}
               onPress={() => removeEntry(selectedDay, index)}
             >
-              <Text style={currentStyles.removeButtonText}>{t('study_calendar.remove_subject')}</Text>
+              <Text style={currentStyles.removeButtonText}>
+                {t('study_calendar.remove_subject')}
+              </Text>
             </TouchableOpacity>
           </View>
         ))}
@@ -309,11 +338,7 @@ const StudyCalendarScreen: React.FC = () => {
         </TouchableOpacity>
 
         {/* Save Button */}
-        <TouchableOpacity
-          style={currentStyles.saveButton}
-          onPress={handleSave}
-          disabled={saving}
-        >
+        <TouchableOpacity style={currentStyles.saveButton} onPress={handleSave} disabled={saving}>
           {saving ? (
             <ActivityIndicator color="#fff" />
           ) : (
@@ -342,15 +367,6 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
       fontSize: fontSizes.base,
       color: theme.colors.textSecondary,
     },
-    header: {
-      padding: spacing.xl,
-      paddingTop: 50,
-      backgroundColor: theme.colors.headerBackground || theme.colors.primary,
-    },
-    headerRow: {
-      flexDirection: isRTL ? 'row-reverse' : 'row',
-      alignItems: 'center',
-    },
     backButton: {
       width: 40,
       height: 40,
@@ -358,23 +374,6 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
       backgroundColor: 'rgba(255,255,255,0.15)',
       justifyContent: 'center',
       alignItems: 'center',
-      marginRight: isRTL ? 0 : spacing.md,
-      marginLeft: isRTL ? spacing.md : 0,
-    },
-    headerTitleContainer: {
-      flex: 1,
-      alignItems: isRTL ? 'flex-end' : 'flex-start',
-    },
-    headerTitle: {
-      fontSize: fontSizes['2xl'],
-      fontWeight: 'bold',
-      color: theme.colors.headerText || '#fff',
-    },
-    headerSubtitle: {
-      fontSize: fontSizes.base,
-      opacity: 0.9,
-      marginTop: spacing.xs,
-      color: theme.colors.headerSubtitle || 'rgba(255,255,255,0.8)',
     },
     dayTabsContainer: {
       maxHeight: 60,
@@ -409,7 +408,8 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
       color: '#fff',
     },
     dayBadge: {
-      marginLeft: spacing.xs,
+      marginLeft: isRTL ? 0 : spacing.xs,
+      marginRight: isRTL ? spacing.xs : 0,
       paddingHorizontal: spacing.xs,
       paddingVertical: 2,
       borderRadius: 10,
@@ -422,10 +422,6 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
       fontSize: 10,
       fontWeight: 'bold',
       color: theme.colors.primary,
-    },
-    content: {
-      flex: 1,
-      padding: spacing.lg,
     },
     dayTitle: {
       fontSize: fontSizes.xl,
@@ -457,7 +453,8 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
       paddingHorizontal: spacing.md,
       borderRadius: borderRadius.lg,
       backgroundColor: theme.colors.background,
-      marginRight: spacing.sm,
+      marginRight: isRTL ? 0 : spacing.sm,
+      marginLeft: isRTL ? spacing.sm : 0,
       borderWidth: 1,
       borderColor: theme.colors.border,
     },
@@ -510,7 +507,7 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
       marginBottom: spacing.sm,
     },
     removeButton: {
-      alignSelf: 'flex-end',
+      alignSelf: isRTL ? 'flex-start' : 'flex-end',
       paddingVertical: spacing.xs,
       paddingHorizontal: spacing.md,
     },

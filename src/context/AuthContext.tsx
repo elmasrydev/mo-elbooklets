@@ -52,16 +52,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Check if user is already logged in on app start
   useEffect(() => {
     checkAuthStatus();
-    
+
     // Create logout function to share between handlers
     const handleSessionExpired = () => {
       console.log('Session expired - logging out');
       setUser(null);
     };
-    
+
     // Register logout handler for Apollo error link
     setLogoutHandler(handleSessionExpired);
-    
+
     // Register logout handler for API fetch calls
     setAuthErrorHandler(handleSessionExpired);
   }, []);
@@ -70,7 +70,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const token = await AsyncStorage.getItem('auth_token');
       const userData = await AsyncStorage.getItem('user_data');
-      
+
       if (token && userData) {
         setUser(JSON.parse(userData));
       }
@@ -81,11 +81,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-
-
   const login = async (input: LoginInput): Promise<{ success: boolean; error?: string }> => {
     try {
-      const result = await tryFetchWithFallback(`
+      const result = await tryFetchWithFallback(
+        `
         mutation Login($input: LoginInput!) {
           login(input: $input) {
             access_token
@@ -107,7 +106,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             }
           }
         }
-      `, { input });
+      `,
+        { input },
+      );
 
       if (result.data?.login) {
         const authPayload = result.data.login;
@@ -122,14 +123,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Login error:', error);
       return {
         success: false,
-        error: error.message || 'An error occurred during login'
+        error: error.message || 'An error occurred during login',
       };
     }
   };
 
   const register = async (input: RegisterInput): Promise<{ success: boolean; error?: string }> => {
     try {
-      const result = await tryFetchWithFallback(`
+      const result = await tryFetchWithFallback(
+        `
         mutation Register($input: RegisterInput!) {
           register(input: $input) {
             access_token
@@ -151,7 +153,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             }
           }
         }
-      `, { input });
+      `,
+        { input },
+      );
 
       if (result.data?.register) {
         const authPayload = result.data.register;
@@ -166,7 +170,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Registration error:', error);
       return {
         success: false,
-        error: error.message || 'An error occurred during registration'
+        error: error.message || 'An error occurred during registration',
       };
     }
   };
@@ -181,20 +185,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const value: AuthContextType = React.useMemo(() => ({
-    user,
-    isLoading,
-    isAuthenticated: !!user,
-    login,
-    register,
-    logout,
-  }), [user, isLoading, login, register, logout]);
-
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
+  const value: AuthContextType = React.useMemo(
+    () => ({
+      user,
+      isLoading,
+      isAuthenticated: !!user,
+      login,
+      register,
+      logout,
+    }),
+    [user, isLoading, login, register, logout],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = (): AuthContextType => {

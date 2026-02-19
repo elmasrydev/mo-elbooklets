@@ -1,55 +1,43 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { useCommonStyles } from '../hooks/useCommonStyles';
+import { useTheme } from '../context/ThemeContext';
+import { layout } from '../config/layout';
 
 const BookletsScreen: React.FC = () => {
+  const common = useCommonStyles();
+  const { theme } = useTheme();
+
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Booklets</Text>
-        <Text style={styles.subtitle}>Explore available learning materials</Text>
+    <View style={common.container}>
+      {/* Standardized Header */}
+      <View style={common.header}>
+        <View style={common.headerTextWrapper}>
+          <Text style={common.headerTitle}>Booklets</Text>
+          <Text style={common.headerSubtitle}>Explore available learning materials</Text>
+        </View>
       </View>
 
-      <View style={styles.content}>
-        <View style={styles.emptyState}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: layout.screenPadding, paddingBottom: 100 }}
+      >
+        <View style={[styles.emptyState, { backgroundColor: theme.colors.card }]}>
           <Text style={styles.emptyStateIcon}>📚</Text>
-          <Text style={styles.emptyStateTitle}>No booklets available</Text>
-          <Text style={styles.emptyStateSubtitle}>
+          <Text style={[styles.emptyStateTitle, { color: theme.colors.text }]}>
+            No booklets available
+          </Text>
+          <Text style={[styles.emptyStateSubtitle, { color: theme.colors.textSecondary }]}>
             Booklets will appear here once they are added to the system
           </Text>
         </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    backgroundColor: '#ffffff',
-    padding: 20,
-    paddingTop: 50,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333333',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666666',
-    marginTop: 4,
-  },
-  content: {
-    flex: 1,
-    padding: 20,
-  },
   emptyState: {
-    backgroundColor: '#ffffff',
     padding: 40,
     borderRadius: 12,
     alignItems: 'center',
@@ -66,12 +54,10 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#333333',
     marginBottom: 8,
   },
   emptyStateSubtitle: {
     fontSize: 16,
-    color: '#666666',
     textAlign: 'center',
     lineHeight: 24,
   },
