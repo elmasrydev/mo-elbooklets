@@ -18,7 +18,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
-import { tryFetchWithFallback } from '../config/api';
+import { tryFetchWithFallback, PRIMARY_API_URL } from '../config/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../context/LanguageContext';
@@ -105,9 +105,47 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
     }
   };
 
+  const [schoolResults, setSchoolResults] = useState<any[]>([]);
+  const [isSearchingSchools, setIsSearchingSchools] = useState(false);
+  const [showSchoolResults, setShowSchoolResults] = useState(false);
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (schoolName.length >= 2 && !isLoading) {
+        searchSchools(schoolName);
+      } else {
+        setSchoolResults([]);
+        setShowSchoolResults(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [schoolName]);
+
+  const searchSchools = async (query: string) => {
+    setIsSearchingSchools(true);
+    try {
+      const baseUrl = PRIMARY_API_URL.replace('/graphql', '');
+      const response = await fetch(`${baseUrl}/schools-search?q=${encodeURIComponent(query)}`);
+      const data = await response.json();
+      setSchoolResults(data);
+      setShowSchoolResults(data.length > 0);
+    } catch (error) {
+      console.error('Error searching schools:', error);
+    } finally {
+      setIsSearchingSchools(false);
+    }
+  };
+
+  const selectSchool = (school: any) => {
+    setSchoolName(school.name);
+    setSchoolResults([]);
+    setShowSchoolResults(false);
+  };
+
   const validateStep = (step: number) => {
     switch (step) {
-      case 1:
+      case 1: {
         if (!name.trim() || !email.trim() || !gender || !schoolName.trim()) {
           Alert.alert(t('common.error'), t('auth.fill_all_fields'));
           return false;
@@ -118,6 +156,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
           return false;
         }
         return true;
+      }
       case 2:
         if (!selectedGrade || !selectedSystem) {
           Alert.alert(t('common.error'), t('auth.fill_all_fields'));
@@ -316,13 +355,44 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                 <TextInput
                   style={currentStyles.input}
                   value={schoolName}
-                  onChangeText={setSchoolName}
+                  onChangeText={(text) => {
+                    setSchoolName(text);
+                    if (text.length < 2) {
+                      setShowSchoolResults(false);
+                    }
+                  }}
                   placeholder={t('auth.school_placeholder')}
                   placeholderTextColor={theme.colors.textSecondary}
                   editable={!isLoading}
                   textAlign={common.textAlign}
                 />
+                {isSearchingSchools && (
+                  <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginRight: 8 }} />
+                )}
               </View>
+
+              {/* School Autocomplete Results */}
+              {showSchoolResults && schoolResults.length > 0 && (
+                <View style={currentStyles.autocompleteContainer}>
+                  {schoolResults.map((school) => (
+                    <TouchableOpacity
+                      key={school.id}
+                      style={currentStyles.autocompleteItem}
+                      onPress={() => selectSchool(school)}
+                    >
+                      <View style={currentStyles.schoolResultInfo}>
+                        <Text style={currentStyles.schoolResultName}>{school.name}</Text>
+                        <Text style={currentStyles.schoolResultMeta}>
+                          {school.governorate} {school.area ? `• ${school.area}` : ''}
+                        </Text>
+                      </View>
+                      {school.is_verified && (
+                        <Ionicons name="checkmark-circle" size={16} color="#059669" />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
             </>
           )}
 
@@ -726,6 +796,42 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       top: 8,
       right: isRTL ? undefined : 8,
       left: isRTL ? 8 : undefined,
+    },
+    autocompleteContainer: {
+      backgroundColor: '#FFF',
+      borderWidth: 1,
+      borderColor: '#E2E8F0',
+      borderRadius: 12,
+      marginTop: -8,
+      marginBottom: 16,
+      maxHeight: 200,
+      overflow: 'hidden',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 5,
+    },
+    autocompleteItem: {
+      flexDirection: isRTL ? 'row-reverse' : 'row',
+      alignItems: 'center',
+      padding: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: '#F1F5F9',
+    },
+    schoolResultInfo: {
+      flex: 1,
+      alignItems: isRTL ? 'flex-end' : 'flex-start',
+    },
+    schoolResultName: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: '#1E293B',
+    },
+    schoolResultMeta: {
+      fontSize: 12,
+      color: '#64748B',
+      marginTop: 2,
     },
     modalContainer: {
       flex: 1,
