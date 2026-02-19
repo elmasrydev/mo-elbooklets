@@ -260,7 +260,7 @@
   },
   "auth": {
     "login": "Login",
-    "register": "Register",
+    "register": "Create Account",
     "forgot_password": "Forgot Password?",
     "email": "Email",
     "password": "Password",
@@ -280,7 +280,7 @@
     "fill_all_fields": "Please fill in all fields",
     "welcome_back": "Welcome Back",
     "sign_in_subtitle": "Sign in to your account",
-    "sign_up_subtitle": "Join ElBooklets Hub today",
+    "sign_up_subtitle": "Join thousands of students mastering their curriculum.",
     "passwords_not_match": "Passwords do not match",
     "password_too_short": "Password must be at least 8 characters long",
     "registration_error": "An error occurred during registration",
@@ -288,7 +288,17 @@
     "educational_system": "Educational System",
     "select_educational_system": "Select your educational system",
     "confirm_password": "Confirm Password",
-    "confirm_password_placeholder": "Confirm your password"
+    "confirm_password_placeholder": "Confirm your password",
+    "gender": "Gender",
+    "boy": "Boy",
+    "girl": "Girl",
+    "school_name": "School Name",
+    "school_placeholder": "Type your school name...",
+    "parent_mobile": "Parent's Mobile Number",
+    "parent_mobile_placeholder": "Enter parent's mobile number",
+    "second_parent_mobile": "Second Parent's Mobile (Optional)",
+    "promo_code": "Referral Code (Optional)",
+    "promo_code_placeholder": "Enter code if you have one"
   },
   "time": {
     "just_now": "Just now",

@@ -280,7 +280,7 @@
     "fill_all_fields": "يرجى ملء جميع الحقول",
     "welcome_back": "مرحباً بعودتك",
     "sign_in_subtitle": "سجل دخولك إلى حسابك",
-    "sign_up_subtitle": "انضم إلى ElBooklets Hub اليوم",
+    "sign_up_subtitle": "انضم إلى آلاف الطلاب الذين يتقنون مناهجهم الدراسية.",
     "passwords_not_match": "كلمات المرور غير متطابقة",
     "password_too_short": "يجب أن تكون كلمة المرور 8 أحرف على الأقل",
     "registration_error": "حدث خطأ أثناء التسجيل",
@@ -288,7 +288,17 @@
     "educational_system": "النظام التعليمي",
     "select_educational_system": "اختر نظامك التعليمي",
     "confirm_password": "تأكيد كلمة المرور",
-    "confirm_password_placeholder": "أكد كلمة المرور"
+    "confirm_password_placeholder": "أكد كلمة المرور",
+    "gender": "الجنس",
+    "boy": "ولد",
+    "girl": "بنت",
+    "school_name": "اسم المدرسة",
+    "school_placeholder": "اكتب اسم مدرستك...",
+    "parent_mobile": "رقم هاتف ولي الأمر",
+    "parent_mobile_placeholder": "أدخل رقم هاتف ولي الأمر",
+    "second_parent_mobile": "رقم هاتف ولي أمر ثانٍ (اختياري)",
+    "promo_code": "كود الدعوة (اختياري)",
+    "promo_code_placeholder": "أدخل الكود إذا كان لديك واحد"
   },
   "time": {
     "just_now": "الآن",

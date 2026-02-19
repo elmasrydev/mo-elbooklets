@@ -24,9 +24,14 @@ interface RegisterInput {
   name: string;
   email: string;
   mobile: string;
+  gender: string;
+  school_name?: string;
+  parent_mobile?: string;
+  parent_mobile_2?: string;
   password: string;
   grade_id: string;
   educational_system_id: string;
+  promo_code?: string;
 }
 
 interface AuthContextType {
