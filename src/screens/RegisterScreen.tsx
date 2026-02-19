@@ -108,8 +108,14 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
   const [schoolResults, setSchoolResults] = useState<any[]>([]);
   const [isSearchingSchools, setIsSearchingSchools] = useState(false);
   const [showSchoolResults, setShowSchoolResults] = useState(false);
+  const [skipNextSearch, setSkipNextSearch] = useState(false);
 
   useEffect(() => {
+    if (skipNextSearch) {
+      setSkipNextSearch(false);
+      return;
+    }
+
     const delayDebounceFn = setTimeout(() => {
       if (schoolName.length >= 2 && !isLoading) {
         searchSchools(schoolName);
@@ -138,7 +144,9 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
   };
 
   const selectSchool = (school: any) => {
-    setSchoolName(school.name);
+    const selectedName = language === 'ar' ? school.name : (school.name_en || school.name);
+    setSkipNextSearch(true);
+    setSchoolName(selectedName);
     setSchoolResults([]);
     setShowSchoolResults(false);
   };
@@ -381,7 +389,10 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                       onPress={() => selectSchool(school)}
                     >
                       <View style={currentStyles.schoolResultInfo}>
-                        <Text style={currentStyles.schoolResultName}>{school.name}</Text>
+                        <Text style={currentStyles.schoolResultName}>
+                          {school.name}
+                          {school.name_en ? ` - ${school.name_en}` : ''}
+                        </Text>
                         <Text style={currentStyles.schoolResultMeta}>
                           {school.governorate} {school.area ? `• ${school.area}` : ''}
                         </Text>
