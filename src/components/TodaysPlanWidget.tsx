@@ -56,7 +56,7 @@ const TodaysPlanWidget: React.FC = () => {
               color={theme.colors.text}
               style={{ marginRight: 8 }}
             />
-            <Text style={currentStyles.title}> {t('study_calendar.today_plan')} </Text>
+            <Text style={currentStyles.title}>{t('study_calendar.today_plan')}</Text>
           </View>
         </View>
         <View style={currentStyles.loadingContainer}>
@@ -80,10 +80,10 @@ const TodaysPlanWidget: React.FC = () => {
               color={theme.colors.text}
               style={{ marginRight: 8 }}
             />
-            <Text style={currentStyles.title}> {t('study_calendar.today_plan')} </Text>
+            <Text style={currentStyles.title}>{t('study_calendar.today_plan')}</Text>
           </View>
           <TouchableOpacity onPress={() => navigation.navigate('StudyCalendar')}>
-            <Text style={currentStyles.linkText}> {t('study_calendar.set_schedule')} </Text>
+            <Text style={currentStyles.linkText}>{t('study_calendar.set_schedule')}</Text>
           </TouchableOpacity>
         </View>
         <View style={currentStyles.emptyContainer}>
@@ -93,8 +93,8 @@ const TodaysPlanWidget: React.FC = () => {
             color={theme.colors.textSecondary}
             style={{ marginBottom: spacing.sm }}
           />
-          <Text style={currentStyles.emptyText}> {t('study_calendar.no_schedule')} </Text>
-          <Text style={currentStyles.emptyHint}> {t('study_calendar.set_schedule_hint')} </Text>
+          <Text style={currentStyles.emptyText}>{t('study_calendar.no_schedule')}</Text>
+          <Text style={currentStyles.emptyHint}>{t('study_calendar.set_schedule_hint')}</Text>
         </View>
       </View>
     );
@@ -112,7 +112,7 @@ const TodaysPlanWidget: React.FC = () => {
               color={theme.colors.primary}
               style={{ marginRight: 8 }}
             />
-            <Text style={currentStyles.title}> {t('study_calendar.today_plan')} </Text>
+            <Text style={currentStyles.title}>{t('study_calendar.today_plan')}</Text>
           </View>
           <Text style={currentStyles.subtitle}>
             {t(`study_calendar.${dayName.toLowerCase()}`)} • {t('study_calendar.your_goals_today')}

@@ -171,12 +171,8 @@ const HomeScreen: React.FC = () => {
             <View style={currentStyles.onlineDot} />
           </View>
           <View style={currentStyles.headerGreeting}>
-            <Text style={common.headerTitle}>
-              {t('home_screen.hi')}, {user?.name?.split(' ')[0] || 'Alex'}! 👋
-            </Text>
-            <Text style={common.headerSubtitle}>
-              {user?.grade?.name || 'Grade'} • {user?.educational_system?.name || 'System'}
-            </Text>
+            <Text style={common.headerTitle}>{t('home_screen.hi')}, {user?.name?.split(' ')[0] || 'Alex'}! 👋</Text>
+            <Text style={common.headerSubtitle}>{user?.grade?.name || 'Grade'} • {user?.educational_system?.name || 'System'}</Text>
           </View>
         </View>
         <TouchableOpacity style={currentStyles.notificationButton}>
@@ -194,22 +190,22 @@ const HomeScreen: React.FC = () => {
             <View style={[currentStyles.statIconContainer, { backgroundColor: '#FDF2F8' }]}>
               <Ionicons name="briefcase" size={20} color="#EC4899" />
             </View>
-            <Text style={currentStyles.statLabel}> {t('home_screen.quizzes')} </Text>
-            <Text style={currentStyles.statValue}> {activitiesData?.total_quizzes ?? 0}</Text>
+            <Text style={currentStyles.statLabel}>{t('home_screen.quizzes')}</Text>
+            <Text style={currentStyles.statValue}>{activitiesData?.total_quizzes ?? 0}</Text>
           </View>
           <View style={currentStyles.topStatCard}>
             <View style={[currentStyles.statIconContainer, { backgroundColor: '#ECFDF5' }]}>
               <Ionicons name="trending-up" size={20} color="#10B981" />
             </View>
-            <Text style={currentStyles.statLabel}> {t('home_screen.completed')} </Text>
-            <Text style={currentStyles.statValue}> {activitiesData?.avg_score ?? 0}% </Text>
+            <Text style={currentStyles.statLabel}>{t('home_screen.completed')}</Text>
+            <Text style={currentStyles.statValue}>{activitiesData?.avg_score ?? 0}%</Text>
           </View>
         </View>
 
         <View style={common.card}>
           <View style={currentStyles.performanceHeader}>
             <View>
-              <Text style={currentStyles.performanceTitle}> {t('home_screen.performance')} </Text>
+              <Text style={currentStyles.performanceTitle}>{t('home_screen.performance')}</Text>
               <Text style={currentStyles.performanceStatus}>
                 {activitiesData?.performance_status || t('home_screen.excellent')}
               </Text>
@@ -268,8 +264,8 @@ const HomeScreen: React.FC = () => {
               <View style={currentStyles.quickActionIconWhite}>
                 <Ionicons name="play" size={20} color="#fff" />
               </View>
-              <Text style={currentStyles.quickActionTitleWhite}> Start </Text>
-              <Text style={currentStyles.quickActionSubtitle}> jump to quiz </Text>
+              <Text style={currentStyles.quickActionTitleWhite}>Start</Text>
+              <Text style={currentStyles.quickActionSubtitle}>jump to quiz</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={currentStyles.quickActionButton}
@@ -305,9 +301,9 @@ const HomeScreen: React.FC = () => {
 
         <View style={currentStyles.section}>
           <View style={currentStyles.sectionHeaderRow}>
-            <Text style={common.sectionTitle}> {t('home_screen.recent_activity')} </Text>
+            <Text style={common.sectionTitle}>{t('home_screen.recent_activity')}</Text>
             <TouchableOpacity onPress={() => navigation.navigate('Leaderboard')}>
-              <Text style={currentStyles.viewAllText}> {t('home_screen.view_all')} </Text>
+              <Text style={currentStyles.viewAllText}>{t('home_screen.view_all')}</Text>
             </TouchableOpacity>
           </View>
           {loading ? (
@@ -329,7 +325,7 @@ const HomeScreen: React.FC = () => {
           <Text style={currentStyles.quoteText}>
             "Learning is a treasure that will follow its owner everywhere."
           </Text>
-          <Text style={currentStyles.quoteAuthor}> - CHINESE PROVERB </Text>
+          <Text style={currentStyles.quoteAuthor}>- CHINESE PROVERB</Text>
         </View>
       </ScrollView>
     </View>

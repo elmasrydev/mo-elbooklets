@@ -19,13 +19,18 @@ import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import BackButton from '../components/navigation/BackButton';
+
 interface LoginScreenProps {
   onNavigateToRegister: () => void;
+  onBack: () => void;
 }
 
-const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister }) => {
+const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister, onBack }) => {
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const { login } = useAuth();
@@ -33,6 +38,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister }) => {
   const { language, setLanguage } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
+  const insets = useSafeAreaInsets();
 
   const handleLogin = async () => {
     if (!mobile.trim() || !password.trim()) {
@@ -51,27 +57,48 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister }) => {
     }
   };
 
-  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius);
+  const isRTL = language === 'ar';
+  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius, isRTL);
 
   return (
     <KeyboardAvoidingView
       style={currentStyles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView contentContainerStyle={currentStyles.scrollContainer}>
+      {/* Floating Back Button */}
+      <BackButton
+        onPress={onBack}
+        style={[
+          currentStyles.backButton,
+          { top: insets.top + spacing.sm },
+          common.start(spacing.lg),
+        ]}
+        color={theme.colors.text}
+      />
+
+      <ScrollView 
+        contentContainerStyle={currentStyles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={currentStyles.header}>
           <Image
-            source={require('../../assets/logo.png')}
+            source={require('../../assets/logo-icon.png')}
             style={currentStyles.logo}
             resizeMode="contain"
           />
-          <Text style={currentStyles.title}> {t('auth.welcome_back')} </Text>
-          <Text style={currentStyles.subtitle}> {t('auth.sign_in_subtitle')} </Text>
+          <Text style={currentStyles.title}>{t('auth.welcome_back')}</Text>
+          <Text style={currentStyles.subtitle}>{t('auth.sign_in_subtitle')}</Text>
         </View>
 
         <View style={currentStyles.form}>
-          <View style={currentStyles.inputContainer}>
-            <Text style={currentStyles.label}> {t('auth.mobile_number')} </Text>
+          {/* Mobile Input */}
+          <View style={currentStyles.inputWrapper}>
+            <Ionicons 
+              name="call-outline" 
+              size={20} 
+              color={theme.colors.textSecondary} 
+              style={currentStyles.inputIcon} 
+            />
             <TextInput
               style={currentStyles.input}
               value={mobile}
@@ -85,20 +112,40 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister }) => {
             />
           </View>
 
-          <View style={currentStyles.inputContainer}>
-            <Text style={currentStyles.label}> {t('auth.password')} </Text>
+          {/* Password Input */}
+          <View style={currentStyles.inputWrapper}>
+            <Ionicons 
+              name="lock-closed-outline" 
+              size={20} 
+              color={theme.colors.textSecondary} 
+              style={currentStyles.inputIcon} 
+            />
             <TextInput
-              style={currentStyles.input}
+              style={[currentStyles.input, { flex: 1 }]}
               value={password}
               onChangeText={setPassword}
               placeholder={t('auth.password_placeholder')}
               placeholderTextColor={theme.colors.textSecondary}
-              secureTextEntry
+              secureTextEntry={!showPassword}
               autoCapitalize="none"
               editable={!isLoading}
               textAlign={common.textAlign}
             />
+            <TouchableOpacity 
+              onPress={() => setShowPassword(!showPassword)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons 
+                name={showPassword ? "eye-off-outline" : "eye-outline"} 
+                size={20} 
+                color={theme.colors.textSecondary} 
+              />
+            </TouchableOpacity>
           </View>
+
+          <TouchableOpacity style={currentStyles.forgotContainer}>
+            <Text style={currentStyles.forgotText}>{t('auth.forgot_password')}</Text>
+          </TouchableOpacity>
 
           <TouchableOpacity
             style={[currentStyles.loginButton, isLoading && currentStyles.disabledButton]}
@@ -108,15 +155,17 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister }) => {
             {isLoading ? (
               <ActivityIndicator color="#ffffff" />
             ) : (
-              <Text style={currentStyles.loginButtonText}> {t('auth.sign_in')} </Text>
+              <Text style={currentStyles.loginButtonText}>{t('auth.sign_in')}</Text>
             )}
           </TouchableOpacity>
         </View>
 
+
+
         <View style={currentStyles.footer}>
-          <Text style={currentStyles.footerText}> {t('auth.dont_have_account')} </Text>
+          <Text style={currentStyles.footerText}>{t('auth.dont_have_account')}</Text>
           <TouchableOpacity onPress={onNavigateToRegister} disabled={isLoading}>
-            <Text style={currentStyles.linkText}> {t('auth.sign_up')} </Text>
+            <Text style={currentStyles.linkText}>{t('auth.sign_up')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -128,7 +177,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister }) => {
           >
             <Ionicons name="language-outline" size={18} color={theme.colors.primary} />
             <Text style={currentStyles.langButtonText}>
-              {language === 'en' ? 'العربية' : 'English'}
+              {language === 'en' ? t('common.arabic') : t('common.english')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -137,17 +186,110 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister }) => {
   );
 };
 
-const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRadius: any) =>
+const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRadius: any, isRTL: boolean) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.background },
-    scrollContainer: { flexGrow: 1, justifyContent: 'center', padding: spacing.xl },
-    langRow: {
-      flexDirection: common.rowDirection,
+    scrollContainer: { 
+      flexGrow: 1, 
+      paddingHorizontal: spacing.xl,
+      paddingTop: 60,
+      paddingBottom: spacing.xl 
+    },
+    header: { alignItems: 'center', marginBottom: 50 },
+    logo: { width: 120, height: 120, marginBottom: 24 },
+    title: {
+      fontSize: 32,
+      fontWeight: '800',
+      color: '#0F172A',
+      marginBottom: 8,
+      textAlign: 'center',
+    },
+    subtitle: { 
+      fontSize: fontSizes.base, 
+      color: '#64748B',
+      textAlign: 'center',
+      fontWeight: '500'
+    },
+    form: { marginBottom: 32 },
+    inputWrapper: {
+      flexDirection: isRTL ? 'row-reverse' : 'row',
+      alignItems: 'center',
+      backgroundColor: '#F8FAFC',
+      borderWidth: 1,
+      borderColor: '#E2E8F0',
+      borderRadius: 12,
+      paddingHorizontal: 16,
+      marginBottom: 16,
+      height: 56,
+    },
+    inputIcon: {
+      marginRight: isRTL ? 0 : 12,
+      marginLeft: isRTL ? 12 : 0,
+    },
+    input: {
+      flex: 1,
+      fontSize: fontSizes.base,
+      color: '#1E293B',
+      height: '100%',
+    },
+    forgotContainer: {
+      alignSelf: isRTL ? 'flex-start' : 'flex-end',
+      marginBottom: 32,
+    },
+    forgotText: {
+      color: theme.colors.primary,
+      fontWeight: '600',
+      fontSize: fontSizes.sm,
+    },
+    loginButton: {
+      backgroundColor: '#1E3A8A', // Deep Navy from Screenshot
+      borderRadius: 30, // Pill shaped button
+      height: 56,
+      alignItems: 'center',
       justifyContent: 'center',
-      marginTop: spacing.lg,
+      shadowColor: '#1E3A8A',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    disabledButton: { backgroundColor: '#94A3B8' },
+    loginButtonText: {
+      color: '#fff',
+      fontSize: 18,
+      fontWeight: '700',
+    },
+    footer: { 
+      flexDirection: isRTL ? 'row-reverse' : 'row', 
+      justifyContent: 'center', 
+      alignItems: 'center',
+      marginBottom: 24,
+      gap: 4,
+    },
+    footerText: { fontSize: fontSizes.base, color: '#64748B' },
+    linkText: { 
+      fontSize: fontSizes.base, 
+      color: '#1E3A8A', 
+      fontWeight: '700' 
+    },
+    backButton: {
+      position: 'absolute',
+      zIndex: 10,
+      padding: 8,
+      borderRadius: 20,
+      backgroundColor: theme.colors.surface,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    langRow: {
+      flexDirection: isRTL ? 'row-reverse' : 'row',
+      justifyContent: 'center',
     },
     langButton: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
       gap: 6,
       paddingVertical: 8,
@@ -155,56 +297,13 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       borderRadius: borderRadius.lg,
       borderWidth: 1,
       borderColor: theme.colors.primary,
-      backgroundColor: theme.colors.primaryLight || 'rgba(16, 185, 129, 0.08)',
+      backgroundColor: 'rgba(30, 58, 138, 0.05)',
     },
     langButtonText: {
       fontSize: fontSizes.sm,
       fontWeight: '600',
       color: theme.colors.primary,
     },
-    header: { alignItems: 'center', marginBottom: 40 },
-    logo: { width: 100, height: 100, marginBottom: 20 },
-    title: {
-      fontSize: fontSizes['3xl'],
-      fontWeight: 'bold',
-      color: theme.colors.text,
-      marginBottom: 8,
-    },
-    subtitle: { fontSize: fontSizes.base, color: theme.colors.textSecondary },
-    form: { marginBottom: 30 },
-    inputContainer: { marginBottom: 20 },
-    label: {
-      fontSize: fontSizes.base,
-      fontWeight: '600',
-      color: theme.colors.text,
-      marginBottom: 8,
-      textAlign: common.textAlign,
-    },
-    input: {
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      borderRadius: borderRadius.md,
-      padding: 15,
-      fontSize: fontSizes.base,
-      backgroundColor: theme.colors.surface,
-      color: theme.colors.text,
-    },
-    loginButton: {
-      backgroundColor: theme.colors.primary,
-      borderRadius: borderRadius.md,
-      padding: 12, // Reduced from 15
-      alignItems: 'center',
-      marginTop: 10,
-    },
-    disabledButton: { backgroundColor: theme.colors.buttonDisabled },
-    loginButtonText: {
-      color: '#fff',
-      fontSize: fontSizes.sm, // Changed from lg to sm
-      fontWeight: '600', // Changed from bold (if it was) to 600
-    },
-    footer: { flexDirection: common.rowDirection, justifyContent: 'center', alignItems: 'center' },
-    footerText: { fontSize: fontSizes.base, color: theme.colors.textSecondary },
-    linkText: { fontSize: fontSizes.base, color: theme.colors.primary, fontWeight: '600' },
   });
 
 export default LoginScreen;

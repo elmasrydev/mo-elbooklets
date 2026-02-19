@@ -121,29 +121,29 @@ export default function App() {
   // Show loading screen while fonts and i18n are loading
   if (!fontsLoaded || !appReady) {
     return (
-      <View style= { styles.loadingContainer } >
-      <ActivityIndicator size="large" color = "#10b981" />
-        </View>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#1E40AF" />
+      </View>
     );
   }
 
   return (
     <SafeAreaProvider>
-    <ApolloProvider client= { apolloClient } >
-    <ThemeProvider>
-    <LanguageProvider initialLanguage={ initialLanguage }>
-      <I18nextProvider i18n={ i18n }>
-        <AuthProvider>
-        <NavigationContainer>
-        <AppNavigator />
-        </NavigationContainer>
-        </AuthProvider>
-        </I18nextProvider>
-        </LanguageProvider>
+      <ApolloProvider client={apolloClient}>
+        <ThemeProvider>
+          <LanguageProvider initialLanguage={initialLanguage}>
+            <I18nextProvider i18n={i18n}>
+              <AuthProvider>
+                <NavigationContainer>
+                  <AppNavigator />
+                </NavigationContainer>
+              </AuthProvider>
+            </I18nextProvider>
+          </LanguageProvider>
         </ThemeProvider>
-        </ApolloProvider>
-        < StatusBar style = "auto" />
-          </SafeAreaProvider>
+      </ApolloProvider>
+      <StatusBar style="auto" />
+    </SafeAreaProvider>
   );
 }
 

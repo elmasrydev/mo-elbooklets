@@ -5,7 +5,9 @@ import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import TabNavigator from './TabNavigator';
 
-type AppState = 'splash' | 'auth' | 'main';
+import OnboardingScreen from '../screens/OnboardingScreen';
+
+type AppState = 'splash' | 'onboarding' | 'auth' | 'main';
 type AuthState = 'login' | 'register';
 
 const AppNavigator: React.FC = () => {
@@ -14,7 +16,17 @@ const AppNavigator: React.FC = () => {
   const [authState, setAuthState] = useState<AuthState>('login');
 
   const handleSplashFinish = (authenticated: boolean) => {
-    setAppState(authenticated ? 'main' : 'auth');
+    setAppState(authenticated ? 'main' : 'onboarding');
+  };
+
+  const handleOnboardingGetStarted = () => {
+    setAuthState('register');
+    setAppState('auth');
+  };
+
+  const handleOnboardingLogin = () => {
+    setAuthState('login');
+    setAppState('auth');
   };
 
   // Show splash screen while loading or during initial state
@@ -27,11 +39,27 @@ const AppNavigator: React.FC = () => {
     return <TabNavigator />;
   }
 
+  // Show onboarding screen
+  if (appState === 'onboarding') {
+    return (
+      <OnboardingScreen
+        onGetStarted={handleOnboardingGetStarted}
+        onLogin={handleOnboardingLogin}
+      />
+    );
+  }
+
   // Show authentication screens
   return authState === 'login' ? (
-    <LoginScreen onNavigateToRegister={() => setAuthState('register')} />
+    <LoginScreen
+      onNavigateToRegister={() => setAuthState('register')}
+      onBack={() => setAppState('onboarding')}
+    />
   ) : (
-    <RegisterScreen onNavigateToLogin={() => setAuthState('login')} />
+    <RegisterScreen
+      onNavigateToLogin={() => setAuthState('login')}
+      onBack={() => setAppState('onboarding')}
+    />
   );
 };
 

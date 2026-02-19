@@ -87,8 +87,8 @@ const MoreScreen: React.FC = () => {
     <View style={currentStyles.container}>
       <View style={common.header}>
         <View style={common.headerTextWrapper}>
-          <Text style={common.headerTitle}> {t('more_screen.header_title')} </Text>
-          <Text style={common.headerSubtitle}> {t('more_screen.header_subtitle')} </Text>
+          <Text style={common.headerTitle}>{t('more_screen.header_title')}</Text>
+          <Text style={common.headerSubtitle}>{t('more_screen.header_subtitle')}</Text>
         </View>
       </View>
 
@@ -104,8 +104,8 @@ const MoreScreen: React.FC = () => {
             </Text>
           </View>
           <View style={currentStyles.userInfo}>
-            <Text style={currentStyles.userName}> {user?.name || 'User'}</Text>
-            <Text style={currentStyles.userEmail}> {user?.email || 'No email'}</Text>
+            <Text style={currentStyles.userName}>{user?.name || 'User'}</Text>
+            <Text style={currentStyles.userEmail}>{user?.email || 'No email'}</Text>
             <Text style={currentStyles.userGrade}>
               {t('more_screen.grade')}: {user?.grade?.name || t('more_screen.not_specified')}
             </Text>
@@ -116,8 +116,10 @@ const MoreScreen: React.FC = () => {
         </View>
 
         <View style={currentStyles.menuSection}>
-          {menuItems.map((item, index) => {
-            const isLast = index === menuItems.length - 1;
+          {menuItems
+            .filter((item) => item.id !== 'color_theme')
+            .map((item, index, filteredItems) => {
+              const isLast = index === filteredItems.length - 1;
             return (
               <View key={item.id}>
                 <TouchableOpacity
@@ -229,7 +231,7 @@ const MoreScreen: React.FC = () => {
         </View>
 
         <View style={currentStyles.versionContainer}>
-          <Text style={currentStyles.versionText}> ElBooklets {t('common.version')} 1.0.0 </Text>
+          <Text style={currentStyles.versionText}>ElBooklets {t('common.version')} 1.0.0</Text>
         </View>
       </ScrollView>
     </View>

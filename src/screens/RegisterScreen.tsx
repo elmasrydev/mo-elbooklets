@@ -21,12 +21,30 @@ import { useCommonStyles } from '../hooks/useCommonStyles';
 import { tryFetchWithFallback } from '../config/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useLanguage } from '../context/LanguageContext';
+
+import BackButton from '../components/navigation/BackButton';
 
 interface RegisterScreenProps {
   onNavigateToLogin: () => void;
+  onBack: () => void;
 }
 
-const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) => {
+const PickerTrigger = ({ value, placeholder, icon, onPress, theme, currentStyles }: any) => (
+  <TouchableOpacity 
+    style={currentStyles.inputWrapper} 
+    onPress={onPress}
+    activeOpacity={0.7}
+  >
+    <Ionicons name={icon} size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
+    <Text style={[currentStyles.inputText, !value && { color: theme.colors.textSecondary }]}>
+      {value || placeholder}
+    </Text>
+    <Ionicons name="chevron-down" size={20} color={theme.colors.textSecondary} />
+  </TouchableOpacity>
+);
+
+const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBack }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [mobile, setMobile] = useState('');
@@ -39,14 +57,16 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
 
   const { register } = useAuth();
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
+  const { language } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
   const insets = useSafeAreaInsets();
+  const isRTL = language === 'ar';
+  const [showPassword, setShowPassword] = useState(false);
 
   const [gradesData, setGradesData] = useState<{ grades: any[] } | null>(null);
   const [systemsData, setSystemsData] = useState<{ educationalSystems: any[] } | null>(null);
-  const [gradesLoading, setGradesLoading] = useState(true);
-  const [systemsLoading, setSystemsLoading] = useState(true);
+
 
   useEffect(() => {
     fetchGrades();
@@ -55,27 +75,21 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
 
   const fetchGrades = async () => {
     try {
-      setGradesLoading(true);
       const result = await tryFetchWithFallback(`query GetGrades { grades { id name } }`);
       if (result.data) setGradesData(result.data);
     } catch (error) {
       console.error('Error fetching grades:', error);
-    } finally {
-      setGradesLoading(false);
-    }
+    } 
   };
 
   const fetchSystems = async () => {
     try {
-      setSystemsLoading(true);
       const result = await tryFetchWithFallback(
         `query GetSystems { educationalSystems { id name } }`,
       );
       if (result.data) setSystemsData(result.data);
     } catch (error) {
       console.error('Error fetching systems:', error);
-    } finally {
-      setSystemsLoading(false);
     }
   };
 
@@ -112,49 +126,47 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
       if (!result.success)
         Alert.alert(t('auth.registration_failed'), result.error || t('auth.registration_error'));
     } catch (error) {
+      console.error('Registration error:', error);
       Alert.alert(t('common.error'), t('common.unexpected_error'));
     } finally {
       setIsLoading(false);
     }
   };
 
-  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius);
+  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius, isRTL);
+
+
 
   return (
     <KeyboardAvoidingView
-      style={[
-        currentStyles.container,
-        { paddingTop: insets.top, paddingBottom: insets.bottom + 15 },
-      ]}
+      style={currentStyles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      {/* Floating Close Button */}
-      <TouchableOpacity
+      {/* Floating Back Button */}
+      <BackButton
+        onPress={onBack}
         style={[
-          currentStyles.closeButton,
+          currentStyles.backButton,
           { top: insets.top + spacing.sm },
           common.start(spacing.lg),
         ]}
-        onPress={onNavigateToLogin}
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-      >
-        <Ionicons name="close" size={28} color={theme.colors.text} />
-      </TouchableOpacity>
+        color={theme.colors.text}
+      />
 
-      <ScrollView contentContainerStyle={currentStyles.scrollContainer}>
+      <ScrollView contentContainerStyle={currentStyles.scrollContainer} showsVerticalScrollIndicator={false}>
         <View style={currentStyles.header}>
           <Image
-            source={require('../../assets/logo.png')}
+            source={require('../../assets/logo-icon.png')}
             style={currentStyles.logo}
             resizeMode="contain"
           />
-          <Text style={currentStyles.title}> {t('auth.register')} </Text>
-          <Text style={currentStyles.subtitle}> {t('auth.sign_up_subtitle')} </Text>
+          <Text style={currentStyles.title}>{t('auth.register')}</Text>
+          <Text style={currentStyles.subtitle}>{t('auth.sign_up_subtitle')}</Text>
         </View>
 
         <View style={currentStyles.form}>
-          <View style={currentStyles.inputContainer}>
-            <Text style={currentStyles.label}> {t('auth.name')} </Text>
+          <View style={currentStyles.inputWrapper}>
+            <Ionicons name="person-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
             <TextInput
               style={currentStyles.input}
               value={name}
@@ -163,11 +175,12 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
               placeholderTextColor={theme.colors.textSecondary}
               autoCapitalize="words"
               editable={!isLoading}
-              textAlign={common.textAlign as any}
+              textAlign={common.textAlign}
             />
           </View>
-          <View style={currentStyles.inputContainer}>
-            <Text style={currentStyles.label}> {t('auth.email')} </Text>
+
+          <View style={currentStyles.inputWrapper}>
+            <Ionicons name="mail-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
             <TextInput
               style={currentStyles.input}
               value={email}
@@ -177,11 +190,12 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
               keyboardType="email-address"
               autoCapitalize="none"
               editable={!isLoading}
-              textAlign={common.textAlign as any}
+              textAlign={common.textAlign}
             />
           </View>
-          <View style={currentStyles.inputContainer}>
-            <Text style={currentStyles.label}> {t('auth.mobile_number')} </Text>
+
+          <View style={currentStyles.inputWrapper}>
+            <Ionicons name="call-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
             <TextInput
               style={currentStyles.input}
               value={mobile}
@@ -191,129 +205,58 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
               keyboardType="phone-pad"
               autoCapitalize="none"
               editable={!isLoading}
-              textAlign={common.textAlign as any}
+              textAlign={common.textAlign}
             />
           </View>
 
-          <View style={currentStyles.inputContainer}>
-            <Text style={currentStyles.label}> {t('more_screen.grade')} </Text>
-            {gradesLoading ? (
-              <View style={currentStyles.loadingContainer}>
-                <ActivityIndicator size="small" color={theme.colors.primary} />
-                <Text style={currentStyles.loadingText}>
-                  {' '}
-                  {t('home_screen.loading_activities')}{' '}
-                </Text>
-              </View>
-            ) : Platform.OS === 'ios' ? (
-              <TouchableOpacity
-                style={currentStyles.input}
-                onPress={() => setPickerModalVisible('grade')}
-              >
-                <Text
-                  style={{
-                    color: selectedGrade ? theme.colors.text : theme.colors.textSecondary,
-                    textAlign: 'left',
-                    width: '100%',
-                  }}
-                >
-                  {selectedGrade
-                    ? gradesData?.grades?.find((g: any) => g.id === selectedGrade)?.name
-                    : t('auth.select_grade')}
-                </Text>
-              </TouchableOpacity>
-            ) : (
-              <View style={currentStyles.pickerContainer}>
-                <Picker
-                  selectedValue={selectedGrade}
-                  onValueChange={setSelectedGrade}
-                  enabled={!isLoading}
-                  style={currentStyles.picker}
-                  dropdownIconColor={theme.colors.text}
-                  mode="dropdown"
-                >
-                  <Picker.Item label={t('auth.select_grade')} value="" />
-                  {gradesData?.grades?.map((grade: any) => (
-                    <Picker.Item key={grade.id} label={grade.name} value={grade.id} />
-                  ))}
-                </Picker>
-              </View>
-            )}
-          </View>
+          <PickerTrigger 
+            icon="school-outline"
+            placeholder={t('auth.select_grade')}
+            value={gradesData?.grades?.find((g: any) => g.id === selectedGrade)?.name}
+            onPress={() => setPickerModalVisible('grade')}
+            theme={theme}
+            currentStyles={currentStyles}
+          />
 
-          <View style={currentStyles.inputContainer}>
-            <Text style={currentStyles.label}> {t('auth.educational_system')} </Text>
-            {systemsLoading ? (
-              <View style={currentStyles.loadingContainer}>
-                <ActivityIndicator size="small" color={theme.colors.primary} />
-                <Text style={currentStyles.loadingText}>
-                  {' '}
-                  {t('home_screen.loading_activities')}{' '}
-                </Text>
-              </View>
-            ) : Platform.OS === 'ios' ? (
-              <TouchableOpacity
-                style={currentStyles.input}
-                onPress={() => setPickerModalVisible('system')}
-              >
-                <Text
-                  style={{
-                    color: selectedSystem ? theme.colors.text : theme.colors.textSecondary,
-                    textAlign: 'left',
-                    width: '100%',
-                  }}
-                >
-                  {selectedSystem
-                    ? systemsData?.educationalSystems?.find((s: any) => s.id === selectedSystem)
-                        ?.name
-                    : t('auth.select_educational_system')}
-                </Text>
-              </TouchableOpacity>
-            ) : (
-              <View style={currentStyles.pickerContainer}>
-                <Picker
-                  selectedValue={selectedSystem}
-                  onValueChange={setSelectedSystem}
-                  enabled={!isLoading}
-                  style={currentStyles.picker}
-                  dropdownIconColor={theme.colors.text}
-                  mode="dropdown"
-                >
-                  <Picker.Item label={t('auth.select_educational_system')} value="" />
-                  {systemsData?.educationalSystems?.map((system: any) => (
-                    <Picker.Item key={system.id} label={system.name} value={system.id} />
-                  ))}
-                </Picker>
-              </View>
-            )}
-          </View>
+          <PickerTrigger 
+            icon="book-outline"
+            placeholder={t('auth.select_educational_system')}
+            value={systemsData?.educationalSystems?.find((s: any) => s.id === selectedSystem)?.name}
+            onPress={() => setPickerModalVisible('system')}
+            theme={theme}
+            currentStyles={currentStyles}
+          />
 
-          <View style={currentStyles.inputContainer}>
-            <Text style={currentStyles.label}> {t('auth.password')} </Text>
+          <View style={currentStyles.inputWrapper}>
+            <Ionicons name="lock-closed-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
             <TextInput
               style={currentStyles.input}
               value={password}
               onChangeText={setPassword}
               placeholder={t('auth.password_placeholder')}
               placeholderTextColor={theme.colors.textSecondary}
-              secureTextEntry
+              secureTextEntry={!showPassword}
               autoCapitalize="none"
               editable={!isLoading}
-              textAlign={common.textAlign as any}
+              textAlign={common.textAlign}
             />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+              <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={theme.colors.textSecondary} />
+            </TouchableOpacity>
           </View>
-          <View style={currentStyles.inputContainer}>
-            <Text style={currentStyles.label}> {t('auth.confirm_password')} </Text>
+
+          <View style={currentStyles.inputWrapper}>
+            <Ionicons name="shield-checkmark-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
             <TextInput
               style={currentStyles.input}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               placeholder={t('auth.confirm_password_placeholder')}
               placeholderTextColor={theme.colors.textSecondary}
-              secureTextEntry
+              secureTextEntry={!showPassword}
               autoCapitalize="none"
               editable={!isLoading}
-              textAlign={common.textAlign as any}
+              textAlign={common.textAlign}
             />
           </View>
 
@@ -325,15 +268,15 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
             {isLoading ? (
               <ActivityIndicator color="#ffffff" />
             ) : (
-              <Text style={currentStyles.registerButtonText}> {t('auth.sign_up')} </Text>
+              <Text style={currentStyles.registerButtonText}>{t('auth.sign_up')}</Text>
             )}
           </TouchableOpacity>
         </View>
 
         <View style={currentStyles.footer}>
-          <Text style={currentStyles.footerText}> {t('auth.already_have_account')} </Text>
+          <Text style={currentStyles.footerText}>{t('auth.already_have_account')}</Text>
           <TouchableOpacity onPress={onNavigateToLogin} disabled={isLoading}>
-            <Text style={currentStyles.linkText}> {t('auth.sign_in')} </Text>
+            <Text style={currentStyles.linkText}>{t('auth.sign_in')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -388,76 +331,91 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
   );
 };
 
-const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRadius: any) =>
+const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRadius: any, isRTL: boolean) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.background },
-    scrollContainer: { flexGrow: 1, justifyContent: 'center', padding: spacing.xl },
-    header: { alignItems: 'center', marginBottom: 30 },
-    logo: { width: 80, height: 80, marginBottom: 15 },
-    title: {
-      fontSize: fontSizes['3xl'],
-      fontWeight: 'bold',
-      color: theme.colors.text,
-      marginBottom: 8,
+    scrollContainer: { 
+      flexGrow: 1, 
+      paddingHorizontal: spacing.xl,
+      paddingTop: 60,
+      paddingBottom: spacing.xl 
     },
-    subtitle: { fontSize: fontSizes.base, color: theme.colors.textSecondary },
-    form: { marginBottom: 20 },
-    inputContainer: { marginBottom: 15 },
-    label: {
-      fontSize: fontSizes.base,
-      fontWeight: '600',
-      color: theme.colors.text,
+    header: { alignItems: 'center', marginBottom: 32 },
+    logo: { width: 100, height: 100, marginBottom: 16 },
+    title: {
+      fontSize: 28,
+      fontWeight: '800',
+      color: '#0F172A',
       marginBottom: 8,
-      textAlign: 'left',
+      textAlign: 'center',
+    },
+    subtitle: { 
+      fontSize: fontSizes.base, 
+      color: '#64748B',
+      textAlign: 'center',
+      fontWeight: '500'
+    },
+    form: { marginBottom: 24 },
+    inputWrapper: {
+      flexDirection: isRTL ? 'row-reverse' : 'row',
+      alignItems: 'center',
+      backgroundColor: '#F8FAFC',
+      borderWidth: 1,
+      borderColor: '#E2E8F0',
+      borderRadius: 12,
+      paddingHorizontal: 16,
+      marginBottom: 12,
+      height: 56,
+    },
+    inputIcon: {
+      marginRight: isRTL ? 0 : 12,
+      marginLeft: isRTL ? 12 : 0,
     },
     input: {
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      borderRadius: borderRadius.md,
-      padding: 15,
+      flex: 1,
       fontSize: fontSizes.base,
-      backgroundColor: theme.colors.surface,
-      color: theme.colors.text,
+      color: '#1E293B',
+      height: '100%',
     },
-    pickerContainer: {
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      borderRadius: borderRadius.md,
-      backgroundColor: theme.colors.surface,
+    inputText: {
+      flex: 1,
+      fontSize: fontSizes.base,
+      color: '#1E293B',
+      textAlign: isRTL ? 'right' : 'left',
     },
-    picker: { height: 50, color: theme.colors.text, backgroundColor: theme.colors.surface },
-    loadingContainer: {
-      flexDirection: common.rowDirection,
-      alignItems: 'center',
-      padding: 15,
-      backgroundColor: theme.colors.surface,
-      borderRadius: borderRadius.md,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-    },
-    loadingText: { ...common.marginStart(10), color: theme.colors.textSecondary },
     registerButton: {
-      backgroundColor: theme.colors.primary,
-      borderRadius: borderRadius.md,
-      padding: 12, // Reduced from 15
+      backgroundColor: '#1E3A8A',
+      borderRadius: 30,
+      height: 56,
       alignItems: 'center',
-      marginTop: 10,
+      justifyContent: 'center',
+      marginTop: 16,
+      shadowColor: '#1E3A8A',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      elevation: 4,
     },
-    disabledButton: { backgroundColor: theme.colors.buttonDisabled },
+    disabledButton: { backgroundColor: '#94A3B8' },
     registerButtonText: {
       color: '#fff',
-      fontSize: fontSizes.sm, // Changed from lg to sm
-      fontWeight: '600', // Changed from bold (if it was) to 600
+      fontSize: 18,
+      fontWeight: '700',
     },
-    footer: {
-      flexDirection: common.rowDirection,
-      justifyContent: 'center',
+    footer: { 
+      flexDirection: isRTL ? 'row-reverse' : 'row', 
+      justifyContent: 'center', 
       alignItems: 'center',
-      marginBottom: 20,
+      marginBottom: 24,
+      gap: 4,
     },
-    footerText: { fontSize: fontSizes.base, color: theme.colors.textSecondary },
-    linkText: { fontSize: fontSizes.base, color: theme.colors.primary, fontWeight: '600' },
-    closeButton: {
+    footerText: { fontSize: fontSizes.base, color: '#64748B' },
+    linkText: { 
+      fontSize: fontSizes.base, 
+      color: '#1E3A8A', 
+      fontWeight: '700' 
+    },
+    backButton: {
       position: 'absolute',
       zIndex: 10,
       padding: 8,
@@ -476,27 +434,24 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
     },
     modalContent: {
       backgroundColor: theme.colors.surface,
-      borderTopLeftRadius: borderRadius.lg,
-      borderTopRightRadius: borderRadius.lg,
-      paddingBottom: 20,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      paddingBottom: 40,
     },
     modalHeader: {
       flexDirection: 'row',
       justifyContent: 'flex-end',
       padding: 16,
       borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
-      backgroundColor: theme.colors.surface, // Ensure header has background
-      borderTopLeftRadius: borderRadius.lg,
-      borderTopRightRadius: borderRadius.lg,
+      borderBottomColor: '#E2E8F0',
     },
     modalDoneButton: {
       paddingHorizontal: 16,
     },
     modalDoneText: {
-      color: theme.colors.primary,
-      fontSize: fontSizes.lg,
-      fontWeight: '600',
+      color: '#1E3A8A',
+      fontSize: 18,
+      fontWeight: '700',
     },
   });
 

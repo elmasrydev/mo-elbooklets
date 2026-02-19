@@ -13,10 +13,9 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
 
   useEffect(() => {
     if (!isLoading) {
-      // Add a small delay for better UX
       const timer = setTimeout(() => {
         onFinish(isAuthenticated);
-      }, 800);
+      }, 800); // Reduced to 3s for better UX while keeping it visible
 
       return () => clearTimeout(timer);
     }
@@ -26,27 +25,29 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
 
   return (
     <View style={currentStyles.container}>
+      {/* 1. Full-screen Background Image */}
+      <Image
+        source={require('../../assets/splash-bg-default.png')}
+        style={StyleSheet.absoluteFillObject}
+        resizeMode="cover"
+      />
+
+      {/* 2. Centered Logo Overlay */}
+      <View style={currentStyles.logoOverlayContainer}>
+        <Image
+          source={require('../../assets/splash-logo.png')}
+          style={currentStyles.logo}
+          resizeMode="contain"
+        />
+      </View>
+
+      {/* 3. Loading Indicator & Info */}
       <View style={currentStyles.content}>
-        {/* App Logo/Icon */}
-        <View style={currentStyles.logoContainer}>
-          <Image
-            source={require('../../assets/logo.png')}
-            style={currentStyles.logo}
-            resizeMode="contain"
-          />
-          <Text style={currentStyles.appName}>ElBooklets</Text>
-        </View>
-
-        {/* Loading indicator */}
         <ActivityIndicator size="large" color={theme.colors.primary} style={currentStyles.loader} />
-
         <Text style={currentStyles.loadingText}>Loading...</Text>
       </View>
 
-      {/* Footer */}
-      <View style={currentStyles.footer}>
-        <Text style={currentStyles.footerText}>Welcome to ElBooklets Hub</Text>
-      </View>
+      {/* 4. Optional: Re-add footer if needed, but keeping it clean for now */}
     </View>
   );
 };
@@ -55,47 +56,38 @@ const styles = (theme: any) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: theme.colors.primary100, // Dynamic light theme color
       justifyContent: 'center',
       alignItems: 'center',
     },
-    content: {
-      flex: 1,
+    logoOverlayContainer: {
+      width: '150%',
+      aspectRatio: 1,
       justifyContent: 'center',
       alignItems: 'center',
-    },
-    logoContainer: {
-      alignItems: 'center',
-      marginBottom: 50,
+      backgroundColor: 'transparent',
     },
     logo: {
-      width: 150,
-      height: 150,
-      marginBottom: 20,
+      width: '100%',
+      height: '100%',
+      backgroundColor: 'transparent',
     },
-    appName: {
-      fontSize: 36,
-      fontWeight: 'bold',
-      color: theme.colors.primary,
-      letterSpacing: 1,
+    content: {
+      position: 'absolute',
+      bottom: 100,
+      alignItems: 'center',
     },
     loader: {
-      marginVertical: 20,
+      marginVertical: 15,
     },
     loadingText: {
       fontSize: 16,
       color: theme.colors.textSecondary,
-      marginTop: 10,
-      fontWeight: '500',
-    },
-    footer: {
-      paddingBottom: 50,
-    },
-    footerText: {
-      fontSize: 14,
-      color: theme.colors.textTertiary,
-      textAlign: 'center',
-      fontWeight: '500',
+      fontWeight: '600',
+      backgroundColor: 'rgba(255, 255, 255, 0.6)',
+      paddingHorizontal: 12,
+      paddingVertical: 4,
+      borderRadius: 12,
+      overflow: 'hidden',
     },
   });
 

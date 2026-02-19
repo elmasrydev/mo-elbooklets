@@ -45,10 +45,9 @@ const RecentActivityCard: React.FC<ActivityCardProps> = ({ activity, onPress }) 
         <Ionicons name={subjectConfig.icon} size={24} color={subjectConfig.color} />
       </View>
       <View style={currentStyles.infoContainer}>
-        <Text style={currentStyles.subjectName}> {activity.subject.name} </Text>
+        <Text style={currentStyles.subjectName}>{activity.subject.name}</Text>
         <Text style={currentStyles.timeText}>
-          {' '}
-          {getTimeAgo(activity.completedAt, t, language)}{' '}
+          {getTimeAgo(activity.completedAt, t, language)}
         </Text>
       </View>
       <View style={currentStyles.rightContainer}>

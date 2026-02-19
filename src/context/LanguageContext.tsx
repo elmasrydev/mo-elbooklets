@@ -115,7 +115,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({
     [language, setLanguage],
   );
 
-  return <LanguageContext.Provider value={value}> {children} </LanguageContext.Provider>;
+  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 };
 
 export const useLanguage = () => {

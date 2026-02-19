@@ -107,7 +107,7 @@ const generateThemeColors = (mode: ThemeMode, palette: ColorPalette): ThemeColor
       textTertiary: '#999999',
       border: '#e0e0e0',
       primary: palette.primary500,
-      secondary: '#4CAF50',
+      secondary: palette.secondary,
       card: '#ffffff',
       headerBackground: palette.primary500,
       headerText: '#ffffff',
@@ -174,7 +174,7 @@ const generateThemeColors = (mode: ThemeMode, palette: ColorPalette): ThemeColor
       textTertiary: '#64748b', // Slate 500
       border: '#1e293b', // Slate 800
       primary: palette.primary500,
-      secondary: '#10b981',
+      secondary: palette.secondary,
       card: '#1e293b', // Slate 800
       headerBackground: '#020617',
       headerText: '#f8fafc',
