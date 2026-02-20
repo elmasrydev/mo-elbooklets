@@ -37,6 +37,7 @@ interface Lesson {
   summary?: string;
   points?: string[];
   lessonPoints?: LessonPoint[];
+  videoUrl?: string; // New field
   chapter: {
     id: string;
     name: string;
@@ -90,6 +91,7 @@ const StudyChaptersScreen: React.FC = () => {
               name
               summary
               points
+              videoUrl
               lessonPoints {
                 id
                 title

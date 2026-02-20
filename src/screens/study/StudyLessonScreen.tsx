@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
+import { Video, ResizeMode, Audio } from 'expo-av';
 import { layout } from '../../config/layout';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import CloseButton from '../../components/navigation/CloseButton';
@@ -36,12 +37,99 @@ interface Lesson {
   summary?: string;
   points?: string[]; // Legacy field
   lessonPoints?: LessonPoint[]; // New structured points
+  videoUrl?: string; // New field
   chapter: {
     id: string;
     name: string;
     order: number;
   };
 }
+
+const LessonVideoPlayer: React.FC<{ url: string; theme: any }> = ({ url, theme }) => {
+  const video = React.useRef<Video>(null);
+  const [status, setStatus] = useState<any>({});
+  const [isMuted, setIsMuted] = useState(false);
+
+  const formatTime = (ms: number) => {
+    if (!ms) return '0:00';
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  };
+
+  const handlePlayPause = () => {
+    if (status.isPlaying) {
+      video.current?.pauseAsync();
+    } else {
+      video.current?.playAsync();
+    }
+  };
+
+  const handleSkip = async (seconds: number) => {
+    if (status.positionMillis !== undefined) {
+      const newPosition = status.positionMillis + seconds * 1000;
+      await video.current?.setPositionAsync(Math.max(0, Math.min(newPosition, status.durationMillis || newPosition)));
+    }
+  };
+
+  return (
+    <View style={videoStyles.container}>
+      <Video
+        ref={video}
+        style={videoStyles.video}
+        source={{ uri: url }}
+        useNativeControls={false}
+        resizeMode={ResizeMode.CONTAIN}
+        isLooping={false}
+        onPlaybackStatusUpdate={(s) => setStatus(() => s)}
+        isMuted={isMuted}
+      />
+      
+      {/* Custom Controls Overlays */}
+      <View style={videoStyles.controlsContainer}>
+        {/* Progress Bar Container */}
+        <View style={videoStyles.progressWrapper}>
+          <View style={videoStyles.progressBarBackground}>
+            <View 
+              style={[
+                videoStyles.progressBarFill, 
+                { width: `${(status.positionMillis / (status.durationMillis || 1)) * 100}%` }
+              ]} 
+            />
+          </View>
+          <View style={videoStyles.timeRow}>
+            <Text style={videoStyles.timeText}>{formatTime(status.positionMillis)}</Text>
+            <Text style={videoStyles.timeText}>{formatTime(status.durationMillis)}</Text>
+          </View>
+        </View>
+
+        {/* Main Buttons */}
+        <View style={videoStyles.mainButtonsRow}>
+          <TouchableOpacity onPress={() => handleSkip(-10)} style={videoStyles.controlButton}>
+            <Ionicons name="play-back" size={24} color="#fff" />
+          </TouchableOpacity>
+          
+          <TouchableOpacity onPress={handlePlayPause} style={videoStyles.playButton}>
+            <Ionicons name={status.isPlaying ? "pause" : "play"} size={32} color="#fff" />
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => handleSkip(10)} style={videoStyles.controlButton}>
+            <Ionicons name="play-forward" size={24} color="#fff" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Audio Toggle */}
+        <TouchableOpacity 
+          onPress={() => setIsMuted(!isMuted)} 
+          style={videoStyles.muteButton}
+        >
+          <Ionicons name={isMuted ? "volume-mute" : "volume-high"} size={20} color="#fff" />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
 
 const StudyLessonScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -107,6 +195,13 @@ const StudyLessonScreen: React.FC = () => {
         contentContainerStyle={{ padding: layout.screenPadding, paddingBottom: 30 }}
         showsVerticalScrollIndicator={false}
       >
+        {/* Video Section */}
+        {currentLesson.videoUrl && (
+          <View style={currentStyles.videoSection}>
+             <LessonVideoPlayer url={currentLesson.videoUrl} theme={theme} />
+          </View>
+        )}
+
         {/* Summary Section */}
         <View style={currentStyles.section}>
           <View style={currentStyles.sectionHeader}>
@@ -270,6 +365,17 @@ const styles = (theme: any, isRTL: boolean) =>
       color: theme.colors.text,
       textAlign: isRTL ? 'right' : 'left',
     },
+    videoSection: {
+      marginBottom: 20,
+      borderRadius: 16,
+      overflow: 'hidden',
+      backgroundColor: '#000',
+      elevation: 5,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 10,
+    },
     summaryText: {
       fontSize: 15,
       lineHeight: 24,
@@ -336,5 +442,74 @@ const styles = (theme: any, isRTL: boolean) =>
       textAlign: isRTL ? 'right' : 'left',
     },
   });
+
+const videoStyles = StyleSheet.create({
+  container: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    backgroundColor: '#000',
+    borderRadius: 12,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  video: {
+    width: '100%',
+    height: '100%',
+  },
+  controlsContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 10,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  progressWrapper: {
+    marginBottom: 8,
+  },
+  progressBarBackground: {
+    height: 4,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#3B82F6', // Brand blue
+  },
+  timeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  timeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  mainButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 20,
+  },
+  controlButton: {
+    padding: 8,
+  },
+  playButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(59, 130, 246, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  muteButton: {
+    position: 'absolute',
+    right: 15,
+    bottom: 12,
+    padding: 5,
+  },
+});
 
 export default StudyLessonScreen;
