@@ -257,7 +257,9 @@
     "loading_leaderboard": "Loading leaderboard...",
     "error_loading_leaderboard": "Error Loading Leaderboard",
     "no_rankings_yet": "No rankings yet",
-    "be_first_hint": "Be the first to complete quizzes and appear on the leaderboard!"
+    "be_first_hint": "Be the first to complete quizzes and appear on the leaderboard!",
+    "no_more_students": "No more students ranked yet",
+    "no_student_yet": "Waiting for student"
   },
   "auth": {
     "login": "Login",

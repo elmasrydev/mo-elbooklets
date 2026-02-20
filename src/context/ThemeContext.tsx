@@ -43,6 +43,11 @@ interface ThemeColors {
   silver: string;
   bronze: string;
   orange: string;
+  navy: string;
+  darkGray: string;
+  mediumGray: string;
+  lightGray: string;
+  bgGray: string;
   success: string;
   successBackground: string;
   successText: string;
@@ -128,7 +133,12 @@ const generateThemeColors = (mode: ThemeMode, palette: ColorPalette): ThemeColor
       gold: '#FFD700',
       silver: '#C0C0C0',
       bronze: '#CD7F32',
-      orange: '#FF9800',
+      orange: '#f59e0b',
+      navy: '#0f172a',
+      darkGray: '#1f2937',
+      mediumGray: '#6b7280',
+      lightGray: '#e5e7eb',
+      bgGray: '#f5f5f5',
       success: '#28a745',
       successBackground: '#d4edda',
       successText: '#155724',
@@ -195,7 +205,12 @@ const generateThemeColors = (mode: ThemeMode, palette: ColorPalette): ThemeColor
       gold: '#FFD700',
       silver: '#C0C0C0',
       bronze: '#CD7F32',
-      orange: '#FF9800',
+      orange: '#f59e0b',
+      navy: '#0f172a',
+      darkGray: '#1f2937',
+      mediumGray: '#6b7280',
+      lightGray: '#e5e7eb',
+      bgGray: '#f5f5f5',
       success: '#28a745',
       successBackground: '#1e3a1e',
       successText: '#90EE90',

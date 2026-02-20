@@ -206,17 +206,22 @@ const LeaderboardScreen: React.FC = () => {
     const third = top3.find((s) => s.rank === 3);
 
     const PodiumStudent = ({ student, rank, style }: any) => {
-      if (!student) return null;
+      const name = student ? student.name : t('leaderboard_screen.no_student_yet');
+      const points = student ? `${student.xp.toLocaleString()} pts` : '- pts';
+      const avatarUri = student 
+        ? `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random&color=fff&size=128`
+        : `https://ui-avatars.com/api/?name=%3F&background=E2E8F0&color=475569&size=128`;
+
       return (
         <View style={[currentStyles.podiumStudentOverlay, style]}>
           <View style={[currentStyles.podiumAvatar, rank === 1 && currentStyles.podiumAvatarLarge]}>
             <Image 
-              source={{ uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random&color=fff&size=128` }} 
+              source={{ uri: avatarUri }} 
               style={currentStyles.avatarImage} 
             />
           </View>
-          <Text style={currentStyles.podiumNameText} numberOfLines={1}>{student.name}</Text>
-          <Text style={currentStyles.podiumPointsText}>{student.xp.toLocaleString()} pts</Text>
+          <Text style={currentStyles.podiumNameText} numberOfLines={1}>{name}</Text>
+          <Text style={currentStyles.podiumPointsText}>{points}</Text>
         </View>
       );
     };
@@ -276,25 +281,33 @@ const LeaderboardScreen: React.FC = () => {
     return (
       <>
         {renderCurrentUserCard(leaderboard.userEntry)}
-        {top3.length > 0 && <Podium top3={top3} />}
+        <Podium top3={top3} />
 
-        <View style={currentStyles.listCard}>
-          {rest.map((student, index) => (
-            <View key={student.id} style={[currentStyles.listItem, index === rest.length - 1 && { borderBottomWidth: 0 }]}>
-              <View style={currentStyles.listItemLeft}>
-                <Text style={currentStyles.listItemRank}>#{student.rank}</Text>
-                <View style={currentStyles.listItemAvatar}>
-                  <Image 
-                    source={{ uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=E2E8F0&color=475569&size=64` }} 
-                    style={currentStyles.avatarImageSmall} 
-                  />
+        {rest.length > 0 ? (
+          <View style={currentStyles.listCard}>
+            {rest.map((student, index) => (
+              <View key={student.id} style={[currentStyles.listItem, index === rest.length - 1 && { borderBottomWidth: 0 }]}>
+                <View style={currentStyles.listItemLeft}>
+                  <Text style={currentStyles.listItemRank}>#{student.rank}</Text>
+                  <View style={currentStyles.listItemAvatar}>
+                    <Image
+                      source={{ uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=E2E8F0&color=475569&size=64` }}
+                      style={currentStyles.avatarImageSmall}
+                    />
+                  </View>
+                  <Text style={currentStyles.listItemName} numberOfLines={1}>{student.name}</Text>
                 </View>
-                <Text style={currentStyles.listItemName} numberOfLines={1}>{student.name}</Text>
+                <Text style={currentStyles.listItemPoints}>{student.xp.toLocaleString()} pts</Text>
               </View>
-              <Text style={currentStyles.listItemPoints}>{student.xp.toLocaleString()} pts</Text>
-            </View>
-          ))}
-        </View>
+            ))}
+          </View>
+        ) : (
+          <View style={[currentStyles.listCard, { alignItems: 'center', paddingVertical: spacing.xl }]}>
+            <Text style={{ color: theme.colors.textSecondary, fontWeight: '600' }}>
+              {t('leaderboard_screen.no_more_students')}
+            </Text>
+          </View>
+        )}
       </>
     );
   };
@@ -396,11 +409,11 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
 
     // User Status Card
     userStatusCard: {
-      backgroundColor: '#EFF6FF',
+      backgroundColor: theme.colors.primary100,
       borderRadius: borderRadius.xl,
       padding: spacing.lg,
-      marginBottom: spacing.xl,
-      shadowColor: '#3B82F6',
+      marginBottom: spacing.md,
+      shadowColor: theme.colors.primary,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.1,
       shadowRadius: 12,
@@ -411,7 +424,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       alignItems: 'center',
     },
     userStatusRankBadge: {
-      backgroundColor: '#2563EB',
+      backgroundColor: theme.colors.secondary,
       paddingHorizontal: 12,
       paddingVertical: 6,
       borderRadius: borderRadius.md,
@@ -426,7 +439,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       width: 50,
       height: 50,
       borderRadius: 25,
-      backgroundColor: '#A08470', // Match screenshot brown
+      backgroundColor: theme.colors.orange,
       justifyContent: 'center',
       alignItems: 'center',
       marginRight: spacing.md,
@@ -442,21 +455,21 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
     userStatusName: {
       fontSize: fontSizes.lg,
       fontWeight: 'bold',
-      color: '#1E293B',
+      color: theme.colors.navy,
     },
     userStatusPoints: {
       fontSize: fontSizes.sm,
-      color: '#64748B',
+      color: theme.colors.mediumGray,
     },
     userStatusSeparator: {
       height: 1,
-      backgroundColor: '#DBEAFE',
+      backgroundColor: theme.colors.lightGray,
       marginVertical: spacing.md,
     },
     userStatusFooter: {
       textAlign: 'center',
       fontWeight: 'bold',
-      color: '#1E293B',
+      color: theme.colors.navy,
       fontSize: fontSizes.sm,
     },
 
@@ -465,8 +478,8 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       position: 'relative',
       width: '100%',
       height: 300,
-      marginTop: spacing.xl + 20,
-      marginBottom: spacing.xl,
+      marginTop: spacing.md,
+      marginBottom: spacing.sm,
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -498,7 +511,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       height: 60,
       borderRadius: 30,
       borderWidth: 3,
-      borderColor: '#fff',
+      borderColor: theme.colors.secondary,
       overflow: 'hidden',
       marginBottom: spacing.xs,
       backgroundColor: '#fff',
@@ -515,24 +528,22 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
     podiumNameText: {
       fontWeight: 'bold',
       fontSize: fontSizes.xs,
-      color: '#1E293B',
+      color: theme.colors.navy,
       textAlign: 'center',
-      backgroundColor: 'rgba(255,255,255,0.8)',
       paddingHorizontal: 4,
       borderRadius: 4,
     },
     podiumPointsText: {
       fontSize: 10,
       fontWeight: 'bold',
-      color: '#64748B',
-      backgroundColor: 'rgba(255,255,255,0.8)',
+      color: theme.colors.mediumGray,
       paddingHorizontal: 4,
       borderRadius: 4,
     },
 
     // List Styles
     listCard: {
-      backgroundColor: '#fff',
+      backgroundColor: theme.colors.surface,
       borderRadius: borderRadius.xl,
       padding: spacing.md,
       shadowColor: '#000',
@@ -547,7 +558,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       justifyContent: 'space-between',
       paddingVertical: spacing.md,
       borderBottomWidth: 1,
-      borderBottomColor: '#F1F5F9',
+      borderBottomColor: theme.colors.border,
     },
     listItemLeft: {
       flexDirection: 'row',
@@ -558,7 +569,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       width: 40,
       fontSize: fontSizes.base,
       fontWeight: '600',
-      color: '#475569',
+      color: theme.colors.mediumGray,
     },
     listItemAvatar: {
       width: 40,
@@ -574,13 +585,13 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
     listItemName: {
       fontSize: fontSizes.base,
       fontWeight: '600',
-      color: '#1E293B',
+      color: theme.colors.navy,
       flex: 1,
     },
     listItemPoints: {
       fontSize: fontSizes.base,
       fontWeight: '600',
-      color: '#1E293B',
+      color: theme.colors.navy,
     },
 
     // States
