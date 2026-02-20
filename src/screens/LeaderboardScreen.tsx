@@ -37,6 +37,8 @@ interface Student {
   rank: number;
 }
 
+const podiumBg = require('../../assets/leaderboard-bg.png');
+
 const LeaderboardScreen: React.FC = () => {
   const { user } = useAuth();
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
@@ -49,8 +51,8 @@ const LeaderboardScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [leaderboardError, setLeaderboardError] = useState<string | null>(null);
-  const [allLeaderboard, setAllLeaderboard] = useState<Student[]>([]);
-  const [subjectLeaderboards, setSubjectLeaderboards] = useState<{ [key: string]: Student[] }>({});
+  const [allLeaderboard, setAllLeaderboard] = useState<{ entries: Student[], userEntry: Student | null }>({ entries: [], userEntry: null });
+  const [subjectLeaderboards, setSubjectLeaderboards] = useState<{ [key: string]: { entries: Student[], userEntry: Student | null } }>({});
 
   useEffect(() => {
     fetchSubjects();
@@ -100,7 +102,12 @@ const LeaderboardScreen: React.FC = () => {
         `
         query Leaderboard($subjectId: ID, $limit: Int) {
           leaderboard(subjectId: $subjectId, limit: $limit) {
-            id name grade { id name } totalQuizzes avgScore xp isFollowing rank
+            entries {
+              id name grade { id name } totalQuizzes avgScore xp isFollowing rank
+            }
+            userEntry {
+              id name grade { id name } totalQuizzes avgScore xp isFollowing rank
+            }
           }
         }
       `,
@@ -109,13 +116,22 @@ const LeaderboardScreen: React.FC = () => {
       );
 
       if (result.data?.leaderboard) {
-        const processed = result.data.leaderboard.map((s: any) => ({
+        const { entries, userEntry } = result.data.leaderboard;
+        const processedEntries = entries.map((s: any) => ({
           ...s,
           xp: s.xp || 0,
           isFollowing: !!s.isFollowing,
         }));
-        if (tabId === 'all') setAllLeaderboard(processed);
-        else setSubjectLeaderboards((prev) => ({ ...prev, [tabId]: processed }));
+        const processedUserEntry = userEntry ? {
+          ...userEntry,
+          xp: userEntry.xp || 0,
+          isFollowing: !!userEntry.isFollowing,
+        } : null;
+
+        const resultData = { entries: processedEntries, userEntry: processedUserEntry };
+
+        if (tabId === 'all') setAllLeaderboard(resultData);
+        else setSubjectLeaderboards((prev) => ({ ...prev, [tabId]: resultData }));
       } else {
         setLeaderboardError(t('leaderboard_screen.error_loading_leaderboard'));
       }
@@ -137,8 +153,11 @@ const LeaderboardScreen: React.FC = () => {
       );
       if (result.data?.followUser?.success) {
         const newIsFollowing = result.data.followUser.isFollowing;
-        const updater = (list: Student[]) =>
-          list.map((s) => (s.id === student.id ? { ...s, isFollowing: newIsFollowing } : s));
+        const updater = (data: { entries: Student[], userEntry: Student | null }) => ({
+          entries: data.entries.map((s) => (s.id === student.id ? { ...s, isFollowing: newIsFollowing } : s)),
+          userEntry: data.userEntry?.id === student.id ? { ...data.userEntry, isFollowing: newIsFollowing } : data.userEntry
+        });
+
         setAllLeaderboard((prev) => updater(prev));
         setSubjectLeaderboards((prev) => {
           const updated: any = {};
@@ -153,86 +172,61 @@ const LeaderboardScreen: React.FC = () => {
 
   const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius);
 
+  const renderCurrentUserCard = (userEntry: Student | null) => {
+    if (!userEntry) return null;
+    return (
+      <View style={currentStyles.userStatusCard}>
+        <View style={currentStyles.userStatusHeader}>
+          <View style={currentStyles.userStatusRankBadge}>
+            <Text style={currentStyles.userStatusRankText}>#{userEntry.rank}</Text>
+          </View>
+          <View style={currentStyles.userStatusAvatarContainer}>
+            <Text style={currentStyles.userStatusAvatarText}>
+              {userEntry.name.charAt(0).toUpperCase()}
+            </Text>
+          </View>
+          <View style={currentStyles.userStatusInfo}>
+            <Text style={currentStyles.userStatusName}>{userEntry.name}</Text>
+            <Text style={currentStyles.userStatusPoints}>
+              {userEntry.xp.toLocaleString()} {t('common.points', 'points')}
+            </Text>
+          </View>
+        </View>
+        <View style={currentStyles.userStatusSeparator} />
+        <Text style={currentStyles.userStatusFooter}>
+          {t('leaderboard.your_rank', 'Your Rank')}: #{userEntry.rank}
+        </Text>
+      </View>
+    );
+  };
+
   const Podium = ({ top3 }: { top3: Student[] }) => {
-    // Expected order in top3 array: [Rank 1, Rank 2, Rank 3]
-    // Desired visual order: Rank 2 (Left), Rank 1 (Center), Rank 3 (Right)
     const first = top3.find((s) => s.rank === 1);
     const second = top3.find((s) => s.rank === 2);
     const third = top3.find((s) => s.rank === 3);
 
+    const PodiumStudent = ({ student, rank, style }: any) => {
+      if (!student) return null;
+      return (
+        <View style={[currentStyles.podiumStudentOverlay, style]}>
+          <View style={[currentStyles.podiumAvatar, rank === 1 && currentStyles.podiumAvatarLarge]}>
+            <Image 
+              source={{ uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random&color=fff&size=128` }} 
+              style={currentStyles.avatarImage} 
+            />
+          </View>
+          <Text style={currentStyles.podiumNameText} numberOfLines={1}>{student.name}</Text>
+          <Text style={currentStyles.podiumPointsText}>{student.xp.toLocaleString()} pts</Text>
+        </View>
+      );
+    };
+
     return (
-      <View style={currentStyles.podiumContainer}>
-        {/* Second Place */}
-        <View style={[currentStyles.podiumColumn, { marginTop: 40 }]}>
-          {second && (
-            <>
-              <View style={currentStyles.podiumAvatarContainer}>
-                <Text style={currentStyles.podiumAvatarText}>
-                  {' '}
-                  {second.name.charAt(0).toUpperCase()}{' '}
-                </Text>
-                <View style={[currentStyles.podiumBadge, { backgroundColor: '#C0C0C0' }]}>
-                  <Text style={currentStyles.podiumBadgeText}> 2 </Text>
-                </View>
-              </View>
-              <Text style={currentStyles.podiumName} numberOfLines={1}>
-                {' '}
-                {second.name}{' '}
-              </Text>
-              <Text style={currentStyles.podiumXP}> {second.xp} XP </Text>
-            </>
-          )}
-          {!second && <View style={{ height: 100 }} />}
-        </View>
-
-        {/* First Place */}
-        <View style={currentStyles.podiumColumn}>
-          {first && (
-            <>
-              <View style={currentStyles.podiumCrown}>
-                <Ionicons name="trophy" size={32} color="#F59E0B" />
-              </View>
-              <View style={[currentStyles.podiumAvatarContainer, currentStyles.podiumAvatarFirst]}>
-                <Text style={currentStyles.podiumAvatarTextLarge}>
-                  {' '}
-                  {first.name.charAt(0).toUpperCase()}{' '}
-                </Text>
-                <View style={[currentStyles.podiumBadge, { backgroundColor: '#F59E0B' }]}>
-                  <Text style={currentStyles.podiumBadgeText}> 1 </Text>
-                </View>
-              </View>
-              <Text style={[currentStyles.podiumName, { fontWeight: 'bold' }]} numberOfLines={1}>
-                {' '}
-                {first.name}{' '}
-              </Text>
-              <Text style={currentStyles.podiumXP}> {first.xp} XP </Text>
-            </>
-          )}
-          {!first && <View style={{ height: 120 }} />}
-        </View>
-
-        {/* Third Place */}
-        <View style={[currentStyles.podiumColumn, { marginTop: 60 }]}>
-          {third && (
-            <>
-              <View style={currentStyles.podiumAvatarContainer}>
-                <Text style={currentStyles.podiumAvatarText}>
-                  {' '}
-                  {third.name.charAt(0).toUpperCase()}{' '}
-                </Text>
-                <View style={[currentStyles.podiumBadge, { backgroundColor: '#CD7F32' }]}>
-                  <Text style={currentStyles.podiumBadgeText}> 3 </Text>
-                </View>
-              </View>
-              <Text style={currentStyles.podiumName} numberOfLines={1}>
-                {' '}
-                {third.name}{' '}
-              </Text>
-              <Text style={currentStyles.podiumXP}> {third.xp} XP </Text>
-            </>
-          )}
-          {!third && <View style={{ height: 80 }} />}
-        </View>
+      <View style={currentStyles.podiumWrapper}>
+        <Image source={podiumBg} style={currentStyles.podiumBackgroundImage} resizeMode="contain" />
+        <PodiumStudent student={second} rank={2} style={currentStyles.podiumPosSecond} />
+        <PodiumStudent student={first} rank={1} style={currentStyles.podiumPosFirst} />
+        <PodiumStudent student={third} rank={3} style={currentStyles.podiumPosThird} />
       </View>
     );
   };
@@ -264,10 +258,9 @@ const LeaderboardScreen: React.FC = () => {
         </View>
       );
 
-    const leaderboard =
-      selectedTab === 'all' ? allLeaderboard : subjectLeaderboards[selectedTab] || [];
+    const leaderboard = selectedTab === 'all' ? allLeaderboard : subjectLeaderboards[selectedTab] || { entries: [], userEntry: null };
 
-    if (leaderboard.length === 0)
+    if (leaderboard.entries.length === 0)
       return (
         <View style={currentStyles.emptyState}>
           <Ionicons name="trophy-outline" size={64} style={{ opacity: 0.2, marginBottom: 16 }} />
@@ -277,49 +270,28 @@ const LeaderboardScreen: React.FC = () => {
         </View>
       );
 
-    const top3 = leaderboard.filter((s) => s.rank <= 3);
-    const rest = leaderboard.filter((s) => s.rank > 3);
+    const top3 = leaderboard.entries.filter((s) => s.rank <= 3);
+    const rest = leaderboard.entries.filter((s) => s.rank > 3);
 
     return (
       <>
+        {renderCurrentUserCard(leaderboard.userEntry)}
         {top3.length > 0 && <Podium top3={top3} />}
 
-        <View style={currentStyles.listContainer}>
-          {rest.map((student) => (
-            <View key={student.id} style={currentStyles.rankCard}>
-              <View style={currentStyles.studentCardContent}>
-                <View style={currentStyles.studentLeft}>
-                  <Text style={currentStyles.rankNumber}> {student.rank} </Text>
-                  <View style={currentStyles.avatarPlaceholderSmall}>
-                    <Text style={currentStyles.avatarTextSmall}>
-                      {' '}
-                      {student.name.charAt(0).toUpperCase()}{' '}
-                    </Text>
-                  </View>
-                  <View style={currentStyles.studentDetails}>
-                    <Text style={currentStyles.studentName}> {student.name} </Text>
-                    <Text style={currentStyles.studentStatXP}> {student.xp} XP </Text>
-                  </View>
+        <View style={currentStyles.listCard}>
+          {rest.map((student, index) => (
+            <View key={student.id} style={[currentStyles.listItem, index === rest.length - 1 && { borderBottomWidth: 0 }]}>
+              <View style={currentStyles.listItemLeft}>
+                <Text style={currentStyles.listItemRank}>#{student.rank}</Text>
+                <View style={currentStyles.listItemAvatar}>
+                  <Image 
+                    source={{ uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=E2E8F0&color=475569&size=64` }} 
+                    style={currentStyles.avatarImageSmall} 
+                  />
                 </View>
-                {student.id !== user?.id && (
-                  <TouchableOpacity
-                    style={[
-                      currentStyles.followButton,
-                      student.isFollowing && currentStyles.followButtonFollowing,
-                    ]}
-                    onPress={() => handleFollowToggle(student)}
-                  >
-                    <Text
-                      style={[
-                        currentStyles.followButtonText,
-                        student.isFollowing && currentStyles.followButtonTextFollowing,
-                      ]}
-                    >
-                      {student.isFollowing ? t('common.following') : t('common.follow')}
-                    </Text>
-                  </TouchableOpacity>
-                )}
+                <Text style={currentStyles.listItemName} numberOfLines={1}>{student.name}</Text>
               </View>
+              <Text style={currentStyles.listItemPoints}>{student.xp.toLocaleString()} pts</Text>
             </View>
           ))}
         </View>
@@ -420,158 +392,196 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
     tabTextInactive: { color: theme.colors.textSecondary },
     content: { flex: 1 },
     contentContainer: { paddingBottom: 100 },
-    leaderboardContainer: { paddingBottom: spacing.xl * 2 },
+    leaderboardContainer: { padding: spacing.md },
 
-    // Podium Styles
-    podiumContainer: {
-      flexDirection: common.rowDirection,
-      justifyContent: 'center',
-      alignItems: 'flex-end',
-      paddingVertical: 30,
-      marginBottom: 20,
-    },
-    podiumColumn: {
-      alignItems: 'center',
-      width: '30%',
-    },
-    podiumCrown: {
-      marginBottom: -10,
-      zIndex: 10,
-    },
-    podiumAvatarContainer: {
-      width: 64,
-      height: 64,
-      borderRadius: 32,
-      backgroundColor: theme.colors.card,
-      borderWidth: 3,
-      borderColor: theme.colors.border,
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginBottom: 8,
-      position: 'relative',
-      shadowColor: '#000',
+    // User Status Card
+    userStatusCard: {
+      backgroundColor: '#EFF6FF',
+      borderRadius: borderRadius.xl,
+      padding: spacing.lg,
+      marginBottom: spacing.xl,
+      shadowColor: '#3B82F6',
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 3,
+      shadowRadius: 12,
+      elevation: 4,
     },
-    podiumAvatarFirst: {
-      width: 80,
-      height: 80,
-      borderRadius: 40,
-      borderColor: '#F59E0B',
-      borderWidth: 4,
+    userStatusHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
     },
-    podiumAvatarText: {
-      fontSize: 24,
+    userStatusRankBadge: {
+      backgroundColor: '#2563EB',
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: borderRadius.md,
+      marginRight: spacing.md,
+    },
+    userStatusRankText: {
+      color: '#fff',
       fontWeight: 'bold',
-      color: theme.colors.text,
+      fontSize: fontSizes.base,
     },
-    podiumAvatarTextLarge: {
-      fontSize: 32,
-      fontWeight: 'bold',
-      color: theme.colors.text,
-    },
-    podiumBadge: {
-      position: 'absolute',
-      bottom: -6,
-      width: 24,
-      height: 24,
-      borderRadius: 12,
+    userStatusAvatarContainer: {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+      backgroundColor: '#A08470', // Match screenshot brown
       justifyContent: 'center',
       alignItems: 'center',
-      borderWidth: 2,
-      borderColor: '#fff',
+      marginRight: spacing.md,
     },
-    podiumBadgeText: {
+    userStatusAvatarText: {
       color: '#fff',
-      fontSize: 12,
-      fontWeight: 'bold',
-    },
-    podiumName: {
-      fontSize: fontSizes.sm,
+      fontSize: fontSizes.xl,
       fontWeight: '600',
-      color: theme.colors.text,
-      textAlign: 'center',
-      marginBottom: 4,
     },
-    podiumXP: {
+    userStatusInfo: {
+      flex: 1,
+    },
+    userStatusName: {
+      fontSize: fontSizes.lg,
+      fontWeight: 'bold',
+      color: '#1E293B',
+    },
+    userStatusPoints: {
+      fontSize: fontSizes.sm,
+      color: '#64748B',
+    },
+    userStatusSeparator: {
+      height: 1,
+      backgroundColor: '#DBEAFE',
+      marginVertical: spacing.md,
+    },
+    userStatusFooter: {
+      textAlign: 'center',
+      fontWeight: 'bold',
+      color: '#1E293B',
+      fontSize: fontSizes.sm,
+    },
+
+    // Podium Styles
+    podiumWrapper: {
+      position: 'relative',
+      width: '100%',
+      height: 300,
+      marginTop: spacing.xl + 20,
+      marginBottom: spacing.xl,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    podiumBackgroundImage: {
+      width: '100%',
+      height: '75%',
+      position: 'absolute',
+      bottom: 0,
+    },
+    podiumStudentOverlay: {
+      position: 'absolute',
+      alignItems: 'center',
+      width: 100,
+    },
+    podiumPosFirst: {
+      top: 0,
+      zIndex: 10,
+    },
+    podiumPosSecond: {
+      top: 45,
+      left: 15,
+    },
+    podiumPosThird: {
+      top: 65,
+      right: 15,
+    },
+    podiumAvatar: {
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      borderWidth: 3,
+      borderColor: '#fff',
+      overflow: 'hidden',
+      marginBottom: spacing.xs,
+      backgroundColor: '#fff',
+    },
+    podiumAvatarLarge: {
+      width: 76,
+      height: 76,
+      borderRadius: 38,
+    },
+    avatarImage: {
+      width: '100%',
+      height: '100%',
+    },
+    podiumNameText: {
+      fontWeight: 'bold',
       fontSize: fontSizes.xs,
-      color: theme.colors.primary,
-      fontWeight: '700',
+      color: '#1E293B',
+      textAlign: 'center',
+      backgroundColor: 'rgba(255,255,255,0.8)',
+      paddingHorizontal: 4,
+      borderRadius: 4,
+    },
+    podiumPointsText: {
+      fontSize: 10,
+      fontWeight: 'bold',
+      color: '#64748B',
+      backgroundColor: 'rgba(255,255,255,0.8)',
+      paddingHorizontal: 4,
+      borderRadius: 4,
     },
 
     // List Styles
-    listContainer: {
-      paddingHorizontal: layout.screenPadding,
-      backgroundColor: theme.colors.card,
-      borderTopLeftRadius: 30,
-      borderTopRightRadius: 30,
-      paddingTop: 24,
-      marginTop: -10,
+    listCard: {
+      backgroundColor: '#fff',
+      borderRadius: borderRadius.xl,
+      padding: spacing.md,
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: -2 },
+      shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.05,
-      shadowRadius: 10,
-      elevation: 5,
+      shadowRadius: 8,
+      elevation: 2,
     },
-    rankCard: {
-      marginBottom: 20,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
-      paddingBottom: 16,
-    },
-    studentCardContent: {
-      flexDirection: common.rowDirection,
+    listItem: {
+      flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
+      paddingVertical: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: '#F1F5F9',
     },
-    studentLeft: { flexDirection: common.rowDirection, alignItems: 'center', flex: 1 },
-    rankNumber: {
-      fontSize: fontSizes.lg,
-      fontWeight: 'bold',
-      color: theme.colors.textSecondary,
-      width: 30,
-      textAlign: 'center',
-      ...common.marginEnd(12),
+    listItemLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
     },
-    avatarPlaceholderSmall: {
+    listItemRank: {
+      width: 40,
+      fontSize: fontSizes.base,
+      fontWeight: '600',
+      color: '#475569',
+    },
+    listItemAvatar: {
       width: 40,
       height: 40,
       borderRadius: 20,
-      backgroundColor: theme.colors.background,
-      justifyContent: 'center',
-      alignItems: 'center',
-      ...common.marginEnd(12),
+      overflow: 'hidden',
+      marginRight: spacing.md,
     },
-    avatarTextSmall: {
-      fontWeight: 'bold',
-      color: theme.colors.primary,
+    avatarImageSmall: {
+      width: '100%',
+      height: '100%',
     },
-    studentDetails: { flex: 1, alignItems: common.alignStart },
-    studentName: {
+    listItemName: {
       fontSize: fontSizes.base,
       fontWeight: '600',
-      color: theme.colors.text,
-      textAlign: common.textAlign,
+      color: '#1E293B',
+      flex: 1,
     },
-    studentStatXP: { fontSize: fontSizes.xs, fontWeight: 'bold', color: theme.colors.primary },
-
-    // Follow Button
-    followButton: {
-      paddingHorizontal: spacing.md,
-      paddingVertical: 6,
-      borderRadius: borderRadius.md,
-      backgroundColor: theme.colors.primary,
-      ...common.marginStart(8),
+    listItemPoints: {
+      fontSize: fontSizes.base,
+      fontWeight: '600',
+      color: '#1E293B',
     },
-    followButtonFollowing: {
-      backgroundColor: theme.colors.background,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-    },
-    followButtonText: { fontSize: fontSizes.xs, fontWeight: 'bold', color: '#fff' },
-    followButtonTextFollowing: { color: theme.colors.textSecondary },
 
     // States
     loadingText: {
