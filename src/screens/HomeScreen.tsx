@@ -18,7 +18,7 @@ import { useCommonStyles } from '../hooks/useCommonStyles';
 import { layout } from '../config/layout';
 import { tryFetchWithFallback } from '../config/api';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, Circle, G, Text as SvgText } from 'react-native-svg';
 import RecentActivityCard from '../components/RecentActivityCard';
 import TodaysPlanWidget from '../components/TodaysPlanWidget';
 
@@ -27,6 +27,19 @@ const { width } = Dimensions.get('window');
 interface WeeklyPerformance {
   week: string;
   score: number;
+}
+
+interface WheelOfSuccessArm {
+  id: string;
+  name: string;
+  progress: number;
+  color: string;
+  type: string;
+}
+
+interface WheelOfSuccessData {
+  arms: WheelOfSuccessArm[];
+  overallProgress: number;
 }
 
 interface ActivitiesData {
@@ -45,6 +58,186 @@ const getInitials = (name: string) => {
     ? parts[0].substring(0, 2).toUpperCase()
     : (parts[0][0] + parts[1][0]).toUpperCase();
 };
+
+const WheelOfSuccess: React.FC<{ theme: any; data: WheelOfSuccessData | null; t: any }> = ({
+  theme,
+  data,
+  t,
+}) => {
+  if (!data || !data.arms || data.arms.length === 0) return null;
+
+  const size = width - 40; // Full width card
+  const centerX = size / 2;
+  const centerY = size / 2;
+  
+  // Configuration matching webfront proportions
+  const outerArcThickness = 12;
+  const labelCircleRadius = 14; 
+  const centerRadius = 25; 
+  const mainRadius = (size / 2) * 0.7 - outerArcThickness;
+  
+  const arms = data.arms;
+  const segmentCount = arms.length;
+  const anglePerSegment = (2 * Math.PI) / segmentCount;
+
+  return (
+    <View style={wheelStyles.container}>
+      <View style={wheelStyles.headerRow}>
+        <View style={wheelStyles.headerInfo}>
+          <Text style={wheelStyles.wheelTitle}>{t('home_screen.wheel_of_success')}</Text>
+          <Text style={wheelStyles.wheelSubtitle}>{t('home_screen.overall_success')}</Text>
+        </View>
+        <View style={wheelStyles.masteryBadge}>
+          <Text style={wheelStyles.masteryValue}>{round(data.overallProgress)}%</Text>
+          <Text style={wheelStyles.masteryLabel}>Mastery</Text>
+        </View>
+      </View>
+
+      <View style={wheelStyles.wheelMainContainer}>
+        <Svg width={size} height={size}>
+          {/* Grid Lines (Concentric Circles) */}
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => {
+            const r = centerRadius + ((mainRadius - centerRadius) / 10) * i;
+            return (
+              <Circle
+                key={`grid-${i}`}
+                cx={centerX}
+                cy={centerY}
+                r={r}
+                stroke="rgba(160, 210, 219, 0.2)"
+                strokeWidth="1"
+                fill="none"
+                strokeDasharray="4, 4"
+              />
+            );
+          })}
+
+          {arms.map((arm, index) => {
+            const startAngle = index * anglePerSegment - Math.PI / 2;
+            const endAngle = startAngle + anglePerSegment;
+            const midAngle = startAngle + anglePerSegment / 2;
+            
+            // Progress Segment Path
+            const progressRadius = centerRadius + ((mainRadius - centerRadius) / 100) * arm.progress;
+            
+            // Calculate coordinates for the pie segment
+            const x1 = centerX + progressRadius * Math.cos(startAngle);
+            const y1 = centerY + progressRadius * Math.sin(startAngle);
+            const x2 = centerX + progressRadius * Math.cos(endAngle);
+            const y2 = centerY + progressRadius * Math.sin(endAngle);
+            const xCenter = centerX + centerRadius * Math.cos(startAngle);
+            const yCenter = centerY + centerRadius * Math.sin(startAngle);
+
+            const pathData = `
+              M ${centerX} ${centerY}
+              L ${centerX + progressRadius * Math.cos(startAngle)} ${centerY + progressRadius * Math.sin(startAngle)}
+              A ${progressRadius} ${progressRadius} 0 0 1 ${centerX + progressRadius * Math.cos(endAngle)} ${centerY + progressRadius * Math.sin(endAngle)}
+              Z
+            `;
+
+            // Spoke Line
+            const spokeX = centerX + (mainRadius + outerArcThickness) * Math.cos(startAngle);
+            const spokeY = centerY + (mainRadius + outerArcThickness) * Math.sin(startAngle);
+
+            // Label Position
+            const labelArcRadius = mainRadius + outerArcThickness / 2;
+            const labelX = centerX + labelArcRadius * Math.cos(midAngle);
+            const labelY = centerY + labelArcRadius * Math.sin(midAngle);
+
+            return (
+              <G key={`arm-${arm.id}`}>
+                {/* Outer Arc Band */}
+                <Path
+                  d={`
+                    M ${centerX + (mainRadius + outerArcThickness / 2) * Math.cos(startAngle)} 
+                      ${centerY + (mainRadius + outerArcThickness / 2) * Math.sin(startAngle)}
+                    A ${mainRadius + outerArcThickness / 2} ${mainRadius + outerArcThickness / 2} 0 0 1 
+                      ${centerX + (mainRadius + outerArcThickness / 2) * Math.cos(endAngle)} 
+                      ${centerY + (mainRadius + outerArcThickness / 2) * Math.sin(endAngle)}
+                  `}
+                  fill="none"
+                  stroke={arm.color}
+                  strokeWidth={outerArcThickness}
+                />
+                
+                {/* Spoke Line */}
+                <Path
+                  d={`M ${centerX} ${centerY} L ${spokeX} ${spokeY}`}
+                  stroke="rgba(203, 213, 225, 0.3)"
+                  strokeWidth="1"
+                />
+
+                {/* Filled Progress Segment */}
+                {arm.progress > 0 && (
+                  <Path
+                    d={pathData}
+                    fill={arm.color}
+                    opacity="0.5"
+                  />
+                )}
+
+                {/* Label Circle */}
+                <Circle
+                  cx={labelX}
+                  cy={labelY}
+                  r={labelCircleRadius}
+                  fill="#fff"
+                  stroke={arm.color}
+                  strokeWidth="2"
+                />
+                
+                {/* Subject Initial */}
+                <SvgText
+                  x={labelX}
+                  y={labelY + 4}
+                  fontSize="10"
+                  fontWeight="900"
+                  fill={arm.color}
+                  textAnchor="middle"
+                >
+                  {arm.name.charAt(0).toUpperCase()}
+                </SvgText>
+              </G>
+            );
+          })}
+
+          {/* Center Hub */}
+          <Circle
+            cx={centerX}
+            cy={centerY}
+            r={centerRadius}
+            fill={theme.colors.primary}
+            stroke="#fff"
+            strokeWidth="2"
+          />
+          <SvgText
+            x={centerX}
+            y={centerY + 5}
+            fontSize="12"
+            fontWeight="900"
+            fill="#fff"
+            textAnchor="middle"
+          >
+            {round(data.overallProgress)}%
+          </SvgText>
+        </Svg>
+      </View>
+      
+      {/* Subjects List Summary (Horizontal Scroll) */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={wheelStyles.legendContainer}>
+        {arms.map((arm) => (
+          <View key={`legend-${arm.id}`} style={wheelStyles.legendItem}>
+            <View style={[wheelStyles.legendDot, { backgroundColor: arm.color }]} />
+            <Text style={wheelStyles.legendText}>{arm.name}</Text>
+            <Text style={[wheelStyles.legendValue, { color: arm.color }]}>{round(arm.progress)}%</Text>
+          </View>
+        ))}
+      </ScrollView>
+    </View>
+  );
+};
+
+const round = (val: number) => Math.round(val || 0);
 
 const WeeklyPerformanceChart: React.FC<{ theme: any; common: any; data: WeeklyPerformance[] }> = ({
   theme,
@@ -121,6 +314,7 @@ const HomeScreen: React.FC = () => {
   const { t } = useTranslation();
   const common = useCommonStyles();
   const [activitiesData, setActivitiesData] = useState<ActivitiesData | null>(null);
+  const [wheelData, setWheelData] = useState<WheelOfSuccessData | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchActivities = useCallback(async () => {
@@ -130,11 +324,15 @@ const HomeScreen: React.FC = () => {
       if (!token) return;
       const result = await tryFetchWithFallback(
         `
-        query Activities {
+        query HomeData {
           activities {
             total_quizzes avg_score performance_status performance_trend
             activities { id name subject { id name } score totalQuestions completedAt isPassed }
             weekly_performance { week score }
+          }
+          wheelOfSuccess {
+            arms { id name progress color type }
+            overallProgress
           }
         }
       `,
@@ -142,6 +340,7 @@ const HomeScreen: React.FC = () => {
         token,
       );
       if (result.data?.activities) setActivitiesData(result.data.activities);
+      if (result.data?.wheelOfSuccess) setWheelData(result.data.wheelOfSuccess);
     } catch (err: any) {
       console.error('Fetch activities error:', err);
     } finally {
@@ -187,20 +386,26 @@ const HomeScreen: React.FC = () => {
       >
         <View style={currentStyles.topStatsRow}>
           <View style={currentStyles.topStatCard}>
-            <View style={[currentStyles.statIconContainer, { backgroundColor: '#FDF2F8' }]}>
-              <Ionicons name="briefcase" size={20} color="#EC4899" />
+            <View style={[currentStyles.statIconContainer, { backgroundColor: 'rgba(245, 158, 11, 0.1)' }]}>
+              <Ionicons name="briefcase" size={20} color="#f59e0b" />
             </View>
             <Text style={currentStyles.statLabel}>{t('home_screen.quizzes')}</Text>
-            <Text style={currentStyles.statValue}>{activitiesData?.total_quizzes ?? 0}</Text>
+            <Text style={[currentStyles.statValue, { color: '#0f172a' }]}>{activitiesData?.total_quizzes ?? 0}</Text>
           </View>
           <View style={currentStyles.topStatCard}>
-            <View style={[currentStyles.statIconContainer, { backgroundColor: '#ECFDF5' }]}>
-              <Ionicons name="trending-up" size={20} color="#10B981" />
+            <View style={[currentStyles.statIconContainer, { backgroundColor: 'rgba(245, 158, 11, 0.1)' }]}>
+              <Ionicons name="trending-up" size={20} color="#f59e0b" />
             </View>
             <Text style={currentStyles.statLabel}>{t('home_screen.completed')}</Text>
-            <Text style={currentStyles.statValue}>{activitiesData?.avg_score ?? 0}%</Text>
+            <Text style={[currentStyles.statValue, { color: '#0f172a' }]}>{activitiesData?.avg_score ?? 0}%</Text>
           </View>
         </View>
+
+        <WheelOfSuccess 
+          theme={theme} 
+          data={wheelData} 
+          t={t} 
+        />
 
         <View style={common.card}>
           <View style={currentStyles.performanceHeader}>
@@ -392,16 +597,15 @@ const styles = (
       aspectRatio: 1, // Make square
       backgroundColor: theme.colors.card,
       padding: spacing.lg,
-      borderRadius: layout.borderRadius.xl,
+      borderRadius: layout.borderRadius.md, // Reduced border radius
       alignItems: 'center',
       justifyContent: 'center',
-      shadowColor: theme.colors.shadow,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.05,
-      shadowRadius: 8,
-      elevation: 2,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 10,
+      elevation: 5,
+      borderWidth: 0,
     },
     statIconContainer: {
       width: 40,
@@ -546,5 +750,109 @@ const styles = (
       letterSpacing: 1,
     },
   });
+
+const wheelStyles = StyleSheet.create({
+  container: {
+    backgroundColor: '#ffffff', // Light background
+    borderRadius: 16, // Reduced border radius
+    paddingVertical: 24,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 15,
+    elevation: 4,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    marginBottom: 10,
+  },
+  headerInfo: {
+    flex: 1,
+  },
+  wheelTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#0f172a', // Dark text
+    textTransform: 'uppercase',
+    letterSpacing: -0.5,
+  },
+  wheelSubtitle: {
+    fontSize: 14,
+    color: '#64748b', // Gray text
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  masteryBadge: {
+    width: 80,
+    height: 80,
+    backgroundColor: '#2563eb',
+    borderRadius: 12, // Reduced border radius
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 4,
+    borderColor: 'rgba(255,255,255,0.1)',
+    shadowColor: '#2563eb',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  masteryValue: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#fff',
+    lineHeight: 22,
+  },
+  masteryLabel: {
+    fontSize: 8,
+    color: '#fff',
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+    marginTop: 4,
+    opacity: 0.8,
+  },
+  wheelMainContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: -20, // Negative margin to handle SVG whitespace
+  },
+  legendContainer: {
+    marginTop: 10,
+    paddingHorizontal: 24,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8fafc', // Light gray background
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 14,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+  },
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 8,
+  },
+  legendText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#334155', // Slate-700
+    marginRight: 6,
+  },
+  legendValue: {
+    fontSize: 11,
+    fontWeight: '900',
+  },
+});
 
 export default HomeScreen;

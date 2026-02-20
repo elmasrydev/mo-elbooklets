@@ -130,7 +130,10 @@
     "view_all": "View All",
     "review": "Review",
     "start_quiz": "Start Quiz",
-    "subject_waiting": "{{subject}} waiting"
+    "subject_waiting": "{{subject}} waiting",
+    "wheel_of_success": "Wheel of Success",
+    "overall_success": "Overall Success",
+    "mastery_target": "Mastery Target"
   },
   "quiz_screen": {
     "header_title": "Quiz Center",

@@ -130,7 +130,10 @@
     "view_all": "عرض الكل",
     "review": "مراجعة",
     "start_quiz": "بدء اختبار",
-    "subject_waiting": "{{subject}} في الانتظار"
+    "subject_waiting": "{{subject}} في الانتظار",
+    "wheel_of_success": "عجلة النجاح",
+    "overall_success": "النجاح العام",
+    "mastery_target": "هدف الإتقان"
   },
   "quiz_screen": {
     "header_title": "مركز الاختبارات",
