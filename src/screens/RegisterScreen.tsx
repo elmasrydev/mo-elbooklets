@@ -46,6 +46,11 @@ const PickerTrigger = ({ value, placeholder, icon, onPress, theme, currentStyles
 
 const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBack }) => {
   const [currentStep, setCurrentStep] = useState(1);
+  const [countryCode, setCountryCode] = useState('+2');
+  const [parentCountryCode, setParentCountryCode] = useState('+2');
+  const [parentCountryCode2, setParentCountryCode2] = useState('+2');
+
+  const MOBILE_REGEX = /^01[0125][0-9]{8}$/;
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [mobile, setMobile] = useState('');
@@ -158,6 +163,10 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
           Alert.alert(t('common.error'), t('auth.fill_all_fields'));
           return false;
         }
+        if (name.trim().length < 3) {
+          Alert.alert(t('common.error'), t('auth.name_too_short', 'Name is too short'));
+          return false;
+        }
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email.trim())) {
           Alert.alert(t('common.error'), t('auth.invalid_email'));
@@ -172,16 +181,34 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
         }
         return true;
       case 3:
-        if (!mobile.trim() || !password.trim()) {
+        if (!mobile.trim() || !password.trim() || !confirmPassword.trim()) {
           Alert.alert(t('common.error'), t('auth.fill_all_fields'));
+          return false;
+        }
+        if (!MOBILE_REGEX.test(mobile.trim())) {
+          Alert.alert(t('common.error'), t('auth.invalid_mobile_format', 'The mobile number must be 11 digits starting with 010, 011, 012 or 015.'));
+          return false;
+        }
+        if (password.length < 8) {
+          Alert.alert(t('common.error'), t('auth.password_too_short'));
           return false;
         }
         if (password !== confirmPassword) {
           Alert.alert(t('common.error'), t('auth.passwords_not_match'));
           return false;
         }
-        if (password.length < 8) {
-          Alert.alert(t('common.error'), t('auth.password_too_short'));
+        return true;
+      case 4:
+        if (!parentMobile.trim()) {
+          Alert.alert(t('common.error'), t('auth.parent_mobile_required'));
+          return false;
+        }
+        if (!MOBILE_REGEX.test(parentMobile.trim())) {
+          Alert.alert(t('common.error'), t('auth.invalid_mobile_format', 'The mobile number must be 11 digits starting with 010, 011, 012 or 015.'));
+          return false;
+        }
+        if (parentMobile2.trim() && !MOBILE_REGEX.test(parentMobile2.trim())) {
+          Alert.alert(t('common.error'), t('auth.invalid_mobile_format', 'The mobile number must be 11 digits starting with 010, 011, 012 or 015.'));
           return false;
         }
         return true;
@@ -231,10 +258,13 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
         name: name.trim(),
         email: email.trim(),
         mobile: mobile.trim(),
+        country_code: countryCode,
         gender,
         school_name: schoolName.trim(),
         parent_mobile: parentMobile.trim(),
+        parent_country_code: parentCountryCode,
         parent_mobile_2: parentMobile2.trim(),
+        parent_country_code_2: parentCountryCode2,
         password,
         grade_id: selectedGrade,
         educational_system_id: selectedSystem,
@@ -308,29 +338,29 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
               <View style={currentStyles.inputWrapper}>
                 <Ionicons name="person-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
                 <TextInput
-                  style={currentStyles.input}
+                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
                   value={name}
                   onChangeText={setName}
                   placeholder={t('auth.name_placeholder')}
                   placeholderTextColor={theme.colors.textSecondary}
-                  autoCapitalize="words"
+                  autoCapitalize="none"
+                  autoCorrect={false}
                   editable={!isLoading}
-                  textAlign={common.textAlign}
                 />
               </View>
 
               <View style={currentStyles.inputWrapper}>
                 <Ionicons name="mail-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
                 <TextInput
-                  style={currentStyles.input}
+                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
                   value={email}
                   onChangeText={setEmail}
                   placeholder={t('auth.email_placeholder')}
                   placeholderTextColor={theme.colors.textSecondary}
                   keyboardType="email-address"
                   autoCapitalize="none"
+                  autoCorrect={false}
                   editable={!isLoading}
-                  textAlign={common.textAlign}
                 />
               </View>
 
@@ -361,7 +391,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
               <View style={currentStyles.inputWrapper}>
                 <Ionicons name="business-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
                 <TextInput
-                  style={currentStyles.input}
+                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
                   value={schoolName}
                   onChangeText={(text) => {
                     setSchoolName(text);
@@ -371,8 +401,9 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                   }}
                   placeholder={t('auth.school_placeholder')}
                   placeholderTextColor={theme.colors.textSecondary}
+                  autoCapitalize="none"
+                  autoCorrect={false}
                   editable={!isLoading}
-                  textAlign={common.textAlign}
                 />
                 {isSearchingSchools && (
                   <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginRight: 8 }} />
@@ -457,33 +488,35 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
 
           {currentStep === 3 && (
             <>
-              <View style={currentStyles.inputWrapper}>
-                <Ionicons name="call-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
+              <View style={[currentStyles.inputWrapper, { paddingLeft: 0, paddingRight: 0 }]}>
+                <View style={[currentStyles.countryCodeContainer, isRTL ? { borderLeftWidth: 1, borderLeftColor: '#E2E8F0' } : { borderRightWidth: 1, borderRightColor: '#E2E8F0' }]}>
+                  <Text style={currentStyles.countryCodeText}>🇪🇬 +2</Text>
+                </View>
                 <TextInput
-                  style={currentStyles.input}
+                  style={[currentStyles.input, { flex: 1, textAlign: isRTL ? 'right' : 'left', paddingHorizontal: 16 }]}
                   value={mobile}
                   onChangeText={setMobile}
                   placeholder={t('auth.mobile_placeholder')}
                   placeholderTextColor={theme.colors.textSecondary}
                   keyboardType="phone-pad"
                   autoCapitalize="none"
+                  autoCorrect={false}
                   editable={!isLoading}
-                  textAlign={common.textAlign}
                 />
               </View>
 
               <View style={currentStyles.inputWrapper}>
                 <Ionicons name="lock-closed-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
                 <TextInput
-                  style={currentStyles.input}
+                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
                   value={password}
                   onChangeText={setPassword}
                   placeholder={t('auth.password_placeholder')}
                   placeholderTextColor={theme.colors.textSecondary}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
+                  autoCorrect={false}
                   editable={!isLoading}
-                  textAlign={common.textAlign}
                 />
                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                   <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={theme.colors.textSecondary} />
@@ -493,15 +526,15 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
               <View style={currentStyles.inputWrapper}>
                 <Ionicons name="shield-checkmark-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
                 <TextInput
-                  style={currentStyles.input}
+                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   placeholder={t('auth.confirm_password_placeholder')}
                   placeholderTextColor={theme.colors.textSecondary}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
+                  autoCorrect={false}
                   editable={!isLoading}
-                  textAlign={common.textAlign}
                 />
               </View>
             </>
@@ -509,45 +542,49 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
 
           {currentStep === 4 && (
             <>
-              <View style={currentStyles.inputWrapper}>
-                <Ionicons name="people-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
+              <View style={[currentStyles.inputWrapper, { paddingLeft: 0, paddingRight: 0 }]}>
+                <View style={[currentStyles.countryCodeContainer, isRTL ? { borderLeftWidth: 1, borderLeftColor: '#E2E8F0' } : { borderRightWidth: 1, borderRightColor: '#E2E8F0' }]}>
+                  <Text style={currentStyles.countryCodeText}>🇪🇬 +2</Text>
+                </View>
                 <TextInput
-                  style={currentStyles.input}
+                  style={[currentStyles.input, { flex: 1, textAlign: isRTL ? 'right' : 'left', paddingHorizontal: 16 }]}
                   value={parentMobile}
                   onChangeText={setParentMobile}
                   placeholder={t('auth.parent_mobile_placeholder')}
                   placeholderTextColor={theme.colors.textSecondary}
                   keyboardType="phone-pad"
+                  autoCorrect={false}
                   editable={!isLoading}
-                  textAlign={common.textAlign}
                 />
               </View>
 
-              <View style={currentStyles.inputWrapper}>
-                <Ionicons name="people-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
+              <View style={[currentStyles.inputWrapper, { paddingLeft: 0, paddingRight: 0 }]}>
+                <View style={[currentStyles.countryCodeContainer, isRTL ? { borderLeftWidth: 1, borderLeftColor: '#E2E8F0' } : { borderRightWidth: 1, borderRightColor: '#E2E8F0' }]}>
+                  <Text style={currentStyles.countryCodeText}>🇪🇬 +2</Text>
+                </View>
                 <TextInput
-                  style={currentStyles.input}
+                  style={[currentStyles.input, { flex: 1, textAlign: isRTL ? 'right' : 'left', paddingHorizontal: 16 }]}
                   value={parentMobile2}
                   onChangeText={setParentMobile2}
                   placeholder={t('auth.second_parent_mobile')}
                   placeholderTextColor={theme.colors.textSecondary}
                   keyboardType="phone-pad"
+                  autoCorrect={false}
                   editable={!isLoading}
-                  textAlign={common.textAlign}
                 />
               </View>
 
               <View style={currentStyles.inputWrapper}>
                 <Ionicons name="gift-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
                 <TextInput
-                  style={currentStyles.input}
+                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
                   value={promoCode}
                   onChangeText={setPromoCode}
                   placeholder={t('auth.promo_code_placeholder')}
                   placeholderTextColor={theme.colors.textSecondary}
                   autoCapitalize="characters"
+                  autoCorrect={false}
                   editable={!isLoading}
-                  textAlign={common.textAlign}
                 />
               </View>
             </>
@@ -843,6 +880,18 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       fontSize: 12,
       color: '#64748B',
       marginTop: 2,
+    },
+    countryCodeContainer: {
+      paddingHorizontal: 12,
+      height: '100%',
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: '#F8FAFC',
+    },
+    countryCodeText: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: '#1E293B',
     },
     modalContainer: {
       flex: 1,

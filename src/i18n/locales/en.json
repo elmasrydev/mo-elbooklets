@@ -307,7 +307,9 @@
     "promo_code": "Referral Code (Optional)",
     "promo_code_placeholder": "Enter code if you have one",
     "invalid_email": "Please enter a valid email address",
-    "parent_mobile_required": "Parent mobile number is required"
+    "parent_mobile_required": "Parent mobile number is required",
+    "invalid_mobile_format": "The mobile number must be 11 digits starting with 010, 011, 012 or 015.",
+    "name_too_short": "Name is too short (min 3 characters)"
   },
   "time": {
     "just_now": "Just now",

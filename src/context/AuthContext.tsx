@@ -24,10 +24,13 @@ interface RegisterInput {
   name: string;
   email: string;
   mobile: string;
+  country_code: string;
   gender: string;
   school_name?: string;
   parent_mobile?: string;
+  parent_country_code?: string;
   parent_mobile_2?: string;
+  parent_country_code_2?: string;
   password: string;
   grade_id: string;
   educational_system_id: string;
@@ -145,6 +148,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               name
               email
               mobile
+              country_code
               grade_id
               grade {
                 id

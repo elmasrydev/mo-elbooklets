@@ -307,7 +307,9 @@
     "promo_code": "كود الدعوة (اختياري)",
     "promo_code_placeholder": "أدخل الكود إذا كان لديك واحد",
     "invalid_email": "يرجى إدخال بريد إلكتروني صحيح",
-    "parent_mobile_required": "رقم هاتف ولي الأمر مطلوب"
+    "parent_mobile_required": "رقم هاتف ولي الأمر مطلوب",
+    "invalid_mobile_format": "يجب أن يكون رقم الهاتف 11 رقمًا يبدأ بـ 010 أو 011 أو 012 أو 015.",
+    "name_too_short": "الاسم قصير جداً (3 أحرف على الأقل)"
   },
   "time": {
     "just_now": "الآن",
