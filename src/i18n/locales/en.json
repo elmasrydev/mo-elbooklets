@@ -45,7 +45,9 @@
     "done": "Done",
     "correct": "Correct",
     "incorrect": "Incorrect",
-    "total": "Total"
+    "total": "Total",
+    "lesson": "Lesson",
+    "completed": "Completed"
   },
   "study_screen": {
     "header_title": "Study",

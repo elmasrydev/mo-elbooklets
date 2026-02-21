@@ -45,7 +45,9 @@
     "done": "تم",
     "correct": "صحيح",
     "incorrect": "خطأ",
-    "total": "الإجمالي"
+    "total": "الإجمالي",
+    "lesson": "درس",
+    "completed": "مكتمل"
   },
   "study_screen": {
     "header_title": "المذاكرة",
