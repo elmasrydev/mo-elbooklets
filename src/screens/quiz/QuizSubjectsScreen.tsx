@@ -15,6 +15,7 @@ import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
 import { layout } from '../../config/layout';
 import { tryFetchWithFallback } from '../../config/api';
+import UnifiedHeader from '../../components/UnifiedHeader';
 
 interface Subject {
   id: string;
@@ -75,12 +76,11 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
   if (loading)
     return (
       <View style={currentStyles.container}>
-        <View style={common.header}>
-          <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
-            <Ionicons name={common.arrowBack as any} size={24} color={theme.colors.headerText} />
-          </TouchableOpacity>
-          <Text style={common.headerTitle}> {t('quiz_subjects.header_title')} </Text>
-        </View>
+        <UnifiedHeader
+          showBackButton
+          onBackPress={onBack}
+          title={t('quiz_subjects.header_title')}
+        />
         <View style={currentStyles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={currentStyles.loadingText}> {t('quiz_subjects.loading_subjects')} </Text>
@@ -91,12 +91,11 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
   if (error)
     return (
       <View style={currentStyles.container}>
-        <View style={common.header}>
-          <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
-            <Ionicons name={common.arrowBack as any} size={24} color={theme.colors.headerText} />
-          </TouchableOpacity>
-          <Text style={common.headerTitle}> {t('quiz_subjects.header_title')} </Text>
-        </View>
+        <UnifiedHeader
+          showBackButton
+          onBackPress={onBack}
+          title={t('quiz_subjects.header_title')}
+        />
         <View style={currentStyles.errorContainer}>
           <Text style={currentStyles.errorIcon}>⚠️</Text>
           <Text style={currentStyles.errorTitle}>
@@ -112,15 +111,12 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
 
   return (
     <View style={currentStyles.container}>
-      <View style={common.header}>
-        <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
-          <Ionicons name={common.arrowBack as any} size={24} color={theme.colors.headerText} />
-        </TouchableOpacity>
-        <View style={common.headerTextWrapper}>
-          <Text style={common.headerTitle}> {t('quiz_subjects.header_title')} </Text>
-          <Text style={common.headerSubtitle}> {t('quiz_subjects.header_subtitle')} </Text>
-        </View>
-      </View>
+      <UnifiedHeader
+        showBackButton
+        onBackPress={onBack}
+        title={t('quiz_subjects.header_title')}
+        subtitle={t('quiz_subjects.header_subtitle')}
+      />
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ padding: layout.screenPadding, paddingBottom: 100 }}

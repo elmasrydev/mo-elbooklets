@@ -19,6 +19,7 @@ import { getSubjectConfig } from '../utils/subjectTheme';
 import { useTranslation } from 'react-i18next';
 import { layout } from '../config/layout';
 import { tryFetchWithFallback } from '../config/api';
+import UnifiedHeader from '../components/UnifiedHeader';
 
 interface Subject {
   id: string;
@@ -98,12 +99,10 @@ const StudyScreen: React.FC = () => {
   return (
     <View style={currentStyles.container}>
       {/* Header */}
-      <View style={common.header}>
-        <View style={common.headerTextWrapper}>
-          <Text style={common.headerTitle}> {t('study_screen.header_title')} </Text>
-          <Text style={common.headerSubtitle}> {t('study_screen.header_subtitle')} </Text>
-        </View>
-      </View>
+      <UnifiedHeader
+        title={t('study_screen.header_title')}
+        subtitle={t('study_screen.header_subtitle')}
+      />
 
       {/* Content */}
       {loading && subjects.length === 0 ? (
@@ -203,7 +202,7 @@ const styles = (
     },
     content: {
       flex: 1,
-      marginTop: -30,
+      marginTop: -24,
     },
     loadingState: {
       flex: 1,

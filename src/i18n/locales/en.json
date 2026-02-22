@@ -360,5 +360,27 @@
     "loading_subjects": "Loading subjects...",
     "error_loading": "Error loading schedule",
     "no_subjects": "No subjects available"
+  },
+  "profile_screen": {
+    "header_title": "Profile",
+    "header_subtitle": "Manage your account settings",
+    "settings": "Settings",
+    "edit_profile": "Edit Profile",
+    "update_profile_info": "Update your personal information",
+    "notifications": "Notifications",
+    "manage_notifications": "Manage your notification preferences",
+    "privacy_security": "Privacy & Security",
+    "privacy_subtitle": "Password and privacy settings",
+    "help_support": "Help & Support",
+    "help_subtitle": "Get help and contact support",
+    "sign_out": "Sign Out",
+    "grade": "Grade",
+    "not_specified": "Not specified"
+  },
+  "booklets_screen": {
+    "header_title": "Booklets",
+    "header_subtitle": "Explore available learning materials",
+    "no_booklets": "No booklets available",
+    "no_booklets_subtitle": "Booklets will appear here once they are added to the system"
   }
 }

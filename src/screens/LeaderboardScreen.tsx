@@ -17,7 +17,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
-import ScreenHeader from '../components/ScreenHeader';
+import UnifiedHeader from '../components/UnifiedHeader';
 import { layout } from '../config/layout';
 import { tryFetchWithFallback } from '../config/api';
 
@@ -325,7 +325,10 @@ const LeaderboardScreen: React.FC = () => {
                     {student.name}{' '}
                   </Text>
                 </View>
-                <Text style={currentStyles.listItemPoints}> {student.xp.toLocaleString()} pts</Text>
+                <Text style={currentStyles.listItemPoints}>
+                  {' '}
+                  {student.xp.toLocaleString()} pts{' '}
+                </Text>
               </View>
             ))}
           </View>
@@ -344,10 +347,10 @@ const LeaderboardScreen: React.FC = () => {
 
   return (
     <View style={common.container}>
-      <ScreenHeader
+      <UnifiedHeader
         title={t('leaderboard_screen.header_title')}
         subtitle={t('leaderboard_screen.header_subtitle')}
-        rightAction={
+        rightContent={
           <TouchableOpacity
             style={currentStyles.refreshButton}
             onPress={() => fetchLeaderboard(selectedTab)}

@@ -20,6 +20,7 @@ import { layout } from '../../config/layout';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
 import CircularProgress from '../../components/CircularProgress';
+import UnifiedHeader from '../../components/UnifiedHeader';
 
 interface UserQuizAnswer {
   question: {
@@ -205,11 +206,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
   if (loading) {
     return (
       <View style={common.container}>
-        <View style={common.header}>
-          <View style={common.headerTextWrapper}>
-            <Text style={common.headerTitle}> {t('quiz_results.loading_results')} </Text>
-          </View>
-        </View>
+        <UnifiedHeader title={t('quiz_results.loading_results')} />
         <View style={currentStyles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={currentStyles.loadingText}> {t('quiz_results.loading_quiz_results')} </Text>
@@ -221,18 +218,11 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
   if (error) {
     return (
       <View style={common.container}>
-        <View style={common.header}>
-          <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
-            <Ionicons
-              name={isRTL ? 'arrow-forward' : 'arrow-back'}
-              size={24}
-              color={theme.colors.headerText}
-            />
-          </TouchableOpacity>
-          <View style={common.headerTextWrapper}>
-            <Text style={common.headerTitle}> {t('quiz_results.results_error')} </Text>
-          </View>
-        </View>
+        <UnifiedHeader
+          showBackButton
+          onBackPress={onBack}
+          title={t('quiz_results.results_error')}
+        />
         <View style={currentStyles.errorContainer}>
           <Ionicons
             name="alert-circle"
@@ -253,18 +243,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
   if (!quizResult) {
     return (
       <View style={common.container}>
-        <View style={common.header}>
-          <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
-            <Ionicons
-              name={isRTL ? 'arrow-forward' : 'arrow-back'}
-              size={24}
-              color={theme.colors.headerText}
-            />
-          </TouchableOpacity>
-          <View style={common.headerTextWrapper}>
-            <Text style={common.headerTitle}> {t('quiz_results.no_results')} </Text>
-          </View>
-        </View>
+        <UnifiedHeader showBackButton onBackPress={onBack} title={t('quiz_results.no_results')} />
         <View style={currentStyles.errorContainer}>
           <Ionicons
             name="stats-chart"
@@ -285,18 +264,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
   return (
     <View style={common.container}>
       {/* Navbar Area */}
-      <View style={[currentStyles.header, { paddingTop: insets.top + spacing.sm }]}>
-        <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
-          <Ionicons
-            name={isRTL ? 'arrow-forward' : 'arrow-back'}
-            size={24}
-            color={theme.colors.headerText}
-          />
-        </TouchableOpacity>
-        <View style={common.headerTextWrapper}>
-          <Text style={currentStyles.headerTitle}> {t('quiz_results.header_title')} </Text>
-        </View>
-      </View>
+      <UnifiedHeader showBackButton onBackPress={onBack} title={t('quiz_results.header_title')} />
 
       <ScrollView
         style={currentStyles.content}

@@ -19,6 +19,7 @@ import { tryFetchWithFallback } from '../../config/api';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
 import { layout } from '../../config/layout';
+import UnifiedHeader from '../../components/UnifiedHeader';
 
 interface QuizQuestion {
   id: string;
@@ -253,11 +254,7 @@ const QuizTakingScreen: React.FC = () => {
   if (loading) {
     return (
       <View style={common.container}>
-        <View style={common.header}>
-          <View style={common.headerTextWrapper}>
-            <Text style={common.headerTitle}> {t('quiz_taking.loading_quiz')} </Text>
-          </View>
-        </View>
+        <UnifiedHeader title={t('quiz_taking.loading_quiz')} />
         <View style={currentStyles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={currentStyles.loadingText}> {t('quiz_taking.loading_quiz_questions')} </Text>
@@ -269,18 +266,7 @@ const QuizTakingScreen: React.FC = () => {
   if (error) {
     return (
       <View style={common.container}>
-        <View style={common.header}>
-          <TouchableOpacity style={currentStyles.backButton} onPress={() => navigation.goBack()}>
-            <Ionicons
-              name={isRTL ? 'arrow-forward' : 'arrow-back'}
-              size={24}
-              color={theme.colors.headerText}
-            />
-          </TouchableOpacity>
-          <View style={common.headerTextWrapper}>
-            <Text style={common.headerTitle}> {t('quiz_taking.quiz_error')} </Text>
-          </View>
-        </View>
+        <UnifiedHeader showBackButton title={t('quiz_taking.quiz_error')} />
         <View style={currentStyles.errorContainer}>
           <Ionicons
             name="alert-circle"
@@ -301,18 +287,7 @@ const QuizTakingScreen: React.FC = () => {
   if (!quiz || quiz.questions.length === 0) {
     return (
       <View style={common.container}>
-        <View style={common.header}>
-          <TouchableOpacity style={currentStyles.backButton} onPress={() => navigation.goBack()}>
-            <Ionicons
-              name={isRTL ? 'arrow-forward' : 'arrow-back'}
-              size={24}
-              color={theme.colors.headerText}
-            />
-          </TouchableOpacity>
-          <View style={common.headerTextWrapper}>
-            <Text style={common.headerTitle}> {t('quiz_taking.no_questions')} </Text>
-          </View>
-        </View>
+        <UnifiedHeader showBackButton title={t('quiz_taking.no_questions')} />
         <View style={currentStyles.errorContainer}>
           <Ionicons
             name="document-text-outline"
@@ -333,20 +308,15 @@ const QuizTakingScreen: React.FC = () => {
   return (
     <View style={common.container}>
       {/* Header */}
-      <View style={common.header}>
-        <TouchableOpacity style={currentStyles.backButton} onPress={handleBackPress}>
-          <Ionicons
-            name={isRTL ? 'arrow-forward' : 'arrow-back'}
-            size={24}
-            color={theme.colors.headerText}
-          />
-        </TouchableOpacity>
-        <View style={common.headerTextWrapper}>
+      <UnifiedHeader
+        showBackButton
+        onBackPress={handleBackPress}
+        title={
           <Text style={common.headerTitle} numberOfLines={1}>
             {t('quiz_taking.quiz')} - {quiz.subject.name}
           </Text>
-        </View>
-      </View>
+        }
+      />
 
       {/* Progress Bar */}
       <View style={currentStyles.progressContainer}>

@@ -17,6 +17,7 @@ import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { layout } from '../../config/layout';
 import { useTypography } from '../../hooks/useTypography';
 import QuizSettingsModal from '../../components/QuizSettingsModal';
+import UnifiedHeader from '../../components/UnifiedHeader';
 
 interface Subject {
   id: string;
@@ -127,11 +128,7 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
   if (loading)
     return (
       <View style={common.container}>
-        <View style={[currentStyles.header, { paddingTop: insets.top + spacing.sm }]}>
-          <View style={common.headerTextWrapper}>
-            <Text style={currentStyles.headerTitle}> {t('quiz_lessons.header_title')} </Text>
-          </View>
-        </View>
+        <UnifiedHeader title={t('quiz_lessons.header_title')} />
         <View style={currentStyles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={currentStyles.loadingText}> {t('quiz_lessons.loading_lessons')} </Text>
@@ -141,19 +138,12 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
 
   return (
     <View style={common.container}>
-      <View style={[currentStyles.header, { paddingTop: insets.top + spacing.sm }]}>
-        <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
-          <Ionicons
-            name={common.isRTL ? 'arrow-forward' : 'arrow-back'}
-            size={24}
-            color={theme.colors.headerText}
-          />
-        </TouchableOpacity>
-        <View style={common.headerTextWrapper}>
-          <Text style={currentStyles.headerTitle}> {t('quiz_lessons.header_title')} </Text>
-          <Text style={currentStyles.headerSubtitle}> {subject.name} </Text>
-        </View>
-      </View>
+      <UnifiedHeader
+        showBackButton
+        onBackPress={onBack}
+        title={t('quiz_lessons.header_title')}
+        subtitle={subject.name}
+      />
 
       <ScrollView
         style={currentStyles.content}

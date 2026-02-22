@@ -359,5 +359,27 @@
     "loading_subjects": "جارٍ تحميل المواد...",
     "error_loading": "خطأ في تحميل الجدول",
     "no_subjects": "لا توجد مواد متاحة"
+  },
+  "profile_screen": {
+    "header_title": "الملف الشخصي",
+    "header_subtitle": "إدارة إعدادات حسابك",
+    "settings": "الإعدادات",
+    "edit_profile": "تعديل الملف الشخصي",
+    "update_profile_info": "تحديث معلوماتك الشخصية",
+    "notifications": "الإشعارات",
+    "manage_notifications": "إدارة تفضيلات الإشعارات",
+    "privacy_security": "الخصوصية والأمان",
+    "privacy_subtitle": "إعدادات كلمة المرور والخصوصية",
+    "help_support": "المساعدة والدعم",
+    "help_subtitle": "احصل على المساعدة وتواصل مع الدعم",
+    "sign_out": "تسجيل الخروج",
+    "grade": "السنة الدراسية",
+    "not_specified": "غير محدد"
+  },
+  "booklets_screen": {
+    "header_title": "الكتيبات",
+    "header_subtitle": "استكشف المواد التعليمية المتاحة",
+    "no_booklets": "لا توجد كتيبات متاحة",
+    "no_booklets_subtitle": "ستظهر الكتيبات هنا بمجرد إضافتها للنظام"
   }
 }

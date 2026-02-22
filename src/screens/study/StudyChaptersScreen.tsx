@@ -17,7 +17,7 @@ import { layout } from '../../config/layout';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import BackButton from '../../components/navigation/BackButton';
+import UnifiedHeader from '../../components/UnifiedHeader';
 
 interface Subject {
   id: string;
@@ -140,12 +140,7 @@ const StudyChaptersScreen: React.FC = () => {
   if (loading) {
     return (
       <View style={common.container}>
-        <View style={common.header}>
-          <BackButton />
-          <View style={[common.headerTextWrapper, common.marginStart(12)]}>
-            <Text style={common.headerTitle}> {subject.name} </Text>
-          </View>
-        </View>
+        <UnifiedHeader showBackButton title={subject.name} />
         <View style={currentStyles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={currentStyles.loadingText}> {t('study_chapters.loading')} </Text>
@@ -157,12 +152,7 @@ const StudyChaptersScreen: React.FC = () => {
   if (error) {
     return (
       <View style={common.container}>
-        <View style={common.header}>
-          <BackButton />
-          <View style={[common.headerTextWrapper, common.marginStart(12)]}>
-            <Text style={common.headerTitle}> {subject.name} </Text>
-          </View>
-        </View>
+        <UnifiedHeader showBackButton title={subject.name} />
         <View style={currentStyles.errorContainer}>
           <Ionicons
             name="alert-circle"
@@ -182,13 +172,11 @@ const StudyChaptersScreen: React.FC = () => {
 
   return (
     <View style={common.container}>
-      <View style={common.header}>
-        <BackButton />
-        <View style={[common.headerTextWrapper, common.marginStart(12)]}>
-          <Text style={common.headerTitle}> {subject.name} </Text>
-          <Text style={common.headerSubtitle}> {t('study_chapters.select_lesson')} </Text>
-        </View>
-      </View>
+      <UnifiedHeader
+        showBackButton
+        title={subject.name}
+        subtitle={t('study_chapters.select_lesson')}
+      />
 
       <ScrollView
         style={currentStyles.content}
