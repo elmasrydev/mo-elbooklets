@@ -16,6 +16,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
+import { useTypography } from '../hooks/useTypography';
 import ScreenHeader from '../components/ScreenHeader';
 import { layout } from '../config/layout';
 import { tryFetchWithFallback } from '../config/api';
@@ -45,14 +46,20 @@ const LeaderboardScreen: React.FC = () => {
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
+  const { typography } = useTypography();
 
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [selectedTab, setSelectedTab] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [leaderboardError, setLeaderboardError] = useState<string | null>(null);
-  const [allLeaderboard, setAllLeaderboard] = useState<{ entries: Student[], userEntry: Student | null }>({ entries: [], userEntry: null });
-  const [subjectLeaderboards, setSubjectLeaderboards] = useState<{ [key: string]: { entries: Student[], userEntry: Student | null } }>({});
+  const [allLeaderboard, setAllLeaderboard] = useState<{
+    entries: Student[];
+    userEntry: Student | null;
+  }>({ entries: [], userEntry: null });
+  const [subjectLeaderboards, setSubjectLeaderboards] = useState<{
+    [key: string]: { entries: Student[]; userEntry: Student | null };
+  }>({});
 
   useEffect(() => {
     fetchSubjects();
@@ -122,11 +129,13 @@ const LeaderboardScreen: React.FC = () => {
           xp: s.xp || 0,
           isFollowing: !!s.isFollowing,
         }));
-        const processedUserEntry = userEntry ? {
-          ...userEntry,
-          xp: userEntry.xp || 0,
-          isFollowing: !!userEntry.isFollowing,
-        } : null;
+        const processedUserEntry = userEntry
+          ? {
+              ...userEntry,
+              xp: userEntry.xp || 0,
+              isFollowing: !!userEntry.isFollowing,
+            }
+          : null;
 
         const resultData = { entries: processedEntries, userEntry: processedUserEntry };
 
@@ -153,9 +162,14 @@ const LeaderboardScreen: React.FC = () => {
       );
       if (result.data?.followUser?.success) {
         const newIsFollowing = result.data.followUser.isFollowing;
-        const updater = (data: { entries: Student[], userEntry: Student | null }) => ({
-          entries: data.entries.map((s) => (s.id === student.id ? { ...s, isFollowing: newIsFollowing } : s)),
-          userEntry: data.userEntry?.id === student.id ? { ...data.userEntry, isFollowing: newIsFollowing } : data.userEntry
+        const updater = (data: { entries: Student[]; userEntry: Student | null }) => ({
+          entries: data.entries.map((s) =>
+            s.id === student.id ? { ...s, isFollowing: newIsFollowing } : s,
+          ),
+          userEntry:
+            data.userEntry?.id === student.id
+              ? { ...data.userEntry, isFollowing: newIsFollowing }
+              : data.userEntry,
         });
 
         setAllLeaderboard((prev) => updater(prev));
@@ -170,7 +184,7 @@ const LeaderboardScreen: React.FC = () => {
     }
   };
 
-  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius);
+  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius, typography);
 
   const renderCurrentUserCard = (userEntry: Student | null) => {
     if (!userEntry) return null;
@@ -178,7 +192,7 @@ const LeaderboardScreen: React.FC = () => {
       <View style={currentStyles.userStatusCard}>
         <View style={currentStyles.userStatusHeader}>
           <View style={currentStyles.userStatusRankBadge}>
-            <Text style={currentStyles.userStatusRankText}>#{userEntry.rank}</Text>
+            <Text style={currentStyles.userStatusRankText}>#{userEntry.rank} </Text>
           </View>
           <View style={currentStyles.userStatusAvatarContainer}>
             <Text style={currentStyles.userStatusAvatarText}>
@@ -186,7 +200,7 @@ const LeaderboardScreen: React.FC = () => {
             </Text>
           </View>
           <View style={currentStyles.userStatusInfo}>
-            <Text style={currentStyles.userStatusName}>{userEntry.name}</Text>
+            <Text style={currentStyles.userStatusName}> {userEntry.name} </Text>
             <Text style={currentStyles.userStatusPoints}>
               {userEntry.xp.toLocaleString()} {t('common.points', 'points')}
             </Text>
@@ -208,20 +222,20 @@ const LeaderboardScreen: React.FC = () => {
     const PodiumStudent = ({ student, rank, style }: any) => {
       const name = student ? student.name : t('leaderboard_screen.no_student_yet');
       const points = student ? `${student.xp.toLocaleString()} pts` : '- pts';
-      const avatarUri = student 
+      const avatarUri = student
         ? `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random&color=fff&size=128`
         : `https://ui-avatars.com/api/?name=%3F&background=E2E8F0&color=475569&size=128`;
 
       return (
         <View style={[currentStyles.podiumStudentOverlay, style]}>
           <View style={[currentStyles.podiumAvatar, rank === 1 && currentStyles.podiumAvatarLarge]}>
-            <Image 
-              source={{ uri: avatarUri }} 
-              style={currentStyles.avatarImage} 
-            />
+            <Image source={{ uri: avatarUri }} style={currentStyles.avatarImage} />
           </View>
-          <Text style={currentStyles.podiumNameText} numberOfLines={1}>{name}</Text>
-          <Text style={currentStyles.podiumPointsText}>{points}</Text>
+          <Text style={currentStyles.podiumNameText} numberOfLines={1}>
+            {' '}
+            {name}{' '}
+          </Text>
+          <Text style={currentStyles.podiumPointsText}> {points} </Text>
         </View>
       );
     };
@@ -263,7 +277,10 @@ const LeaderboardScreen: React.FC = () => {
         </View>
       );
 
-    const leaderboard = selectedTab === 'all' ? allLeaderboard : subjectLeaderboards[selectedTab] || { entries: [], userEntry: null };
+    const leaderboard =
+      selectedTab === 'all'
+        ? allLeaderboard
+        : subjectLeaderboards[selectedTab] || { entries: [], userEntry: null };
 
     if (leaderboard.entries.length === 0)
       return (
@@ -286,23 +303,36 @@ const LeaderboardScreen: React.FC = () => {
         {rest.length > 0 ? (
           <View style={currentStyles.listCard}>
             {rest.map((student, index) => (
-              <View key={student.id} style={[currentStyles.listItem, index === rest.length - 1 && { borderBottomWidth: 0 }]}>
+              <View
+                key={student.id}
+                style={[
+                  currentStyles.listItem,
+                  index === rest.length - 1 && { borderBottomWidth: 0 },
+                ]}
+              >
                 <View style={currentStyles.listItemLeft}>
-                  <Text style={currentStyles.listItemRank}>#{student.rank}</Text>
+                  <Text style={currentStyles.listItemRank}>#{student.rank} </Text>
                   <View style={currentStyles.listItemAvatar}>
                     <Image
-                      source={{ uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=E2E8F0&color=475569&size=64` }}
+                      source={{
+                        uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=E2E8F0&color=475569&size=64`,
+                      }}
                       style={currentStyles.avatarImageSmall}
                     />
                   </View>
-                  <Text style={currentStyles.listItemName} numberOfLines={1}>{student.name}</Text>
+                  <Text style={currentStyles.listItemName} numberOfLines={1}>
+                    {' '}
+                    {student.name}{' '}
+                  </Text>
                 </View>
-                <Text style={currentStyles.listItemPoints}>{student.xp.toLocaleString()} pts</Text>
+                <Text style={currentStyles.listItemPoints}> {student.xp.toLocaleString()} pts</Text>
               </View>
             ))}
           </View>
         ) : (
-          <View style={[currentStyles.listCard, { alignItems: 'center', paddingVertical: spacing.xl }]}>
+          <View
+            style={[currentStyles.listCard, { alignItems: 'center', paddingVertical: spacing.xl }]}
+          >
             <Text style={{ color: theme.colors.textSecondary, fontWeight: '600' }}>
               {t('leaderboard_screen.no_more_students')}
             </Text>
@@ -372,13 +402,20 @@ const LeaderboardScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={currentStyles.contentContainer}
       >
-        <View style={currentStyles.leaderboardContainer}>{renderLeaderboardContent()}</View>
+        <View style={currentStyles.leaderboardContainer}> {renderLeaderboardContent()} </View>
       </ScrollView>
     </View>
   );
 };
 
-const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRadius: any) =>
+const styles = (
+  theme: any,
+  common: any,
+  fontSizes: any,
+  spacing: any,
+  borderRadius: any,
+  typography: any,
+) =>
   StyleSheet.create({
     refreshButton: {
       width: 44,
@@ -400,7 +437,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       borderColor: theme.colors.border,
     },
     tabActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
-    tabText: { fontSize: fontSizes.sm, fontWeight: '700' },
+    tabText: { ...typography('label'), fontWeight: '700' },
     tabTextActive: { color: '#fff' },
     tabTextInactive: { color: theme.colors.textSecondary },
     content: { flex: 1 },
@@ -433,7 +470,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
     userStatusRankText: {
       color: '#fff',
       fontWeight: 'bold',
-      fontSize: fontSizes.base,
+      ...typography('h3'),
     },
     userStatusAvatarContainer: {
       width: 50,
@@ -446,19 +483,19 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
     },
     userStatusAvatarText: {
       color: '#fff',
-      fontSize: fontSizes.xl,
+      ...typography('h2'),
       fontWeight: '600',
     },
     userStatusInfo: {
       flex: 1,
     },
     userStatusName: {
-      fontSize: fontSizes.lg,
+      ...typography('h3'),
       fontWeight: 'bold',
       color: theme.colors.navy,
     },
     userStatusPoints: {
-      fontSize: fontSizes.sm,
+      ...typography('caption'),
       color: theme.colors.mediumGray,
     },
     userStatusSeparator: {
@@ -470,7 +507,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       textAlign: 'center',
       fontWeight: 'bold',
       color: theme.colors.navy,
-      fontSize: fontSizes.sm,
+      ...typography('label'),
     },
 
     // Podium Styles
@@ -527,13 +564,14 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
     },
     podiumNameText: {
       fontWeight: 'bold',
-      fontSize: fontSizes.xs,
+      ...typography('caption'),
       color: theme.colors.navy,
       textAlign: 'center',
       paddingHorizontal: 4,
       borderRadius: 4,
     },
     podiumPointsText: {
+      ...typography('caption'),
       fontSize: 10,
       fontWeight: 'bold',
       color: theme.colors.mediumGray,
@@ -567,7 +605,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
     },
     listItemRank: {
       width: 40,
-      fontSize: fontSizes.base,
+      ...typography('body'),
       fontWeight: '600',
       color: theme.colors.mediumGray,
     },
@@ -583,13 +621,13 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       height: '100%',
     },
     listItemName: {
-      fontSize: fontSizes.base,
+      ...typography('body'),
       fontWeight: '600',
       color: theme.colors.navy,
       flex: 1,
     },
     listItemPoints: {
-      fontSize: fontSizes.base,
+      ...typography('body'),
       fontWeight: '600',
       color: theme.colors.navy,
     },
@@ -597,7 +635,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
     // States
     loadingText: {
       marginTop: spacing.lg,
-      fontSize: fontSizes.sm,
+      ...typography('caption'),
       color: theme.colors.textSecondary,
       fontWeight: '600',
       textAlign: 'center',
@@ -611,7 +649,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       alignItems: 'center',
     },
     emptyStateTitle: {
-      fontSize: fontSizes.lg,
+      ...typography('h3'),
       fontWeight: 'bold',
       marginBottom: spacing.sm,
       color: theme.colors.text,
@@ -624,7 +662,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       borderRadius: borderRadius.lg,
       backgroundColor: theme.colors.primary,
     },
-    retryButtonText: { color: '#fff', fontSize: fontSizes.sm, fontWeight: 'bold' },
+    retryButtonText: { color: '#fff', ...typography('button'), fontWeight: 'bold' },
   });
 
 export default LeaderboardScreen;

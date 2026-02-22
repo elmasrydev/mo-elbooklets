@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
+import { useTypography } from '../hooks/useTypography';
 
 interface QuizType {
   id: string;
@@ -39,6 +40,7 @@ const QuizSettingsModal: React.FC<QuizSettingsModalProps> = ({
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { t } = useTranslation();
   const common = useCommonStyles();
+  const { typography } = useTypography();
   const [selectedTypeId, setSelectedTypeId] = useState<string | null>(initialQuizTypeId || null);
 
   useEffect(() => {
@@ -54,7 +56,7 @@ const QuizSettingsModal: React.FC<QuizSettingsModalProps> = ({
     }
   };
 
-  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius);
+  const currentStyles = styles(theme, common, typography, fontSizes, spacing, borderRadius);
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -169,7 +171,14 @@ const QuizSettingsModal: React.FC<QuizSettingsModalProps> = ({
   );
 };
 
-const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRadius: any) =>
+const styles = (
+  theme: any,
+  common: any,
+  typography: any,
+  fontSizes: any,
+  spacing: any,
+  borderRadius: any,
+) =>
   StyleSheet.create({
     overlay: {
       flex: 1,
@@ -215,13 +224,13 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       alignItems: common.alignStart,
     },
     title: {
-      fontSize: fontSizes.xl,
+      ...typography('h2'),
       fontWeight: 'bold',
       color: theme.colors.text,
       textAlign: common.textAlign,
     },
     subtitle: {
-      fontSize: fontSizes.sm,
+      ...typography('caption'),
       color: theme.colors.textSecondary,
       textAlign: common.textAlign,
     },
@@ -232,7 +241,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       flex: 1,
     },
     sectionTitle: {
-      fontSize: fontSizes.base,
+      ...typography('body'),
       fontWeight: '600',
       color: theme.colors.text,
       marginBottom: spacing.md,
@@ -269,7 +278,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       alignItems: common.alignStart,
     },
     optionTitle: {
-      fontSize: fontSizes.base,
+      ...typography('body'),
       fontWeight: '600',
       color: theme.colors.text,
       textAlign: common.textAlign,
@@ -278,7 +287,8 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       color: theme.colors.primary,
     },
     optionSubtitle: {
-      fontSize: fontSizes.xs,
+      ...typography('caption'),
+      fontSize: 12,
       color: theme.colors.textSecondary,
       textAlign: common.textAlign,
     },
@@ -307,7 +317,8 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
     },
     infoText: {
       flex: 1,
-      fontSize: fontSizes.xs,
+      ...typography('caption'),
+      fontSize: 12,
       color: theme.colors.info || '#0284C7',
       ...common.marginStart(spacing.sm),
       textAlign: common.textAlign,
@@ -333,7 +344,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       shadowOpacity: 0,
     },
     startButtonText: {
-      fontSize: fontSizes.lg,
+      ...typography('h3'),
       fontWeight: 'bold',
       color: '#fff',
     },

@@ -16,6 +16,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
+import { useTypography } from '../hooks/useTypography';
 import ScreenHeader from '../components/ScreenHeader';
 import { layout } from '../config/layout';
 import { tryFetchWithFallback } from '../config/api';
@@ -74,6 +75,7 @@ const SocialScreen: React.FC = () => {
   const { language, isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
+  const { typography } = useTypography();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Student[]>([]);
@@ -238,7 +240,7 @@ const SocialScreen: React.FC = () => {
     }
   };
 
-  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius);
+  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius, typography);
 
   const renderContent = () => {
     if (searchQuery.length >= 2) {
@@ -246,7 +248,7 @@ const SocialScreen: React.FC = () => {
         return (
           <View style={currentStyles.loadingState}>
             <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text style={currentStyles.loadingText}>{t('social_screen.searching')}</Text>
+            <Text style={currentStyles.loadingText}> {t('social_screen.searching')} </Text>
           </View>
         );
 
@@ -254,7 +256,7 @@ const SocialScreen: React.FC = () => {
         return (
           <View style={currentStyles.emptyState}>
             <Ionicons name="search-outline" size={64} color={theme.colors.textTertiary} />
-            <Text style={currentStyles.emptyStateTitle}>{t('social_screen.no_results')}</Text>
+            <Text style={currentStyles.emptyStateTitle}> {t('social_screen.no_results')} </Text>
             <Text style={currentStyles.emptyStateSubtitle}>
               {t('social_screen.try_different_search')}
             </Text>
@@ -263,7 +265,7 @@ const SocialScreen: React.FC = () => {
 
       return (
         <View style={currentStyles.searchResultsContainer}>
-          <Text style={common.sectionTitle}>{t('social_screen.search_results')}</Text>
+          <Text style={common.sectionTitle}> {t('social_screen.search_results')} </Text>
           {searchResults.map((student) => (
             <View key={student.id} style={common.card}>
               <View style={currentStyles.studentCardContent}>
@@ -274,15 +276,15 @@ const SocialScreen: React.FC = () => {
                     </Text>
                   </View>
                   <View style={currentStyles.studentDetails}>
-                    <Text style={currentStyles.studentName}>{student.name}</Text>
-                    <Text style={currentStyles.studentGrade}>{student.grade.name}</Text>
+                    <Text style={currentStyles.studentName}> {student.name} </Text>
+                    <Text style={currentStyles.studentGrade}> {student.grade.name} </Text>
                     <View style={currentStyles.studentStats}>
                       <Text style={currentStyles.studentStat}>
                         {student.totalQuizzes} {t('common.quizzes')}
                       </Text>
                       <Text style={currentStyles.studentStatSeparator}>•</Text>
                       <Text style={currentStyles.studentStat}>
-                        {student.avgScore}% {t('common.avg')}
+                        {student.avgScore} % {t('common.avg')}
                       </Text>
                     </View>
                   </View>
@@ -314,7 +316,7 @@ const SocialScreen: React.FC = () => {
       return (
         <View style={currentStyles.loadingState}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={currentStyles.loadingText}>{t('social_screen.loading_activities')}</Text>
+          <Text style={currentStyles.loadingText}> {t('social_screen.loading_activities')} </Text>
         </View>
       );
 
@@ -326,7 +328,7 @@ const SocialScreen: React.FC = () => {
             {t('social_screen.error_loading_timeline')}
           </Text>
           <TouchableOpacity style={currentStyles.retryButton} onPress={fetchTimeline}>
-            <Text style={currentStyles.retryButtonText}>{t('home_screen.try_again')}</Text>
+            <Text style={currentStyles.retryButtonText}> {t('home_screen.try_again')} </Text>
           </TouchableOpacity>
         </View>
       );
@@ -335,7 +337,7 @@ const SocialScreen: React.FC = () => {
       return (
         <View style={currentStyles.emptyState}>
           <Ionicons name="people-outline" size={64} color={theme.colors.textTertiary} />
-          <Text style={currentStyles.emptyStateTitle}>{t('social_screen.no_activity_yet')}</Text>
+          <Text style={currentStyles.emptyStateTitle}> {t('social_screen.no_activity_yet')} </Text>
           <Text style={currentStyles.emptyStateSubtitle}>
             {t('social_screen.follow_students_hint')}
           </Text>
@@ -344,7 +346,7 @@ const SocialScreen: React.FC = () => {
 
     return (
       <View style={currentStyles.timelineContainer}>
-        <Text style={common.sectionTitle}>{t('social_screen.recent_activity')}</Text>
+        <Text style={common.sectionTitle}> {t('social_screen.recent_activity')} </Text>
         {feedItems.map((item) => {
           if (item.type === 'quiz_completion' && item.quizData)
             return (
@@ -413,7 +415,14 @@ const SocialScreen: React.FC = () => {
   );
 };
 
-const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRadius: any) =>
+const styles = (
+  theme: any,
+  common: any,
+  fontSizes: any,
+  spacing: any,
+  borderRadius: any,
+  typography: any,
+) =>
   StyleSheet.create({
     refreshButton: {
       width: 44,
@@ -440,7 +449,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
     },
     searchInput: {
       flex: 1,
-      fontSize: fontSizes.base,
+      ...typography('body'),
       color: theme.colors.text,
       fontWeight: '500',
       ...common.marginStart(10), // Safe from double-flip
@@ -463,24 +472,24 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       justifyContent: 'center',
       alignItems: 'center',
     },
-    avatarText: { color: theme.colors.primary, fontWeight: 'bold', fontSize: 20 },
+    avatarText: { color: theme.colors.primary, fontWeight: 'bold', ...typography('h3') },
     studentDetails: { flex: 1, ...common.marginStart(12), alignItems: common.alignStart },
     studentName: {
-      fontSize: fontSizes.base,
+      ...typography('label'),
       fontWeight: 'bold',
       color: theme.colors.text,
       textAlign: common.textAlign,
     },
     studentGrade: {
-      fontSize: fontSizes.xs,
+      ...typography('caption'),
       color: theme.colors.textSecondary,
       marginTop: 2,
       textAlign: common.textAlign,
     },
     studentStats: { flexDirection: common.rowDirection, alignItems: 'center', marginTop: 4 },
-    studentStat: { fontSize: fontSizes.xs, color: theme.colors.primary, fontWeight: '600' },
+    studentStat: { ...typography('caption'), color: theme.colors.primary, fontWeight: '600' },
     studentStatSeparator: {
-      fontSize: fontSizes.xs,
+      ...typography('caption'),
       marginHorizontal: 6,
       color: theme.colors.textTertiary,
     },
@@ -496,13 +505,13 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       borderWidth: 1,
       borderColor: theme.colors.border,
     },
-    followButtonText: { fontSize: fontSizes.xs, fontWeight: 'bold', color: '#fff' },
+    followButtonText: { ...typography('caption'), fontWeight: 'bold', color: '#fff' },
     followButtonTextFollowing: { color: theme.colors.textSecondary },
     timelineContainer: { paddingBottom: spacing.xl },
     loadingState: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
     loadingText: {
       marginTop: spacing.md,
-      fontSize: fontSizes.base,
+      ...typography('body'),
       color: theme.colors.textSecondary,
       textAlign: 'center',
     },
@@ -514,14 +523,14 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       marginTop: 40,
     },
     emptyStateTitle: {
-      fontSize: fontSizes.lg,
+      ...typography('h3'),
       fontWeight: 'bold',
       color: theme.colors.text,
       marginTop: spacing.lg,
       textAlign: 'center',
     },
     emptyStateSubtitle: {
-      fontSize: fontSizes.sm,
+      ...typography('bodySmall'),
       color: theme.colors.textSecondary,
       marginTop: spacing.sm,
       textAlign: 'center',
@@ -534,7 +543,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       backgroundColor: theme.colors.primary,
       borderRadius: borderRadius.lg,
     },
-    retryButtonText: { color: '#fff', fontWeight: 'bold' },
+    retryButtonText: { ...typography('button'), color: '#fff', fontWeight: 'bold' },
   });
 
 export default SocialScreen;

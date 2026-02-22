@@ -6,6 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
+import { useTypography } from '../hooks/useTypography';
 import { layout } from '../config/layout';
 import { gql } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
@@ -38,12 +39,13 @@ const TodaysPlanWidget: React.FC = () => {
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { t } = useTranslation();
   const common = useCommonStyles();
+  const { typography } = useTypography();
 
   const { data, loading, error } = useQuery(TODAY_SCHEDULE_QUERY, {
     fetchPolicy: 'cache-and-network',
     pollInterval: 60000,
   });
-  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius);
+  const currentStyles = styles(theme, common, typography, fontSizes, spacing, borderRadius);
 
   if (loading && !data)
     return (
@@ -56,7 +58,7 @@ const TodaysPlanWidget: React.FC = () => {
               color={theme.colors.text}
               style={{ marginRight: 8 }}
             />
-            <Text style={currentStyles.title}>{t('study_calendar.today_plan')}</Text>
+            <Text style={currentStyles.title}> {t('study_calendar.today_plan')} </Text>
           </View>
         </View>
         <View style={currentStyles.loadingContainer}>
@@ -80,10 +82,10 @@ const TodaysPlanWidget: React.FC = () => {
               color={theme.colors.text}
               style={{ marginRight: 8 }}
             />
-            <Text style={currentStyles.title}>{t('study_calendar.today_plan')}</Text>
+            <Text style={currentStyles.title}> {t('study_calendar.today_plan')} </Text>
           </View>
           <TouchableOpacity onPress={() => navigation.navigate('StudyCalendar')}>
-            <Text style={currentStyles.linkText}>{t('study_calendar.set_schedule')}</Text>
+            <Text style={currentStyles.linkText}> {t('study_calendar.set_schedule')} </Text>
           </TouchableOpacity>
         </View>
         <View style={currentStyles.emptyContainer}>
@@ -93,8 +95,8 @@ const TodaysPlanWidget: React.FC = () => {
             color={theme.colors.textSecondary}
             style={{ marginBottom: spacing.sm }}
           />
-          <Text style={currentStyles.emptyText}>{t('study_calendar.no_schedule')}</Text>
-          <Text style={currentStyles.emptyHint}>{t('study_calendar.set_schedule_hint')}</Text>
+          <Text style={currentStyles.emptyText}> {t('study_calendar.no_schedule')} </Text>
+          <Text style={currentStyles.emptyHint}> {t('study_calendar.set_schedule_hint')} </Text>
         </View>
       </View>
     );
@@ -112,7 +114,7 @@ const TodaysPlanWidget: React.FC = () => {
               color={theme.colors.primary}
               style={{ marginRight: 8 }}
             />
-            <Text style={currentStyles.title}>{t('study_calendar.today_plan')}</Text>
+            <Text style={currentStyles.title}> {t('study_calendar.today_plan')} </Text>
           </View>
           <Text style={currentStyles.subtitle}>
             {t(`study_calendar.${dayName.toLowerCase()}`)} • {t('study_calendar.your_goals_today')}
@@ -177,7 +179,14 @@ const TodaysPlanWidget: React.FC = () => {
   );
 };
 
-const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRadius: any) =>
+const styles = (
+  theme: any,
+  common: any,
+  typography: any,
+  fontSizes: any,
+  spacing: any,
+  borderRadius: any,
+) =>
   StyleSheet.create({
     header: {
       flexDirection: common.rowDirection,
@@ -186,23 +195,23 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       marginBottom: spacing.md,
     },
     titleSection: { alignItems: common.alignStart },
-    title: { fontSize: fontSizes.lg, fontWeight: 'bold', color: theme.colors.text },
+    title: { ...typography('h3'), fontWeight: 'bold', color: theme.colors.text },
     subtitle: {
-      fontSize: fontSizes.xs,
+      ...typography('caption'),
       color: theme.colors.textSecondary,
       marginTop: 2,
       ...common.marginStart(28),
     },
-    linkText: { fontSize: fontSizes.sm, color: theme.colors.primary, fontWeight: '600' },
+    linkText: { ...typography('bodySmall'), color: theme.colors.primary, fontWeight: '600' },
     loadingContainer: { padding: spacing.xl, alignItems: 'center' },
     emptyContainer: { alignItems: 'center', padding: spacing.lg },
     emptyText: {
-      fontSize: fontSizes.base,
+      ...typography('body'),
       fontWeight: '600',
       color: theme.colors.text,
       marginBottom: spacing.xs,
     },
-    emptyHint: { fontSize: fontSizes.sm, color: theme.colors.textSecondary, textAlign: 'center' },
+    emptyHint: { ...typography('caption'), color: theme.colors.textSecondary, textAlign: 'center' },
     scheduleList: { gap: spacing.sm },
     scheduleItem: {
       flexDirection: common.rowDirection,
@@ -221,11 +230,12 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       ...common.marginEnd(spacing.md),
     },
     subjectIconComplete: { backgroundColor: '#10B98120' },
-    subjectIconText: { fontSize: fontSizes.lg, fontWeight: 'bold', color: theme.colors.primary },
+    subjectIconText: { ...typography('h3'), fontWeight: 'bold', color: theme.colors.primary },
     itemInfo: { flex: 1, alignItems: common.alignStart },
     itemHeader: { flexDirection: common.rowDirection, alignItems: 'center', gap: spacing.sm },
-    subjectName: { fontSize: fontSizes.base, fontWeight: '600', color: theme.colors.text },
+    subjectName: { ...typography('body'), fontWeight: '600', color: theme.colors.text },
     completeBadge: {
+      ...typography('caption'),
       fontSize: 10,
       fontWeight: 'bold',
       color: '#10B981',
@@ -235,9 +245,9 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       borderRadius: 8,
     },
     goalsRow: { flexDirection: common.rowDirection, gap: spacing.md, marginTop: 2 },
-    goalText: { fontSize: fontSizes.xs, color: theme.colors.textSecondary },
+    goalText: { ...typography('caption'), fontSize: 12, color: theme.colors.textSecondary },
     progressContainer: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
-    progressText: { fontSize: fontSizes.sm, fontWeight: 'bold', color: theme.colors.text },
+    progressText: { ...typography('bodySmall'), fontWeight: 'bold', color: theme.colors.text },
     progressTextComplete: { color: '#10B981' },
   });
 

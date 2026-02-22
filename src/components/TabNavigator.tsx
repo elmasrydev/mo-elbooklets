@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useTypography } from '../hooks/useTypography';
 import HomeScreen from '../screens/HomeScreen';
 import StudyScreen from '../screens/StudyScreen';
 import QuizScreen from '../screens/QuizScreen';
@@ -48,6 +49,7 @@ const TabScreens: React.FC = () => {
   const { isRTL, language } = useLanguage();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const { typography } = useTypography();
 
   // Debugging Order
   useEffect(() => {
@@ -96,7 +98,8 @@ const TabScreens: React.FC = () => {
           height: tabBarHeight,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
+          ...typography('caption'),
+          fontSize: 12, // Keeping the smaller size for tabs
           fontWeight: '600',
           marginTop: -5,
         },

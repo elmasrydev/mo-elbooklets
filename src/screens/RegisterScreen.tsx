@@ -22,6 +22,7 @@ import { tryFetchWithFallback, PRIMARY_API_URL } from '../config/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../context/LanguageContext';
+import { useTypography } from '../hooks/useTypography';
 
 import BackButton from '../components/navigation/BackButton';
 
@@ -31,12 +32,13 @@ interface RegisterScreenProps {
 }
 
 const PickerTrigger = ({ value, placeholder, icon, onPress, theme, currentStyles }: any) => (
-  <TouchableOpacity 
-    style={currentStyles.inputWrapper} 
-    onPress={onPress}
-    activeOpacity={0.7}
-  >
-    <Ionicons name={icon} size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
+  <TouchableOpacity style={currentStyles.inputWrapper} onPress={onPress} activeOpacity={0.7}>
+    <Ionicons
+      name={icon}
+      size={20}
+      color={theme.colors.textSecondary}
+      style={currentStyles.inputIcon}
+    />
     <Text style={[currentStyles.inputText, !value && { color: theme.colors.textSecondary }]}>
       {value || placeholder}
     </Text>
@@ -63,7 +65,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [promoCode, setPromoCode] = useState('');
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -75,14 +77,21 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
   const { t } = useTranslation();
   const common = useCommonStyles();
   const insets = useSafeAreaInsets();
+  const { typography } = useTypography();
   const isRTL = language === 'ar';
 
   const [gradesData, setGradesData] = useState<{ grades: any[] } | null>(null);
   const [systemsData, setSystemsData] = useState<{ educationalSystems: any[] } | null>(null);
 
   const messages = {
-    no_referral: t('auth.no_referral_disclaimer', 'You are now going to sign up without referral code and will have Trial Limited Access only'),
-    limit_reached: t('auth.limit_reached_disclaimer', 'The referral code you are using has exceeded its Free Access Limit and you will have Trial Limited Access only')
+    no_referral: t(
+      'auth.no_referral_disclaimer',
+      'You are now going to sign up without referral code and will have Trial Limited Access only',
+    ),
+    limit_reached: t(
+      'auth.limit_reached_disclaimer',
+      'The referral code you are using has exceeded its Free Access Limit and you will have Trial Limited Access only',
+    ),
   };
 
   useEffect(() => {
@@ -96,7 +105,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
       if (result.data) setGradesData(result.data);
     } catch (error) {
       console.error('Error fetching grades:', error);
-    } 
+    }
   };
 
   const fetchSystems = async () => {
@@ -149,7 +158,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
   };
 
   const selectSchool = (school: any) => {
-    const selectedName = language === 'ar' ? school.name : (school.name_en || school.name);
+    const selectedName = language === 'ar' ? school.name : school.name_en || school.name;
     setSkipNextSearch(true);
     setSchoolName(selectedName);
     setSchoolResults([]);
@@ -186,7 +195,13 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
           return false;
         }
         if (!MOBILE_REGEX.test(mobile.trim())) {
-          Alert.alert(t('common.error'), t('auth.invalid_mobile_format', 'The mobile number must be 11 digits starting with 010, 011, 012 or 015.'));
+          Alert.alert(
+            t('common.error'),
+            t(
+              'auth.invalid_mobile_format',
+              'The mobile number must be 11 digits starting with 010, 011, 012 or 015.',
+            ),
+          );
           return false;
         }
         if (password.length < 8) {
@@ -204,11 +219,23 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
           return false;
         }
         if (!MOBILE_REGEX.test(parentMobile.trim())) {
-          Alert.alert(t('common.error'), t('auth.invalid_mobile_format', 'The mobile number must be 11 digits starting with 010, 011, 012 or 015.'));
+          Alert.alert(
+            t('common.error'),
+            t(
+              'auth.invalid_mobile_format',
+              'The mobile number must be 11 digits starting with 010, 011, 012 or 015.',
+            ),
+          );
           return false;
         }
         if (parentMobile2.trim() && !MOBILE_REGEX.test(parentMobile2.trim())) {
-          Alert.alert(t('common.error'), t('auth.invalid_mobile_format', 'The mobile number must be 11 digits starting with 010, 011, 012 or 015.'));
+          Alert.alert(
+            t('common.error'),
+            t(
+              'auth.invalid_mobile_format',
+              'The mobile number must be 11 digits starting with 010, 011, 012 or 015.',
+            ),
+          );
           return false;
         }
         return true;
@@ -237,7 +264,10 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
 
   const handleRegister = async () => {
     if (!parentMobile.trim()) {
-      Alert.alert(t('common.error'), t('auth.parent_mobile_required', 'Parent mobile number is required'));
+      Alert.alert(
+        t('common.error'),
+        t('auth.parent_mobile_required', 'Parent mobile number is required'),
+      );
       return;
     }
 
@@ -280,23 +310,26 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
     }
   };
 
-  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius, isRTL);
+  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius, isRTL, typography);
 
   const StepIndicator = () => (
     <View style={currentStyles.stepIndicatorContainer}>
       <View style={currentStyles.stepDots}>
         {[1, 2, 3, 4].map((s) => (
-          <View 
-            key={s} 
+          <View
+            key={s}
             style={[
-              currentStyles.stepDot, 
+              currentStyles.stepDot,
               s === currentStep && currentStyles.stepDotActive,
-              s < currentStep && currentStyles.stepDotCompleted
-            ]} 
+              s < currentStep && currentStyles.stepDotCompleted,
+            ]}
           />
         ))}
       </View>
-      <Text style={currentStyles.stepText}>{t('auth.step_x_of_y', { current: currentStep, total: 4 })}</Text>
+      <Text style={currentStyles.stepText}>
+        {' '}
+        {t('auth.step_x_of_y', { current: currentStep, total: 4 })}{' '}
+      </Text>
     </View>
   );
 
@@ -316,7 +349,10 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
         color={theme.colors.text}
       />
 
-      <ScrollView contentContainerStyle={currentStyles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={currentStyles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={currentStyles.header}>
           <Image
             source={require('../../assets/logo-icon.png')}
@@ -336,7 +372,12 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
           {currentStep === 1 && (
             <>
               <View style={currentStyles.inputWrapper}>
-                <Ionicons name="person-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
+                <Ionicons
+                  name="person-outline"
+                  size={20}
+                  color={theme.colors.textSecondary}
+                  style={currentStyles.inputIcon}
+                />
                 <TextInput
                   style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
                   value={name}
@@ -350,7 +391,12 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
               </View>
 
               <View style={currentStyles.inputWrapper}>
-                <Ionicons name="mail-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
+                <Ionicons
+                  name="mail-outline"
+                  size={20}
+                  color={theme.colors.textSecondary}
+                  style={currentStyles.inputIcon}
+                />
                 <TextInput
                   style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
                   value={email}
@@ -365,23 +411,39 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
               </View>
 
               <View style={currentStyles.genderContainer}>
-                <Text style={currentStyles.sectionLabel}>{t('auth.gender')}</Text>
+                <Text style={currentStyles.sectionLabel}> {t('auth.gender')} </Text>
                 <View style={currentStyles.genderRow}>
                   <TouchableOpacity
-                    style={[currentStyles.genderButton, gender === 'male' && currentStyles.genderButtonActive]}
+                    style={[
+                      currentStyles.genderButton,
+                      gender === 'male' && currentStyles.genderButtonActive,
+                    ]}
                     onPress={() => setGender('male')}
                   >
                     <Text style={currentStyles.genderEmoji}>👦</Text>
-                    <Text style={[currentStyles.genderText, gender === 'male' && currentStyles.genderTextActive]}>
+                    <Text
+                      style={[
+                        currentStyles.genderText,
+                        gender === 'male' && currentStyles.genderTextActive,
+                      ]}
+                    >
                       {t('auth.boy')}
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[currentStyles.genderButton, gender === 'female' && currentStyles.genderButtonActive]}
+                    style={[
+                      currentStyles.genderButton,
+                      gender === 'female' && currentStyles.genderButtonActive,
+                    ]}
                     onPress={() => setGender('female')}
                   >
                     <Text style={currentStyles.genderEmoji}>👧</Text>
-                    <Text style={[currentStyles.genderText, gender === 'female' && currentStyles.genderTextActive]}>
+                    <Text
+                      style={[
+                        currentStyles.genderText,
+                        gender === 'female' && currentStyles.genderTextActive,
+                      ]}
+                    >
                       {t('auth.girl')}
                     </Text>
                   </TouchableOpacity>
@@ -389,7 +451,12 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
               </View>
 
               <View style={currentStyles.inputWrapper}>
-                <Ionicons name="business-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
+                <Ionicons
+                  name="business-outline"
+                  size={20}
+                  color={theme.colors.textSecondary}
+                  style={currentStyles.inputIcon}
+                />
                 <TextInput
                   style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
                   value={schoolName}
@@ -406,7 +473,11 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                   editable={!isLoading}
                 />
                 {isSearchingSchools && (
-                  <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginRight: 8 }} />
+                  <ActivityIndicator
+                    size="small"
+                    color={theme.colors.primary}
+                    style={{ marginRight: 8 }}
+                  />
                 )}
               </View>
 
@@ -442,43 +513,55 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
             <>
               <View style={currentStyles.gridContainer}>
                 {gradesData?.grades?.map((grade: any) => (
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     key={grade.id}
                     style={[
                       currentStyles.gridItem,
-                      selectedGrade === grade.id && currentStyles.gridItemActive
+                      selectedGrade === grade.id && currentStyles.gridItemActive,
                     ]}
                     onPress={() => setSelectedGrade(grade.id)}
                   >
-                    <Text style={[
-                      currentStyles.gridItemText,
-                      selectedGrade === grade.id && currentStyles.gridItemTextActive
-                    ]}>
+                    <Text
+                      style={[
+                        currentStyles.gridItemText,
+                        selectedGrade === grade.id && currentStyles.gridItemTextActive,
+                      ]}
+                    >
                       {grade.name}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <Text style={currentStyles.sectionTitle}>{t('auth.select_curriculum_type', 'Select Curriculum Type')}</Text>
+              <Text style={currentStyles.sectionTitle}>
+                {' '}
+                {t('auth.select_curriculum_type', 'Select Curriculum Type')}{' '}
+              </Text>
               <View style={currentStyles.systemsContainer}>
                 {systemsData?.educationalSystems?.map((system: any) => (
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     key={system.id}
                     style={[
                       currentStyles.systemCard,
-                      selectedSystem === system.id && currentStyles.systemCardActive
+                      selectedSystem === system.id && currentStyles.systemCardActive,
                     ]}
                     onPress={() => setSelectedSystem(system.id)}
                   >
-                    <Text style={[
-                      currentStyles.systemCardText,
-                      selectedSystem === system.id && currentStyles.systemCardTextActive
-                    ]}>
+                    <Text
+                      style={[
+                        currentStyles.systemCardText,
+                        selectedSystem === system.id && currentStyles.systemCardTextActive,
+                      ]}
+                    >
                       {system.name}
                     </Text>
                     {selectedSystem === system.id && (
-                      <Ionicons name="checkmark-circle" size={20} color="#1E3A8A" style={currentStyles.checkIcon} />
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={20}
+                        color="#1E3A8A"
+                        style={currentStyles.checkIcon}
+                      />
                     )}
                   </TouchableOpacity>
                 ))}
@@ -489,11 +572,21 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
           {currentStep === 3 && (
             <>
               <View style={[currentStyles.inputWrapper, { paddingLeft: 0, paddingRight: 0 }]}>
-                <View style={[currentStyles.countryCodeContainer, isRTL ? { borderLeftWidth: 1, borderLeftColor: '#E2E8F0' } : { borderRightWidth: 1, borderRightColor: '#E2E8F0' }]}>
-                  <Text style={currentStyles.countryCodeText}>🇪🇬 +2</Text>
+                <View
+                  style={[
+                    currentStyles.countryCodeContainer,
+                    isRTL
+                      ? { borderLeftWidth: 1, borderLeftColor: '#E2E8F0' }
+                      : { borderRightWidth: 1, borderRightColor: '#E2E8F0' },
+                  ]}
+                >
+                  <Text style={currentStyles.countryCodeText}>🇪🇬 +2 </Text>
                 </View>
                 <TextInput
-                  style={[currentStyles.input, { flex: 1, textAlign: isRTL ? 'right' : 'left', paddingHorizontal: 16 }]}
+                  style={[
+                    currentStyles.input,
+                    { flex: 1, textAlign: isRTL ? 'right' : 'left', paddingHorizontal: 16 },
+                  ]}
                   value={mobile}
                   onChangeText={setMobile}
                   placeholder={t('auth.mobile_placeholder')}
@@ -506,7 +599,12 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
               </View>
 
               <View style={currentStyles.inputWrapper}>
-                <Ionicons name="lock-closed-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={20}
+                  color={theme.colors.textSecondary}
+                  style={currentStyles.inputIcon}
+                />
                 <TextInput
                   style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
                   value={password}
@@ -519,12 +617,21 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                   editable={!isLoading}
                 />
                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                  <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={theme.colors.textSecondary} />
+                  <Ionicons
+                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                    size={20}
+                    color={theme.colors.textSecondary}
+                  />
                 </TouchableOpacity>
               </View>
 
               <View style={currentStyles.inputWrapper}>
-                <Ionicons name="shield-checkmark-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
+                <Ionicons
+                  name="shield-checkmark-outline"
+                  size={20}
+                  color={theme.colors.textSecondary}
+                  style={currentStyles.inputIcon}
+                />
                 <TextInput
                   style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
                   value={confirmPassword}
@@ -543,11 +650,21 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
           {currentStep === 4 && (
             <>
               <View style={[currentStyles.inputWrapper, { paddingLeft: 0, paddingRight: 0 }]}>
-                <View style={[currentStyles.countryCodeContainer, isRTL ? { borderLeftWidth: 1, borderLeftColor: '#E2E8F0' } : { borderRightWidth: 1, borderRightColor: '#E2E8F0' }]}>
-                  <Text style={currentStyles.countryCodeText}>🇪🇬 +2</Text>
+                <View
+                  style={[
+                    currentStyles.countryCodeContainer,
+                    isRTL
+                      ? { borderLeftWidth: 1, borderLeftColor: '#E2E8F0' }
+                      : { borderRightWidth: 1, borderRightColor: '#E2E8F0' },
+                  ]}
+                >
+                  <Text style={currentStyles.countryCodeText}>🇪🇬 +2 </Text>
                 </View>
                 <TextInput
-                  style={[currentStyles.input, { flex: 1, textAlign: isRTL ? 'right' : 'left', paddingHorizontal: 16 }]}
+                  style={[
+                    currentStyles.input,
+                    { flex: 1, textAlign: isRTL ? 'right' : 'left', paddingHorizontal: 16 },
+                  ]}
                   value={parentMobile}
                   onChangeText={setParentMobile}
                   placeholder={t('auth.parent_mobile_placeholder')}
@@ -559,11 +676,21 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
               </View>
 
               <View style={[currentStyles.inputWrapper, { paddingLeft: 0, paddingRight: 0 }]}>
-                <View style={[currentStyles.countryCodeContainer, isRTL ? { borderLeftWidth: 1, borderLeftColor: '#E2E8F0' } : { borderRightWidth: 1, borderRightColor: '#E2E8F0' }]}>
-                  <Text style={currentStyles.countryCodeText}>🇪🇬 +2</Text>
+                <View
+                  style={[
+                    currentStyles.countryCodeContainer,
+                    isRTL
+                      ? { borderLeftWidth: 1, borderLeftColor: '#E2E8F0' }
+                      : { borderRightWidth: 1, borderRightColor: '#E2E8F0' },
+                  ]}
+                >
+                  <Text style={currentStyles.countryCodeText}>🇪🇬 +2 </Text>
                 </View>
                 <TextInput
-                  style={[currentStyles.input, { flex: 1, textAlign: isRTL ? 'right' : 'left', paddingHorizontal: 16 }]}
+                  style={[
+                    currentStyles.input,
+                    { flex: 1, textAlign: isRTL ? 'right' : 'left', paddingHorizontal: 16 },
+                  ]}
                   value={parentMobile2}
                   onChangeText={setParentMobile2}
                   placeholder={t('auth.second_parent_mobile')}
@@ -575,7 +702,12 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
               </View>
 
               <View style={currentStyles.inputWrapper}>
-                <Ionicons name="gift-outline" size={20} color={theme.colors.textSecondary} style={currentStyles.inputIcon} />
+                <Ionicons
+                  name="gift-outline"
+                  size={20}
+                  color={theme.colors.textSecondary}
+                  style={currentStyles.inputIcon}
+                />
                 <TextInput
                   style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
                   value={promoCode}
@@ -606,9 +738,9 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
         </View>
 
         <View style={currentStyles.footer}>
-          <Text style={currentStyles.footerText}>{t('auth.already_have_account')}</Text>
+          <Text style={currentStyles.footerText}> {t('auth.already_have_account')} </Text>
           <TouchableOpacity onPress={onNavigateToLogin} disabled={isLoading}>
-            <Text style={currentStyles.linkText}>{t('auth.sign_in')}</Text>
+            <Text style={currentStyles.linkText}> {t('auth.sign_in')} </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -625,15 +757,27 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
             <View style={currentStyles.disclaimerIconContainer}>
               <Ionicons name="warning" size={32} color="#D97706" />
             </View>
-            <Text style={currentStyles.disclaimerTitle}>{t('auth.disclaimer_title', 'Registration Disclaimer')}</Text>
-            <Text style={currentStyles.disclaimerMessage}>{modalMessage}</Text>
-            
+            <Text style={currentStyles.disclaimerTitle}>
+              {' '}
+              {t('auth.disclaimer_title', 'Registration Disclaimer')}{' '}
+            </Text>
+            <Text style={currentStyles.disclaimerMessage}> {modalMessage} </Text>
+
             <View style={currentStyles.disclaimerActions}>
               <TouchableOpacity style={currentStyles.confirmButton} onPress={confirmRegistration}>
-                <Text style={currentStyles.confirmButtonText}>{t('auth.continue_registration', 'Continue Registration')}</Text>
+                <Text style={currentStyles.confirmButtonText}>
+                  {' '}
+                  {t('auth.continue_registration', 'Continue Registration')}{' '}
+                </Text>
               </TouchableOpacity>
-              <TouchableOpacity style={currentStyles.cancelButton} onPress={() => setShowModal(false)}>
-                <Text style={currentStyles.cancelButtonText}>{t('common.go_back', 'Go Back')}</Text>
+              <TouchableOpacity
+                style={currentStyles.cancelButton}
+                onPress={() => setShowModal(false)}
+              >
+                <Text style={currentStyles.cancelButtonText}>
+                  {' '}
+                  {t('common.go_back', 'Go Back')}{' '}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -643,29 +787,36 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
   );
 };
 
-const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRadius: any, isRTL: boolean) =>
+const styles = (
+  theme: any,
+  common: any,
+  fontSizes: any,
+  spacing: any,
+  borderRadius: any,
+  isRTL: boolean,
+  typography: any,
+) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.background },
-    scrollContainer: { 
-      flexGrow: 1, 
+    scrollContainer: {
+      flexGrow: 1,
       paddingHorizontal: spacing.xl,
       paddingTop: 60,
-      paddingBottom: spacing.xl 
+      paddingBottom: spacing.xl,
     },
     header: { alignItems: 'center', marginBottom: 32 },
     logo: { width: 100, height: 100, marginBottom: 16 },
     title: {
-      fontSize: 28,
-      fontWeight: '800',
+      ...typography('h1'),
       color: '#0F172A',
       marginBottom: 8,
       textAlign: 'center',
     },
-    subtitle: { 
-      fontSize: fontSizes.base, 
+    subtitle: {
+      ...typography('body'),
       color: '#64748B',
       textAlign: 'center',
-      fontWeight: '500'
+      fontWeight: '500',
     },
     form: { marginBottom: 24 },
     inputWrapper: {
@@ -685,13 +836,13 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
     },
     input: {
       flex: 1,
-      fontSize: fontSizes.base,
+      ...typography('body'),
       color: '#1E293B',
       height: '100%',
     },
     inputText: {
       flex: 1,
-      fontSize: fontSizes.base,
+      ...typography('body'),
       color: '#1E293B',
       textAlign: isRTL ? 'right' : 'left',
     },
@@ -710,22 +861,23 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
     },
     disabledButton: { backgroundColor: '#94A3B8' },
     registerButtonText: {
+      ...typography('button'),
       color: '#fff',
       fontSize: 18,
       fontWeight: '700',
     },
-    footer: { 
-      flexDirection: isRTL ? 'row-reverse' : 'row', 
-      justifyContent: 'center', 
+    footer: {
+      flexDirection: isRTL ? 'row-reverse' : 'row',
+      justifyContent: 'center',
       alignItems: 'center',
       marginBottom: 24,
       gap: 4,
     },
-    footerText: { fontSize: fontSizes.base, color: '#64748B' },
-    linkText: { 
-      fontSize: fontSizes.base, 
-      color: '#1E3A8A', 
-      fontWeight: '700' 
+    footerText: { ...typography('body'), color: '#64748B' },
+    linkText: {
+      ...typography('button'),
+      color: '#1E3A8A',
+      fontWeight: '700',
     },
     backButton: {
       position: 'absolute',
@@ -762,7 +914,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       backgroundColor: '#94A3B8',
     },
     stepText: {
-      fontSize: 12,
+      ...typography('caption'),
       fontWeight: '600',
       color: '#64748B',
     },
@@ -793,7 +945,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       elevation: 0,
     },
     gridItemText: {
-      fontSize: 14,
+      ...typography('label'),
       fontWeight: '700',
       color: '#64748B',
     },
@@ -801,7 +953,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       color: '#1E3A8A',
     },
     sectionTitle: {
-      fontSize: 18,
+      ...typography('h3'),
       fontWeight: '800',
       color: '#0F172A',
       marginTop: 8,
@@ -831,7 +983,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       backgroundColor: 'rgba(30, 58, 138, 0.05)',
     },
     systemCardText: {
-      fontSize: 13,
+      ...typography('caption'),
       fontWeight: '700',
       color: '#64748B',
       textAlign: 'center',
@@ -872,12 +1024,12 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       alignItems: isRTL ? 'flex-end' : 'flex-start',
     },
     schoolResultName: {
-      fontSize: 14,
+      ...typography('label'),
       fontWeight: '700',
       color: '#1E293B',
     },
     schoolResultMeta: {
-      fontSize: 12,
+      ...typography('caption'),
       color: '#64748B',
       marginTop: 2,
     },
@@ -889,7 +1041,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       backgroundColor: '#F8FAFC',
     },
     countryCodeText: {
-      fontSize: 14,
+      ...typography('label'),
       fontWeight: '700',
       color: '#1E293B',
     },
@@ -915,6 +1067,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       paddingHorizontal: 16,
     },
     modalDoneText: {
+      ...typography('button'),
       color: '#1E3A8A',
       fontSize: 18,
       fontWeight: '700',
@@ -923,6 +1076,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       marginBottom: 16,
     },
     sectionLabel: {
+      ...typography('caption'),
       fontSize: 10,
       fontWeight: '900',
       color: '#64748B',
@@ -955,8 +1109,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       fontSize: 20,
     },
     genderText: {
-      fontSize: 16,
-      fontWeight: '700',
+      ...typography('button'),
       color: '#64748B',
     },
     genderTextActive: {
@@ -992,14 +1145,14 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       marginBottom: 24,
     },
     disclaimerTitle: {
-      fontSize: 20,
+      ...typography('h3'),
       fontWeight: '900',
       color: '#0F172A',
       textAlign: 'center',
       marginBottom: 8,
     },
     disclaimerMessage: {
-      fontSize: 14,
+      ...typography('label'),
       fontWeight: '700',
       color: '#64748B',
       textAlign: 'center',
@@ -1023,8 +1176,8 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       shadowRadius: 8,
     },
     confirmButtonText: {
+      ...typography('button'),
       color: '#FFF',
-      fontSize: 16,
       fontWeight: '900',
     },
     cancelButton: {
@@ -1036,8 +1189,8 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       alignItems: 'center',
     },
     cancelButtonText: {
+      ...typography('button'),
       color: '#64748B',
-      fontSize: 16,
       fontWeight: '900',
     },
   });

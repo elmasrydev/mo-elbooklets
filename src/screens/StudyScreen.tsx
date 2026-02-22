@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useCommonStyles } from '../hooks/useCommonStyles';
+import { useTypography } from '../hooks/useTypography';
 import { getSubjectConfig } from '../utils/subjectTheme';
 import { useTranslation } from 'react-i18next';
 import { layout } from '../config/layout';
@@ -31,6 +32,7 @@ const StudyScreen: React.FC = () => {
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
+  const { typography } = useTypography();
   const navigation = useNavigation<any>();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
@@ -91,7 +93,7 @@ const StudyScreen: React.FC = () => {
     navigation.navigate('StudyChapters', { subject });
   };
 
-  const currentStyles = styles(theme, fontSizes, spacing, borderRadius, common, isRTL);
+  const currentStyles = styles(theme, fontSizes, spacing, borderRadius, common, isRTL, typography);
 
   return (
     <View style={currentStyles.container}>
@@ -192,6 +194,7 @@ const styles = (
   borderRadius: any,
   common: any,
   isRTL: boolean,
+  typography: any,
 ) =>
   StyleSheet.create({
     container: {
@@ -209,7 +212,7 @@ const styles = (
     },
     loadingText: {
       marginTop: 16,
-      fontSize: 16,
+      ...typography('body'),
       color: theme.colors.textSecondary,
     },
     errorState: {
@@ -223,13 +226,13 @@ const styles = (
       marginBottom: 16,
     },
     errorStateTitle: {
-      fontSize: 18,
+      ...typography('h3'),
       fontWeight: 'bold',
       marginBottom: 8,
       color: theme.colors.text,
     },
     errorStateSubtitle: {
-      fontSize: 14,
+      ...typography('caption'),
       textAlign: 'center',
       marginBottom: 20,
       color: theme.colors.textSecondary,
@@ -245,13 +248,13 @@ const styles = (
       marginBottom: 16,
     },
     emptyStateTitle: {
-      fontSize: 18,
+      ...typography('h3'),
       fontWeight: 'bold',
       marginBottom: 8,
       color: theme.colors.text,
     },
     emptyStateSubtitle: {
-      fontSize: 14,
+      ...typography('caption'),
       textAlign: 'center',
       color: theme.colors.textSecondary,
     },
@@ -280,6 +283,7 @@ const styles = (
       alignItems: common.alignStart,
     },
     subjectName: {
+      ...typography('label'),
       fontSize: 16, // Design title size
       fontWeight: 'bold',
       color: theme.colors.text,
@@ -287,6 +291,7 @@ const styles = (
       textAlign: common.textAlign,
     },
     subjectChapters: {
+      ...typography('caption'),
       fontSize: 13,
       color: theme.colors.textSecondary,
       textAlign: common.textAlign,
@@ -306,8 +311,7 @@ const styles = (
     },
     retryButtonText: {
       color: '#FFFFFF',
-      fontSize: 16,
-      fontWeight: '600',
+      ...typography('button'),
     },
   });
 

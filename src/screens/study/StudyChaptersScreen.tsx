@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { tryFetchWithFallback } from '../../config/api';
 import { layout } from '../../config/layout';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
+import { useTypography } from '../../hooks/useTypography';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import BackButton from '../../components/navigation/BackButton';
 
@@ -57,6 +58,7 @@ const StudyChaptersScreen: React.FC = () => {
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
+  const { typography } = useTypography();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const subject: Subject = route.params?.subject;
@@ -133,7 +135,7 @@ const StudyChaptersScreen: React.FC = () => {
     navigation.navigate('StudyLesson', { lesson, allLessons });
   };
 
-  const currentStyles = styles(theme, fontSizes, spacing, borderRadius, common);
+  const currentStyles = styles(theme, fontSizes, spacing, borderRadius, common, typography);
 
   if (loading) {
     return (
@@ -263,11 +265,18 @@ const StudyChaptersScreen: React.FC = () => {
   );
 };
 
-const styles = (theme: any, fontSizes: any, spacing: any, borderRadius: any, common: any) =>
+const styles = (
+  theme: any,
+  fontSizes: any,
+  spacing: any,
+  borderRadius: any,
+  common: any,
+  typography: any,
+) =>
   StyleSheet.create({
     content: { flex: 1 },
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    loadingText: { marginTop: 16, fontSize: fontSizes.base, color: theme.colors.textSecondary },
+    loadingText: { marginTop: 16, ...typography('body'), color: theme.colors.textSecondary },
     errorContainer: {
       flex: 1,
       justifyContent: 'center',
@@ -275,13 +284,13 @@ const styles = (theme: any, fontSizes: any, spacing: any, borderRadius: any, com
       padding: spacing.xl,
     },
     errorTitle: {
-      fontSize: fontSizes.lg,
+      ...typography('h3'),
       fontWeight: 'bold',
       marginBottom: 8,
       color: theme.colors.text,
     },
     errorText: {
-      fontSize: fontSizes.sm,
+      ...typography('caption'),
       textAlign: 'center',
       marginBottom: 20,
       color: theme.colors.textSecondary,
@@ -322,13 +331,13 @@ const styles = (theme: any, fontSizes: any, spacing: any, borderRadius: any, com
       alignItems: common.alignStart,
     },
     chapterName: {
-      fontSize: fontSizes.base,
+      ...typography('body'),
       fontWeight: 'bold',
       color: theme.colors.text,
       textAlign: common.textAlign,
     },
     lessonCount: {
-      fontSize: fontSizes.xs,
+      ...typography('caption'),
       marginTop: 2,
       color: theme.colors.textSecondary,
       textAlign: common.textAlign,
@@ -352,13 +361,14 @@ const styles = (theme: any, fontSizes: any, spacing: any, borderRadius: any, com
       alignItems: common.alignStart,
     },
     lessonName: {
-      fontSize: fontSizes.sm,
+      ...typography('caption'),
       fontWeight: '500',
       color: theme.colors.text,
       textAlign: common.textAlign,
     },
     lessonSummary: {
-      fontSize: fontSizes.xs,
+      ...typography('caption'),
+      fontSize: 12, // Keeping it slightly smaller text style for summary
       marginTop: 2,
       color: theme.colors.textSecondary,
       textAlign: common.textAlign,
@@ -370,13 +380,13 @@ const styles = (theme: any, fontSizes: any, spacing: any, borderRadius: any, com
       marginTop: 40,
     },
     emptyStateTitle: {
-      fontSize: fontSizes.lg,
+      ...typography('h3'),
       fontWeight: 'bold',
       marginBottom: 8,
       color: theme.colors.text,
     },
     emptyStateSubtitle: {
-      fontSize: fontSizes.sm,
+      ...typography('caption'),
       textAlign: 'center',
       color: theme.colors.textSecondary,
     },
@@ -388,8 +398,7 @@ const styles = (theme: any, fontSizes: any, spacing: any, borderRadius: any, com
     },
     retryButtonText: {
       color: '#fff',
-      fontSize: fontSizes.base,
-      fontWeight: '600',
+      ...typography('button'),
     },
   });
 

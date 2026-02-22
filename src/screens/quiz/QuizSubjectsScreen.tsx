@@ -12,6 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
+import { useTypography } from '../../hooks/useTypography';
 import { layout } from '../../config/layout';
 import { tryFetchWithFallback } from '../../config/api';
 
@@ -29,6 +30,7 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { t } = useTranslation();
   const common = useCommonStyles();
+  const { typography } = useTypography();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -68,7 +70,7 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
     return '📖';
   };
 
-  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius);
+  const currentStyles = styles(theme, common, typography, fontSizes, spacing, borderRadius);
 
   if (loading)
     return (
@@ -77,11 +79,11 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
           <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
             <Ionicons name={common.arrowBack as any} size={24} color={theme.colors.headerText} />
           </TouchableOpacity>
-          <Text style={common.headerTitle}>{t('quiz_subjects.header_title')}</Text>
+          <Text style={common.headerTitle}> {t('quiz_subjects.header_title')} </Text>
         </View>
         <View style={currentStyles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={currentStyles.loadingText}>{t('quiz_subjects.loading_subjects')}</Text>
+          <Text style={currentStyles.loadingText}> {t('quiz_subjects.loading_subjects')} </Text>
         </View>
       </View>
     );
@@ -93,13 +95,16 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
           <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
             <Ionicons name={common.arrowBack as any} size={24} color={theme.colors.headerText} />
           </TouchableOpacity>
-          <Text style={common.headerTitle}>{t('quiz_subjects.header_title')}</Text>
+          <Text style={common.headerTitle}> {t('quiz_subjects.header_title')} </Text>
         </View>
         <View style={currentStyles.errorContainer}>
           <Text style={currentStyles.errorIcon}>⚠️</Text>
-          <Text style={currentStyles.errorTitle}>{t('quiz_subjects.error_loading_subjects')}</Text>
+          <Text style={currentStyles.errorTitle}>
+            {' '}
+            {t('quiz_subjects.error_loading_subjects')}{' '}
+          </Text>
           <TouchableOpacity style={currentStyles.retryButton} onPress={fetchSubjects}>
-            <Text style={currentStyles.retryButtonText}>{t('home_screen.try_again')}</Text>
+            <Text style={currentStyles.retryButtonText}> {t('home_screen.try_again')} </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -112,8 +117,8 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
           <Ionicons name={common.arrowBack as any} size={24} color={theme.colors.headerText} />
         </TouchableOpacity>
         <View style={common.headerTextWrapper}>
-          <Text style={common.headerTitle}>{t('quiz_subjects.header_title')}</Text>
-          <Text style={common.headerSubtitle}>{t('quiz_subjects.header_subtitle')}</Text>
+          <Text style={common.headerTitle}> {t('quiz_subjects.header_title')} </Text>
+          <Text style={common.headerSubtitle}> {t('quiz_subjects.header_subtitle')} </Text>
         </View>
       </View>
       <ScrollView
@@ -129,9 +134,9 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
               onPress={() => onSubjectSelect(subject)}
             >
               <View style={currentStyles.subjectIcon}>
-                <Text style={currentStyles.subjectIconText}>{getSubjectIcon(subject.name)}</Text>
+                <Text style={currentStyles.subjectIconText}> {getSubjectIcon(subject.name)} </Text>
               </View>
-              <Text style={currentStyles.subjectName}>{subject.name}</Text>
+              <Text style={currentStyles.subjectName}> {subject.name} </Text>
               <Text style={currentStyles.subjectDescription}>
                 {subject.description || t('quiz_subjects.test_knowledge')}
               </Text>
@@ -159,18 +164,25 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
   );
 };
 
-const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRadius: any) =>
+const styles = (
+  theme: any,
+  common: any,
+  typography: any,
+  fontSizes: any,
+  spacing: any,
+  borderRadius: any,
+) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.background },
     backButton: { marginRight: common.isRTL ? 0 : 16, marginLeft: common.isRTL ? 16 : 0 },
-    backButtonText: { fontSize: fontSizes.base, fontWeight: '500', color: theme.colors.headerText },
+    backButtonText: { ...typography('body'), fontWeight: '500', color: theme.colors.headerText },
     content: { flex: 1 },
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    loadingText: { marginTop: 16, fontSize: fontSizes.base, color: theme.colors.textSecondary },
+    loadingText: { marginTop: 16, ...typography('body'), color: theme.colors.textSecondary },
     errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
     errorIcon: { fontSize: 48, marginBottom: 16 },
     errorTitle: {
-      fontSize: fontSizes.lg,
+      ...typography('h3'),
       fontWeight: 'bold',
       marginBottom: 8,
       color: theme.colors.text,
@@ -181,7 +193,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       borderRadius: borderRadius.md,
       backgroundColor: theme.colors.primary,
     },
-    retryButtonText: { color: '#fff', fontSize: fontSizes.base, fontWeight: '600' },
+    retryButtonText: { color: '#fff', ...typography('button') },
     subjectsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
     subjectCard: {
       width: '48%',
@@ -203,20 +215,20 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
     },
     subjectIconText: { fontSize: 28 },
     subjectName: {
-      fontSize: fontSizes.base,
+      ...typography('body'),
       fontWeight: 'bold',
       textAlign: 'center',
       marginBottom: 8,
       color: theme.colors.text,
     },
     subjectDescription: {
-      fontSize: fontSizes.xs,
+      ...typography('caption'),
       textAlign: 'center',
       marginBottom: 12,
       color: theme.colors.textSecondary,
     },
     subjectStats: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12 },
-    subjectStatsText: { fontSize: fontSizes.xs, fontWeight: '500', color: theme.colors.primary },
+    subjectStatsText: { ...typography('caption'), fontWeight: '500', color: theme.colors.primary },
     emptyState: {
       padding: 40,
       borderRadius: layout.borderRadius.xl,
@@ -226,13 +238,13 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
     },
     emptyStateIcon: { fontSize: 48, marginBottom: 16 },
     emptyStateTitle: {
-      fontSize: fontSizes.lg,
+      ...typography('h3'),
       fontWeight: 'bold',
       marginBottom: 8,
       color: theme.colors.text,
     },
     emptyStateSubtitle: {
-      fontSize: fontSizes.sm,
+      ...typography('caption'),
       textAlign: 'center',
       color: theme.colors.textSecondary,
     },

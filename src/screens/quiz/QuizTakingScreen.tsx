@@ -17,6 +17,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { tryFetchWithFallback } from '../../config/api';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
+import { useTypography } from '../../hooks/useTypography';
 import { layout } from '../../config/layout';
 
 interface QuizQuestion {
@@ -49,6 +50,7 @@ const QuizTakingScreen: React.FC = () => {
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
+  const { typography } = useTypography();
   const insets = useSafeAreaInsets();
 
   const [quiz, setQuiz] = useState<Quiz | null>(null);
@@ -246,7 +248,7 @@ const QuizTakingScreen: React.FC = () => {
     };
   }, []);
 
-  const currentStyles = styles(theme, fontSizes, spacing, borderRadius, common);
+  const currentStyles = styles(theme, typography, spacing, borderRadius, common);
 
   if (loading) {
     return (
@@ -482,7 +484,7 @@ const QuizTakingScreen: React.FC = () => {
   );
 };
 
-const styles = (theme: any, fontSizes: any, spacing: any, borderRadius: any, common: any) =>
+const styles = (theme: any, typography: any, spacing: any, borderRadius: any, common: any) =>
   StyleSheet.create({
     backButton: {
       padding: 4,
@@ -508,7 +510,7 @@ const styles = (theme: any, fontSizes: any, spacing: any, borderRadius: any, com
       backgroundColor: theme.colors.primary,
     },
     progressText: {
-      fontSize: fontSizes.xs,
+      ...typography('caption'),
       textAlign: 'center',
       color: theme.colors.textSecondary,
       fontWeight: '600',
@@ -527,7 +529,7 @@ const styles = (theme: any, fontSizes: any, spacing: any, borderRadius: any, com
     },
     loadingText: {
       marginTop: spacing.lg,
-      fontSize: fontSizes.base,
+      ...typography('body'),
       color: theme.colors.textSecondary,
     },
     errorContainer: {
@@ -537,13 +539,13 @@ const styles = (theme: any, fontSizes: any, spacing: any, borderRadius: any, com
       padding: 40,
     },
     errorTitle: {
-      fontSize: fontSizes.xl,
+      ...typography('h2'),
       fontWeight: 'bold',
       marginBottom: spacing.sm,
       color: theme.colors.text,
     },
     errorText: {
-      fontSize: fontSizes.sm,
+      ...typography('caption'),
       textAlign: 'center',
       marginBottom: 20,
       color: theme.colors.textSecondary,
@@ -556,8 +558,7 @@ const styles = (theme: any, fontSizes: any, spacing: any, borderRadius: any, com
     },
     retryButtonText: {
       color: '#FFFFFF',
-      fontSize: fontSizes.base,
-      fontWeight: '600',
+      ...typography('button'),
     },
     questionContainer: {
       backgroundColor: theme.colors.card,
@@ -570,13 +571,13 @@ const styles = (theme: any, fontSizes: any, spacing: any, borderRadius: any, com
       marginBottom: spacing.md,
     },
     questionNumber: {
-      fontSize: fontSizes.sm,
+      ...typography('label'),
       color: theme.colors.primary,
       fontWeight: '700',
       textAlign: common.textAlign,
     },
     questionText: {
-      fontSize: fontSizes.lg,
+      ...typography('h3'),
       color: theme.colors.text,
       fontWeight: '600',
       marginBottom: spacing['2xl'],
@@ -612,7 +613,7 @@ const styles = (theme: any, fontSizes: any, spacing: any, borderRadius: any, com
       backgroundColor: theme.colors.primary,
     },
     answerLetterText: {
-      fontSize: fontSizes.sm,
+      ...typography('label'),
       fontWeight: 'bold',
       color: theme.colors.textSecondary,
     },
@@ -621,7 +622,7 @@ const styles = (theme: any, fontSizes: any, spacing: any, borderRadius: any, com
     },
     answerText: {
       flex: 1,
-      fontSize: fontSizes.base,
+      ...typography('body'),
       color: theme.colors.text,
       textAlign: common.textAlign,
       fontWeight: '500',
@@ -656,9 +657,8 @@ const styles = (theme: any, fontSizes: any, spacing: any, borderRadius: any, com
       borderColor: theme.colors.border,
     },
     navButtonText: {
-      fontSize: fontSizes.sm, // Changed from base to sm
+      ...typography('buttonSmall'), // Changed from base to sm
       color: '#FFFFFF',
-      fontWeight: '600',
     },
     navButtonTextSecondary: {
       color: theme.colors.text,
@@ -685,9 +685,8 @@ const styles = (theme: any, fontSizes: any, spacing: any, borderRadius: any, com
       elevation: 2, // Reduced
     },
     submitButtonText: {
-      fontSize: fontSizes.sm, // Changed from base to sm
+      ...typography('buttonSmall'), // Changed from base to sm
       color: '#FFFFFF',
-      fontWeight: '600', // Changed from bold to 600
     },
   });
 

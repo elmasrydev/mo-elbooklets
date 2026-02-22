@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
+import { useTypography } from '../hooks/useTypography';
 
 interface CircularProgressProps {
   size: number;
@@ -15,6 +16,7 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
   percentage,
   color,
 }) => {
+  const { typography } = useTypography();
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
@@ -45,8 +47,10 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
         />
       </Svg>
       <View style={{ position: 'absolute' }}>
-        <Text style={{ fontSize: size * 0.22, fontWeight: 'bold', color: color }}>
-          {percentage}%
+        <Text
+          style={[typography('h3'), { fontSize: size * 0.22, fontWeight: 'bold', color: color }]}
+        >
+          {percentage} %
         </Text>
       </View>
     </View>

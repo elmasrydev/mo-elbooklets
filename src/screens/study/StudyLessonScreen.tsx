@@ -18,6 +18,7 @@ import { layout } from '../../config/layout';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import CloseButton from '../../components/navigation/CloseButton';
 import LessonNavBar from '../../components/navigation/LessonNavBar';
+import { useTypography } from '../../hooks/useTypography';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -69,7 +70,9 @@ const LessonVideoPlayer: React.FC<{ url: string; theme: any }> = ({ url, theme }
   const handleSkip = async (seconds: number) => {
     if (status.positionMillis !== undefined) {
       const newPosition = status.positionMillis + seconds * 1000;
-      await video.current?.setPositionAsync(Math.max(0, Math.min(newPosition, status.durationMillis || newPosition)));
+      await video.current?.setPositionAsync(
+        Math.max(0, Math.min(newPosition, status.durationMillis || newPosition)),
+      );
     }
   };
 
@@ -85,22 +88,22 @@ const LessonVideoPlayer: React.FC<{ url: string; theme: any }> = ({ url, theme }
         onPlaybackStatusUpdate={(s) => setStatus(() => s)}
         isMuted={isMuted}
       />
-      
+
       {/* Custom Controls Overlays */}
       <View style={videoStyles.controlsContainer}>
         {/* Progress Bar Container */}
         <View style={videoStyles.progressWrapper}>
           <View style={videoStyles.progressBarBackground}>
-            <View 
+            <View
               style={[
-                videoStyles.progressBarFill, 
-                { width: `${(status.positionMillis / (status.durationMillis || 1)) * 100}%` }
-              ]} 
+                videoStyles.progressBarFill,
+                { width: `${(status.positionMillis / (status.durationMillis || 1)) * 100}%` },
+              ]}
             />
           </View>
           <View style={videoStyles.timeRow}>
-            <Text style={videoStyles.timeText}>{formatTime(status.positionMillis)}</Text>
-            <Text style={videoStyles.timeText}>{formatTime(status.durationMillis)}</Text>
+            <Text style={videoStyles.timeText}> {formatTime(status.positionMillis)} </Text>
+            <Text style={videoStyles.timeText}> {formatTime(status.durationMillis)} </Text>
           </View>
         </View>
 
@@ -109,9 +112,9 @@ const LessonVideoPlayer: React.FC<{ url: string; theme: any }> = ({ url, theme }
           <TouchableOpacity onPress={() => handleSkip(-10)} style={videoStyles.controlButton}>
             <Ionicons name="play-back" size={24} color="#fff" />
           </TouchableOpacity>
-          
+
           <TouchableOpacity onPress={handlePlayPause} style={videoStyles.playButton}>
-            <Ionicons name={status.isPlaying ? "pause" : "play"} size={32} color="#fff" />
+            <Ionicons name={status.isPlaying ? 'pause' : 'play'} size={32} color="#fff" />
           </TouchableOpacity>
 
           <TouchableOpacity onPress={() => handleSkip(10)} style={videoStyles.controlButton}>
@@ -120,11 +123,8 @@ const LessonVideoPlayer: React.FC<{ url: string; theme: any }> = ({ url, theme }
         </View>
 
         {/* Audio Toggle */}
-        <TouchableOpacity 
-          onPress={() => setIsMuted(!isMuted)} 
-          style={videoStyles.muteButton}
-        >
-          <Ionicons name={isMuted ? "volume-mute" : "volume-high"} size={20} color="#fff" />
+        <TouchableOpacity onPress={() => setIsMuted(!isMuted)} style={videoStyles.muteButton}>
+          <Ionicons name={isMuted ? 'volume-mute' : 'volume-high'} size={20} color="#fff" />
         </TouchableOpacity>
       </View>
     </View>
@@ -137,6 +137,7 @@ const StudyLessonScreen: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const { typography } = useTypography();
 
   const [currentLesson, setCurrentLesson] = useState<Lesson>(route.params?.lesson);
   const allLessons: Lesson[] = route.params?.allLessons || [];
@@ -146,7 +147,7 @@ const StudyLessonScreen: React.FC = () => {
   const previousLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
   const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
 
-  const currentStyles = styles(theme, isRTL);
+  const currentStyles = styles(theme, isRTL, typography);
 
   const togglePoint = (pointId: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -198,7 +199,7 @@ const StudyLessonScreen: React.FC = () => {
         {/* Video Section */}
         {currentLesson.videoUrl && (
           <View style={currentStyles.videoSection}>
-             <LessonVideoPlayer url={currentLesson.videoUrl} theme={theme} />
+            <LessonVideoPlayer url={currentLesson.videoUrl} theme={theme} />
           </View>
         )}
 
@@ -290,7 +291,7 @@ const StudyLessonScreen: React.FC = () => {
   );
 };
 
-const styles = (theme: any, isRTL: boolean) =>
+const styles = (theme: any, isRTL: boolean, typography: any) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -313,6 +314,7 @@ const styles = (theme: any, isRTL: boolean) =>
       alignItems: isRTL ? 'flex-end' : 'flex-start',
     },
     chapterBadge: {
+      ...typography('caption'),
       fontSize: 12,
       paddingHorizontal: 10,
       paddingVertical: 4,
@@ -322,7 +324,7 @@ const styles = (theme: any, isRTL: boolean) =>
       overflow: 'hidden',
     },
     headerTitle: {
-      fontSize: 22,
+      ...typography('h2'),
       fontWeight: 'bold',
       color: theme.colors.headerText,
       textAlign: isRTL ? 'right' : 'left',
@@ -358,7 +360,7 @@ const styles = (theme: any, isRTL: boolean) =>
       fontSize: 18,
     },
     sectionTitle: {
-      fontSize: 18,
+      ...typography('h3'),
       fontWeight: '600',
       marginLeft: isRTL ? 0 : 12,
       marginRight: isRTL ? 12 : 0,
@@ -377,13 +379,14 @@ const styles = (theme: any, isRTL: boolean) =>
       shadowRadius: 10,
     },
     summaryText: {
+      ...typography('body'),
       fontSize: 15,
       lineHeight: 24,
       color: theme.colors.text,
       textAlign: isRTL ? 'right' : 'left',
     },
     noContentText: {
-      fontSize: 14,
+      ...typography('caption'),
       fontStyle: 'italic',
       color: theme.colors.textSecondary,
       textAlign: isRTL ? 'right' : 'left',
@@ -419,7 +422,7 @@ const styles = (theme: any, isRTL: boolean) =>
     },
     pointText: {
       flex: 1,
-      fontSize: 14,
+      ...typography('caption'),
       lineHeight: 22,
       marginLeft: isRTL ? 0 : 12,
       marginRight: isRTL ? 12 : 0,
@@ -436,6 +439,7 @@ const styles = (theme: any, isRTL: boolean) =>
       marginRight: isRTL ? 36 : 0,
     },
     explanationText: {
+      ...typography('caption'),
       fontSize: 13,
       lineHeight: 20,
       color: theme.colors.textSecondary,

@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Image } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useTypography } from '../hooks/useTypography';
 
 interface SplashScreenProps {
   onFinish: (isAuthenticated: boolean) => void;
@@ -10,6 +11,7 @@ interface SplashScreenProps {
 const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   const { isLoading, isAuthenticated } = useAuth();
   const { theme } = useTheme();
+  const { typography } = useTypography();
 
   useEffect(() => {
     if (!isLoading) {
@@ -21,7 +23,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
     }
   }, [isLoading, isAuthenticated, onFinish]);
 
-  const currentStyles = styles(theme);
+  const currentStyles = styles(theme, typography);
 
   return (
     <View style={currentStyles.container}>
@@ -44,7 +46,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
       {/* 3. Loading Indicator & Info */}
       <View style={currentStyles.content}>
         <ActivityIndicator size="large" color={theme.colors.primary} style={currentStyles.loader} />
-        <Text style={currentStyles.loadingText}>Loading...</Text>
+        <Text style={currentStyles.loadingText}> Loading...</Text>
       </View>
 
       {/* 4. Optional: Re-add footer if needed, but keeping it clean for now */}
@@ -52,7 +54,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   );
 };
 
-const styles = (theme: any) =>
+const styles = (theme: any, typography: any) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -80,7 +82,7 @@ const styles = (theme: any) =>
       marginVertical: 15,
     },
     loadingText: {
-      fontSize: 16,
+      ...typography('body'),
       color: theme.colors.textSecondary,
       fontWeight: '600',
       backgroundColor: 'rgba(255, 255, 255, 0.6)',

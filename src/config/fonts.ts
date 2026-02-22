@@ -123,51 +123,39 @@ export const borderRadius = {
 
 // Pre-defined text styles for common use cases
 export const textStyles = {
-  // Headers
-  h1: {
-    fontSize: fontSizes['3xl'],
-    lineHeight: lineHeights['3xl'],
-  },
-  h2: {
-    fontSize: fontSizes['2xl'],
-    lineHeight: lineHeights['2xl'],
-  },
-  h3: {
-    fontSize: fontSizes.xl,
-    lineHeight: lineHeights.xl,
-  },
-
-  // Body
-  body: {
-    fontSize: fontSizes.base,
-    lineHeight: lineHeights.base,
-  },
-  bodySmall: {
-    fontSize: fontSizes.sm,
-    lineHeight: lineHeights.sm,
-  },
-
-  // Labels
-  label: {
-    fontSize: fontSizes.sm,
-    lineHeight: lineHeights.sm,
-  },
-  caption: {
-    fontSize: fontSizes.xs,
-    lineHeight: lineHeights.xs,
-  },
-
-  // Buttons
-  button: {
-    fontSize: fontSizes.base,
-    lineHeight: lineHeights.base,
-  },
-  buttonSmall: {
-    fontSize: fontSizes.sm,
-    lineHeight: lineHeights.sm,
-  },
+  display: { fontSize: 32, fontWeight: '700', lineHeight: 40, fontFamily: 'Inter' },
+  h1: { fontSize: 28, fontWeight: '700', lineHeight: 36, fontFamily: 'Inter' },
+  h2: { fontSize: 24, fontWeight: '600', lineHeight: 32, fontFamily: 'Inter' },
+  h3: { fontSize: 20, fontWeight: '600', lineHeight: 28, fontFamily: 'Inter' },
+  body: { fontSize: 16, fontWeight: '400', lineHeight: 24, fontFamily: 'Inter' },
+  caption: { fontSize: 14, fontWeight: '400', lineHeight: 20, fontFamily: 'Inter' },
+  // Utility styles
+  button: { fontSize: 16, fontWeight: '600', lineHeight: 24, fontFamily: 'Inter' },
+  buttonSmall: { fontSize: 14, fontWeight: '600', lineHeight: 20, fontFamily: 'Inter' },
+  label: { fontSize: 14, fontWeight: '500', lineHeight: 20, fontFamily: 'Inter' },
+  bodySmall: { fontSize: 14, fontWeight: '400', lineHeight: 20, fontFamily: 'Inter' },
 } as const;
+
+/**
+ * Returns a complete text style object including the correct font family
+ * based on the current language (Inter for Latin, Cairo for Arabic).
+ */
+export const getTextStyle = (style: keyof typeof textStyles, isArabic: boolean = false) => {
+  const baseStyle = textStyles[style];
+
+  if (isArabic) {
+    // For Arabic, use Cairo and slightly bump caption size for readability
+    return {
+      ...baseStyle,
+      fontFamily: 'Cairo',
+      fontSize: style === 'caption' ? baseStyle.fontSize + 1 : baseStyle.fontSize,
+    };
+  }
+
+  return baseStyle;
+};
 
 export type FontSize = keyof typeof fontSizes;
 export type Spacing = keyof typeof spacing;
 export type BorderRadius = keyof typeof borderRadius;
+export type TextStyleType = keyof typeof textStyles;

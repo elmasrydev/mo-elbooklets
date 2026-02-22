@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
+import { useTypography } from '../../hooks/useTypography';
 import { layout } from '../../config/layout';
 
 interface QuizStartScreenProps {
@@ -24,8 +25,9 @@ const QuizStartScreen: React.FC<QuizStartScreenProps> = ({
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { t } = useTranslation();
   const common = useCommonStyles();
+  const { typography } = useTypography();
 
-  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius);
+  const currentStyles = styles(theme, common, typography, spacing, borderRadius);
 
   return (
     <View style={common.container}>
@@ -118,7 +120,7 @@ const QuizStartScreen: React.FC<QuizStartScreenProps> = ({
   );
 };
 
-const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRadius: any) =>
+const styles = (theme: any, common: any, typography: any, spacing: any, borderRadius: any) =>
   StyleSheet.create({
     backButton: {
       padding: 4,
@@ -149,14 +151,14 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       elevation: 6,
     },
     readyTitle: {
-      fontSize: 28,
+      ...typography('h1'),
       fontWeight: 'bold',
       color: theme.colors.text,
       marginBottom: spacing.sm,
       textAlign: 'center',
     },
     goodLuckText: {
-      fontSize: fontSizes.base,
+      ...typography('body'),
       color: theme.colors.textSecondary,
       marginBottom: spacing['2xl'],
       textAlign: 'center',
@@ -189,13 +191,14 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       alignItems: common.alignStart,
     },
     infoLabel: {
-      fontSize: fontSizes.xs,
+      ...typography('caption'),
+      fontSize: 12,
       color: theme.colors.textSecondary,
       marginBottom: 2,
       textAlign: common.textAlign,
     },
     infoValue: {
-      fontSize: fontSizes.base,
+      ...typography('body'),
       fontWeight: '700',
       color: theme.colors.text,
       textAlign: common.textAlign,
@@ -220,8 +223,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       backgroundColor: theme.colors.background,
     },
     backBtnText: {
-      fontSize: fontSizes.sm, // Changed from base to sm
-      fontWeight: '600',
+      ...typography('buttonSmall'), // Changed from base to sm
       color: theme.colors.text,
     },
     startButton: {
@@ -239,8 +241,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       elevation: 2, // Reduced elevation
     },
     startButtonText: {
-      fontSize: fontSizes.sm, // Changed from lg to sm
-      fontWeight: '600', // Changed from bold to 600
+      ...typography('buttonSmall'), // Changed from base to sm
       color: '#FFFFFF',
     },
   });

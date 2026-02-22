@@ -15,6 +15,7 @@ import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/nativ
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useCommonStyles } from '../hooks/useCommonStyles';
+import { useTypography } from '../hooks/useTypography';
 import { layout } from '../config/layout';
 import { tryFetchWithFallback } from '../config/api';
 import { useTranslation } from 'react-i18next';
@@ -47,6 +48,7 @@ const QuizScreen: React.FC = () => {
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { t } = useTranslation();
   const common = useCommonStyles();
+  const { typography } = useTypography();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
 
@@ -218,7 +220,7 @@ const QuizScreen: React.FC = () => {
       </>
     );
 
-  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius);
+  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius, typography);
 
   return (
     <View style={common.container}>
@@ -268,7 +270,10 @@ const QuizScreen: React.FC = () => {
           <View style={currentStyles.emptyState}>
             <Text style={currentStyles.emptyStateIcon}>📝</Text>
             <Text style={currentStyles.emptyStateTitle}> {t('quiz_screen.no_quizzes_yet')} </Text>
-            <Text style={currentStyles.emptyStateSubtitle}>{t('quiz_screen.take_first_quiz')}</Text>
+            <Text style={currentStyles.emptyStateSubtitle}>
+              {' '}
+              {t('quiz_screen.take_first_quiz')}{' '}
+            </Text>
           </View>
         ) : (
           <ScrollView
@@ -360,7 +365,14 @@ const QuizScreen: React.FC = () => {
   );
 };
 
-const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRadius: any) =>
+const styles = (
+  theme: any,
+  common: any,
+  fontSizes: any,
+  spacing: any,
+  borderRadius: any,
+  typography: any,
+) =>
   StyleSheet.create({
     actionSection: {
       padding: spacing.xl,
@@ -393,14 +405,14 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       ...common.marginStart(spacing.lg),
     },
     takeQuizText: {
-      fontSize: fontSizes.xl,
+      ...typography('h3'),
       fontWeight: 'bold',
       marginBottom: 4,
       color: '#FFFFFF',
       textAlign: common.textAlign,
     },
     takeQuizSubtext: {
-      fontSize: fontSizes.xs,
+      ...typography('caption'),
       color: 'rgba(255, 255, 255, 0.9)',
       textAlign: common.textAlign,
     },
@@ -423,7 +435,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       padding: 40,
       marginTop: 20,
     },
-    loadingText: { marginTop: 16, fontSize: fontSizes.base, color: theme.colors.textSecondary },
+    loadingText: { marginTop: 16, ...typography('body'), color: theme.colors.textSecondary },
     errorState: {
       alignItems: 'center',
       justifyContent: 'center',
@@ -434,7 +446,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
     },
     errorStateIcon: { fontSize: 48, marginBottom: 16 },
     errorStateTitle: {
-      fontSize: fontSizes.lg,
+      ...typography('h3'),
       fontWeight: 'bold',
       marginBottom: 8,
       color: theme.colors.text,
@@ -446,7 +458,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       borderRadius: borderRadius.lg,
       backgroundColor: theme.colors.primary,
     },
-    retryButtonText: { color: '#fff', fontSize: fontSizes.base, fontWeight: '600' },
+    retryButtonText: { color: '#fff', ...typography('button') },
     emptyState: {
       padding: 40,
       marginTop: 20,
@@ -454,13 +466,13 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
     },
     emptyStateIcon: { fontSize: 48, marginBottom: 16 },
     emptyStateTitle: {
-      fontSize: fontSizes.lg,
+      ...typography('h3'),
       fontWeight: '600',
       marginBottom: 8,
       color: theme.colors.text,
     },
     emptyStateSubtitle: {
-      fontSize: fontSizes.sm,
+      ...typography('caption'),
       textAlign: 'center',
       color: theme.colors.textSecondary,
     },

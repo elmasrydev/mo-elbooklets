@@ -5,6 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
+import { useTypography } from '../hooks/useTypography';
 import { layout } from '../config/layout';
 import CircularProgress from './CircularProgress';
 import { getTimeAgo } from '../lib/dateUtils';
@@ -29,11 +30,12 @@ const RecentActivityCard: React.FC<ActivityCardProps> = ({ activity, onPress }) 
   const { language } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
+  const { typography } = useTypography();
 
   const scorePercent = Math.round((activity.score / activity.totalQuestions) * 100);
   const scoreColor = getScoreColor(scorePercent);
   const subjectConfig = getSubjectConfig(activity.subject?.name, theme);
-  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius);
+  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius, typography);
 
   return (
     <TouchableOpacity
@@ -45,10 +47,8 @@ const RecentActivityCard: React.FC<ActivityCardProps> = ({ activity, onPress }) 
         <Ionicons name={subjectConfig.icon} size={24} color={subjectConfig.color} />
       </View>
       <View style={currentStyles.infoContainer}>
-        <Text style={currentStyles.subjectName}>{activity.subject.name}</Text>
-        <Text style={currentStyles.timeText}>
-          {getTimeAgo(activity.completedAt, t, language)}
-        </Text>
+        <Text style={currentStyles.subjectName}> {activity.subject.name} </Text>
+        <Text style={currentStyles.timeText}>{getTimeAgo(activity.completedAt, t, language)}</Text>
       </View>
       <View style={currentStyles.rightContainer}>
         <CircularProgress size={50} strokeWidth={5} percentage={scorePercent} color={scoreColor} />
@@ -57,7 +57,14 @@ const RecentActivityCard: React.FC<ActivityCardProps> = ({ activity, onPress }) 
   );
 };
 
-const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRadius: any) =>
+const styles = (
+  theme: any,
+  common: any,
+  fontSizes: any,
+  spacing: any,
+  borderRadius: any,
+  typography: any,
+) =>
   StyleSheet.create({
     card: {
       flexDirection: common.rowDirection,
@@ -76,9 +83,9 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       alignItems: 'center',
     },
     infoContainer: { flex: 1, ...common.marginStart(12), alignItems: common.alignStart },
-    subjectName: { fontSize: fontSizes.base, fontWeight: 'bold', color: theme.colors.text },
+    subjectName: { ...typography('body'), fontWeight: 'bold', color: theme.colors.text },
     timeText: {
-      fontSize: fontSizes.xs,
+      ...typography('caption'),
       color: theme.colors.textSecondary,
       marginTop: 4,
       fontWeight: '500',

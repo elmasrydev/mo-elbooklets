@@ -11,10 +11,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
-import { useCommonStyles } from '../../hooks/useCommonStyles';
-import { layout } from '../../config/layout';
 import { tryFetchWithFallback } from '../../config/api';
 import { Ionicons } from '@expo/vector-icons';
+import { useCommonStyles } from '../../hooks/useCommonStyles';
+import { layout } from '../../config/layout';
+import { useTypography } from '../../hooks/useTypography';
 import QuizSettingsModal from '../../components/QuizSettingsModal';
 
 interface Subject {
@@ -53,6 +54,7 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { t } = useTranslation();
   const common = useCommonStyles();
+  const { typography } = useTypography();
   const insets = useSafeAreaInsets();
   const [selectedLessons, setSelectedLessons] = useState<Set<string>>(new Set());
   const [chapters, setChapters] = useState<Chapter[]>([]);
@@ -120,7 +122,7 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
     }, 500);
   };
 
-  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius);
+  const currentStyles = styles(theme, common, typography, spacing, borderRadius);
 
   if (loading)
     return (
@@ -278,11 +280,11 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
   );
 };
 
-const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRadius: any) =>
+const styles = (theme: any, common: any, typography: any, spacing: any, borderRadius: any) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.background },
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    loadingText: { marginTop: 16, fontSize: fontSizes.base, color: theme.colors.textSecondary },
+    loadingText: { marginTop: 16, ...typography('body'), color: theme.colors.textSecondary },
 
     // Header
     backButton: {
@@ -302,13 +304,13 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       borderBottomColor: theme.colors.border,
     },
     headerTitle: {
-      fontSize: fontSizes.lg,
+      ...typography('h3'),
       fontWeight: 'bold',
       color: theme.colors.headerText,
       textAlign: common.textAlign,
     },
     headerSubtitle: {
-      fontSize: fontSizes.sm,
+      ...typography('caption'),
       color: theme.colors.headerSubtitle,
       marginTop: 2,
       opacity: 0.9,
@@ -350,13 +352,14 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       ...common.marginEnd(12),
     },
     chapterName: {
-      fontSize: fontSizes.base,
+      ...typography('body'),
       fontWeight: 'bold',
       color: theme.colors.text,
       textAlign: common.textAlign,
     },
     chapterStats: {
-      fontSize: fontSizes.xs,
+      ...typography('caption'),
+      fontSize: 12,
       color: theme.colors.textSecondary,
       marginTop: 2,
       textAlign: common.textAlign,
@@ -379,7 +382,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       ...common.marginEnd(12),
     },
     lessonName: {
-      fontSize: fontSizes.sm,
+      ...typography('caption'),
       flex: 1,
       color: theme.colors.text,
       textAlign: common.textAlign,
@@ -396,13 +399,13 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       marginTop: 60,
     },
     emptyStateTitle: {
-      fontSize: fontSizes.lg,
+      ...typography('h3'),
       fontWeight: 'bold',
       marginBottom: 8,
       color: theme.colors.text,
     },
     emptyStateSubtitle: {
-      fontSize: fontSizes.sm,
+      ...typography('caption'),
       textAlign: 'center',
       color: theme.colors.textSecondary,
     },
@@ -433,8 +436,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
     },
     prepareButtonText: {
       color: '#fff',
-      fontSize: fontSizes.sm, // Changed from base to sm
-      fontWeight: '600', // Changed from bold to 600
+      ...typography('buttonSmall'), // Changed from base to sm
     },
   });
 
