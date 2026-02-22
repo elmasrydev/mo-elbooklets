@@ -17,7 +17,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
-import ScreenHeader from '../components/ScreenHeader';
+import UnifiedHeader from '../components/UnifiedHeader';
 import { layout } from '../config/layout';
 import { tryFetchWithFallback } from '../config/api';
 import { QuizCompletionCard, ConnectionCard, RankChangeCard } from '../components/feed';
@@ -369,10 +369,10 @@ const SocialScreen: React.FC = () => {
 
   return (
     <View style={common.container}>
-      <ScreenHeader
+      <UnifiedHeader
         title={t('social_screen.header_title')}
         subtitle={t('social_screen.header_subtitle')}
-        rightAction={
+        rightContent={
           <TouchableOpacity style={currentStyles.refreshButton} onPress={fetchTimeline}>
             <Ionicons name="refresh-outline" size={24} color="#fff" />
           </TouchableOpacity>

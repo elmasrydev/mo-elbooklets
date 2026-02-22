@@ -54,7 +54,7 @@ export const useCommonStyles = () => {
     headerSubtitle: {
       ...typography('body'),
       color: theme.colors.headerSubtitle,
-      marginTop: spacing.xs,
+      marginTop: spacing.xs - 6,
       opacity: 0.9,
       textAlign: rtl.textAlign,
     } as TextStyle,

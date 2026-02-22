@@ -6,6 +6,8 @@ import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useLanguage } from '../context/LanguageContext';
 import { useTypography } from '../hooks/useTypography';
 import { layout } from '../config/layout';
+import UnifiedHeader from '../components/UnifiedHeader';
+import { useTranslation } from 'react-i18next';
 
 const ProfileScreen: React.FC = () => {
   const { user, logout } = useAuth();
@@ -13,6 +15,7 @@ const ProfileScreen: React.FC = () => {
   const common = useCommonStyles();
   const { isRTL } = useLanguage();
   const { typography } = useTypography();
+  const { t } = useTranslation();
 
   const handleLogout = async () => {
     await logout();
@@ -23,12 +26,11 @@ const ProfileScreen: React.FC = () => {
   return (
     <View style={common.container}>
       {/* Standardized Header */}
-      <View style={common.header}>
-        <View style={common.headerTextWrapper}>
-          <Text style={common.headerTitle}> Profile </Text>
-          <Text style={common.headerSubtitle}> Manage your account settings </Text>
-        </View>
-      </View>
+      <UnifiedHeader
+        title={t('profile_screen.header_title')}
+        subtitle={t('profile_screen.header_subtitle')}
+        showBackButton
+      />
 
       <ScrollView
         style={{ flex: 1 }}

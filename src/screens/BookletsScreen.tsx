@@ -4,21 +4,23 @@ import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTheme } from '../context/ThemeContext';
 import { layout } from '../config/layout';
 import { useTypography } from '../hooks/useTypography';
+import UnifiedHeader from '../components/UnifiedHeader';
+import { useTranslation } from 'react-i18next';
 
 const BookletsScreen: React.FC = () => {
   const common = useCommonStyles();
   const { theme } = useTheme();
   const { typography } = useTypography();
+  const { t } = useTranslation();
 
   return (
     <View style={common.container}>
       {/* Standardized Header */}
-      <View style={common.header}>
-        <View style={common.headerTextWrapper}>
-          <Text style={common.headerTitle}> Booklets </Text>
-          <Text style={common.headerSubtitle}> Explore available learning materials </Text>
-        </View>
-      </View>
+      <UnifiedHeader
+        title={t('booklets_screen.header_title')}
+        subtitle={t('booklets_screen.header_subtitle')}
+        showBackButton
+      />
 
       <ScrollView
         style={{ flex: 1 }}
@@ -27,7 +29,7 @@ const BookletsScreen: React.FC = () => {
         <View style={[styles.emptyState, { backgroundColor: theme.colors.card }]}>
           <Text style={styles.emptyStateIcon}>📚</Text>
           <Text style={[typography('h3'), styles.emptyStateTitle, { color: theme.colors.text }]}>
-            No booklets available
+            {t('booklets_screen.no_booklets')}
           </Text>
           <Text
             style={[
@@ -36,7 +38,7 @@ const BookletsScreen: React.FC = () => {
               { color: theme.colors.textSecondary },
             ]}
           >
-            Booklets will appear here once they are added to the system
+            {t('booklets_screen.no_booklets_subtitle')}
           </Text>
         </View>
       </ScrollView>

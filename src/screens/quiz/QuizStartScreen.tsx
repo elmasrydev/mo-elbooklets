@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
 import { layout } from '../../config/layout';
+import UnifiedHeader from '../../components/UnifiedHeader';
 
 interface QuizStartScreenProps {
   subjectName: string;
@@ -31,18 +32,7 @@ const QuizStartScreen: React.FC<QuizStartScreenProps> = ({
 
   return (
     <View style={common.container}>
-      <View style={common.header}>
-        <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
-          <Ionicons
-            name={common.isRTL ? 'arrow-forward' : 'arrow-back'}
-            size={24}
-            color={theme.colors.headerText}
-          />
-        </TouchableOpacity>
-        <View style={common.headerTextWrapper}>
-          <Text style={common.headerTitle}> {t('quiz_start.header_title')} </Text>
-        </View>
-      </View>
+      <UnifiedHeader showBackButton onBackPress={onBack} title={t('quiz_start.header_title')} />
 
       <View style={currentStyles.content}>
         {/* Illustration / Icon */}

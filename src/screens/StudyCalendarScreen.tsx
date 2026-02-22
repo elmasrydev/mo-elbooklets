@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { gql } from '@apollo/client';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { Ionicons } from '@expo/vector-icons';
+import UnifiedHeader from '../components/UnifiedHeader';
 
 const STUDY_SCHEDULE_QUERY = gql`
   query StudySchedule {
@@ -190,22 +191,11 @@ const StudyCalendarScreen: React.FC = () => {
   return (
     <View style={currentStyles.container}>
       {/* Header with Back Button */}
-      <View style={common.header}>
-        <TouchableOpacity
-          style={[currentStyles.backButton, common.marginEnd(spacing.md)]}
-          onPress={() => navigation.goBack()}
-        >
-          <Ionicons
-            name={isRTL ? 'arrow-forward' : 'arrow-back'}
-            size={24}
-            color={theme.colors.headerText || '#fff'}
-          />
-        </TouchableOpacity>
-        <View style={common.headerTextWrapper}>
-          <Text style={common.headerTitle}> {t('study_calendar.header_title')} </Text>
-          <Text style={common.headerSubtitle}> {t('study_calendar.header_subtitle')} </Text>
-        </View>
-      </View>
+      <UnifiedHeader
+        showBackButton
+        title={t('study_calendar.header_title')}
+        subtitle={t('study_calendar.header_subtitle')}
+      />
 
       {/* Day Tabs */}
       <View style={currentStyles.dayTabsContainer}>

@@ -9,6 +9,7 @@ import { useCommonStyles } from '../hooks/useCommonStyles';
 import { layout } from '../config/layout';
 import ColorThemePicker from '../components/ColorThemePicker';
 import { useTypography } from '../hooks/useTypography';
+import UnifiedHeader from '../components/UnifiedHeader';
 import { marginStart } from '../lib/rtl';
 
 const MoreScreen: React.FC = () => {
@@ -87,12 +88,10 @@ const MoreScreen: React.FC = () => {
 
   return (
     <View style={currentStyles.container}>
-      <View style={common.header}>
-        <View style={common.headerTextWrapper}>
-          <Text style={common.headerTitle}> {t('more_screen.header_title')} </Text>
-          <Text style={common.headerSubtitle}> {t('more_screen.header_subtitle')} </Text>
-        </View>
-      </View>
+      <UnifiedHeader
+        title={t('more_screen.header_title')}
+        subtitle={t('more_screen.header_subtitle')}
+      />
 
       <ScrollView
         style={currentStyles.scrollView}

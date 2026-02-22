@@ -25,7 +25,7 @@ export const useRTL = () => {
     alignEnd: (isMismatch ? 'flex-start' : 'flex-end') as FlexStyle['alignItems'],
 
     // TEXT ALIGNMENT
-    textAlign: 'left',
+    textAlign: 'left' as 'left' | 'right' | 'center',
 
     // MARGINS/PADDING
     marginStart: (val: number) =>

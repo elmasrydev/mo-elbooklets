@@ -22,6 +22,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, Circle, G, Text as SvgText } from 'react-native-svg';
 import RecentActivityCard from '../components/RecentActivityCard';
 import TodaysPlanWidget from '../components/TodaysPlanWidget';
+import UnifiedHeader from '../components/UnifiedHeader';
 
 const { width } = Dimensions.get('window');
 
@@ -212,11 +213,12 @@ const WheelOfSuccess: React.FC<{
           />
           <SvgText
             x={centerX}
-            y={centerY + 5}
-            fontSize="12"
-            fontWeight="900"
+            y={centerY}
+            fontSize="14"
+            fontWeight="bold"
             fill="#fff"
             textAnchor="middle"
+            alignmentBaseline="central"
           >
             {round(data.overallProgress)} %
           </SvgText>
@@ -372,29 +374,33 @@ const HomeScreen: React.FC = () => {
 
   return (
     <View style={common.container}>
-      <View style={common.header}>
-        <View style={currentStyles.headerLeftContent}>
+      <UnifiedHeader
+        leftContent={
           <View style={currentStyles.avatarContainer}>
             <View style={currentStyles.initialsAvatar}>
-              <Text style={currentStyles.initialsText}> {getInitials(user?.name || '')}</Text>
+              <Text style={currentStyles.initialsText}> {getInitials(user?.name || '')} </Text>
             </View>
             <View style={currentStyles.onlineDot} />
           </View>
-          <View style={currentStyles.headerGreeting}>
-            <Text style={common.headerTitle}>
-              {' '}
-              {t('home_screen.hi')}, {user?.name?.split(' ')[0] || 'Alex'} ! 👋
-            </Text>
-            <Text style={common.headerSubtitle}>
-              {' '}
-              {user?.grade?.name || 'Grade'} • {user?.educational_system?.name || 'System'}{' '}
-            </Text>
-          </View>
-        </View>
-        <TouchableOpacity style={currentStyles.notificationButton}>
-          <Ionicons name="notifications-outline" size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
+        }
+        title={
+          <Text style={common.headerTitle}>
+            {' '}
+            {t('home_screen.hi')}, {user?.name?.split(' ')[0] || 'Alex'} ! 👋
+          </Text>
+        }
+        subtitle={
+          <Text style={common.headerSubtitle}>
+            {' '}
+            {user?.grade?.name || 'Grade'} • {user?.educational_system?.name || 'System'}{' '}
+          </Text>
+        }
+        rightContent={
+          <TouchableOpacity style={currentStyles.notificationButton}>
+            <Ionicons name="notifications-outline" size={24} color="#fff" />
+          </TouchableOpacity>
+        }
+      />
 
       <ScrollView
         style={currentStyles.scrollContainer}
@@ -857,7 +863,8 @@ const wheelStyles = (typography: any, common: any) =>
       fontSize: 22,
       fontWeight: '900',
       color: '#fff',
-      lineHeight: 22,
+      lineHeight: 30, // Increased to prevent Arabic crop
+      paddingTop: 4, // Slight nudge down for Arabic fonts
     },
     masteryLabel: {
       ...typography('caption'),

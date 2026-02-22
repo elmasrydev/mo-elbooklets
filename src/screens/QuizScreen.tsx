@@ -24,6 +24,7 @@ import QuizLessonsScreen from './quiz/QuizLessonsScreen';
 import QuizResultsScreen from './quiz/QuizResultsScreen';
 import QuizStartScreen from './quiz/QuizStartScreen';
 import RecentActivityCard from '../components/RecentActivityCard';
+import UnifiedHeader from '../components/UnifiedHeader';
 
 interface Subject {
   id: string;
@@ -216,12 +217,10 @@ const QuizScreen: React.FC = () => {
 
   return (
     <View style={common.container}>
-      <View style={common.header}>
-        <View style={common.headerTextWrapper}>
-          <Text style={common.headerTitle}> {t('quiz_screen.header_title')} </Text>
-          <Text style={common.headerSubtitle}> {t('quiz_screen.header_subtitle')} </Text>
-        </View>
-      </View>
+      <UnifiedHeader
+        title={t('quiz_screen.header_title')}
+        subtitle={t('quiz_screen.header_subtitle')}
+      />
 
       <View style={currentStyles.actionSection}>
         <TouchableOpacity
@@ -338,7 +337,7 @@ const styles = (
   StyleSheet.create({
     actionSection: {
       padding: spacing.xl,
-      marginTop: -30,
+      marginTop: -26,
     },
     takeQuizButton: {
       padding: 24,
