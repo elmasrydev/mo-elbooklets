@@ -322,13 +322,12 @@ const QuizTakingScreen: React.FC = () => {
       <View style={currentStyles.progressContainer}>
         <View style={currentStyles.progressBar}>
           <View style={[currentStyles.progressFill, { width: `${progress}%` }]} />
+          <View style={currentStyles.progressTextContainer}>
+            <View style={currentStyles.progressTextWrapper}>
+              <Text style={currentStyles.progressTextCenter}>{Math.round(progress)} %</Text>
+            </View>
+          </View>
         </View>
-        <Text style={currentStyles.progressText}>
-          {t('quiz_taking.question_of', {
-            current: currentQuestionIndex + 1,
-            total: quiz.questions.length,
-          })}
-        </Text>
       </View>
 
       <ScrollView
@@ -337,12 +336,6 @@ const QuizTakingScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         <View style={currentStyles.questionContainer}>
-          <View style={currentStyles.questionHeader}>
-            <Text style={currentStyles.questionNumber}>
-              {t('quiz_taking.question_number', { number: currentQuestion.questionNumber })}
-            </Text>
-          </View>
-
           <Text style={currentStyles.questionText}> {currentQuestion.question} </Text>
 
           <View style={currentStyles.answersContainer}>
@@ -379,12 +372,9 @@ const QuizTakingScreen: React.FC = () => {
                     {answer}
                   </Text>
                   {isSelected && (
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={20}
-                      color={theme.colors.primary}
-                      style={currentStyles.checkIcon}
-                    />
+                    <View style={currentStyles.checkIconContainer}>
+                      <Ionicons name="checkmark" size={16} color="#20A66E" />
+                    </View>
                   )}
                 </TouchableOpacity>
               );
@@ -462,28 +452,38 @@ const styles = (theme: any, typography: any, spacing: any, borderRadius: any, co
       marginLeft: common.isRTL ? 16 : 0,
     },
     progressContainer: {
-      padding: spacing.lg,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.sm,
       backgroundColor: theme.colors.surface,
     },
     progressBar: {
-      height: 8,
-      borderRadius: 4,
-      marginBottom: 8,
-      backgroundColor: theme.colors.borderLight || '#E5E7EB',
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: '#E5E9F2',
       overflow: 'hidden',
+      position: 'relative',
     },
     progressFill: {
       height: '100%',
-      borderRadius: 4,
-      backgroundColor: theme.colors.primary,
+      borderRadius: 12,
+      backgroundColor: '#284196',
     },
-    progressText: {
-      ...typography('caption'),
-      textAlign: 'center',
-      color: theme.colors.textSecondary,
-      fontWeight: '600',
+    progressTextContainer: {
+      ...StyleSheet.absoluteFillObject,
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 1,
+    },
+    progressTextWrapper: {
+      backgroundColor: 'rgba(0, 0, 0, 0.3)',
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 12,
+    },
+    progressTextCenter: {
+      color: '#FFFFFF',
+      ...typography('buttonSmall'),
+      fontWeight: 'bold',
     },
     content: {
       flex: 1,
@@ -532,13 +532,13 @@ const styles = (theme: any, typography: any, spacing: any, borderRadius: any, co
     },
     questionContainer: {
       backgroundColor: theme.colors.card,
-      padding: spacing.xl,
+      padding: spacing.lg,
       borderRadius: borderRadius.xl,
-      marginBottom: spacing.lg,
+      marginBottom: spacing.md,
       ...layout.shadow,
     },
     questionHeader: {
-      marginBottom: spacing.md,
+      marginBottom: spacing.sm,
     },
     questionNumber: {
       ...typography('label'),
@@ -547,61 +547,67 @@ const styles = (theme: any, typography: any, spacing: any, borderRadius: any, co
       textAlign: common.textAlign,
     },
     questionText: {
-      ...typography('h3'),
-      color: theme.colors.text,
-      fontWeight: '600',
-      marginBottom: spacing['2xl'],
-      lineHeight: 28,
+      ...typography('h2'),
+      color: '#111827',
+      fontWeight: 'bold',
+      marginBottom: spacing.lg,
+      lineHeight: 30,
       textAlign: common.textAlign,
     },
     answersContainer: {
-      gap: spacing.md,
+      gap: spacing.sm,
     },
     answerButton: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      backgroundColor: theme.colors.background,
-      padding: spacing.md,
-      borderRadius: borderRadius.lg,
-      borderWidth: 2,
-      borderColor: theme.colors.border,
+      backgroundColor: '#F3F4F6',
+      padding: 12,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: '#E5E7EB',
     },
     selectedAnswer: {
-      backgroundColor: theme.colors.primaryLight || 'rgba(59, 130, 246, 0.05)',
-      borderColor: theme.colors.primary,
+      backgroundColor: '#20A66E',
+      borderColor: '#20A66E',
     },
     answerLetter: {
       width: 32,
       height: 32,
       borderRadius: 16,
-      backgroundColor: theme.colors.border,
+      backgroundColor: '#284196',
       justifyContent: 'center',
       alignItems: 'center',
       ...common.marginEnd(spacing.md),
     },
     selectedAnswerLetter: {
-      backgroundColor: theme.colors.primary,
+      backgroundColor: '#FFFFFF',
     },
     answerLetterText: {
-      ...typography('label'),
+      ...typography('button'),
       fontWeight: 'bold',
-      color: theme.colors.textSecondary,
+      color: '#FFFFFF',
     },
     selectedAnswerLetterText: {
-      color: '#FFFFFF',
+      color: '#20A66E',
     },
     answerText: {
       flex: 1,
       ...typography('body'),
-      color: theme.colors.text,
+      color: '#374151',
       textAlign: common.textAlign,
       fontWeight: '500',
     },
     selectedAnswerText: {
-      color: theme.colors.primary,
+      color: '#FFFFFF',
       fontWeight: '600',
     },
-    checkIcon: {
+    checkIconContainer: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: '#FFFFFF',
+      justifyContent: 'center',
+      alignItems: 'center',
       ...common.marginStart(spacing.sm),
     },
     navigationContainer: {
