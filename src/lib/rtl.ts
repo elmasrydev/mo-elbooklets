@@ -17,8 +17,7 @@ export const isRTL = (): boolean => I18nManager.isRTL;
 // Flex direction — 'row' auto-flips when I18nManager.isRTL is true
 export const rowDirection = (): FlexStyle['flexDirection'] => 'row';
 
-// Text alignment — RN does NOT auto-flip textAlign, so we must toggle manually
-export const textAlign = (): 'left' | 'right' | 'center' => (I18nManager.isRTL ? 'right' : 'left');
+export const textAlign = (): 'left' | 'right' | 'center' => 'left';
 
 // Logical properties — these auto-flip with I18nManager.isRTL
 export const marginStart = (value: number): object => ({ marginStart: value });

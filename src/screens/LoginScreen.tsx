@@ -17,6 +17,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
+import { useTypography } from '../hooks/useTypography';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -38,6 +39,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister, onBack 
   const { language, setLanguage } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
+  const { typography } = useTypography();
   const insets = useSafeAreaInsets();
 
   const handleLogin = async () => {
@@ -58,7 +60,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister, onBack 
   };
 
   const isRTL = language === 'ar';
-  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius, isRTL);
+  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius, isRTL, typography);
 
   return (
     <KeyboardAvoidingView
@@ -76,7 +78,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister, onBack 
         color={theme.colors.text}
       />
 
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={currentStyles.scrollContainer}
         showsVerticalScrollIndicator={false}
       >
@@ -86,18 +88,18 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister, onBack 
             style={currentStyles.logo}
             resizeMode="contain"
           />
-          <Text style={currentStyles.title}>{t('auth.welcome_back')}</Text>
-          <Text style={currentStyles.subtitle}>{t('auth.sign_in_subtitle')}</Text>
+          <Text style={currentStyles.title}> {t('auth.welcome_back')} </Text>
+          <Text style={currentStyles.subtitle}> {t('auth.sign_in_subtitle')} </Text>
         </View>
 
         <View style={currentStyles.form}>
           {/* Mobile Input */}
           <View style={currentStyles.inputWrapper}>
-            <Ionicons 
-              name="call-outline" 
-              size={20} 
-              color={theme.colors.textSecondary} 
-              style={currentStyles.inputIcon} 
+            <Ionicons
+              name="call-outline"
+              size={20}
+              color={theme.colors.textSecondary}
+              style={currentStyles.inputIcon}
             />
             <TextInput
               style={currentStyles.input}
@@ -114,11 +116,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister, onBack 
 
           {/* Password Input */}
           <View style={currentStyles.inputWrapper}>
-            <Ionicons 
-              name="lock-closed-outline" 
-              size={20} 
-              color={theme.colors.textSecondary} 
-              style={currentStyles.inputIcon} 
+            <Ionicons
+              name="lock-closed-outline"
+              size={20}
+              color={theme.colors.textSecondary}
+              style={currentStyles.inputIcon}
             />
             <TextInput
               style={[currentStyles.input, { flex: 1 }]}
@@ -131,20 +133,20 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister, onBack 
               editable={!isLoading}
               textAlign={common.textAlign}
             />
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => setShowPassword(!showPassword)}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Ionicons 
-                name={showPassword ? "eye-off-outline" : "eye-outline"} 
-                size={20} 
-                color={theme.colors.textSecondary} 
+              <Ionicons
+                name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                size={20}
+                color={theme.colors.textSecondary}
               />
             </TouchableOpacity>
           </View>
 
           <TouchableOpacity style={currentStyles.forgotContainer}>
-            <Text style={currentStyles.forgotText}>{t('auth.forgot_password')}</Text>
+            <Text style={currentStyles.forgotText}> {t('auth.forgot_password')} </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -155,17 +157,15 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister, onBack 
             {isLoading ? (
               <ActivityIndicator color="#ffffff" />
             ) : (
-              <Text style={currentStyles.loginButtonText}>{t('auth.sign_in')}</Text>
+              <Text style={currentStyles.loginButtonText}> {t('auth.sign_in')} </Text>
             )}
           </TouchableOpacity>
         </View>
 
-
-
         <View style={currentStyles.footer}>
-          <Text style={currentStyles.footerText}>{t('auth.dont_have_account')}</Text>
+          <Text style={currentStyles.footerText}> {t('auth.dont_have_account')} </Text>
           <TouchableOpacity onPress={onNavigateToRegister} disabled={isLoading}>
-            <Text style={currentStyles.linkText}>{t('auth.sign_up')}</Text>
+            <Text style={currentStyles.linkText}> {t('auth.sign_up')} </Text>
           </TouchableOpacity>
         </View>
 
@@ -186,29 +186,36 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister, onBack 
   );
 };
 
-const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRadius: any, isRTL: boolean) =>
+const styles = (
+  theme: any,
+  common: any,
+  fontSizes: any,
+  spacing: any,
+  borderRadius: any,
+  isRTL: boolean,
+  typography: any,
+) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.background },
-    scrollContainer: { 
-      flexGrow: 1, 
+    scrollContainer: {
+      flexGrow: 1,
       paddingHorizontal: spacing.xl,
       paddingTop: 60,
-      paddingBottom: spacing.xl 
+      paddingBottom: spacing.xl,
     },
     header: { alignItems: 'center', marginBottom: 50 },
     logo: { width: 120, height: 120, marginBottom: 24 },
     title: {
-      fontSize: 32,
-      fontWeight: '800',
+      ...typography('display'),
       color: '#0F172A',
       marginBottom: 8,
       textAlign: 'center',
     },
-    subtitle: { 
-      fontSize: fontSizes.base, 
+    subtitle: {
+      ...typography('body'),
       color: '#64748B',
       textAlign: 'center',
-      fontWeight: '500'
+      fontWeight: '500', // slightly bolder body for subtitle
     },
     form: { marginBottom: 32 },
     inputWrapper: {
@@ -237,9 +244,9 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       marginBottom: 32,
     },
     forgotText: {
+      ...typography('label'),
       color: theme.colors.primary,
       fontWeight: '600',
-      fontSize: fontSizes.sm,
     },
     loginButton: {
       backgroundColor: '#1E3A8A', // Deep Navy from Screenshot
@@ -255,22 +262,23 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
     },
     disabledButton: { backgroundColor: '#94A3B8' },
     loginButtonText: {
+      ...typography('button'),
       color: '#fff',
       fontSize: 18,
       fontWeight: '700',
     },
-    footer: { 
-      flexDirection: isRTL ? 'row-reverse' : 'row', 
-      justifyContent: 'center', 
+    footer: {
+      flexDirection: isRTL ? 'row-reverse' : 'row',
+      justifyContent: 'center',
       alignItems: 'center',
       marginBottom: 24,
       gap: 4,
     },
-    footerText: { fontSize: fontSizes.base, color: '#64748B' },
-    linkText: { 
-      fontSize: fontSizes.base, 
-      color: '#1E3A8A', 
-      fontWeight: '700' 
+    footerText: { ...typography('body'), color: '#64748B' },
+    linkText: {
+      ...typography('button'),
+      color: '#1E3A8A',
+      fontWeight: '700',
     },
     backButton: {
       position: 'absolute',
@@ -300,8 +308,7 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       backgroundColor: 'rgba(30, 58, 138, 0.05)',
     },
     langButtonText: {
-      fontSize: fontSizes.sm,
-      fontWeight: '600',
+      ...typography('buttonSmall'),
       color: theme.colors.primary,
     },
   });

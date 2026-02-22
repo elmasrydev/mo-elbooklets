@@ -1,6 +1,7 @@
 import { ViewStyle, TextStyle } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useRTL } from './useRTL';
+import { useTypography } from './useTypography';
 import { layout } from '../config/layout';
 
 /**
@@ -11,9 +12,10 @@ import { layout } from '../config/layout';
 export const useCommonStyles = () => {
   const { theme, spacing, fontSizes, borderRadius } = useTheme();
   const rtl = useRTL();
+  const { typography } = useTypography();
   return {
     ...rtl, // isRTL, rowDirection, marginStart helper, etc.
-
+    textAlign: rtl.textAlign,
     // Main screen container
     container: {
       flex: 1,
@@ -42,14 +44,14 @@ export const useCommonStyles = () => {
     } as ViewStyle,
 
     headerTitle: {
-      fontSize: fontSizes['2xl'],
+      ...typography('h2'),
       fontWeight: 'bold',
       color: theme.colors.headerText,
       textAlign: rtl.textAlign,
     } as TextStyle,
 
     headerSubtitle: {
-      fontSize: fontSizes.base,
+      ...typography('body'),
       color: theme.colors.headerSubtitle,
       marginTop: spacing.xs,
       opacity: 0.9,
@@ -85,7 +87,7 @@ export const useCommonStyles = () => {
     } as TextStyle,
 
     sectionTitle: {
-      fontSize: fontSizes.xl,
+      ...typography('h3'),
       fontWeight: 'bold',
       color: theme.colors.text,
       textAlign: rtl.textAlign,

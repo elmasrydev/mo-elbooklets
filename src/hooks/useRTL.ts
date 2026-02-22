@@ -25,7 +25,7 @@ export const useRTL = () => {
     alignEnd: (isMismatch ? 'flex-start' : 'flex-end') as FlexStyle['alignItems'],
 
     // TEXT ALIGNMENT
-    textAlign: (isRTL ? 'right' : 'left') as 'left' | 'right' | 'center',
+    textAlign: 'left',
 
     // MARGINS/PADDING
     marginStart: (val: number) =>
@@ -39,14 +39,22 @@ export const useRTL = () => {
       isMismatch ? getPhysical({ paddingLeft: val }, { paddingRight: val }) : { paddingEnd: val },
 
     borderStartWidth: (val: number) =>
-      isMismatch ? getPhysical({ borderRightWidth: val }, { borderLeftWidth: val }) : { borderStartWidth: val },
+      isMismatch
+        ? getPhysical({ borderRightWidth: val }, { borderLeftWidth: val })
+        : { borderStartWidth: val },
     borderEndWidth: (val: number) =>
-      isMismatch ? getPhysical({ borderLeftWidth: val }, { borderRightWidth: val }) : { borderEndWidth: val },
+      isMismatch
+        ? getPhysical({ borderLeftWidth: val }, { borderRightWidth: val })
+        : { borderEndWidth: val },
 
     borderStartColor: (val: string) =>
-      isMismatch ? getPhysical({ borderRightColor: val }, { borderLeftColor: val }) : { borderStartColor: val },
+      isMismatch
+        ? getPhysical({ borderRightColor: val }, { borderLeftColor: val })
+        : { borderStartColor: val },
     borderEndColor: (val: string) =>
-      isMismatch ? getPhysical({ borderLeftColor: val }, { borderRightColor: val }) : { borderEndColor: val },
+      isMismatch
+        ? getPhysical({ borderLeftColor: val }, { borderRightColor: val })
+        : { borderEndColor: val },
 
     start: (val: number) => (isRTL ? { right: val } : { left: val }),
     end: (val: number) => (isRTL ? { left: val } : { right: val }),

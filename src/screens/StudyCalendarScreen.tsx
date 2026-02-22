@@ -13,6 +13,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useCommonStyles } from '../hooks/useCommonStyles';
+import { useTypography } from '../hooks/useTypography';
 import { layout } from '../config/layout';
 
 import { useTranslation } from 'react-i18next';
@@ -76,6 +77,7 @@ const StudyCalendarScreen: React.FC = () => {
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
+  const { typography } = useTypography();
 
   const [selectedDay, setSelectedDay] = useState(0);
   const [scheduleData, setScheduleData] = useState<{ [key: number]: ScheduleEntry[] }>({});
@@ -172,13 +174,13 @@ const StudyCalendarScreen: React.FC = () => {
     saveSchedule({ variables: { entries: allEntries } });
   };
 
-  const currentStyles = styles(theme, isRTL, fontSizes, spacing, borderRadius);
+  const currentStyles = styles(theme, isRTL, typography, spacing, borderRadius);
 
   if (loadingSchedule || loadingSubjects) {
     return (
       <View style={currentStyles.loadingContainer}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={currentStyles.loadingText}>{t('study_calendar.loading_schedule')}</Text>
+        <Text style={currentStyles.loadingText}> {t('study_calendar.loading_schedule')} </Text>
       </View>
     );
   }
@@ -200,8 +202,8 @@ const StudyCalendarScreen: React.FC = () => {
           />
         </TouchableOpacity>
         <View style={common.headerTextWrapper}>
-          <Text style={common.headerTitle}>{t('study_calendar.header_title')}</Text>
-          <Text style={common.headerSubtitle}>{t('study_calendar.header_subtitle')}</Text>
+          <Text style={common.headerTitle}> {t('study_calendar.header_title')} </Text>
+          <Text style={common.headerSubtitle}> {t('study_calendar.header_subtitle')} </Text>
         </View>
       </View>
 
@@ -250,7 +252,7 @@ const StudyCalendarScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         <Text style={currentStyles.dayTitle}>
-          {t(`study_calendar.${DAY_KEYS[selectedDay]}`)} {t('common.schedule') || 'Schedule'}
+          {t(`study_calendar.${DAY_KEYS[selectedDay]} `)} {t('common.schedule') || 'Schedule'}
         </Text>
 
         {currentDayEntries.map((entry, index) => (
@@ -350,7 +352,7 @@ const StudyCalendarScreen: React.FC = () => {
   );
 };
 
-const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, borderRadius: any) =>
+const styles = (theme: any, isRTL: boolean, typography: any, spacing: any, borderRadius: any) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -364,7 +366,7 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
     },
     loadingText: {
       marginTop: spacing.md,
-      fontSize: fontSizes.base,
+      ...typography('body'),
       color: theme.colors.textSecondary,
     },
     backButton: {
@@ -400,7 +402,7 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
       backgroundColor: theme.colors.primary,
     },
     dayTabText: {
-      fontSize: fontSizes.sm,
+      ...typography('label'),
       fontWeight: '600',
       color: theme.colors.text,
     },
@@ -419,12 +421,13 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
       backgroundColor: 'rgba(255,255,255,0.3)',
     },
     dayBadgeText: {
+      ...typography('caption'),
       fontSize: 10,
       fontWeight: 'bold',
       color: theme.colors.primary,
     },
     dayTitle: {
-      fontSize: fontSizes.xl,
+      ...typography('h2'),
       fontWeight: 'bold',
       color: theme.colors.text,
       marginBottom: spacing.lg,
@@ -442,7 +445,7 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
       marginBottom: spacing.md,
     },
     entryLabel: {
-      fontSize: fontSizes.sm,
+      ...typography('label'),
       fontWeight: '600',
       color: theme.colors.textSecondary,
       marginBottom: spacing.sm,
@@ -463,7 +466,7 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
       borderColor: theme.colors.primary,
     },
     subjectPillText: {
-      fontSize: fontSizes.sm,
+      ...typography('bodySmall'),
       color: theme.colors.text,
     },
     subjectPillTextActive: {
@@ -478,7 +481,7 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
       flex: 1,
     },
     goalLabel: {
-      fontSize: fontSizes.xs,
+      ...typography('caption'),
       fontWeight: '600',
       color: theme.colors.textSecondary,
       marginBottom: spacing.xs,
@@ -488,7 +491,7 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
       backgroundColor: theme.colors.background,
       borderRadius: borderRadius.md,
       padding: spacing.sm,
-      fontSize: fontSizes.lg,
+      ...typography('h3'),
       fontWeight: 'bold',
       color: theme.colors.text,
       textAlign: 'center',
@@ -499,7 +502,7 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
       backgroundColor: theme.colors.background,
       borderRadius: borderRadius.md,
       padding: spacing.md,
-      fontSize: fontSizes.sm,
+      ...typography('bodySmall'),
       color: theme.colors.text,
       textAlign: isRTL ? 'right' : 'left',
       borderWidth: 1,
@@ -512,7 +515,7 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
       paddingHorizontal: spacing.md,
     },
     removeButtonText: {
-      fontSize: fontSizes.sm,
+      ...typography('label'),
       color: theme.colors.error || '#EF4444',
       fontWeight: '600',
     },
@@ -526,7 +529,7 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
       marginBottom: spacing.lg,
     },
     addButtonText: {
-      fontSize: fontSizes.base,
+      ...typography('button'),
       fontWeight: '600',
       color: theme.colors.textSecondary,
     },
@@ -538,7 +541,7 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
       marginBottom: spacing['3xl'],
     },
     saveButtonText: {
-      fontSize: fontSizes.base,
+      ...typography('button'),
       fontWeight: 'bold',
       color: '#fff',
     },

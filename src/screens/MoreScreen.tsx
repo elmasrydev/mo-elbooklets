@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { layout } from '../config/layout';
 import ColorThemePicker from '../components/ColorThemePicker';
+import { useTypography } from '../hooks/useTypography';
 import { marginStart } from '../lib/rtl';
 
 const MoreScreen: React.FC = () => {
@@ -16,6 +17,7 @@ const MoreScreen: React.FC = () => {
   const { language, setLanguage, isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
+  const { typography } = useTypography();
 
   const handleLogout = () => {
     Alert.alert(t('more_screen.logout'), t('more_screen.logout_confirm'), [
@@ -81,14 +83,14 @@ const MoreScreen: React.FC = () => {
     },
   ];
 
-  const currentStyles = styles(theme, fontSizes, spacing, borderRadius, common, isRTL);
+  const currentStyles = styles(theme, fontSizes, spacing, borderRadius, common, isRTL, typography);
 
   return (
     <View style={currentStyles.container}>
       <View style={common.header}>
         <View style={common.headerTextWrapper}>
-          <Text style={common.headerTitle}>{t('more_screen.header_title')}</Text>
-          <Text style={common.headerSubtitle}>{t('more_screen.header_subtitle')}</Text>
+          <Text style={common.headerTitle}> {t('more_screen.header_title')} </Text>
+          <Text style={common.headerSubtitle}> {t('more_screen.header_subtitle')} </Text>
         </View>
       </View>
 
@@ -104,8 +106,8 @@ const MoreScreen: React.FC = () => {
             </Text>
           </View>
           <View style={currentStyles.userInfo}>
-            <Text style={currentStyles.userName}>{user?.name || 'User'}</Text>
-            <Text style={currentStyles.userEmail}>{user?.email || 'No email'}</Text>
+            <Text style={currentStyles.userName}> {user?.name || 'User'}</Text>
+            <Text style={currentStyles.userEmail}> {user?.email || 'No email'}</Text>
             <Text style={currentStyles.userGrade}>
               {t('more_screen.grade')}: {user?.grade?.name || t('more_screen.not_specified')}
             </Text>
@@ -120,118 +122,126 @@ const MoreScreen: React.FC = () => {
             .filter((item) => item.id !== 'color_theme')
             .map((item, index, filteredItems) => {
               const isLast = index === filteredItems.length - 1;
-            return (
-              <View key={item.id}>
-                <TouchableOpacity
-                  style={[
-                    currentStyles.menuItem,
-                    isLast &&
-                      !item.isLanguageSelector &&
-                      !item.isColorThemePicker &&
-                      currentStyles.lastMenuItem,
-                  ]}
-                  onPress={item.action}
-                  disabled={
-                    !!item.isSwitch || !!item.isLanguageSelector || !!item.isColorThemePicker
-                  }
-                  activeOpacity={0.7}
-                >
-                  <View style={currentStyles.menuItemContent}>
-                    <View
-                      style={[currentStyles.menuIconContainer, { backgroundColor: item.iconBg }]}
-                    >
-                      <Ionicons name={item.icon as any} size={22} color={item.iconColor} />
-                    </View>
-                    <View style={currentStyles.menuTextContainer}>
-                      <Text
-                        style={[
-                          currentStyles.menuTitle,
-                          item.isDestructive && { color: item.iconColor },
-                        ]}
+              return (
+                <View key={item.id}>
+                  <TouchableOpacity
+                    style={[
+                      currentStyles.menuItem,
+                      isLast &&
+                        !item.isLanguageSelector &&
+                        !item.isColorThemePicker &&
+                        currentStyles.lastMenuItem,
+                    ]}
+                    onPress={item.action}
+                    disabled={
+                      !!item.isSwitch || !!item.isLanguageSelector || !!item.isColorThemePicker
+                    }
+                    activeOpacity={0.7}
+                  >
+                    <View style={currentStyles.menuItemContent}>
+                      <View
+                        style={[currentStyles.menuIconContainer, { backgroundColor: item.iconBg }]}
                       >
-                        {item.title}
-                      </Text>
-                      {item.subtitle && !item.isLanguageSelector && !item.isColorThemePicker && (
-                        <Text style={currentStyles.menuSubtitle}> {item.subtitle} </Text>
-                      )}
+                        <Ionicons name={item.icon as any} size={22} color={item.iconColor} />
+                      </View>
+                      <View style={currentStyles.menuTextContainer}>
+                        <Text
+                          style={[
+                            currentStyles.menuTitle,
+                            item.isDestructive && { color: item.iconColor },
+                          ]}
+                        >
+                          {item.title}
+                        </Text>
+                        {item.subtitle && !item.isLanguageSelector && !item.isColorThemePicker && (
+                          <Text style={currentStyles.menuSubtitle}> {item.subtitle} </Text>
+                        )}
+                      </View>
                     </View>
-                  </View>
 
-                  {item.isSwitch ? (
-                    <View style={{ marginStart: spacing.md }}>
-                      <Switch
-                        value={isDark}
-                        onValueChange={toggleTheme}
-                        trackColor={{ false: '#E5E7EB', true: theme.colors.primary }}
-                        thumbColor={'#fff'}
+                    {item.isSwitch ? (
+                      <View style={{ marginStart: spacing.md }}>
+                        <Switch
+                          value={isDark}
+                          onValueChange={toggleTheme}
+                          trackColor={{ false: '#E5E7EB', true: theme.colors.primary }}
+                          thumbColor={'#fff'}
+                        />
+                      </View>
+                    ) : item.isLanguageSelector || item.isColorThemePicker ? null : (
+                      <Ionicons
+                        name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                        size={20}
+                        color={theme.colors.textTertiary}
                       />
+                    )}
+                  </TouchableOpacity>
+
+                  {item.isLanguageSelector && (
+                    <View style={currentStyles.languageSelector}>
+                      <TouchableOpacity
+                        style={[
+                          currentStyles.langOption,
+                          language === 'ar' && currentStyles.langSelected,
+                        ]}
+                        onPress={() => setLanguage('ar')}
+                      >
+                        <Text
+                          style={[
+                            currentStyles.langText,
+                            language === 'ar' && currentStyles.langTextSelected,
+                          ]}
+                        >
+                          العربية
+                        </Text>
+                        {language === 'ar' && (
+                          <Ionicons
+                            name="checkmark-circle"
+                            size={20}
+                            color={theme.colors.primary}
+                          />
+                        )}
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          currentStyles.langOption,
+                          language === 'en' && currentStyles.langSelected,
+                        ]}
+                        onPress={() => setLanguage('en')}
+                      >
+                        <Text
+                          style={[
+                            currentStyles.langText,
+                            language === 'en' && currentStyles.langTextSelected,
+                          ]}
+                        >
+                          English
+                        </Text>
+                        {language === 'en' && (
+                          <Ionicons
+                            name="checkmark-circle"
+                            size={20}
+                            color={theme.colors.primary}
+                          />
+                        )}
+                      </TouchableOpacity>
                     </View>
-                  ) : item.isLanguageSelector || item.isColorThemePicker ? null : (
-                    <Ionicons
-                      name={isRTL ? 'chevron-back' : 'chevron-forward'}
-                      size={20}
-                      color={theme.colors.textTertiary}
-                    />
                   )}
-                </TouchableOpacity>
 
-                {item.isLanguageSelector && (
-                  <View style={currentStyles.languageSelector}>
-                    <TouchableOpacity
-                      style={[
-                        currentStyles.langOption,
-                        language === 'ar' && currentStyles.langSelected,
-                      ]}
-                      onPress={() => setLanguage('ar')}
-                    >
-                      <Text
-                        style={[
-                          currentStyles.langText,
-                          language === 'ar' && currentStyles.langTextSelected,
-                        ]}
-                      >
-                        العربية
-                      </Text>
-                      {language === 'ar' && (
-                        <Ionicons name="checkmark-circle" size={20} color={theme.colors.primary} />
-                      )}
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        currentStyles.langOption,
-                        language === 'en' && currentStyles.langSelected,
-                      ]}
-                      onPress={() => setLanguage('en')}
-                    >
-                      <Text
-                        style={[
-                          currentStyles.langText,
-                          language === 'en' && currentStyles.langTextSelected,
-                        ]}
-                      >
-                        English
-                      </Text>
-                      {language === 'en' && (
-                        <Ionicons name="checkmark-circle" size={20} color={theme.colors.primary} />
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                )}
+                  {item.isColorThemePicker && (
+                    <View style={currentStyles.colorPickerContainer}>
+                      <ColorThemePicker />
+                    </View>
+                  )}
 
-                {item.isColorThemePicker && (
-                  <View style={currentStyles.colorPickerContainer}>
-                    <ColorThemePicker />
-                  </View>
-                )}
-
-                {!isLast && <View style={currentStyles.separator} />}
-              </View>
-            );
-          })}
+                  {!isLast && <View style={currentStyles.separator} />}
+                </View>
+              );
+            })}
         </View>
 
         <View style={currentStyles.versionContainer}>
-          <Text style={currentStyles.versionText}>ElBooklets {t('common.version')} 1.0.0</Text>
+          <Text style={currentStyles.versionText}> ElBooklets {t('common.version')} 1.0.0 </Text>
         </View>
       </ScrollView>
     </View>
@@ -245,6 +255,7 @@ const styles = (
   borderRadius: any,
   common: any,
   isRTL: boolean,
+  typography: any,
 ) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.background },
@@ -281,22 +292,22 @@ const styles = (
       ...common.marginEnd(spacing.md),
       ...common.marginStart(spacing.sm),
     },
-    userAvatarText: { fontSize: fontSizes['2xl'], fontWeight: 'bold', color: '#fff' },
+    userAvatarText: { ...typography('h2'), fontWeight: 'bold', color: '#fff' },
     userInfo: { flex: 1, alignItems: common.alignStart },
     userName: {
-      fontSize: fontSizes.lg,
+      ...typography('h3'),
       fontWeight: 'bold',
       marginBottom: 2,
       color: theme.colors.text,
       textAlign: common.textAlign,
     },
     userEmail: {
-      fontSize: fontSizes.sm,
+      ...typography('caption'),
       color: theme.colors.textSecondary,
       textAlign: common.textAlign,
     },
     userGrade: {
-      fontSize: fontSizes.xs,
+      ...typography('caption'),
       fontWeight: '600',
       color: theme.colors.primary,
       textAlign: common.textAlign,
@@ -357,13 +368,13 @@ const styles = (
     },
     menuTextContainer: { flex: 1, alignItems: common.alignStart },
     menuTitle: {
-      fontSize: fontSizes.base,
+      ...typography('body'),
       fontWeight: '600',
       color: theme.colors.text,
       textAlign: common.textAlign,
     },
     menuSubtitle: {
-      fontSize: fontSizes.xs,
+      ...typography('caption'),
       color: theme.colors.textSecondary,
       marginTop: 2,
       textAlign: common.textAlign,
@@ -391,14 +402,14 @@ const styles = (
       borderColor: theme.colors.primary,
       backgroundColor: theme.colors.primaryLight || 'rgba(147, 51, 234, 0.05)',
     },
-    langText: { fontSize: fontSizes.sm, color: theme.colors.text, fontWeight: '500' },
+    langText: { ...typography('label'), color: theme.colors.text, fontWeight: '500' },
     langTextSelected: { color: theme.colors.primary, fontWeight: 'bold' },
     colorPickerContainer: {
       padding: spacing.md,
       paddingTop: 0,
     },
     versionContainer: { alignItems: 'center', marginTop: spacing['3xl'], marginBottom: spacing.xl },
-    versionText: { fontSize: fontSizes.xs, color: theme.colors.textTertiary, opacity: 0.7 },
+    versionText: { ...typography('caption'), color: theme.colors.textTertiary, opacity: 0.7 },
   });
 
 export default MoreScreen;

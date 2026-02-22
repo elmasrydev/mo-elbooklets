@@ -5,6 +5,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
+import { useTypography } from '../../hooks/useTypography';
 import { layout } from '../../config/layout';
 import CircularProgress from '../CircularProgress';
 import { getScoreColor } from '../../lib/scoreUtils';
@@ -112,6 +113,7 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
   const { language } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
+  const { typography } = useTypography();
 
   const scorePercent = Math.round((item.quizData.score / item.quizData.totalQuestions) * 100);
   const color = getScoreColor(scorePercent);
@@ -135,7 +137,7 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
       .join('')
       .toUpperCase()
       .substring(0, 2);
-  const currentStyles = createStyles(theme, common, fontSizes, spacing, borderRadius);
+  const currentStyles = createStyles(theme, common, fontSizes, spacing, borderRadius, typography);
 
   return (
     <View style={[common.card, isPerfect && currentStyles.cardPerfect]}>
@@ -157,19 +159,22 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
           <View style={currentStyles.header}>
             <View style={currentStyles.headerLeft}>
               <View style={currentStyles.avatar}>
-                <Text style={currentStyles.avatarText}>{getInitials(item.user.name)}</Text>
+                <Text style={currentStyles.avatarText}> {getInitials(item.user.name)} </Text>
               </View>
               <View style={currentStyles.userInfo}>
                 <View style={currentStyles.nameRow}>
-                  <Text style={currentStyles.userName}>{item.user.name}</Text>
+                  <Text style={currentStyles.userName}> {item.user.name} </Text>
                   {isPerfect && <Text style={currentStyles.fireEmoji}>🔥</Text>}
                 </View>
-                <Text style={currentStyles.timeAgo}>{getTimeAgo(item.createdAt, t, language)}</Text>
+                <Text style={currentStyles.timeAgo}>
+                  {' '}
+                  {getTimeAgo(item.createdAt, t, language)}{' '}
+                </Text>
               </View>
             </View>
             <View style={currentStyles.xpBadge}>
-              <Text style={currentStyles.xpValue}>+{xpEarned}</Text>
-              <Text style={currentStyles.xpLabel}>XP</Text>
+              <Text style={currentStyles.xpValue}> +{xpEarned} </Text>
+              <Text style={currentStyles.xpLabel}> XP </Text>
             </View>
           </View>
 
@@ -200,7 +205,7 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
               </TouchableOpacity>
               <TouchableOpacity style={currentStyles.actionButton} onPress={onComment}>
                 <Ionicons name="chatbubble-outline" size={18} color={theme.colors.textSecondary} />
-                <Text style={currentStyles.actionText}>{item.comments}</Text>
+                <Text style={currentStyles.actionText}> {item.comments} </Text>
               </TouchableOpacity>
               <TouchableOpacity style={currentStyles.actionButton}>
                 <Ionicons name="share-outline" size={18} color={theme.colors.textSecondary} />
@@ -208,7 +213,7 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
             </View>
             {isCurrentUser && onReview && (
               <TouchableOpacity style={currentStyles.reviewButton} onPress={onReview}>
-                <Text style={currentStyles.reviewButtonText}>{t('home_screen.review')}</Text>
+                <Text style={currentStyles.reviewButtonText}> {t('home_screen.review')} </Text>
               </TouchableOpacity>
             )}
           </View>
@@ -223,7 +228,14 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
   );
 };
 
-const createStyles = (theme: any, common: any, fontSizes: any, spacing: any, borderRadius: any) =>
+const createStyles = (
+  theme: any,
+  common: any,
+  fontSizes: any,
+  spacing: any,
+  borderRadius: any,
+  typography: any,
+) =>
   StyleSheet.create({
     cardPerfect: { borderStyle: 'dashed', borderColor: theme.colors.primary, borderWidth: 2 },
     confettiContainer: {
@@ -256,12 +268,13 @@ const createStyles = (theme: any, common: any, fontSizes: any, spacing: any, bor
       borderWidth: 1,
       borderColor: theme.colors.border,
     },
-    avatarText: { fontSize: fontSizes.sm, fontWeight: '900', color: theme.colors.textSecondary },
+    avatarText: { ...typography('caption'), fontWeight: '900', color: theme.colors.textSecondary },
     userInfo: { gap: 2, alignItems: common.alignStart, flex: 1 },
     nameRow: { flexDirection: common.rowDirection, alignItems: 'center', gap: 6 },
-    userName: { fontSize: fontSizes.sm, fontWeight: '900', color: theme.colors.text },
+    userName: { ...typography('label'), fontWeight: '900', color: theme.colors.text },
     fireEmoji: { fontSize: 16 },
     timeAgo: {
+      ...typography('caption'),
       fontSize: 10,
       fontWeight: '700',
       color: theme.colors.textTertiary,
@@ -279,8 +292,9 @@ const createStyles = (theme: any, common: any, fontSizes: any, spacing: any, bor
       minWidth: 60,
       ...common.marginStart(8),
     },
-    xpValue: { fontSize: fontSizes.base, fontWeight: '900', color: theme.colors.primary },
+    xpValue: { ...typography('body'), fontWeight: '900', color: theme.colors.primary },
     xpLabel: {
+      ...typography('caption'),
       fontSize: 8,
       fontWeight: '900',
       color: theme.colors.textTertiary,
@@ -288,14 +302,14 @@ const createStyles = (theme: any, common: any, fontSizes: any, spacing: any, bor
       letterSpacing: 1,
     },
     title: {
-      fontSize: fontSizes.lg,
+      ...typography('h3'),
       fontWeight: '900',
       color: theme.colors.text,
       marginBottom: spacing.sm,
       lineHeight: 24,
     },
     description: {
-      fontSize: fontSizes.sm,
+      ...typography('caption'),
       fontWeight: '500',
       color: theme.colors.textSecondary,
       marginBottom: spacing.lg,
@@ -311,7 +325,12 @@ const createStyles = (theme: any, common: any, fontSizes: any, spacing: any, bor
     },
     actionsLeft: { flexDirection: common.rowDirection, gap: 16 },
     actionButton: { flexDirection: common.rowDirection, alignItems: 'center', gap: 6 },
-    actionText: { fontSize: fontSizes.xs, fontWeight: '900', color: theme.colors.textSecondary },
+    actionText: {
+      ...typography('caption'),
+      fontSize: 12,
+      fontWeight: '900',
+      color: theme.colors.textSecondary,
+    },
     actionTextLiked: { color: '#EF4444' },
     reviewButton: {
       backgroundColor: `${theme.colors.primary}15`,
@@ -322,6 +341,7 @@ const createStyles = (theme: any, common: any, fontSizes: any, spacing: any, bor
       borderColor: `${theme.colors.primary}30`,
     },
     reviewButtonText: {
+      ...typography('caption'),
       fontSize: 10,
       fontWeight: '900',
       color: theme.colors.primary,

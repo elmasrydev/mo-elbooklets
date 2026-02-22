@@ -5,6 +5,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
+import { useTypography } from '../../hooks/useTypography';
 import { getTimeAgo } from '../../lib/dateUtils';
 
 interface RankChangeCardProps {
@@ -26,6 +27,7 @@ const RankChangeCard: React.FC<RankChangeCardProps> = ({ item }) => {
   const { language } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
+  const { typography } = useTypography();
 
   const rankColors: { [key: number]: string } = { 1: '#F59E0B', 2: '#94A3B8', 3: '#EA580C' };
   const rankColor = rankColors[item.rankData.newRank] || '#EA580C';
@@ -36,14 +38,22 @@ const RankChangeCard: React.FC<RankChangeCardProps> = ({ item }) => {
     return `${rank}${t('social_screen.rank_th')}`;
   };
 
-  const currentStyles = createStyles(theme, common, fontSizes, spacing, borderRadius, rankColor);
+  const currentStyles = createStyles(
+    theme,
+    common,
+    fontSizes,
+    spacing,
+    borderRadius,
+    rankColor,
+    typography,
+  );
 
   return (
     <View style={[common.card, currentStyles.cardBorder]}>
       <View style={currentStyles.contentRow}>
         <View style={currentStyles.leftSection}>
           <View style={currentStyles.rankBadge}>
-            <Text style={currentStyles.rankNumber}>#{item.rankData.newRank}</Text>
+            <Text style={currentStyles.rankNumber}>#{item.rankData.newRank} </Text>
           </View>
           <View style={currentStyles.userInfo}>
             <Text style={[currentStyles.userName, { textAlign: common.textAlign }]}>
@@ -66,7 +76,7 @@ const RankChangeCard: React.FC<RankChangeCardProps> = ({ item }) => {
         </View>
         <View style={currentStyles.rightSection}>
           <Ionicons name="trophy" size={40} color={rankColor} />
-          <Text style={currentStyles.timeAgo}>{getTimeAgo(item.createdAt, t, language)}</Text>
+          <Text style={currentStyles.timeAgo}> {getTimeAgo(item.createdAt, t, language)} </Text>
         </View>
       </View>
     </View>
@@ -80,6 +90,7 @@ const createStyles = (
   spacing: any,
   borderRadius: any,
   rankColor: string,
+  typography: any,
 ) =>
   StyleSheet.create({
     cardBorder: { ...common.borderStartWidth(4), ...common.borderStartColor(rankColor) },
@@ -97,13 +108,29 @@ const createStyles = (
       alignItems: 'center',
       justifyContent: 'center',
     },
-    rankNumber: { fontSize: 20, fontWeight: '900', color: '#fff' },
+    rankNumber: { ...typography('h3'), fontWeight: '900', color: '#fff' },
     userInfo: { flex: 1, gap: 4, alignItems: common.alignStart },
-    userName: { fontSize: fontSizes.base, fontWeight: '800', color: theme.colors.text },
-    rankChange: { fontSize: 13, fontWeight: '600', color: theme.colors.textSecondary },
-    subjectLabel: { fontSize: 12, fontWeight: '700', color: rankColor, marginTop: 2 },
+    userName: { ...typography('body'), fontWeight: '800', color: theme.colors.text },
+    rankChange: {
+      ...typography('caption'),
+      fontSize: 13,
+      fontWeight: '600',
+      color: theme.colors.textSecondary,
+    },
+    subjectLabel: {
+      ...typography('caption'),
+      fontSize: 12,
+      fontWeight: '700',
+      color: rankColor,
+      marginTop: 2,
+    },
     rightSection: { alignItems: 'center', gap: 6, ...common.marginStart(12) },
-    timeAgo: { fontSize: 11, fontWeight: '700', color: theme.colors.textTertiary },
+    timeAgo: {
+      ...typography('caption'),
+      fontSize: 11,
+      fontWeight: '700',
+      color: theme.colors.textTertiary,
+    },
   });
 
 export default RankChangeCard;

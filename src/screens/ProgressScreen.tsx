@@ -1,19 +1,44 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
+import { useTypography } from '../hooks/useTypography';
 
 const ProgressScreen: React.FC = () => {
+  const { theme } = useTheme();
+  const { typography } = useTypography();
+
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>My Progress</Text>
-        <Text style={styles.subtitle}>Track your learning journey</Text>
+    <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: theme.colors.card, borderBottomColor: theme.colors.border },
+        ]}
+      >
+        <Text style={[typography('h1'), styles.title, { color: theme.colors.text }]}>
+          {' '}
+          My Progress{' '}
+        </Text>
+        <Text style={[typography('body'), styles.subtitle, { color: theme.colors.textSecondary }]}>
+          {' '}
+          Track your learning journey{' '}
+        </Text>
       </View>
 
       <View style={styles.content}>
-        <View style={styles.emptyState}>
+        <View style={[styles.emptyState, { backgroundColor: theme.colors.card }]}>
           <Text style={styles.emptyStateIcon}>📊</Text>
-          <Text style={styles.emptyStateTitle}>No progress data</Text>
-          <Text style={styles.emptyStateSubtitle}>
+          <Text style={[typography('h3'), styles.emptyStateTitle, { color: theme.colors.text }]}>
+            {' '}
+            No progress data{' '}
+          </Text>
+          <Text
+            style={[
+              typography('body'),
+              styles.emptyStateSubtitle,
+              { color: theme.colors.textSecondary },
+            ]}
+          >
             Start learning to see your progress and achievements here
           </Text>
         </View>
@@ -28,20 +53,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   header: {
-    backgroundColor: '#ffffff',
     padding: 20,
     paddingTop: 50,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
   },
   title: {
-    fontSize: 28,
     fontWeight: 'bold',
-    color: '#333333',
   },
   subtitle: {
-    fontSize: 16,
-    color: '#666666',
     marginTop: 4,
   },
   content: {
@@ -49,7 +68,6 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   emptyState: {
-    backgroundColor: '#ffffff',
     padding: 40,
     borderRadius: 12,
     alignItems: 'center',
@@ -64,16 +82,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   emptyStateTitle: {
-    fontSize: 20,
     fontWeight: '600',
-    color: '#333333',
     marginBottom: 8,
   },
   emptyStateSubtitle: {
-    fontSize: 16,
-    color: '#666666',
     textAlign: 'center',
-    lineHeight: 24,
   },
 });
 

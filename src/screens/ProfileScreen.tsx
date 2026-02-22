@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useLanguage } from '../context/LanguageContext';
+import { useTypography } from '../hooks/useTypography';
 import { layout } from '../config/layout';
 
 const ProfileScreen: React.FC = () => {
@@ -11,20 +12,21 @@ const ProfileScreen: React.FC = () => {
   const { theme, spacing, fontSizes, borderRadius } = useTheme();
   const common = useCommonStyles();
   const { isRTL } = useLanguage();
+  const { typography } = useTypography();
 
   const handleLogout = async () => {
     await logout();
   };
 
-  const currentStyles = styles(theme, spacing, fontSizes, borderRadius, common, isRTL);
+  const currentStyles = styles(theme, spacing, fontSizes, borderRadius, common, isRTL, typography);
 
   return (
     <View style={common.container}>
       {/* Standardized Header */}
       <View style={common.header}>
         <View style={common.headerTextWrapper}>
-          <Text style={common.headerTitle}>Profile</Text>
-          <Text style={common.headerSubtitle}>Manage your account settings</Text>
+          <Text style={common.headerTitle}> Profile </Text>
+          <Text style={common.headerSubtitle}> Manage your account settings </Text>
         </View>
       </View>
 
@@ -35,12 +37,12 @@ const ProfileScreen: React.FC = () => {
         {/* User Info Card */}
         <View style={currentStyles.userCard}>
           <View style={currentStyles.avatar}>
-            <Text style={currentStyles.avatarText}>{user?.name?.charAt(0).toUpperCase()}</Text>
+            <Text style={currentStyles.avatarText}> {user?.name?.charAt(0).toUpperCase()} </Text>
           </View>
           <View style={currentStyles.userInfo}>
-            <Text style={currentStyles.userName}>{user?.name}</Text>
-            <Text style={currentStyles.userEmail}>{user?.email}</Text>
-            <Text style={currentStyles.userMobile}>{user?.mobile}</Text>
+            <Text style={currentStyles.userName}> {user?.name} </Text>
+            <Text style={currentStyles.userEmail}> {user?.email} </Text>
+            <Text style={currentStyles.userMobile}> {user?.mobile} </Text>
             <Text style={currentStyles.userGrade}>
               Grade: {user?.grade?.name || 'Not specified'}
             </Text>
@@ -49,50 +51,50 @@ const ProfileScreen: React.FC = () => {
 
         {/* Settings Options */}
         <View style={currentStyles.settingsSection}>
-          <Text style={common.sectionTitle}>Settings</Text>
+          <Text style={common.sectionTitle}> Settings </Text>
 
           <TouchableOpacity style={currentStyles.settingItem}>
             <Text style={currentStyles.settingIcon}>👤</Text>
             <View style={currentStyles.settingContent}>
-              <Text style={currentStyles.settingTitle}>Edit Profile</Text>
-              <Text style={currentStyles.settingSubtitle}>Update your personal information</Text>
+              <Text style={currentStyles.settingTitle}> Edit Profile </Text>
+              <Text style={currentStyles.settingSubtitle}> Update your personal information </Text>
             </View>
-            <Text style={currentStyles.settingArrow}>{isRTL ? '<' : '›'}</Text>
+            <Text style={currentStyles.settingArrow}> {isRTL ? '<' : '›'} </Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={currentStyles.settingItem}>
             <Text style={currentStyles.settingIcon}>🔔</Text>
             <View style={currentStyles.settingContent}>
-              <Text style={currentStyles.settingTitle}>Notifications</Text>
+              <Text style={currentStyles.settingTitle}> Notifications </Text>
               <Text style={currentStyles.settingSubtitle}>
                 Manage your notification preferences
               </Text>
             </View>
-            <Text style={currentStyles.settingArrow}>{isRTL ? '<' : '›'}</Text>
+            <Text style={currentStyles.settingArrow}> {isRTL ? '<' : '›'} </Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={currentStyles.settingItem}>
             <Text style={currentStyles.settingIcon}>🔒</Text>
             <View style={currentStyles.settingContent}>
-              <Text style={currentStyles.settingTitle}>Privacy & Security</Text>
-              <Text style={currentStyles.settingSubtitle}>Password and privacy settings</Text>
+              <Text style={currentStyles.settingTitle}> Privacy & Security </Text>
+              <Text style={currentStyles.settingSubtitle}> Password and privacy settings </Text>
             </View>
-            <Text style={currentStyles.settingArrow}>{isRTL ? '<' : '›'}</Text>
+            <Text style={currentStyles.settingArrow}> {isRTL ? '<' : '›'} </Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={currentStyles.settingItem}>
             <Text style={currentStyles.settingIcon}>❓</Text>
             <View style={currentStyles.settingContent}>
-              <Text style={currentStyles.settingTitle}>Help & Support</Text>
-              <Text style={currentStyles.settingSubtitle}>Get help and contact support</Text>
+              <Text style={currentStyles.settingTitle}> Help & Support </Text>
+              <Text style={currentStyles.settingSubtitle}> Get help and contact support </Text>
             </View>
-            <Text style={currentStyles.settingArrow}>{isRTL ? '<' : '›'}</Text>
+            <Text style={currentStyles.settingArrow}> {isRTL ? '<' : '›'} </Text>
           </TouchableOpacity>
         </View>
 
         {/* Logout Button */}
         <TouchableOpacity style={currentStyles.logoutButton} onPress={handleLogout}>
-          <Text style={currentStyles.logoutButtonText}>Sign Out</Text>
+          <Text style={currentStyles.logoutButtonText}> Sign Out </Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -106,6 +108,7 @@ const styles = (
   borderRadius: any,
   common: any,
   isRTL: boolean,
+  typography: any,
 ) =>
   StyleSheet.create({
     content: {
@@ -131,7 +134,7 @@ const styles = (
       ...common.marginEnd(spacing.lg),
     },
     avatarText: {
-      fontSize: fontSizes.xl,
+      ...typography('h3'),
       fontWeight: 'bold',
       color: '#ffffff',
     },
@@ -140,26 +143,26 @@ const styles = (
       alignItems: common.alignStart,
     },
     userName: {
-      fontSize: fontSizes.lg,
+      ...typography('h3'),
       fontWeight: 'bold',
       color: theme.colors.text,
       marginBottom: 4,
       textAlign: common.textAlign,
     },
     userEmail: {
-      fontSize: fontSizes.sm,
+      ...typography('caption'),
       color: theme.colors.textSecondary,
       marginBottom: 2,
       textAlign: common.textAlign,
     },
     userMobile: {
-      fontSize: fontSizes.sm,
+      ...typography('caption'),
       color: theme.colors.textSecondary,
       marginBottom: 2,
       textAlign: common.textAlign,
     },
     userGrade: {
-      fontSize: fontSizes.sm,
+      ...typography('caption'),
       color: theme.colors.primary,
       fontWeight: '600',
       textAlign: common.textAlign,
@@ -185,14 +188,14 @@ const styles = (
       alignItems: common.alignStart,
     },
     settingTitle: {
-      fontSize: fontSizes.base,
+      ...typography('body'),
       fontWeight: '600',
       color: theme.colors.text,
       marginBottom: 2,
       textAlign: common.textAlign,
     },
     settingSubtitle: {
-      fontSize: fontSizes.sm,
+      ...typography('caption'),
       color: theme.colors.textSecondary,
       textAlign: common.textAlign,
     },
@@ -208,8 +211,7 @@ const styles = (
     },
     logoutButtonText: {
       color: '#ffffff',
-      fontSize: fontSizes.base,
-      fontWeight: '600',
+      ...typography('button'),
     },
   });
 

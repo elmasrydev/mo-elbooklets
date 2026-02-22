@@ -6,6 +6,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
+import { useTypography } from '../../hooks/useTypography';
 
 interface LessonNavBarProps {
   currentIndex: number;
@@ -32,6 +33,7 @@ const LessonNavBar: React.FC<LessonNavBarProps> = ({
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
+  const { typography } = useTypography();
   const insets = useSafeAreaInsets();
 
   return (
@@ -66,7 +68,9 @@ const LessonNavBar: React.FC<LessonNavBarProps> = ({
             color={theme.colors.text}
             style={{ marginRight: isRTL ? 0 : 4, marginLeft: isRTL ? 4 : 0 }}
           />
-          <Text style={[styles.prevButtonText, { color: theme.colors.text }]}>
+          <Text
+            style={[typography('buttonSmall'), styles.prevButtonText, { color: theme.colors.text }]}
+          >
             {t('study_lesson.previous')}
           </Text>
         </TouchableOpacity>
@@ -84,7 +88,7 @@ const LessonNavBar: React.FC<LessonNavBarProps> = ({
           },
         ]}
       >
-        <Text style={[styles.counterText, { color: theme.colors.primary }]}>
+        <Text style={[typography('label'), styles.counterText, { color: theme.colors.primary }]}>
           {currentIndex + 1} / {totalCount}
         </Text>
       </View>
@@ -103,7 +107,10 @@ const LessonNavBar: React.FC<LessonNavBarProps> = ({
           onPress={onNext}
           activeOpacity={0.7}
         >
-          <Text style={styles.nextButtonText}> {t('study_lesson.next')} </Text>
+          <Text style={[typography('buttonSmall'), styles.nextButtonText]}>
+            {' '}
+            {t('study_lesson.next')}{' '}
+          </Text>
           <Ionicons
             name={isRTL ? 'chevron-back' : 'chevron-forward'}
             size={18}
@@ -130,7 +137,10 @@ const LessonNavBar: React.FC<LessonNavBarProps> = ({
             color="#fff"
             style={{ marginRight: isRTL ? 0 : 4, marginLeft: isRTL ? 4 : 0 }}
           />
-          <Text style={styles.nextButtonText}> {t('study_lesson.back_to_chapters')} </Text>
+          <Text style={[typography('buttonSmall'), styles.nextButtonText]}>
+            {' '}
+            {t('study_lesson.back_to_chapters')}{' '}
+          </Text>
         </TouchableOpacity>
       )}
     </View>
@@ -165,11 +175,9 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   prevButtonText: {
-    fontSize: 14,
     fontWeight: '600',
   },
   nextButtonText: {
-    fontSize: 14,
     fontWeight: '600',
     color: '#fff',
   },
@@ -181,7 +189,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   counterText: {
-    fontSize: 13,
     fontWeight: '700',
   },
 });

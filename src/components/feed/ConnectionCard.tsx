@@ -5,6 +5,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
+import { useTypography } from '../../hooks/useTypography';
 import { getTimeAgo } from '../../lib/dateUtils';
 import { layout } from '../../config/layout';
 
@@ -22,6 +23,7 @@ const ConnectionCard: React.FC<ConnectionCardProps> = ({ item }) => {
   const { language } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
+  const { typography } = useTypography();
 
   const getInitials = (name: string) =>
     name
@@ -30,33 +32,40 @@ const ConnectionCard: React.FC<ConnectionCardProps> = ({ item }) => {
       .join('')
       .toUpperCase()
       .substring(0, 2);
-  const currentStyles = createStyles(theme, common, fontSizes, spacing, borderRadius);
+  const currentStyles = createStyles(theme, common, fontSizes, spacing, borderRadius, typography);
 
   return (
     <View style={currentStyles.card}>
       <View style={currentStyles.content}>
         <View style={currentStyles.avatarsRow}>
           <View style={currentStyles.avatar}>
-            <Text style={currentStyles.avatarText}>{getInitials(item.user.name)}</Text>
+            <Text style={currentStyles.avatarText}> {getInitials(item.user.name)} </Text>
           </View>
           <View style={currentStyles.connectionIcon}>
             <Ionicons name="people" size={24} color="#10B981" />
-            <Text style={currentStyles.connectedLabel}>{t('social_screen.connected')}</Text>
+            <Text style={currentStyles.connectedLabel}> {t('social_screen.connected')} </Text>
           </View>
           <View style={currentStyles.avatar}>
-            <Text style={currentStyles.avatarText}>{getInitials(item.connectedUser.name)}</Text>
+            <Text style={currentStyles.avatarText}> {getInitials(item.connectedUser.name)} </Text>
           </View>
         </View>
         <Text style={currentStyles.names}>
           {item.user.name} & {item.connectedUser.name}
         </Text>
-        <Text style={currentStyles.timeAgo}>{getTimeAgo(item.createdAt, t, language)}</Text>
+        <Text style={currentStyles.timeAgo}> {getTimeAgo(item.createdAt, t, language)} </Text>
       </View>
     </View>
   );
 };
 
-const createStyles = (theme: any, common: any, fontSizes: any, spacing: any, borderRadius: any) =>
+const createStyles = (
+  theme: any,
+  common: any,
+  fontSizes: any,
+  spacing: any,
+  borderRadius: any,
+  typography: any,
+) =>
   StyleSheet.create({
     card: {
       backgroundColor: '#ECFDF5',
@@ -82,22 +91,28 @@ const createStyles = (theme: any, common: any, fontSizes: any, spacing: any, bor
       borderWidth: 2,
       borderColor: theme.colors.border,
     },
-    avatarText: { fontSize: fontSizes.base, fontWeight: '700', color: theme.colors.primary },
+    avatarText: { ...typography('body'), fontWeight: '700', color: theme.colors.primary },
     connectionIcon: { alignItems: 'center', gap: 4 },
     connectedLabel: {
+      ...typography('caption'),
       fontSize: 10,
       fontWeight: '800',
       color: '#10B981',
       textTransform: 'uppercase',
     },
     names: {
-      fontSize: fontSizes.base,
+      ...typography('body'),
       fontWeight: '800',
       color: theme.colors.text,
       textAlign: 'center',
       marginBottom: 4,
     },
-    timeAgo: { fontSize: 11, fontWeight: '700', color: theme.colors.textTertiary },
+    timeAgo: {
+      ...typography('caption'),
+      fontSize: 11,
+      fontWeight: '700',
+      color: theme.colors.textTertiary,
+    },
   });
 
 export default ConnectionCard;

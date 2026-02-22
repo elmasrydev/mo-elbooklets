@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { tryFetchWithFallback } from '../../config/api';
 import { layout } from '../../config/layout';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
+import { useTypography } from '../../hooks/useTypography';
 
 interface UserQuizAnswer {
   question: {
@@ -62,6 +63,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({ quizId, onBack, o
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
+  const { typography } = useTypography();
   const insets = useSafeAreaInsets();
   const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
   const [loading, setLoading] = useState(true);
@@ -134,10 +136,10 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({ quizId, onBack, o
     }
   };
 
-  const getBreadcrumbs = () => {
+  const getBreadcrumbs = (): { title: string; subtitle?: string; type: 'chapter' | 'quiz' }[] => {
     if (!quizResult?.quiz?.lessons || quizResult.quiz.lessons.length === 0) {
       // Fallback for old quizzes or if lessons not available
-      return [{ title: quizResult?.quiz?.name || '', type: 'quiz' }];
+      return [{ title: quizResult?.quiz?.name || '', type: 'quiz' as const }];
     }
 
     const chapters = new Map<string, string[]>();
@@ -160,7 +162,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({ quizId, onBack, o
     return crumbs;
   };
 
-  const currentStyles = styles(theme, fontSizes, spacing, borderRadius, common, insets);
+  const currentStyles = styles(theme, fontSizes, typography, spacing, borderRadius, common, insets);
   const breadcrumbs = quizResult ? getBreadcrumbs() : [];
 
   if (loading) {
@@ -466,6 +468,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({ quizId, onBack, o
 const styles = (
   theme: any,
   fontSizes: any,
+  typography: any,
   spacing: any,
   borderRadius: any,
   common: any,
@@ -511,14 +514,14 @@ const styles = (
       marginLeft: common.isRTL ? 8 : 0,
     },
     breadcrumbSubjectText: {
-      fontSize: fontSizes.xs,
+      ...typography('caption'),
       fontWeight: '600',
       color: theme.colors.primary,
       flex: 1,
       textAlign: common.textAlign,
     },
     breadcrumbQuizText: {
-      fontSize: fontSizes.sm, // Slightly larger for emphasis
+      ...typography('bodySmall'), // Slightly larger for emphasis
       fontWeight: 'bold',
       color: theme.colors.text,
       flex: 1,
@@ -532,7 +535,7 @@ const styles = (
     },
     loadingText: {
       marginTop: spacing.lg,
-      fontSize: fontSizes.base,
+      ...typography('body'),
       color: theme.colors.textSecondary,
     },
     errorContainer: {
@@ -542,13 +545,13 @@ const styles = (
       padding: 40,
     },
     errorTitle: {
-      fontSize: fontSizes.xl,
+      ...typography('h2'),
       fontWeight: 'bold',
       marginBottom: spacing.sm,
       color: theme.colors.text,
     },
     errorText: {
-      fontSize: fontSizes.sm,
+      ...typography('caption'),
       textAlign: 'center',
       marginBottom: spacing.xl,
       color: theme.colors.textSecondary,
@@ -561,8 +564,7 @@ const styles = (
     },
     retryButtonText: {
       color: '#FFFFFF',
-      fontSize: fontSizes.base,
-      fontWeight: '600',
+      ...typography('button'),
     },
     scoreContainer: {
       padding: spacing['2xl'],
@@ -599,7 +601,7 @@ const styles = (
       color: theme.colors.error,
     },
     scoreLabel: {
-      fontSize: fontSizes.sm,
+      ...typography('caption'),
       color: theme.colors.textSecondary,
     },
     scoreStats: {
@@ -611,12 +613,13 @@ const styles = (
       alignItems: 'center',
     },
     scoreNumber: {
-      fontSize: fontSizes.xl,
+      ...typography('h2'),
       fontWeight: 'bold',
       color: theme.colors.text,
     },
     scoreText: {
-      fontSize: fontSizes.xs,
+      ...typography('caption'),
+      fontSize: 12,
       marginTop: spacing.xs,
       color: theme.colors.textSecondary,
     },
@@ -639,7 +642,7 @@ const styles = (
       ...common.marginEnd(spacing.md),
     },
     statusText: {
-      fontSize: fontSizes.base,
+      ...typography('body'),
       fontWeight: '600',
       flex: 1,
       textAlign: common.textAlign,
@@ -654,7 +657,7 @@ const styles = (
       marginBottom: spacing.xl,
     },
     reviewTitle: {
-      fontSize: fontSizes.xl,
+      ...typography('h2'),
       fontWeight: 'bold',
       marginBottom: spacing.lg,
       color: theme.colors.text,
@@ -674,7 +677,7 @@ const styles = (
       marginBottom: spacing.md,
     },
     questionNumber: {
-      fontSize: fontSizes.sm,
+      ...typography('caption'),
       fontWeight: 'bold',
       color: theme.colors.primary,
     },
@@ -685,12 +688,13 @@ const styles = (
       backgroundColor: theme.colors.errorBackground,
     },
     badgeErrorText: {
+      ...typography('caption'),
       fontSize: 10,
       fontWeight: 'bold',
       color: theme.colors.error,
     },
     questionText: {
-      fontSize: fontSizes.base,
+      ...typography('body'),
       marginBottom: spacing.lg,
       lineHeight: 24,
       color: theme.colors.text,
@@ -712,13 +716,14 @@ const styles = (
       borderColor: theme.colors.success,
     },
     answerLabel: {
-      fontSize: fontSizes.xs,
+      ...typography('caption'),
+      fontSize: 12,
       fontWeight: 'bold',
       marginBottom: 4,
       color: theme.colors.textSecondary,
     },
     answerText: {
-      fontSize: fontSizes.base,
+      ...typography('body'),
       fontWeight: '600',
       color: theme.colors.text,
     },
@@ -729,13 +734,14 @@ const styles = (
       borderRadius: borderRadius.md,
     },
     explanationLabel: {
-      fontSize: fontSizes.xs,
+      ...typography('caption'),
+      fontSize: 12,
       fontWeight: 'bold',
       marginBottom: 4,
       color: theme.colors.primary,
     },
     explanationText: {
-      fontSize: fontSizes.sm,
+      ...typography('caption'),
       color: theme.colors.textSecondary,
       lineHeight: 20,
     },
@@ -747,13 +753,13 @@ const styles = (
       ...layout.shadow,
     },
     perfectScoreTitle: {
-      fontSize: fontSizes.xl,
+      ...typography('h2'),
       fontWeight: 'bold',
       color: theme.colors.text,
       marginBottom: spacing.sm,
     },
     perfectScoreText: {
-      fontSize: fontSizes.base,
+      ...typography('body'),
       color: theme.colors.textSecondary,
       textAlign: 'center',
     },
@@ -777,8 +783,7 @@ const styles = (
       alignItems: 'center',
     },
     retakeButtonText: {
-      fontSize: fontSizes.sm,
-      fontWeight: '600',
+      ...typography('buttonSmall'),
       color: theme.colors.text,
     },
     doneButton: {
@@ -789,8 +794,7 @@ const styles = (
       alignItems: 'center',
     },
     doneButtonText: {
-      fontSize: fontSizes.sm,
-      fontWeight: '600',
+      ...typography('buttonSmall'),
       color: '#FFFFFF',
     },
     // Custom Header
