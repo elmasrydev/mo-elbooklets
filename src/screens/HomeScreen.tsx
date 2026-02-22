@@ -65,7 +65,8 @@ const WheelOfSuccess: React.FC<{
   data: WheelOfSuccessData | null;
   t: any;
   typography: any;
-}> = ({ theme, data, t, typography }) => {
+  common: any;
+}> = ({ theme, data, t, typography, common }) => {
   if (!data || !data.arms || data.arms.length === 0) return null;
 
   const size = width - 40; // Full width card
@@ -82,7 +83,7 @@ const WheelOfSuccess: React.FC<{
   const segmentCount = arms.length;
   const anglePerSegment = (2 * Math.PI) / segmentCount;
 
-  const currentWheelStyles = wheelStyles(typography);
+  const currentWheelStyles = wheelStyles(typography, common);
 
   return (
     <View style={currentWheelStyles.container}>
@@ -93,7 +94,7 @@ const WheelOfSuccess: React.FC<{
         </View>
         <View style={currentWheelStyles.masteryBadge}>
           <Text style={currentWheelStyles.masteryValue}> {round(data.overallProgress)} % </Text>
-          <Text style={currentWheelStyles.masteryLabel}> Mastery </Text>
+          <Text style={currentWheelStyles.masteryLabel}> {t('home_screen.mastery_target')} </Text>
         </View>
       </View>
 
@@ -233,8 +234,7 @@ const WheelOfSuccess: React.FC<{
             <View style={[currentWheelStyles.legendDot, { backgroundColor: arm.color }]} />
             <Text style={currentWheelStyles.legendText}> {arm.name} </Text>
             <Text style={[currentWheelStyles.legendValue, { color: arm.color }]}>
-              {' '}
-              {round(arm.progress)} %{' '}
+              {round(arm.progress)} %
             </Text>
           </View>
         ))}
@@ -383,7 +383,7 @@ const HomeScreen: React.FC = () => {
           <View style={currentStyles.headerGreeting}>
             <Text style={common.headerTitle}>
               {' '}
-              {t('home_screen.hi')}, {user?.name?.split(' ')[0] || 'Alex'}! 👋
+              {t('home_screen.hi')}, {user?.name?.split(' ')[0] || 'Alex'} ! 👋
             </Text>
             <Text style={common.headerSubtitle}>
               {' '}
@@ -434,7 +434,13 @@ const HomeScreen: React.FC = () => {
           </View>
         </View>
 
-        <WheelOfSuccess theme={theme} data={wheelData} t={t} typography={typography} />
+        <WheelOfSuccess
+          theme={theme}
+          data={wheelData}
+          t={t}
+          typography={typography}
+          common={common}
+        />
 
         <View style={common.card}>
           <View style={currentStyles.performanceHeader}>
@@ -499,7 +505,10 @@ const HomeScreen: React.FC = () => {
               <View style={currentStyles.quickActionIconWhite}>
                 <Ionicons name="play" size={20} color="#fff" />
               </View>
-              <Text style={currentStyles.quickActionTitleWhite}> Start </Text>
+              <Text style={currentStyles.quickActionTitleWhite}>
+                {' '}
+                {t('home_screen.start_quiz')}{' '}
+              </Text>
               <Text style={currentStyles.quickActionSubtitle}> jump to quiz </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -509,7 +518,10 @@ const HomeScreen: React.FC = () => {
               <View style={[currentStyles.quickActionIcon, { backgroundColor: '#EFF6FF' }]}>
                 <Ionicons name="book" size={20} color="#3B82F6" />
               </View>
-              <Text style={currentStyles.quickActionTitle}> Browse </Text>
+              <Text style={currentStyles.quickActionTitle}>
+                {' '}
+                {t('home_screen.browse_booklets')}{' '}
+              </Text>
               <Text style={currentStyles.quickActionSubtitleDark}> Booklets </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -519,7 +531,7 @@ const HomeScreen: React.FC = () => {
               <View style={[currentStyles.quickActionIcon, { backgroundColor: '#FDF2F8' }]}>
                 <Ionicons name="stats-chart" size={20} color="#EC4899" />
               </View>
-              <Text style={currentStyles.quickActionTitle}> My </Text>
+              <Text style={currentStyles.quickActionTitle}> {t('home_screen.my_progress')} </Text>
               <Text style={currentStyles.quickActionSubtitleDark}> Progress </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -529,7 +541,7 @@ const HomeScreen: React.FC = () => {
               <View style={[currentStyles.quickActionIcon, { backgroundColor: '#FFF7ED' }]}>
                 <Ionicons name="settings" size={20} color="#F97316" />
               </View>
-              <Text style={currentStyles.quickActionTitle}> Settings </Text>
+              <Text style={currentStyles.quickActionTitle}> {t('common.settings')} </Text>
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -785,7 +797,7 @@ const styles = (
     },
   });
 
-const wheelStyles = (typography: any) =>
+const wheelStyles = (typography: any, common: any) =>
   StyleSheet.create({
     container: {
       backgroundColor: '#ffffff', // Light background
@@ -802,14 +814,15 @@ const wheelStyles = (typography: any) =>
       borderColor: '#f1f5f9',
     },
     headerRow: {
-      flexDirection: 'row',
+      flexDirection: common.rowDirection,
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingHorizontal: 24,
+      paddingHorizontal: 20,
       marginBottom: 10,
     },
     headerInfo: {
       flex: 1,
+      alignItems: common.alignStart,
     },
     wheelTitle: {
       ...typography('h2'),
@@ -865,7 +878,7 @@ const wheelStyles = (typography: any) =>
       paddingHorizontal: 24,
     },
     legendItem: {
-      flexDirection: 'row',
+      flexDirection: common.rowDirection,
       alignItems: 'center',
       backgroundColor: '#f8fafc', // Light gray background
       paddingHorizontal: 12,

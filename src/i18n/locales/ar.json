@@ -47,7 +47,8 @@
     "incorrect": "خطأ",
     "total": "الإجمالي",
     "lesson": "درس",
-    "completed": "مكتمل"
+    "completed": "مكتمل",
+    "unknown_unit": "وحدة غير معروفة"
   },
   "study_screen": {
     "header_title": "المذاكرة",
@@ -228,7 +229,10 @@
     "your_answer": "إجابتك:",
     "correct_answer": "الإجابة الصحيحة:",
     "explanation": "التفسير:",
-    "retake_quiz": "إعادة الاختبار"
+    "retake_quiz": "إعادة الاختبار",
+    "incorrect_questions": "سؤال غير صحيح",
+    "back_to_results": "العودة للنتائج",
+    "score": "النتيجة"
   },
   "social_screen": {
     "header_title": "اجتماعي",

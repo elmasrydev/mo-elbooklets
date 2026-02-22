@@ -84,15 +84,40 @@ const QuizScreen: React.FC = () => {
         setCurrentQuizId(completedId);
         fetchQuizHistory(); // Refresh history
 
-        // Show results after standard delay
-        setTimeout(() => {
-          setResultsModalVisible(true);
-        }, 900);
+        // Navigate to QuizResults screen
+        navigation.navigate('QuizResults', { quizId: completedId });
       } else {
         if (currentStep === 'history') fetchQuizHistory();
       }
     }, [route.params?.completedQuizId, currentStep]),
   );
+
+  // Handle retake request from Results screen
+  useEffect(() => {
+    if (route.params?.retakeQuizId) {
+      const { subject, lessons } = route.params;
+
+      // Clear params to avoid loops
+      navigation.setParams({
+        retakeQuizId: undefined,
+        subject: undefined,
+        lessons: undefined,
+      });
+
+      // Reset existing flow state
+      resetFlow();
+
+      if (subject && lessons) {
+        // Automatically jump to the 'ready' step with the quiz data
+        setSelectedSubject(subject);
+        setSelectedLessons(lessons.map((l: any) => l.id));
+        setCurrentStep('ready');
+      } else {
+        // Fallback: show subject selection if data is missing
+        setSubjectModalVisible(true);
+      }
+    }
+  }, [route.params?.retakeQuizId]);
 
   const fetchQuizHistory = async () => {
     try {
@@ -175,49 +200,16 @@ const QuizScreen: React.FC = () => {
   // Quiz Start / Ready screen
   if (currentStep === 'ready' && selectedSubject)
     return (
-      <>
-        <QuizStartScreen
-          subjectName={selectedSubject.name}
-          lessonsCount={selectedLessons.length}
-          quizTypeName={selectedQuizTypeName}
-          onStart={handleStartQuiz}
-          onBack={() => {
-            setCurrentStep('history');
-            setLessonsModalVisible(true);
-          }}
-        />
-
-        {/* Results Modal */}
-        <Modal
-          visible={resultsModalVisible}
-          animationType="slide"
-          presentationStyle="pageSheet"
-          onRequestClose={() => {
-            setResultsModalVisible(false);
-            resetFlow();
-          }}
-        >
-          {currentQuizId && (
-            <QuizResultsScreen
-              quizId={currentQuizId}
-              onBack={() => {
-                setResultsModalVisible(false);
-                resetFlow();
-              }}
-              onRetakeQuiz={() => {
-                setResultsModalVisible(false);
-                if (selectedSubject) {
-                  setTimeout(() => {
-                    setLessonsModalVisible(true);
-                  }, 300);
-                } else {
-                  resetFlow();
-                }
-              }}
-            />
-          )}
-        </Modal>
-      </>
+      <QuizStartScreen
+        subjectName={selectedSubject.name}
+        lessonsCount={selectedLessons.length}
+        quizTypeName={selectedQuizTypeName}
+        onStart={handleStartQuiz}
+        onBack={() => {
+          setCurrentStep('history');
+          setLessonsModalVisible(true);
+        }}
+      />
     );
 
   const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius, typography);
@@ -286,8 +278,7 @@ const QuizScreen: React.FC = () => {
                 <RecentActivityCard
                   activity={quiz}
                   onPress={() => {
-                    setCurrentQuizId(quiz.id);
-                    setResultsModalVisible(true);
+                    navigation.navigate('QuizResults', { quizId: quiz.id });
                   }}
                 />
               </View>
@@ -331,36 +322,7 @@ const QuizScreen: React.FC = () => {
         )}
       </Modal>
 
-      {/* Results Modal (from history tap) */}
-      <Modal
-        visible={resultsModalVisible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => {
-          setResultsModalVisible(false);
-          resetFlow();
-        }}
-      >
-        {currentQuizId && (
-          <QuizResultsScreen
-            quizId={currentQuizId}
-            onBack={() => {
-              setResultsModalVisible(false);
-              resetFlow();
-            }}
-            onRetakeQuiz={() => {
-              setResultsModalVisible(false);
-              if (selectedSubject) {
-                setTimeout(() => {
-                  setLessonsModalVisible(true);
-                }, 300);
-              } else {
-                resetFlow();
-              }
-            }}
-          />
-        )}
-      </Modal>
+      {/* Modal logic for QuizResults removed as it is now a screen */}
     </View>
   );
 };

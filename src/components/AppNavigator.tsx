@@ -42,10 +42,7 @@ const AppNavigator: React.FC = () => {
   // Show onboarding screen
   if (appState === 'onboarding') {
     return (
-      <OnboardingScreen
-        onGetStarted={handleOnboardingGetStarted}
-        onLogin={handleOnboardingLogin}
-      />
+      <OnboardingScreen onGetStarted={handleOnboardingGetStarted} onLogin={handleOnboardingLogin} />
     );
   }
 

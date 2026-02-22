@@ -17,6 +17,8 @@ import StudyCalendarScreen from '../screens/StudyCalendarScreen';
 import StudyChaptersScreen from '../screens/study/StudyChaptersScreen';
 import StudyLessonScreen from '../screens/study/StudyLessonScreen';
 import QuizTakingScreen from '../screens/quiz/QuizTakingScreen';
+import QuizReviewScreen from '../screens/quiz/QuizReviewScreen';
+import QuizResultsScreen from '../screens/quiz/QuizResultsScreen';
 import { useTranslation } from 'react-i18next';
 
 const Tab = createBottomTabNavigator();
@@ -80,7 +82,7 @@ const TabScreens: React.FC = () => {
   const orderedTabs = isMismatch ? [...tabs].reverse() : tabs;
 
   // Calculate tab bar height with safe area
-  const tabBarHeight = 60 + Math.max(insets.bottom, Platform.OS === 'android' ? 10 : 0);
+  const tabBarHeight = 54 + Math.max(insets.bottom, Platform.OS === 'android' ? 8 : 0);
 
   return (
     <Tab.Navigator
@@ -145,6 +147,15 @@ const TabNavigator: React.FC = () => {
         component={QuizTakingScreen}
         options={{
           animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen name="QuizResults" component={QuizResultsScreen as any} options={{}} />
+      <Stack.Screen
+        name="QuizReview"
+        component={QuizReviewScreen}
+        options={{
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
         }}
       />
     </Stack.Navigator>

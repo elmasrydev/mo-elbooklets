@@ -8,6 +8,7 @@ interface CircularProgressProps {
   strokeWidth: number;
   percentage: number;
   color: string;
+  showText?: boolean;
 }
 
 const CircularProgress: React.FC<CircularProgressProps> = ({
@@ -15,6 +16,7 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
   strokeWidth,
   percentage,
   color,
+  showText = true,
 }) => {
   const { typography } = useTypography();
   const radius = (size - strokeWidth) / 2;
@@ -46,13 +48,15 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
           origin={`${size / 2}, ${size / 2}`}
         />
       </Svg>
-      <View style={{ position: 'absolute' }}>
-        <Text
-          style={[typography('h3'), { fontSize: size * 0.22, fontWeight: 'bold', color: color }]}
-        >
-          {percentage} %
-        </Text>
-      </View>
+      {showText && (
+        <View style={{ position: 'absolute' }}>
+          <Text
+            style={[typography('h3'), { fontSize: size * 0.22, fontWeight: 'bold', color: color }]}
+          >
+            {percentage} %
+          </Text>
+        </View>
+      )}
     </View>
   );
 };

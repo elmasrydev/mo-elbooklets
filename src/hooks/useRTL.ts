@@ -18,7 +18,7 @@ export const useRTL = () => {
     isRTL,
 
     // DIRECTION:
-    rowDirection: (isMismatch ? 'row-reverse' : 'row') as FlexStyle['flexDirection'],
+    rowDirection: 'row' as FlexStyle['flexDirection'],
 
     // ALIGNMENT:
     alignStart: (isMismatch ? 'flex-end' : 'flex-start') as FlexStyle['alignItems'],

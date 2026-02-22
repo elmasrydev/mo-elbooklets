@@ -47,7 +47,8 @@
     "incorrect": "Incorrect",
     "total": "Total",
     "lesson": "Lesson",
-    "completed": "Completed"
+    "completed": "Completed",
+    "unknown_unit": "Unknown Unit"
   },
   "study_screen": {
     "header_title": "Study",
@@ -228,7 +229,11 @@
     "your_answer": "Your Answer:",
     "correct_answer": "Correct Answer:",
     "explanation": "Explanation:",
-    "retake_quiz": "Retake Quiz"
+    "retake_quiz": "Retake Quiz",
+    "incorrect": "Incorrect",
+    "back_to_results": "Back to Results",
+    "incorrect_questions": "Incorrect Question",
+    "score": "Score"
   },
   "social_screen": {
     "header_title": "Social",
