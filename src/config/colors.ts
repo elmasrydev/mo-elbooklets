@@ -38,7 +38,7 @@ const bluePalette: ColorPalette = {
   primary500: '#1E40AF', // Main Color Blue
   primary600: '#2563eb',
   primary700: '#1d4ed8',
-  primary800: '#1e40af', 
+  primary800: '#1e40af',
   primary900: '#1e3a8a',
   secondary: '#10B981', // Greeny Secondary
 };

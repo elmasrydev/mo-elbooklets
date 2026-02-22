@@ -13,7 +13,7 @@ export const layout = {
 
   // Safe area (header)
   headerPaddingTop: Platform.OS === 'ios' ? 50 : StatusBar.currentHeight || 50,
-  headerPaddingBottom: 24,
+  headerPaddingBottom: 18,
 
   // Screen padding (unified 20px)
   screenPadding: 20,

@@ -33,6 +33,7 @@ export const useCommonStyles = () => {
       flexDirection: rtl.rowDirection,
       alignItems: 'center',
       justifyContent: 'flex-start',
+      maxHeight: 120,
     } as ViewStyle,
 
     // Wrapper for Title + Subtitle to keep them vertically stacked
