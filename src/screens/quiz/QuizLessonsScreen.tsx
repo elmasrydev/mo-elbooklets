@@ -355,7 +355,8 @@ const styles = (
       color: theme.colors.textSecondary,
     },
     footer: {
-      padding: spacing.lg,
+      paddingHorizontal: layout.screenPadding,
+      paddingVertical: spacing.lg,
       paddingBottom: Math.max(insets.bottom, spacing.lg),
       backgroundColor: theme.colors.card,
       borderTopWidth: 1,

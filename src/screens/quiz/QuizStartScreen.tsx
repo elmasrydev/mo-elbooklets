@@ -136,7 +136,7 @@ const styles = (
       flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: spacing.xl,
+      paddingHorizontal: layout.screenPadding,
       paddingBottom: 80,
     },
     illustrationContainer: {
@@ -210,9 +210,9 @@ const styles = (
     },
     footer: {
       flexDirection: common.rowDirection,
-      paddingHorizontal: spacing.xl,
+      paddingHorizontal: layout.screenPadding,
       paddingTop: spacing.xl,
-      paddingBottom: Math.max(insets.bottom, spacing.xl),
+      paddingBottom: Math.max(insets.bottom, layout.screenPadding),
       gap: spacing.md,
       borderTopWidth: 1,
       borderTopColor: theme.colors.border,

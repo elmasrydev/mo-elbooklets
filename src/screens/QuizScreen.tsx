@@ -244,7 +244,10 @@ const QuizScreen: React.FC = () => {
               color={theme.colors.textTertiary}
             />
             <Text style={currentStyles.emptyStateTitle}> {t('quiz_screen.no_quizzes_yet')} </Text>
-            <Text style={currentStyles.emptyStateSubtitle}>{t('quiz_screen.take_first_quiz')}</Text>
+            <Text style={currentStyles.emptyStateSubtitle}>
+              {' '}
+              {t('quiz_screen.take_first_quiz')}{' '}
+            </Text>
           </View>
         ) : (
           <ScrollView
@@ -312,7 +315,7 @@ const styles = (
 ) =>
   StyleSheet.create({
     actionSection: {
-      padding: spacing.xl,
+      padding: layout.screenPadding,
     },
     takeQuizButton: {
       padding: spacing.md,
@@ -322,7 +325,7 @@ const styles = (
     },
     historySection: {
       flex: 1,
-      paddingHorizontal: spacing.xl,
+      paddingHorizontal: layout.screenPadding,
     },
     historyList: {
       flex: 1,

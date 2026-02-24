@@ -424,7 +424,7 @@ const styles = (
     tabTextInactive: { color: theme.colors.textSecondary },
     content: { flex: 1 },
     contentContainer: { paddingBottom: Math.max(common.insets.bottom, spacing.xl) },
-    leaderboardContainer: { padding: spacing.md },
+    leaderboardContainer: { paddingHorizontal: layout.screenPadding },
 
     userStatusCard: {
       backgroundColor: theme.colors.primary + '1A', // Using 10% opacity of primary

@@ -264,7 +264,7 @@ const styles = (
       flex: 1,
     },
     contentContainer: {
-      padding: spacing.xl,
+      padding: layout.screenPadding,
       alignItems: 'stretch',
     },
     userCard: {
@@ -272,7 +272,7 @@ const styles = (
       borderRadius: borderRadius.xl,
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      marginBottom: spacing.xl,
+      marginBottom: layout.screenPadding,
       backgroundColor: theme.colors.card,
       borderWidth: 1,
       borderColor: theme.colors.border,

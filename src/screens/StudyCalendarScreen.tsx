@@ -373,7 +373,7 @@ const styles = (theme: any, isRTL: boolean, typography: any, spacing: any, borde
     },
     dayTabsContent: {
       paddingVertical: spacing.sm,
-      paddingHorizontal: spacing.xs,
+      paddingHorizontal: layout.screenPadding,
       flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
     },

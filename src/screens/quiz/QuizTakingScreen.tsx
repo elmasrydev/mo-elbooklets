@@ -439,7 +439,7 @@ const styles = (theme: any, typography: any, spacing: any, borderRadius: any, co
       marginLeft: common.isRTL ? 16 : 0,
     },
     progressContainer: {
-      paddingHorizontal: spacing.xl,
+      paddingHorizontal: layout.screenPadding,
       paddingVertical: spacing.sm,
       backgroundColor: theme.colors.surface,
     },
@@ -590,7 +590,7 @@ const styles = (theme: any, typography: any, spacing: any, borderRadius: any, co
     navigationContainer: {
       flexDirection: common.rowDirection,
       justifyContent: 'space-between',
-      paddingHorizontal: spacing.lg,
+      paddingHorizontal: layout.screenPadding,
       paddingVertical: spacing.lg,
       backgroundColor: theme.colors.surface,
       borderTopWidth: 1,

@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useTypography } from '../hooks/useTypography';
 import AppButton from '../components/AppButton';
+import { layout } from '../config/layout';
 
 interface OnboardingScreenProps {
   onGetStarted: () => void;
@@ -90,7 +91,7 @@ const styles = (typography: any, insets: { top: number; bottom: number }) =>
       flex: 1,
     },
     bottomContent: {
-      paddingHorizontal: 30,
+      paddingHorizontal: layout.screenPadding,
       paddingBottom: Math.max(insets.bottom, 20),
       alignItems: 'center',
     },

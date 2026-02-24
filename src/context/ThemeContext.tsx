@@ -77,6 +77,7 @@ interface ThemeColors {
   logoutColor: string;
   logoutButtonBackground: string;
   shadow: string;
+  info: string;
   // Primary color palette
   primary50: string;
   primary100: string;
@@ -170,6 +171,7 @@ const generateThemeColors = (mode: ThemeMode, palette: ColorPalette): ThemeColor
       logoutColor: '#F44336',
       logoutButtonBackground: palette.primary100,
       shadow: COLORS.black,
+      info: palette.primary600,
       // Primary palette colors
       primary50: palette.primary50,
       primary100: palette.primary100,
@@ -243,6 +245,7 @@ const generateThemeColors = (mode: ThemeMode, palette: ColorPalette): ThemeColor
       logoutColor: '#F44336',
       logoutButtonBackground: palette.primary900,
       shadow: '#000000',
+      info: palette.primary400,
       // Primary palette colors
       primary50: palette.primary50,
       primary100: palette.primary100,

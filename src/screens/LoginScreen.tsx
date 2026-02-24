@@ -22,6 +22,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BackButton from '../components/navigation/BackButton';
 import AppButton from '../components/AppButton';
+import { layout } from '../config/layout';
 
 interface LoginScreenProps {
   onNavigateToRegister: () => void;
@@ -193,7 +194,7 @@ const styles = (
     container: { flex: 1, backgroundColor: theme.colors.background },
     scrollContainer: {
       flexGrow: 1,
-      paddingHorizontal: spacing.xl,
+      paddingHorizontal: layout.screenPadding,
       paddingTop: 60,
       paddingBottom: Math.max(common.insets.bottom, 20),
     },
