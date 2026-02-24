@@ -258,12 +258,15 @@ const QuizScreen: React.FC = () => {
           <View style={currentStyles.emptyState}>
             <Text style={currentStyles.emptyStateIcon}>📝</Text>
             <Text style={currentStyles.emptyStateTitle}> {t('quiz_screen.no_quizzes_yet')} </Text>
-            <Text style={currentStyles.emptyStateSubtitle}>{t('quiz_screen.take_first_quiz')}</Text>
+            <Text style={currentStyles.emptyStateSubtitle}>
+              {' '}
+              {t('quiz_screen.take_first_quiz')}{' '}
+            </Text>
           </View>
         ) : (
           <ScrollView
             style={currentStyles.historyList}
-            contentContainerStyle={{ paddingBottom: common.insets.bottom + 50 }}
+            contentContainerStyle={{ paddingBottom: Math.max(common.insets.bottom, 20) }}
             showsVerticalScrollIndicator={false}
           >
             {quizHistory.map((quiz) => (
@@ -329,7 +332,6 @@ const styles = (
   StyleSheet.create({
     actionSection: {
       padding: spacing.xl,
-      marginTop: -26,
     },
     takeQuizButton: {
       padding: 16,

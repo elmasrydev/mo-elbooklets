@@ -197,7 +197,7 @@ const StudyLessonScreen: React.FC = () => {
         style={{ flex: 1 }}
         contentContainerStyle={{
           padding: layout.screenPadding,
-          paddingBottom: Math.max(insets.bottom, 16) + 16,
+          paddingBottom: Math.max(insets.bottom, 20),
         }}
         showsVerticalScrollIndicator={false}
       >

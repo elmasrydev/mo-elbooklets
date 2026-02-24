@@ -202,7 +202,10 @@ const StudyCalendarScreen: React.FC = () => {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={currentStyles.dayTabsContent}
+          contentContainerStyle={[
+            currentStyles.dayTabsContent,
+            { paddingBottom: Math.max(common.insets.bottom, 20) },
+          ]}
         >
           {DAY_KEYS.map((dayKey, index) => (
             <TouchableOpacity

@@ -91,7 +91,7 @@ const styles = (typography: any, insets: { top: number; bottom: number }) =>
     },
     bottomContent: {
       paddingHorizontal: 30,
-      paddingBottom: Math.max(insets.bottom, 40),
+      paddingBottom: Math.max(insets.bottom, 20),
       alignItems: 'center',
     },
     title: {

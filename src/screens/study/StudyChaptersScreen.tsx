@@ -186,7 +186,7 @@ const StudyChaptersScreen: React.FC = () => {
         style={currentStyles.content}
         contentContainerStyle={{
           padding: layout.screenPadding,
-          paddingBottom: common.insets.bottom + 16,
+          paddingBottom: Math.max(common.insets.bottom, 20),
         }}
         showsVerticalScrollIndicator={false}
       >

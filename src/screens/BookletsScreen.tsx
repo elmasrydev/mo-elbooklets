@@ -26,7 +26,7 @@ const BookletsScreen: React.FC = () => {
         style={{ flex: 1 }}
         contentContainerStyle={{
           padding: layout.screenPadding,
-          paddingBottom: common.insets.bottom + 50,
+          paddingBottom: Math.max(common.insets.bottom, 20),
         }}
       >
         <View style={[styles.emptyState, { backgroundColor: theme.colors.card }]}>

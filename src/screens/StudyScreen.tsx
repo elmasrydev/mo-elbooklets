@@ -143,7 +143,7 @@ const StudyScreen: React.FC = () => {
           style={currentStyles.content}
           contentContainerStyle={{
             padding: layout.screenPadding,
-            paddingBottom: common.insets.bottom + 50,
+            paddingBottom: Math.max(common.insets.bottom, 20),
           }}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchSubjects} />}
@@ -212,7 +212,6 @@ const styles = (
     },
     content: {
       flex: 1,
-      marginTop: -24,
     },
     loadingState: {
       flex: 1,

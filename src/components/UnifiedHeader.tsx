@@ -16,6 +16,7 @@ interface UnifiedHeaderProps {
   rightContent?: React.ReactNode;
   centerAlign?: boolean;
   showBorder?: boolean;
+  isModal?: boolean;
   style?: ViewStyle;
 }
 
@@ -28,6 +29,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
   rightContent,
   centerAlign = false,
   showBorder = false,
+  isModal = false,
   style,
 }) => {
   const navigation = useNavigation();
@@ -65,13 +67,16 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
     return leftContent || null;
   };
 
-  const HEADER_CONTENT_HEIGHT = 54; // Standard fixed design height
+  const HEADER_CONTENT_HEIGHT = isModal ? 59 : 54; // Standard fixed design height
+  const effectiveCenterAlign = centerAlign || isModal || !showBackButton;
 
   const renderTitle = () => {
     if (!title) return null;
     if (typeof title === 'string') {
       return (
-        <Text style={[common.headerTitle, centerAlign ? { textAlign: 'center' } : undefined]}>
+        <Text
+          style={[common.headerTitle, effectiveCenterAlign ? { textAlign: 'center' } : undefined]}
+        >
           {title}
         </Text>
       );
@@ -80,15 +85,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
   };
 
   const renderSubtitle = () => {
-    if (!subtitle) return null;
-    if (typeof subtitle === 'string') {
-      return (
-        <Text style={[common.headerSubtitle, centerAlign ? { textAlign: 'center' } : undefined]}>
-          {subtitle}
-        </Text>
-      );
-    }
-    return subtitle;
+    return null;
   };
 
   const containerStyle = [
@@ -97,15 +94,15 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
       backgroundColor: theme.colors.headerBackground,
       borderBottomColor: theme.colors.border,
       borderBottomWidth: showBorder ? 1 : 0,
-      height: insets.top + HEADER_CONTENT_HEIGHT,
-      paddingTop: insets.top,
+      height: (isModal ? 0 : insets.top) + HEADER_CONTENT_HEIGHT,
+      paddingTop: isModal ? 0 : insets.top,
       flexDirection: common.rowDirection,
     },
-    !centerAlign ? { justifyContent: 'flex-start' as const } : undefined,
+    !effectiveCenterAlign ? { justifyContent: 'flex-start' as const } : undefined,
     style,
   ];
 
-  if (centerAlign) {
+  if (effectiveCenterAlign) {
     return (
       <View style={containerStyle as any}>
         <View style={[styles.sideContainer, { alignItems: 'flex-start' }]}> {renderLeft()} </View>

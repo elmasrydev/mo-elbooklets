@@ -260,14 +260,14 @@ const styles = (
     container: { flex: 1, backgroundColor: theme.colors.background },
     scrollView: {
       flex: 1,
-      marginTop: -25,
     },
     contentContainer: {
       padding: spacing.xl,
       alignItems: 'stretch',
     },
     userCard: {
-      padding: spacing.md,
+      padding: spacing.sm - 3,
+      paddingEnd: spacing.sm + 5,
       borderRadius: borderRadius.xl,
       flexDirection: common.rowDirection,
       alignItems: 'center',
@@ -343,13 +343,13 @@ const styles = (
       flexDirection: common.rowDirection,
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: spacing.lg,
+      padding: spacing.md,
     },
     lastMenuItem: { borderBottomWidth: 0 },
     separator: {
       height: 1,
       backgroundColor: theme.colors.border,
-      marginLeft: spacing.xl + 40, // Indent separator to match text start
+      marginLeft: spacing.xl, // Indent separator to match text start
     },
     menuItemContent: {
       flexDirection: common.rowDirection,
@@ -362,8 +362,8 @@ const styles = (
       borderRadius: 22,
       justifyContent: 'center',
       alignItems: 'center',
-      ...common.marginEnd(spacing.md),
-      ...common.marginStart(spacing.md),
+      ...common.marginEnd(spacing.md - 10),
+      ...common.marginStart(spacing.md - 10),
     },
     menuTextContainer: { flex: 1, alignItems: common.alignStart },
     menuTitle: {
@@ -407,7 +407,11 @@ const styles = (
       padding: spacing.md,
       paddingTop: 0,
     },
-    versionContainer: { alignItems: 'center', marginTop: spacing['3xl'], marginBottom: spacing.xl },
+    versionContainer: {
+      alignItems: 'center',
+      marginTop: spacing['3xl'],
+      marginBottom: Math.max(common.insets.bottom, 20),
+    },
     versionText: { ...typography('caption'), color: theme.colors.textTertiary, opacity: 0.7 },
   });
 

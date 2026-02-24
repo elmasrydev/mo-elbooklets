@@ -37,7 +37,7 @@ const ProfileScreen: React.FC = () => {
         style={{ flex: 1 }}
         contentContainerStyle={{
           padding: layout.screenPadding,
-          paddingBottom: common.insets.bottom + 50,
+          paddingBottom: Math.max(common.insets.bottom, 20),
         }}
       >
         {/* User Info Card */}

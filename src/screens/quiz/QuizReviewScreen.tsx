@@ -290,7 +290,7 @@ const styles = (
     },
     scrollContent: {
       padding: 16,
-      paddingBottom: Math.max(insets.bottom, 16) + 40,
+      paddingBottom: Math.max(insets.bottom, 20),
     },
     questionCard: {
       backgroundColor: theme.colors.card,

@@ -195,7 +195,7 @@ const styles = (
       flexGrow: 1,
       paddingHorizontal: spacing.xl,
       paddingTop: 60,
-      paddingBottom: spacing.xl,
+      paddingBottom: Math.max(common.insets.bottom, 20),
     },
     header: { alignItems: 'center', marginBottom: 50 },
     logo: { width: 120, height: 120, marginBottom: 24 },

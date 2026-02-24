@@ -786,7 +786,7 @@ const styles = (
       flexGrow: 1,
       paddingHorizontal: spacing.xl,
       paddingTop: 60,
-      paddingBottom: spacing.xl,
+      paddingBottom: Math.max(common.insets.bottom, 20),
     },
     header: { alignItems: 'center', marginBottom: 32 },
     logo: { width: 100, height: 100, marginBottom: 16 },
@@ -1018,7 +1018,7 @@ const styles = (
       backgroundColor: theme.colors.surface,
       borderTopLeftRadius: 24,
       borderTopRightRadius: 24,
-      paddingBottom: 40,
+      paddingBottom: Math.max(common.insets.bottom, 40),
     },
     modalHeader: {
       flexDirection: 'row',

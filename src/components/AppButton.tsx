@@ -105,21 +105,21 @@ const AppButton: React.FC<AppButtonProps> = ({
       case 'sm':
         return {
           button: { height: 36, paddingHorizontal: spacing.md },
-          text: { ...typography('label'), fontSize: 14 },
-          subtitle: { fontSize: 10 }, // Added subtitle style
+          text: { ...typography('label'), fontSize: 14, lineHeight: 20 },
+          subtitle: { fontSize: 10, lineHeight: 14 }, // Added subtitle style
         };
       case 'lg':
         return {
           button: { height: 64, paddingHorizontal: spacing.xl }, // Adjusted height for subtitle
-          text: { ...typography('h2'), fontSize: 18, fontWeight: '700' },
-          subtitle: { fontSize: 12 }, // Added subtitle style
+          text: { ...typography('h2'), fontSize: 18, fontWeight: '700', lineHeight: 28 },
+          subtitle: { fontSize: 12, lineHeight: 16 }, // Added subtitle style
         };
       case 'md':
       default:
         return {
           button: { height: 52, paddingHorizontal: spacing.lg }, // Adjusted height for subtitle
-          text: { ...typography('label'), fontSize: 16, fontWeight: '600' },
-          subtitle: { fontSize: 11 }, // Added subtitle style
+          text: { ...typography('label'), fontSize: 16, fontWeight: '600', lineHeight: 24 },
+          subtitle: { fontSize: 11, lineHeight: 16 }, // Added subtitle style
         };
     }
   };

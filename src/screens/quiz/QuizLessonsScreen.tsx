@@ -129,7 +129,7 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
   if (loading)
     return (
       <View style={common.container}>
-        <UnifiedHeader title={t('quiz_lessons.header_title')} />
+        <UnifiedHeader isModal title={t('quiz_lessons.header_title')} />
         <View style={currentStyles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={currentStyles.loadingText}> {t('quiz_lessons.loading_lessons')} </Text>
@@ -140,6 +140,7 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
   return (
     <View style={common.container}>
       <UnifiedHeader
+        isModal
         showBackButton
         onBackPress={onBack}
         title={t('quiz_lessons.header_title')}
@@ -150,7 +151,7 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
         style={currentStyles.content}
         contentContainerStyle={{
           padding: layout.screenPadding,
-          paddingBottom: common.insets.bottom + 16,
+          paddingBottom: Math.max(common.insets.bottom, 20),
         }}
         showsVerticalScrollIndicator={false}
       >
@@ -290,7 +291,7 @@ const styles = (theme: any, common: any, typography: any, spacing: any, borderRa
       flexDirection: common.rowDirection,
       alignItems: 'center',
       paddingHorizontal: layout.screenPadding,
-      paddingBottom: spacing.md,
+      paddingBottom: Math.max(common.insets.bottom, 20),
       backgroundColor: theme.colors.headerBackground,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.border,

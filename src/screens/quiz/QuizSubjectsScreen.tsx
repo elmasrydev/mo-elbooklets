@@ -116,6 +116,7 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
   return (
     <View style={currentStyles.container}>
       <UnifiedHeader
+        isModal
         showBackButton
         onBackPress={onBack}
         title={t('quiz_subjects.header_title')}
@@ -125,7 +126,7 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
         style={{ flex: 1 }}
         contentContainerStyle={{
           padding: layout.screenPadding,
-          paddingBottom: common.insets.bottom + 16,
+          paddingBottom: Math.max(common.insets.bottom, 20),
         }}
         showsVerticalScrollIndicator={false}
       >

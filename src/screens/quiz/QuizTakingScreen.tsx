@@ -325,7 +325,7 @@ const QuizTakingScreen: React.FC = () => {
       {/* Progress Bar */}
       <View style={currentStyles.progressContainer}>
         <View style={currentStyles.progressBar}>
-          <View style={(currentStyles.progressFill, { width: `${progress}%` })} />
+          <View style={[currentStyles.progressFill, { width: `${progress}%` }]} />
           <View style={currentStyles.progressTextContainer}>
             <View style={currentStyles.progressTextWrapper}>
               <Text style={currentStyles.progressTextCenter}> {Math.round(progress)} % </Text>

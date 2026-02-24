@@ -85,7 +85,7 @@ const WheelOfSuccess: React.FC<{
   const segmentCount = arms.length;
   const anglePerSegment = (2 * Math.PI) / segmentCount;
 
-  const currentWheelStyles = wheelStyles(typography, common);
+  const currentWheelStyles = wheelStyles(typography, common, theme);
 
   return (
     <View style={currentWheelStyles.container}>
@@ -368,24 +368,7 @@ const HomeScreen: React.FC = () => {
   return (
     <View style={common.container}>
       <UnifiedHeader
-        leftContent={
-          <View style={currentStyles.avatarContainer}>
-            <View style={currentStyles.initialsAvatar}>
-              <Text style={currentStyles.initialsText}> {getInitials(user?.name || '')} </Text>
-            </View>
-            <View style={currentStyles.onlineDot} />
-          </View>
-        }
-        title={
-          <Text style={common.headerTitle}>
-            {t('home_screen.hi')}, {user?.name?.split(' ')[0] || 'Alex'}! 👋
-          </Text>
-        }
-        subtitle={
-          <Text style={common.headerSubtitle}>
-            {user?.grade?.name || 'Grade'} • {user?.educational_system?.name || 'System'}
-          </Text>
-        }
+        title={isRTL ? 'البوكلتس' : 'EL-Booklets'}
         rightContent={
           <TouchableOpacity style={currentStyles.notificationButton}>
             <Ionicons name="notifications-outline" size={24} color="#fff" />
@@ -398,6 +381,22 @@ const HomeScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={currentStyles.scrollContent}
       >
+        <View style={currentStyles.userInfoContainer}>
+          <View style={currentStyles.avatarContainer}>
+            <View style={currentStyles.initialsAvatar}>
+              <Text style={currentStyles.initialsText}> {getInitials(user?.name || '')}</Text>
+            </View>
+            <View style={currentStyles.onlineDot} />
+          </View>
+          <View style={currentStyles.userInfoText}>
+            <Text style={currentStyles.welcomeText}>
+              {t('home_screen.hi')}, {user?.name?.split(' ')[0] || 'Alex'}! 👋
+            </Text>
+            <Text style={currentStyles.gradeText}>
+              {user?.grade?.name || 'Grade'} • {user?.educational_system?.name || 'System'}
+            </Text>
+          </View>
+        </View>
         <View style={currentStyles.topStatsRow}>
           <View style={currentStyles.topStatCard}>
             <View
@@ -574,7 +573,7 @@ const HomeScreen: React.FC = () => {
   );
 };
 
-const wheelStyles = (typography: any, common: any) =>
+const wheelStyles = (typography: any, common: any, theme: any) =>
   StyleSheet.create({
     container: {
       backgroundColor: '#fff',
@@ -610,34 +609,24 @@ const wheelStyles = (typography: any, common: any) =>
       textAlign: common.textAlign,
     },
     masteryBadge: {
-      backgroundColor: '#fff',
-      paddingHorizontal: 14,
-      paddingVertical: 10,
-      borderRadius: 16,
+      backgroundColor: '#f1f5f9',
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 12,
       alignItems: 'center',
       justifyContent: 'center',
-      borderWidth: 1,
-      borderColor: '#e2e8f0',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.05,
-      shadowRadius: 4,
-      elevation: 2,
-      minWidth: 80,
     },
     masteryValue: {
-      ...typography('h3'),
-      fontWeight: '800',
-      color: '#284196',
-      lineHeight: 24,
+      ...typography('body'),
+      fontWeight: 'bold',
+      color: theme.colors.primary,
+      textAlign: 'center',
     },
     masteryLabel: {
       ...typography('caption'),
-      fontSize: 9,
-      fontWeight: '700',
+      fontSize: 10,
       color: '#64748b',
-      textTransform: 'uppercase',
-      letterSpacing: 0.5,
+      textAlign: 'center',
       marginTop: 2,
     },
     wheelMainContainer: {
@@ -691,11 +680,11 @@ const styles = (
       width: 50,
       height: 50,
       borderRadius: 25,
-      backgroundColor: 'rgba(255,255,255,0.2)',
+      backgroundColor: theme.colors.primary,
       justifyContent: 'center',
       alignItems: 'center',
       borderWidth: 2,
-      borderColor: 'rgba(255,255,255,0.5)',
+      borderColor: theme.colors.border,
     },
     initialsText: { ...typography('h3'), fontWeight: 'bold', color: '#fff' },
     onlineDot: {
@@ -707,7 +696,7 @@ const styles = (
       borderRadius: 7,
       backgroundColor: '#10B981',
       borderWidth: 2,
-      borderColor: theme.colors.headerBackground || theme.colors.primary,
+      borderColor: theme.colors.background,
     },
     notificationButton: {
       width: 44,
@@ -719,8 +708,30 @@ const styles = (
     },
     scrollContainer: { flex: 1 },
     scrollContent: {
-      paddingBottom: common.insets.bottom + 50,
+      paddingBottom: Math.max(common.insets.bottom, 20),
       paddingHorizontal: layout.screenPadding,
+    },
+    userInfoContainer: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      marginTop: spacing.md,
+      marginBottom: spacing.xs,
+    },
+    userInfoText: {
+      flex: 1,
+      ...common.marginStart(spacing.md),
+    },
+    welcomeText: {
+      ...typography('h2'),
+      fontWeight: 'bold',
+      color: theme.colors.text,
+      textAlign: common.textAlign,
+    },
+    gradeText: {
+      ...typography('caption'),
+      color: theme.colors.textSecondary,
+      marginTop: 2,
+      textAlign: common.textAlign,
     },
     topStatsRow: {
       flexDirection: common.rowDirection,

@@ -292,7 +292,7 @@ const LeaderboardScreen: React.FC = () => {
                     {student.name}
                   </Text>
                 </View>
-                <Text style={currentStyles.listItemPoints}>{student.xp.toLocaleString()} pts</Text>
+                <Text style={currentStyles.listItemPoints}> {student.xp.toLocaleString()} pts</Text>
               </View>
             ))}
           </View>
@@ -408,7 +408,7 @@ const styles = (
     tabTextActive: { color: '#fff' },
     tabTextInactive: { color: theme.colors.textSecondary },
     content: { flex: 1 },
-    contentContainer: { paddingBottom: common.insets.bottom + 50 },
+    contentContainer: { paddingBottom: Math.max(common.insets.bottom, 20) },
     leaderboardContainer: { padding: spacing.md },
 
     // User Status Card

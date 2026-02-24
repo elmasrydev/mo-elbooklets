@@ -454,7 +454,7 @@ const styles = (
     clearButton: { padding: 4 },
     content: { flex: 1 },
     contentContainer: { padding: layout.screenPadding, paddingTop: 0, alignItems: 'stretch' },
-    searchResultsContainer: { paddingBottom: spacing.xl },
+    searchResultsContainer: { paddingBottom: Math.max(common.insets.bottom, 20) },
     studentCardContent: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
@@ -494,7 +494,7 @@ const styles = (
       paddingHorizontal: spacing.md,
       minWidth: 90,
     },
-    timelineContainer: { paddingBottom: spacing.xl },
+    timelineContainer: { paddingBottom: Math.max(common.insets.bottom, 20) },
     loadingState: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
     loadingText: {
       marginTop: spacing.md,
