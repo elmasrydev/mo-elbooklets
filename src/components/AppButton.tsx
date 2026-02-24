@@ -17,7 +17,7 @@ export type AppButtonSize = 'sm' | 'md' | 'lg';
 
 interface AppButtonProps extends TouchableOpacityProps {
   title: string;
-  subtitle?: string; // Added subtitle prop
+  subtitle?: string;
   variant?: AppButtonVariant;
   size?: AppButtonSize;
   loading?: boolean;
@@ -25,14 +25,14 @@ interface AppButtonProps extends TouchableOpacityProps {
   fullWidth?: boolean;
   style?: ViewStyle | ViewStyle[];
   textStyle?: TextStyle | TextStyle[];
-  subtitleStyle?: TextStyle | TextStyle[]; // Added subtitleStyle prop
+  subtitleStyle?: TextStyle | TextStyle[];
   icon?: React.ReactNode;
   iconPosition?: 'left' | 'right';
 }
 
 const AppButton: React.FC<AppButtonProps> = ({
   title,
-  subtitle, // Destructured subtitle
+  subtitle,
   variant = 'primary',
   size = 'md',
   loading = false,
@@ -40,12 +40,12 @@ const AppButton: React.FC<AppButtonProps> = ({
   fullWidth = true,
   style,
   textStyle,
-  subtitleStyle, // Destructured subtitleStyle
+  subtitleStyle,
   icon,
   iconPosition = 'left',
   ...props
 }) => {
-  const { theme, spacing } = useTheme();
+  const { theme, spacing, borderRadius } = useTheme();
   const { typography } = useTypography();
 
   const getVariantStyles = () => {
@@ -53,18 +53,18 @@ const AppButton: React.FC<AppButtonProps> = ({
       case 'secondary':
         return {
           button: { backgroundColor: theme.colors.buttonSecondary },
-          text: { color: theme.colors.buttonSecondaryText || '#fff' },
-          subtitle: { color: theme.colors.buttonSecondaryText || '#fff', opacity: 0.8 }, // Added subtitle style
+          text: { color: theme.colors.buttonSecondaryText },
+          subtitle: { color: theme.colors.buttonSecondaryText, opacity: 0.8 },
         };
       case 'outline':
         return {
           button: {
             backgroundColor: 'transparent',
-            borderWidth: 2,
+            borderWidth: 1.5,
             borderColor: theme.colors.primary,
           },
           text: { color: theme.colors.primary },
-          subtitle: { color: theme.colors.primary, opacity: 0.7 }, // Added subtitle style
+          subtitle: { color: theme.colors.primary, opacity: 0.7 },
         };
       case 'ghost':
         return {
@@ -73,29 +73,28 @@ const AppButton: React.FC<AppButtonProps> = ({
             paddingHorizontal: 0,
           },
           text: { color: theme.colors.primary },
-          subtitle: { color: theme.colors.primary, opacity: 0.7 }, // Added subtitle style
+          subtitle: { color: theme.colors.primary, opacity: 0.7 },
         };
       case 'danger':
         return {
           button: { backgroundColor: theme.colors.error },
-          text: { color: '#fff' },
-          subtitle: { color: '#fff', opacity: 0.8 }, // Added subtitle style
+          text: { color: theme.colors.textOnDark },
+          subtitle: { color: theme.colors.textOnDark, opacity: 0.8 },
         };
       case 'success':
         return {
-          button: { backgroundColor: '#10B981' },
-          text: { color: '#fff' },
-          subtitle: { color: '#fff', opacity: 0.8 }, // Added subtitle style
+          button: { backgroundColor: theme.colors.success },
+          text: { color: theme.colors.textOnDark },
+          subtitle: { color: theme.colors.textOnDark, opacity: 0.8 },
         };
       case 'primary':
       default:
         return {
           button: {
-            backgroundColor: theme.colors.buttonPrimary || theme.colors.primary,
-            ...styles.shadow,
+            backgroundColor: theme.colors.buttonPrimary,
           },
-          text: { color: theme.colors.buttonPrimaryText || '#fff' },
-          subtitle: { color: theme.colors.buttonPrimaryText || '#fff', opacity: 0.8 }, // Added subtitle style
+          text: { color: theme.colors.buttonPrimaryText },
+          subtitle: { color: theme.colors.buttonPrimaryText, opacity: 0.8 },
         };
     }
   };
@@ -104,22 +103,22 @@ const AppButton: React.FC<AppButtonProps> = ({
     switch (size) {
       case 'sm':
         return {
-          button: { height: 36, paddingHorizontal: spacing.md },
-          text: { ...typography('label'), fontSize: 14, lineHeight: 20 },
-          subtitle: { fontSize: 10, lineHeight: 14 }, // Added subtitle style
+          button: { height: 38, paddingHorizontal: spacing.md },
+          text: { ...typography('label'), fontWeight: '700' },
+          subtitle: typography('caption'),
         };
       case 'lg':
         return {
-          button: { height: 64, paddingHorizontal: spacing.xl }, // Adjusted height for subtitle
-          text: { ...typography('h2'), fontSize: 18, fontWeight: '700', lineHeight: 28 },
-          subtitle: { fontSize: 12, lineHeight: 16 }, // Added subtitle style
+          button: { height: 60, paddingHorizontal: spacing.xl },
+          text: typography('button'),
+          subtitle: typography('label'),
         };
       case 'md':
       default:
         return {
-          button: { height: 52, paddingHorizontal: spacing.lg }, // Adjusted height for subtitle
-          text: { ...typography('label'), fontSize: 16, fontWeight: '600', lineHeight: 24 },
-          subtitle: { fontSize: 11, lineHeight: 16 }, // Added subtitle style
+          button: { height: 52, paddingHorizontal: spacing.lg },
+          text: typography('button'),
+          subtitle: typography('label'),
         };
     }
   };
@@ -129,11 +128,22 @@ const AppButton: React.FC<AppButtonProps> = ({
 
   const buttonStyles: ViewStyle[] = [
     styles.baseButton,
+    { borderRadius: borderRadius.md },
     vStyles.button as ViewStyle,
     sStyles.button as ViewStyle,
     fullWidth ? { width: '100%' } : {},
-    disabled ? styles.disabledButton : {},
+    disabled ? { backgroundColor: theme.colors.buttonDisabled, opacity: 0.6 } : {},
   ];
+
+  if (variant === 'primary' && !disabled) {
+    buttonStyles.push({
+      shadowColor: theme.colors.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      elevation: 4,
+    });
+  }
 
   if (Array.isArray(style)) {
     buttonStyles.push(...style);
@@ -144,7 +154,7 @@ const AppButton: React.FC<AppButtonProps> = ({
   const titleStyles: TextStyle[] = [
     sStyles.text as TextStyle,
     vStyles.text as TextStyle,
-    disabled ? styles.disabledText : {},
+    disabled ? { color: theme.colors.buttonDisabledText } : {},
   ];
 
   if (Array.isArray(textStyle)) {
@@ -153,11 +163,10 @@ const AppButton: React.FC<AppButtonProps> = ({
     titleStyles.push(textStyle);
   }
 
-  // Added subStyles
   const subStyles: TextStyle[] = [
     sStyles.subtitle as TextStyle,
     vStyles.subtitle as TextStyle,
-    { marginTop: 2 },
+    { marginTop: spacing.xxs },
   ];
 
   if (Array.isArray(subtitleStyle)) {
@@ -166,7 +175,7 @@ const AppButton: React.FC<AppButtonProps> = ({
     subStyles.push(subtitleStyle);
   }
 
-  const indicatorColor = (vStyles.text as any).color || '#fff';
+  const indicatorColor = (vStyles.text as any).color || theme.colors.textOnDark;
 
   return (
     <TouchableOpacity
@@ -178,14 +187,18 @@ const AppButton: React.FC<AppButtonProps> = ({
       {loading ? (
         <ActivityIndicator color={indicatorColor} />
       ) : (
-        <>
-          {icon && iconPosition === 'left' && icon}
+        <View style={styles.content}>
+          {icon && iconPosition === 'left' && (
+            <View style={{ marginEnd: spacing.xs }}> {icon} </View>
+          )}
           <View style={styles.textContainer}>
             <Text style={titleStyles}> {title} </Text>
             {subtitle && <Text style={subStyles}> {subtitle} </Text>}
           </View>
-          {icon && iconPosition === 'right' && icon}
-        </>
+          {icon && iconPosition === 'right' && (
+            <View style={{ marginStart: spacing.xs }}> {icon} </View>
+          )}
+        </View>
       )}
     </TouchableOpacity>
   );
@@ -193,30 +206,17 @@ const AppButton: React.FC<AppButtonProps> = ({
 
 const styles = StyleSheet.create({
   baseButton: {
-    borderRadius: 12, // Changed from 100 to 12
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  content: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
   textContainer: {
-    // Added textContainer style
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 8,
-  },
-  disabledButton: {
-    backgroundColor: '#94A3B8',
-    opacity: 0.8,
-  },
-  disabledText: {
-    opacity: 0.8,
-  },
-  shadow: {
-    shadowColor: '#1E3A8A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
   },
 });
 

@@ -8,8 +8,15 @@ import React, {
   ReactNode,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ColorTheme, getColorPalette, DEFAULT_COLOR_THEME, ColorPalette } from '../config/colors';
-import { fontSizes, spacing, borderRadius, fontFamilies } from '../config/fonts';
+import {
+  ColorTheme,
+  getColorPalette,
+  DEFAULT_COLOR_THEME,
+  ColorPalette,
+  COLORS,
+} from '../config/colors';
+import { fontSizes, fontFamilies } from '../config/fonts';
+import { spacing, borderRadius } from '../config/spacing';
 
 type ThemeMode = 'light' | 'dark';
 
@@ -82,6 +89,7 @@ interface ThemeColors {
   primary800: string;
   primary900: string;
   primaryLight: string;
+  textOnDark: string;
 }
 
 interface Theme {
@@ -105,47 +113,48 @@ interface ThemeContextType {
 const generateThemeColors = (mode: ThemeMode, palette: ColorPalette): ThemeColors => {
   if (mode === 'light') {
     return {
-      background: '#f5f5f5',
-      surface: '#ffffff',
-      text: '#333333',
-      textSecondary: '#666666',
-      textTertiary: '#999999',
-      border: '#e0e0e0',
+      background: COLORS.backgroundGray,
+      surface: COLORS.white,
+      text: COLORS.textPrimary,
+      textSecondary: COLORS.textSecondary,
+      textTertiary: COLORS.textTertiary,
+      border: COLORS.lightGray,
       primary: palette.primary500,
       secondary: palette.secondary,
-      card: '#ffffff',
+      card: COLORS.white,
       headerBackground: palette.primary500,
-      headerText: '#ffffff',
-      headerSubtitle: '#ffffff',
-      tabActive: '#333333',
+      headerText: COLORS.white,
+      headerSubtitle: COLORS.white,
+      tabActive: COLORS.textPrimary,
       tabInactive: 'transparent',
-      tabActiveText: '#ffffff',
-      tabInactiveText: '#666666',
+      tabActiveText: COLORS.white,
+      tabInactiveText: COLORS.textSecondary,
       buttonPrimary: palette.primary500,
-      buttonPrimaryText: '#ffffff',
-      buttonSecondary: '#e0e0e0',
-      buttonSecondaryText: '#666666',
-      buttonDisabled: '#e0e0e0',
-      buttonDisabledText: '#999999',
+      buttonPrimaryText: COLORS.white,
+      buttonSecondary: COLORS.lightGray,
+      buttonSecondaryText: COLORS.textSecondary,
+      buttonDisabled: COLORS.lightGray,
+      buttonDisabledText: COLORS.textTertiary,
       avatarBackground: palette.primary500,
-      avatarText: '#ffffff',
-      rankBadgeText: '#000000',
+      avatarText: COLORS.white,
+      rankBadgeText: COLORS.black,
       gold: '#FFD700',
       silver: '#C0C0C0',
       bronze: '#CD7F32',
-      orange: '#f59e0b',
-      navy: '#0f172a',
-      darkGray: '#1f2937',
-      mediumGray: '#6b7280',
-      lightGray: '#e5e7eb',
-      bgGray: '#f5f5f5',
-      success: '#28a745',
+      orange: COLORS.warningOrange,
+      navy: COLORS.darkNavy,
+      darkGray: COLORS.darkGray,
+      mediumGray: COLORS.mediumGray,
+      lightGray: COLORS.lightGray,
+      bgGray: COLORS.backgroundGray,
+      success: COLORS.success,
+      textOnDark: COLORS.textOnDark,
       successBackground: '#d4edda',
       successText: '#155724',
-      error: '#dc3545',
+      error: COLORS.error,
       errorBackground: '#f8d7da',
       errorText: '#721c24',
-      warning: '#FF9800',
+      warning: COLORS.warning,
       warningBackground: '#fff3cd',
       warningText: '#856404',
       passBackground: '#E8F5E8',
@@ -153,14 +162,14 @@ const generateThemeColors = (mode: ThemeMode, palette: ColorPalette): ThemeColor
       failBackground: '#FFEBEE',
       failText: '#F44336',
       iconBackground: palette.primary100,
-      checkboxBorder: '#e0e0e0',
+      checkboxBorder: COLORS.lightGray,
       checkboxSelected: palette.primary500,
-      checkboxSelectedText: '#ffffff',
+      checkboxSelectedText: COLORS.white,
       checkboxPartial: '#FFA500',
       answerSelectedBackground: palette.primary100,
       logoutColor: '#F44336',
       logoutButtonBackground: palette.primary100,
-      shadow: '#000000',
+      shadow: COLORS.black,
       // Primary palette colors
       primary50: palette.primary50,
       primary100: palette.primary100,
@@ -205,19 +214,20 @@ const generateThemeColors = (mode: ThemeMode, palette: ColorPalette): ThemeColor
       gold: '#FFD700',
       silver: '#C0C0C0',
       bronze: '#CD7F32',
-      orange: '#f59e0b',
-      navy: '#0f172a',
-      darkGray: '#1f2937',
-      mediumGray: '#6b7280',
-      lightGray: '#e5e7eb',
-      bgGray: '#f5f5f5',
-      success: '#28a745',
+      orange: COLORS.warningOrange,
+      navy: COLORS.darkNavy,
+      darkGray: COLORS.darkGray,
+      mediumGray: COLORS.mediumGray,
+      lightGray: COLORS.lightGray,
+      bgGray: COLORS.backgroundGray,
+      success: COLORS.success,
+      textOnDark: COLORS.textOnDark,
       successBackground: '#1e3a1e',
       successText: '#90EE90',
-      error: '#dc3545',
+      error: COLORS.error,
       errorBackground: '#3a1e1e',
       errorText: '#ff6b6b',
-      warning: '#FF9800',
+      warning: COLORS.warning,
       warningBackground: '#3a2e1e',
       warningText: '#FFB84D',
       passBackground: '#1e3a1e',
@@ -324,7 +334,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     [theme, toggleTheme, themeMode, currentColorTheme, setColorTheme],
   );
 
-  return <ThemeContext.Provider value={contextValue}>{children}</ThemeContext.Provider>;
+  return <ThemeContext.Provider value={contextValue}> {children} </ThemeContext.Provider>;
 };
 
 export const useTheme = (): ThemeContextType => {

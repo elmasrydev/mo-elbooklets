@@ -23,24 +23,23 @@ const LessonNavBar: React.FC<LessonNavBarProps> = ({
   onNext,
   onFinish,
 }) => {
-  const { theme, borderRadius } = useTheme();
+  const { theme, borderRadius, spacing } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const { typography } = useTypography();
   const insets = useSafeAreaInsets();
 
+  const currentStyles = styles(theme, spacing, borderRadius);
+
   return (
     <View
       style={[
-        styles.container,
+        currentStyles.container,
         {
-          backgroundColor: theme.colors.surface,
-          borderTopColor: theme.colors.border,
-          paddingBottom: Math.max(insets.bottom, 16),
+          paddingBottom: Math.max(insets.bottom, spacing.md),
         },
       ]}
     >
-      {/* Previous Button */}
       {onPrevious ? (
         <AppButton
           title={t('study_lesson.previous')}
@@ -52,32 +51,22 @@ const LessonNavBar: React.FC<LessonNavBarProps> = ({
           icon={
             <Ionicons
               name={isRTL ? 'chevron-forward' : 'chevron-back'}
-              size={18}
+              size={spacing.icon.xs}
               color={theme.colors.text}
             />
           }
           iconPosition="left"
         />
       ) : (
-        <View style={styles.placeholder} />
+        <View style={currentStyles.placeholder} />
       )}
 
-      {/* Counter Badge */}
-      <View
-        style={[
-          styles.counterBadge,
-          {
-            backgroundColor: theme.colors.primaryLight || `${theme.colors.primary}15`,
-            borderRadius: borderRadius.md,
-          },
-        ]}
-      >
-        <Text style={[typography('label'), styles.counterText, { color: theme.colors.primary }]}>
+      <View style={currentStyles.counterBadge}>
+        <Text style={[typography('label'), currentStyles.counterText]}>
           {currentIndex + 1} / {totalCount}
         </Text>
       </View>
 
-      {/* Next Button / Finish */}
       {onNext ? (
         <AppButton
           title={t('study_lesson.next')}
@@ -87,7 +76,11 @@ const LessonNavBar: React.FC<LessonNavBarProps> = ({
           fullWidth={false}
           style={{ minWidth: 100 }}
           icon={
-            <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color="#fff" />
+            <Ionicons
+              name={isRTL ? 'chevron-back' : 'chevron-forward'}
+              size={spacing.icon.xs}
+              color={theme.colors.textOnDark}
+            />
           }
           iconPosition="right"
         />
@@ -99,7 +92,13 @@ const LessonNavBar: React.FC<LessonNavBarProps> = ({
           size="sm"
           fullWidth={false}
           style={{ minWidth: 120 }}
-          icon={<Ionicons name="checkmark-circle-outline" size={18} color="#fff" />}
+          icon={
+            <Ionicons
+              name="checkmark-circle-outline"
+              size={spacing.icon.xs}
+              color={theme.colors.textOnDark}
+            />
+          }
           iconPosition="left"
         />
       )}
@@ -107,25 +106,31 @@ const LessonNavBar: React.FC<LessonNavBarProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    borderTopWidth: 1,
-  },
-  placeholder: {
-    minWidth: 100,
-  },
-  counterBadge: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-  },
-  counterText: {
-    fontWeight: '700',
-  },
-});
+const styles = (theme: any, spacing: any, borderRadius: any) =>
+  StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.border,
+      backgroundColor: theme.colors.card,
+    },
+    placeholder: {
+      minWidth: 100,
+    },
+    counterBadge: {
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+      borderRadius: borderRadius.md,
+      backgroundColor: theme.colors.primary + '1A',
+    },
+    counterText: {
+      fontWeight: '700',
+      color: theme.colors.primary,
+    },
+  });
 
 export default LessonNavBar;

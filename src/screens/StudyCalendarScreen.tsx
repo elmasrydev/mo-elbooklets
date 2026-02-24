@@ -255,9 +255,7 @@ const StudyCalendarScreen: React.FC = () => {
           <View key={index} style={currentStyles.entryCard}>
             {/* Subject Picker */}
             <View style={currentStyles.entryRow}>
-              <Text style={currentStyles.entryLabel}>
-                {t('study_calendar.subject') || 'Subject'}
-              </Text>
+              <Text style={currentStyles.entryLabel}>{t('common.subject')}</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {subjects.map((subject) => (
                   <TouchableOpacity

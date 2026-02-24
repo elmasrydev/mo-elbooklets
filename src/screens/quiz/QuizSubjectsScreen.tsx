@@ -98,7 +98,7 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
           title={t('quiz_subjects.header_title')}
         />
         <View style={currentStyles.errorContainer}>
-          <Text style={currentStyles.errorIcon}>⚠️</Text>
+          <Ionicons name="alert-circle-outline" size={spacing.icon.xl} color={theme.colors.error} />
           <Text style={currentStyles.errorTitle}>
             {' '}
             {t('quiz_subjects.error_loading_subjects')}{' '}
@@ -126,7 +126,7 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
         style={{ flex: 1 }}
         contentContainerStyle={{
           padding: layout.screenPadding,
-          paddingBottom: Math.max(common.insets.bottom, 20),
+          paddingBottom: Math.max(common.insets.bottom, spacing.xl),
         }}
         showsVerticalScrollIndicator={false}
       >
@@ -136,12 +136,16 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
               key={subject.id}
               style={currentStyles.subjectCard}
               onPress={() => onSubjectSelect(subject)}
+              activeOpacity={0.7}
             >
               <View style={currentStyles.subjectIcon}>
                 <Text style={currentStyles.subjectIconText}> {getSubjectIcon(subject.name)} </Text>
               </View>
-              <Text style={currentStyles.subjectName}> {subject.name} </Text>
-              <Text style={currentStyles.subjectDescription}>
+              <Text style={currentStyles.subjectName} numberOfLines={1}>
+                {' '}
+                {subject.name}{' '}
+              </Text>
+              <Text style={currentStyles.subjectDescription} numberOfLines={2}>
                 {subject.description || t('quiz_subjects.test_knowledge')}
               </Text>
               <View style={currentStyles.subjectStats}>
@@ -155,12 +159,18 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
         </View>
         {subjects.length === 0 && (
           <View style={currentStyles.emptyState}>
-            <Text style={currentStyles.emptyStateIcon}>📚</Text>
+            <Ionicons
+              name="library-outline"
+              size={spacing.icon.xl}
+              color={theme.colors.textTertiary}
+            />
             <Text style={currentStyles.emptyStateTitle}>
-              {t('quiz_subjects.no_subjects_available')}
+              {' '}
+              {t('quiz_subjects.no_subjects_available')}{' '}
             </Text>
             <Text style={currentStyles.emptyStateSubtitle}>
-              {t('quiz_subjects.no_subjects_for_grade')}
+              {' '}
+              {t('quiz_subjects.no_subjects_for_grade')}{' '}
             </Text>
           </View>
         )}
@@ -179,66 +189,87 @@ const styles = (
 ) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.background },
-    backButton: { marginRight: common.isRTL ? 0 : 16, marginLeft: common.isRTL ? 16 : 0 },
-    backButtonText: { ...typography('body'), fontWeight: '500', color: theme.colors.headerText },
-    content: { flex: 1 },
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    loadingText: { marginTop: 16, ...typography('body'), color: theme.colors.textSecondary },
-    errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-    errorIcon: { fontSize: 48, marginBottom: 16 },
+    loadingText: {
+      marginTop: spacing.md,
+      ...typography('body'),
+      color: theme.colors.textSecondary,
+    },
+    errorContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: spacing.xl,
+    },
     errorTitle: {
       ...typography('h3'),
       fontWeight: 'bold',
-      marginBottom: 8,
+      marginTop: spacing.md,
+      marginBottom: spacing.md,
       color: theme.colors.text,
     },
     subjectsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
     subjectCard: {
       width: '48%',
-      padding: spacing.lg,
-      borderRadius: layout.borderRadius.xl,
+      padding: spacing.md,
+      borderRadius: borderRadius.xl,
       alignItems: 'center',
       backgroundColor: theme.colors.card,
-      marginBottom: 16,
+      marginBottom: spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
       ...layout.shadow,
     },
     subjectIcon: {
-      width: 60,
-      height: 60,
-      borderRadius: 30,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
       justifyContent: 'center',
       alignItems: 'center',
-      marginBottom: 12,
-      backgroundColor: theme.colors.primaryLight || 'rgba(147, 51, 234, 0.05)',
+      marginBottom: spacing.sm,
+      backgroundColor: theme.colors.primary + '0D',
     },
-    subjectIconText: { fontSize: 28 },
+    subjectIconText: { fontSize: 24 },
     subjectName: {
       ...typography('body'),
       fontWeight: 'bold',
       textAlign: 'center',
-      marginBottom: 8,
+      marginBottom: 4,
       color: theme.colors.text,
     },
     subjectDescription: {
       ...typography('caption'),
       textAlign: 'center',
-      marginBottom: 12,
+      marginBottom: spacing.sm,
       color: theme.colors.textSecondary,
+      height: 32,
     },
-    subjectStats: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12 },
-    subjectStatsText: { ...typography('caption'), fontWeight: '500', color: theme.colors.primary },
+    subjectStats: {
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+      borderRadius: borderRadius.md,
+      backgroundColor: theme.colors.primary + '1A',
+    },
+    subjectStatsText: {
+      ...typography('caption'),
+      fontWeight: '700',
+      color: theme.colors.primary,
+      fontSize: 10,
+    },
     emptyState: {
-      padding: 40,
-      borderRadius: layout.borderRadius.xl,
+      padding: spacing.xl,
+      borderRadius: borderRadius.xl,
       alignItems: 'center',
-      marginTop: 40,
+      marginTop: spacing.xl,
       backgroundColor: theme.colors.card,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
     },
-    emptyStateIcon: { fontSize: 48, marginBottom: 16 },
     emptyStateTitle: {
       ...typography('h3'),
       fontWeight: 'bold',
-      marginBottom: 8,
+      marginTop: spacing.md,
+      marginBottom: spacing.xs,
       color: theme.colors.text,
     },
     emptyStateSubtitle: {

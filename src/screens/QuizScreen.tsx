@@ -63,7 +63,6 @@ const QuizScreen: React.FC = () => {
   const [selectedQuizTypeName, setSelectedQuizTypeName] = useState<string | undefined>(undefined);
   const [currentQuizId, setCurrentQuizId] = useState<string | null>(null);
 
-  // Modal visibility
   const [subjectModalVisible, setSubjectModalVisible] = useState(false);
   const [lessonsModalVisible, setLessonsModalVisible] = useState(false);
 
@@ -73,18 +72,12 @@ const QuizScreen: React.FC = () => {
 
   useFocusEffect(
     useCallback(() => {
-      // Check if we returned from a completed quiz
       if (route.params?.completedQuizId) {
         const completedId = route.params.completedQuizId;
-        // Clear param to avoid loops
         navigation.setParams({ completedQuizId: undefined });
-
-        // Handle completion
         setCurrentStep('history');
         setCurrentQuizId(completedId);
-        fetchQuizHistory(); // Refresh history
-
-        // Navigate to QuizResults screen
+        fetchQuizHistory();
         navigation.navigate('QuizResults', { quizId: completedId });
       } else {
         if (currentStep === 'history') fetchQuizHistory();
@@ -92,28 +85,20 @@ const QuizScreen: React.FC = () => {
     }, [route.params?.completedQuizId, currentStep]),
   );
 
-  // Handle retake request from Results screen
   useEffect(() => {
     if (route.params?.retakeQuizId) {
       const { subject, lessons } = route.params;
-
-      // Clear params to avoid loops
       navigation.setParams({
         retakeQuizId: undefined,
         subject: undefined,
         lessons: undefined,
       });
-
-      // Reset existing flow state
       resetFlow();
-
       if (subject && lessons) {
-        // Automatically jump to the 'ready' step with the quiz data
         setSelectedSubject(subject);
         setSelectedLessons(lessons.map((l: any) => l.id));
         setCurrentStep('ready');
       } else {
-        // Fallback: show subject selection if data is missing
         setSubjectModalVisible(true);
       }
     }
@@ -143,7 +128,6 @@ const QuizScreen: React.FC = () => {
     setLessonsModalVisible(false);
     setSelectedLessons(lessonIds);
     setSelectedQuizTypeId(quizTypeId);
-    // Wait for lessons modal close animation before showing start screen
     setTimeout(() => {
       setCurrentStep('ready');
     }, 500);
@@ -176,7 +160,6 @@ const QuizScreen: React.FC = () => {
       const result = await startQuiz(selectedSubject.id, selectedLessons, selectedQuizTypeId);
       if (result.success && result.quizId) {
         setCurrentQuizId(result.quizId);
-        // Navigate to QuizTaking
         navigation.navigate('QuizTaking', {
           quizId: result.quizId,
         });
@@ -197,7 +180,6 @@ const QuizScreen: React.FC = () => {
     setCurrentStep('history');
   };
 
-  // Quiz Start / Ready screen
   if (currentStep === 'ready' && selectedSubject)
     return (
       <QuizStartScreen
@@ -216,10 +198,7 @@ const QuizScreen: React.FC = () => {
 
   return (
     <View style={common.container}>
-      <UnifiedHeader
-        title={t('quiz_screen.header_title')}
-        subtitle={t('quiz_screen.header_subtitle')}
-      />
+      <UnifiedHeader title={t('quiz_screen.header_title')} />
 
       <View style={currentStyles.actionSection}>
         <AppButton
@@ -227,7 +206,7 @@ const QuizScreen: React.FC = () => {
           subtitle={t('quiz_screen.start_new_challenge')}
           onPress={() => setSubjectModalVisible(true)}
           style={currentStyles.takeQuizButton}
-          icon={<Ionicons name="flash" size={28} color="#FFFFFF" />}
+          icon={<Ionicons name="flash" size={spacing.icon.lg} color={theme.colors.textOnDark} />}
           iconPosition="right"
           size="lg"
         />
@@ -242,10 +221,13 @@ const QuizScreen: React.FC = () => {
           </View>
         ) : historyError ? (
           <View style={currentStyles.errorState}>
-            <Text style={currentStyles.errorStateIcon}>⚠️</Text>
+            <Ionicons
+              name="alert-circle-outline"
+              size={spacing.icon.xl}
+              color={theme.colors.error}
+            />
             <Text style={currentStyles.errorStateTitle}>
-              {' '}
-              {t('quiz_screen.error_loading_history')}{' '}
+              {t('quiz_screen.error_loading_history')}
             </Text>
             <AppButton
               title={t('home_screen.try_again')}
@@ -256,17 +238,18 @@ const QuizScreen: React.FC = () => {
           </View>
         ) : quizHistory.length === 0 ? (
           <View style={currentStyles.emptyState}>
-            <Text style={currentStyles.emptyStateIcon}>📝</Text>
+            <Ionicons
+              name="document-text-outline"
+              size={spacing.icon.xl}
+              color={theme.colors.textTertiary}
+            />
             <Text style={currentStyles.emptyStateTitle}> {t('quiz_screen.no_quizzes_yet')} </Text>
-            <Text style={currentStyles.emptyStateSubtitle}>
-              {' '}
-              {t('quiz_screen.take_first_quiz')}{' '}
-            </Text>
+            <Text style={currentStyles.emptyStateSubtitle}>{t('quiz_screen.take_first_quiz')}</Text>
           </View>
         ) : (
           <ScrollView
             style={currentStyles.historyList}
-            contentContainerStyle={{ paddingBottom: Math.max(common.insets.bottom, 20) }}
+            contentContainerStyle={{ paddingBottom: Math.max(common.insets.bottom, spacing.xl) }}
             showsVerticalScrollIndicator={false}
           >
             {quizHistory.map((quiz) => (
@@ -283,7 +266,6 @@ const QuizScreen: React.FC = () => {
         )}
       </View>
 
-      {/* Subject Selection Modal */}
       <Modal
         visible={subjectModalVisible}
         animationType="slide"
@@ -302,7 +284,6 @@ const QuizScreen: React.FC = () => {
         />
       </Modal>
 
-      {/* Lessons Selection Modal */}
       <Modal
         visible={lessonsModalVisible}
         animationType="slide"
@@ -334,15 +315,10 @@ const styles = (
       padding: spacing.xl,
     },
     takeQuizButton: {
-      padding: 16,
-      borderRadius: layout.borderRadius.xl,
-      backgroundColor: '#6366F1',
-      shadowColor: '#6366F1',
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.35,
-      shadowRadius: 14,
-      elevation: 8,
-      height: 90,
+      padding: spacing.md,
+      borderRadius: borderRadius.xl,
+      backgroundColor: theme.colors.primary,
+      ...layout.shadow,
     },
     historySection: {
       flex: 1,
@@ -353,43 +329,46 @@ const styles = (
       marginTop: spacing.md,
     },
     historyItemWrapper: {
-      marginBottom: spacing.md,
-      borderRadius: layout.borderRadius.xl,
-      overflow: 'hidden',
+      marginBottom: spacing.xs,
     },
     loadingState: {
+      flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
-      padding: 40,
-      marginTop: 20,
+      padding: spacing.xl,
     },
-    loadingText: { marginTop: 16, ...typography('body'), color: theme.colors.textSecondary },
+    loadingText: {
+      marginTop: spacing.md,
+      ...typography('body'),
+      color: theme.colors.textSecondary,
+    },
     errorState: {
       alignItems: 'center',
       justifyContent: 'center',
-      padding: 40,
+      padding: spacing.xl,
       borderRadius: borderRadius.xl,
       backgroundColor: theme.colors.card,
       ...layout.shadow,
     },
-    errorStateIcon: { fontSize: 48, marginBottom: 16 },
     errorStateTitle: {
       ...typography('h3'),
-      fontWeight: 'bold',
-      marginBottom: 8,
+      marginTop: spacing.md,
+      marginBottom: spacing.xs,
       color: theme.colors.text,
+      textAlign: 'center',
     },
     emptyState: {
-      padding: 40,
-      marginTop: 20,
+      flex: 1,
       alignItems: 'center',
+      justifyContent: 'center',
+      padding: spacing.xl,
     },
-    emptyStateIcon: { fontSize: 48, marginBottom: 16 },
     emptyStateTitle: {
       ...typography('h3'),
-      fontWeight: '600',
-      marginBottom: 8,
+      marginTop: spacing.md,
+      marginBottom: spacing.xs,
       color: theme.colors.text,
+      textAlign: 'center',
     },
     emptyStateSubtitle: {
       ...typography('caption'),

@@ -10,7 +10,6 @@ import { layout } from '../config/layout';
 import ColorThemePicker from '../components/ColorThemePicker';
 import { useTypography } from '../hooks/useTypography';
 import UnifiedHeader from '../components/UnifiedHeader';
-import { marginStart } from '../lib/rtl';
 
 const MoreScreen: React.FC = () => {
   const { user, logout } = useAuth();
@@ -34,7 +33,7 @@ const MoreScreen: React.FC = () => {
       subtitle: t('more_screen.update_profile_info'),
       icon: 'person-outline',
       iconColor: theme.colors.primary,
-      iconBg: theme.colors.primaryLight || 'rgba(59, 130, 246, 0.1)',
+      iconBg: theme.colors.primary + '1A',
       action: () => {},
     },
     {
@@ -42,8 +41,8 @@ const MoreScreen: React.FC = () => {
       title: t('more_screen.language'),
       subtitle: t('more_screen.choose_language'),
       icon: 'language-outline',
-      iconColor: '#10B981',
-      iconBg: '#ECFDF5',
+      iconColor: theme.colors.success,
+      iconBg: theme.colors.success + '1A',
       isLanguageSelector: true,
     },
     {
@@ -51,8 +50,8 @@ const MoreScreen: React.FC = () => {
       title: t('more_screen.dark_mode'),
       subtitle: t('more_screen.switch_dark'),
       icon: 'moon-outline',
-      iconColor: '#8B5CF6',
-      iconBg: '#F5F3FF',
+      iconColor: theme.colors.secondary,
+      iconBg: theme.colors.secondary + '1A',
       isSwitch: true,
     },
     {
@@ -60,8 +59,8 @@ const MoreScreen: React.FC = () => {
       title: t('more_screen.color_theme'),
       subtitle: t('more_screen.choose_app_color'),
       icon: 'color-palette-outline',
-      iconColor: '#F59E0B',
-      iconBg: '#FFFBEB',
+      iconColor: theme.colors.orange,
+      iconBg: theme.colors.orange + '1A',
       isColorThemePicker: true,
     },
     {
@@ -69,16 +68,16 @@ const MoreScreen: React.FC = () => {
       title: t('more_screen.help_support'),
       subtitle: t('more_screen.get_assistance'),
       icon: 'help-circle-outline',
-      iconColor: '#EC4899',
-      iconBg: '#FDF2F8',
+      iconColor: theme.colors.info,
+      iconBg: theme.colors.info + '1A',
       action: () => {},
     },
     {
       id: 'logout',
       title: t('more_screen.logout'),
       icon: 'log-out-outline',
-      iconColor: '#EF4444',
-      iconBg: '#FEF2F2',
+      iconColor: theme.colors.error,
+      iconBg: theme.colors.error + '1A',
       action: handleLogout,
       isDestructive: true,
     },
@@ -88,10 +87,7 @@ const MoreScreen: React.FC = () => {
 
   return (
     <View style={currentStyles.container}>
-      <UnifiedHeader
-        title={t('more_screen.header_title')}
-        subtitle={t('more_screen.header_subtitle')}
-      />
+      <UnifiedHeader title={t('more_screen.header_title')} />
 
       <ScrollView
         style={currentStyles.scrollView}
@@ -107,12 +103,14 @@ const MoreScreen: React.FC = () => {
           <View style={currentStyles.userInfo}>
             <Text style={currentStyles.userName}> {user?.name || 'User'}</Text>
             <Text style={currentStyles.userEmail}> {user?.email || 'No email'}</Text>
-            <Text style={currentStyles.userGrade}>
-              {t('more_screen.grade')}: {user?.grade?.name || t('more_screen.not_specified')}
-            </Text>
+            <View style={currentStyles.userGradeContainer}>
+              <Text style={currentStyles.userGrade}>
+                {t('more_screen.grade')}: {user?.grade?.name || t('more_screen.not_specified')}
+              </Text>
+            </View>
           </View>
           <TouchableOpacity style={currentStyles.editButton}>
-            <Ionicons name="pencil" size={20} color={theme.colors.primary} />
+            <Ionicons name="pencil" size={spacing.icon.sm} color={theme.colors.primary} />
           </TouchableOpacity>
         </View>
 
@@ -141,7 +139,11 @@ const MoreScreen: React.FC = () => {
                       <View
                         style={[currentStyles.menuIconContainer, { backgroundColor: item.iconBg }]}
                       >
-                        <Ionicons name={item.icon as any} size={22} color={item.iconColor} />
+                        <Ionicons
+                          name={item.icon as any}
+                          size={spacing.icon.md}
+                          color={item.iconColor}
+                        />
                       </View>
                       <View style={currentStyles.menuTextContainer}>
                         <Text
@@ -159,18 +161,18 @@ const MoreScreen: React.FC = () => {
                     </View>
 
                     {item.isSwitch ? (
-                      <View style={{ marginStart: spacing.md }}>
+                      <View style={common.marginStart(spacing.md)}>
                         <Switch
                           value={isDark}
                           onValueChange={toggleTheme}
-                          trackColor={{ false: '#E5E7EB', true: theme.colors.primary }}
-                          thumbColor={'#fff'}
+                          trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
+                          thumbColor={theme.colors.textOnDark}
                         />
                       </View>
                     ) : item.isLanguageSelector || item.isColorThemePicker ? null : (
                       <Ionicons
                         name={isRTL ? 'chevron-back' : 'chevron-forward'}
-                        size={20}
+                        size={spacing.icon.sm}
                         color={theme.colors.textTertiary}
                       />
                     )}
@@ -196,7 +198,7 @@ const MoreScreen: React.FC = () => {
                         {language === 'ar' && (
                           <Ionicons
                             name="checkmark-circle"
-                            size={20}
+                            size={spacing.icon.sm}
                             color={theme.colors.primary}
                           />
                         )}
@@ -219,7 +221,7 @@ const MoreScreen: React.FC = () => {
                         {language === 'en' && (
                           <Ionicons
                             name="checkmark-circle"
-                            size={20}
+                            size={spacing.icon.sm}
                             color={theme.colors.primary}
                           />
                         )}
@@ -266,20 +268,15 @@ const styles = (
       alignItems: 'stretch',
     },
     userCard: {
-      padding: spacing.sm - 3,
-      paddingEnd: spacing.sm + 5,
+      padding: spacing.md,
       borderRadius: borderRadius.xl,
       flexDirection: common.rowDirection,
       alignItems: 'center',
       marginBottom: spacing.xl,
       backgroundColor: theme.colors.card,
-      shadowColor: theme.colors.shadow,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.05,
-      shadowRadius: 10,
-      elevation: 2,
       borderWidth: 1,
       borderColor: theme.colors.border,
+      ...layout.shadow,
     },
     userAvatar: {
       width: 64,
@@ -289,14 +286,13 @@ const styles = (
       alignItems: 'center',
       backgroundColor: theme.colors.primary,
       ...common.marginEnd(spacing.md),
-      ...common.marginStart(spacing.sm),
     },
-    userAvatarText: { ...typography('h2'), fontWeight: 'bold', color: '#fff' },
+    userAvatarText: { ...typography('h2'), fontWeight: 'bold', color: theme.colors.textOnDark },
     userInfo: { flex: 1, alignItems: common.alignStart },
     userName: {
       ...typography('h3'),
       fontWeight: 'bold',
-      marginBottom: 2,
+      marginBottom: spacing.xxs,
       color: theme.colors.text,
       textAlign: common.textAlign,
     },
@@ -305,22 +301,23 @@ const styles = (
       color: theme.colors.textSecondary,
       textAlign: common.textAlign,
     },
+    userGradeContainer: {
+      marginTop: spacing.sm,
+      backgroundColor: theme.colors.primary + '1A',
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 2,
+      borderRadius: borderRadius.sm,
+    },
     userGrade: {
       ...typography('caption'),
       fontWeight: '600',
       color: theme.colors.primary,
       textAlign: common.textAlign,
-      marginTop: 6,
-      backgroundColor: theme.colors.primaryLight || 'rgba(59, 130, 246, 0.1)',
-      paddingHorizontal: 8,
-      paddingVertical: 2,
-      borderRadius: 4,
-      overflow: 'hidden',
     },
     editButton: {
       width: 40,
       height: 40,
-      borderRadius: 20,
+      borderRadius: borderRadius.full,
       backgroundColor: theme.colors.background,
       justifyContent: 'center',
       alignItems: 'center',
@@ -330,14 +327,10 @@ const styles = (
     menuSection: {
       borderRadius: borderRadius.xl,
       backgroundColor: theme.colors.card,
-      shadowColor: theme.colors.shadow,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.05,
-      shadowRadius: 8,
-      elevation: 2,
-      overflow: 'hidden',
       borderWidth: 1,
       borderColor: theme.colors.border,
+      overflow: 'hidden',
+      ...layout.shadow,
     },
     menuItem: {
       flexDirection: common.rowDirection,
@@ -349,7 +342,7 @@ const styles = (
     separator: {
       height: 1,
       backgroundColor: theme.colors.border,
-      marginLeft: spacing.xl, // Indent separator to match text start
+      ...common.marginStart(spacing.xl + spacing.md),
     },
     menuItemContent: {
       flexDirection: common.rowDirection,
@@ -359,15 +352,14 @@ const styles = (
     menuIconContainer: {
       width: 44,
       height: 44,
-      borderRadius: 22,
+      borderRadius: borderRadius.full,
       justifyContent: 'center',
       alignItems: 'center',
-      ...common.marginEnd(spacing.md - 10),
-      ...common.marginStart(spacing.md - 10),
+      ...common.marginEnd(spacing.md),
     },
     menuTextContainer: { flex: 1, alignItems: common.alignStart },
     menuTitle: {
-      ...typography('body'),
+      ...typography('bodyLarge'),
       fontWeight: '600',
       color: theme.colors.text,
       textAlign: common.textAlign,
@@ -382,27 +374,27 @@ const styles = (
       flexDirection: common.rowDirection,
       padding: spacing.md,
       paddingTop: 0,
-      gap: 12,
+      gap: spacing.md,
     },
     langOption: {
       flex: 1,
       flexDirection: common.rowDirection,
-      paddingVertical: 10,
-      paddingHorizontal: 12,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: borderRadius.md,
+      borderRadius: borderRadius.lg,
       backgroundColor: theme.colors.background,
       borderWidth: 1,
       borderColor: theme.colors.border,
-      gap: 8,
+      gap: spacing.xs,
     },
     langSelected: {
       borderColor: theme.colors.primary,
-      backgroundColor: theme.colors.primaryLight || 'rgba(147, 51, 234, 0.05)',
+      backgroundColor: theme.colors.primary + '1A',
     },
     langText: { ...typography('label'), color: theme.colors.text, fontWeight: '500' },
-    langTextSelected: { color: theme.colors.primary, fontWeight: 'bold' },
+    langTextSelected: { color: theme.colors.primary, fontWeight: '700' },
     colorPickerContainer: {
       padding: spacing.md,
       paddingTop: 0,
@@ -410,7 +402,7 @@ const styles = (
     versionContainer: {
       alignItems: 'center',
       marginTop: spacing['3xl'],
-      marginBottom: Math.max(common.insets.bottom, 20),
+      marginBottom: Math.max(common.insets.bottom, spacing.xl),
     },
     versionText: { ...typography('caption'), color: theme.colors.textTertiary, opacity: 0.7 },
   });

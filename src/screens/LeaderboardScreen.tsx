@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -48,6 +48,7 @@ const LeaderboardScreen: React.FC = () => {
   const { t } = useTranslation();
   const common = useCommonStyles();
   const { typography } = useTypography();
+  const navigation = useNavigation<any>();
 
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [selectedTab, setSelectedTab] = useState<string>('all');
@@ -168,15 +169,17 @@ const LeaderboardScreen: React.FC = () => {
             </Text>
           </View>
           <View style={currentStyles.userStatusInfo}>
-            <Text style={currentStyles.userStatusName}> {userEntry.name} </Text>
+            <Text style={currentStyles.userStatusName} numberOfLines={1}>
+              {userEntry.name}
+            </Text>
             <Text style={currentStyles.userStatusPoints}>
-              {userEntry.xp.toLocaleString()} {t('common.points', 'points')}
+              {userEntry.xp.toLocaleString()} {t('common.points')}
             </Text>
           </View>
         </View>
         <View style={currentStyles.userStatusSeparator} />
         <Text style={currentStyles.userStatusFooter}>
-          {t('leaderboard.your_rank', 'Your Rank')}: #{userEntry.rank}
+          {t('leaderboard_screen.your_rank')}: #{userEntry.rank}
         </Text>
       </View>
     );
@@ -189,7 +192,9 @@ const LeaderboardScreen: React.FC = () => {
 
     const PodiumStudent = ({ student, rank, style }: any) => {
       const name = student ? student.name : t('leaderboard_screen.no_student_yet');
-      const points = student ? `${student.xp.toLocaleString()} pts` : '- pts';
+      const points = student
+        ? `${student.xp.toLocaleString()} ${t('common.points')}`
+        : `- ${t('common.points')}`;
       const avatarUri = student
         ? `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random&color=fff&size=128`
         : `https://ui-avatars.com/api/?name=%3F&background=E2E8F0&color=475569&size=128`;
@@ -223,8 +228,7 @@ const LeaderboardScreen: React.FC = () => {
         <View style={currentStyles.loadingState}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={currentStyles.loadingText}>
-            {' '}
-            {t('leaderboard_screen.loading_leaderboard')}{' '}
+            {t('leaderboard_screen.loading_leaderboard')}
           </Text>
         </View>
       );
@@ -232,7 +236,7 @@ const LeaderboardScreen: React.FC = () => {
     if (leaderboardError)
       return (
         <View style={currentStyles.emptyState}>
-          <Ionicons name="alert-circle-outline" size={48} color={theme.colors.textSecondary} />
+          <Ionicons name="alert-circle-outline" size={spacing.icon.xl} color={theme.colors.error} />
           <Text style={currentStyles.emptyStateTitle}>
             {t('leaderboard_screen.error_loading_leaderboard')}
           </Text>
@@ -253,7 +257,12 @@ const LeaderboardScreen: React.FC = () => {
     if (leaderboard.entries.length === 0)
       return (
         <View style={currentStyles.emptyState}>
-          <Ionicons name="trophy-outline" size={64} style={{ opacity: 0.2, marginBottom: 16 }} />
+          <Ionicons
+            name="trophy-outline"
+            size={spacing.icon.xl}
+            color={theme.colors.textTertiary}
+            style={{ opacity: 0.5 }}
+          />
           <Text style={currentStyles.emptyStateTitle}>
             {t('leaderboard_screen.no_rankings_yet')}
           </Text>
@@ -292,7 +301,10 @@ const LeaderboardScreen: React.FC = () => {
                     {student.name}
                   </Text>
                 </View>
-                <Text style={currentStyles.listItemPoints}> {student.xp.toLocaleString()} pts</Text>
+                <Text style={currentStyles.listItemPoints}>
+                  {' '}
+                  {student.xp.toLocaleString()} {t('common.points')}{' '}
+                </Text>
               </View>
             ))}
           </View>
@@ -300,7 +312,7 @@ const LeaderboardScreen: React.FC = () => {
           <View
             style={[currentStyles.listCard, { alignItems: 'center', paddingVertical: spacing.xl }]}
           >
-            <Text style={{ color: theme.colors.textSecondary, fontWeight: '600' }}>
+            <Text style={{ ...typography('caption'), color: theme.colors.textSecondary }}>
               {t('leaderboard_screen.no_more_students')}
             </Text>
           </View>
@@ -313,13 +325,16 @@ const LeaderboardScreen: React.FC = () => {
     <View style={common.container}>
       <UnifiedHeader
         title={t('leaderboard_screen.header_title')}
-        subtitle={t('leaderboard_screen.header_subtitle')}
         rightContent={
           <TouchableOpacity
             style={currentStyles.refreshButton}
             onPress={() => fetchLeaderboard(selectedTab)}
           >
-            <Ionicons name="refresh-outline" size={24} color="#fff" />
+            <Ionicons
+              name="refresh-outline"
+              size={spacing.icon.md}
+              color={theme.colors.headerText}
+            />
           </TouchableOpacity>
         }
       />
@@ -387,8 +402,8 @@ const styles = (
     refreshButton: {
       width: 44,
       height: 44,
-      borderRadius: 22,
-      backgroundColor: 'rgba(255,255,255,0.15)',
+      borderRadius: borderRadius.full,
+      backgroundColor: theme.colors.headerText + '26',
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -396,8 +411,8 @@ const styles = (
     tabBarContent: { paddingHorizontal: layout.screenPadding, flexDirection: common.rowDirection },
     tab: {
       paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.sm + 2,
-      ...common.marginEnd(10),
+      paddingVertical: spacing.sm,
+      ...common.marginEnd(spacing.xs),
       borderRadius: borderRadius.lg,
       backgroundColor: theme.colors.card,
       borderWidth: 1,
@@ -405,37 +420,34 @@ const styles = (
     },
     tabActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
     tabText: { ...typography('label'), fontWeight: '700' },
-    tabTextActive: { color: '#fff' },
+    tabTextActive: { color: theme.colors.textOnDark },
     tabTextInactive: { color: theme.colors.textSecondary },
     content: { flex: 1 },
-    contentContainer: { paddingBottom: Math.max(common.insets.bottom, 20) },
+    contentContainer: { paddingBottom: Math.max(common.insets.bottom, spacing.xl) },
     leaderboardContainer: { padding: spacing.md },
 
-    // User Status Card
     userStatusCard: {
-      backgroundColor: theme.colors.primary100,
+      backgroundColor: theme.colors.primary + '1A', // Using 10% opacity of primary
       borderRadius: borderRadius.xl,
       padding: spacing.lg,
       marginBottom: spacing.md,
-      shadowColor: theme.colors.primary,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.1,
-      shadowRadius: 12,
-      elevation: 4,
+      borderWidth: 1,
+      borderColor: theme.colors.primary + '33', // 20% opacity
+      ...layout.shadow,
     },
     userStatusHeader: {
       flexDirection: 'row',
       alignItems: 'center',
     },
     userStatusRankBadge: {
-      backgroundColor: theme.colors.secondary,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
+      backgroundColor: theme.colors.orange,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xxs,
       borderRadius: borderRadius.md,
-      marginRight: spacing.md,
+      ...common.marginEnd(spacing.md),
     },
     userStatusRankText: {
-      color: '#fff',
+      color: theme.colors.textOnDark,
       fontWeight: 'bold',
       ...typography('h3'),
     },
@@ -443,13 +455,13 @@ const styles = (
       width: 50,
       height: 50,
       borderRadius: 25,
-      backgroundColor: theme.colors.orange,
+      backgroundColor: theme.colors.primary,
       justifyContent: 'center',
       alignItems: 'center',
-      marginRight: spacing.md,
+      ...common.marginEnd(spacing.md),
     },
     userStatusAvatarText: {
-      color: '#fff',
+      color: theme.colors.textOnDark,
       ...typography('h2'),
       fontWeight: '600',
     },
@@ -459,25 +471,24 @@ const styles = (
     userStatusName: {
       ...typography('h3'),
       fontWeight: 'bold',
-      color: theme.colors.navy,
+      color: theme.colors.text,
     },
     userStatusPoints: {
       ...typography('caption'),
-      color: theme.colors.mediumGray,
+      color: theme.colors.textSecondary,
     },
     userStatusSeparator: {
       height: 1,
-      backgroundColor: theme.colors.lightGray,
+      backgroundColor: theme.colors.border,
       marginVertical: spacing.md,
     },
     userStatusFooter: {
       textAlign: 'center',
       fontWeight: 'bold',
-      color: theme.colors.navy,
+      color: theme.colors.text,
       ...typography('label'),
     },
 
-    // Podium Styles
     podiumWrapper: {
       position: 'relative',
       width: '100%',
@@ -515,10 +526,10 @@ const styles = (
       height: 60,
       borderRadius: 30,
       borderWidth: 3,
-      borderColor: theme.colors.secondary,
+      borderColor: theme.colors.orange,
       overflow: 'hidden',
       marginBottom: spacing.xs,
-      backgroundColor: '#fff',
+      backgroundColor: theme.colors.surface,
     },
     podiumAvatarLarge: {
       width: 76,
@@ -530,32 +541,27 @@ const styles = (
       height: '100%',
     },
     podiumNameText: {
-      fontWeight: 'bold',
       ...typography('caption'),
-      color: theme.colors.navy,
+      fontWeight: 'bold',
+      color: theme.colors.text,
       textAlign: 'center',
       paddingHorizontal: 4,
-      borderRadius: 4,
     },
     podiumPointsText: {
       ...typography('caption'),
       fontSize: 10,
       fontWeight: 'bold',
-      color: theme.colors.mediumGray,
-      paddingHorizontal: 4,
-      borderRadius: 4,
+      color: theme.colors.textSecondary,
+      textAlign: 'center',
     },
 
-    // List Styles
     listCard: {
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.card,
       borderRadius: borderRadius.xl,
       padding: spacing.md,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.05,
-      shadowRadius: 8,
-      elevation: 2,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      ...layout.shadow,
     },
     listItem: {
       flexDirection: 'row',
@@ -574,14 +580,14 @@ const styles = (
       width: 40,
       ...typography('body'),
       fontWeight: '600',
-      color: theme.colors.mediumGray,
+      color: theme.colors.textSecondary,
     },
     listItemAvatar: {
       width: 40,
       height: 40,
       borderRadius: 20,
       overflow: 'hidden',
-      marginRight: spacing.md,
+      ...common.marginEnd(spacing.md),
     },
     avatarImageSmall: {
       width: '100%',
@@ -590,41 +596,35 @@ const styles = (
     listItemName: {
       ...typography('body'),
       fontWeight: '600',
-      color: theme.colors.navy,
+      color: theme.colors.text,
       flex: 1,
+      textAlign: common.textAlign,
     },
     listItemPoints: {
       ...typography('body'),
       fontWeight: '600',
-      color: theme.colors.navy,
+      color: theme.colors.text,
     },
 
-    // States
     loadingText: {
-      marginTop: spacing.lg,
+      marginTop: spacing.md,
       ...typography('caption'),
       color: theme.colors.textSecondary,
-      fontWeight: '600',
       textAlign: 'center',
     },
     loadingState: {
-      padding: 40,
+      padding: spacing.xl,
       alignItems: 'center',
     },
     emptyState: {
-      padding: 60,
+      padding: spacing.xl,
       alignItems: 'center',
     },
     emptyStateTitle: {
       ...typography('h3'),
-      fontWeight: 'bold',
+      marginTop: spacing.md,
       marginBottom: spacing.sm,
       color: theme.colors.text,
-      textAlign: 'center',
-    },
-    emptyText: {
-      ...typography('body'),
-      color: theme.colors.textSecondary,
       textAlign: 'center',
     },
   });

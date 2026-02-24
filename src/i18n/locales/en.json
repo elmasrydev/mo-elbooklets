@@ -48,7 +48,9 @@
     "total": "Total",
     "lesson": "Lesson",
     "completed": "Completed",
-    "unknown_unit": "Unknown Unit"
+    "unknown_unit": "Unknown Unit",
+    "points": "Points",
+    "subject": "Subject"
   },
   "study_screen": {
     "header_title": "Study",
@@ -136,7 +138,9 @@
     "subject_waiting": "{{subject}} waiting",
     "wheel_of_success": "Wheel of Success",
     "overall_success": "Overall Success",
-    "mastery_target": "Mastery Target"
+    "mastery_target": "Mastery Target",
+    "jump_to_quiz": "Jump right back in",
+    "booklets": "Explore your booklets"
   },
   "quiz_screen": {
     "header_title": "Quiz Center",
@@ -269,7 +273,8 @@
     "no_rankings_yet": "No rankings yet",
     "be_first_hint": "Be the first to complete quizzes and appear on the leaderboard!",
     "no_more_students": "No more students ranked yet",
-    "no_student_yet": "Waiting for student"
+    "no_student_yet": "Waiting for student",
+    "your_rank": "Your Rank"
   },
   "auth": {
     "login": "Login",

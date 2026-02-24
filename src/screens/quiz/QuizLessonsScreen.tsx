@@ -10,6 +10,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { tryFetchWithFallback } from '../../config/api';
 import { Ionicons } from '@expo/vector-icons';
@@ -54,6 +55,7 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
   onBack,
 }) => {
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
+  const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
   const { typography } = useTypography();
@@ -118,13 +120,12 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
 
   const handleStartQuiz = (quizTypeId: string) => {
     setSettingsModalVisible(false);
-    // Wait for settings modal close animation before triggering parent
     setTimeout(() => {
       onLessonsSelect(Array.from(selectedLessons), quizTypeId);
     }, 500);
   };
 
-  const currentStyles = styles(theme, common, typography, spacing, borderRadius);
+  const currentStyles = styles(theme, common, typography, spacing, borderRadius, insets);
 
   if (loading)
     return (
@@ -151,7 +152,7 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
         style={currentStyles.content}
         contentContainerStyle={{
           padding: layout.screenPadding,
-          paddingBottom: Math.max(common.insets.bottom, 20),
+          paddingBottom: Math.max(insets.bottom + 100, spacing.xl),
         }}
         showsVerticalScrollIndicator={false}
       >
@@ -174,7 +175,7 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
                     name={
                       allSelected ? 'checkbox' : someSelected ? 'remove-circle' : 'square-outline'
                     }
-                    size={24}
+                    size={spacing.icon.md}
                     color={
                       allSelected || someSelected ? theme.colors.primary : theme.colors.textTertiary
                     }
@@ -208,7 +209,7 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
                       <View style={currentStyles.lessonCheckbox}>
                         <Ionicons
                           name={isSelected ? 'checkbox' : 'square-outline'}
-                          size={20}
+                          size={spacing.icon.sm}
                           color={isSelected ? theme.colors.primary : theme.colors.textTertiary}
                         />
                       </View>
@@ -232,15 +233,16 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
           <View style={currentStyles.emptyState}>
             <Ionicons
               name="book-outline"
-              size={48}
-              color={theme.colors.textSecondary}
-              style={{ marginBottom: 16 }}
+              size={spacing.icon.xl}
+              color={theme.colors.textTertiary}
             />
             <Text style={currentStyles.emptyStateTitle}>
-              {t('quiz_lessons.no_lessons_available')}
+              {' '}
+              {t('quiz_lessons.no_lessons_available')}{' '}
             </Text>
             <Text style={currentStyles.emptyStateSubtitle}>
-              {t('quiz_lessons.no_lessons_for_subject')}
+              {' '}
+              {t('quiz_lessons.no_lessons_for_subject')}{' '}
             </Text>
           </View>
         )}
@@ -253,9 +255,9 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
             onPress={() => setSettingsModalVisible(true)}
             icon={
               <Ionicons
-                name={common.isRTL ? 'arrow-back' : 'arrow-forward'}
-                size={20}
-                color="#fff"
+                name={isRTL ? 'arrow-back' : 'arrow-forward'}
+                size={spacing.icon.sm}
+                color={theme.colors.textOnDark}
               />
             }
             iconPosition="right"
@@ -273,76 +275,42 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
   );
 };
 
-const styles = (theme: any, common: any, typography: any, spacing: any, borderRadius: any) =>
+const styles = (
+  theme: any,
+  common: any,
+  typography: any,
+  spacing: any,
+  borderRadius: any,
+  insets: any,
+) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.background },
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    loadingText: { marginTop: 16, ...typography('body'), color: theme.colors.textSecondary },
-
-    // Header
-    backButton: {
-      padding: 8,
-      marginRight: common.isRTL ? 0 : 16,
-      marginLeft: common.isRTL ? 16 : 0,
+    loadingText: {
+      marginTop: spacing.md,
+      ...typography('body'),
+      color: theme.colors.textSecondary,
     },
-
-    // Custom Header
-    header: {
-      flexDirection: common.rowDirection,
-      alignItems: 'center',
-      paddingHorizontal: layout.screenPadding,
-      paddingBottom: Math.max(common.insets.bottom, 20),
-      backgroundColor: theme.colors.headerBackground,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
-    },
-    headerTitle: {
-      ...typography('h3'),
-      fontWeight: 'bold',
-      color: theme.colors.headerText,
-      textAlign: common.textAlign,
-    },
-    headerSubtitle: {
-      ...typography('caption'),
-      color: theme.colors.headerSubtitle,
-      marginTop: 2,
-      opacity: 0.9,
-      textAlign: common.textAlign,
-    },
-
-    // Content
-    content: {
-      flex: 1,
-    },
+    content: { flex: 1 },
     chapterCard: {
-      borderRadius: layout.borderRadius.xl,
+      borderRadius: borderRadius.xl,
       marginBottom: spacing.lg,
-      backgroundColor: '#F9FAFB',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 3 },
-      shadowOpacity: 0.08,
-      shadowRadius: 10,
-      elevation: 3,
-      overflow: 'hidden',
+      backgroundColor: theme.colors.card,
       borderWidth: 1,
-      borderColor: '#E5E7EB',
+      borderColor: theme.colors.border,
+      overflow: 'hidden',
+      ...layout.shadow,
     },
     chapterHeader: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      padding: spacing.lg,
-      backgroundColor: '#FFFFFF',
+      padding: spacing.md,
+      backgroundColor: theme.colors.surface,
       borderBottomWidth: 1,
-      borderBottomColor: '#E5E7EB',
+      borderBottomColor: theme.colors.border,
     },
-    chapterHeaderContent: {
-      flex: 1,
-      alignItems: common.alignStart,
-    },
-    chapterCheckbox: {
-      padding: 4,
-      ...common.marginEnd(12),
-    },
+    chapterHeaderContent: { flex: 1, alignItems: common.alignStart },
+    chapterCheckbox: { padding: spacing.xxs, ...common.marginEnd(spacing.xs) },
     chapterName: {
       ...typography('body'),
       fontWeight: 'bold',
@@ -356,44 +324,29 @@ const styles = (theme: any, common: any, typography: any, spacing: any, borderRa
       marginTop: 2,
       textAlign: common.textAlign,
     },
-
-    // Lessons
-    lessonsContainer: {
-      paddingVertical: spacing.sm,
-    },
+    lessonsContainer: { paddingVertical: spacing.xxs },
     lessonItem: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      paddingVertical: 12,
+      paddingVertical: spacing.sm,
       paddingHorizontal: spacing.md,
     },
-    lessonItemSelected: {
-      backgroundColor: theme.colors.primaryLight || 'rgba(59, 130, 246, 0.05)',
-    },
-    lessonCheckbox: {
-      ...common.marginEnd(12),
-    },
+    lessonItemSelected: { backgroundColor: theme.colors.primary + '0D' },
+    lessonCheckbox: { ...common.marginEnd(spacing.sm) },
     lessonName: {
       ...typography('caption'),
       flex: 1,
       color: theme.colors.text,
       textAlign: common.textAlign,
+      fontSize: 14,
     },
-    lessonNameSelected: {
-      color: theme.colors.primary,
-      fontWeight: '600',
-    },
-
-    // Empty State
-    emptyState: {
-      padding: 40,
-      alignItems: 'center',
-      marginTop: 60,
-    },
+    lessonNameSelected: { color: theme.colors.primary, fontWeight: '700' },
+    emptyState: { padding: spacing.xl, alignItems: 'center', marginTop: spacing.xl },
     emptyStateTitle: {
       ...typography('h3'),
       fontWeight: 'bold',
-      marginBottom: 8,
+      marginTop: spacing.md,
+      marginBottom: spacing.xs,
       color: theme.colors.text,
     },
     emptyStateSubtitle: {
@@ -401,11 +354,10 @@ const styles = (theme: any, common: any, typography: any, spacing: any, borderRa
       textAlign: 'center',
       color: theme.colors.textSecondary,
     },
-
-    // Footer
     footer: {
-      padding: spacing.xl,
-      backgroundColor: theme.colors.background,
+      padding: spacing.lg,
+      paddingBottom: Math.max(insets.bottom, spacing.lg),
+      backgroundColor: theme.colors.card,
       borderTopWidth: 1,
       borderTopColor: theme.colors.border,
       position: 'absolute',

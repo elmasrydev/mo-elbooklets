@@ -44,11 +44,14 @@ const RecentActivityCard: React.FC<ActivityCardProps> = ({ activity, onPress }) 
       activeOpacity={onPress ? 0.7 : 1}
     >
       <View style={[currentStyles.iconContainer, { backgroundColor: subjectConfig.bg }]}>
-        <Ionicons name={subjectConfig.icon} size={24} color={subjectConfig.color} />
+        <Ionicons name={subjectConfig.icon} size={spacing.icon.md} color={subjectConfig.color} />
       </View>
       <View style={currentStyles.infoContainer}>
         <Text style={currentStyles.subjectName}> {activity.subject.name} </Text>
-        <Text style={currentStyles.timeText}>{getTimeAgo(activity.completedAt, t, language)}</Text>
+        <Text style={currentStyles.timeText}>
+          {' '}
+          {getTimeAgo(activity.completedAt, t, language)}{' '}
+        </Text>
       </View>
       <View style={currentStyles.rightContainer}>
         <CircularProgress size={50} strokeWidth={5} percentage={scorePercent} color={scoreColor} />
@@ -70,27 +73,41 @@ const styles = (
       flexDirection: common.rowDirection,
       alignItems: 'center',
       backgroundColor: theme.colors.card,
-      padding: spacing.lg,
-      borderRadius: layout.borderRadius.xl,
+      padding: spacing.md,
+      borderRadius: borderRadius.xl,
       marginBottom: spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
       ...layout.shadow,
     },
     iconContainer: {
       width: 48,
       height: 48,
-      borderRadius: 14,
+      borderRadius: borderRadius.md,
       justifyContent: 'center',
       alignItems: 'center',
     },
-    infoContainer: { flex: 1, ...common.marginStart(12), alignItems: common.alignStart },
-    subjectName: { ...typography('body'), fontWeight: 'bold', color: theme.colors.text },
+    infoContainer: {
+      flex: 1,
+      ...common.marginStart(spacing.md),
+      alignItems: common.alignStart,
+    },
+    subjectName: {
+      ...typography('body'),
+      fontWeight: 'bold',
+      color: theme.colors.text,
+    },
     timeText: {
       ...typography('caption'),
       color: theme.colors.textSecondary,
-      marginTop: 4,
+      marginTop: spacing.xxs,
       fontWeight: '500',
     },
-    rightContainer: { ...common.marginStart(12), alignItems: 'center', justifyContent: 'center' },
+    rightContainer: {
+      ...common.marginStart(spacing.md),
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
   });
 
 export default RecentActivityCard;

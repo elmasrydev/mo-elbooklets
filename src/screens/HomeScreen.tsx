@@ -23,7 +23,6 @@ import Svg, { Path, Circle, G, Text as SvgText } from 'react-native-svg';
 import RecentActivityCard from '../components/RecentActivityCard';
 import TodaysPlanWidget from '../components/TodaysPlanWidget';
 import UnifiedHeader from '../components/UnifiedHeader';
-import { marginStart } from '../lib/rtl';
 
 const { width } = Dimensions.get('window');
 
@@ -62,20 +61,23 @@ const getInitials = (name: string) => {
     : (parts[0][0] + parts[1][0]).toUpperCase();
 };
 
+const round = (val: number) => Math.round(val || 0);
+
 const WheelOfSuccess: React.FC<{
   theme: any;
   data: WheelOfSuccessData | null;
   t: any;
   typography: any;
   common: any;
-}> = ({ theme, data, t, typography, common }) => {
+  spacing: any;
+  borderRadius: any;
+}> = ({ theme, data, t, typography, common, spacing, borderRadius }) => {
   if (!data || !data.arms || data.arms.length === 0) return null;
 
-  const size = width - 40; // Full width card
+  const size = width - layout.screenPadding * 2;
   const centerX = size / 2;
   const centerY = size / 2;
 
-  // Configuration matching webfront proportions
   const outerArcThickness = 12;
   const labelCircleRadius = 14;
   const centerRadius = 25;
@@ -85,7 +87,7 @@ const WheelOfSuccess: React.FC<{
   const segmentCount = arms.length;
   const anglePerSegment = (2 * Math.PI) / segmentCount;
 
-  const currentWheelStyles = wheelStyles(typography, common, theme);
+  const currentWheelStyles = wheelStyles(typography, common, theme, spacing, borderRadius, layout);
 
   return (
     <View style={currentWheelStyles.container}>
@@ -102,7 +104,6 @@ const WheelOfSuccess: React.FC<{
 
       <View style={currentWheelStyles.wheelMainContainer}>
         <Svg width={size} height={size}>
-          {/* Grid Lines (Concentric Circles) */}
           {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => {
             const r = centerRadius + ((mainRadius - centerRadius) / 10) * i;
             return (
@@ -111,10 +112,11 @@ const WheelOfSuccess: React.FC<{
                 cx={centerX}
                 cy={centerY}
                 r={r}
-                stroke="rgba(160, 210, 219, 0.2)"
+                stroke={theme.colors.border}
                 strokeWidth="1"
                 fill="none"
                 strokeDasharray="4, 4"
+                opacity={0.3}
               />
             );
           })}
@@ -124,10 +126,8 @@ const WheelOfSuccess: React.FC<{
             const endAngle = startAngle + anglePerSegment;
             const midAngle = startAngle + anglePerSegment / 2;
 
-            // Progress Segment Path
             const progressRadius =
               centerRadius + ((mainRadius - centerRadius) / 100) * arm.progress;
-
             const pathData = `
               M ${centerX} ${centerY}
               L ${centerX + progressRadius * Math.cos(startAngle)} ${centerY + progressRadius * Math.sin(startAngle)}
@@ -135,18 +135,15 @@ const WheelOfSuccess: React.FC<{
               Z
             `;
 
-            // Spoke Line
             const spokeX = centerX + (mainRadius + outerArcThickness) * Math.cos(startAngle);
             const spokeY = centerY + (mainRadius + outerArcThickness) * Math.sin(startAngle);
 
-            // Label Position
             const labelArcRadius = mainRadius + outerArcThickness / 2;
             const labelX = centerX + labelArcRadius * Math.cos(midAngle);
             const labelY = centerY + labelArcRadius * Math.sin(midAngle);
 
             return (
               <G key={`arm-${arm.id}`}>
-                {/* Outer Arc Band */}
                 <Path
                   d={`
                     M ${centerX + (mainRadius + outerArcThickness / 2) * Math.cos(startAngle)} 
@@ -159,28 +156,21 @@ const WheelOfSuccess: React.FC<{
                   stroke={arm.color}
                   strokeWidth={outerArcThickness}
                 />
-
-                {/* Spoke Line */}
                 <Path
                   d={`M ${centerX} ${centerY} L ${spokeX} ${spokeY}`}
-                  stroke="rgba(203, 213, 225, 0.3)"
+                  stroke={theme.colors.border}
                   strokeWidth="1"
+                  opacity={0.5}
                 />
-
-                {/* Filled Progress Segment */}
                 {arm.progress > 0 && <Path d={pathData} fill={arm.color} opacity="0.5" />}
-
-                {/* Label Circle */}
                 <Circle
                   cx={labelX}
                   cy={labelY}
                   r={labelCircleRadius}
-                  fill="#fff"
+                  fill={theme.colors.surface}
                   stroke={arm.color}
                   strokeWidth="2"
                 />
-
-                {/* Subject Initial */}
                 <SvgText
                   x={labelX}
                   y={labelY + 4}
@@ -195,13 +185,12 @@ const WheelOfSuccess: React.FC<{
             );
           })}
 
-          {/* Center Hub */}
           <Circle
             cx={centerX}
             cy={centerY}
             r={centerRadius}
             fill={theme.colors.primary}
-            stroke="#fff"
+            stroke={theme.colors.surface}
             strokeWidth="2"
           />
           <SvgText
@@ -209,7 +198,7 @@ const WheelOfSuccess: React.FC<{
             y={centerY}
             fontSize="14"
             fontWeight="bold"
-            fill="#fff"
+            fill={theme.colors.textOnDark}
             textAnchor="middle"
             alignmentBaseline="central"
           >
@@ -218,7 +207,6 @@ const WheelOfSuccess: React.FC<{
         </Svg>
       </View>
 
-      {/* Subjects List Summary (Horizontal Scroll) */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -229,7 +217,8 @@ const WheelOfSuccess: React.FC<{
             <View style={[currentWheelStyles.legendDot, { backgroundColor: arm.color }]} />
             <Text style={currentWheelStyles.legendText}> {arm.name} </Text>
             <Text style={[currentWheelStyles.legendValue, { color: arm.color }]}>
-              {round(arm.progress)} %
+              {' '}
+              {round(arm.progress)} %{' '}
             </Text>
           </View>
         ))}
@@ -238,8 +227,6 @@ const WheelOfSuccess: React.FC<{
   );
 };
 
-const round = (val: number) => Math.round(val || 0);
-
 const WeeklyPerformanceChart: React.FC<{
   theme: any;
   common: any;
@@ -247,8 +234,8 @@ const WeeklyPerformanceChart: React.FC<{
   typography: any;
 }> = ({ theme, common, data, typography }) => {
   if (!data || data.length === 0) return null;
-  const chartHeight = 80;
-  const chartWidth = width - 80;
+  const chartHeight = 84;
+  const chartWidth = width - layout.screenPadding * 4;
   const maxValue = 100;
   const points = data.map((item, index) => ({
     x: (index / (data.length - 1)) * chartWidth,
@@ -270,7 +257,7 @@ const WeeklyPerformanceChart: React.FC<{
     return d;
   };
 
-  const currentChartStyles = chartStyles(typography);
+  const currentChartStyles = chartStyles(typography, theme);
 
   return (
     <View style={currentChartStyles.chartContainer}>
@@ -291,8 +278,7 @@ const WeeklyPerformanceChart: React.FC<{
             key={`${item.week}-${index}`}
             style={[
               currentChartStyles.chartLabel,
-              { color: theme.colors.textSecondary },
-              index === data.length - 1 ? { color: theme.colors.primary, fontWeight: 'bold' } : {},
+              index === data.length - 1 ? { color: theme.colors.primary } : {},
             ]}
           >
             {item.week}
@@ -303,11 +289,14 @@ const WeeklyPerformanceChart: React.FC<{
   );
 };
 
-const chartStyles = (typography: any) =>
+const chartStyles = (typography: any, theme: any) =>
   StyleSheet.create({
     chartContainer: { height: 120, justifyContent: 'center', paddingTop: 10 },
-    chartWrapper: { height: 80, alignItems: 'center' },
-    chartLabel: { ...typography('caption'), fontSize: 12, fontWeight: '700' },
+    chartWrapper: { height: 84, alignItems: 'center' },
+    chartLabel: {
+      ...typography('label'),
+      color: theme.colors.textSecondary,
+    },
     chartLabels: { justifyContent: 'space-between', marginTop: 15 },
   });
 
@@ -357,13 +346,23 @@ const HomeScreen: React.FC = () => {
   useEffect(() => {
     fetchActivities();
   }, [fetchActivities]);
+
   useFocusEffect(
     useCallback(() => {
       fetchActivities();
     }, [fetchActivities]),
   );
 
-  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius, isRTL, typography);
+  const currentStyles = styles(
+    theme,
+    common,
+    fontSizes,
+    spacing,
+    borderRadius,
+    isRTL,
+    typography,
+    layout,
+  );
 
   return (
     <View style={common.container}>
@@ -371,7 +370,7 @@ const HomeScreen: React.FC = () => {
         title={isRTL ? 'البوكلتس' : 'EL-Booklets'}
         rightContent={
           <TouchableOpacity style={currentStyles.notificationButton}>
-            <Ionicons name="notifications-outline" size={24} color="#fff" />
+            <Ionicons name="notifications-outline" size={24} color={theme.colors.headerText} />
           </TouchableOpacity>
         }
       />
@@ -393,38 +392,36 @@ const HomeScreen: React.FC = () => {
               {t('home_screen.hi')}, {user?.name?.split(' ')[0] || 'Alex'}! 👋
             </Text>
             <Text style={currentStyles.gradeText}>
-              {user?.grade?.name || 'Grade'} • {user?.educational_system?.name || 'System'}
+              {user?.grade?.name || t('more_screen.grade')} •{' '}
+              {user?.educational_system?.name || t('auth.educational_system')}
             </Text>
           </View>
         </View>
+
         <View style={currentStyles.topStatsRow}>
           <View style={currentStyles.topStatCard}>
             <View
               style={[
                 currentStyles.statIconContainer,
-                { backgroundColor: 'rgba(245, 158, 11, 0.1)' },
+                { backgroundColor: theme.colors.orange + '1A' },
               ]}
             >
-              <Ionicons name="briefcase" size={20} color="#f59e0b" />
+              <Ionicons name="briefcase" size={20} color={theme.colors.orange} />
             </View>
             <Text style={currentStyles.statLabel}> {t('home_screen.quizzes')} </Text>
-            <Text style={[currentStyles.statValue, { color: '#0f172a' }]}>
-              {activitiesData?.total_quizzes ?? 0}
-            </Text>
+            <Text style={currentStyles.statValue}> {activitiesData?.total_quizzes ?? 0}</Text>
           </View>
           <View style={currentStyles.topStatCard}>
             <View
               style={[
                 currentStyles.statIconContainer,
-                { backgroundColor: 'rgba(245, 158, 11, 0.1)' },
+                { backgroundColor: theme.colors.orange + '1A' },
               ]}
             >
-              <Ionicons name="trending-up" size={20} color="#f59e0b" />
+              <Ionicons name="trending-up" size={20} color={theme.colors.orange} />
             </View>
             <Text style={currentStyles.statLabel}> {t('home_screen.completed')} </Text>
-            <Text style={[currentStyles.statValue, { color: '#0f172a' }]}>
-              {activitiesData?.avg_score ?? 0}%
-            </Text>
+            <Text style={currentStyles.statValue}> {activitiesData?.avg_score ?? 0}% </Text>
           </View>
         </View>
 
@@ -434,6 +431,8 @@ const HomeScreen: React.FC = () => {
           t={t}
           typography={typography}
           common={common}
+          spacing={spacing}
+          borderRadius={borderRadius}
         />
 
         <View style={common.card}>
@@ -444,7 +443,17 @@ const HomeScreen: React.FC = () => {
                 {activitiesData?.performance_status || t('home_screen.excellent')}
               </Text>
             </View>
-            <View style={currentStyles.trendBadge}>
+            <View
+              style={[
+                currentStyles.trendBadge,
+                {
+                  backgroundColor:
+                    Number.parseFloat(activitiesData?.performance_trend || '0') >= 0
+                      ? theme.colors.success + '1A'
+                      : theme.colors.error + '1A',
+                },
+              ]}
+            >
               <Ionicons
                 name={
                   Number.parseFloat(activitiesData?.performance_trend || '0') >= 0
@@ -454,8 +463,8 @@ const HomeScreen: React.FC = () => {
                 size={14}
                 color={
                   Number.parseFloat(activitiesData?.performance_trend || '0') >= 0
-                    ? '#10B981'
-                    : '#EF4444'
+                    ? theme.colors.success
+                    : theme.colors.error
                 }
               />
               <Text
@@ -464,8 +473,8 @@ const HomeScreen: React.FC = () => {
                   {
                     color:
                       Number.parseFloat(activitiesData?.performance_trend || '0') >= 0
-                        ? '#10B981'
-                        : '#EF4444',
+                        ? theme.colors.success
+                        : theme.colors.error,
                   },
                 ]}
               >
@@ -493,47 +502,74 @@ const HomeScreen: React.FC = () => {
             contentContainerStyle={currentStyles.quickActionsScroll}
           >
             <TouchableOpacity
-              style={[currentStyles.quickActionButton, { backgroundColor: '#6366F1' }]}
+              style={[currentStyles.quickActionButton, { backgroundColor: theme.colors.primary }]}
               onPress={() => navigation.navigate('Quiz')}
             >
               <View style={currentStyles.quickActionIconWhite}>
-                <Ionicons name="play" size={20} color="#fff" />
+                <Ionicons name="play" size={20} color={theme.colors.textOnDark} />
               </View>
               <Text style={currentStyles.quickActionTitleWhite}>
                 {' '}
                 {t('home_screen.start_quiz')}{' '}
               </Text>
-              <Text style={currentStyles.quickActionSubtitle}> jump to quiz </Text>
+              <Text style={currentStyles.quickActionSubtitle}>
+                {' '}
+                {t('home_screen.jump_to_quiz')}{' '}
+              </Text>
             </TouchableOpacity>
+
             <TouchableOpacity
               style={currentStyles.quickActionButton}
               onPress={() => navigation.navigate('Study')}
             >
-              <View style={[currentStyles.quickActionIcon, { backgroundColor: '#EFF6FF' }]}>
-                <Ionicons name="book" size={20} color="#3B82F6" />
+              <View
+                style={[
+                  currentStyles.quickActionIcon,
+                  { backgroundColor: theme.colors.primary + '1A' },
+                ]}
+              >
+                <Ionicons name="book" size={20} color={theme.colors.primary} />
               </View>
               <Text style={currentStyles.quickActionTitle}>
                 {' '}
                 {t('home_screen.browse_booklets')}{' '}
               </Text>
-              <Text style={currentStyles.quickActionSubtitleDark}> Booklets </Text>
+              <Text style={currentStyles.quickActionSubtitleDark}>
+                {' '}
+                {t('home_screen.booklets')}{' '}
+              </Text>
             </TouchableOpacity>
+
             <TouchableOpacity
               style={currentStyles.quickActionButton}
               onPress={() => navigation.navigate('Leaderboard')}
             >
-              <View style={[currentStyles.quickActionIcon, { backgroundColor: '#FDF2F8' }]}>
-                <Ionicons name="stats-chart" size={20} color="#EC4899" />
+              <View
+                style={[
+                  currentStyles.quickActionIcon,
+                  { backgroundColor: theme.colors.orange + '1A' },
+                ]}
+              >
+                <Ionicons name="stats-chart" size={20} color={theme.colors.orange} />
               </View>
               <Text style={currentStyles.quickActionTitle}> {t('home_screen.my_progress')} </Text>
-              <Text style={currentStyles.quickActionSubtitleDark}> Progress </Text>
+              <Text style={currentStyles.quickActionSubtitleDark}>
+                {' '}
+                {t('home_screen.progress')}{' '}
+              </Text>
             </TouchableOpacity>
+
             <TouchableOpacity
               style={currentStyles.quickActionButton}
               onPress={() => navigation.navigate('More')}
             >
-              <View style={[currentStyles.quickActionIcon, { backgroundColor: '#FFF7ED' }]}>
-                <Ionicons name="settings" size={20} color="#F97316" />
+              <View
+                style={[
+                  currentStyles.quickActionIcon,
+                  { backgroundColor: theme.colors.mediumGray + '1A' },
+                ]}
+              >
+                <Ionicons name="settings" size={20} color={theme.colors.mediumGray} />
               </View>
               <Text style={currentStyles.quickActionTitle}> {t('common.settings')} </Text>
             </TouchableOpacity>
@@ -573,24 +609,29 @@ const HomeScreen: React.FC = () => {
   );
 };
 
-const wheelStyles = (typography: any, common: any, theme: any) =>
+const wheelStyles = (
+  typography: any,
+  common: any,
+  theme: any,
+  spacing: any,
+  borderRadius: any,
+  layout: any,
+) =>
   StyleSheet.create({
     container: {
-      backgroundColor: '#fff',
-      padding: 20,
-      borderRadius: 24,
-      marginBottom: 20,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.1,
-      shadowRadius: 12,
-      elevation: 5,
+      backgroundColor: theme.colors.surface,
+      padding: spacing.lg,
+      borderRadius: borderRadius.xl,
+      marginBottom: spacing.xl,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      ...layout.shadow,
     },
     headerRow: {
       flexDirection: common.rowDirection,
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: 20,
+      marginBottom: spacing.lg,
     },
     headerInfo: {
       flex: 1,
@@ -598,21 +639,20 @@ const wheelStyles = (typography: any, common: any, theme: any) =>
     },
     wheelTitle: {
       ...typography('h3'),
-      fontWeight: 'bold',
-      color: '#1e293b',
+      color: theme.colors.text,
       textAlign: common.textAlign,
     },
     wheelSubtitle: {
       ...typography('caption'),
-      color: '#64748b',
-      marginTop: 2,
+      color: theme.colors.textSecondary,
+      marginTop: spacing.xxs,
       textAlign: common.textAlign,
     },
     masteryBadge: {
-      backgroundColor: '#f1f5f9',
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 12,
+      backgroundColor: theme.colors.background,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      borderRadius: borderRadius.md,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -625,42 +665,42 @@ const wheelStyles = (typography: any, common: any, theme: any) =>
     masteryLabel: {
       ...typography('caption'),
       fontSize: 10,
-      color: '#64748b',
+      color: theme.colors.textSecondary,
       textAlign: 'center',
-      marginTop: 2,
+      marginTop: spacing.xxs,
     },
     wheelMainContainer: {
       alignItems: 'center',
       justifyContent: 'center',
     },
     legendContainer: {
-      marginTop: 20,
+      marginTop: spacing.lg,
       flexDirection: common.rowDirection,
     },
     legendItem: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      ...common.marginEnd(16),
-      backgroundColor: '#f8fafc',
-      paddingHorizontal: 10,
-      paddingVertical: 6,
-      borderRadius: 10,
+      ...common.marginEnd(spacing.md),
+      backgroundColor: theme.colors.background,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      borderRadius: borderRadius.sm,
     },
     legendDot: {
       width: 8,
       height: 8,
       borderRadius: 4,
-      ...common.marginEnd(6),
+      ...common.marginEnd(spacing.xs),
     },
     legendText: {
       ...typography('caption'),
-      color: '#1e293b',
+      color: theme.colors.text,
       fontWeight: '600',
     },
     legendValue: {
       ...typography('caption'),
       fontWeight: 'bold',
-      ...common.marginStart(4),
+      ...common.marginStart(spacing.xxs),
     },
   });
 
@@ -672,21 +712,24 @@ const styles = (
   borderRadius: any,
   isRTL: boolean,
   typography: any,
+  layout: any,
 ) =>
   StyleSheet.create({
-    headerLeftContent: { flexDirection: common.rowDirection, alignItems: 'center', flex: 1 },
     avatarContainer: { position: 'relative', ...common.marginStart(spacing.sm) },
     initialsAvatar: {
       width: 50,
       height: 50,
       borderRadius: 25,
-      backgroundColor: theme.colors.primary,
+      backgroundColor: theme.colors.avatarBackground,
       justifyContent: 'center',
       alignItems: 'center',
       borderWidth: 2,
-      borderColor: theme.colors.border,
+      borderColor: theme.colors.surface,
     },
-    initialsText: { ...typography('h3'), fontWeight: 'bold', color: '#fff' },
+    initialsText: {
+      ...typography('h3'),
+      color: theme.colors.avatarText,
+    },
     onlineDot: {
       position: 'absolute',
       bottom: 0,
@@ -694,7 +737,7 @@ const styles = (
       width: 14,
       height: 14,
       borderRadius: 7,
-      backgroundColor: '#10B981',
+      backgroundColor: theme.colors.success,
       borderWidth: 2,
       borderColor: theme.colors.background,
     },
@@ -708,7 +751,7 @@ const styles = (
     },
     scrollContainer: { flex: 1 },
     scrollContent: {
-      paddingBottom: Math.max(common.insets.bottom, 20),
+      paddingBottom: Math.max(common.insets.bottom, spacing.xl),
       paddingHorizontal: layout.screenPadding,
     },
     userInfoContainer: {
@@ -723,14 +766,13 @@ const styles = (
     },
     welcomeText: {
       ...typography('h2'),
-      fontWeight: 'bold',
       color: theme.colors.text,
       textAlign: common.textAlign,
     },
     gradeText: {
-      ...typography('caption'),
+      ...typography('bodySmall'),
       color: theme.colors.textSecondary,
-      marginTop: 2,
+      marginTop: spacing.xxs,
       textAlign: common.textAlign,
     },
     topStatsRow: {
@@ -738,41 +780,36 @@ const styles = (
       justifyContent: 'space-between',
       marginBottom: spacing.xl,
       marginTop: spacing.xl,
-      gap: 12,
+      gap: spacing.md,
     },
     topStatCard: {
       flex: 1,
       aspectRatio: 1,
       backgroundColor: theme.colors.card,
-      padding: spacing.lg,
-      borderRadius: layout.borderRadius.md,
+      padding: spacing.md,
+      borderRadius: borderRadius.lg,
       alignItems: 'center',
       justifyContent: 'center',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.1,
-      shadowRadius: 10,
-      elevation: 5,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      ...layout.shadow,
     },
     statIconContainer: {
       width: 40,
       height: 40,
-      borderRadius: 12,
+      borderRadius: borderRadius.md,
       justifyContent: 'center',
       alignItems: 'center',
-      marginBottom: 10,
+      marginBottom: spacing.sm,
     },
     statLabel: {
-      ...typography('caption'),
-      fontSize: 11,
-      fontWeight: '600',
+      ...typography('label'),
       color: theme.colors.textSecondary,
-      marginBottom: 2,
+      marginBottom: spacing.xxs,
       textAlign: 'center',
     },
     statValue: {
       ...typography('h3'),
-      fontWeight: 'bold',
       color: theme.colors.text,
       textAlign: 'center',
     },
@@ -780,7 +817,7 @@ const styles = (
       flexDirection: common.rowDirection,
       justifyContent: 'space-between',
       alignItems: 'flex-start',
-      marginBottom: spacing.xl,
+      marginBottom: spacing.lg,
     },
     performanceTitle: {
       ...typography('caption'),
@@ -789,118 +826,108 @@ const styles = (
     },
     performanceStatus: {
       ...typography('h2'),
-      fontWeight: 'bold',
       color: theme.colors.text,
-      marginTop: 4,
+      marginTop: spacing.xxs,
     },
     trendBadge: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      backgroundColor: '#ECFDF5',
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 14,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xxs,
+      borderRadius: borderRadius.sm,
     },
     trendText: {
-      ...typography('label'),
+      ...typography('caption'),
       fontWeight: 'bold',
-      color: '#10B981',
-      ...common.marginStart(4),
+      ...common.marginStart(spacing.xxs),
     },
-    section: { marginBottom: spacing.xl * 1.5 },
+    section: {
+      marginBottom: spacing.xl,
+    },
     sectionHeaderRow: {
       flexDirection: common.rowDirection,
       justifyContent: 'space-between',
-      alignItems: 'baseline', // Align text baselines
+      alignItems: 'center',
       marginBottom: spacing.md,
-      paddingHorizontal: 4,
     },
-    viewAllText: { ...typography('label'), color: theme.colors.primary, fontWeight: '700' },
+    viewAllText: {
+      ...typography('link'),
+      color: theme.colors.primary,
+    },
     quickActionsScroll: {
-      paddingRight: spacing.md,
-      gap: 12,
+      paddingRight: spacing.xl,
+      gap: spacing.md,
     },
     quickActionButton: {
-      width: 100, // Revert to 100
-      backgroundColor: theme.colors.card,
-      borderRadius: layout.borderRadius.lg,
+      width: 140,
       padding: spacing.md,
-      alignItems: 'center',
-      justifyContent: 'center',
+      borderRadius: borderRadius.lg,
+      backgroundColor: theme.colors.card,
       borderWidth: 1,
       borderColor: theme.colors.border,
-      shadowColor: theme.colors.shadow,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.05,
-      shadowRadius: 4,
-      elevation: 2,
+      ...layout.shadow,
     },
     quickActionIcon: {
       width: 40,
       height: 40,
-      borderRadius: 12,
+      borderRadius: borderRadius.md,
       justifyContent: 'center',
       alignItems: 'center',
-      marginBottom: 8,
+      marginBottom: spacing.sm,
     },
     quickActionIconWhite: {
       width: 40,
       height: 40,
-      borderRadius: 20,
-      backgroundColor: 'rgba(255,255,255,0.2)',
+      borderRadius: borderRadius.md,
       justifyContent: 'center',
       alignItems: 'center',
-      marginBottom: 8,
+      marginBottom: spacing.sm,
+      backgroundColor: 'rgba(255,255,255,0.2)',
     },
     quickActionTitle: {
-      ...typography('label'),
+      ...typography('bodySmall'),
       fontWeight: '600',
       color: theme.colors.text,
-      textAlign: 'center',
+      textAlign: common.textAlign,
     },
     quickActionTitleWhite: {
-      ...typography('label'),
+      ...typography('bodySmall'),
       fontWeight: '600',
-      color: '#fff',
-      textAlign: 'center',
+      color: theme.colors.textOnDark,
+      textAlign: common.textAlign,
     },
     quickActionSubtitle: {
       ...typography('caption'),
-      fontSize: 10,
-      color: 'rgba(255,255,255,0.8)',
-      textAlign: 'center',
+      color: 'rgba(255,255,255,0.7)',
       marginTop: 2,
+      textAlign: common.textAlign,
     },
     quickActionSubtitleDark: {
       ...typography('caption'),
-      fontSize: 10,
       color: theme.colors.textSecondary,
-      textAlign: 'center',
       marginTop: 2,
+      textAlign: common.textAlign,
     },
     quoteCard: {
-      backgroundColor: '#9333EA',
-      borderRadius: layout.borderRadius.xl,
-      padding: 30,
+      padding: spacing.xl,
+      backgroundColor: theme.colors.primary,
+      borderRadius: borderRadius.xl,
       alignItems: 'center',
-      marginTop: 10,
+      marginBottom: spacing.xl,
     },
     quoteText: {
-      ...typography('h3'),
-      color: '#fff',
-      fontWeight: 'bold',
-      textAlign: 'center',
-      lineHeight: 26,
+      ...typography('bodyLarge'),
+      color: theme.colors.textOnDark,
       fontStyle: 'italic',
+      textAlign: 'center',
+      lineHeight: 24,
     },
     quoteAuthor: {
-      ...typography('caption'),
-      color: 'rgba(255,255,255,0.7)',
-      fontWeight: '700',
-      marginTop: 12,
-    },
-    sectionHeader: {
-      marginBottom: spacing.md,
+      ...typography('label'),
+      color: theme.colors.textOnDark,
+      marginTop: spacing.md,
+      letterSpacing: 1,
+      opacity: 0.8,
     },
   });
 

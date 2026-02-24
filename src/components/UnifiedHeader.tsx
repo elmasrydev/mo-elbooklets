@@ -6,6 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useCommonStyles } from '../hooks/useCommonStyles';
+import { layout } from '../config/layout';
 
 interface UnifiedHeaderProps {
   title?: string | React.ReactNode;
@@ -33,7 +34,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
   style,
 }) => {
   const navigation = useNavigation();
-  const { theme } = useTheme();
+  const { theme, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
   const insets = useSafeAreaInsets();
   const common = useCommonStyles();
@@ -46,19 +47,21 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
     }
   };
 
+  const currentStyles = styles(theme, spacing, borderRadius);
+
   const renderLeft = () => {
     if (showBackButton) {
       return (
         <TouchableOpacity
-          style={styles.iconButton}
+          style={currentStyles.iconButton}
           onPress={handleBackPress}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <View style={styles.backButtonBackground}>
+          <View style={currentStyles.backButtonBackground}>
             <Ionicons
               name={isRTL ? 'arrow-forward' : 'arrow-back'}
-              size={22}
-              color={theme.colors.headerText || '#fff'}
+              size={spacing.icon.md}
+              color={theme.colors.headerText}
             />
           </View>
         </TouchableOpacity>
@@ -67,7 +70,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
     return leftContent || null;
   };
 
-  const HEADER_CONTENT_HEIGHT = isModal ? 59 : 54; // Standard fixed design height
+  const HEADER_CONTENT_HEIGHT = isModal ? 57 : 50;
   const effectiveCenterAlign = centerAlign || isModal || !showBackButton;
 
   const renderTitle = () => {
@@ -84,12 +87,10 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
     return title;
   };
 
-  const renderSubtitle = () => {
-    return null;
-  };
+  const renderSubtitle = () => null;
 
   const containerStyle = [
-    styles.container,
+    currentStyles.container,
     {
       backgroundColor: theme.colors.headerBackground,
       borderBottomColor: theme.colors.border,
@@ -105,22 +106,28 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
   if (effectiveCenterAlign) {
     return (
       <View style={containerStyle as any}>
-        <View style={[styles.sideContainer, { alignItems: 'flex-start' }]}> {renderLeft()} </View>
-        <View style={styles.centerContainer}>
+        <View style={[currentStyles.sideContainer, { alignItems: 'flex-start' }]}>
+          {renderLeft()}
+        </View>
+        <View style={currentStyles.centerContainer}>
           {renderTitle()}
           {renderSubtitle()}
         </View>
-        <View style={[styles.sideContainer, { alignItems: 'flex-end' }]}> {rightContent} </View>
+        <View style={[currentStyles.sideContainer, { alignItems: 'flex-end' }]}>
+          {rightContent}
+        </View>
       </View>
     );
   }
 
-  // Default left/right-aligned
   return (
     <View style={containerStyle as any}>
       {renderLeft()}
       <View
-        style={[styles.flex1, showBackButton || leftContent ? common.marginStart(12) : undefined]}
+        style={[
+          currentStyles.flex1,
+          showBackButton || leftContent ? common.marginStart(spacing.sm) : undefined,
+        ]}
       >
         {renderTitle()}
         {renderSubtitle()}
@@ -132,38 +139,39 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-    paddingBottom: 8,
-    paddingHorizontal: 20, // matches layout.screenPadding
-    alignItems: 'center',
-  },
-  sideContainer: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  centerContainer: {
-    flex: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  flex1: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  iconButton: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  backButtonBackground: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.15)',
-  },
-});
+const styles = (theme: any, spacing: any, borderRadius: any) =>
+  StyleSheet.create({
+    container: {
+      width: '100%',
+      paddingBottom: spacing.sm,
+      paddingHorizontal: layout.screenPadding,
+      alignItems: 'center',
+    },
+    sideContainer: {
+      flex: 1,
+      justifyContent: 'center',
+    },
+    centerContainer: {
+      flex: 2,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    flex1: {
+      flex: 1,
+      justifyContent: 'center',
+    },
+    iconButton: {
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    backButtonBackground: {
+      width: 40,
+      height: 40,
+      borderRadius: borderRadius.full,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: theme.colors.headerText + '26',
+    },
+  });
 
 export default UnifiedHeader;
