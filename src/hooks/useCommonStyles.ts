@@ -1,4 +1,5 @@
 import { ViewStyle, TextStyle } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { useRTL } from './useRTL';
 import { useTypography } from './useTypography';
@@ -8,32 +9,25 @@ import { layout } from '../config/layout';
  * useCommonStyles Hook
  * Providing common UI styles and design patterns.
  * Optimized for Explicit JS-Driven RTL support.
+ * Uses dynamic safe area insets (matching HedeyaStores pattern).
  */
 export const useCommonStyles = () => {
   const { theme, spacing, fontSizes, borderRadius } = useTheme();
   const rtl = useRTL();
   const { typography } = useTypography();
+  const insets = useSafeAreaInsets();
+
   return {
     ...rtl, // isRTL, rowDirection, marginStart helper, etc.
     textAlign: rtl.textAlign,
+
+    // Expose insets for screens that need custom safe area logic
+    insets,
+
     // Main screen container
     container: {
       flex: 1,
       backgroundColor: theme.colors.background,
-    } as ViewStyle,
-
-    // Header pattern
-    header: {
-      width: '100%',
-      paddingHorizontal: layout.screenPadding,
-      paddingTop: layout.headerPaddingTop,
-      paddingBottom: layout.headerPaddingBottom,
-      backgroundColor: theme.colors.headerBackground,
-      // Robust RTL Fix: Use Physical Row Direction
-      flexDirection: rtl.rowDirection,
-      alignItems: 'center',
-      justifyContent: 'flex-start',
-      maxHeight: 120,
     } as ViewStyle,
 
     // Wrapper for Title + Subtitle to keep them vertically stacked
@@ -63,6 +57,17 @@ export const useCommonStyles = () => {
     content: {
       flex: 1,
       padding: layout.screenPadding,
+    } as ViewStyle,
+
+    // Scroll content padding for screens inside the tab navigator
+    // Use this as contentContainerStyle paddingBottom
+    scrollContentWithTabBar: {
+      paddingBottom: insets.bottom + 50,
+    } as ViewStyle,
+
+    // Fixed bottom bar padding (quiz footers, nav bars, action buttons)
+    fixedBottomBar: {
+      paddingBottom: Math.max(insets.bottom, 16),
     } as ViewStyle,
 
     // Standardized Card

@@ -134,7 +134,10 @@ const StudyScreen: React.FC = () => {
       ) : (
         <ScrollView
           style={currentStyles.content}
-          contentContainerStyle={{ padding: layout.screenPadding, paddingBottom: 100 }}
+          contentContainerStyle={{
+            padding: layout.screenPadding,
+            paddingBottom: common.insets.bottom + 50,
+          }}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchSubjects} />}
         >

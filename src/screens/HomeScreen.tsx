@@ -631,7 +631,7 @@ const styles = (
     },
     scrollContainer: { flex: 1 },
     scrollContent: {
-      paddingBottom: 100,
+      paddingBottom: common.insets.bottom + 50,
       paddingHorizontal: layout.screenPadding,
     },
     topStatsRow: {

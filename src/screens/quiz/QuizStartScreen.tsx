@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
@@ -27,8 +28,9 @@ const QuizStartScreen: React.FC<QuizStartScreenProps> = ({
   const { t } = useTranslation();
   const common = useCommonStyles();
   const { typography } = useTypography();
+  const insets = useSafeAreaInsets();
 
-  const currentStyles = styles(theme, common, typography, spacing, borderRadius);
+  const currentStyles = styles(theme, common, typography, spacing, borderRadius, insets);
 
   return (
     <View style={common.container}>
@@ -110,7 +112,14 @@ const QuizStartScreen: React.FC<QuizStartScreenProps> = ({
   );
 };
 
-const styles = (theme: any, common: any, typography: any, spacing: any, borderRadius: any) =>
+const styles = (
+  theme: any,
+  common: any,
+  typography: any,
+  spacing: any,
+  borderRadius: any,
+  insets: { bottom: number },
+) =>
   StyleSheet.create({
     backButton: {
       padding: 4,
@@ -195,7 +204,9 @@ const styles = (theme: any, common: any, typography: any, spacing: any, borderRa
     },
     footer: {
       flexDirection: common.rowDirection,
-      padding: spacing.xl,
+      paddingHorizontal: spacing.xl,
+      paddingTop: spacing.xl,
+      paddingBottom: Math.max(insets.bottom, spacing.xl),
       gap: spacing.md,
       borderTopWidth: 1,
       borderTopColor: theme.colors.border,

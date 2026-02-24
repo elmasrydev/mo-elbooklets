@@ -269,7 +269,7 @@ const QuizScreen: React.FC = () => {
         ) : (
           <ScrollView
             style={currentStyles.historyList}
-            contentContainerStyle={{ paddingBottom: 100 }}
+            contentContainerStyle={{ paddingBottom: common.insets.bottom + 50 }}
             showsVerticalScrollIndicator={false}
           >
             {quizHistory.map((quiz) => (

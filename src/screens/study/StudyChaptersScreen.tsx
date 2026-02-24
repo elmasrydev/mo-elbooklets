@@ -180,7 +180,10 @@ const StudyChaptersScreen: React.FC = () => {
 
       <ScrollView
         style={currentStyles.content}
-        contentContainerStyle={{ padding: layout.screenPadding, paddingBottom: 100 }}
+        contentContainerStyle={{
+          padding: layout.screenPadding,
+          paddingBottom: common.insets.bottom + 16,
+        }}
         showsVerticalScrollIndicator={false}
       >
         {chapters.map((chapter) => (

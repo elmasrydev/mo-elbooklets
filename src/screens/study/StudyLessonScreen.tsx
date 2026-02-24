@@ -9,6 +9,7 @@ import {
   Platform,
   UIManager,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -138,6 +139,7 @@ const StudyLessonScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { typography } = useTypography();
+  const insets = useSafeAreaInsets();
 
   const [currentLesson, setCurrentLesson] = useState<Lesson>(route.params?.lesson);
   const allLessons: Lesson[] = route.params?.allLessons || [];
@@ -147,7 +149,7 @@ const StudyLessonScreen: React.FC = () => {
   const previousLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
   const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
 
-  const currentStyles = styles(theme, isRTL, typography);
+  const currentStyles = styles(theme, isRTL, typography, insets);
 
   const togglePoint = (pointId: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -193,7 +195,10 @@ const StudyLessonScreen: React.FC = () => {
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: layout.screenPadding, paddingBottom: 30 }}
+        contentContainerStyle={{
+          padding: layout.screenPadding,
+          paddingBottom: Math.max(insets.bottom, 16) + 16,
+        }}
         showsVerticalScrollIndicator={false}
       >
         {/* Video Section */}
@@ -291,7 +296,12 @@ const StudyLessonScreen: React.FC = () => {
   );
 };
 
-const styles = (theme: any, isRTL: boolean, typography: any) =>
+const styles = (
+  theme: any,
+  isRTL: boolean,
+  typography: any,
+  insets: { top: number; bottom: number },
+) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -299,7 +309,7 @@ const styles = (theme: any, isRTL: boolean, typography: any) =>
     },
     header: {
       padding: 20,
-      paddingTop: 50,
+      paddingTop: insets.top + 8,
       backgroundColor: theme.colors.headerBackground,
     },
     headerTopRow: {

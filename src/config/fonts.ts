@@ -44,56 +44,56 @@ export const getFontWeight = (weight: 'regular' | 'medium' | 'semiBold' | 'bold'
   return fontWeights[weight];
 };
 
-// Typography scale - reasonable mobile sizes
+// Typography scale - aligned with HedeyaStores design system
 export const fontSizes = {
-  /** 12px - Captions, metadata, timestamps */
-  xs: 12,
-  /** 14px - Secondary text, labels, subtitles */
-  sm: 14,
-  /** 16px - Body text, default size */
-  base: 16,
+  /** 10px - Captions, metadata, timestamps */
+  xs: 10,
+  /** 12px - Secondary text, labels, subtitles */
+  sm: 12,
+  /** 14px - Body text, default size */
+  base: 14,
   /** 18px - Emphasized body, important text */
   lg: 18,
-  /** 20px - Section titles, card headers */
-  xl: 20,
-  /** 24px - Screen titles, main headers */
-  '2xl': 24,
-  /** 28px - Large headers, hero subtext */
-  '3xl': 28,
-  /** 32px - Hero text, splash screen */
-  '4xl': 32,
+  /** 24px - Section titles, card headers */
+  xl: 24,
+  /** 30px - Screen titles, main headers */
+  '2xl': 30,
+  /** 36px - Large headers, hero subtext */
+  '3xl': 36,
+  /** 36px - Hero text, splash screen */
+  '4xl': 36,
   /** 40px - Extra large display text */
   '5xl': 40,
 } as const;
 
 // Line heights matching font sizes
 export const lineHeights = {
-  xs: 16,
-  sm: 20,
-  base: 24,
-  lg: 28,
-  xl: 28,
-  '2xl': 32,
-  '3xl': 36,
-  '4xl': 40,
+  xs: 14,
+  sm: 16,
+  base: 20,
+  lg: 24,
+  xl: 32,
+  '2xl': 38,
+  '3xl': 44,
+  '4xl': 44,
   '5xl': 48,
 } as const;
 
-// Spacing scale for consistent padding/margins
+// Spacing scale - aligned with HedeyaStores design system
 export const spacing = {
   /** 4px */
   xs: 4,
   /** 8px */
   sm: 8,
-  /** 12px */
-  md: 12,
   /** 16px */
-  lg: 16,
-  /** 20px */
-  xl: 20,
+  md: 16,
   /** 24px */
-  '2xl': 24,
+  lg: 24,
   /** 32px */
+  xl: 32,
+  /** 48px */
+  '2xl': 48,
+  /** 32px (kept for backward compat) */
   '3xl': 32,
   /** 40px */
   '4xl': 40,
@@ -121,19 +121,19 @@ export const borderRadius = {
   full: 9999,
 } as const;
 
-// Pre-defined text styles for common use cases
+// Pre-defined text styles for common use cases (HedeyaStores-aligned sizes)
 export const textStyles = {
-  display: { fontSize: 32, fontWeight: '700', lineHeight: 40, fontFamily: 'Inter' },
-  h1: { fontSize: 28, fontWeight: '700', lineHeight: 36, fontFamily: 'Inter' },
+  display: { fontSize: 36, fontWeight: '700', lineHeight: 44, fontFamily: 'Inter' },
+  h1: { fontSize: 30, fontWeight: '700', lineHeight: 38, fontFamily: 'Inter' },
   h2: { fontSize: 24, fontWeight: '600', lineHeight: 32, fontFamily: 'Inter' },
-  h3: { fontSize: 20, fontWeight: '600', lineHeight: 28, fontFamily: 'Inter' },
-  body: { fontSize: 16, fontWeight: '400', lineHeight: 24, fontFamily: 'Inter' },
-  caption: { fontSize: 14, fontWeight: '400', lineHeight: 20, fontFamily: 'Inter' },
+  h3: { fontSize: 18, fontWeight: '600', lineHeight: 24, fontFamily: 'Inter' },
+  body: { fontSize: 14, fontWeight: '400', lineHeight: 20, fontFamily: 'Inter' },
+  caption: { fontSize: 12, fontWeight: '400', lineHeight: 16, fontFamily: 'Inter' },
   // Utility styles
-  button: { fontSize: 16, fontWeight: '600', lineHeight: 24, fontFamily: 'Inter' },
-  buttonSmall: { fontSize: 14, fontWeight: '600', lineHeight: 20, fontFamily: 'Inter' },
-  label: { fontSize: 14, fontWeight: '500', lineHeight: 20, fontFamily: 'Inter' },
-  bodySmall: { fontSize: 14, fontWeight: '400', lineHeight: 20, fontFamily: 'Inter' },
+  button: { fontSize: 14, fontWeight: '600', lineHeight: 20, fontFamily: 'Inter' },
+  buttonSmall: { fontSize: 12, fontWeight: '600', lineHeight: 16, fontFamily: 'Inter' },
+  label: { fontSize: 12, fontWeight: '500', lineHeight: 16, fontFamily: 'Inter' },
+  bodySmall: { fontSize: 12, fontWeight: '400', lineHeight: 16, fontFamily: 'Inter' },
 } as const;
 
 /**
@@ -144,11 +144,16 @@ export const getTextStyle = (style: keyof typeof textStyles, isArabic: boolean =
   const baseStyle = textStyles[style];
 
   if (isArabic) {
-    // For Arabic, use Cairo and slightly bump caption size for readability
+    // For Arabic, use Cairo and slightly bump size for readability
+    // Also increase line height by ~20% because Arabic (Cairo) has taller ascenders/descenders
     return {
       ...baseStyle,
       fontFamily: 'Cairo',
-      fontSize: style === 'caption' ? baseStyle.fontSize + 1 : baseStyle.fontSize,
+      fontSize:
+        style === 'caption' || style === 'bodySmall' || style === 'label' || style === 'buttonSmall'
+          ? baseStyle.fontSize + 1
+          : baseStyle.fontSize,
+      lineHeight: baseStyle.lineHeight ? Math.round(baseStyle.lineHeight * 1.25) : undefined,
     };
   }
 

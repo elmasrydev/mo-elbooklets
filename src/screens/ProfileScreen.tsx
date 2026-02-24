@@ -34,7 +34,10 @@ const ProfileScreen: React.FC = () => {
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: layout.screenPadding, paddingBottom: 100 }}
+        contentContainerStyle={{
+          padding: layout.screenPadding,
+          paddingBottom: common.insets.bottom + 50,
+        }}
       >
         {/* User Info Card */}
         <View style={currentStyles.userCard}>

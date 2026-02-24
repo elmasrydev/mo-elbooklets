@@ -238,7 +238,10 @@ const StudyCalendarScreen: React.FC = () => {
       {/* Day Content */}
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: layout.screenPadding, paddingBottom: 100 }}
+        contentContainerStyle={{
+          padding: layout.screenPadding,
+          paddingBottom: common.insets.bottom + 50,
+        }}
         showsVerticalScrollIndicator={false}
       >
         <Text style={currentStyles.dayTitle}>

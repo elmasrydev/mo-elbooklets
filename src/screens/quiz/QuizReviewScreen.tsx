@@ -213,7 +213,10 @@ const QuizReviewScreen: React.FC = () => {
 
             {(ua.question.explanation || ua.explanation) && (
               <View style={currentStyles.explanationBox}>
-                <Text style={currentStyles.explanationTitle}>{t('quiz_results.explanation')}</Text>
+                <Text style={currentStyles.explanationTitle}>
+                  {' '}
+                  {t('quiz_results.explanation')}{' '}
+                </Text>
                 <Text style={currentStyles.explanationText}>
                   {ua.question.explanation || ua.explanation}
                 </Text>
@@ -283,6 +286,7 @@ const styles = (
     },
     scrollContent: {
       padding: 16,
+      paddingBottom: Math.max(insets.bottom, 16) + 40,
     },
     questionCard: {
       backgroundColor: theme.colors.card,

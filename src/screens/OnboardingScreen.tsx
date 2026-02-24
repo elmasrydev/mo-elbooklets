@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../context/ThemeContext';
 import { useCommonStyles } from '../hooks/useCommonStyles';
@@ -15,8 +16,9 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted, onLog
   const { theme, spacing, fontSizes, borderRadius } = useTheme();
   const commonStyles = useCommonStyles();
   const { typography } = useTypography();
+  const insets = useSafeAreaInsets();
 
-  const currentStyles = styles(typography);
+  const currentStyles = styles(typography, insets);
 
   return (
     <View style={currentStyles.container}>
@@ -27,7 +29,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted, onLog
         resizeMode="cover"
       />
 
-      <SafeAreaView style={currentStyles.safeArea}>
+      <View style={currentStyles.safeArea}>
         {/* 2. Top Logo Overlay */}
         <View style={currentStyles.header}>
           <Image
@@ -62,18 +64,19 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted, onLog
             </Text>
           </View>
         </View>
-      </SafeAreaView>
+      </View>
     </View>
   );
 };
 
-const styles = (typography: any) =>
+const styles = (typography: any, insets: { top: number; bottom: number }) =>
   StyleSheet.create({
     container: {
       flex: 1,
     },
     safeArea: {
       flex: 1,
+      paddingTop: insets.top,
     },
     onboardingBg: {
       ...StyleSheet.absoluteFillObject,
@@ -97,7 +100,7 @@ const styles = (typography: any) =>
     },
     bottomContent: {
       paddingHorizontal: 30,
-      paddingBottom: 40,
+      paddingBottom: Math.max(insets.bottom, 40),
       alignItems: 'center',
     },
     title: {

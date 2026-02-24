@@ -1,4 +1,4 @@
-import { Dimensions, Platform, StatusBar } from 'react-native';
+import { Dimensions, Platform } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -11,9 +11,8 @@ export const layout = {
   screenWidth: width,
   screenHeight: height,
 
-  // Safe area (header)
-  headerPaddingTop: Platform.OS === 'ios' ? 50 : StatusBar.currentHeight || 50,
-  headerPaddingBottom: 18,
+  // Tab bar content height (used with insets.bottom for scroll padding)
+  tabBarContentHeight: 54,
 
   // Screen padding (unified 20px)
   screenPadding: 20,

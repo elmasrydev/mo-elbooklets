@@ -98,7 +98,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
       borderBottomColor: theme.colors.border,
       borderBottomWidth: showBorder ? 1 : 0,
       height: insets.top + HEADER_CONTENT_HEIGHT,
-      paddingTop: insets.top - 5,
+      paddingTop: insets.top,
       flexDirection: common.rowDirection,
     },
     !centerAlign ? { justifyContent: 'flex-start' as const } : undefined,
@@ -108,12 +108,12 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
   if (centerAlign) {
     return (
       <View style={containerStyle as any}>
-        <View style={[styles.sideContainer, { alignItems: 'flex-start' }]}>{renderLeft()}</View>
+        <View style={[styles.sideContainer, { alignItems: 'flex-start' }]}> {renderLeft()} </View>
         <View style={styles.centerContainer}>
           {renderTitle()}
           {renderSubtitle()}
         </View>
-        <View style={[styles.sideContainer, { alignItems: 'flex-end' }]}>{rightContent}</View>
+        <View style={[styles.sideContainer, { alignItems: 'flex-end' }]}> {rightContent} </View>
       </View>
     );
   }
@@ -129,7 +129,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
         {renderSubtitle()}
       </View>
       {rightContent && (
-        <View style={{ alignItems: 'flex-end', marginLeft: 'auto' }}>{rightContent}</View>
+        <View style={{ alignItems: 'flex-end', marginLeft: 'auto' }}> {rightContent} </View>
       )}
     </View>
   );

@@ -444,7 +444,7 @@ const styles = (
     tabTextActive: { color: '#fff' },
     tabTextInactive: { color: theme.colors.textSecondary },
     content: { flex: 1 },
-    contentContainer: { paddingBottom: 100 },
+    contentContainer: { paddingBottom: common.insets.bottom + 50 },
     leaderboardContainer: { padding: spacing.md },
 
     // User Status Card
