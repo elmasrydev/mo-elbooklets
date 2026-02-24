@@ -21,10 +21,10 @@ import { tryFetchWithFallback } from '../config/api';
 import { useTranslation } from 'react-i18next';
 import QuizSubjectsScreen from './quiz/QuizSubjectsScreen';
 import QuizLessonsScreen from './quiz/QuizLessonsScreen';
-import QuizResultsScreen from './quiz/QuizResultsScreen';
 import QuizStartScreen from './quiz/QuizStartScreen';
 import RecentActivityCard from '../components/RecentActivityCard';
 import UnifiedHeader from '../components/UnifiedHeader';
+import AppButton from '../components/AppButton';
 
 interface Subject {
   id: string;
@@ -66,7 +66,6 @@ const QuizScreen: React.FC = () => {
   // Modal visibility
   const [subjectModalVisible, setSubjectModalVisible] = useState(false);
   const [lessonsModalVisible, setLessonsModalVisible] = useState(false);
-  const [resultsModalVisible, setResultsModalVisible] = useState(false);
 
   useEffect(() => {
     fetchQuizHistory();
@@ -223,21 +222,15 @@ const QuizScreen: React.FC = () => {
       />
 
       <View style={currentStyles.actionSection}>
-        <TouchableOpacity
-          style={currentStyles.takeQuizButton}
+        <AppButton
+          title={t('quiz_screen.take_new_quiz')}
+          subtitle={t('quiz_screen.start_new_challenge')}
           onPress={() => setSubjectModalVisible(true)}
-          activeOpacity={0.9}
-        >
-          <View style={currentStyles.takeQuizContent}>
-            <Text style={currentStyles.takeQuizText}> {t('quiz_screen.take_new_quiz')} </Text>
-            <Text style={currentStyles.takeQuizSubtext}>
-              {t('quiz_screen.start_new_challenge')}
-            </Text>
-          </View>
-          <View style={currentStyles.takeQuizIconContainer}>
-            <Ionicons name="flash" size={28} color="#FFFFFF" />
-          </View>
-        </TouchableOpacity>
+          style={currentStyles.takeQuizButton}
+          icon={<Ionicons name="flash" size={28} color="#FFFFFF" />}
+          iconPosition="right"
+          size="lg"
+        />
       </View>
 
       <View style={currentStyles.historySection}>
@@ -251,20 +244,21 @@ const QuizScreen: React.FC = () => {
           <View style={currentStyles.errorState}>
             <Text style={currentStyles.errorStateIcon}>⚠️</Text>
             <Text style={currentStyles.errorStateTitle}>
-              {t('quiz_screen.error_loading_history')}
+              {' '}
+              {t('quiz_screen.error_loading_history')}{' '}
             </Text>
-            <TouchableOpacity style={currentStyles.retryButton} onPress={fetchQuizHistory}>
-              <Text style={currentStyles.retryButtonText}> {t('home_screen.try_again')} </Text>
-            </TouchableOpacity>
+            <AppButton
+              title={t('home_screen.try_again')}
+              onPress={fetchQuizHistory}
+              size="sm"
+              fullWidth={false}
+            />
           </View>
         ) : quizHistory.length === 0 ? (
           <View style={currentStyles.emptyState}>
             <Text style={currentStyles.emptyStateIcon}>📝</Text>
             <Text style={currentStyles.emptyStateTitle}> {t('quiz_screen.no_quizzes_yet')} </Text>
-            <Text style={currentStyles.emptyStateSubtitle}>
-              {' '}
-              {t('quiz_screen.take_first_quiz')}{' '}
-            </Text>
+            <Text style={currentStyles.emptyStateSubtitle}>{t('quiz_screen.take_first_quiz')}</Text>
           </View>
         ) : (
           <ScrollView
@@ -320,8 +314,6 @@ const QuizScreen: React.FC = () => {
           />
         )}
       </Modal>
-
-      {/* Modal logic for QuizResults removed as it is now a screen */}
     </View>
   );
 };
@@ -340,42 +332,15 @@ const styles = (
       marginTop: -26,
     },
     takeQuizButton: {
-      padding: 24,
+      padding: 16,
       borderRadius: layout.borderRadius.xl,
-      alignItems: 'center',
       backgroundColor: '#6366F1',
       shadowColor: '#6366F1',
       shadowOffset: { width: 0, height: 6 },
       shadowOpacity: 0.35,
       shadowRadius: 14,
       elevation: 8,
-      flexDirection: common.rowDirection,
-      justifyContent: 'space-between',
-    },
-    takeQuizContent: {
-      flex: 1,
-      alignItems: common.alignStart,
-    },
-    takeQuizIconContainer: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: 'rgba(255, 255, 255, 0.2)',
-      justifyContent: 'center',
-      alignItems: 'center',
-      ...common.marginStart(spacing.lg),
-    },
-    takeQuizText: {
-      ...typography('h3'),
-      fontWeight: 'bold',
-      marginBottom: 4,
-      color: '#FFFFFF',
-      textAlign: common.textAlign,
-    },
-    takeQuizSubtext: {
-      ...typography('caption'),
-      color: 'rgba(255, 255, 255, 0.9)',
-      textAlign: common.textAlign,
+      height: 90,
     },
     historySection: {
       flex: 1,
@@ -412,14 +377,6 @@ const styles = (
       marginBottom: 8,
       color: theme.colors.text,
     },
-    retryButton: {
-      marginTop: 20,
-      paddingHorizontal: 24,
-      paddingVertical: 12,
-      borderRadius: borderRadius.lg,
-      backgroundColor: theme.colors.primary,
-    },
-    retryButtonText: { color: '#fff', ...typography('button') },
     emptyState: {
       padding: 40,
       marginTop: 20,

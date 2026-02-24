@@ -18,6 +18,7 @@ import { layout } from '../../config/layout';
 import { useTypography } from '../../hooks/useTypography';
 import QuizSettingsModal from '../../components/QuizSettingsModal';
 import UnifiedHeader from '../../components/UnifiedHeader';
+import AppButton from '../../components/AppButton';
 
 interface Subject {
   id: string;
@@ -246,20 +247,18 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
 
       {selectedLessons.size > 0 && (
         <View style={currentStyles.footer}>
-          <TouchableOpacity
-            style={currentStyles.prepareButton}
+          <AppButton
+            title={`${t('quiz_lessons.prepare_quiz')} (${selectedLessons.size})`}
             onPress={() => setSettingsModalVisible(true)}
-          >
-            <Text style={currentStyles.prepareButtonText}>
-              {t('quiz_lessons.prepare_quiz')}({selectedLessons.size})
-            </Text>
-            <Ionicons
-              name={common.isRTL ? 'arrow-back' : 'arrow-forward'}
-              size={20}
-              color="#fff"
-              style={{ marginLeft: 8 }}
-            />
-          </TouchableOpacity>
+            icon={
+              <Ionicons
+                name={common.isRTL ? 'arrow-back' : 'arrow-forward'}
+                size={20}
+                color="#fff"
+              />
+            }
+            iconPosition="right"
+          />
         </View>
       )}
 
@@ -330,7 +329,6 @@ const styles = (theme: any, common: any, typography: any, spacing: any, borderRa
     chapterHeader: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      // justifyContent: 'flex-start', // Default
       padding: spacing.lg,
       backgroundColor: '#FFFFFF',
       borderBottomWidth: 1,
@@ -413,23 +411,6 @@ const styles = (theme: any, common: any, typography: any, spacing: any, borderRa
       bottom: 0,
       left: 0,
       right: 0,
-    },
-    prepareButton: {
-      flexDirection: common.rowDirection,
-      backgroundColor: theme.colors.primary,
-      paddingVertical: 12, // Reduced from 16
-      borderRadius: borderRadius.md, // changed from xl to md
-      justifyContent: 'center',
-      alignItems: 'center',
-      shadowColor: theme.colors.primary,
-      shadowOffset: { width: 0, height: 2 }, // Reduced shadow
-      shadowOpacity: 0.2, // Reduced opacity
-      shadowRadius: 4, // Reduced radius
-      elevation: 2, // Reduced elevation
-    },
-    prepareButtonText: {
-      color: '#fff',
-      ...typography('buttonSmall'), // Changed from base to sm
     },
   });
 

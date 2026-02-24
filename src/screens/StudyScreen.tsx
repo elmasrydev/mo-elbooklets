@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { layout } from '../config/layout';
 import { tryFetchWithFallback } from '../config/api';
 import UnifiedHeader from '../components/UnifiedHeader';
+import AppButton from '../components/AppButton';
 
 interface Subject {
   id: string;
@@ -114,21 +115,27 @@ const StudyScreen: React.FC = () => {
         <View style={currentStyles.errorState}>
           <Text style={currentStyles.errorStateIcon}>⚠️</Text>
           <Text style={currentStyles.errorStateTitle}>
-            {t('study_screen.error_loading_subjects')}
+            {' '}
+            {t('study_screen.error_loading_subjects')}{' '}
           </Text>
           <Text style={currentStyles.errorStateSubtitle}> {error} </Text>
-          <TouchableOpacity style={currentStyles.retryButton} onPress={fetchSubjects}>
-            <Text style={currentStyles.retryButtonText}> {t('home_screen.try_again')} </Text>
-          </TouchableOpacity>
+          <AppButton
+            title={t('home_screen.try_again')}
+            onPress={fetchSubjects}
+            size="sm"
+            fullWidth={false}
+          />
         </View>
       ) : subjects.length === 0 ? (
         <View style={currentStyles.emptyState}>
           <Text style={currentStyles.emptyStateIcon}>📚</Text>
           <Text style={currentStyles.emptyStateTitle}>
-            {t('study_screen.no_subjects_available')}
+            {' '}
+            {t('study_screen.no_subjects_available')}{' '}
           </Text>
           <Text style={currentStyles.emptyStateSubtitle}>
-            {t('study_screen.no_subjects_for_grade')}
+            {' '}
+            {t('study_screen.no_subjects_for_grade')}{' '}
           </Text>
         </View>
       ) : (
@@ -160,15 +167,15 @@ const StudyScreen: React.FC = () => {
               >
                 {/* Left Icon Box */}
                 <View style={[currentStyles.iconBox, { backgroundColor: config.bg }]}>
-                  <Ionicons name={config.icon} size={28} color={config.color} />
+                  <Ionicons name={config.icon as any} size={28} color={config.color} />
                 </View>
 
                 {/* Middle Info */}
                 <View style={currentStyles.subjectInfo}>
                   <Text style={currentStyles.subjectName}> {subject.name} </Text>
                   <Text style={currentStyles.subjectChapters}>
-                    {subject.chapters?.length || 0} {t('study_screen.chapters')}{' '}
-                    {subject.description ? `• ${subject.description}` : ''}
+                    {subject.chapters?.length || 0} {t('study_screen.chapters')}
+                    {subject.description ? ` • ${subject.description}` : ''}
                   </Text>
                 </View>
 
@@ -264,17 +271,17 @@ const styles = (
     subjectCard: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      padding: spacing.lg, // approx 16
+      padding: spacing.lg,
       marginBottom: spacing.md,
       backgroundColor: theme.colors.card,
-      borderRadius: borderRadius.xl, // approx 16-20
+      borderRadius: borderRadius.xl,
       borderWidth: 1,
       borderColor: theme.colors.border,
     },
     iconBox: {
       width: 56,
       height: 56,
-      borderRadius: 16, // squircle
+      borderRadius: 16,
       justifyContent: 'center',
       alignItems: 'center',
       ...common.marginEnd(spacing.md),
@@ -286,7 +293,7 @@ const styles = (
     },
     subjectName: {
       ...typography('label'),
-      fontSize: 16, // Design title size
+      fontSize: 16,
       fontWeight: 'bold',
       color: theme.colors.text,
       marginBottom: 4,
@@ -302,18 +309,6 @@ const styles = (
       justifyContent: 'center',
       alignItems: 'center',
       ...common.marginStart(spacing.sm),
-    },
-
-    // Legacy/Unused (can keep or remove, keeping for safety)
-    retryButton: {
-      paddingHorizontal: 24,
-      paddingVertical: 12,
-      borderRadius: 8,
-      backgroundColor: theme.colors.primary,
-    },
-    retryButtonText: {
-      color: '#FFFFFF',
-      ...typography('button'),
     },
   });
 

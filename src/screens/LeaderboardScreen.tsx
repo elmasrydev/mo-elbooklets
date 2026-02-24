@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
 import UnifiedHeader from '../components/UnifiedHeader';
+import AppButton from '../components/AppButton';
 import { layout } from '../config/layout';
 import { tryFetchWithFallback } from '../config/api';
 
@@ -151,39 +152,6 @@ const LeaderboardScreen: React.FC = () => {
     }
   };
 
-  const handleFollowToggle = async (student: Student) => {
-    try {
-      const token = await AsyncStorage.getItem('auth_token');
-      if (!token) return;
-      const result = await tryFetchWithFallback(
-        `mutation FollowUser($userId: ID!) { followUser(userId: $userId) { success isFollowing } }`,
-        { userId: student.id },
-        token,
-      );
-      if (result.data?.followUser?.success) {
-        const newIsFollowing = result.data.followUser.isFollowing;
-        const updater = (data: { entries: Student[]; userEntry: Student | null }) => ({
-          entries: data.entries.map((s) =>
-            s.id === student.id ? { ...s, isFollowing: newIsFollowing } : s,
-          ),
-          userEntry:
-            data.userEntry?.id === student.id
-              ? { ...data.userEntry, isFollowing: newIsFollowing }
-              : data.userEntry,
-        });
-
-        setAllLeaderboard((prev) => updater(prev));
-        setSubjectLeaderboards((prev) => {
-          const updated: any = {};
-          Object.keys(prev).forEach((k) => (updated[k] = updater(prev[k])));
-          return updated;
-        });
-      }
-    } catch (err: any) {
-      console.error('Follow error:', err);
-    }
-  };
-
   const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius, typography);
 
   const renderCurrentUserCard = (userEntry: Student | null) => {
@@ -232,8 +200,7 @@ const LeaderboardScreen: React.FC = () => {
             <Image source={{ uri: avatarUri }} style={currentStyles.avatarImage} />
           </View>
           <Text style={currentStyles.podiumNameText} numberOfLines={1}>
-            {' '}
-            {name}{' '}
+            {name}
           </Text>
           <Text style={currentStyles.podiumPointsText}> {points} </Text>
         </View>
@@ -256,7 +223,8 @@ const LeaderboardScreen: React.FC = () => {
         <View style={currentStyles.loadingState}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={currentStyles.loadingText}>
-            {t('leaderboard_screen.loading_leaderboard')}
+            {' '}
+            {t('leaderboard_screen.loading_leaderboard')}{' '}
           </Text>
         </View>
       );
@@ -268,12 +236,12 @@ const LeaderboardScreen: React.FC = () => {
           <Text style={currentStyles.emptyStateTitle}>
             {t('leaderboard_screen.error_loading_leaderboard')}
           </Text>
-          <TouchableOpacity
-            style={currentStyles.retryButton}
+          <AppButton
+            title={t('home_screen.try_again')}
             onPress={() => fetchLeaderboard(selectedTab)}
-          >
-            <Text style={currentStyles.retryButtonText}> {t('home_screen.try_again')} </Text>
-          </TouchableOpacity>
+            size="sm"
+            fullWidth={false}
+          />
         </View>
       );
 
@@ -321,14 +289,10 @@ const LeaderboardScreen: React.FC = () => {
                     />
                   </View>
                   <Text style={currentStyles.listItemName} numberOfLines={1}>
-                    {' '}
-                    {student.name}{' '}
+                    {student.name}
                   </Text>
                 </View>
-                <Text style={currentStyles.listItemPoints}>
-                  {' '}
-                  {student.xp.toLocaleString()} pts{' '}
-                </Text>
+                <Text style={currentStyles.listItemPoints}>{student.xp.toLocaleString()} pts</Text>
               </View>
             ))}
           </View>
@@ -658,14 +622,11 @@ const styles = (
       color: theme.colors.text,
       textAlign: 'center',
     },
-    retryButton: {
-      marginTop: spacing.xl,
-      paddingHorizontal: spacing.xl,
-      paddingVertical: spacing.md,
-      borderRadius: borderRadius.lg,
-      backgroundColor: theme.colors.primary,
+    emptyText: {
+      ...typography('body'),
+      color: theme.colors.textSecondary,
+      textAlign: 'center',
     },
-    retryButtonText: { color: '#fff', ...typography('button'), fontWeight: 'bold' },
   });
 
 export default LeaderboardScreen;

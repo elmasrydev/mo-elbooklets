@@ -1,10 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import { useTheme } from '../context/ThemeContext';
-import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
+import AppButton from '../components/AppButton';
 
 interface OnboardingScreenProps {
   onGetStarted: () => void;
@@ -13,8 +12,6 @@ interface OnboardingScreenProps {
 
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted, onLogin }) => {
   const { t } = useTranslation();
-  const { theme, spacing, fontSizes, borderRadius } = useTheme();
-  const commonStyles = useCommonStyles();
   const { typography } = useTypography();
   const insets = useSafeAreaInsets();
 
@@ -47,13 +44,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted, onLog
           <Text style={currentStyles.title}> {t('onboarding.title')} </Text>
           <Text style={currentStyles.subtitle}> {t('onboarding.subtitle')} </Text>
 
-          <TouchableOpacity
-            style={[currentStyles.button, { backgroundColor: '#1E3A8A' }]}
-            onPress={onGetStarted}
-            activeOpacity={0.8}
-          >
-            <Text style={currentStyles.buttonText}> {t('onboarding.get_started')} </Text>
-          </TouchableOpacity>
+          <AppButton title={t('onboarding.get_started')} onPress={onGetStarted} size="lg" />
 
           <View style={currentStyles.footer}>
             <Text style={currentStyles.footerText}>
@@ -115,24 +106,6 @@ const styles = (typography: any, insets: { top: number; bottom: number }) =>
       color: '#64748B',
       textAlign: 'center',
       marginBottom: 32,
-    },
-    button: {
-      width: '100%',
-      paddingVertical: 18,
-      borderRadius: 30,
-      alignItems: 'center',
-      justifyContent: 'center',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.1,
-      shadowRadius: 8,
-      elevation: 4,
-    },
-    buttonText: {
-      ...typography('button'),
-      color: '#FFFFFF',
-      fontSize: 18,
-      fontWeight: '700',
     },
     footer: {
       marginTop: 24,

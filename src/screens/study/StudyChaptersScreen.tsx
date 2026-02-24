@@ -18,6 +18,7 @@ import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import UnifiedHeader from '../../components/UnifiedHeader';
+import AppButton from '../../components/AppButton';
 
 interface Subject {
   id: string;
@@ -162,9 +163,12 @@ const StudyChaptersScreen: React.FC = () => {
           />
           <Text style={currentStyles.errorTitle}> {t('study_chapters.error_loading')} </Text>
           <Text style={currentStyles.errorText}> {error} </Text>
-          <TouchableOpacity style={currentStyles.retryButton} onPress={fetchLessons}>
-            <Text style={currentStyles.retryButtonText}> {t('home_screen.try_again')} </Text>
-          </TouchableOpacity>
+          <AppButton
+            title={t('home_screen.try_again')}
+            onPress={fetchLessons}
+            size="sm"
+            fullWidth={false}
+          />
         </View>
       </View>
     );
@@ -217,8 +221,7 @@ const StudyChaptersScreen: React.FC = () => {
                   </View>
                   <View style={currentStyles.lessonInfo}>
                     <Text style={currentStyles.lessonName} numberOfLines={2}>
-                      {' '}
-                      {lesson.name}{' '}
+                      {lesson.name}
                     </Text>
                     {lesson.summary && (
                       <Text style={currentStyles.lessonSummary} numberOfLines={1}>
@@ -302,7 +305,6 @@ const styles = (
     chapterHeader: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      // justifyContent: 'flex-start', // Default
       padding: spacing.md,
       backgroundColor: theme.colors.surface,
       borderBottomWidth: 1,
@@ -359,7 +361,7 @@ const styles = (
     },
     lessonSummary: {
       ...typography('caption'),
-      fontSize: 12, // Keeping it slightly smaller text style for summary
+      fontSize: 12,
       marginTop: 2,
       color: theme.colors.textSecondary,
       textAlign: common.textAlign,
@@ -380,16 +382,6 @@ const styles = (
       ...typography('caption'),
       textAlign: 'center',
       color: theme.colors.textSecondary,
-    },
-    retryButton: {
-      paddingHorizontal: 24,
-      paddingVertical: 12,
-      borderRadius: borderRadius.md,
-      backgroundColor: theme.colors.primary,
-    },
-    retryButtonText: {
-      color: '#fff',
-      ...typography('button'),
     },
   });
 

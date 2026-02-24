@@ -7,6 +7,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useTypography } from '../hooks/useTypography';
 import { layout } from '../config/layout';
 import UnifiedHeader from '../components/UnifiedHeader';
+import AppButton from '../components/AppButton';
 import { useTranslation } from 'react-i18next';
 
 const ProfileScreen: React.FC = () => {
@@ -98,9 +99,13 @@ const ProfileScreen: React.FC = () => {
         </View>
 
         {/* Logout Button */}
-        <TouchableOpacity style={currentStyles.logoutButton} onPress={handleLogout}>
-          <Text style={currentStyles.logoutButtonText}> Sign Out </Text>
-        </TouchableOpacity>
+        <AppButton
+          title="Sign Out"
+          onPress={handleLogout}
+          variant="danger"
+          size="lg"
+          style={currentStyles.logoutButton}
+        />
       </ScrollView>
     </View>
   );
@@ -209,14 +214,7 @@ const styles = (
       color: theme.colors.textTertiary,
     },
     logoutButton: {
-      backgroundColor: theme.colors.error || '#ef4444',
-      padding: spacing.lg,
-      borderRadius: borderRadius.lg,
-      alignItems: 'center',
-    },
-    logoutButtonText: {
-      color: '#ffffff',
-      ...typography('button'),
+      marginTop: spacing.md,
     },
   });
 

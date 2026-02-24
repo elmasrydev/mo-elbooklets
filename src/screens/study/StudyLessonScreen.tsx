@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
-import { Video, ResizeMode, Audio } from 'expo-av';
+import { Video, ResizeMode } from 'expo-av';
 import { layout } from '../../config/layout';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import CloseButton from '../../components/navigation/CloseButton';
@@ -334,10 +334,11 @@ const styles = (
       overflow: 'hidden',
     },
     headerTitle: {
-      ...typography('h2'),
-      fontWeight: 'bold',
+      ...typography('h1'),
+      fontWeight: '800',
       color: theme.colors.headerText,
       textAlign: isRTL ? 'right' : 'left',
+      marginTop: 8,
     },
     section: {
       marginBottom: 24,
@@ -432,7 +433,8 @@ const styles = (
     },
     pointText: {
       flex: 1,
-      ...typography('caption'),
+      ...typography('body'),
+      fontSize: 15,
       lineHeight: 22,
       marginLeft: isRTL ? 0 : 12,
       marginRight: isRTL ? 12 : 0,
@@ -449,9 +451,9 @@ const styles = (
       marginRight: isRTL ? 36 : 0,
     },
     explanationText: {
-      ...typography('caption'),
-      fontSize: 13,
-      lineHeight: 20,
+      ...typography('body'),
+      fontSize: 14,
+      lineHeight: 21,
       color: theme.colors.textSecondary,
       textAlign: isRTL ? 'right' : 'left',
     },

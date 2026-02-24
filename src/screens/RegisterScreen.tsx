@@ -13,7 +13,6 @@ import {
   Image,
   Modal,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
@@ -25,6 +24,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useTypography } from '../hooks/useTypography';
 
 import BackButton from '../components/navigation/BackButton';
+import AppButton from '../components/AppButton';
 
 interface RegisterScreenProps {
   onNavigateToLogin: () => void;
@@ -327,8 +327,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
         ))}
       </View>
       <Text style={currentStyles.stepText}>
-        {' '}
-        {t('auth.step_x_of_y', { current: currentStep, total: 4 })}{' '}
+        {t('auth.step_x_of_y', { current: currentStep, total: 4 })}
       </Text>
     </View>
   );
@@ -338,7 +337,6 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
       style={currentStyles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      {/* Back Button */}
       <BackButton
         onPress={handleBack}
         style={[
@@ -534,8 +532,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
               </View>
 
               <Text style={currentStyles.sectionTitle}>
-                {' '}
-                {t('auth.select_curriculum_type', 'Select Curriculum Type')}{' '}
+                {t('auth.select_curriculum_type', 'Select Curriculum Type')}
               </Text>
               <View style={currentStyles.systemsContainer}>
                 {systemsData?.educationalSystems?.map((system: any) => (
@@ -722,19 +719,12 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
             </>
           )}
 
-          <TouchableOpacity
-            style={[currentStyles.registerButton, isLoading && currentStyles.disabledButton]}
+          <AppButton
+            title={currentStep === 4 ? t('auth.sign_up') : t('common.continue', 'Continue')}
             onPress={handleNext}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#ffffff" />
-            ) : (
-              <Text style={currentStyles.registerButtonText}>
-                {currentStep === 4 ? t('auth.sign_up') : t('common.continue', 'Continue')}
-              </Text>
-            )}
-          </TouchableOpacity>
+            size="lg"
+            loading={isLoading}
+          />
         </View>
 
         <View style={currentStyles.footer}>
@@ -758,27 +748,21 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
               <Ionicons name="warning" size={32} color="#D97706" />
             </View>
             <Text style={currentStyles.disclaimerTitle}>
-              {' '}
-              {t('auth.disclaimer_title', 'Registration Disclaimer')}{' '}
+              {t('auth.disclaimer_title', 'Registration Disclaimer')}
             </Text>
             <Text style={currentStyles.disclaimerMessage}> {modalMessage} </Text>
 
             <View style={currentStyles.disclaimerActions}>
-              <TouchableOpacity style={currentStyles.confirmButton} onPress={confirmRegistration}>
-                <Text style={currentStyles.confirmButtonText}>
-                  {' '}
-                  {t('auth.continue_registration', 'Continue Registration')}{' '}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={currentStyles.cancelButton}
+              <AppButton
+                title={t('auth.continue_registration', 'Continue Registration')}
+                onPress={confirmRegistration}
+                style={{ marginBottom: 12 }}
+              />
+              <AppButton
+                title={t('common.go_back', 'Go Back')}
                 onPress={() => setShowModal(false)}
-              >
-                <Text style={currentStyles.cancelButtonText}>
-                  {' '}
-                  {t('common.go_back', 'Go Back')}{' '}
-                </Text>
-              </TouchableOpacity>
+                variant="outline"
+              />
             </View>
           </View>
         </View>
@@ -845,26 +829,6 @@ const styles = (
       ...typography('body'),
       color: '#1E293B',
       textAlign: isRTL ? 'right' : 'left',
-    },
-    registerButton: {
-      backgroundColor: '#1E3A8A',
-      borderRadius: 30,
-      height: 56,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginTop: 16,
-      shadowColor: '#1E3A8A',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.2,
-      shadowRadius: 8,
-      elevation: 4,
-    },
-    disabledButton: { backgroundColor: '#94A3B8' },
-    registerButtonText: {
-      ...typography('button'),
-      color: '#fff',
-      fontSize: 18,
-      fontWeight: '700',
     },
     footer: {
       flexDirection: isRTL ? 'row-reverse' : 'row',
@@ -1161,37 +1125,6 @@ const styles = (
     },
     disclaimerActions: {
       width: '100%',
-      gap: 12,
-    },
-    confirmButton: {
-      width: '100%',
-      height: 56,
-      backgroundColor: '#1E3A8A',
-      borderRadius: 16,
-      justifyContent: 'center',
-      alignItems: 'center',
-      shadowColor: '#1E3A8A',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.2,
-      shadowRadius: 8,
-    },
-    confirmButtonText: {
-      ...typography('button'),
-      color: '#FFF',
-      fontWeight: '900',
-    },
-    cancelButton: {
-      width: '100%',
-      height: 56,
-      backgroundColor: '#F1F5F9',
-      borderRadius: 16,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    cancelButtonText: {
-      ...typography('button'),
-      color: '#64748B',
-      fontWeight: '900',
     },
   });
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
@@ -8,6 +8,7 @@ import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
 import { layout } from '../../config/layout';
 import UnifiedHeader from '../../components/UnifiedHeader';
+import AppButton from '../../components/AppButton';
 
 interface QuizStartScreenProps {
   subjectName: string;
@@ -88,25 +89,30 @@ const QuizStartScreen: React.FC<QuizStartScreenProps> = ({
 
       {/* Footer */}
       <View style={currentStyles.footer}>
-        <TouchableOpacity style={currentStyles.backBtn} onPress={onBack}>
-          <Ionicons
-            name={common.isRTL ? 'arrow-forward' : 'arrow-back'}
-            size={18}
-            color={theme.colors.text}
-            style={{ marginRight: common.isRTL ? 0 : 6, marginLeft: common.isRTL ? 6 : 0 }}
-          />
-          <Text style={currentStyles.backBtnText}> {t('quiz_start.go_back')} </Text>
-        </TouchableOpacity>
+        <AppButton
+          title={t('quiz_start.go_back')}
+          onPress={onBack}
+          variant="outline"
+          size="md"
+          icon={
+            <Ionicons
+              name={common.isRTL ? 'arrow-forward' : 'arrow-back'}
+              size={18}
+              color={theme.colors.text}
+            />
+          }
+          iconPosition="left"
+          style={{ flex: 1 }}
+        />
 
-        <TouchableOpacity style={currentStyles.startButton} onPress={onStart} activeOpacity={0.85}>
-          <Ionicons
-            name="flash"
-            size={22}
-            color="#FFFFFF"
-            style={{ marginRight: common.isRTL ? 0 : 8, marginLeft: common.isRTL ? 8 : 0 }}
-          />
-          <Text style={currentStyles.startButtonText}> {t('quiz_start.start_quiz')} </Text>
-        </TouchableOpacity>
+        <AppButton
+          title={t('quiz_start.start_quiz')}
+          onPress={onStart}
+          size="md"
+          icon={<Ionicons name="flash" size={22} color="#FFFFFF" />}
+          iconPosition="left"
+          style={{ flex: 2 }}
+        />
       </View>
     </View>
   );
@@ -211,39 +217,6 @@ const styles = (
       borderTopWidth: 1,
       borderTopColor: theme.colors.border,
       backgroundColor: theme.colors.background,
-    },
-    backBtn: {
-      flex: 1,
-      flexDirection: common.rowDirection,
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 12, // Reduced from 16
-      borderRadius: borderRadius.md, // changed from xl to md
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      backgroundColor: theme.colors.background,
-    },
-    backBtnText: {
-      ...typography('buttonSmall'), // Changed from base to sm
-      color: theme.colors.text,
-    },
-    startButton: {
-      flex: 2,
-      flexDirection: common.rowDirection,
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 12, // Reduced from 16
-      borderRadius: borderRadius.md, // changed from xl to md
-      backgroundColor: '#6366F1',
-      shadowColor: '#6366F1',
-      shadowOffset: { width: 0, height: 2 }, // Reduced shadow
-      shadowOpacity: 0.2, // Reduced opacity
-      shadowRadius: 4, // Reduced radius
-      elevation: 2, // Reduced elevation
-    },
-    startButtonText: {
-      ...typography('buttonSmall'), // Changed from base to sm
-      color: '#FFFFFF',
     },
   });
 

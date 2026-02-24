@@ -23,6 +23,7 @@ import Svg, { Path, Circle, G, Text as SvgText } from 'react-native-svg';
 import RecentActivityCard from '../components/RecentActivityCard';
 import TodaysPlanWidget from '../components/TodaysPlanWidget';
 import UnifiedHeader from '../components/UnifiedHeader';
+import { marginStart } from '../lib/rtl';
 
 const { width } = Dimensions.get('window');
 
@@ -126,14 +127,6 @@ const WheelOfSuccess: React.FC<{
             // Progress Segment Path
             const progressRadius =
               centerRadius + ((mainRadius - centerRadius) / 100) * arm.progress;
-
-            // Calculate coordinates for the pie segment
-            const x1 = centerX + progressRadius * Math.cos(startAngle);
-            const y1 = centerY + progressRadius * Math.sin(startAngle);
-            const x2 = centerX + progressRadius * Math.cos(endAngle);
-            const y2 = centerY + progressRadius * Math.sin(endAngle);
-            const xCenter = centerX + centerRadius * Math.cos(startAngle);
-            const yCenter = centerY + centerRadius * Math.sin(startAngle);
 
             const pathData = `
               M ${centerX} ${centerY}
@@ -385,14 +378,12 @@ const HomeScreen: React.FC = () => {
         }
         title={
           <Text style={common.headerTitle}>
-            {' '}
-            {t('home_screen.hi')}, {user?.name?.split(' ')[0] || 'Alex'} ! 👋
+            {t('home_screen.hi')}, {user?.name?.split(' ')[0] || 'Alex'}! 👋
           </Text>
         }
         subtitle={
           <Text style={common.headerSubtitle}>
-            {' '}
-            {user?.grade?.name || 'Grade'} • {user?.educational_system?.name || 'System'}{' '}
+            {user?.grade?.name || 'Grade'} • {user?.educational_system?.name || 'System'}
           </Text>
         }
         rightContent={
@@ -419,7 +410,6 @@ const HomeScreen: React.FC = () => {
             </View>
             <Text style={currentStyles.statLabel}> {t('home_screen.quizzes')} </Text>
             <Text style={[currentStyles.statValue, { color: '#0f172a' }]}>
-              {' '}
               {activitiesData?.total_quizzes ?? 0}
             </Text>
           </View>
@@ -434,8 +424,7 @@ const HomeScreen: React.FC = () => {
             </View>
             <Text style={currentStyles.statLabel}> {t('home_screen.completed')} </Text>
             <Text style={[currentStyles.statValue, { color: '#0f172a' }]}>
-              {' '}
-              {activitiesData?.avg_score ?? 0}%{' '}
+              {activitiesData?.avg_score ?? 0}%
             </Text>
           </View>
         </View>
@@ -585,6 +574,107 @@ const HomeScreen: React.FC = () => {
   );
 };
 
+const wheelStyles = (typography: any, common: any) =>
+  StyleSheet.create({
+    container: {
+      backgroundColor: '#fff',
+      padding: 20,
+      borderRadius: 24,
+      marginBottom: 20,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 12,
+      elevation: 5,
+    },
+    headerRow: {
+      flexDirection: common.rowDirection,
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 20,
+    },
+    headerInfo: {
+      flex: 1,
+      alignItems: common.alignStart,
+    },
+    wheelTitle: {
+      ...typography('h3'),
+      fontWeight: 'bold',
+      color: '#1e293b',
+      textAlign: common.textAlign,
+    },
+    wheelSubtitle: {
+      ...typography('caption'),
+      color: '#64748b',
+      marginTop: 2,
+      textAlign: common.textAlign,
+    },
+    masteryBadge: {
+      backgroundColor: '#fff',
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: '#e2e8f0',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+      elevation: 2,
+      minWidth: 80,
+    },
+    masteryValue: {
+      ...typography('h3'),
+      fontWeight: '800',
+      color: '#284196',
+      lineHeight: 24,
+    },
+    masteryLabel: {
+      ...typography('caption'),
+      fontSize: 9,
+      fontWeight: '700',
+      color: '#64748b',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      marginTop: 2,
+    },
+    wheelMainContainer: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    legendContainer: {
+      marginTop: 20,
+      flexDirection: common.rowDirection,
+    },
+    legendItem: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      ...common.marginEnd(16),
+      backgroundColor: '#f8fafc',
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 10,
+    },
+    legendDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      ...common.marginEnd(6),
+    },
+    legendText: {
+      ...typography('caption'),
+      color: '#1e293b',
+      fontWeight: '600',
+    },
+    legendValue: {
+      ...typography('caption'),
+      fontWeight: 'bold',
+      ...common.marginStart(4),
+    },
+  });
+
 const styles = (
   theme: any,
   common: any,
@@ -595,7 +685,6 @@ const styles = (
   typography: any,
 ) =>
   StyleSheet.create({
-    // header: { ...common.header }, // Using common.header directly
     headerLeftContent: { flexDirection: common.rowDirection, alignItems: 'center', flex: 1 },
     avatarContainer: { position: 'relative', ...common.marginStart(spacing.sm) },
     initialsAvatar: {
@@ -620,7 +709,6 @@ const styles = (
       borderWidth: 2,
       borderColor: theme.colors.headerBackground || theme.colors.primary,
     },
-    headerGreeting: { ...common.marginStart(12), alignItems: common.alignStart },
     notificationButton: {
       width: 44,
       height: 44,
@@ -643,10 +731,10 @@ const styles = (
     },
     topStatCard: {
       flex: 1,
-      aspectRatio: 1, // Make square
+      aspectRatio: 1,
       backgroundColor: theme.colors.card,
       padding: spacing.lg,
-      borderRadius: layout.borderRadius.md, // Reduced border radius
+      borderRadius: layout.borderRadius.md,
       alignItems: 'center',
       justifyContent: 'center',
       shadowColor: '#000',
@@ -654,7 +742,6 @@ const styles = (
       shadowOpacity: 0.1,
       shadowRadius: 10,
       elevation: 5,
-      borderWidth: 0,
     },
     statIconContainer: {
       width: 40,
@@ -713,8 +800,9 @@ const styles = (
     sectionHeaderRow: {
       flexDirection: common.rowDirection,
       justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: spacing.lg,
+      alignItems: 'baseline', // Align text baselines
+      marginBottom: spacing.md,
+      paddingHorizontal: 4,
     },
     viewAllText: { ...typography('label'), color: theme.colors.primary, fontWeight: '700' },
     quickActionsScroll: {
@@ -722,7 +810,7 @@ const styles = (
       gap: 12,
     },
     quickActionButton: {
-      width: 100,
+      width: 100, // Revert to 100
       backgroundColor: theme.colors.card,
       borderRadius: layout.borderRadius.lg,
       padding: spacing.md,
@@ -798,120 +886,10 @@ const styles = (
       ...typography('caption'),
       color: 'rgba(255,255,255,0.7)',
       fontWeight: '700',
-      marginTop: 16,
-      letterSpacing: 1,
+      marginTop: 12,
     },
-  });
-
-const wheelStyles = (typography: any, common: any) =>
-  StyleSheet.create({
-    container: {
-      backgroundColor: '#ffffff', // Light background
-      borderRadius: 16, // Reduced border radius
-      paddingVertical: 24,
-      marginBottom: 24,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.08,
-      shadowRadius: 15,
-      elevation: 4,
-      overflow: 'hidden',
-      borderWidth: 1,
-      borderColor: '#f1f5f9',
-    },
-    headerRow: {
-      flexDirection: common.rowDirection,
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: 20,
-      marginBottom: 10,
-    },
-    headerInfo: {
-      flex: 1,
-      alignItems: common.alignStart,
-    },
-    wheelTitle: {
-      ...typography('h2'),
-      fontSize: 22,
-      fontWeight: '900',
-      color: '#0f172a', // Dark text
-      textTransform: 'uppercase',
-      letterSpacing: -0.5,
-    },
-    wheelSubtitle: {
-      ...typography('body'),
-      color: '#64748b', // Gray text
-      fontWeight: '500',
-      marginTop: 2,
-    },
-    masteryBadge: {
-      width: 80,
-      height: 80,
-      backgroundColor: '#2563eb',
-      borderRadius: 12, // Reduced border radius
-      justifyContent: 'center',
-      alignItems: 'center',
-      borderWidth: 4,
-      borderColor: 'rgba(255,255,255,0.1)',
-      shadowColor: '#2563eb',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
-      shadowRadius: 8,
-    },
-    masteryValue: {
-      ...typography('h2'),
-      fontSize: 22,
-      fontWeight: '900',
-      color: '#fff',
-      lineHeight: 30, // Increased to prevent Arabic crop
-      paddingTop: 4, // Slight nudge down for Arabic fonts
-    },
-    masteryLabel: {
-      ...typography('caption'),
-      fontSize: 8,
-      color: '#fff',
-      fontWeight: 'bold',
-      textTransform: 'uppercase',
-      marginTop: 4,
-      opacity: 0.8,
-    },
-    wheelMainContainer: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginVertical: -20, // Negative margin to handle SVG whitespace
-    },
-    legendContainer: {
-      marginTop: 10,
-      paddingHorizontal: 24,
-    },
-    legendItem: {
-      flexDirection: common.rowDirection,
-      alignItems: 'center',
-      backgroundColor: '#f8fafc', // Light gray background
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      borderRadius: 14,
-      marginRight: 8,
-      borderWidth: 1,
-      borderColor: '#f1f5f9',
-    },
-    legendDot: {
-      width: 10,
-      height: 10,
-      borderRadius: 5,
-      marginRight: 8,
-    },
-    legendText: {
-      ...typography('caption'),
-      fontSize: 11,
-      fontWeight: 'bold',
-      color: '#334155', // Slate-700
-      marginRight: 6,
-    },
-    legendValue: {
-      ...typography('caption'),
-      fontSize: 11,
-      fontWeight: '900',
+    sectionHeader: {
+      marginBottom: spacing.md,
     },
   });
 

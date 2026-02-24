@@ -65,7 +65,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
     return leftContent || null;
   };
 
-  const HEADER_CONTENT_HEIGHT = 50; // Standard fixed design height
+  const HEADER_CONTENT_HEIGHT = 54; // Standard fixed design height
 
   const renderTitle = () => {
     if (!title) return null;
@@ -138,7 +138,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    paddingBottom: 6,
+    paddingBottom: 8,
     paddingHorizontal: 20, // matches layout.screenPadding
     alignItems: 'center',
   },

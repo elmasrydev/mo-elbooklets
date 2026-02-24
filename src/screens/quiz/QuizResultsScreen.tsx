@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -21,6 +20,7 @@ import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
 import CircularProgress from '../../components/CircularProgress';
 import UnifiedHeader from '../../components/UnifiedHeader';
+import AppButton from '../../components/AppButton';
 
 interface UserQuizAnswer {
   question: {
@@ -232,9 +232,12 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
           />
           <Text style={currentStyles.errorTitle}> {t('quiz_results.error_loading_results')} </Text>
           <Text style={currentStyles.errorText}> {error} </Text>
-          <TouchableOpacity style={currentStyles.retryButton} onPress={fetchQuizResults}>
-            <Text style={currentStyles.retryButtonText}> {t('home_screen.try_again')} </Text>
-          </TouchableOpacity>
+          <AppButton
+            title={t('home_screen.try_again')}
+            onPress={fetchQuizResults}
+            size="sm"
+            fullWidth={false}
+          />
         </View>
       </View>
     );
@@ -271,7 +274,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
         contentContainerStyle={currentStyles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        {/* Score Summary based on n1.png */}
+        {/* Score Summary */}
         <View style={currentStyles.scoreGridContainer}>
           <View style={currentStyles.mainScoreWrapper}>
             <CircularProgress
@@ -312,7 +315,8 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
           <View style={currentStyles.statsGrid}>
             <View style={[currentStyles.statCard, { backgroundColor: '#ECFDF5' }]}>
               <Text style={[currentStyles.statValueText, { color: '#10B981' }]}>
-                {correctAnswers}
+                {' '}
+                {correctAnswers}{' '}
               </Text>
               <Text style={[currentStyles.statLabelText, { color: '#047857' }]}>
                 {t('common.correct')}
@@ -337,33 +341,25 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
           </View>
         </View>
 
-        {/* Action Buttons based on n1.png */}
+        {/* Action Buttons */}
         <View style={currentStyles.actionsContainer}>
-          <TouchableOpacity
-            style={currentStyles.primaryAction}
+          <AppButton
+            title={t('home_screen.review')}
             onPress={() => navigation.navigate('QuizReview', { quizId, quizResult })}
-          >
-            <Ionicons
-              name="eye-outline"
-              size={20}
-              color="#fff"
-              style={{ marginRight: isRTL ? 0 : 8, marginLeft: isRTL ? 8 : 0 }}
-            />
-            <Text style={currentStyles.primaryActionText}> {t('home_screen.review')} </Text>
-          </TouchableOpacity>
+            icon={<Ionicons name="eye-outline" size={20} color="#fff" />}
+            size="lg"
+          />
 
-          <TouchableOpacity style={currentStyles.secondaryAction} onPress={onRetakeQuiz}>
-            <Ionicons
-              name="refresh-outline"
-              size={20}
-              color={theme.colors.primary}
-              style={{ marginRight: isRTL ? 0 : 8, marginLeft: isRTL ? 8 : 0 }}
-            />
-            <Text style={currentStyles.secondaryActionText}> {t('quiz_results.retake_quiz')} </Text>
-          </TouchableOpacity>
+          <AppButton
+            title={t('quiz_results.retake_quiz')}
+            onPress={onRetakeQuiz}
+            variant="outline"
+            icon={<Ionicons name="refresh-outline" size={20} color={theme.colors.primary} />}
+            size="lg"
+          />
         </View>
 
-        {/* Refined Breadcrumb: Vertical Stack - moved to bottom */}
+        {/* Breadcrumb: Vertical Stack */}
         <View style={[currentStyles.breadcrumbContainer]}>
           {/* Always show Subject first */}
           <View style={[currentStyles.breadcrumbRow]}>
@@ -412,8 +408,6 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
 
         <View style={{ height: 40 }} />
       </ScrollView>
-
-      {/* Footer is now integrated into main scroll for n1 layout */}
     </View>
   );
 };
@@ -458,11 +452,11 @@ const styles = (
     },
     breadcrumbRow: {
       flexDirection: 'row',
-      alignItems: 'flex-start', // Top align icon with multiline text
+      alignItems: 'flex-start',
       marginBottom: 8,
     },
     iconContainer: {
-      marginTop: 2, // Fine tune alignment with text
+      marginTop: 2,
       marginRight: 12,
       marginLeft: 12,
     },
@@ -474,7 +468,7 @@ const styles = (
       textAlign: common.textAlign,
     },
     breadcrumbQuizText: {
-      ...typography('bodySmall'), // Slightly larger for emphasis
+      ...typography('bodySmall'),
       fontWeight: 'bold',
       color: theme.colors.text,
       flex: 1,
@@ -509,16 +503,6 @@ const styles = (
       marginBottom: spacing.xl,
       color: theme.colors.textSecondary,
     },
-    retryButton: {
-      paddingHorizontal: 24,
-      paddingVertical: 12,
-      borderRadius: borderRadius.md,
-      backgroundColor: theme.colors.primary,
-    },
-    retryButtonText: {
-      color: '#FFFFFF',
-      ...typography('button'),
-    },
     scoreGridContainer: {
       alignItems: 'center',
       marginBottom: spacing.xl,
@@ -538,7 +522,7 @@ const styles = (
       fontSize: 28,
       fontWeight: 'bold',
       color: theme.colors.text,
-      lineHeight: 34, // Explicit line height to prevent cutoff
+      lineHeight: 34,
     },
     scorePercentText: {
       ...typography('h3'),
@@ -581,204 +565,6 @@ const styles = (
       width: '100%',
       gap: 12,
       marginBottom: spacing.xl,
-    },
-    primaryAction: {
-      backgroundColor: theme.colors.primary,
-      flexDirection: common.rowDirection,
-      paddingVertical: 16,
-      borderRadius: borderRadius.lg,
-      alignItems: 'center',
-      justifyContent: 'center',
-      ...layout.shadow,
-    },
-    primaryActionText: {
-      ...typography('button'),
-      color: '#fff',
-      fontWeight: 'bold',
-    },
-    secondaryAction: {
-      backgroundColor: theme.colors.card,
-      flexDirection: common.rowDirection,
-      paddingVertical: 16,
-      borderRadius: borderRadius.lg,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-    },
-    secondaryActionText: {
-      ...typography('button'),
-      color: theme.colors.primary,
-      fontWeight: 'bold',
-    },
-    textAction: {
-      paddingVertical: 12,
-      alignItems: 'center',
-    },
-    textActionLabel: {
-      ...typography('button'),
-      color: theme.colors.textSecondary,
-      textDecorationLine: 'underline',
-    },
-    reviewSection: {
-      marginBottom: spacing.xl,
-    },
-    reviewTitle: {
-      ...typography('h2'),
-      fontWeight: 'bold',
-      marginBottom: spacing.lg,
-      color: theme.colors.text,
-      textAlign: common.textAlign,
-    },
-    questionCard: {
-      padding: spacing.xl,
-      borderRadius: borderRadius.lg,
-      marginBottom: spacing.md,
-      backgroundColor: theme.colors.card,
-      ...layout.shadow,
-    },
-    questionHeader: {
-      flexDirection: common.rowDirection,
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: spacing.md,
-    },
-    questionNumber: {
-      ...typography('caption'),
-      fontWeight: 'bold',
-      color: theme.colors.primary,
-    },
-    badgeError: {
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      borderRadius: 4,
-      backgroundColor: theme.colors.errorBackground,
-    },
-    badgeErrorText: {
-      ...typography('caption'),
-      fontSize: 10,
-      fontWeight: 'bold',
-      color: theme.colors.error,
-    },
-    questionText: {
-      ...typography('body'),
-      marginBottom: spacing.lg,
-      lineHeight: 24,
-      color: theme.colors.text,
-    },
-    answerBoxWrong: {
-      padding: spacing.md,
-      borderRadius: borderRadius.md,
-      backgroundColor: theme.colors.errorBackground,
-      marginBottom: spacing.md,
-      borderWidth: 1,
-      borderColor: theme.colors.error,
-    },
-    answerBoxCorrect: {
-      padding: spacing.md,
-      borderRadius: borderRadius.md,
-      backgroundColor: theme.colors.successBackground,
-      marginBottom: spacing.md,
-      borderWidth: 1,
-      borderColor: theme.colors.success,
-    },
-    answerLabel: {
-      ...typography('caption'),
-      fontSize: 12,
-      fontWeight: 'bold',
-      marginBottom: 4,
-      color: theme.colors.textSecondary,
-    },
-    answerText: {
-      ...typography('body'),
-      fontWeight: '600',
-      color: theme.colors.text,
-    },
-    explanationBox: {
-      marginTop: spacing.md,
-      padding: spacing.md,
-      backgroundColor: theme.colors.background,
-      borderRadius: borderRadius.md,
-    },
-    explanationLabel: {
-      ...typography('caption'),
-      fontSize: 12,
-      fontWeight: 'bold',
-      marginBottom: 4,
-      color: theme.colors.primary,
-    },
-    explanationText: {
-      ...typography('caption'),
-      color: theme.colors.textSecondary,
-      lineHeight: 20,
-    },
-    perfectScoreCard: {
-      alignItems: 'center',
-      padding: spacing['2xl'],
-      backgroundColor: theme.colors.card,
-      borderRadius: borderRadius.lg,
-      ...layout.shadow,
-    },
-    perfectScoreTitle: {
-      ...typography('h2'),
-      fontWeight: 'bold',
-      color: theme.colors.text,
-      marginBottom: spacing.sm,
-    },
-    perfectScoreText: {
-      ...typography('body'),
-      color: theme.colors.textSecondary,
-      textAlign: 'center',
-    },
-    footer: {
-      padding: spacing.md,
-      // Ensure we always have at least some padding, plus safe area
-      paddingBottom: Math.max(spacing.md, insets.bottom + spacing.xs),
-      backgroundColor: theme.colors.background,
-      borderTopWidth: 1,
-      borderTopColor: theme.colors.border,
-      flexDirection: common.rowDirection,
-      gap: spacing.md,
-    },
-    retakeButton: {
-      flex: 1,
-      paddingVertical: 12,
-      borderRadius: borderRadius.md,
-      backgroundColor: theme.colors.card,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      alignItems: 'center',
-    },
-    retakeButtonText: {
-      ...typography('buttonSmall'),
-      color: theme.colors.text,
-    },
-    doneButton: {
-      flex: 1,
-      paddingVertical: 12,
-      borderRadius: borderRadius.md,
-      backgroundColor: theme.colors.primary,
-      alignItems: 'center',
-    },
-    doneButtonText: {
-      ...typography('buttonSmall'),
-      color: '#FFFFFF',
-    },
-    // Custom Header
-    header: {
-      flexDirection: common.rowDirection,
-      alignItems: 'center',
-      paddingHorizontal: layout.screenPadding,
-      paddingBottom: spacing.md,
-      backgroundColor: theme.colors.headerBackground,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border, // subtle separator for sleekness
-    },
-    headerTitle: {
-      fontSize: fontSizes.lg, // Smaller than 2xl
-      fontWeight: 'bold',
-      color: theme.colors.headerText,
-      textAlign: common.textAlign,
     },
   });
 

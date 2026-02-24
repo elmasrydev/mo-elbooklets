@@ -16,6 +16,7 @@ import { useTypography } from '../../hooks/useTypography';
 import { layout } from '../../config/layout';
 import { tryFetchWithFallback } from '../../config/api';
 import UnifiedHeader from '../../components/UnifiedHeader';
+import AppButton from '../../components/AppButton';
 
 interface Subject {
   id: string;
@@ -102,9 +103,12 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
             {' '}
             {t('quiz_subjects.error_loading_subjects')}{' '}
           </Text>
-          <TouchableOpacity style={currentStyles.retryButton} onPress={fetchSubjects}>
-            <Text style={currentStyles.retryButtonText}> {t('home_screen.try_again')} </Text>
-          </TouchableOpacity>
+          <AppButton
+            title={t('home_screen.try_again')}
+            onPress={fetchSubjects}
+            size="sm"
+            fullWidth={false}
+          />
         </View>
       </View>
     );
@@ -141,7 +145,8 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
               </Text>
               <View style={currentStyles.subjectStats}>
                 <Text style={currentStyles.subjectStatsText}>
-                  {t('quiz_subjects.tap_to_start')}
+                  {' '}
+                  {t('quiz_subjects.tap_to_start')}{' '}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -186,13 +191,6 @@ const styles = (
       marginBottom: 8,
       color: theme.colors.text,
     },
-    retryButton: {
-      paddingHorizontal: 24,
-      paddingVertical: 12,
-      borderRadius: borderRadius.md,
-      backgroundColor: theme.colors.primary,
-    },
-    retryButtonText: { color: '#fff', ...typography('button') },
     subjectsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
     subjectCard: {
       width: '48%',

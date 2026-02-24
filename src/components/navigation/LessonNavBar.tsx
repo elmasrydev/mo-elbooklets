@@ -1,12 +1,12 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
-import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
+import AppButton from '../AppButton';
 
 interface LessonNavBarProps {
   currentIndex: number;
@@ -16,12 +16,6 @@ interface LessonNavBarProps {
   onFinish?: () => void;
 }
 
-/**
- * Fixed bottom navigation bar for lesson prev/next.
- * - Previous on the left (secondary style)
- * - Counter badge in the center
- * - Next on the right (primary style)
- */
 const LessonNavBar: React.FC<LessonNavBarProps> = ({
   currentIndex,
   totalCount,
@@ -29,10 +23,9 @@ const LessonNavBar: React.FC<LessonNavBarProps> = ({
   onNext,
   onFinish,
 }) => {
-  const { theme, borderRadius, spacing } = useTheme();
+  const { theme, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
-  const common = useCommonStyles();
   const { typography } = useTypography();
   const insets = useSafeAreaInsets();
 
@@ -49,31 +42,22 @@ const LessonNavBar: React.FC<LessonNavBarProps> = ({
     >
       {/* Previous Button */}
       {onPrevious ? (
-        <TouchableOpacity
-          style={[
-            styles.navButton,
-            styles.prevButton,
-            {
-              backgroundColor: theme.colors.card,
-              borderColor: theme.colors.border,
-              borderRadius: borderRadius.lg,
-            },
-          ]}
+        <AppButton
+          title={t('study_lesson.previous')}
           onPress={onPrevious}
-          activeOpacity={0.7}
-        >
-          <Ionicons
-            name={isRTL ? 'chevron-forward' : 'chevron-back'}
-            size={18}
-            color={theme.colors.text}
-            style={{ marginRight: isRTL ? 0 : 4, marginLeft: isRTL ? 4 : 0 }}
-          />
-          <Text
-            style={[typography('buttonSmall'), styles.prevButtonText, { color: theme.colors.text }]}
-          >
-            {t('study_lesson.previous')}
-          </Text>
-        </TouchableOpacity>
+          variant="secondary"
+          size="sm"
+          fullWidth={false}
+          style={{ minWidth: 100 }}
+          icon={
+            <Ionicons
+              name={isRTL ? 'chevron-forward' : 'chevron-back'}
+              size={18}
+              color={theme.colors.text}
+            />
+          }
+          iconPosition="left"
+        />
       ) : (
         <View style={styles.placeholder} />
       )}
@@ -93,55 +77,31 @@ const LessonNavBar: React.FC<LessonNavBarProps> = ({
         </Text>
       </View>
 
-      {/* Next Button */}
+      {/* Next Button / Finish */}
       {onNext ? (
-        <TouchableOpacity
-          style={[
-            styles.navButton,
-            styles.nextButton,
-            {
-              backgroundColor: theme.colors.primary,
-              borderRadius: borderRadius.lg,
-            },
-          ]}
+        <AppButton
+          title={t('study_lesson.next')}
           onPress={onNext}
-          activeOpacity={0.7}
-        >
-          <Text style={[typography('buttonSmall'), styles.nextButtonText]}>
-            {' '}
-            {t('study_lesson.next')}{' '}
-          </Text>
-          <Ionicons
-            name={isRTL ? 'chevron-back' : 'chevron-forward'}
-            size={18}
-            color="#fff"
-            style={{ marginLeft: isRTL ? 0 : 4, marginRight: isRTL ? 4 : 0 }}
-          />
-        </TouchableOpacity>
+          variant="primary"
+          size="sm"
+          fullWidth={false}
+          style={{ minWidth: 100 }}
+          icon={
+            <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color="#fff" />
+          }
+          iconPosition="right"
+        />
       ) : (
-        <TouchableOpacity
-          style={[
-            styles.navButton,
-            styles.nextButton,
-            {
-              backgroundColor: theme.colors.primary,
-              borderRadius: borderRadius.lg,
-            },
-          ]}
+        <AppButton
+          title={t('study_lesson.back_to_chapters')}
           onPress={onFinish}
-          activeOpacity={0.7}
-        >
-          <Ionicons
-            name="checkmark-circle-outline"
-            size={18}
-            color="#fff"
-            style={{ marginRight: isRTL ? 0 : 4, marginLeft: isRTL ? 4 : 0 }}
-          />
-          <Text style={[typography('buttonSmall'), styles.nextButtonText]}>
-            {' '}
-            {t('study_lesson.back_to_chapters')}{' '}
-          </Text>
-        </TouchableOpacity>
+          variant="primary"
+          size="sm"
+          fullWidth={false}
+          style={{ minWidth: 120 }}
+          icon={<Ionicons name="checkmark-circle-outline" size={18} color="#fff" />}
+          iconPosition="left"
+        />
       )}
     </View>
   );
@@ -155,31 +115,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     borderTopWidth: 1,
-  },
-  navButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    minWidth: 100,
-    justifyContent: 'center',
-  },
-  prevButton: {
-    borderWidth: 1,
-  },
-  nextButton: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  prevButtonText: {
-    fontWeight: '600',
-  },
-  nextButtonText: {
-    fontWeight: '600',
-    color: '#fff',
   },
   placeholder: {
     minWidth: 100,

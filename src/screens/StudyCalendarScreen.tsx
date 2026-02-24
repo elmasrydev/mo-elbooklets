@@ -252,7 +252,9 @@ const StudyCalendarScreen: React.FC = () => {
           <View key={index} style={currentStyles.entryCard}>
             {/* Subject Picker */}
             <View style={currentStyles.entryRow}>
-              <Text style={currentStyles.entryLabel}>{t('study_calendar.lessons_goal')}</Text>
+              <Text style={currentStyles.entryLabel}>
+                {t('study_calendar.subject') || 'Subject'}
+              </Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {subjects.map((subject) => (
                   <TouchableOpacity
@@ -361,14 +363,6 @@ const styles = (theme: any, isRTL: boolean, typography: any, spacing: any, borde
       marginTop: spacing.md,
       ...typography('body'),
       color: theme.colors.textSecondary,
-    },
-    backButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      backgroundColor: 'rgba(255,255,255,0.15)',
-      justifyContent: 'center',
-      alignItems: 'center',
     },
     dayTabsContainer: {
       maxHeight: 60,
