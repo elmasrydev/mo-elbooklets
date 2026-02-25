@@ -80,7 +80,7 @@ const styles = (typography: any, insets: { top: number; bottom: number }) =>
     header: {
       alignItems: 'center',
       marginTop: 40,
-      paddingHorizontal: 20,
+      paddingHorizontal: layout.screenPadding,
     },
     logo: {
       zIndex: 1,

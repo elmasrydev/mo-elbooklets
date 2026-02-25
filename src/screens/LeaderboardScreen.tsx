@@ -173,7 +173,7 @@ const LeaderboardScreen: React.FC = () => {
               {userEntry.name}
             </Text>
             <Text style={currentStyles.userStatusPoints}>
-              {userEntry.xp.toLocaleString()} {t('common.points')}
+              {userEntry.xp.toLocaleString()} {t('leaderboard_screen.points')}
             </Text>
           </View>
         </View>
@@ -193,8 +193,8 @@ const LeaderboardScreen: React.FC = () => {
     const PodiumStudent = ({ student, rank, style }: any) => {
       const name = student ? student.name : t('leaderboard_screen.no_student_yet');
       const points = student
-        ? `${student.xp.toLocaleString()} ${t('common.points')}`
-        : `- ${t('common.points')}`;
+        ? `${student.xp.toLocaleString()} ${t('leaderboard_screen.points')}`
+        : `- ${t('leaderboard_screen.points')}`;
       const avatarUri = student
         ? `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random&color=fff&size=128`
         : `https://ui-avatars.com/api/?name=%3F&background=E2E8F0&color=475569&size=128`;
