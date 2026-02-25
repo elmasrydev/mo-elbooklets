@@ -18,7 +18,7 @@ import { tryFetchWithFallback } from '../../config/api';
 import { layout } from '../../config/layout';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
-import { marginStart } from '../../lib/rtl';
+import AppButton from '../../components/AppButton';
 
 const QuizReviewScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -122,9 +122,12 @@ const QuizReviewScreen: React.FC = () => {
         <Text style={{ ...common.text, textAlign: 'center', marginBottom: 20 }}>
           {error || t('common.error')}
         </Text>
-        <TouchableOpacity onPress={fetchResults} style={currentStyles.retryButton}>
-          <Text style={currentStyles.retryButtonText}> {t('home_screen.try_again')} </Text>
-        </TouchableOpacity>
+        <AppButton
+          title={t('home_screen.try_again')}
+          onPress={fetchResults}
+          size="sm"
+          fullWidth={false}
+        />
       </View>
     );
   }
@@ -213,20 +216,24 @@ const QuizReviewScreen: React.FC = () => {
 
             {(ua.question.explanation || ua.explanation) && (
               <View style={currentStyles.explanationBox}>
-                <Text style={currentStyles.explanationTitle}>{t('quiz_results.explanation')}</Text>
+                <Text style={currentStyles.explanationTitle}>
+                  {' '}
+                  {t('quiz_results.explanation')}{' '}
+                </Text>
                 <Text style={currentStyles.explanationText}>
-                  {ua.question.explanation || ua.explanation}
+                  {' '}
+                  {ua.question.explanation || ua.explanation}{' '}
                 </Text>
               </View>
             )}
           </View>
         ))}
 
-        <TouchableOpacity style={currentStyles.bottomButton} onPress={() => navigation.goBack()}>
-          <Text style={currentStyles.bottomButtonText}>
-            {t('quiz_results.back_to_results', { defaultValue: 'Back to Results' })}
-          </Text>
-        </TouchableOpacity>
+        <AppButton
+          title={t('quiz_results.back_to_results', { defaultValue: 'Back to Results' })}
+          onPress={() => navigation.goBack()}
+          size="lg"
+        />
         <View style={{ height: 40 }} />
       </ScrollView>
     </View>
@@ -273,16 +280,17 @@ const styles = (
       ...typography('h2'),
       fontWeight: '900',
       color: theme.colors.text,
-      textAlign: 'right',
+      textAlign: common.textAlign,
     },
     headerSubtitle: {
       ...typography('caption'),
       color: theme.colors.textSecondary,
       fontWeight: '600',
-      textAlign: 'right',
+      textAlign: common.textAlign,
     },
     scrollContent: {
       padding: 16,
+      paddingBottom: Math.max(insets.bottom, 20),
     },
     questionCard: {
       backgroundColor: theme.colors.card,
@@ -315,7 +323,7 @@ const styles = (
       fontWeight: '700',
       color: theme.colors.text,
       marginBottom: 24,
-      textAlign: 'left',
+      textAlign: common.textAlign,
     },
     optionsContainer: {
       gap: 12,
@@ -323,7 +331,7 @@ const styles = (
     optionItem: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      padding: 14,
+      padding: 10,
       borderRadius: 14,
       borderWidth: 2,
       borderColor: theme.colors.border,
@@ -358,7 +366,7 @@ const styles = (
       flex: 1,
       ...typography('body'),
       color: theme.colors.text,
-      textAlign: 'left',
+      textAlign: common.textAlign,
       marginStart: 10,
     },
     dotIconContainer: {
@@ -378,36 +386,13 @@ const styles = (
       color: '#1E40AF',
       fontWeight: 'bold',
       marginBottom: 4,
-      textAlign: 'left',
+      textAlign: common.textAlign,
     },
     explanationText: {
       ...typography('bodySmall'),
       color: '#3B82F6',
-      textAlign: 'left',
+      textAlign: common.textAlign,
       fontWeight: '500',
-    },
-    retryButton: {
-      backgroundColor: theme.colors.primary,
-      paddingHorizontal: 24,
-      paddingVertical: 12,
-      borderRadius: 8,
-    },
-    retryButtonText: {
-      color: '#fff',
-      fontWeight: 'bold',
-    },
-    bottomButton: {
-      backgroundColor: theme.colors.primary,
-      paddingVertical: 18,
-      borderRadius: 16,
-      alignItems: 'center',
-      marginTop: 10,
-      ...layout.shadow,
-    },
-    bottomButtonText: {
-      color: '#fff',
-      fontWeight: '900',
-      fontSize: 16,
     },
   });
 

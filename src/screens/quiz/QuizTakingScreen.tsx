@@ -20,6 +20,7 @@ import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
 import { layout } from '../../config/layout';
 import UnifiedHeader from '../../components/UnifiedHeader';
+import AppButton from '../../components/AppButton';
 
 interface QuizQuestion {
   id: string;
@@ -276,9 +277,12 @@ const QuizTakingScreen: React.FC = () => {
           />
           <Text style={currentStyles.errorTitle}> {t('quiz_taking.error_loading_quiz')} </Text>
           <Text style={currentStyles.errorText}> {error} </Text>
-          <TouchableOpacity style={currentStyles.retryButton} onPress={fetchQuiz}>
-            <Text style={currentStyles.retryButtonText}> {t('home_screen.try_again')} </Text>
-          </TouchableOpacity>
+          <AppButton
+            title={t('home_screen.try_again')}
+            onPress={fetchQuiz}
+            size="sm"
+            fullWidth={false}
+          />
         </View>
       </View>
     );
@@ -324,7 +328,7 @@ const QuizTakingScreen: React.FC = () => {
           <View style={[currentStyles.progressFill, { width: `${progress}%` }]} />
           <View style={currentStyles.progressTextContainer}>
             <View style={currentStyles.progressTextWrapper}>
-              <Text style={currentStyles.progressTextCenter}>{Math.round(progress)} %</Text>
+              <Text style={currentStyles.progressTextCenter}> {Math.round(progress)} % </Text>
             </View>
           </View>
         </View>
@@ -387,57 +391,40 @@ const QuizTakingScreen: React.FC = () => {
       <View
         style={[currentStyles.navigationContainer, { paddingBottom: Math.max(insets.bottom, 20) }]}
       >
-        <TouchableOpacity
-          style={[
-            currentStyles.navButton,
-            currentStyles.navButtonSecondary,
-            currentQuestionIndex === 0 && currentStyles.disabledButton,
-          ]}
+        <AppButton
+          title={t('common.previous')}
           onPress={handlePreviousQuestion}
+          variant="secondary"
+          size="md"
           disabled={currentQuestionIndex === 0}
-        >
-          <Ionicons
-            name={isRTL ? 'arrow-forward' : 'arrow-back'}
-            size={20}
-            color={currentQuestionIndex === 0 ? theme.colors.textTertiary : theme.colors.text}
-            style={{ marginRight: isRTL ? 0 : 8, marginLeft: isRTL ? 8 : 0 }}
-          />
-          <Text
-            style={[
-              currentStyles.navButtonText,
-              currentStyles.navButtonTextSecondary,
-              currentQuestionIndex === 0 && currentStyles.disabledButtonText,
-            ]}
-          >
-            {t('common.previous')}
-          </Text>
-        </TouchableOpacity>
+          icon={
+            <Ionicons
+              name={isRTL ? 'arrow-forward' : 'arrow-back'}
+              size={20}
+              color={currentQuestionIndex === 0 ? theme.colors.textTertiary : theme.colors.text}
+            />
+          }
+          iconPosition="left"
+          style={{ flex: 1 }}
+        />
 
         {currentQuestionIndex === quiz.questions.length - 1 ? (
-          <TouchableOpacity
-            style={[currentStyles.submitButton, submitting && currentStyles.disabledButton]}
+          <AppButton
+            title={submitting ? t('quiz_taking.submitting') : t('quiz_taking.submit_quiz')}
             onPress={handleSubmitQuiz}
-            disabled={submitting}
-          >
-            {submitting ? (
-              <ActivityIndicator size="small" color="#fff" style={{ marginRight: 8 }} />
-            ) : (
-              <Ionicons name="checkmark-done" size={20} color="#fff" style={{ marginRight: 8 }} />
-            )}
-            <Text style={currentStyles.submitButtonText}>
-              {submitting ? t('quiz_taking.submitting') : t('quiz_taking.submit_quiz')}
-            </Text>
-          </TouchableOpacity>
+            loading={submitting}
+            icon={!submitting && <Ionicons name="checkmark-done" size={20} color="#fff" />}
+            iconPosition="left"
+            style={{ flex: 1 }}
+          />
         ) : (
-          <TouchableOpacity style={currentStyles.navButton} onPress={handleNextQuestion}>
-            <Text style={currentStyles.navButtonText}> {t('common.next')} </Text>
-            <Ionicons
-              name={isRTL ? 'arrow-back' : 'arrow-forward'}
-              size={20}
-              color="#fff"
-              style={{ marginLeft: isRTL ? 0 : 8, marginRight: isRTL ? 8 : 0 }}
-            />
-          </TouchableOpacity>
+          <AppButton
+            title={t('common.next')}
+            onPress={handleNextQuestion}
+            icon={<Ionicons name={isRTL ? 'arrow-back' : 'arrow-forward'} size={20} color="#fff" />}
+            iconPosition="right"
+            style={{ flex: 1 }}
+          />
         )}
       </View>
     </View>
@@ -452,7 +439,7 @@ const styles = (theme: any, typography: any, spacing: any, borderRadius: any, co
       marginLeft: common.isRTL ? 16 : 0,
     },
     progressContainer: {
-      paddingHorizontal: spacing.xl,
+      paddingHorizontal: layout.screenPadding,
       paddingVertical: spacing.sm,
       backgroundColor: theme.colors.surface,
     },
@@ -490,7 +477,7 @@ const styles = (theme: any, typography: any, spacing: any, borderRadius: any, co
     },
     contentContainer: {
       padding: layout.screenPadding,
-      paddingBottom: 100,
+      paddingBottom: 16,
     },
     loadingContainer: {
       flex: 1,
@@ -519,16 +506,6 @@ const styles = (theme: any, typography: any, spacing: any, borderRadius: any, co
       textAlign: 'center',
       marginBottom: 20,
       color: theme.colors.textSecondary,
-    },
-    retryButton: {
-      backgroundColor: theme.colors.primary,
-      paddingHorizontal: 24,
-      paddingVertical: 12,
-      borderRadius: borderRadius.md,
-    },
-    retryButtonText: {
-      color: '#FFFFFF',
-      ...typography('button'),
     },
     questionContainer: {
       backgroundColor: theme.colors.card,
@@ -613,56 +590,12 @@ const styles = (theme: any, typography: any, spacing: any, borderRadius: any, co
     navigationContainer: {
       flexDirection: common.rowDirection,
       justifyContent: 'space-between',
-      paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.lg,
+      paddingHorizontal: layout.screenPadding,
+      paddingVertical: spacing.md - 4,
       backgroundColor: theme.colors.surface,
       borderTopWidth: 1,
       borderTopColor: theme.colors.border,
-    },
-    navButton: {
-      flexDirection: common.rowDirection,
-      alignItems: 'center',
-      backgroundColor: theme.colors.primary,
-      paddingHorizontal: spacing.xl,
-      paddingVertical: 12,
-      borderRadius: borderRadius.md, // changed from lg to md
-    },
-    navButtonSecondary: {
-      backgroundColor: theme.colors.background,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-    },
-    navButtonText: {
-      ...typography('buttonSmall'), // Changed from base to sm
-      color: '#FFFFFF',
-    },
-    navButtonTextSecondary: {
-      color: theme.colors.text,
-    },
-    disabledButton: {
-      backgroundColor: theme.colors.border,
-      borderColor: theme.colors.border,
-      opacity: 0.7,
-    },
-    disabledButtonText: {
-      color: theme.colors.textTertiary,
-    },
-    submitButton: {
-      flexDirection: common.rowDirection,
-      alignItems: 'center',
-      backgroundColor: '#10B981', // Emerald green
-      paddingHorizontal: spacing.xl,
-      paddingVertical: 12,
-      borderRadius: borderRadius.md, // changed from lg to md
-      shadowColor: '#10B981',
-      shadowOffset: { width: 0, height: 2 }, // Reduced
-      shadowOpacity: 0.2, // Reduced
-      shadowRadius: 4, // Reduced
-      elevation: 2, // Reduced
-    },
-    submitButtonText: {
-      ...typography('buttonSmall'), // Changed from base to sm
-      color: '#FFFFFF',
+      gap: spacing.md,
     },
   });
 

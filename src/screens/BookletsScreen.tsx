@@ -24,7 +24,10 @@ const BookletsScreen: React.FC = () => {
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: layout.screenPadding, paddingBottom: 100 }}
+        contentContainerStyle={{
+          padding: layout.screenPadding,
+          paddingBottom: Math.max(common.insets.bottom, 20),
+        }}
       >
         <View style={[styles.emptyState, { backgroundColor: theme.colors.card }]}>
           <Text style={styles.emptyStateIcon}>📚</Text>

@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { layout } from '../config/layout';
 import { tryFetchWithFallback } from '../config/api';
 import UnifiedHeader from '../components/UnifiedHeader';
+import AppButton from '../components/AppButton';
 
 interface Subject {
   id: string;
@@ -98,13 +99,8 @@ const StudyScreen: React.FC = () => {
 
   return (
     <View style={currentStyles.container}>
-      {/* Header */}
-      <UnifiedHeader
-        title={t('study_screen.header_title')}
-        subtitle={t('study_screen.header_subtitle')}
-      />
+      <UnifiedHeader title={t('study_screen.header_title')} />
 
-      {/* Content */}
       {loading && subjects.length === 0 ? (
         <View style={currentStyles.loadingState}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -112,18 +108,21 @@ const StudyScreen: React.FC = () => {
         </View>
       ) : error ? (
         <View style={currentStyles.errorState}>
-          <Text style={currentStyles.errorStateIcon}>⚠️</Text>
+          <Ionicons name="alert-circle-outline" size={spacing.icon.xl} color={theme.colors.error} />
           <Text style={currentStyles.errorStateTitle}>
             {t('study_screen.error_loading_subjects')}
           </Text>
           <Text style={currentStyles.errorStateSubtitle}> {error} </Text>
-          <TouchableOpacity style={currentStyles.retryButton} onPress={fetchSubjects}>
-            <Text style={currentStyles.retryButtonText}> {t('home_screen.try_again')} </Text>
-          </TouchableOpacity>
+          <AppButton
+            title={t('home_screen.try_again')}
+            onPress={fetchSubjects}
+            size="sm"
+            fullWidth={false}
+          />
         </View>
       ) : subjects.length === 0 ? (
         <View style={currentStyles.emptyState}>
-          <Text style={currentStyles.emptyStateIcon}>📚</Text>
+          <Ionicons name="book-outline" size={spacing.icon.xl} color={theme.colors.textSecondary} />
           <Text style={currentStyles.emptyStateTitle}>
             {t('study_screen.no_subjects_available')}
           </Text>
@@ -134,46 +133,44 @@ const StudyScreen: React.FC = () => {
       ) : (
         <ScrollView
           style={currentStyles.content}
-          contentContainerStyle={{ padding: layout.screenPadding, paddingBottom: 100 }}
+          contentContainerStyle={{
+            padding: layout.screenPadding,
+            paddingBottom: Math.max(common.insets.bottom, spacing.xl),
+          }}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchSubjects} />}
+          refreshControl={
+            <RefreshControl
+              refreshing={loading}
+              onRefresh={fetchSubjects}
+              colors={[theme.colors.primary]}
+              tintColor={theme.colors.primary}
+            />
+          }
         >
           {subjects.map((subject) => {
             const config = getSubjectConfig(subject.name, theme);
             return (
               <TouchableOpacity
                 key={subject.id}
-                style={[
-                  currentStyles.subjectCard,
-                  {
-                    shadowColor: theme.colors.shadow,
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 4,
-                    elevation: 3,
-                  },
-                ]}
+                style={currentStyles.subjectCard}
                 onPress={() => handleSubjectSelect(subject)}
               >
-                {/* Left Icon Box */}
                 <View style={[currentStyles.iconBox, { backgroundColor: config.bg }]}>
-                  <Ionicons name={config.icon} size={28} color={config.color} />
+                  <Ionicons name={config.icon as any} size={spacing.icon.lg} color={config.color} />
                 </View>
 
-                {/* Middle Info */}
                 <View style={currentStyles.subjectInfo}>
                   <Text style={currentStyles.subjectName}> {subject.name} </Text>
                   <Text style={currentStyles.subjectChapters}>
-                    {subject.chapters?.length || 0} {t('study_screen.chapters')}{' '}
-                    {subject.description ? `• ${subject.description}` : ''}
+                    {subject.chapters?.length || 0} {t('study_screen.chapters')}
+                    {subject.description ? ` • ${subject.description}` : ''}
                   </Text>
                 </View>
 
-                {/* Right Action */}
                 <View style={currentStyles.arrowContainer}>
                   <Ionicons
                     name={isRTL ? 'chevron-back' : 'chevron-forward'}
-                    size={20}
+                    size={spacing.icon.md}
                     color={theme.colors.textTertiary}
                   />
                 </View>
@@ -202,7 +199,6 @@ const styles = (
     },
     content: {
       flex: 1,
-      marginTop: -24,
     },
     loadingState: {
       flex: 1,
@@ -210,7 +206,7 @@ const styles = (
       justifyContent: 'center',
     },
     loadingText: {
-      marginTop: 16,
+      marginTop: spacing.md,
       ...typography('body'),
       color: theme.colors.textSecondary,
     },
@@ -218,60 +214,55 @@ const styles = (
       flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
-      padding: 40,
-    },
-    errorStateIcon: {
-      fontSize: 48,
-      marginBottom: 16,
+      padding: spacing['2xl'],
     },
     errorStateTitle: {
       ...typography('h3'),
-      fontWeight: 'bold',
-      marginBottom: 8,
+      marginTop: spacing.md,
+      marginBottom: spacing.xs,
       color: theme.colors.text,
+      textAlign: 'center',
     },
     errorStateSubtitle: {
       ...typography('caption'),
       textAlign: 'center',
-      marginBottom: 20,
+      marginBottom: spacing.xl,
       color: theme.colors.textSecondary,
     },
     emptyState: {
       flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
-      padding: 40,
-    },
-    emptyStateIcon: {
-      fontSize: 48,
-      marginBottom: 16,
+      padding: spacing['2xl'],
     },
     emptyStateTitle: {
       ...typography('h3'),
-      fontWeight: 'bold',
-      marginBottom: 8,
+      marginTop: spacing.md,
+      marginBottom: spacing.xs,
       color: theme.colors.text,
+      textAlign: 'center',
     },
     emptyStateSubtitle: {
       ...typography('caption'),
       textAlign: 'center',
       color: theme.colors.textSecondary,
     },
-    // New Card Styles
     subjectCard: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      padding: spacing.lg, // approx 16
+      padding: spacing.md,
+      paddingVertical: spacing.md - 4,
       marginBottom: spacing.md,
       backgroundColor: theme.colors.card,
-      borderRadius: borderRadius.xl, // approx 16-20
+      borderRadius: borderRadius.xl,
       borderWidth: 1,
       borderColor: theme.colors.border,
+      ...layout.shadow,
     },
     iconBox: {
       width: 56,
       height: 56,
-      borderRadius: 16, // squircle
+      borderRadius: borderRadius.lg,
       justifyContent: 'center',
       alignItems: 'center',
       ...common.marginEnd(spacing.md),
@@ -282,16 +273,14 @@ const styles = (
       alignItems: common.alignStart,
     },
     subjectName: {
-      ...typography('label'),
-      fontSize: 16, // Design title size
-      fontWeight: 'bold',
+      ...typography('bodyLarge'),
+      fontWeight: '700',
       color: theme.colors.text,
-      marginBottom: 4,
+      marginBottom: spacing.xxs,
       textAlign: common.textAlign,
     },
     subjectChapters: {
       ...typography('caption'),
-      fontSize: 13,
       color: theme.colors.textSecondary,
       textAlign: common.textAlign,
     },
@@ -299,18 +288,6 @@ const styles = (
       justifyContent: 'center',
       alignItems: 'center',
       ...common.marginStart(spacing.sm),
-    },
-
-    // Legacy/Unused (can keep or remove, keeping for safety)
-    retryButton: {
-      paddingHorizontal: 24,
-      paddingVertical: 12,
-      borderRadius: 8,
-      backgroundColor: theme.colors.primary,
-    },
-    retryButtonText: {
-      color: '#FFFFFF',
-      ...typography('button'),
     },
   });
 

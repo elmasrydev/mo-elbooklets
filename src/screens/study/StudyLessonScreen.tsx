@@ -9,18 +9,18 @@ import {
   Platform,
   UIManager,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
-import { Video, ResizeMode, Audio } from 'expo-av';
+import { Video, ResizeMode } from 'expo-av';
 import { layout } from '../../config/layout';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import CloseButton from '../../components/navigation/CloseButton';
 import LessonNavBar from '../../components/navigation/LessonNavBar';
 import { useTypography } from '../../hooks/useTypography';
 
-// Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
@@ -36,9 +36,9 @@ interface Lesson {
   id: string;
   name: string;
   summary?: string;
-  points?: string[]; // Legacy field
-  lessonPoints?: LessonPoint[]; // New structured points
-  videoUrl?: string; // New field
+  points?: string[];
+  lessonPoints?: LessonPoint[];
+  videoUrl?: string;
   chapter: {
     id: string;
     name: string;
@@ -46,7 +46,12 @@ interface Lesson {
   };
 }
 
-const LessonVideoPlayer: React.FC<{ url: string; theme: any }> = ({ url, theme }) => {
+const LessonVideoPlayer: React.FC<{ url: string; theme: any; spacing: any; borderRadius: any }> = ({
+  url,
+  theme,
+  spacing,
+  borderRadius,
+}) => {
   const video = React.useRef<Video>(null);
   const [status, setStatus] = useState<any>({});
   const [isMuted, setIsMuted] = useState(false);
@@ -76,11 +81,13 @@ const LessonVideoPlayer: React.FC<{ url: string; theme: any }> = ({ url, theme }
     }
   };
 
+  const currentVideoStyles = videoStyles(theme, spacing, borderRadius);
+
   return (
-    <View style={videoStyles.container}>
+    <View style={currentVideoStyles.container}>
       <Video
         ref={video}
-        style={videoStyles.video}
+        style={currentVideoStyles.video}
         source={{ uri: url }}
         useNativeControls={false}
         resizeMode={ResizeMode.CONTAIN}
@@ -88,43 +95,48 @@ const LessonVideoPlayer: React.FC<{ url: string; theme: any }> = ({ url, theme }
         onPlaybackStatusUpdate={(s) => setStatus(() => s)}
         isMuted={isMuted}
       />
-
-      {/* Custom Controls Overlays */}
-      <View style={videoStyles.controlsContainer}>
-        {/* Progress Bar Container */}
-        <View style={videoStyles.progressWrapper}>
-          <View style={videoStyles.progressBarBackground}>
+      <View style={currentVideoStyles.controlsContainer}>
+        <View style={currentVideoStyles.progressWrapper}>
+          <View style={currentVideoStyles.progressBarBackground}>
             <View
               style={[
-                videoStyles.progressBarFill,
+                currentVideoStyles.progressBarFill,
                 { width: `${(status.positionMillis / (status.durationMillis || 1)) * 100}%` },
               ]}
             />
           </View>
-          <View style={videoStyles.timeRow}>
-            <Text style={videoStyles.timeText}> {formatTime(status.positionMillis)} </Text>
-            <Text style={videoStyles.timeText}> {formatTime(status.durationMillis)} </Text>
+          <View style={currentVideoStyles.timeRow}>
+            <Text style={currentVideoStyles.timeText}> {formatTime(status.positionMillis)} </Text>
+            <Text style={currentVideoStyles.timeText}> {formatTime(status.durationMillis)} </Text>
           </View>
         </View>
-
-        {/* Main Buttons */}
-        <View style={videoStyles.mainButtonsRow}>
-          <TouchableOpacity onPress={() => handleSkip(-10)} style={videoStyles.controlButton}>
-            <Ionicons name="play-back" size={24} color="#fff" />
+        <View style={currentVideoStyles.mainButtonsRow}>
+          <TouchableOpacity
+            onPress={() => handleSkip(-10)}
+            style={currentVideoStyles.controlButton}
+          >
+            <Ionicons name="play-back" size={24} color={theme.colors.textOnDark} />
           </TouchableOpacity>
-
-          <TouchableOpacity onPress={handlePlayPause} style={videoStyles.playButton}>
-            <Ionicons name={status.isPlaying ? 'pause' : 'play'} size={32} color="#fff" />
+          <TouchableOpacity onPress={handlePlayPause} style={currentVideoStyles.playButton}>
+            <Ionicons
+              name={status.isPlaying ? 'pause' : 'play'}
+              size={32}
+              color={theme.colors.textOnDark}
+            />
           </TouchableOpacity>
-
-          <TouchableOpacity onPress={() => handleSkip(10)} style={videoStyles.controlButton}>
-            <Ionicons name="play-forward" size={24} color="#fff" />
+          <TouchableOpacity onPress={() => handleSkip(10)} style={currentVideoStyles.controlButton}>
+            <Ionicons name="play-forward" size={24} color={theme.colors.textOnDark} />
           </TouchableOpacity>
         </View>
-
-        {/* Audio Toggle */}
-        <TouchableOpacity onPress={() => setIsMuted(!isMuted)} style={videoStyles.muteButton}>
-          <Ionicons name={isMuted ? 'volume-mute' : 'volume-high'} size={20} color="#fff" />
+        <TouchableOpacity
+          onPress={() => setIsMuted(!isMuted)}
+          style={currentVideoStyles.muteButton}
+        >
+          <Ionicons
+            name={isMuted ? 'volume-mute' : 'volume-high'}
+            size={20}
+            color={theme.colors.textOnDark}
+          />
         </TouchableOpacity>
       </View>
     </View>
@@ -132,12 +144,13 @@ const LessonVideoPlayer: React.FC<{ url: string; theme: any }> = ({ url, theme }
 };
 
 const StudyLessonScreen: React.FC = () => {
-  const { theme } = useTheme();
+  const { theme, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { typography } = useTypography();
+  const insets = useSafeAreaInsets();
 
   const [currentLesson, setCurrentLesson] = useState<Lesson>(route.params?.lesson);
   const allLessons: Lesson[] = route.params?.allLessons || [];
@@ -147,7 +160,7 @@ const StudyLessonScreen: React.FC = () => {
   const previousLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
   const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
 
-  const currentStyles = styles(theme, isRTL, typography);
+  const currentStyles = styles(theme, isRTL, typography, insets, spacing, borderRadius);
 
   const togglePoint = (pointId: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -165,25 +178,21 @@ const StudyLessonScreen: React.FC = () => {
   const handleNavigateLesson = (lesson: Lesson) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setCurrentLesson(lesson);
-    setExpandedPoints(new Set()); // Reset expanded state
+    setExpandedPoints(new Set());
   };
 
-  const handleClose = () => {
-    navigation.goBack();
-  };
-
-  // Prefer new lessonPoints over legacy points
   const hasNewPoints = currentLesson.lessonPoints && currentLesson.lessonPoints.length > 0;
   const hasLegacyPoints = !hasNewPoints && currentLesson.points && currentLesson.points.length > 0;
 
   return (
     <View style={currentStyles.container}>
-      {/* Header */}
       <View style={currentStyles.header}>
         <View style={currentStyles.headerTopRow}>
           <CloseButton />
           <View style={currentStyles.headerTitleArea}>
-            <Text style={currentStyles.chapterBadge}> {currentLesson.chapter.name} </Text>
+            <View style={currentStyles.chapterBadgeContainer}>
+              <Text style={currentStyles.chapterBadge}> {currentLesson.chapter.name} </Text>
+            </View>
           </View>
         </View>
         <Text style={currentStyles.headerTitle} numberOfLines={2}>
@@ -193,21 +202,27 @@ const StudyLessonScreen: React.FC = () => {
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: layout.screenPadding, paddingBottom: 30 }}
+        contentContainerStyle={{
+          padding: layout.screenPadding,
+          paddingBottom: Math.max(insets.bottom, spacing.xl),
+        }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Video Section */}
         {currentLesson.videoUrl && (
           <View style={currentStyles.videoSection}>
-            <LessonVideoPlayer url={currentLesson.videoUrl} theme={theme} />
+            <LessonVideoPlayer
+              url={currentLesson.videoUrl}
+              theme={theme}
+              spacing={spacing}
+              borderRadius={borderRadius}
+            />
           </View>
         )}
 
-        {/* Summary Section */}
         <View style={currentStyles.section}>
           <View style={currentStyles.sectionHeader}>
             <View style={currentStyles.sectionIcon}>
-              <Text style={currentStyles.sectionIconText}>📄</Text>
+              <Ionicons name="document-text-outline" size={20} color={theme.colors.primary} />
             </View>
             <Text style={currentStyles.sectionTitle}> {t('study_lesson.summary')} </Text>
           </View>
@@ -218,11 +233,12 @@ const StudyLessonScreen: React.FC = () => {
           )}
         </View>
 
-        {/* Key Points Section */}
         <View style={currentStyles.section}>
           <View style={currentStyles.sectionHeader}>
-            <View style={[currentStyles.sectionIcon, currentStyles.pointsIcon]}>
-              <Text style={currentStyles.sectionIconText}>✓</Text>
+            <View
+              style={[currentStyles.sectionIcon, { backgroundColor: theme.colors.success + '1A' }]}
+            >
+              <Ionicons name="checkmark-done" size={20} color={theme.colors.success} />
             </View>
             <Text style={currentStyles.sectionTitle}> {t('study_lesson.key_points')} </Text>
           </View>
@@ -240,7 +256,7 @@ const StudyLessonScreen: React.FC = () => {
                   >
                     <View style={currentStyles.pointHeader}>
                       <View style={currentStyles.pointBullet}>
-                        <Text style={currentStyles.pointBulletText}>✓</Text>
+                        <Ionicons name="checkmark" size={12} color={theme.colors.textOnDark} />
                       </View>
                       <Text style={currentStyles.pointText}> {point.title} </Text>
                       {point.explanation && (
@@ -266,7 +282,7 @@ const StudyLessonScreen: React.FC = () => {
                 <View key={index} style={currentStyles.pointItem}>
                   <View style={currentStyles.pointHeader}>
                     <View style={currentStyles.pointBullet}>
-                      <Text style={currentStyles.pointBulletText}>✓</Text>
+                      <Ionicons name="checkmark" size={12} color={theme.colors.textOnDark} />
                     </View>
                     <Text style={currentStyles.pointText}> {point} </Text>
                   </View>
@@ -279,108 +295,101 @@ const StudyLessonScreen: React.FC = () => {
         </View>
       </ScrollView>
 
-      {/* Bottom Navigation Bar */}
       <LessonNavBar
         currentIndex={currentIndex}
         totalCount={allLessons.length}
         onPrevious={previousLesson ? () => handleNavigateLesson(previousLesson) : null}
         onNext={nextLesson ? () => handleNavigateLesson(nextLesson) : null}
-        onFinish={handleClose}
+        onFinish={() => navigation.goBack()}
       />
     </View>
   );
 };
 
-const styles = (theme: any, isRTL: boolean, typography: any) =>
+const styles = (
+  theme: any,
+  isRTL: boolean,
+  typography: any,
+  insets: { top: number; bottom: number },
+  spacing: any,
+  borderRadius: any,
+) =>
   StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: theme.colors.background,
     },
     header: {
-      padding: 20,
-      paddingTop: 50,
+      padding: spacing.lg,
+      paddingTop: insets.top + spacing.xs,
       backgroundColor: theme.colors.headerBackground,
     },
     headerTopRow: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
-      marginBottom: 14,
+      marginBottom: spacing.sm,
     },
     headerTitleArea: {
       flex: 1,
-      marginLeft: isRTL ? 0 : 12,
-      marginRight: isRTL ? 12 : 0,
+      marginLeft: isRTL ? 0 : spacing.sm,
+      marginRight: isRTL ? spacing.sm : 0,
       alignItems: isRTL ? 'flex-end' : 'flex-start',
+    },
+    chapterBadgeContainer: {
+      backgroundColor: theme.colors.textOnDark + '33',
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+      borderRadius: borderRadius.full,
     },
     chapterBadge: {
       ...typography('caption'),
       fontSize: 12,
-      paddingHorizontal: 10,
-      paddingVertical: 4,
-      borderRadius: 12,
-      backgroundColor: 'rgba(255,255,255,0.2)',
-      color: theme.colors.headerText,
-      overflow: 'hidden',
+      color: theme.colors.textOnDark,
     },
     headerTitle: {
       ...typography('h2'),
-      fontWeight: 'bold',
-      color: theme.colors.headerText,
+      fontWeight: '800',
+      color: theme.colors.textOnDark,
       textAlign: isRTL ? 'right' : 'left',
     },
     section: {
-      marginBottom: 24,
-      padding: 16,
-      borderRadius: 12,
+      marginBottom: spacing.lg,
+      padding: spacing.md,
+      borderRadius: borderRadius.lg,
       backgroundColor: theme.colors.card,
-      shadowColor: theme.colors.shadow,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 3,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      ...layout.shadow,
     },
     sectionHeader: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
-      marginBottom: 16,
+      marginBottom: spacing.md,
     },
     sectionIcon: {
       width: 36,
       height: 36,
-      borderRadius: 10,
+      borderRadius: borderRadius.md,
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: theme.colors.primaryLight || `${theme.colors.primary}20`,
-    },
-    pointsIcon: {
-      backgroundColor: '#10b98120',
-    },
-    sectionIconText: {
-      fontSize: 18,
+      backgroundColor: theme.colors.primary + '1A',
     },
     sectionTitle: {
       ...typography('h3'),
-      fontWeight: '600',
-      marginLeft: isRTL ? 0 : 12,
-      marginRight: isRTL ? 12 : 0,
+      fontWeight: '700',
+      marginLeft: isRTL ? 0 : spacing.sm,
+      marginRight: isRTL ? spacing.sm : 0,
       color: theme.colors.text,
-      textAlign: isRTL ? 'right' : 'left',
     },
     videoSection: {
-      marginBottom: 20,
-      borderRadius: 16,
+      marginBottom: spacing.lg,
+      borderRadius: borderRadius.lg,
       overflow: 'hidden',
       backgroundColor: '#000',
-      elevation: 5,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.2,
-      shadowRadius: 10,
+      ...layout.shadow,
     },
     summaryText: {
-      ...typography('body'),
-      fontSize: 15,
+      ...typography('bodyLarge'),
       lineHeight: 24,
       color: theme.colors.text,
       textAlign: isRTL ? 'right' : 'left',
@@ -392,51 +401,45 @@ const styles = (theme: any, isRTL: boolean, typography: any) =>
       textAlign: isRTL ? 'right' : 'left',
     },
     pointsList: {
-      gap: 12,
+      gap: spacing.sm,
     },
     pointItem: {
-      paddingVertical: 10,
-      paddingHorizontal: 14,
-      borderRadius: 12,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      borderRadius: borderRadius.md,
       backgroundColor: theme.colors.background,
       borderWidth: 1,
-      borderColor: theme.colors.border || '#e5e7eb',
+      borderColor: theme.colors.border,
     },
     pointHeader: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
     },
     pointBullet: {
-      width: 24,
-      height: 24,
-      borderRadius: 12,
+      width: 20,
+      height: 20,
+      borderRadius: 10,
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: '#10b981',
+      backgroundColor: theme.colors.success,
       flexShrink: 0,
-    },
-    pointBulletText: {
-      fontSize: 12,
-      fontWeight: 'bold',
-      color: '#fff',
     },
     pointText: {
       flex: 1,
-      ...typography('caption'),
-      lineHeight: 22,
-      marginLeft: isRTL ? 0 : 12,
-      marginRight: isRTL ? 12 : 0,
+      ...typography('body'),
+      marginLeft: isRTL ? 0 : spacing.sm,
+      marginRight: isRTL ? spacing.sm : 0,
       color: theme.colors.text,
       textAlign: isRTL ? 'right' : 'left',
       fontWeight: '600',
     },
     explanationContainer: {
-      marginTop: 10,
-      paddingTop: 10,
+      marginTop: spacing.sm,
+      paddingTop: spacing.sm,
       borderTopWidth: 1,
-      borderTopColor: theme.colors.border || '#e5e7eb',
-      marginLeft: isRTL ? 0 : 36,
-      marginRight: isRTL ? 36 : 0,
+      borderTopColor: theme.colors.border,
+      marginLeft: isRTL ? 0 : 28,
+      marginRight: isRTL ? 28 : 0,
     },
     explanationText: {
       ...typography('caption'),
@@ -447,73 +450,72 @@ const styles = (theme: any, isRTL: boolean, typography: any) =>
     },
   });
 
-const videoStyles = StyleSheet.create({
-  container: {
-    width: '100%',
-    aspectRatio: 16 / 9,
-    backgroundColor: '#000',
-    borderRadius: 12,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  video: {
-    width: '100%',
-    height: '100%',
-  },
-  controlsContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 10,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-  },
-  progressWrapper: {
-    marginBottom: 8,
-  },
-  progressBarBackground: {
-    height: 4,
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: '#3B82F6', // Brand blue
-  },
-  timeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 4,
-  },
-  timeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  mainButtonsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 20,
-  },
-  controlButton: {
-    padding: 8,
-  },
-  playButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(59, 130, 246, 0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  muteButton: {
-    position: 'absolute',
-    right: 15,
-    bottom: 12,
-    padding: 5,
-  },
-});
+const videoStyles = (theme: any, spacing: any, borderRadius: any) =>
+  StyleSheet.create({
+    container: {
+      width: '100%',
+      aspectRatio: 16 / 9,
+      backgroundColor: '#000',
+      position: 'relative',
+    },
+    video: {
+      width: '100%',
+      height: '100%',
+    },
+    controlsContainer: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      padding: spacing.sm,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+    progressWrapper: {
+      marginBottom: spacing.xs,
+    },
+    progressBarBackground: {
+      height: 4,
+      backgroundColor: 'rgba(255,255,255,0.3)',
+      borderRadius: 2,
+      overflow: 'hidden',
+    },
+    progressBarFill: {
+      height: '100%',
+      backgroundColor: theme.colors.primary,
+    },
+    timeRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginTop: 4,
+    },
+    timeText: {
+      color: '#fff',
+      fontSize: 10,
+      fontWeight: '600',
+    },
+    mainButtonsRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: spacing.lg,
+    },
+    controlButton: {
+      padding: spacing.xs,
+    },
+    playButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: theme.colors.primary + 'CC',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    muteButton: {
+      position: 'absolute',
+      right: spacing.sm,
+      bottom: spacing.xs,
+      padding: 5,
+    },
+  });
 
 export default StudyLessonScreen;

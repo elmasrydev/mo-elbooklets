@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'rea
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
-import { useLanguage } from '../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
@@ -41,10 +40,20 @@ const TodaysPlanWidget: React.FC = () => {
   const common = useCommonStyles();
   const { typography } = useTypography();
 
-  const { data, loading, error } = useQuery(TODAY_SCHEDULE_QUERY, {
+  interface TodayScheduleData {
+    todaySchedule: {
+      date: string;
+      dayName: string;
+      dayOfWeek: number;
+      schedule: any[];
+    };
+  }
+
+  const { data, loading, error } = useQuery<TodayScheduleData>(TODAY_SCHEDULE_QUERY, {
     fetchPolicy: 'cache-and-network',
     pollInterval: 60000,
   });
+
   const currentStyles = styles(theme, common, typography, fontSizes, spacing, borderRadius);
 
   if (loading && !data)
@@ -54,9 +63,9 @@ const TodaysPlanWidget: React.FC = () => {
           <View style={{ flexDirection: common.rowDirection, alignItems: 'center' }}>
             <Ionicons
               name="calendar-outline"
-              size={24}
+              size={spacing.icon.md}
               color={theme.colors.text}
-              style={{ marginRight: 8 }}
+              style={common.marginEnd(spacing.xs)}
             />
             <Text style={currentStyles.title}> {t('study_calendar.today_plan')} </Text>
           </View>
@@ -78,9 +87,9 @@ const TodaysPlanWidget: React.FC = () => {
           <View style={{ flexDirection: common.rowDirection, alignItems: 'center' }}>
             <Ionicons
               name="calendar-outline"
-              size={24}
+              size={spacing.icon.md}
               color={theme.colors.text}
-              style={{ marginRight: 8 }}
+              style={common.marginEnd(spacing.xs)}
             />
             <Text style={currentStyles.title}> {t('study_calendar.today_plan')} </Text>
           </View>
@@ -91,8 +100,8 @@ const TodaysPlanWidget: React.FC = () => {
         <View style={currentStyles.emptyContainer}>
           <Ionicons
             name="clipboard-outline"
-            size={32}
-            color={theme.colors.textSecondary}
+            size={spacing.icon.lg}
+            color={theme.colors.textTertiary}
             style={{ marginBottom: spacing.sm }}
           />
           <Text style={currentStyles.emptyText}> {t('study_calendar.no_schedule')} </Text>
@@ -106,13 +115,17 @@ const TodaysPlanWidget: React.FC = () => {
       <View style={currentStyles.header}>
         <View style={currentStyles.titleSection}>
           <View
-            style={{ flexDirection: common.rowDirection, alignItems: 'center', marginBottom: 4 }}
+            style={{
+              flexDirection: common.rowDirection,
+              alignItems: 'center',
+              marginBottom: spacing.xxs,
+            }}
           >
             <Ionicons
               name="calendar-outline"
-              size={20}
+              size={spacing.icon.sm}
               color={theme.colors.primary}
-              style={{ marginRight: 8 }}
+              style={common.marginEnd(spacing.xs)}
             />
             <Text style={currentStyles.title}> {t('study_calendar.today_plan')} </Text>
           </View>
@@ -131,9 +144,17 @@ const TodaysPlanWidget: React.FC = () => {
           return (
             <View key={item.id} style={currentStyles.scheduleItem}>
               <View
-                style={[currentStyles.subjectIcon, isComplete && currentStyles.subjectIconComplete]}
+                style={[
+                  currentStyles.subjectIcon,
+                  isComplete && { backgroundColor: theme.colors.success + '1A' },
+                ]}
               >
-                <Text style={currentStyles.subjectIconText}>
+                <Text
+                  style={[
+                    currentStyles.subjectIconText,
+                    isComplete && { color: theme.colors.success },
+                  ]}
+                >
                   {item.subject?.name?.charAt(0) || 'S'}
                 </Text>
               </View>
@@ -165,7 +186,7 @@ const TodaysPlanWidget: React.FC = () => {
                 <Text
                   style={[
                     currentStyles.progressText,
-                    isComplete && currentStyles.progressTextComplete,
+                    isComplete && { color: theme.colors.success },
                   ]}
                 >
                   {Math.round(percent)}%
@@ -195,12 +216,12 @@ const styles = (
       marginBottom: spacing.md,
     },
     titleSection: { alignItems: common.alignStart },
-    title: { ...typography('h3'), fontWeight: 'bold', color: theme.colors.text },
+    title: { ...typography('h3'), color: theme.colors.text },
     subtitle: {
       ...typography('caption'),
       color: theme.colors.textSecondary,
-      marginTop: 2,
-      ...common.marginStart(28),
+      marginTop: spacing.xxs,
+      ...common.marginStart(spacing.xl),
     },
     linkText: { ...typography('bodySmall'), color: theme.colors.primary, fontWeight: '600' },
     loadingContainer: { padding: spacing.xl, alignItems: 'center' },
@@ -224,13 +245,12 @@ const styles = (
       width: 40,
       height: 40,
       borderRadius: borderRadius.md,
-      backgroundColor: theme.colors.primaryLight || 'rgba(147, 51, 234, 0.05)',
+      backgroundColor: theme.colors.primary + '1A',
       justifyContent: 'center',
       alignItems: 'center',
       ...common.marginEnd(spacing.md),
     },
-    subjectIconComplete: { backgroundColor: '#10B98120' },
-    subjectIconText: { ...typography('h3'), fontWeight: 'bold', color: theme.colors.primary },
+    subjectIconText: { ...typography('h3'), color: theme.colors.primary },
     itemInfo: { flex: 1, alignItems: common.alignStart },
     itemHeader: { flexDirection: common.rowDirection, alignItems: 'center', gap: spacing.sm },
     subjectName: { ...typography('body'), fontWeight: '600', color: theme.colors.text },
@@ -238,17 +258,16 @@ const styles = (
       ...typography('caption'),
       fontSize: 10,
       fontWeight: 'bold',
-      color: '#10B981',
-      backgroundColor: '#10B98120',
-      paddingHorizontal: 6,
+      color: theme.colors.success,
+      backgroundColor: theme.colors.success + '1A',
+      paddingHorizontal: spacing.xs,
       paddingVertical: 2,
-      borderRadius: 8,
+      borderRadius: borderRadius.sm,
     },
     goalsRow: { flexDirection: common.rowDirection, gap: spacing.md, marginTop: 2 },
     goalText: { ...typography('caption'), fontSize: 12, color: theme.colors.textSecondary },
     progressContainer: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
     progressText: { ...typography('bodySmall'), fontWeight: 'bold', color: theme.colors.text },
-    progressTextComplete: { color: '#10B981' },
   });
 
 export default TodaysPlanWidget;

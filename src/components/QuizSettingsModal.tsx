@@ -13,6 +13,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
+import AppButton from './AppButton';
 
 interface QuizType {
   id: string;
@@ -129,39 +130,23 @@ const QuizSettingsModal: React.FC<QuizSettingsModalProps> = ({
                     );
                   })}
                 </View>
-
-                {/* Placeholder for future settings */}
-                <View style={currentStyles.infoBox}>
-                  <Ionicons
-                    name="information-circle-outline"
-                    size={20}
-                    color={theme.colors.info || '#0284C7'}
-                  />
-                  <Text style={currentStyles.infoText}>
-                    {t('quiz_lessons.settings_info_text', {
-                      defaultValue: 'More settings coming soon!',
-                    })}
-                  </Text>
-                </View>
               </ScrollView>
 
               <View style={currentStyles.footer}>
-                <TouchableOpacity
-                  style={[
-                    currentStyles.startButton,
-                    !selectedTypeId && currentStyles.startButtonDisabled,
-                  ]}
+                <AppButton
+                  title={t('quiz_lessons.start_quiz')}
                   onPress={handleStart}
                   disabled={!selectedTypeId}
-                >
-                  <Text style={currentStyles.startButtonText}>{t('quiz_lessons.start_quiz')}</Text>
-                  <Ionicons
-                    name={common.isRTL ? 'arrow-back' : 'arrow-forward'}
-                    size={20}
-                    color="#fff"
-                    style={{ marginLeft: 8 }}
-                  />
-                </TouchableOpacity>
+                  size="lg"
+                  icon={
+                    <Ionicons
+                      name={common.isRTL ? 'arrow-back' : 'arrow-forward'}
+                      size={20}
+                      color="#fff"
+                    />
+                  }
+                  iconPosition="right"
+                />
               </View>
             </View>
           </TouchableWithoutFeedback>
@@ -189,8 +174,8 @@ const styles = (
       backgroundColor: theme.colors.background,
       borderTopLeftRadius: 24,
       borderTopRightRadius: 24,
-      height: '65%',
-      padding: spacing.xl,
+      height: '70%',
+      padding: spacing.md,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: -2 },
       shadowOpacity: 0.1,
@@ -249,12 +234,13 @@ const styles = (
     },
     optionsContainer: {
       gap: spacing.md,
-      marginBottom: spacing.xl,
+      marginBottom: spacing.md,
     },
     optionCard: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
       padding: spacing.md,
+      paddingVertical: spacing.sm,
       borderRadius: borderRadius.lg,
       backgroundColor: theme.colors.card,
       borderWidth: 2,
@@ -271,7 +257,7 @@ const styles = (
       backgroundColor: theme.colors.background,
       justifyContent: 'center',
       alignItems: 'center',
-      ...common.marginEnd(spacing.lg + 4),
+      ...common.marginEnd(spacing.md),
     },
     optionInfo: {
       flex: 1,
@@ -325,6 +311,7 @@ const styles = (
     },
     footer: {
       marginTop: spacing.lg,
+      marginBottom: spacing.sm,
     },
     startButton: {
       flexDirection: common.rowDirection,

@@ -3,8 +3,10 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useTypography } from '../hooks/useTypography';
 
+import { layout } from '../config/layout';
+
 const ProgressScreen: React.FC = () => {
-  const { theme } = useTheme();
+  const { theme, spacing } = useTheme();
   const { typography } = useTypography();
 
   return (
@@ -53,7 +55,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   header: {
-    padding: 20,
+    padding: layout.screenPadding,
     paddingTop: 50,
     borderBottomWidth: 1,
   },
@@ -65,7 +67,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 20,
+    padding: layout.screenPadding,
   },
   emptyState: {
     padding: 40,

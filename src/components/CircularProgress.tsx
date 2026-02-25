@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { useTypography } from '../hooks/useTypography';
+import { useTheme } from '../context/ThemeContext';
 
 interface CircularProgressProps {
   size: number;
@@ -19,6 +20,7 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
   showText = true,
 }) => {
   const { typography } = useTypography();
+  const { theme } = useTheme();
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
@@ -30,9 +32,10 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="rgba(0,0,0,0.05)"
+          stroke={theme.colors.border}
           strokeWidth={strokeWidth}
           fill="none"
+          opacity={0.3}
         />
         <Circle
           cx={size / 2}
@@ -51,7 +54,14 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
       {showText && (
         <View style={{ position: 'absolute' }}>
           <Text
-            style={[typography('h3'), { fontSize: size * 0.22, fontWeight: 'bold', color: color }]}
+            style={[
+              typography('label'),
+              {
+                fontSize: size * 0.22,
+                fontWeight: 'bold',
+                color: theme.colors.text,
+              },
+            ]}
           >
             {percentage} %
           </Text>

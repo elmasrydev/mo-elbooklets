@@ -21,6 +21,7 @@ import UnifiedHeader from '../components/UnifiedHeader';
 import { layout } from '../config/layout';
 import { tryFetchWithFallback } from '../config/api';
 import { QuizCompletionCard, ConnectionCard, RankChangeCard } from '../components/feed';
+import AppButton from '../components/AppButton';
 
 interface Student {
   id: string;
@@ -72,7 +73,7 @@ interface NewsFeedItem {
 
 const SocialScreen: React.FC = () => {
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
-  const { language, isRTL } = useLanguage();
+  const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
   const { typography } = useTypography();
@@ -289,22 +290,15 @@ const SocialScreen: React.FC = () => {
                     </View>
                   </View>
                 </View>
-                <TouchableOpacity
-                  style={[
-                    currentStyles.followButton,
-                    student.isFollowing && currentStyles.followButtonFollowing,
-                  ]}
+
+                <AppButton
+                  title={student.isFollowing ? t('common.following') : t('common.follow')}
                   onPress={() => handleFollowToggle(student)}
-                >
-                  <Text
-                    style={[
-                      currentStyles.followButtonText,
-                      student.isFollowing && currentStyles.followButtonTextFollowing,
-                    ]}
-                  >
-                    {student.isFollowing ? t('common.following') : t('common.follow')}
-                  </Text>
-                </TouchableOpacity>
+                  variant={student.isFollowing ? 'outline' : 'primary'}
+                  size="sm"
+                  fullWidth={false}
+                  style={currentStyles.followButton}
+                />
               </View>
             </View>
           ))}
@@ -327,9 +321,12 @@ const SocialScreen: React.FC = () => {
           <Text style={currentStyles.emptyStateTitle}>
             {t('social_screen.error_loading_timeline')}
           </Text>
-          <TouchableOpacity style={currentStyles.retryButton} onPress={fetchTimeline}>
-            <Text style={currentStyles.retryButtonText}> {t('home_screen.try_again')} </Text>
-          </TouchableOpacity>
+          <AppButton
+            title={t('home_screen.try_again')}
+            onPress={fetchTimeline}
+            size="sm"
+            fullWidth={false}
+          />
         </View>
       );
 
@@ -452,12 +449,12 @@ const styles = (
       ...typography('body'),
       color: theme.colors.text,
       fontWeight: '500',
-      ...common.marginStart(10), // Safe from double-flip
+      ...common.marginStart(10),
     },
     clearButton: { padding: 4 },
     content: { flex: 1 },
     contentContainer: { padding: layout.screenPadding, paddingTop: 0, alignItems: 'stretch' },
-    searchResultsContainer: { paddingBottom: spacing.xl },
+    searchResultsContainer: { paddingBottom: Math.max(common.insets.bottom, 20) },
     studentCardContent: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
@@ -494,20 +491,10 @@ const styles = (
       color: theme.colors.textTertiary,
     },
     followButton: {
-      paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.sm,
-      borderRadius: borderRadius.lg,
-      backgroundColor: theme.colors.primary,
-      ...common.marginStart(8),
+      paddingHorizontal: spacing.md,
+      minWidth: 90,
     },
-    followButtonFollowing: {
-      backgroundColor: theme.colors.background,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-    },
-    followButtonText: { ...typography('caption'), fontWeight: 'bold', color: '#fff' },
-    followButtonTextFollowing: { color: theme.colors.textSecondary },
-    timelineContainer: { paddingBottom: spacing.xl },
+    timelineContainer: { paddingBottom: Math.max(common.insets.bottom, 20) },
     loadingState: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
     loadingText: {
       marginTop: spacing.md,
@@ -536,14 +523,6 @@ const styles = (
       textAlign: 'center',
       lineHeight: 20,
     },
-    retryButton: {
-      marginTop: spacing.xl,
-      paddingHorizontal: spacing.xl,
-      paddingVertical: spacing.md,
-      backgroundColor: theme.colors.primary,
-      borderRadius: borderRadius.lg,
-    },
-    retryButtonText: { ...typography('button'), color: '#fff', fontWeight: 'bold' },
   });
 
 export default SocialScreen;

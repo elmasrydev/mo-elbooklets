@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
@@ -7,6 +8,7 @@ import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
 import { layout } from '../../config/layout';
 import UnifiedHeader from '../../components/UnifiedHeader';
+import AppButton from '../../components/AppButton';
 
 interface QuizStartScreenProps {
   subjectName: string;
@@ -23,19 +25,19 @@ const QuizStartScreen: React.FC<QuizStartScreenProps> = ({
   onStart,
   onBack,
 }) => {
-  const { theme, fontSizes, spacing, borderRadius } = useTheme();
+  const { theme, spacing, borderRadius } = useTheme();
   const { t } = useTranslation();
   const common = useCommonStyles();
   const { typography } = useTypography();
+  const insets = useSafeAreaInsets();
 
-  const currentStyles = styles(theme, common, typography, spacing, borderRadius);
+  const currentStyles = styles(theme, common, typography, spacing, borderRadius, insets);
 
   return (
     <View style={common.container}>
       <UnifiedHeader showBackButton onBackPress={onBack} title={t('quiz_start.header_title')} />
 
       <View style={currentStyles.content}>
-        {/* Illustration / Icon */}
         <View style={currentStyles.illustrationContainer}>
           <View style={currentStyles.illustrationCircle}>
             <Ionicons name="rocket" size={64} color={theme.colors.primary} />
@@ -45,7 +47,6 @@ const QuizStartScreen: React.FC<QuizStartScreenProps> = ({
         <Text style={currentStyles.readyTitle}> {t('quiz_start.ready_to_go')} </Text>
         <Text style={currentStyles.goodLuckText}> {t('quiz_start.good_luck')} </Text>
 
-        {/* Quiz Info Cards */}
         <View style={currentStyles.infoCards}>
           <View style={currentStyles.infoCard}>
             <View style={currentStyles.infoCardIcon}>
@@ -65,7 +66,7 @@ const QuizStartScreen: React.FC<QuizStartScreenProps> = ({
               <Text style={currentStyles.infoLabel}> {t('quiz_start.lessons_selected')} </Text>
               <Text style={currentStyles.infoValue}>
                 {lessonsCount}{' '}
-                {lessonsCount === 1 ? t('study_chapters.lessons') : t('study_chapters.lessons')}
+                {lessonsCount === 1 ? t('common.lesson') : t('study_chapters.lessons')}
               </Text>
             </View>
           </View>
@@ -84,48 +85,55 @@ const QuizStartScreen: React.FC<QuizStartScreenProps> = ({
         </View>
       </View>
 
-      {/* Footer */}
       <View style={currentStyles.footer}>
-        <TouchableOpacity style={currentStyles.backBtn} onPress={onBack}>
-          <Ionicons
-            name={common.isRTL ? 'arrow-forward' : 'arrow-back'}
-            size={18}
-            color={theme.colors.text}
-            style={{ marginRight: common.isRTL ? 0 : 6, marginLeft: common.isRTL ? 6 : 0 }}
-          />
-          <Text style={currentStyles.backBtnText}> {t('quiz_start.go_back')} </Text>
-        </TouchableOpacity>
+        <AppButton
+          title={t('quiz_start.go_back')}
+          onPress={onBack}
+          variant="outline"
+          size="md"
+          icon={
+            <Ionicons
+              name={common.isRTL ? 'arrow-forward' : 'arrow-back'}
+              size={18}
+              color={theme.colors.text}
+            />
+          }
+          iconPosition="left"
+          style={{ flex: 1 }}
+        />
 
-        <TouchableOpacity style={currentStyles.startButton} onPress={onStart} activeOpacity={0.85}>
-          <Ionicons
-            name="flash"
-            size={22}
-            color="#FFFFFF"
-            style={{ marginRight: common.isRTL ? 0 : 8, marginLeft: common.isRTL ? 8 : 0 }}
-          />
-          <Text style={currentStyles.startButtonText}> {t('quiz_start.start_quiz')} </Text>
-        </TouchableOpacity>
+        <AppButton
+          title={t('quiz_start.start_quiz')}
+          onPress={onStart}
+          size="md"
+          icon={<Ionicons name="flash" size={22} color="#FFFFFF" />}
+          iconPosition="left"
+          style={{ flex: 1 }}
+        />
       </View>
     </View>
   );
 };
 
-const styles = (theme: any, common: any, typography: any, spacing: any, borderRadius: any) =>
+const styles = (
+  theme: any,
+  common: any,
+  typography: any,
+  spacing: any,
+  borderRadius: any,
+  insets: { bottom: number },
+) =>
   StyleSheet.create({
-    backButton: {
-      padding: 4,
-      marginRight: common.isRTL ? 0 : 16,
-      marginLeft: common.isRTL ? 16 : 0,
-    },
     content: {
       flex: 1,
       alignItems: 'center',
-      justifyContent: 'center',
-      paddingHorizontal: spacing.xl,
-      paddingBottom: 80,
+      justifyContent: 'flex-start',
+      paddingHorizontal: layout.screenPadding,
+      paddingTop: spacing['xl'],
+      paddingBottom: 60,
     },
     illustrationContainer: {
-      marginBottom: spacing['2xl'],
+      marginBottom: spacing['xl'],
     },
     illustrationCircle: {
       width: 130,
@@ -150,7 +158,7 @@ const styles = (theme: any, common: any, typography: any, spacing: any, borderRa
     goodLuckText: {
       ...typography('body'),
       color: theme.colors.textSecondary,
-      marginBottom: spacing['2xl'],
+      marginBottom: spacing['xl'],
       textAlign: 'center',
     },
     infoCards: {
@@ -160,7 +168,7 @@ const styles = (theme: any, common: any, typography: any, spacing: any, borderRa
     infoCard: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      padding: spacing.lg,
+      padding: spacing.md,
       borderRadius: borderRadius.xl,
       backgroundColor: theme.colors.card,
       borderWidth: 1,
@@ -195,44 +203,14 @@ const styles = (theme: any, common: any, typography: any, spacing: any, borderRa
     },
     footer: {
       flexDirection: common.rowDirection,
-      padding: spacing.xl,
+      paddingHorizontal: layout.screenPadding,
+      // paddingTop: spacing.md,
+      // paddingBottom: Math.max(insets.bottom, layout.screenPadding),
+      paddingVertical: spacing.sm,
       gap: spacing.md,
       borderTopWidth: 1,
       borderTopColor: theme.colors.border,
       backgroundColor: theme.colors.background,
-    },
-    backBtn: {
-      flex: 1,
-      flexDirection: common.rowDirection,
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 12, // Reduced from 16
-      borderRadius: borderRadius.md, // changed from xl to md
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      backgroundColor: theme.colors.background,
-    },
-    backBtnText: {
-      ...typography('buttonSmall'), // Changed from base to sm
-      color: theme.colors.text,
-    },
-    startButton: {
-      flex: 2,
-      flexDirection: common.rowDirection,
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 12, // Reduced from 16
-      borderRadius: borderRadius.md, // changed from xl to md
-      backgroundColor: '#6366F1',
-      shadowColor: '#6366F1',
-      shadowOffset: { width: 0, height: 2 }, // Reduced shadow
-      shadowOpacity: 0.2, // Reduced opacity
-      shadowRadius: 4, // Reduced radius
-      elevation: 2, // Reduced elevation
-    },
-    startButtonText: {
-      ...typography('buttonSmall'), // Changed from base to sm
-      color: '#FFFFFF',
     },
   });
 

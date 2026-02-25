@@ -18,6 +18,7 @@ import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import UnifiedHeader from '../../components/UnifiedHeader';
+import AppButton from '../../components/AppButton';
 
 interface Subject {
   id: string;
@@ -38,7 +39,7 @@ interface Lesson {
   summary?: string;
   points?: string[];
   lessonPoints?: LessonPoint[];
-  videoUrl?: string; // New field
+  videoUrl?: string;
   chapter: {
     id: string;
     name: string;
@@ -75,13 +76,11 @@ const StudyChaptersScreen: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-
       const token = await AsyncStorage.getItem('auth_token');
       if (!token) {
         setError(t('common.error'));
         return;
       }
-
       const result = await tryFetchWithFallback(
         `
         query LessonsForSubject($subjectId: ID!) {
@@ -107,7 +106,6 @@ const StudyChaptersScreen: React.FC = () => {
         { subjectId: subject.id },
         token,
       );
-
       if (result.data?.lessonsForSubject) {
         const mappedChapters = result.data.lessonsForSubject.map((chapter: any, idx: number) => ({
           id: chapter.id,
@@ -154,17 +152,15 @@ const StudyChaptersScreen: React.FC = () => {
       <View style={common.container}>
         <UnifiedHeader showBackButton title={subject.name} />
         <View style={currentStyles.errorContainer}>
-          <Ionicons
-            name="alert-circle"
-            size={48}
-            color={theme.colors.error || '#EF4444'}
-            style={{ marginBottom: 16 }}
-          />
+          <Ionicons name="alert-circle-outline" size={spacing.icon.xl} color={theme.colors.error} />
           <Text style={currentStyles.errorTitle}> {t('study_chapters.error_loading')} </Text>
           <Text style={currentStyles.errorText}> {error} </Text>
-          <TouchableOpacity style={currentStyles.retryButton} onPress={fetchLessons}>
-            <Text style={currentStyles.retryButtonText}> {t('home_screen.try_again')} </Text>
-          </TouchableOpacity>
+          <AppButton
+            title={t('home_screen.try_again')}
+            onPress={fetchLessons}
+            size="sm"
+            fullWidth={false}
+          />
         </View>
       </View>
     );
@@ -172,22 +168,24 @@ const StudyChaptersScreen: React.FC = () => {
 
   return (
     <View style={common.container}>
-      <UnifiedHeader
-        showBackButton
-        title={subject.name}
-        subtitle={t('study_chapters.select_lesson')}
-      />
-
+      <UnifiedHeader showBackButton title={subject.name} />
       <ScrollView
         style={currentStyles.content}
-        contentContainerStyle={{ padding: layout.screenPadding, paddingBottom: 100 }}
+        contentContainerStyle={{
+          padding: layout.screenPadding,
+          paddingBottom: Math.max(common.insets.bottom, spacing.xl),
+        }}
         showsVerticalScrollIndicator={false}
       >
         {chapters.map((chapter) => (
           <View key={chapter.id} style={currentStyles.chapterCard}>
             <View style={currentStyles.chapterHeader}>
               <View style={currentStyles.chapterIconContainer}>
-                <Ionicons name="folder-open-outline" size={20} color={theme.colors.primary} />
+                <Ionicons
+                  name="folder-open-outline"
+                  size={spacing.icon.sm}
+                  color={theme.colors.primary}
+                />
               </View>
               <View style={currentStyles.chapterInfo}>
                 <Text style={currentStyles.chapterName}> {chapter.name} </Text>
@@ -196,7 +194,6 @@ const StudyChaptersScreen: React.FC = () => {
                 </Text>
               </View>
             </View>
-
             <View style={currentStyles.lessonsContainer}>
               {chapter.lessons.map((lesson) => (
                 <TouchableOpacity
@@ -208,7 +205,7 @@ const StudyChaptersScreen: React.FC = () => {
                   <View style={currentStyles.lessonIconContainer}>
                     <Ionicons
                       name="document-text-outline"
-                      size={20}
+                      size={spacing.icon.sm}
                       color={theme.colors.textSecondary}
                     />
                   </View>
@@ -219,13 +216,14 @@ const StudyChaptersScreen: React.FC = () => {
                     </Text>
                     {lesson.summary && (
                       <Text style={currentStyles.lessonSummary} numberOfLines={1}>
-                        {lesson.summary}
+                        {' '}
+                        {lesson.summary}{' '}
                       </Text>
                     )}
                   </View>
                   <Ionicons
                     name={isRTL ? 'chevron-back' : 'chevron-forward'}
-                    size={16}
+                    size={spacing.icon.xs}
                     color={theme.colors.textTertiary}
                   />
                 </TouchableOpacity>
@@ -233,18 +231,17 @@ const StudyChaptersScreen: React.FC = () => {
             </View>
           </View>
         ))}
-
         {chapters.length === 0 && (
           <View style={currentStyles.emptyState}>
             <Ionicons
               name="library-outline"
-              size={48}
-              color={theme.colors.textSecondary}
-              style={{ marginBottom: 16 }}
+              size={spacing.icon.xl}
+              color={theme.colors.textTertiary}
             />
             <Text style={currentStyles.emptyStateTitle}> {t('study_chapters.no_chapters')} </Text>
             <Text style={currentStyles.emptyStateSubtitle}>
-              {t('study_chapters.no_chapters_for_subject')}
+              {' '}
+              {t('study_chapters.no_chapters_for_subject')}{' '}
             </Text>
           </View>
         )}
@@ -264,7 +261,11 @@ const styles = (
   StyleSheet.create({
     content: { flex: 1 },
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    loadingText: { marginTop: 16, ...typography('body'), color: theme.colors.textSecondary },
+    loadingText: {
+      marginTop: spacing.md,
+      ...typography('body'),
+      color: theme.colors.textSecondary,
+    },
     errorContainer: {
       flex: 1,
       justifyContent: 'center',
@@ -274,32 +275,28 @@ const styles = (
     errorTitle: {
       ...typography('h3'),
       fontWeight: 'bold',
-      marginBottom: 8,
+      marginTop: spacing.md,
+      marginBottom: spacing.xs,
       color: theme.colors.text,
     },
     errorText: {
       ...typography('caption'),
       textAlign: 'center',
-      marginBottom: 20,
+      marginBottom: spacing.xl,
       color: theme.colors.textSecondary,
     },
     chapterCard: {
       borderRadius: borderRadius.xl,
       marginBottom: spacing.lg,
       backgroundColor: theme.colors.card,
-      shadowColor: theme.colors.shadow,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.05,
-      shadowRadius: 8,
-      elevation: 2,
-      overflow: 'hidden',
       borderWidth: 1,
       borderColor: theme.colors.border,
+      overflow: 'hidden',
+      ...layout.shadow,
     },
     chapterHeader: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      // justifyContent: 'flex-start', // Default
       padding: spacing.md,
       backgroundColor: theme.colors.surface,
       borderBottomWidth: 1,
@@ -308,16 +305,13 @@ const styles = (
     chapterIconContainer: {
       width: 32,
       height: 32,
-      borderRadius: 16,
-      backgroundColor: theme.colors.primaryLight || 'rgba(59, 130, 246, 0.1)',
+      borderRadius: borderRadius.full,
+      backgroundColor: theme.colors.primary + '1A',
       justifyContent: 'center',
       alignItems: 'center',
-      ...common.marginEnd(12),
+      ...common.marginEnd(spacing.sm),
     },
-    chapterInfo: {
-      flex: 1,
-      alignItems: common.alignStart,
-    },
+    chapterInfo: { flex: 1, alignItems: common.alignStart },
     chapterName: {
       ...typography('body'),
       fontWeight: 'bold',
@@ -330,63 +324,43 @@ const styles = (
       color: theme.colors.textSecondary,
       textAlign: common.textAlign,
     },
-    lessonsContainer: {
-      paddingVertical: 4,
-    },
+    lessonsContainer: { paddingVertical: spacing.xxs },
     lessonItem: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      paddingVertical: 12,
+      paddingVertical: spacing.md,
       paddingHorizontal: spacing.md,
       borderBottomWidth: 1,
-      borderBottomColor: theme.colors.borderLight || '#f3f4f6',
+      borderBottomColor: theme.colors.border,
     },
-    lessonIconContainer: {
-      ...common.marginEnd(12),
-    },
-    lessonInfo: {
-      flex: 1,
-      alignItems: common.alignStart,
-    },
+    lessonIconContainer: { ...common.marginEnd(spacing.sm) },
+    lessonInfo: { flex: 1, alignItems: common.alignStart },
     lessonName: {
       ...typography('caption'),
-      fontWeight: '500',
+      fontWeight: '600',
       color: theme.colors.text,
       textAlign: common.textAlign,
+      fontSize: 13,
     },
     lessonSummary: {
       ...typography('caption'),
-      fontSize: 12, // Keeping it slightly smaller text style for summary
+      fontSize: 11,
       marginTop: 2,
       color: theme.colors.textSecondary,
       textAlign: common.textAlign,
     },
-    emptyState: {
-      padding: 40,
-      borderRadius: 16,
-      alignItems: 'center',
-      marginTop: 40,
-    },
+    emptyState: { padding: spacing.xl, alignItems: 'center', marginTop: spacing.xl },
     emptyStateTitle: {
       ...typography('h3'),
       fontWeight: 'bold',
-      marginBottom: 8,
+      marginTop: spacing.md,
+      marginBottom: spacing.xs,
       color: theme.colors.text,
     },
     emptyStateSubtitle: {
       ...typography('caption'),
       textAlign: 'center',
       color: theme.colors.textSecondary,
-    },
-    retryButton: {
-      paddingHorizontal: 24,
-      paddingVertical: 12,
-      borderRadius: borderRadius.md,
-      backgroundColor: theme.colors.primary,
-    },
-    retryButtonText: {
-      color: '#fff',
-      ...typography('button'),
     },
   });
 

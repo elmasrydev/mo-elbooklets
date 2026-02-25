@@ -202,7 +202,10 @@ const StudyCalendarScreen: React.FC = () => {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={currentStyles.dayTabsContent}
+          contentContainerStyle={[
+            currentStyles.dayTabsContent,
+            { paddingBottom: Math.max(common.insets.bottom, 20) },
+          ]}
         >
           {DAY_KEYS.map((dayKey, index) => (
             <TouchableOpacity
@@ -238,7 +241,10 @@ const StudyCalendarScreen: React.FC = () => {
       {/* Day Content */}
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: layout.screenPadding, paddingBottom: 100 }}
+        contentContainerStyle={{
+          padding: layout.screenPadding,
+          paddingBottom: common.insets.bottom + 50,
+        }}
         showsVerticalScrollIndicator={false}
       >
         <Text style={currentStyles.dayTitle}>
@@ -249,7 +255,7 @@ const StudyCalendarScreen: React.FC = () => {
           <View key={index} style={currentStyles.entryCard}>
             {/* Subject Picker */}
             <View style={currentStyles.entryRow}>
-              <Text style={currentStyles.entryLabel}>{t('study_calendar.lessons_goal')}</Text>
+              <Text style={currentStyles.entryLabel}>{t('common.subject')}</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {subjects.map((subject) => (
                   <TouchableOpacity
@@ -359,14 +365,6 @@ const styles = (theme: any, isRTL: boolean, typography: any, spacing: any, borde
       ...typography('body'),
       color: theme.colors.textSecondary,
     },
-    backButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      backgroundColor: 'rgba(255,255,255,0.15)',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
     dayTabsContainer: {
       maxHeight: 60,
       backgroundColor: theme.colors.card,
@@ -375,7 +373,7 @@ const styles = (theme: any, isRTL: boolean, typography: any, spacing: any, borde
     },
     dayTabsContent: {
       paddingVertical: spacing.sm,
-      paddingHorizontal: spacing.xs,
+      paddingHorizontal: layout.screenPadding,
       flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
     },

@@ -9,7 +9,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  ActivityIndicator,
   Image,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
@@ -22,6 +21,8 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BackButton from '../components/navigation/BackButton';
+import AppButton from '../components/AppButton';
+import { layout } from '../config/layout';
 
 interface LoginScreenProps {
   onNavigateToRegister: () => void;
@@ -67,7 +68,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister, onBack 
       style={currentStyles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      {/* Floating Back Button */}
       <BackButton
         onPress={onBack}
         style={[
@@ -149,17 +149,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister, onBack 
             <Text style={currentStyles.forgotText}> {t('auth.forgot_password')} </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[currentStyles.loginButton, isLoading && currentStyles.disabledButton]}
+          <AppButton
+            title={t('auth.sign_in')}
             onPress={handleLogin}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#ffffff" />
-            ) : (
-              <Text style={currentStyles.loginButtonText}> {t('auth.sign_in')} </Text>
-            )}
-          </TouchableOpacity>
+            size="lg"
+            loading={isLoading}
+          />
         </View>
 
         <View style={currentStyles.footer}>
@@ -199,9 +194,9 @@ const styles = (
     container: { flex: 1, backgroundColor: theme.colors.background },
     scrollContainer: {
       flexGrow: 1,
-      paddingHorizontal: spacing.xl,
+      paddingHorizontal: layout.screenPadding,
       paddingTop: 60,
-      paddingBottom: spacing.xl,
+      paddingBottom: Math.max(common.insets.bottom, 20),
     },
     header: { alignItems: 'center', marginBottom: 50 },
     logo: { width: 120, height: 120, marginBottom: 24 },
@@ -215,7 +210,7 @@ const styles = (
       ...typography('body'),
       color: '#64748B',
       textAlign: 'center',
-      fontWeight: '500', // slightly bolder body for subtitle
+      fontWeight: '500',
     },
     form: { marginBottom: 32 },
     inputWrapper: {
@@ -247,25 +242,6 @@ const styles = (
       ...typography('label'),
       color: theme.colors.primary,
       fontWeight: '600',
-    },
-    loginButton: {
-      backgroundColor: '#1E3A8A', // Deep Navy from Screenshot
-      borderRadius: 30, // Pill shaped button
-      height: 56,
-      alignItems: 'center',
-      justifyContent: 'center',
-      shadowColor: '#1E3A8A',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.2,
-      shadowRadius: 8,
-      elevation: 4,
-    },
-    disabledButton: { backgroundColor: '#94A3B8' },
-    loginButtonText: {
-      ...typography('button'),
-      color: '#fff',
-      fontSize: 18,
-      fontWeight: '700',
     },
     footer: {
       flexDirection: isRTL ? 'row-reverse' : 'row',
