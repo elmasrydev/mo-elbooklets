@@ -86,10 +86,10 @@ export const getTextStyle = (style: keyof typeof textStyles, isArabic: boolean =
     return {
       ...baseStyle,
       fontFamily: 'Cairo',
-      // Sizes +2px for optimal readability in Arabic as per guide
-      fontSize: baseStyle.fontSize + 2,
-      // Adjust line height for Cairo
-      lineHeight: Math.round((baseStyle.fontSize + 2) * 1.5),
+      // Decrease size by 2px as requested
+      fontSize: baseStyle.fontSize - 2,
+      // Adjust line height
+      lineHeight: Math.round((baseStyle.fontSize - 2) * 1.5),
     };
   }
 
