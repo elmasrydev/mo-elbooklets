@@ -111,7 +111,7 @@ const QuizStartScreen: React.FC<QuizStartScreenProps> = ({
           size="md"
           icon={<Ionicons name="flash" size={22} color="#FFFFFF" />}
           iconPosition="left"
-          style={{ flex: 2 }}
+          style={{ flex: 1 }}
         />
       </View>
     </View>

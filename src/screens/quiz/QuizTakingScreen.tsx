@@ -405,7 +405,7 @@ const QuizTakingScreen: React.FC = () => {
             />
           }
           iconPosition="left"
-          style={{ flex: 1, marginRight: isRTL ? 0 : 8, marginLeft: isRTL ? 8 : 0 }}
+          style={{ flex: 1 }}
         />
 
         {currentQuestionIndex === quiz.questions.length - 1 ? (
@@ -415,7 +415,7 @@ const QuizTakingScreen: React.FC = () => {
             loading={submitting}
             icon={!submitting && <Ionicons name="checkmark-done" size={20} color="#fff" />}
             iconPosition="left"
-            style={{ flex: 1.5, marginLeft: isRTL ? 0 : 8, marginRight: isRTL ? 8 : 0 }}
+            style={{ flex: 1 }}
           />
         ) : (
           <AppButton
@@ -423,7 +423,7 @@ const QuizTakingScreen: React.FC = () => {
             onPress={handleNextQuestion}
             icon={<Ionicons name={isRTL ? 'arrow-back' : 'arrow-forward'} size={20} color="#fff" />}
             iconPosition="right"
-            style={{ flex: 1.5, marginLeft: isRTL ? 0 : 8, marginRight: isRTL ? 8 : 0 }}
+            style={{ flex: 1 }}
           />
         )}
       </View>
@@ -595,6 +595,7 @@ const styles = (theme: any, typography: any, spacing: any, borderRadius: any, co
       backgroundColor: theme.colors.surface,
       borderTopWidth: 1,
       borderTopColor: theme.colors.border,
+      gap: spacing.md,
     },
   });
 
