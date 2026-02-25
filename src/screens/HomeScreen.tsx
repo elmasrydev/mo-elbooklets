@@ -508,14 +508,8 @@ const HomeScreen: React.FC = () => {
               <View style={currentStyles.quickActionIconWhite}>
                 <Ionicons name="play" size={20} color={theme.colors.textOnDark} />
               </View>
-              <Text style={currentStyles.quickActionTitleWhite}>
-                {' '}
-                {t('home_screen.start_quiz')}{' '}
-              </Text>
-              <Text style={currentStyles.quickActionSubtitle}>
-                {' '}
-                {t('home_screen.jump_to_quiz')}{' '}
-              </Text>
+              <Text style={currentStyles.quickActionTitleWhite}>{t('home_screen.start_quiz')}</Text>
+              <Text style={currentStyles.quickActionSubtitle}>{t('home_screen.jump_to_quiz')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -530,14 +524,8 @@ const HomeScreen: React.FC = () => {
               >
                 <Ionicons name="book" size={20} color={theme.colors.primary} />
               </View>
-              <Text style={currentStyles.quickActionTitle}>
-                {' '}
-                {t('home_screen.browse_booklets')}{' '}
-              </Text>
-              <Text style={currentStyles.quickActionSubtitleDark}>
-                {' '}
-                {t('home_screen.booklets')}{' '}
-              </Text>
+              <Text style={currentStyles.quickActionTitle}>{t('home_screen.browse_booklets')}</Text>
+              <Text style={currentStyles.quickActionSubtitleDark}>{t('home_screen.booklets')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -553,10 +541,7 @@ const HomeScreen: React.FC = () => {
                 <Ionicons name="stats-chart" size={20} color={theme.colors.orange} />
               </View>
               <Text style={currentStyles.quickActionTitle}> {t('home_screen.my_progress')} </Text>
-              <Text style={currentStyles.quickActionSubtitleDark}>
-                {' '}
-                {t('home_screen.progress')}{' '}
-              </Text>
+              <Text style={currentStyles.quickActionSubtitleDark}>{t('home_screen.progress')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -871,6 +856,7 @@ const styles = (
       backgroundColor: theme.colors.card,
       borderWidth: 1,
       borderColor: theme.colors.border,
+      alignItems: 'center',
       ...layout.shadow,
     },
     quickActionIcon: {
@@ -894,25 +880,25 @@ const styles = (
       ...typography('bodySmall'),
       fontWeight: '600',
       color: theme.colors.text,
-      textAlign: common.textAlign,
+      textAlign: 'center',
     },
     quickActionTitleWhite: {
       ...typography('bodySmall'),
       fontWeight: '600',
       color: theme.colors.textOnDark,
-      textAlign: common.textAlign,
+      textAlign: 'center',
     },
     quickActionSubtitle: {
       ...typography('caption'),
       color: 'rgba(255,255,255,0.7)',
       marginTop: 2,
-      textAlign: common.textAlign,
+      textAlign: 'center',
     },
     quickActionSubtitleDark: {
       ...typography('caption'),
       color: theme.colors.textSecondary,
       marginTop: 2,
-      textAlign: common.textAlign,
+      textAlign: 'center',
     },
     quoteCard: {
       padding: spacing.xl,
