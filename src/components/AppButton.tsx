@@ -109,14 +109,14 @@ const AppButton: React.FC<AppButtonProps> = ({
         };
       case 'lg':
         return {
-          button: { height: 56, paddingHorizontal: spacing.xl },
+          button: { height: 51, paddingHorizontal: spacing.xl },
           text: typography('button'),
           subtitle: typography('label'),
         };
       case 'md':
       default:
         return {
-          button: { height: 46, paddingHorizontal: spacing.lg },
+          button: { height: 44, paddingHorizontal: spacing.lg },
           text: typography('button'),
           subtitle: typography('label'),
         };

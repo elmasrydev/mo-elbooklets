@@ -44,8 +44,8 @@ const QuizStartScreen: React.FC<QuizStartScreenProps> = ({
           </View>
         </View>
 
-        <Text style={currentStyles.readyTitle}>{t('quiz_start.ready_to_go')}</Text>
-        <Text style={currentStyles.goodLuckText}>{t('quiz_start.good_luck')}</Text>
+        <Text style={currentStyles.readyTitle}> {t('quiz_start.ready_to_go')} </Text>
+        <Text style={currentStyles.goodLuckText}> {t('quiz_start.good_luck')} </Text>
 
         <View style={currentStyles.infoCards}>
           <View style={currentStyles.infoCard}>
@@ -53,8 +53,8 @@ const QuizStartScreen: React.FC<QuizStartScreenProps> = ({
               <Ionicons name="book-outline" size={22} color={theme.colors.primary} />
             </View>
             <View style={currentStyles.infoCardContent}>
-              <Text style={currentStyles.infoLabel}>{t('quiz_start.subject')}</Text>
-              <Text style={currentStyles.infoValue}>{subjectName}</Text>
+              <Text style={currentStyles.infoLabel}> {t('quiz_start.subject')} </Text>
+              <Text style={currentStyles.infoValue}> {subjectName} </Text>
             </View>
           </View>
 
@@ -63,7 +63,7 @@ const QuizStartScreen: React.FC<QuizStartScreenProps> = ({
               <Ionicons name="documents-outline" size={22} color={theme.colors.primary} />
             </View>
             <View style={currentStyles.infoCardContent}>
-              <Text style={currentStyles.infoLabel}>{t('quiz_start.lessons_selected')}</Text>
+              <Text style={currentStyles.infoLabel}> {t('quiz_start.lessons_selected')} </Text>
               <Text style={currentStyles.infoValue}>
                 {lessonsCount}{' '}
                 {lessonsCount === 1 ? t('common.lesson') : t('study_chapters.lessons')}
@@ -77,8 +77,8 @@ const QuizStartScreen: React.FC<QuizStartScreenProps> = ({
                 <Ionicons name="options-outline" size={22} color={theme.colors.primary} />
               </View>
               <View style={currentStyles.infoCardContent}>
-                <Text style={currentStyles.infoLabel}>{t('quiz_start.quiz_type')}</Text>
-                <Text style={currentStyles.infoValue}>{quizTypeName}</Text>
+                <Text style={currentStyles.infoLabel}> {t('quiz_start.quiz_type')} </Text>
+                <Text style={currentStyles.infoValue}> {quizTypeName} </Text>
               </View>
             </View>
           )}
@@ -129,11 +129,11 @@ const styles = (
       alignItems: 'center',
       justifyContent: 'flex-start',
       paddingHorizontal: layout.screenPadding,
-      paddingTop: spacing['2xl'],
-      paddingBottom: 80,
+      paddingTop: spacing['xl'],
+      paddingBottom: 60,
     },
     illustrationContainer: {
-      marginBottom: spacing['2xl'],
+      marginBottom: spacing['xl'],
     },
     illustrationCircle: {
       width: 130,
@@ -158,7 +158,7 @@ const styles = (
     goodLuckText: {
       ...typography('body'),
       color: theme.colors.textSecondary,
-      marginBottom: spacing['2xl'],
+      marginBottom: spacing['xl'],
       textAlign: 'center',
     },
     infoCards: {
@@ -168,7 +168,7 @@ const styles = (
     infoCard: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      padding: spacing.lg,
+      padding: spacing.md,
       borderRadius: borderRadius.xl,
       backgroundColor: theme.colors.card,
       borderWidth: 1,
@@ -204,8 +204,9 @@ const styles = (
     footer: {
       flexDirection: common.rowDirection,
       paddingHorizontal: layout.screenPadding,
-      paddingTop: spacing.xl,
-      paddingBottom: Math.max(insets.bottom, layout.screenPadding),
+      // paddingTop: spacing.md,
+      // paddingBottom: Math.max(insets.bottom, layout.screenPadding),
+      paddingVertical: spacing.sm,
       gap: spacing.md,
       borderTopWidth: 1,
       borderTopColor: theme.colors.border,

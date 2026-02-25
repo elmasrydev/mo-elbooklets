@@ -331,7 +331,7 @@ const styles = (
     optionItem: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      padding: 14,
+      padding: 10,
       borderRadius: 14,
       borderWidth: 2,
       borderColor: theme.colors.border,

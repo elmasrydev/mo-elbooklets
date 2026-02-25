@@ -591,7 +591,7 @@ const styles = (theme: any, typography: any, spacing: any, borderRadius: any, co
       flexDirection: common.rowDirection,
       justifyContent: 'space-between',
       paddingHorizontal: layout.screenPadding,
-      paddingVertical: spacing.lg,
+      paddingVertical: spacing.md - 4,
       backgroundColor: theme.colors.surface,
       borderTopWidth: 1,
       borderTopColor: theme.colors.border,
