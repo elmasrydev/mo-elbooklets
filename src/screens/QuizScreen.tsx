@@ -206,7 +206,7 @@ const QuizScreen: React.FC = () => {
           subtitle={t('quiz_screen.start_new_challenge')}
           onPress={() => setSubjectModalVisible(true)}
           style={currentStyles.takeQuizButton}
-          icon={<Ionicons name="flash" size={spacing.icon.lg} color={theme.colors.textOnDark} />}
+          icon={<Ionicons name="flash" size={spacing.icon.xl} color={theme.colors.textOnDark} />}
           iconPosition="right"
           size="lg"
         />

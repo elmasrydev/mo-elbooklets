@@ -250,7 +250,8 @@ const styles = (
     subjectCard: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      padding: spacing.lg,
+      padding: spacing.md,
+      paddingVertical: spacing.md - 4,
       marginBottom: spacing.md,
       backgroundColor: theme.colors.card,
       borderRadius: borderRadius.xl,

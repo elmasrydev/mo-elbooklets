@@ -303,7 +303,7 @@ const createStyles = (
     },
     title: {
       ...typography('h3'),
-      fontWeight: '900',
+      fontWeight: '600',
       color: theme.colors.text,
       marginBottom: spacing.sm,
       lineHeight: 24,
