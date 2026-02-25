@@ -28,7 +28,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
   onBackPress,
   leftContent,
   rightContent,
-  centerAlign = false,
+  centerAlign = true,
   showBorder = false,
   isModal = false,
   style,
@@ -71,7 +71,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
   };
 
   const HEADER_CONTENT_HEIGHT = isModal ? 57 : 50;
-  const effectiveCenterAlign = centerAlign || isModal || !showBackButton;
+  const effectiveCenterAlign = centerAlign;
 
   const renderTitle = () => {
     if (!title) return null;
@@ -85,8 +85,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
             effectiveCenterAlign ? { textAlign: 'center' } : undefined,
           ]}
         >
-          {' '}
-          {title}{' '}
+          {title}
         </Text>
       );
     }
@@ -149,7 +148,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
   return (
     <View style={containerStyle}>
       <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', height: '100%' }}>
-        <View style={{ justifyContent: 'center' }}>{renderLeft()}</View>
+        <View style={{ justifyContent: 'center' }}> {renderLeft()} </View>
         <View
           style={[
             { flex: 1, justifyContent: 'center' },

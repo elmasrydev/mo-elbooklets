@@ -25,7 +25,7 @@ const QuizStartScreen: React.FC<QuizStartScreenProps> = ({
   onStart,
   onBack,
 }) => {
-  const { theme, fontSizes, spacing, borderRadius } = useTheme();
+  const { theme, spacing, borderRadius } = useTheme();
   const { t } = useTranslation();
   const common = useCommonStyles();
   const { typography } = useTypography();
@@ -44,8 +44,8 @@ const QuizStartScreen: React.FC<QuizStartScreenProps> = ({
           </View>
         </View>
 
-        <Text style={currentStyles.readyTitle}> {t('quiz_start.ready_to_go')} </Text>
-        <Text style={currentStyles.goodLuckText}> {t('quiz_start.good_luck')} </Text>
+        <Text style={currentStyles.readyTitle}>{t('quiz_start.ready_to_go')}</Text>
+        <Text style={currentStyles.goodLuckText}>{t('quiz_start.good_luck')}</Text>
 
         <View style={currentStyles.infoCards}>
           <View style={currentStyles.infoCard}>
@@ -53,8 +53,8 @@ const QuizStartScreen: React.FC<QuizStartScreenProps> = ({
               <Ionicons name="book-outline" size={22} color={theme.colors.primary} />
             </View>
             <View style={currentStyles.infoCardContent}>
-              <Text style={currentStyles.infoLabel}> {t('quiz_start.subject')} </Text>
-              <Text style={currentStyles.infoValue}> {subjectName} </Text>
+              <Text style={currentStyles.infoLabel}>{t('quiz_start.subject')}</Text>
+              <Text style={currentStyles.infoValue}>{subjectName}</Text>
             </View>
           </View>
 
@@ -63,7 +63,7 @@ const QuizStartScreen: React.FC<QuizStartScreenProps> = ({
               <Ionicons name="documents-outline" size={22} color={theme.colors.primary} />
             </View>
             <View style={currentStyles.infoCardContent}>
-              <Text style={currentStyles.infoLabel}> {t('quiz_start.lessons_selected')} </Text>
+              <Text style={currentStyles.infoLabel}>{t('quiz_start.lessons_selected')}</Text>
               <Text style={currentStyles.infoValue}>
                 {lessonsCount}{' '}
                 {lessonsCount === 1 ? t('common.lesson') : t('study_chapters.lessons')}
@@ -77,8 +77,8 @@ const QuizStartScreen: React.FC<QuizStartScreenProps> = ({
                 <Ionicons name="options-outline" size={22} color={theme.colors.primary} />
               </View>
               <View style={currentStyles.infoCardContent}>
-                <Text style={currentStyles.infoLabel}> {t('quiz_start.quiz_type')} </Text>
-                <Text style={currentStyles.infoValue}> {quizTypeName} </Text>
+                <Text style={currentStyles.infoLabel}>{t('quiz_start.quiz_type')}</Text>
+                <Text style={currentStyles.infoValue}>{quizTypeName}</Text>
               </View>
             </View>
           )}
@@ -127,8 +127,9 @@ const styles = (
     content: {
       flex: 1,
       alignItems: 'center',
-      justifyContent: 'center',
+      justifyContent: 'flex-start',
       paddingHorizontal: layout.screenPadding,
+      paddingTop: spacing['2xl'],
       paddingBottom: 80,
     },
     illustrationContainer: {
