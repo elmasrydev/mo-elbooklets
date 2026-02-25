@@ -87,9 +87,9 @@ export const getTextStyle = (style: keyof typeof textStyles, isArabic: boolean =
       ...baseStyle,
       fontFamily: 'Cairo',
       // Decrease size by 2px as requested
-      fontSize: baseStyle.fontSize - 2,
+      fontSize: baseStyle.fontSize - 1.5,
       // Adjust line height
-      lineHeight: Math.round((baseStyle.fontSize - 2) * 1.5),
+      lineHeight: Math.round((baseStyle.fontSize - 1.5) * 1.5),
     };
   }
 
