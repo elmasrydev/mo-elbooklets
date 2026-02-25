@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform, ViewStyle } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -78,63 +78,92 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
     if (typeof title === 'string') {
       return (
         <Text
-          style={[common.headerTitle, effectiveCenterAlign ? { textAlign: 'center' } : undefined]}
+          numberOfLines={1}
+          style={[
+            common.headerTitle,
+            { lineHeight: undefined },
+            effectiveCenterAlign ? { textAlign: 'center' } : undefined,
+          ]}
         >
-          {title}
+          {' '}
+          {title}{' '}
         </Text>
       );
     }
     return title;
   };
 
-  const renderSubtitle = () => null;
+  const sidePadding = layout.screenPadding;
+  const headerTop = isModal ? 0 : insets.top;
+  const totalHeight = headerTop + HEADER_CONTENT_HEIGHT;
 
-  const containerStyle = [
+  const containerStyle: ViewStyle[] = [
     currentStyles.container,
     {
       backgroundColor: theme.colors.headerBackground,
       borderBottomColor: theme.colors.border,
       borderBottomWidth: showBorder ? 1 : 0,
-      height: (isModal ? 0 : insets.top) + HEADER_CONTENT_HEIGHT,
-      paddingTop: isModal ? 0 : insets.top,
-      flexDirection: common.rowDirection,
+      height: totalHeight,
+      paddingTop: headerTop,
+      paddingHorizontal: sidePadding,
     },
-    !effectiveCenterAlign ? { justifyContent: 'flex-start' as const } : undefined,
-    style,
+    style as ViewStyle,
   ];
 
   if (effectiveCenterAlign) {
     return (
-      <View style={containerStyle as any}>
-        <View style={[currentStyles.sideContainer, { alignItems: 'flex-start' }]}>
-          {renderLeft()}
-        </View>
-        <View style={currentStyles.centerContainer}>
+      <View style={containerStyle}>
+        {/* Centered Layer - Absolute */}
+        <View
+          style={{
+            position: 'absolute',
+            top: headerTop,
+            left: 0,
+            right: 0,
+            height: HEADER_CONTENT_HEIGHT,
+            justifyContent: 'center',
+            alignItems: 'center',
+            paddingHorizontal: sidePadding + 50,
+            zIndex: 0,
+          }}
+          pointerEvents="none"
+        >
           {renderTitle()}
-          {renderSubtitle()}
         </View>
-        <View style={[currentStyles.sideContainer, { alignItems: 'flex-end' }]}>
-          {rightContent}
+
+        {/* Action Layer - Row */}
+        <View
+          style={{ flex: 1, flexDirection: 'row', alignItems: 'center', height: '100%', zIndex: 1 }}
+        >
+          <View style={{ flex: 1, alignItems: 'flex-start', justifyContent: 'center' }}>
+            {renderLeft()}
+          </View>
+          <View style={{ flex: 1, alignItems: 'flex-end', justifyContent: 'center' }}>
+            {rightContent}
+          </View>
         </View>
       </View>
     );
   }
 
   return (
-    <View style={containerStyle as any}>
-      {renderLeft()}
-      <View
-        style={[
-          currentStyles.flex1,
-          showBackButton || leftContent ? common.marginStart(spacing.sm) : undefined,
-        ]}
-      >
-        {renderTitle()}
-        {renderSubtitle()}
+    <View style={containerStyle}>
+      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', height: '100%' }}>
+        <View style={{ justifyContent: 'center' }}>{renderLeft()}</View>
+        <View
+          style={[
+            { flex: 1, justifyContent: 'center' },
+            showBackButton || leftContent ? common.marginStart(spacing.sm) : undefined,
+          ]}
+        >
+          {renderTitle()}
+        </View>
+        {rightContent && (
+          <View style={{ alignItems: 'flex-end', marginLeft: 'auto', justifyContent: 'center' }}>
+            {rightContent}
+          </View>
+        )}
       </View>
-      {rightContent && (
-        <View style={{ alignItems: 'flex-end', marginLeft: 'auto' }}> {rightContent} </View>
-      )}
     </View>
   );
 };
@@ -143,22 +172,6 @@ const styles = (theme: any, spacing: any, borderRadius: any) =>
   StyleSheet.create({
     container: {
       width: '100%',
-      paddingBottom: spacing.sm,
-      paddingHorizontal: layout.screenPadding,
-      alignItems: 'center',
-    },
-    sideContainer: {
-      flex: 1,
-      justifyContent: 'center',
-    },
-    centerContainer: {
-      flex: 2,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    flex1: {
-      flex: 1,
-      justifyContent: 'center',
     },
     iconButton: {
       justifyContent: 'center',

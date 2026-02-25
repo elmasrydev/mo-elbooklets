@@ -242,7 +242,7 @@ const styles = (
       textAlign: 'center',
       marginBottom: spacing.sm,
       color: theme.colors.textSecondary,
-      height: 32,
+      height: 44,
     },
     subjectStats: {
       paddingHorizontal: spacing.sm,
