@@ -74,6 +74,7 @@ const styles = (
       alignItems: 'center',
       backgroundColor: theme.colors.card,
       padding: spacing.md,
+      paddingVertical: spacing.md - 4,
       borderRadius: borderRadius.xl,
       marginBottom: spacing.md,
       borderWidth: 1,

@@ -322,10 +322,12 @@ const styles = (
       borderRadius: borderRadius.xl,
       backgroundColor: theme.colors.primary,
       ...layout.shadow,
+      minHeight: 70,
     },
     historySection: {
       flex: 1,
       paddingHorizontal: layout.screenPadding,
+      marginTop: spacing.md,
     },
     historyList: {
       flex: 1,
