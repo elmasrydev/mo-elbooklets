@@ -142,11 +142,7 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
                 <Text style={currentStyles.subjectIconText}> {getSubjectIcon(subject.name)} </Text>
               </View>
               <Text style={currentStyles.subjectName} numberOfLines={1}>
-                {' '}
-                {subject.name}{' '}
-              </Text>
-              <Text style={currentStyles.subjectDescription} numberOfLines={2}>
-                {subject.description || t('quiz_subjects.test_knowledge')}
+                {subject.name}
               </Text>
               <View style={currentStyles.subjectStats}>
                 <Text style={currentStyles.subjectStatsText}>
@@ -234,16 +230,10 @@ const styles = (
       ...typography('body'),
       fontWeight: 'bold',
       textAlign: 'center',
-      marginBottom: 4,
+      marginBottom: spacing.sm,
       color: theme.colors.text,
     },
-    subjectDescription: {
-      ...typography('caption'),
-      textAlign: 'center',
-      marginBottom: spacing.sm,
-      color: theme.colors.textSecondary,
-      height: 44,
-    },
+
     subjectStats: {
       paddingHorizontal: spacing.sm,
       paddingVertical: 4,

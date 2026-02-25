@@ -38,7 +38,6 @@ const QuizStartScreen: React.FC<QuizStartScreenProps> = ({
       <UnifiedHeader showBackButton onBackPress={onBack} title={t('quiz_start.header_title')} />
 
       <View style={currentStyles.content}>
-        {/* Illustration / Icon */}
         <View style={currentStyles.illustrationContainer}>
           <View style={currentStyles.illustrationCircle}>
             <Ionicons name="rocket" size={64} color={theme.colors.primary} />
@@ -48,7 +47,6 @@ const QuizStartScreen: React.FC<QuizStartScreenProps> = ({
         <Text style={currentStyles.readyTitle}> {t('quiz_start.ready_to_go')} </Text>
         <Text style={currentStyles.goodLuckText}> {t('quiz_start.good_luck')} </Text>
 
-        {/* Quiz Info Cards */}
         <View style={currentStyles.infoCards}>
           <View style={currentStyles.infoCard}>
             <View style={currentStyles.infoCardIcon}>
@@ -68,7 +66,7 @@ const QuizStartScreen: React.FC<QuizStartScreenProps> = ({
               <Text style={currentStyles.infoLabel}> {t('quiz_start.lessons_selected')} </Text>
               <Text style={currentStyles.infoValue}>
                 {lessonsCount}{' '}
-                {lessonsCount === 1 ? t('study_chapters.lessons') : t('study_chapters.lessons')}
+                {lessonsCount === 1 ? t('common.lesson') : t('study_chapters.lessons')}
               </Text>
             </View>
           </View>
@@ -87,7 +85,6 @@ const QuizStartScreen: React.FC<QuizStartScreenProps> = ({
         </View>
       </View>
 
-      {/* Footer */}
       <View style={currentStyles.footer}>
         <AppButton
           title={t('quiz_start.go_back')}
@@ -127,11 +124,6 @@ const styles = (
   insets: { bottom: number },
 ) =>
   StyleSheet.create({
-    backButton: {
-      padding: 4,
-      marginRight: common.isRTL ? 0 : 16,
-      marginLeft: common.isRTL ? 16 : 0,
-    },
     content: {
       flex: 1,
       alignItems: 'center',
