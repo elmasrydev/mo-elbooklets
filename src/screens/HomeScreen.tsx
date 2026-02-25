@@ -578,9 +578,15 @@ const HomeScreen: React.FC = () => {
 
         <View style={currentStyles.section}>
           <View style={currentStyles.sectionHeaderRow}>
-            <Text style={common.sectionTitle}> {t('home_screen.recent_activity')} </Text>
+            <Text style={[common.sectionTitle, { marginBottom: 0, lineHeight: undefined }]}>
+              {' '}
+              {t('home_screen.recent_activity')}{' '}
+            </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Leaderboard')}>
-              <Text style={currentStyles.viewAllText}> {t('home_screen.view_all')} </Text>
+              <Text style={[currentStyles.viewAllText, { paddingTop: 3, lineHeight: undefined }]}>
+                {' '}
+                {t('home_screen.view_all')}{' '}
+              </Text>
             </TouchableOpacity>
           </View>
           {loading ? (
