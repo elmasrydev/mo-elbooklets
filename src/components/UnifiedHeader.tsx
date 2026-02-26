@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ViewStyle, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -70,7 +70,8 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
     return leftContent || null;
   };
 
-  const HEADER_CONTENT_HEIGHT = isModal ? 57 : 50;
+  const HEADER_CONTENT_HEIGHT = Platform.OS === 'ios' ? (isModal ? 51 : 44) : isModal ? 58 : 63;
+
   const effectiveCenterAlign = centerAlign;
 
   const renderTitle = () => {
