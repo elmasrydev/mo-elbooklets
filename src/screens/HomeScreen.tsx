@@ -471,7 +471,7 @@ const HomeScreen: React.FC = () => {
           borderRadius={borderRadius}
         />
 
-        <View style={common.card}>
+        <View style={[common.card, { marginBottom: spacing.sectionGap }]}>
           <View style={currentStyles.performanceHeader}>
             <View>
               <Text style={currentStyles.performanceTitle}> {t('home_screen.performance')} </Text>
@@ -526,9 +526,7 @@ const HomeScreen: React.FC = () => {
           />
         </View>
 
-        <View style={{ marginBottom: spacing.xl }}>
-          <TodaysPlanWidget />
-        </View>
+        <TodaysPlanWidget />
 
         <View style={currentStyles.section}>
           <Text style={common.sectionTitle}> {t('home_screen.quick_actions')} </Text>
@@ -664,7 +662,7 @@ const wheelStyles = (
       backgroundColor: theme.colors.surface,
       padding: spacing.lg,
       borderRadius: borderRadius.xl,
-      marginBottom: spacing.xl,
+      marginBottom: spacing.sectionGap,
       borderWidth: 1,
       borderColor: theme.colors.border,
       ...layout.shadow,
@@ -800,7 +798,7 @@ const styles = (
       flexDirection: common.rowDirection,
       alignItems: 'center',
       marginTop: spacing.md,
-      marginBottom: spacing.xs,
+      marginBottom: spacing.md,
     },
     userInfoText: {
       flex: 1,
@@ -820,8 +818,8 @@ const styles = (
     topStatsRow: {
       flexDirection: common.rowDirection,
       justifyContent: 'space-between',
-      marginBottom: spacing.xl,
-      marginTop: spacing.xl,
+      marginTop: spacing.sectionGap,
+      marginBottom: spacing.sectionGap,
       gap: spacing.md,
     },
     topStatCard: {
@@ -858,7 +856,7 @@ const styles = (
     featureRow: {
       flexDirection: common.rowDirection,
       justifyContent: 'space-between',
-      marginBottom: spacing.xl,
+      marginBottom: spacing.sectionGap,
       gap: spacing.md,
     },
     featureCard: {
@@ -922,13 +920,14 @@ const styles = (
       ...common.marginStart(spacing.xxs),
     },
     section: {
-      marginBottom: spacing.xl,
+      marginBottom: spacing.sectionGap,
     },
     sectionHeaderRow: {
       flexDirection: common.rowDirection,
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: spacing.md,
+      marginTop: spacing.sm,
+      marginBottom: spacing.sm,
     },
     viewAllText: {
       ...typography('link'),
@@ -994,7 +993,7 @@ const styles = (
       backgroundColor: theme.colors.primary,
       borderRadius: borderRadius.xl,
       alignItems: 'center',
-      marginBottom: spacing.xl,
+      marginBottom: spacing.sectionGap,
     },
     quoteText: {
       ...typography('bodyLarge'),

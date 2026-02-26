@@ -272,7 +272,7 @@ const styles = (
       borderRadius: borderRadius.xl,
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      marginBottom: layout.screenPadding,
+      marginBottom: spacing.sectionGap,
       backgroundColor: theme.colors.card,
       borderWidth: 1,
       borderColor: theme.colors.border,

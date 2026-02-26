@@ -333,9 +333,7 @@ const styles = (
       flex: 1,
       marginTop: spacing.md,
     },
-    historyItemWrapper: {
-      marginBottom: spacing.xs,
-    },
+    historyItemWrapper: {},
     loadingState: {
       flex: 1,
       alignItems: 'center',

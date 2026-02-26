@@ -133,7 +133,7 @@ const styles = (
       paddingBottom: 60,
     },
     illustrationContainer: {
-      marginBottom: spacing['xl'],
+      marginBottom: spacing.sectionGap,
     },
     illustrationCircle: {
       width: 130,
@@ -158,7 +158,7 @@ const styles = (
     goodLuckText: {
       ...typography('body'),
       color: theme.colors.textSecondary,
-      marginBottom: spacing['xl'],
+      marginBottom: spacing.sectionGap,
       textAlign: 'center',
     },
     infoCards: {

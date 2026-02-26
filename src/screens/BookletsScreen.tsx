@@ -54,6 +54,7 @@ const styles = StyleSheet.create({
     padding: 40,
     borderRadius: 12,
     alignItems: 'center',
+    marginBottom: 10, // matching sectionGap
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,

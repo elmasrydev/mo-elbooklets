@@ -252,7 +252,7 @@ const styles = (
       alignItems: 'center',
       padding: spacing.md,
       paddingVertical: spacing.md - 4,
-      marginBottom: spacing.md,
+      marginBottom: spacing.sectionGap,
       backgroundColor: theme.colors.card,
       borderRadius: borderRadius.xl,
       borderWidth: 1,

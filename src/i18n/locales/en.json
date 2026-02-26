@@ -70,6 +70,7 @@
     "no_chapters_for_subject": "No chapters available for this subject."
   },
   "study_lesson": {
+    "lesson_content": "Lesson Content",
     "summary": "Summary",
     "key_points": "Key Points",
     "no_summary": "No summary available for this lesson.",

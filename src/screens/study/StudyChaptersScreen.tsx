@@ -287,7 +287,7 @@ const styles = (
     },
     chapterCard: {
       borderRadius: borderRadius.xl,
-      marginBottom: spacing.lg,
+      marginBottom: spacing.sectionGap,
       backgroundColor: theme.colors.card,
       borderWidth: 1,
       borderColor: theme.colors.border,
