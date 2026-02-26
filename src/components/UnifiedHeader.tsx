@@ -70,7 +70,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
     return leftContent || null;
   };
 
-  const HEADER_CONTENT_HEIGHT = Platform.OS === 'ios' ? (isModal ? 51 : 44) : isModal ? 58 : 63;
+  const HEADER_CONTENT_HEIGHT = Platform.OS === 'ios' ? (isModal ? 56 : 49) : isModal ? 61 : 66;
 
   const effectiveCenterAlign = centerAlign;
 
@@ -133,12 +133,32 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
 
         {/* Action Layer - Row */}
         <View
-          style={{ flex: 1, flexDirection: 'row', alignItems: 'center', height: '100%', zIndex: 1 }}
+          style={{
+            flex: 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            height: HEADER_CONTENT_HEIGHT,
+            zIndex: 1,
+          }}
         >
-          <View style={{ flex: 1, alignItems: 'flex-start', justifyContent: 'center' }}>
+          <View
+            style={{
+              flex: 1,
+              alignItems: 'flex-start',
+              justifyContent: 'center',
+              height: HEADER_CONTENT_HEIGHT,
+            }}
+          >
             {renderLeft()}
           </View>
-          <View style={{ flex: 1, alignItems: 'flex-end', justifyContent: 'center' }}>
+          <View
+            style={{
+              flex: 1,
+              alignItems: 'flex-end',
+              justifyContent: 'center',
+              height: HEADER_CONTENT_HEIGHT,
+            }}
+          >
             {rightContent}
           </View>
         </View>
@@ -148,18 +168,35 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
 
   return (
     <View style={containerStyle}>
-      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', height: '100%' }}>
-        <View style={{ justifyContent: 'center' }}> {renderLeft()} </View>
+      <View
+        style={{
+          flex: 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          height: HEADER_CONTENT_HEIGHT,
+        }}
+      >
+        <View style={{ justifyContent: 'center', height: HEADER_CONTENT_HEIGHT }}>
+          {' '}
+          {renderLeft()}{' '}
+        </View>
         <View
           style={[
-            { flex: 1, justifyContent: 'center' },
+            { flex: 1, justifyContent: 'center', height: HEADER_CONTENT_HEIGHT },
             showBackButton || leftContent ? common.marginStart(spacing.sm) : undefined,
           ]}
         >
           {renderTitle()}
         </View>
         {rightContent && (
-          <View style={{ alignItems: 'flex-end', marginLeft: 'auto', justifyContent: 'center' }}>
+          <View
+            style={{
+              alignItems: 'flex-end',
+              marginLeft: 'auto',
+              justifyContent: 'center',
+              height: HEADER_CONTENT_HEIGHT,
+            }}
+          >
             {rightContent}
           </View>
         )}
