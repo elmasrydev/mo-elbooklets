@@ -367,14 +367,7 @@ const HomeScreen: React.FC = () => {
 
   return (
     <View style={common.container}>
-      <UnifiedHeader
-        title={isRTL ? 'البوكلتس' : 'EL-Booklets'}
-        rightContent={
-          <TouchableOpacity style={currentStyles.notificationButton}>
-            <Ionicons name="notifications-outline" size={24} color={theme.colors.headerText} />
-          </TouchableOpacity>
-        }
-      />
+      <UnifiedHeader title={isRTL ? 'البوكلتس' : 'EL-Booklets'} />
 
       <ScrollView
         style={currentStyles.scrollContainer}
@@ -409,8 +402,10 @@ const HomeScreen: React.FC = () => {
             >
               <Ionicons name="briefcase" size={20} color={theme.colors.orange} />
             </View>
-            <Text style={currentStyles.statLabel}> {t('home_screen.quizzes')} </Text>
-            <Text style={currentStyles.statValue}> {activitiesData?.total_quizzes ?? 0}</Text>
+            <View style={currentStyles.statTextContainer}>
+              <Text style={currentStyles.statValue}> {activitiesData?.total_quizzes ?? 0}</Text>
+              <Text style={currentStyles.statLabel}> {t('home_screen.quizzes')} </Text>
+            </View>
           </View>
           <View style={currentStyles.topStatCard}>
             <View
@@ -421,8 +416,10 @@ const HomeScreen: React.FC = () => {
             >
               <Ionicons name="trending-up" size={20} color={theme.colors.orange} />
             </View>
-            <Text style={currentStyles.statLabel}> {t('home_screen.completed')} </Text>
-            <Text style={currentStyles.statValue}> {activitiesData?.avg_score ?? 0}% </Text>
+            <View style={currentStyles.statTextContainer}>
+              <Text style={currentStyles.statValue}> {activitiesData?.avg_score ?? 0}% </Text>
+              <Text style={currentStyles.statLabel}> {t('home_screen.completed')} </Text>
+            </View>
           </View>
         </View>
 
@@ -781,14 +778,6 @@ const styles = (
       borderWidth: 2,
       borderColor: theme.colors.background,
     },
-    notificationButton: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      backgroundColor: 'rgba(255,255,255,0.15)',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
     scrollContainer: { flex: 1 },
     scrollContent: {
       paddingBottom: Math.max(common.insets.bottom, spacing.xl),
@@ -824,15 +813,13 @@ const styles = (
     },
     topStatCard: {
       flex: 1,
-      aspectRatio: 1,
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
       backgroundColor: theme.colors.card,
       padding: spacing.md,
       borderRadius: borderRadius.lg,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      ...layout.shadow,
+      borderWidth: 0,
+      elevation: 0,
     },
     statIconContainer: {
       width: 40,
@@ -840,18 +827,25 @@ const styles = (
       borderRadius: borderRadius.md,
       justifyContent: 'center',
       alignItems: 'center',
-      marginBottom: spacing.sm,
+      ...common.marginEnd(spacing.sm),
+    },
+    statTextContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'flex-start',
     },
     statLabel: {
-      ...typography('label'),
+      ...typography('caption'),
       color: theme.colors.textSecondary,
-      marginBottom: spacing.xxs,
-      textAlign: 'center',
+      textAlign: 'left',
+      marginTop: 2,
     },
     statValue: {
       ...typography('h3'),
+      fontSize: 18,
+      lineHeight: 24,
       color: theme.colors.text,
-      textAlign: 'center',
+      textAlign: 'left',
     },
     featureRow: {
       flexDirection: common.rowDirection,

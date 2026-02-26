@@ -172,7 +172,8 @@ const StudyChaptersScreen: React.FC = () => {
       <ScrollView
         style={currentStyles.content}
         contentContainerStyle={{
-          padding: layout.screenPadding,
+          paddingHorizontal: layout.screenPadding,
+          paddingTop: spacing.md,
           paddingBottom: Math.max(common.insets.bottom, spacing.xl),
         }}
         showsVerticalScrollIndicator={false}

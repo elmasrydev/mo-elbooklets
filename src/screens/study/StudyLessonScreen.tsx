@@ -21,6 +21,7 @@ import CloseButton from '../../components/navigation/CloseButton';
 import LessonNavBar from '../../components/navigation/LessonNavBar';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import { useTypography } from '../../hooks/useTypography';
+import { textAlign } from '../../lib/rtl';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -195,7 +196,8 @@ const StudyLessonScreen: React.FC = () => {
         ref={scrollViewRef}
         style={{ flex: 1 }}
         contentContainerStyle={{
-          padding: layout.screenPadding,
+          paddingHorizontal: layout.screenPadding,
+          paddingTop: spacing.md,
           paddingBottom: Math.max(insets.bottom, spacing.xl),
         }}
         showsVerticalScrollIndicator={false}
@@ -356,6 +358,7 @@ const styles = (
       fontSize: 13,
       fontWeight: '700',
       color: theme.colors.primary,
+      textAlign: 'left',
     },
     mainTitle: {
       ...typography('h3'),
