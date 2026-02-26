@@ -23,6 +23,7 @@ import Svg, { Path, Circle, G, Text as SvgText } from 'react-native-svg';
 import RecentActivityCard from '../components/RecentActivityCard';
 import TodaysPlanWidget from '../components/TodaysPlanWidget';
 import UnifiedHeader from '../components/UnifiedHeader';
+import { textAlign } from '../lib/rtl';
 
 const { width } = Dimensions.get('window');
 
@@ -425,6 +426,41 @@ const HomeScreen: React.FC = () => {
           </View>
         </View>
 
+        <View style={currentStyles.featureRow}>
+          <TouchableOpacity
+            style={currentStyles.featureCard}
+            onPress={() => navigation.navigate('Social')}
+          >
+            <View
+              style={[
+                currentStyles.featureIconContainer,
+                { backgroundColor: theme.colors.primary + '1A' },
+              ]}
+            >
+              <Ionicons name="people" size={24} color={theme.colors.primary} />
+            </View>
+            <View style={currentStyles.featureTextContainer}>
+              <Text style={currentStyles.featureTitle}> {t('common.social')} </Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={currentStyles.featureCard}
+            onPress={() => navigation.navigate('Leaderboard')}
+          >
+            <View
+              style={[
+                currentStyles.featureIconContainer,
+                { backgroundColor: theme.colors.orange + '1A' },
+              ]}
+            >
+              <Ionicons name="stats-chart" size={24} color={theme.colors.orange} />
+            </View>
+            <View style={currentStyles.featureTextContainer}>
+              <Text style={currentStyles.featureTitle}> {t('common.leaderboard')} </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
         <WheelOfSuccess
           theme={theme}
           data={wheelData}
@@ -508,8 +544,14 @@ const HomeScreen: React.FC = () => {
               <View style={currentStyles.quickActionIconWhite}>
                 <Ionicons name="play" size={20} color={theme.colors.textOnDark} />
               </View>
-              <Text style={currentStyles.quickActionTitleWhite}>{t('home_screen.start_quiz')}</Text>
-              <Text style={currentStyles.quickActionSubtitle}>{t('home_screen.jump_to_quiz')}</Text>
+              <Text style={currentStyles.quickActionTitleWhite}>
+                {' '}
+                {t('home_screen.start_quiz')}{' '}
+              </Text>
+              <Text style={currentStyles.quickActionSubtitle}>
+                {' '}
+                {t('home_screen.jump_to_quiz')}{' '}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -524,8 +566,14 @@ const HomeScreen: React.FC = () => {
               >
                 <Ionicons name="book" size={20} color={theme.colors.primary} />
               </View>
-              <Text style={currentStyles.quickActionTitle}>{t('home_screen.browse_booklets')}</Text>
-              <Text style={currentStyles.quickActionSubtitleDark}>{t('home_screen.booklets')}</Text>
+              <Text style={currentStyles.quickActionTitle}>
+                {' '}
+                {t('home_screen.browse_booklets')}{' '}
+              </Text>
+              <Text style={currentStyles.quickActionSubtitleDark}>
+                {' '}
+                {t('home_screen.booklets')}{' '}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -541,7 +589,10 @@ const HomeScreen: React.FC = () => {
                 <Ionicons name="stats-chart" size={20} color={theme.colors.orange} />
               </View>
               <Text style={currentStyles.quickActionTitle}> {t('home_screen.my_progress')} </Text>
-              <Text style={currentStyles.quickActionSubtitleDark}>{t('home_screen.progress')}</Text>
+              <Text style={currentStyles.quickActionSubtitleDark}>
+                {' '}
+                {t('home_screen.progress')}{' '}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -803,6 +854,44 @@ const styles = (
       ...typography('h3'),
       color: theme.colors.text,
       textAlign: 'center',
+    },
+    featureRow: {
+      flexDirection: common.rowDirection,
+      justifyContent: 'space-between',
+      marginBottom: spacing.xl,
+      gap: spacing.md,
+    },
+    featureCard: {
+      flex: 1,
+      backgroundColor: theme.colors.card,
+      padding: spacing.sm,
+      paddingVertical: spacing.md,
+      borderRadius: borderRadius.lg,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      flexDirection: common.rowDirection,
+      ...layout.shadow,
+    },
+    featureIconContainer: {
+      width: 40,
+      height: 40,
+      borderRadius: borderRadius.md,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 'auto',
+      marginLeft: 4,
+    },
+    featureTextContainer: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    featureTitle: {
+      ...typography('bodySmall'),
+      fontWeight: '600',
+      color: theme.colors.text,
     },
     performanceHeader: {
       flexDirection: common.rowDirection,

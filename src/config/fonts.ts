@@ -90,7 +90,6 @@ export const getTextStyle = (style: keyof typeof textStyles, isArabic: boolean =
       fontSize: baseStyle.fontSize - 1.5,
       // Adjust line height
       lineHeight: baseStyle.lineHeight ? Math.round(baseStyle.lineHeight * 1.15) : undefined,
-
     };
   }
 

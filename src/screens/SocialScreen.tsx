@@ -369,6 +369,7 @@ const SocialScreen: React.FC = () => {
       <UnifiedHeader
         title={t('social_screen.header_title')}
         subtitle={t('social_screen.header_subtitle')}
+        showBackButton={true}
         rightContent={
           <TouchableOpacity style={currentStyles.refreshButton} onPress={fetchTimeline}>
             <Ionicons name="refresh-outline" size={24} color="#fff" />

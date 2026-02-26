@@ -325,6 +325,7 @@ const LeaderboardScreen: React.FC = () => {
     <View style={common.container}>
       <UnifiedHeader
         title={t('leaderboard_screen.header_title')}
+        showBackButton={true}
         rightContent={
           <TouchableOpacity
             style={currentStyles.refreshButton}
