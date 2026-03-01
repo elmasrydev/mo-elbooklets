@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -67,6 +67,23 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
   const [confirmPassword, setConfirmPassword] = useState('');
   const [promoCode, setPromoCode] = useState('');
 
+  // Refs for Focus Chaining
+  const emailRef = useRef<TextInput>(null);
+  const schoolRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
+  const confirmPasswordRef = useRef<TextInput>(null);
+  const parentMobile2Ref = useRef<TextInput>(null);
+  const promoCodeRef = useRef<TextInput>(null);
+
+  // Touch States for Inline Validation
+  const [touchedName, setTouchedName] = useState(false);
+  const [touchedEmail, setTouchedEmail] = useState(false);
+  const [touchedSchool, setTouchedSchool] = useState(false);
+  const [touchedMobile, setTouchedMobile] = useState(false);
+  const [touchedPassword, setTouchedPassword] = useState(false);
+  const [touchedConfirm, setTouchedConfirm] = useState(false);
+  const [touchedParentMobile, setTouchedParentMobile] = useState(false);
+
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -125,6 +142,22 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
   const [showSchoolResults, setShowSchoolResults] = useState(false);
   const [skipNextSearch, setSkipNextSearch] = useState(false);
 
+  // Validation Flags
+  const isNameValid = name.trim().length >= 3;
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const isSchoolValid =
+    schoolName.trim().length >= 2 && !(showSchoolResults && schoolResults.length > 0);
+  const isMobileValid = MOBILE_REGEX.test(mobile.trim());
+  const isPasswordValid = password.length >= 8;
+  const isConfirmValid = isPasswordValid && password === confirmPassword;
+  const isParentMobileValid = MOBILE_REGEX.test(parentMobile.trim());
+
+  // Dynamic Border Color Helpers
+  const getBorderColor = (touched: boolean, valid: boolean) => {
+    if (!touched) return '#E2E8F0';
+    return valid ? '#10B981' : '#F59E0B';
+  };
+
   useEffect(() => {
     if (skipNextSearch) {
       setSkipNextSearch(false);
@@ -169,17 +202,14 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
   const validateStep = (step: number) => {
     switch (step) {
       case 1: {
-        if (!name.trim() || !email.trim() || !gender || !schoolName.trim()) {
-          Alert.alert(t('common.error'), t('auth.fill_all_fields'));
-          return false;
-        }
-        if (name.trim().length < 3) {
-          Alert.alert(t('common.error'), t('auth.name_too_short', 'Name is too short'));
-          return false;
-        }
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email.trim())) {
-          Alert.alert(t('common.error'), t('auth.invalid_email'));
+        setTouchedName(true);
+        setTouchedEmail(true);
+        setTouchedSchool(true);
+        if (!isNameValid || !isEmailValid || !gender || !isSchoolValid) {
+          Alert.alert(
+            t('common.error'),
+            t('auth.fill_all_fields', 'Please check highlighted fields'),
+          );
           return false;
         }
         return true;
@@ -191,51 +221,26 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
         }
         return true;
       case 3:
-        if (!mobile.trim() || !password.trim() || !confirmPassword.trim()) {
-          Alert.alert(t('common.error'), t('auth.fill_all_fields'));
-          return false;
-        }
-        if (!MOBILE_REGEX.test(mobile.trim())) {
+        setTouchedMobile(true);
+        setTouchedPassword(true);
+        setTouchedConfirm(true);
+        if (!isMobileValid || !isPasswordValid || !isConfirmValid) {
           Alert.alert(
             t('common.error'),
-            t(
-              'auth.invalid_mobile_format',
-              'The mobile number must be 11 digits starting with 010, 011, 012 or 015.',
-            ),
+            t('auth.fill_all_fields', 'Please check highlighted fields'),
           );
-          return false;
-        }
-        if (password.length < 8) {
-          Alert.alert(t('common.error'), t('auth.password_too_short'));
-          return false;
-        }
-        if (password !== confirmPassword) {
-          Alert.alert(t('common.error'), t('auth.passwords_not_match'));
           return false;
         }
         return true;
       case 4:
-        if (!parentMobile.trim()) {
-          Alert.alert(t('common.error'), t('auth.parent_mobile_required'));
-          return false;
-        }
-        if (!MOBILE_REGEX.test(parentMobile.trim())) {
+        setTouchedParentMobile(true);
+        if (
+          !isParentMobileValid ||
+          (parentMobile2.trim() && !MOBILE_REGEX.test(parentMobile2.trim()))
+        ) {
           Alert.alert(
             t('common.error'),
-            t(
-              'auth.invalid_mobile_format',
-              'The mobile number must be 11 digits starting with 010, 011, 012 or 015.',
-            ),
-          );
-          return false;
-        }
-        if (parentMobile2.trim() && !MOBILE_REGEX.test(parentMobile2.trim())) {
-          Alert.alert(
-            t('common.error'),
-            t(
-              'auth.invalid_mobile_format',
-              'The mobile number must be 11 digits starting with 010, 011, 012 or 015.',
-            ),
+            t('auth.fill_all_fields', 'Please check highlighted fields'),
           );
           return false;
         }
@@ -370,15 +375,20 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
         <View style={currentStyles.form}>
           {currentStep === 1 && (
             <>
-              <View style={currentStyles.inputWrapper}>
+              <View
+                style={[
+                  currentStyles.inputWrapper,
+                  { borderColor: getBorderColor(touchedName, isNameValid) },
+                ]}
+              >
                 <Ionicons
                   name="person-outline"
                   size={20}
-                  color={theme.colors.textSecondary}
+                  color={isNameValid ? '#10B981' : theme.colors.textSecondary}
                   style={currentStyles.inputIcon}
                 />
                 <TextInput
-                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
+                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left', flex: 1 }]}
                   value={name}
                   onChangeText={setName}
                   placeholder={t('auth.name_placeholder')}
@@ -386,18 +396,45 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                   autoCapitalize="none"
                   autoCorrect={false}
                   editable={!isLoading}
+                  returnKeyType="next"
+                  onSubmitEditing={() => emailRef.current?.focus()}
+                  onBlur={() => setTouchedName(true)}
+                  blurOnSubmit={false}
                 />
+                {touchedName && isNameValid && (
+                  <Ionicons
+                    name="checkmark-circle-outline"
+                    size={20}
+                    color="#10B981"
+                    style={{ marginHorizontal: 8 }}
+                  />
+                )}
+                {touchedName && !isNameValid && (
+                  <Ionicons
+                    name="alert-circle-outline"
+                    size={20}
+                    color="#F59E0B"
+                    style={{ marginHorizontal: 8 }}
+                  />
+                )}
               </View>
 
-              <View style={currentStyles.inputWrapper}>
+              <View
+                style={[
+                  currentStyles.inputWrapper,
+                  { borderColor: getBorderColor(touchedEmail, isEmailValid) },
+                ]}
+              >
                 <Ionicons
                   name="mail-outline"
                   size={20}
-                  color={theme.colors.textSecondary}
+                  color={isEmailValid ? '#10B981' : theme.colors.textSecondary}
                   style={currentStyles.inputIcon}
                 />
                 <TextInput
-                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
+                  // @ts-ignore
+                  ref={emailRef}
+                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left', flex: 1 }]}
                   value={email}
                   onChangeText={setEmail}
                   placeholder={t('auth.email_placeholder')}
@@ -406,7 +443,27 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                   autoCapitalize="none"
                   autoCorrect={false}
                   editable={!isLoading}
+                  returnKeyType="next"
+                  onSubmitEditing={() => schoolRef.current?.focus()}
+                  onBlur={() => setTouchedEmail(true)}
+                  blurOnSubmit={false}
                 />
+                {touchedEmail && isEmailValid && (
+                  <Ionicons
+                    name="checkmark-circle-outline"
+                    size={20}
+                    color="#10B981"
+                    style={{ marginHorizontal: 8 }}
+                  />
+                )}
+                {touchedEmail && !isEmailValid && (
+                  <Ionicons
+                    name="alert-circle-outline"
+                    size={20}
+                    color="#F59E0B"
+                    style={{ marginHorizontal: 8 }}
+                  />
+                )}
               </View>
 
               <View style={currentStyles.genderContainer}>
@@ -449,15 +506,22 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                 </View>
               </View>
 
-              <View style={currentStyles.inputWrapper}>
+              <View
+                style={[
+                  currentStyles.inputWrapper,
+                  { borderColor: getBorderColor(touchedSchool, isSchoolValid) },
+                ]}
+              >
                 <Ionicons
                   name="business-outline"
                   size={20}
-                  color={theme.colors.textSecondary}
+                  color={isSchoolValid ? '#10B981' : theme.colors.textSecondary}
                   style={currentStyles.inputIcon}
                 />
                 <TextInput
-                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
+                  // @ts-ignore
+                  ref={schoolRef}
+                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left', flex: 1 }]}
                   value={schoolName}
                   onChangeText={(text) => {
                     setSchoolName(text);
@@ -470,6 +534,8 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                   autoCapitalize="none"
                   autoCorrect={false}
                   editable={!isLoading}
+                  returnKeyType="done"
+                  onBlur={() => setTouchedSchool(true)}
                 />
                 {isSearchingSchools && (
                   <ActivityIndicator
@@ -482,27 +548,29 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
 
               {/* School Autocomplete Results */}
               {showSchoolResults && schoolResults.length > 0 && (
-                <View style={currentStyles.autocompleteContainer}>
-                  {schoolResults.map((school) => (
-                    <TouchableOpacity
-                      key={school.id}
-                      style={currentStyles.autocompleteItem}
-                      onPress={() => selectSchool(school)}
-                    >
-                      <View style={currentStyles.schoolResultInfo}>
-                        <Text style={currentStyles.schoolResultName}>
-                          {school.name}
-                          {school.name_en ? ` - ${school.name_en}` : ''}
-                        </Text>
-                        <Text style={currentStyles.schoolResultMeta}>
-                          {school.governorate} {school.area ? `• ${school.area}` : ''}
-                        </Text>
-                      </View>
-                      {school.is_verified && (
-                        <Ionicons name="checkmark-circle" size={16} color="#059669" />
-                      )}
-                    </TouchableOpacity>
-                  ))}
+                <View style={[currentStyles.autocompleteContainer, { maxHeight: 250 }]}>
+                  <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled">
+                    {schoolResults.map((school) => (
+                      <TouchableOpacity
+                        key={school.id}
+                        style={currentStyles.autocompleteItem}
+                        onPress={() => selectSchool(school)}
+                      >
+                        <View style={currentStyles.schoolResultInfo}>
+                          <Text style={currentStyles.schoolResultName}>
+                            {school.name}
+                            {school.name_en ? ` - ${school.name_en}` : ''}
+                          </Text>
+                          <Text style={currentStyles.schoolResultMeta}>
+                            {school.governorate} {school.area ? `• ${school.area}` : ''}
+                          </Text>
+                        </View>
+                        {school.is_verified && (
+                          <Ionicons name="checkmark-circle" size={16} color="#059669" />
+                        )}
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
                 </View>
               )}
             </>
@@ -569,7 +637,16 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
 
           {currentStep === 3 && (
             <>
-              <View style={[currentStyles.inputWrapper, { paddingLeft: 0, paddingRight: 0 }]}>
+              <View
+                style={[
+                  currentStyles.inputWrapper,
+                  {
+                    paddingLeft: 0,
+                    paddingRight: 0,
+                    borderColor: getBorderColor(touchedMobile, isMobileValid),
+                  },
+                ]}
+              >
                 <View
                   style={[
                     currentStyles.countryCodeContainer,
@@ -593,18 +670,45 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                   autoCapitalize="none"
                   autoCorrect={false}
                   editable={!isLoading}
+                  returnKeyType="next"
+                  onSubmitEditing={() => passwordRef.current?.focus()}
+                  onBlur={() => setTouchedMobile(true)}
+                  blurOnSubmit={false}
                 />
+                {touchedMobile && isMobileValid && (
+                  <Ionicons
+                    name="checkmark-circle-outline"
+                    size={20}
+                    color="#10B981"
+                    style={{ marginHorizontal: 12 }}
+                  />
+                )}
+                {touchedMobile && !isMobileValid && (
+                  <Ionicons
+                    name="alert-circle-outline"
+                    size={20}
+                    color="#F59E0B"
+                    style={{ marginHorizontal: 12 }}
+                  />
+                )}
               </View>
 
-              <View style={currentStyles.inputWrapper}>
+              <View
+                style={[
+                  currentStyles.inputWrapper,
+                  { borderColor: getBorderColor(touchedPassword, isPasswordValid) },
+                ]}
+              >
                 <Ionicons
                   name="lock-closed-outline"
                   size={20}
-                  color={theme.colors.textSecondary}
+                  color={isPasswordValid ? '#10B981' : theme.colors.textSecondary}
                   style={currentStyles.inputIcon}
                 />
                 <TextInput
-                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
+                  // @ts-ignore
+                  ref={passwordRef}
+                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left', flex: 1 }]}
                   value={password}
                   onChangeText={setPassword}
                   placeholder={t('auth.password_placeholder')}
@@ -613,8 +717,15 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                   autoCapitalize="none"
                   autoCorrect={false}
                   editable={!isLoading}
+                  returnKeyType="next"
+                  onSubmitEditing={() => confirmPasswordRef.current?.focus()}
+                  onBlur={() => setTouchedPassword(true)}
+                  blurOnSubmit={false}
                 />
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  style={{ marginHorizontal: 8 }}
+                >
                   <Ionicons
                     name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                     size={20}
@@ -623,15 +734,22 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                 </TouchableOpacity>
               </View>
 
-              <View style={currentStyles.inputWrapper}>
+              <View
+                style={[
+                  currentStyles.inputWrapper,
+                  { borderColor: getBorderColor(touchedConfirm, isConfirmValid) },
+                ]}
+              >
                 <Ionicons
                   name="shield-checkmark-outline"
                   size={20}
-                  color={theme.colors.textSecondary}
+                  color={isConfirmValid ? '#10B981' : theme.colors.textSecondary}
                   style={currentStyles.inputIcon}
                 />
                 <TextInput
-                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
+                  // @ts-ignore
+                  ref={confirmPasswordRef}
+                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left', flex: 1 }]}
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   placeholder={t('auth.confirm_password_placeholder')}
@@ -640,14 +758,41 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                   autoCapitalize="none"
                   autoCorrect={false}
                   editable={!isLoading}
+                  returnKeyType="done"
+                  onBlur={() => setTouchedConfirm(true)}
                 />
+                {touchedConfirm && isConfirmValid && (
+                  <Ionicons
+                    name="checkmark-circle-outline"
+                    size={20}
+                    color="#10B981"
+                    style={{ marginHorizontal: 8 }}
+                  />
+                )}
+                {touchedConfirm && !isConfirmValid && (
+                  <Ionicons
+                    name="alert-circle-outline"
+                    size={20}
+                    color="#F59E0B"
+                    style={{ marginHorizontal: 8 }}
+                  />
+                )}
               </View>
             </>
           )}
 
           {currentStep === 4 && (
             <>
-              <View style={[currentStyles.inputWrapper, { paddingLeft: 0, paddingRight: 0 }]}>
+              <View
+                style={[
+                  currentStyles.inputWrapper,
+                  {
+                    paddingLeft: 0,
+                    paddingRight: 0,
+                    borderColor: getBorderColor(touchedParentMobile, isParentMobileValid),
+                  },
+                ]}
+              >
                 <View
                   style={[
                     currentStyles.countryCodeContainer,
@@ -670,7 +815,27 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                   keyboardType="phone-pad"
                   autoCorrect={false}
                   editable={!isLoading}
+                  returnKeyType="next"
+                  onSubmitEditing={() => parentMobile2Ref.current?.focus()}
+                  onBlur={() => setTouchedParentMobile(true)}
+                  blurOnSubmit={false}
                 />
+                {touchedParentMobile && isParentMobileValid && (
+                  <Ionicons
+                    name="checkmark-circle-outline"
+                    size={20}
+                    color="#10B981"
+                    style={{ marginHorizontal: 12 }}
+                  />
+                )}
+                {touchedParentMobile && !isParentMobileValid && (
+                  <Ionicons
+                    name="alert-circle-outline"
+                    size={20}
+                    color="#F59E0B"
+                    style={{ marginHorizontal: 12 }}
+                  />
+                )}
               </View>
 
               <View style={[currentStyles.inputWrapper, { paddingLeft: 0, paddingRight: 0 }]}>
@@ -685,6 +850,8 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                   <Text style={currentStyles.countryCodeText}>🇪🇬 +2 </Text>
                 </View>
                 <TextInput
+                  // @ts-ignore
+                  ref={parentMobile2Ref}
                   style={[
                     currentStyles.input,
                     { flex: 1, textAlign: isRTL ? 'right' : 'left', paddingHorizontal: 16 },
@@ -696,7 +863,26 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                   keyboardType="phone-pad"
                   autoCorrect={false}
                   editable={!isLoading}
+                  returnKeyType="next"
+                  onSubmitEditing={() => promoCodeRef.current?.focus()}
+                  blurOnSubmit={false}
                 />
+                {parentMobile2.trim().length > 0 && MOBILE_REGEX.test(parentMobile2.trim()) && (
+                  <Ionicons
+                    name="checkmark-circle-outline"
+                    size={20}
+                    color="#10B981"
+                    style={{ marginHorizontal: 12 }}
+                  />
+                )}
+                {parentMobile2.trim().length > 0 && !MOBILE_REGEX.test(parentMobile2.trim()) && (
+                  <Ionicons
+                    name="alert-circle-outline"
+                    size={20}
+                    color="#F59E0B"
+                    style={{ marginHorizontal: 12 }}
+                  />
+                )}
               </View>
 
               <View style={currentStyles.inputWrapper}>
@@ -707,7 +893,9 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                   style={currentStyles.inputIcon}
                 />
                 <TextInput
-                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
+                  // @ts-ignore
+                  ref={promoCodeRef}
+                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left', flex: 1 }]}
                   value={promoCode}
                   onChangeText={setPromoCode}
                   placeholder={t('auth.promo_code_placeholder')}
@@ -715,6 +903,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                   autoCapitalize="characters"
                   autoCorrect={false}
                   editable={!isLoading}
+                  returnKeyType="done"
                 />
               </View>
             </>
