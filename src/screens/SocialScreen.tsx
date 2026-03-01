@@ -268,7 +268,7 @@ const SocialScreen: React.FC = () => {
         <View style={currentStyles.searchResultsContainer}>
           <Text style={common.sectionTitle}> {t('social_screen.search_results')} </Text>
           {searchResults.map((student) => (
-            <View key={student.id} style={common.card}>
+            <View key={student.id} style={[common.card, { marginBottom: spacing.sectionGap }]}>
               <View style={currentStyles.studentCardContent}>
                 <View style={currentStyles.studentInfo}>
                   <View style={currentStyles.avatarPlaceholder}>
@@ -369,6 +369,7 @@ const SocialScreen: React.FC = () => {
       <UnifiedHeader
         title={t('social_screen.header_title')}
         subtitle={t('social_screen.header_subtitle')}
+        showBackButton={true}
         rightContent={
           <TouchableOpacity style={currentStyles.refreshButton} onPress={fetchTimeline}>
             <Ionicons name="refresh-outline" size={24} color="#fff" />

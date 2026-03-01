@@ -63,13 +63,6 @@ const TabScreens: React.FC = () => {
     { name: 'Home', component: HomeScreen, labelKey: 'common.home', icon: 'home' },
     { name: 'Study', component: StudyScreen, labelKey: 'common.study', icon: 'grid' },
     { name: 'Quiz', component: QuizScreen, labelKey: 'common.quiz', icon: 'help-circle' },
-    { name: 'Social', component: SocialScreen, labelKey: 'common.social', icon: 'people' },
-    {
-      name: 'Leaderboard',
-      component: LeaderboardScreen,
-      labelKey: 'common.leaderboard',
-      icon: 'stats-chart',
-    },
     { name: 'More', component: MoreScreen, labelKey: 'common.more', icon: 'ellipsis-horizontal' },
   ];
 
@@ -126,6 +119,8 @@ const TabNavigator: React.FC = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MainTabs" component={TabScreens} />
+      <Stack.Screen name="Social" component={SocialScreen} />
+      <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
       <Stack.Screen name="StudyCalendar" component={StudyCalendarScreen} />
       <Stack.Screen
         name="StudyChapters"

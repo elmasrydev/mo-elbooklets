@@ -76,7 +76,7 @@ const styles = (
       padding: spacing.md,
       paddingVertical: spacing.md - 4,
       borderRadius: borderRadius.xl,
-      marginBottom: spacing.md,
+      marginTop: spacing.sectionGap,
       borderWidth: 1,
       borderColor: theme.colors.border,
       ...layout.shadow,

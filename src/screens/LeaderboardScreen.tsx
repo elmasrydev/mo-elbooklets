@@ -325,6 +325,7 @@ const LeaderboardScreen: React.FC = () => {
     <View style={common.container}>
       <UnifiedHeader
         title={t('leaderboard_screen.header_title')}
+        showBackButton={true}
         rightContent={
           <TouchableOpacity
             style={currentStyles.refreshButton}
@@ -430,7 +431,7 @@ const styles = (
       backgroundColor: theme.colors.primary + '1A', // Using 10% opacity of primary
       borderRadius: borderRadius.xl,
       padding: spacing.lg,
-      marginBottom: spacing.md,
+      marginBottom: spacing.sectionGap,
       borderWidth: 1,
       borderColor: theme.colors.primary + '33', // 20% opacity
       ...layout.shadow,

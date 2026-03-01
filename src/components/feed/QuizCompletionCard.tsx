@@ -140,7 +140,13 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
   const currentStyles = createStyles(theme, common, fontSizes, spacing, borderRadius, typography);
 
   return (
-    <View style={[common.card, isPerfect && currentStyles.cardPerfect]}>
+    <View
+      style={[
+        common.card,
+        isPerfect && currentStyles.cardPerfect,
+        { marginBottom: spacing.sectionGap },
+      ]}
+    >
       {isPerfect && (
         <View style={currentStyles.confettiContainer}>
           {confettiColors.map((color, index) =>

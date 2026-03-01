@@ -58,7 +58,7 @@ const TodaysPlanWidget: React.FC = () => {
 
   if (loading && !data)
     return (
-      <View style={common.card}>
+      <View style={[common.card, { marginBottom: spacing.sectionGap }]}>
         <View style={currentStyles.header}>
           <View style={{ flexDirection: common.rowDirection, alignItems: 'center' }}>
             <Ionicons
@@ -82,7 +82,7 @@ const TodaysPlanWidget: React.FC = () => {
 
   if (schedule.length === 0)
     return (
-      <View style={common.card}>
+      <View style={[common.card, { marginBottom: spacing.sectionGap }]}>
         <View style={currentStyles.header}>
           <View style={{ flexDirection: common.rowDirection, alignItems: 'center' }}>
             <Ionicons
@@ -111,7 +111,7 @@ const TodaysPlanWidget: React.FC = () => {
     );
 
   return (
-    <View style={common.card}>
+    <View style={[common.card, { marginBottom: spacing.sectionGap }]}>
       <View style={currentStyles.header}>
         <View style={currentStyles.titleSection}>
           <View

@@ -12,6 +12,8 @@ export const spacing = {
   sm: 8,
   /** 12px */
   ssm: 12,
+  /** 10px */
+  sectionGap: 10,
   /** 16px */
   md: 16,
   /** 20px */

@@ -33,7 +33,7 @@ export const useCommonStyles = () => {
     } as ViewStyle,
 
     headerTitle: {
-      ...typography('h1'), // Screen Title is H1 (32px / Bold 700)
+      ...typography('h3'), // Screen Title is h3 (20px / semi-Bold 600)
       color: theme.colors.headerText,
       textAlign: rtl.textAlign,
     } as TextStyle,

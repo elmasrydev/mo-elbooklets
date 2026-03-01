@@ -49,7 +49,7 @@ const RankChangeCard: React.FC<RankChangeCardProps> = ({ item }) => {
   );
 
   return (
-    <View style={[common.card, currentStyles.cardBorder]}>
+    <View style={[common.card, currentStyles.cardBorder, { marginBottom: spacing.sectionGap }]}>
       <View style={currentStyles.contentRow}>
         <View style={currentStyles.leftSection}>
           <View style={currentStyles.rankBadge}>

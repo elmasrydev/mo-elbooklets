@@ -23,6 +23,7 @@ import Svg, { Path, Circle, G, Text as SvgText } from 'react-native-svg';
 import RecentActivityCard from '../components/RecentActivityCard';
 import TodaysPlanWidget from '../components/TodaysPlanWidget';
 import UnifiedHeader from '../components/UnifiedHeader';
+import { textAlign } from '../lib/rtl';
 
 const { width } = Dimensions.get('window');
 
@@ -366,14 +367,7 @@ const HomeScreen: React.FC = () => {
 
   return (
     <View style={common.container}>
-      <UnifiedHeader
-        title={isRTL ? 'البوكلتس' : 'EL-Booklets'}
-        rightContent={
-          <TouchableOpacity style={currentStyles.notificationButton}>
-            <Ionicons name="notifications-outline" size={24} color={theme.colors.headerText} />
-          </TouchableOpacity>
-        }
-      />
+      <UnifiedHeader title={isRTL ? 'البوكلتس' : 'EL-Booklets'} />
 
       <ScrollView
         style={currentStyles.scrollContainer}
@@ -408,8 +402,10 @@ const HomeScreen: React.FC = () => {
             >
               <Ionicons name="briefcase" size={20} color={theme.colors.orange} />
             </View>
-            <Text style={currentStyles.statLabel}> {t('home_screen.quizzes')} </Text>
-            <Text style={currentStyles.statValue}> {activitiesData?.total_quizzes ?? 0}</Text>
+            <View style={currentStyles.statTextContainer}>
+              <Text style={currentStyles.statValue}> {activitiesData?.total_quizzes ?? 0}</Text>
+              <Text style={currentStyles.statLabel}> {t('home_screen.quizzes')} </Text>
+            </View>
           </View>
           <View style={currentStyles.topStatCard}>
             <View
@@ -420,9 +416,46 @@ const HomeScreen: React.FC = () => {
             >
               <Ionicons name="trending-up" size={20} color={theme.colors.orange} />
             </View>
-            <Text style={currentStyles.statLabel}> {t('home_screen.completed')} </Text>
-            <Text style={currentStyles.statValue}> {activitiesData?.avg_score ?? 0}% </Text>
+            <View style={currentStyles.statTextContainer}>
+              <Text style={currentStyles.statValue}> {activitiesData?.avg_score ?? 0}% </Text>
+              <Text style={currentStyles.statLabel}> {t('home_screen.completed')} </Text>
+            </View>
           </View>
+        </View>
+
+        <View style={currentStyles.featureRow}>
+          <TouchableOpacity
+            style={currentStyles.featureCard}
+            onPress={() => navigation.navigate('Social')}
+          >
+            <View
+              style={[
+                currentStyles.featureIconContainer,
+                { backgroundColor: theme.colors.primary + '1A' },
+              ]}
+            >
+              <Ionicons name="people" size={24} color={theme.colors.primary} />
+            </View>
+            <View style={currentStyles.featureTextContainer}>
+              <Text style={currentStyles.featureTitle}> {t('common.social')} </Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={currentStyles.featureCard}
+            onPress={() => navigation.navigate('Leaderboard')}
+          >
+            <View
+              style={[
+                currentStyles.featureIconContainer,
+                { backgroundColor: theme.colors.orange + '1A' },
+              ]}
+            >
+              <Ionicons name="stats-chart" size={24} color={theme.colors.orange} />
+            </View>
+            <View style={currentStyles.featureTextContainer}>
+              <Text style={currentStyles.featureTitle}> {t('common.leaderboard')} </Text>
+            </View>
+          </TouchableOpacity>
         </View>
 
         <WheelOfSuccess
@@ -435,7 +468,7 @@ const HomeScreen: React.FC = () => {
           borderRadius={borderRadius}
         />
 
-        <View style={common.card}>
+        <View style={[common.card, { marginBottom: spacing.sectionGap }]}>
           <View style={currentStyles.performanceHeader}>
             <View>
               <Text style={currentStyles.performanceTitle}> {t('home_screen.performance')} </Text>
@@ -490,9 +523,7 @@ const HomeScreen: React.FC = () => {
           />
         </View>
 
-        <View style={{ marginBottom: spacing.xl }}>
-          <TodaysPlanWidget />
-        </View>
+        <TodaysPlanWidget />
 
         <View style={currentStyles.section}>
           <Text style={common.sectionTitle}> {t('home_screen.quick_actions')} </Text>
@@ -508,8 +539,14 @@ const HomeScreen: React.FC = () => {
               <View style={currentStyles.quickActionIconWhite}>
                 <Ionicons name="play" size={20} color={theme.colors.textOnDark} />
               </View>
-              <Text style={currentStyles.quickActionTitleWhite}>{t('home_screen.start_quiz')}</Text>
-              <Text style={currentStyles.quickActionSubtitle}>{t('home_screen.jump_to_quiz')}</Text>
+              <Text style={currentStyles.quickActionTitleWhite}>
+                {' '}
+                {t('home_screen.start_quiz')}{' '}
+              </Text>
+              <Text style={currentStyles.quickActionSubtitle}>
+                {' '}
+                {t('home_screen.jump_to_quiz')}{' '}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -524,8 +561,14 @@ const HomeScreen: React.FC = () => {
               >
                 <Ionicons name="book" size={20} color={theme.colors.primary} />
               </View>
-              <Text style={currentStyles.quickActionTitle}>{t('home_screen.browse_booklets')}</Text>
-              <Text style={currentStyles.quickActionSubtitleDark}>{t('home_screen.booklets')}</Text>
+              <Text style={currentStyles.quickActionTitle}>
+                {' '}
+                {t('home_screen.browse_booklets')}{' '}
+              </Text>
+              <Text style={currentStyles.quickActionSubtitleDark}>
+                {' '}
+                {t('home_screen.booklets')}{' '}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -541,7 +584,10 @@ const HomeScreen: React.FC = () => {
                 <Ionicons name="stats-chart" size={20} color={theme.colors.orange} />
               </View>
               <Text style={currentStyles.quickActionTitle}> {t('home_screen.my_progress')} </Text>
-              <Text style={currentStyles.quickActionSubtitleDark}>{t('home_screen.progress')}</Text>
+              <Text style={currentStyles.quickActionSubtitleDark}>
+                {' '}
+                {t('home_screen.progress')}{' '}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -613,7 +659,7 @@ const wheelStyles = (
       backgroundColor: theme.colors.surface,
       padding: spacing.lg,
       borderRadius: borderRadius.xl,
-      marginBottom: spacing.xl,
+      marginBottom: spacing.sectionGap,
       borderWidth: 1,
       borderColor: theme.colors.border,
       ...layout.shadow,
@@ -732,14 +778,6 @@ const styles = (
       borderWidth: 2,
       borderColor: theme.colors.background,
     },
-    notificationButton: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      backgroundColor: 'rgba(255,255,255,0.15)',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
     scrollContainer: { flex: 1 },
     scrollContent: {
       paddingBottom: Math.max(common.insets.bottom, spacing.xl),
@@ -749,7 +787,7 @@ const styles = (
       flexDirection: common.rowDirection,
       alignItems: 'center',
       marginTop: spacing.md,
-      marginBottom: spacing.xs,
+      marginBottom: spacing.md,
     },
     userInfoText: {
       flex: 1,
@@ -769,21 +807,19 @@ const styles = (
     topStatsRow: {
       flexDirection: common.rowDirection,
       justifyContent: 'space-between',
-      marginBottom: spacing.xl,
-      marginTop: spacing.xl,
+      marginTop: spacing.sectionGap,
+      marginBottom: spacing.sectionGap,
       gap: spacing.md,
     },
     topStatCard: {
       flex: 1,
-      aspectRatio: 1,
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
       backgroundColor: theme.colors.card,
       padding: spacing.md,
       borderRadius: borderRadius.lg,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      ...layout.shadow,
+      borderWidth: 0,
+      elevation: 0,
     },
     statIconContainer: {
       width: 40,
@@ -791,18 +827,63 @@ const styles = (
       borderRadius: borderRadius.md,
       justifyContent: 'center',
       alignItems: 'center',
-      marginBottom: spacing.sm,
+      ...common.marginEnd(spacing.sm),
+    },
+    statTextContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'flex-start',
     },
     statLabel: {
-      ...typography('label'),
+      ...typography('caption'),
       color: theme.colors.textSecondary,
-      marginBottom: spacing.xxs,
-      textAlign: 'center',
+      textAlign: 'left',
+      marginTop: 2,
     },
     statValue: {
       ...typography('h3'),
+      fontSize: 18,
+      lineHeight: 24,
       color: theme.colors.text,
-      textAlign: 'center',
+      textAlign: 'left',
+    },
+    featureRow: {
+      flexDirection: common.rowDirection,
+      justifyContent: 'space-between',
+      marginBottom: spacing.sectionGap,
+      gap: spacing.md,
+    },
+    featureCard: {
+      flex: 1,
+      backgroundColor: theme.colors.card,
+      padding: spacing.sm,
+      paddingVertical: spacing.md,
+      borderRadius: borderRadius.lg,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      flexDirection: common.rowDirection,
+      ...layout.shadow,
+    },
+    featureIconContainer: {
+      width: 40,
+      height: 40,
+      borderRadius: borderRadius.md,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 'auto',
+      marginLeft: 4,
+    },
+    featureTextContainer: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    featureTitle: {
+      ...typography('bodySmall'),
+      fontWeight: '600',
+      color: theme.colors.text,
     },
     performanceHeader: {
       flexDirection: common.rowDirection,
@@ -833,13 +914,14 @@ const styles = (
       ...common.marginStart(spacing.xxs),
     },
     section: {
-      marginBottom: spacing.xl,
+      marginBottom: spacing.sectionGap,
     },
     sectionHeaderRow: {
       flexDirection: common.rowDirection,
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: spacing.md,
+      marginTop: spacing.sm,
+      marginBottom: spacing.sm,
     },
     viewAllText: {
       ...typography('link'),
@@ -905,7 +987,7 @@ const styles = (
       backgroundColor: theme.colors.primary,
       borderRadius: borderRadius.xl,
       alignItems: 'center',
-      marginBottom: spacing.xl,
+      marginBottom: spacing.sectionGap,
     },
     quoteText: {
       ...typography('bodyLarge'),

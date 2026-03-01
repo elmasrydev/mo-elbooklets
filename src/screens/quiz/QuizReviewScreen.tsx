@@ -296,7 +296,7 @@ const styles = (
       backgroundColor: theme.colors.card,
       borderRadius: 20,
       padding: 20,
-      marginBottom: 20,
+      marginBottom: spacing.sectionGap,
       borderWidth: 1,
       borderColor: theme.colors.border,
       ...layout.shadow,

@@ -38,6 +38,7 @@ const StudyScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -50,9 +51,9 @@ const StudyScreen: React.FC = () => {
     }, []),
   );
 
-  const fetchSubjects = async () => {
+  const fetchSubjects = async (isRefresh = false) => {
     try {
-      setLoading(true);
+      if (!isRefresh) setLoading(true);
       setError(null);
 
       const token = await AsyncStorage.getItem('auth_token');
@@ -86,10 +87,15 @@ const StudyScreen: React.FC = () => {
     } catch (err: any) {
       console.error('Fetch subjects error:', err);
       setError(err.message || t('study_screen.error_loading_subjects'));
-    } finally {
-      setLoading(false);
+      if (!isRefresh) setLoading(false);
     }
   };
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchSubjects(true);
+    setRefreshing(false);
+  }, []);
 
   const handleSubjectSelect = (subject: Subject) => {
     navigation.navigate('StudyChapters', { subject });
@@ -115,7 +121,7 @@ const StudyScreen: React.FC = () => {
           <Text style={currentStyles.errorStateSubtitle}> {error} </Text>
           <AppButton
             title={t('home_screen.try_again')}
-            onPress={fetchSubjects}
+            onPress={() => fetchSubjects()}
             size="sm"
             fullWidth={false}
           />
@@ -134,14 +140,15 @@ const StudyScreen: React.FC = () => {
         <ScrollView
           style={currentStyles.content}
           contentContainerStyle={{
-            padding: layout.screenPadding,
+            paddingHorizontal: layout.screenPadding,
+            paddingTop: spacing.md,
             paddingBottom: Math.max(common.insets.bottom, spacing.xl),
           }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
-              refreshing={loading}
-              onRefresh={fetchSubjects}
+              refreshing={refreshing}
+              onRefresh={onRefresh}
               colors={[theme.colors.primary]}
               tintColor={theme.colors.primary}
             />
@@ -252,7 +259,7 @@ const styles = (
       alignItems: 'center',
       padding: spacing.md,
       paddingVertical: spacing.md - 4,
-      marginBottom: spacing.md,
+      marginBottom: spacing.sectionGap,
       backgroundColor: theme.colors.card,
       borderRadius: borderRadius.xl,
       borderWidth: 1,

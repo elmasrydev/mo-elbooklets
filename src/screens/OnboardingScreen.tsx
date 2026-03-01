@@ -47,7 +47,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted, onLog
 
           <AppButton title={t('onboarding.get_started')} onPress={onGetStarted} size="lg" />
 
-          <View style={currentStyles.footer}>
+          <View style={[currentStyles.footer]}>
             <Text style={currentStyles.footerText}>
               {t('onboarding.already_have_account')}{' '}
               <Text style={currentStyles.link} onPress={onLogin}>
@@ -79,7 +79,7 @@ const styles = (typography: any, insets: { top: number; bottom: number }) =>
     },
     header: {
       alignItems: 'center',
-      marginTop: 40,
+      marginTop: 30,
       paddingHorizontal: layout.screenPadding,
     },
     logo: {
@@ -92,7 +92,7 @@ const styles = (typography: any, insets: { top: number; bottom: number }) =>
     },
     bottomContent: {
       paddingHorizontal: layout.screenPadding,
-      paddingBottom: Math.max(insets.bottom, 20),
+      paddingBottom: Math.max(insets.bottom, 70),
       alignItems: 'center',
     },
     title: {
@@ -100,7 +100,7 @@ const styles = (typography: any, insets: { top: number; bottom: number }) =>
       fontWeight: '800',
       color: '#0F172A',
       textAlign: 'center',
-      marginBottom: 16,
+      marginBottom: 14,
     },
     subtitle: {
       ...typography('body'),
@@ -109,7 +109,8 @@ const styles = (typography: any, insets: { top: number; bottom: number }) =>
       marginBottom: 32,
     },
     footer: {
-      marginTop: 24,
+      marginTop: 25,
+      marginBottom: 25,
     },
     footerText: {
       ...typography('body'),

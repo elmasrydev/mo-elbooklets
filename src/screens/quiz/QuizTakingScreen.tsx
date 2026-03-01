@@ -511,7 +511,7 @@ const styles = (theme: any, typography: any, spacing: any, borderRadius: any, co
       backgroundColor: theme.colors.card,
       padding: spacing.lg,
       borderRadius: borderRadius.xl,
-      marginBottom: spacing.md,
+      marginBottom: spacing.sectionGap,
       ...layout.shadow,
     },
     questionHeader: {

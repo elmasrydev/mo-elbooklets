@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -19,7 +19,9 @@ import { layout } from '../../config/layout';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import CloseButton from '../../components/navigation/CloseButton';
 import LessonNavBar from '../../components/navigation/LessonNavBar';
+import UnifiedHeader from '../../components/UnifiedHeader';
 import { useTypography } from '../../hooks/useTypography';
+import { textAlign } from '../../lib/rtl';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -155,6 +157,7 @@ const StudyLessonScreen: React.FC = () => {
   const [currentLesson, setCurrentLesson] = useState<Lesson>(route.params?.lesson);
   const allLessons: Lesson[] = route.params?.allLessons || [];
   const [expandedPoints, setExpandedPoints] = useState<Set<string>>(new Set());
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const currentIndex = allLessons.findIndex((l) => l.id === currentLesson.id);
   const previousLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
@@ -179,6 +182,7 @@ const StudyLessonScreen: React.FC = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setCurrentLesson(lesson);
     setExpandedPoints(new Set());
+    scrollViewRef.current?.scrollTo({ y: 0, animated: false });
   };
 
   const hasNewPoints = currentLesson.lessonPoints && currentLesson.lessonPoints.length > 0;
@@ -186,32 +190,35 @@ const StudyLessonScreen: React.FC = () => {
 
   return (
     <View style={currentStyles.container}>
-      <View style={currentStyles.header}>
-        <View style={currentStyles.headerTopRow}>
-          <CloseButton />
-          <View style={currentStyles.headerTitleArea}>
-            <View style={currentStyles.chapterBadgeContainer}>
-              <Text style={currentStyles.chapterBadge}> {currentLesson.chapter.name} </Text>
-            </View>
-          </View>
-        </View>
-        <Text style={currentStyles.headerTitle} numberOfLines={2}>
-          {currentLesson.name}
-        </Text>
-      </View>
+      <UnifiedHeader leftContent={<CloseButton />} title={t('study_lesson.lesson_content')} />
 
       <ScrollView
+        ref={scrollViewRef}
         style={{ flex: 1 }}
         contentContainerStyle={{
-          padding: layout.screenPadding,
+          paddingHorizontal: layout.screenPadding,
+          paddingTop: spacing.md,
           paddingBottom: Math.max(insets.bottom, spacing.xl),
         }}
         showsVerticalScrollIndicator={false}
       >
+        <View style={currentStyles.titleBreadcrumbContainer}>
+          <View style={currentStyles.breadcrumbRow}>
+            <Ionicons
+              name="folder-open"
+              size={14}
+              color={theme.colors.primary}
+              style={currentStyles.breadcrumbIcon}
+            />
+            <Text style={currentStyles.chapterBadge}> {currentLesson.chapter.name} </Text>
+          </View>
+          <Text style={currentStyles.mainTitle}> {currentLesson.name} </Text>
+        </View>
+
         {currentLesson.videoUrl && (
           <View style={currentStyles.videoSection}>
             <LessonVideoPlayer
-              url={currentLesson.videoUrl}
+              url={currentLesson.videoUrl as string}
               theme={theme}
               spacing={spacing}
               borderRadius={borderRadius}
@@ -298,8 +305,8 @@ const StudyLessonScreen: React.FC = () => {
       <LessonNavBar
         currentIndex={currentIndex}
         totalCount={allLessons.length}
-        onPrevious={previousLesson ? () => handleNavigateLesson(previousLesson) : null}
-        onNext={nextLesson ? () => handleNavigateLesson(nextLesson) : null}
+        onPrevious={previousLesson ? () => handleNavigateLesson(previousLesson as Lesson) : null}
+        onNext={nextLesson ? () => handleNavigateLesson(nextLesson as Lesson) : null}
         onFinish={() => navigation.goBack()}
       />
     </View>
@@ -319,41 +326,50 @@ const styles = (
       flex: 1,
       backgroundColor: theme.colors.background,
     },
-    header: {
-      padding: spacing.lg,
-      paddingTop: insets.top + spacing.xs,
-      backgroundColor: theme.colors.headerBackground,
+    titleBreadcrumbContainer: {
+      marginBottom: spacing.sectionGap,
+      alignItems: 'flex-start',
+      backgroundColor: theme.colors.card,
+      padding: spacing.mdd,
+      borderRadius: borderRadius.xl,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      ...layout.shadow,
     },
-    headerTopRow: {
-      flexDirection: isRTL ? 'row-reverse' : 'row',
+    breadcrumbRow: {
+      flexDirection: 'row',
       alignItems: 'center',
-      marginBottom: spacing.sm,
-    },
-    headerTitleArea: {
-      flex: 1,
-      marginLeft: isRTL ? 0 : spacing.sm,
-      marginRight: isRTL ? spacing.sm : 0,
-      alignItems: isRTL ? 'flex-end' : 'flex-start',
-    },
-    chapterBadgeContainer: {
-      backgroundColor: theme.colors.textOnDark + '33',
-      paddingHorizontal: spacing.sm,
-      paddingVertical: 4,
+      justifyContent: 'center',
+      backgroundColor: theme.colors.primary + '1A',
+      paddingHorizontal: spacing.xl,
+      paddingVertical: 6,
       borderRadius: borderRadius.full,
+      marginBottom: spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.primary + '33',
+      flex: 0,
+      width: '100%',
+    },
+    breadcrumbIcon: {
+      marginRight: 12,
     },
     chapterBadge: {
       ...typography('caption'),
-      fontSize: 12,
-      color: theme.colors.textOnDark,
+      fontSize: 13,
+      fontWeight: '700',
+      color: theme.colors.primary,
+      textAlign: 'left',
     },
-    headerTitle: {
-      ...typography('h2'),
+    mainTitle: {
+      ...typography('h3'),
+      fontSize: 16,
+      lineHeight: 28,
       fontWeight: '800',
-      color: theme.colors.textOnDark,
-      textAlign: isRTL ? 'right' : 'left',
+      color: theme.colors.text,
+      textAlign: 'left',
     },
     section: {
-      marginBottom: spacing.lg,
+      marginBottom: spacing.sectionGap,
       padding: spacing.md,
       borderRadius: borderRadius.lg,
       backgroundColor: theme.colors.card,
@@ -382,7 +398,7 @@ const styles = (
       color: theme.colors.text,
     },
     videoSection: {
-      marginBottom: spacing.lg,
+      marginBottom: spacing.sectionGap,
       borderRadius: borderRadius.lg,
       overflow: 'hidden',
       backgroundColor: '#000',

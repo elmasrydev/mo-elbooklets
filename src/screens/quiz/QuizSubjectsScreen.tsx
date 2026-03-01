@@ -211,7 +211,7 @@ const styles = (
       borderRadius: borderRadius.xl,
       alignItems: 'center',
       backgroundColor: theme.colors.card,
-      marginBottom: spacing.md,
+      marginBottom: spacing.sectionGap,
       borderWidth: 1,
       borderColor: theme.colors.border,
       ...layout.shadow,

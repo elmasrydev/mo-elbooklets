@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -35,6 +35,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister, onBack 
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  const [touchedMobile, setTouchedMobile] = useState(false);
+  const [touchedPassword, setTouchedPassword] = useState(false);
+
+  const passwordRef = useRef<TextInput>(null);
+
   const { login } = useAuth();
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { language, setLanguage } = useLanguage();
@@ -63,6 +68,19 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister, onBack 
   const isRTL = language === 'ar';
   const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius, isRTL, typography);
 
+  const isMobileValid = new RegExp('^01[0125][0-9]{8}$').test(mobile.trim());
+  const isPasswordValid = password.length >= 8;
+
+  const getMobileBorderColor = () => {
+    if (!touchedMobile) return '#E2E8F0';
+    return isMobileValid ? '#10B981' : '#F59E0B';
+  };
+
+  const getPasswordBorderColor = () => {
+    if (!touchedPassword) return '#E2E8F0';
+    return isPasswordValid ? '#10B981' : '#F59E0B';
+  };
+
   return (
     <KeyboardAvoidingView
       style={currentStyles.container}
@@ -81,6 +99,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister, onBack 
       <ScrollView
         contentContainerStyle={currentStyles.scrollContainer}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         <View style={currentStyles.header}>
           <Image
@@ -94,11 +113,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister, onBack 
 
         <View style={currentStyles.form}>
           {/* Mobile Input */}
-          <View style={currentStyles.inputWrapper}>
+          <View style={[currentStyles.inputWrapper, { borderColor: getMobileBorderColor() }]}>
             <Ionicons
               name="call-outline"
               size={20}
-              color={theme.colors.textSecondary}
+              color={isMobileValid ? '#10B981' : theme.colors.textSecondary}
               style={currentStyles.inputIcon}
             />
             <TextInput
@@ -111,11 +130,31 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister, onBack 
               autoCapitalize="none"
               editable={!isLoading}
               textAlign={common.textAlign}
+              returnKeyType="next"
+              onSubmitEditing={() => passwordRef.current?.focus()}
+              onBlur={() => setTouchedMobile(true)}
+              blurOnSubmit={false}
             />
+            {touchedMobile && !isMobileValid && (
+              <Ionicons
+                name="alert-circle-outline"
+                size={20}
+                color="#F59E0B"
+                style={{ marginHorizontal: 8 }}
+              />
+            )}
+            {isMobileValid && (
+              <Ionicons
+                name="checkmark-circle-outline"
+                size={20}
+                color="#10B981"
+                style={{ marginHorizontal: 8 }}
+              />
+            )}
           </View>
 
           {/* Password Input */}
-          <View style={currentStyles.inputWrapper}>
+          <View style={[currentStyles.inputWrapper, { borderColor: getPasswordBorderColor() }]}>
             <Ionicons
               name="lock-closed-outline"
               size={20}
@@ -123,6 +162,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister, onBack 
               style={currentStyles.inputIcon}
             />
             <TextInput
+              // @ts-ignore: React Native types sometimes incorrectly omit `ref` from TextInputProps
+              ref={passwordRef}
               style={[currentStyles.input, { flex: 1 }]}
               value={password}
               onChangeText={setPassword}
@@ -132,6 +173,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister, onBack 
               autoCapitalize="none"
               editable={!isLoading}
               textAlign={common.textAlign}
+              returnKeyType="done"
+              onSubmitEditing={handleLogin}
+              onBlur={() => setTouchedPassword(true)}
             />
             <TouchableOpacity
               onPress={() => setShowPassword(!showPassword)}

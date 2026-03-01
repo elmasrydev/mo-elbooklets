@@ -131,7 +131,7 @@ const styles = (
       borderRadius: borderRadius.xl,
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      marginBottom: spacing.xl,
+      marginBottom: spacing.sectionGap,
       ...layout.shadow,
     },
     avatar: {
@@ -178,7 +178,7 @@ const styles = (
       textAlign: common.textAlign,
     },
     settingsSection: {
-      marginBottom: spacing.xl,
+      marginBottom: spacing.sectionGap,
     },
     settingItem: {
       backgroundColor: theme.colors.card,

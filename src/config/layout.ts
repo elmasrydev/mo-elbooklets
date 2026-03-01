@@ -14,8 +14,8 @@ export const layout = {
   // Tab bar content height
   tabBarContentHeight: 54,
 
-  // Screen padding (unified 20px)
-  screenPadding: spacing.mdd,
+  // Screen padding (unified 12px)
+  screenPadding: spacing.ssm,
 
   // Card styles
   cardPadding: spacing.md,

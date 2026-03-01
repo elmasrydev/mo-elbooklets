@@ -440,7 +440,7 @@ const styles = (
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.md,
       borderRadius: borderRadius.lg,
-      marginBottom: spacing.lg,
+      marginBottom: spacing.sectionGap,
       borderWidth: 1,
       borderColor: theme.colors.border,
       shadowColor: '#000',
@@ -505,7 +505,7 @@ const styles = (
     },
     scoreGridContainer: {
       alignItems: 'center',
-      marginBottom: spacing.xl,
+      marginBottom: spacing.sectionGap,
     },
     mainScoreWrapper: {
       position: 'relative',
@@ -564,7 +564,7 @@ const styles = (
     actionsContainer: {
       width: '100%',
       gap: 12,
-      marginBottom: spacing.xl,
+      marginBottom: spacing.sectionGap,
     },
   });
 

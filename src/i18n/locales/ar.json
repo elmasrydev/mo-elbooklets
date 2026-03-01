@@ -70,6 +70,7 @@
     "no_chapters_for_subject": "لا توجد فصول متاحة لهذه المادة."
   },
   "study_lesson": {
+    "lesson_content": "محتوى الدرس",
     "summary": "الملخص",
     "key_points": "النقاط الرئيسية",
     "no_summary": "لا يوجد ملخص متاح لهذا الدرس.",
