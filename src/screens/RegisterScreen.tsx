@@ -352,11 +352,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
     >
       <BackButton
         onPress={handleBack}
-        style={[
-          currentStyles.backButton,
-          { top: insets.top + spacing.sm },
-          common.start(spacing.lg),
-        ]}
+        style={[currentStyles.backButton, { top: insets.top + spacing.sm }, { left: spacing.lg }]}
         color={theme.colors.text}
       />
 
@@ -366,7 +362,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
           style={[
             currentStyles.languageButton,
             { top: insets.top + spacing.sm },
-            common.end(spacing.lg),
+            { right: spacing.lg },
           ]}
         >
           <Ionicons name="language-outline" size={20} color={theme.colors.primary} />
@@ -464,10 +460,8 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                   autoCapitalize="none"
                   autoCorrect={false}
                   editable={!isLoading}
-                  returnKeyType="next"
-                  onSubmitEditing={() => schoolRef.current?.focus()}
+                  returnKeyType="done"
                   onBlur={() => setTouchedEmail(true)}
-                  blurOnSubmit={false}
                 />
                 {touchedEmail && isEmailValid && (
                   <Ionicons
@@ -992,6 +986,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                   autoCorrect={false}
                   editable={!isLoading}
                   returnKeyType="done"
+                  onSubmitEditing={handleNext}
                 />
               </View>
             </>
@@ -1276,7 +1271,6 @@ const styles = (
     modalSearchInputContainer: {
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.border,
-      backgroundColor: theme.colors.surface,
       backgroundColor: 'transparent',
     },
     modalSearchInputWrapper: {
