@@ -88,6 +88,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
   const confirmPasswordRef = useRef<TextInput>(null);
   const parentMobile2Ref = useRef<TextInput>(null);
   const promoCodeRef = useRef<TextInput>(null);
+  const schoolSearchInputRef = useRef<any>(null);
 
   // Touch States for Inline Validation (Auto-reset after 3s)
   const [touchedName, setTouchedName] = useAutoReset(false);
@@ -155,6 +156,15 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
   const [isSearchingSchools, setIsSearchingSchools] = useState(false);
   const [isSchoolModalVisible, setIsSchoolModalVisible] = useState(false);
   const [schoolSearchQuery, setSchoolSearchQuery] = useState('');
+
+  useEffect(() => {
+    if (isSchoolModalVisible) {
+      const timer = setTimeout(() => {
+        schoolSearchInputRef.current?.focus();
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [isSchoolModalVisible]);
 
   // Validation Flags
   const isNameValid = name.trim().length >= 3;
@@ -569,7 +579,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                         <View style={currentStyles.modalSearchInputContainer}>
                           <View style={currentStyles.modalSearchInputWrapper}>
                             <TextInput
-                              autoFocus
+                              ref={schoolSearchInputRef}
                               style={currentStyles.modalSearchInput}
                               placeholder={t('auth.school_search_placeholder')}
                               value={schoolSearchQuery}
@@ -596,7 +606,6 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                       shouldRasterizeIOS={true}
                       keyboardShouldPersistTaps="handled"
                       renderItem={({ item }) => {
-                        console.log(JSON.stringify(item, null, 2));
                         return (
                           <TouchableOpacity
                             style={currentStyles.autocompleteItem}
