@@ -12,6 +12,8 @@ import {
   ActivityIndicator,
   Image,
   Modal,
+  FlatList,
+  SafeAreaView,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -22,30 +24,42 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../context/LanguageContext';
 import { useTypography } from '../hooks/useTypography';
+import { useAutoReset } from '../hooks/useAutoReset';
 
 import BackButton from '../components/navigation/BackButton';
+import CloseButton from '../components/navigation/CloseButton';
 import AppButton from '../components/AppButton';
+import UnifiedHeader from '../components/UnifiedHeader';
 import { layout } from '../config/layout';
+import { textAlign } from '../lib/rtl';
 
 interface RegisterScreenProps {
   onNavigateToLogin: () => void;
   onBack: () => void;
 }
 
-const PickerTrigger = ({ value, placeholder, icon, onPress, theme, currentStyles }: any) => (
-  <TouchableOpacity style={currentStyles.inputWrapper} onPress={onPress} activeOpacity={0.7}>
-    <Ionicons
-      name={icon}
-      size={20}
-      color={theme.colors.textSecondary}
-      style={currentStyles.inputIcon}
-    />
-    <Text style={[currentStyles.inputText, !value && { color: theme.colors.textSecondary }]}>
-      {value || placeholder}
-    </Text>
-    <Ionicons name="chevron-down" size={20} color={theme.colors.textSecondary} />
-  </TouchableOpacity>
-);
+const PickerTrigger = ({ value, placeholder, icon, onPress, theme, currentStyles }: any) => {
+  return (
+    <TouchableOpacity style={currentStyles.inputWrapper} onPress={onPress} activeOpacity={0.7}>
+      <Ionicons
+        name={icon}
+        size={20}
+        color={theme.colors.textSecondary}
+        style={currentStyles.inputIcon}
+      />
+      <Text
+        style={[
+          currentStyles.inputText,
+          { textAlign: 'center' },
+          !value && { color: theme.colors.textSecondary },
+        ]}
+      >
+        {value || placeholder}
+      </Text>
+      <Ionicons name="chevron-down" size={20} color={theme.colors.textSecondary} />
+    </TouchableOpacity>
+  );
+};
 
 const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBack }) => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -56,15 +70,15 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
   const MOBILE_REGEX = /^01[0125][0-9]{8}$/;
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [mobile, setMobile] = useState('');
-  const [gender, setGender] = useState<'male' | 'female' | ''>('');
-  const [selectedGrade, setSelectedGrade] = useState('');
-  const [selectedSystem, setSelectedSystem] = useState('');
   const [schoolName, setSchoolName] = useState('');
-  const [parentMobile, setParentMobile] = useState('');
-  const [parentMobile2, setParentMobile2] = useState('');
+  const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [gender, setGender] = useState<string | null>(null);
+  const [parentMobile, setParentMobile] = useState('');
+  const [parentMobile2, setParentMobile2] = useState('');
+  const [selectedGrade, setSelectedGrade] = useState<any>(null);
+  const [selectedSystem, setSelectedSystem] = useState<any>(null);
   const [promoCode, setPromoCode] = useState('');
 
   // Refs for Focus Chaining
@@ -75,23 +89,23 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
   const parentMobile2Ref = useRef<TextInput>(null);
   const promoCodeRef = useRef<TextInput>(null);
 
-  // Touch States for Inline Validation
-  const [touchedName, setTouchedName] = useState(false);
-  const [touchedEmail, setTouchedEmail] = useState(false);
-  const [touchedSchool, setTouchedSchool] = useState(false);
-  const [touchedMobile, setTouchedMobile] = useState(false);
-  const [touchedPassword, setTouchedPassword] = useState(false);
-  const [touchedConfirm, setTouchedConfirm] = useState(false);
-  const [touchedParentMobile, setTouchedParentMobile] = useState(false);
+  // Touch States for Inline Validation (Auto-reset after 3s)
+  const [touchedName, setTouchedName] = useAutoReset(false);
+  const [touchedEmail, setTouchedEmail] = useAutoReset(false);
+  const [touchedSchool, setTouchedSchool] = useAutoReset(false);
+  const [touchedMobile, setTouchedMobile] = useAutoReset(false);
+  const [touchedPassword, setTouchedPassword] = useAutoReset(false);
+  const [touchedConfirm, setTouchedConfirm] = useAutoReset(false);
+  const [touchedParentMobile, setTouchedParentMobile] = useAutoReset(false);
 
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
 
-  const { register } = useAuth();
+  const { login, register } = useAuth();
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
-  const { language } = useLanguage();
+  const { language, setLanguage } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
   const insets = useSafeAreaInsets();
@@ -139,14 +153,13 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
 
   const [schoolResults, setSchoolResults] = useState<any[]>([]);
   const [isSearchingSchools, setIsSearchingSchools] = useState(false);
-  const [showSchoolResults, setShowSchoolResults] = useState(false);
-  const [skipNextSearch, setSkipNextSearch] = useState(false);
+  const [isSchoolModalVisible, setIsSchoolModalVisible] = useState(false);
+  const [schoolSearchQuery, setSchoolSearchQuery] = useState('');
 
   // Validation Flags
   const isNameValid = name.trim().length >= 3;
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-  const isSchoolValid =
-    schoolName.trim().length >= 2 && !(showSchoolResults && schoolResults.length > 0);
+  const isSchoolValid = schoolName.trim().length >= 2;
   const isMobileValid = MOBILE_REGEX.test(mobile.trim());
   const isPasswordValid = password.length >= 8;
   const isConfirmValid = isPasswordValid && password === confirmPassword;
@@ -159,22 +172,16 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
   };
 
   useEffect(() => {
-    if (skipNextSearch) {
-      setSkipNextSearch(false);
-      return;
-    }
-
     const delayDebounceFn = setTimeout(() => {
-      if (schoolName.length >= 2 && !isLoading) {
-        searchSchools(schoolName);
+      if (schoolSearchQuery.length >= 2) {
+        searchSchools(schoolSearchQuery);
       } else {
         setSchoolResults([]);
-        setShowSchoolResults(false);
       }
-    }, 500);
+    }, 400);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [schoolName]);
+  }, [schoolSearchQuery]);
 
   const searchSchools = async (query: string) => {
     setIsSearchingSchools(true);
@@ -183,7 +190,6 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
       const response = await fetch(`${baseUrl}/schools-search?q=${encodeURIComponent(query)}`);
       const data = await response.json();
       setSchoolResults(data);
-      setShowSchoolResults(data.length > 0);
     } catch (error) {
       console.error('Error searching schools:', error);
     } finally {
@@ -193,10 +199,12 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
 
   const selectSchool = (school: any) => {
     const selectedName = language === 'ar' ? school.name : school.name_en || school.name;
-    setSkipNextSearch(true);
     setSchoolName(selectedName);
+    setIsSchoolModalVisible(false);
+    setSchoolSearchQuery('');
     setSchoolResults([]);
-    setShowSchoolResults(false);
+    // Trigger success border
+    setTouchedSchool(true);
   };
 
   const validateStep = (step: number) => {
@@ -285,26 +293,25 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
 
     confirmRegistration();
   };
-
   const confirmRegistration = async () => {
     setShowModal(false);
     setIsLoading(true);
     try {
       const result = await register({
         name: name.trim(),
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         mobile: mobile.trim(),
         country_code: countryCode,
-        gender,
-        school_name: schoolName.trim(),
-        parent_mobile: parentMobile.trim(),
-        parent_country_code: parentCountryCode,
-        parent_mobile_2: parentMobile2.trim(),
-        parent_country_code_2: parentCountryCode2,
         password,
-        grade_id: selectedGrade,
-        educational_system_id: selectedSystem,
-        promo_code: promoCode.trim(),
+        grade_id: selectedGrade?.id,
+        educational_system_id: selectedSystem?.id || '1',
+        gender: gender || 'male',
+        school_name: schoolName ? schoolName : undefined,
+        parent_mobile: parentMobile ? parentMobile.trim() : undefined,
+        parent_country_code: parentMobile ? parentCountryCode : undefined,
+        parent_mobile_2: parentMobile2 ? parentMobile2.trim() : undefined,
+        parent_country_code_2: parentMobile2 ? parentCountryCode2 : undefined,
+        promo_code: promoCode ? promoCode : undefined,
       });
       if (!result.success)
         Alert.alert(t('auth.registration_failed'), result.error || t('auth.registration_error'));
@@ -326,8 +333,8 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
             key={s}
             style={[
               currentStyles.stepDot,
-              s === currentStep && currentStyles.stepDotActive,
-              s < currentStep && currentStyles.stepDotCompleted,
+              s === currentStep ? currentStyles.stepDotActive : undefined,
+              s < currentStep ? currentStyles.stepDotCompleted : undefined,
             ]}
           />
         ))}
@@ -352,6 +359,20 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
         ]}
         color={theme.colors.text}
       />
+
+      {currentStep === 1 && (
+        <TouchableOpacity
+          onPress={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
+          style={[
+            currentStyles.languageButton,
+            { top: insets.top + spacing.sm },
+            common.end(spacing.lg),
+          ]}
+        >
+          <Ionicons name="language-outline" size={20} color={theme.colors.primary} />
+          <Text style={currentStyles.languageText}>{language === 'ar' ? 'English' : 'عربي'}</Text>
+        </TouchableOpacity>
+      )}
 
       <ScrollView
         contentContainerStyle={currentStyles.scrollContainer}
@@ -506,73 +527,140 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                 </View>
               </View>
 
-              <View
-                style={[
-                  currentStyles.inputWrapper,
-                  { borderColor: getBorderColor(touchedSchool, isSchoolValid) },
-                ]}
-              >
-                <Ionicons
-                  name="business-outline"
-                  size={20}
-                  color={isSchoolValid ? '#10B981' : theme.colors.textSecondary}
-                  style={currentStyles.inputIcon}
-                />
-                <TextInput
-                  // @ts-ignore
-                  ref={schoolRef}
-                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left', flex: 1 }]}
-                  value={schoolName}
-                  onChangeText={(text) => {
-                    setSchoolName(text);
-                    if (text.length < 2) {
-                      setShowSchoolResults(false);
-                    }
-                  }}
-                  placeholder={t('auth.school_placeholder')}
-                  placeholderTextColor={theme.colors.textSecondary}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  editable={!isLoading}
-                  returnKeyType="done"
-                  onBlur={() => setTouchedSchool(true)}
-                />
-                {isSearchingSchools && (
-                  <ActivityIndicator
-                    size="small"
-                    color={theme.colors.primary}
-                    style={{ marginRight: 8 }}
-                  />
-                )}
-              </View>
+              <PickerTrigger
+                value={schoolName}
+                placeholder={t('auth.school_placeholder')}
+                icon="business-outline"
+                onPress={() => setIsSchoolModalVisible(true)}
+                theme={theme}
+                currentStyles={{
+                  ...currentStyles,
+                  inputWrapper: StyleSheet.flatten([
+                    currentStyles.inputWrapper,
+                    { borderColor: getBorderColor(touchedSchool, isSchoolValid) },
+                  ]),
+                }}
+              />
 
-              {/* School Autocomplete Results */}
-              {showSchoolResults && schoolResults.length > 0 && (
-                <View style={[currentStyles.autocompleteContainer, { maxHeight: 250 }]}>
-                  <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled">
-                    {schoolResults.map((school) => (
-                      <TouchableOpacity
-                        key={school.id}
-                        style={currentStyles.autocompleteItem}
-                        onPress={() => selectSchool(school)}
-                      >
-                        <View style={currentStyles.schoolResultInfo}>
-                          <Text style={currentStyles.schoolResultName}>
-                            {school.name}
-                            {school.name_en ? ` - ${school.name_en}` : ''}
-                          </Text>
-                          <Text style={currentStyles.schoolResultMeta}>
-                            {school.governorate} {school.area ? `• ${school.area}` : ''}
+              {/* Enhanced School Search Modal */}
+              <Modal
+                visible={isSchoolModalVisible}
+                animationType="slide"
+                presentationStyle="pageSheet"
+                onRequestClose={() => setIsSchoolModalVisible(false)}
+              >
+                <SafeAreaView style={currentStyles.modalSearchContainer}>
+                  <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                    style={{ flex: 1 }}
+                  >
+                    <UnifiedHeader
+                      title={
+                        <Text
+                          style={[
+                            common.headerTitle,
+                            { ...typography('h2'), color: theme.colors.headerText },
+                          ]}
+                        >
+                          {t('auth.select_school_title')}
+                        </Text>
+                      }
+                      leftContent={<CloseButton onPress={() => setIsSchoolModalVisible(false)} />}
+                      showBorder={true}
+                    />
+
+                    <FlatList
+                      style={{ marginBottom: insets.bottom }}
+                      ListHeaderComponent={
+                        <View style={currentStyles.modalSearchInputContainer}>
+                          <View style={currentStyles.modalSearchInputWrapper}>
+                            <TextInput
+                              autoFocus
+                              style={currentStyles.modalSearchInput}
+                              placeholder={t('auth.school_search_placeholder')}
+                              value={schoolSearchQuery}
+                              onChangeText={setSchoolSearchQuery}
+                              placeholderTextColor={theme.colors.textSecondary}
+                              autoCapitalize="none"
+                              autoCorrect={false}
+                            />
+                            {isSearchingSchools && (
+                              <ActivityIndicator size="small" color={theme.colors.primary} />
+                            )}
+                            <Ionicons
+                              name="search-outline"
+                              size={20}
+                              color={theme.colors.textSecondary}
+                              style={{ marginRight: 10 }}
+                            />
+                          </View>
+                        </View>
+                      }
+                      data={schoolResults}
+                      keyExtractor={(item) => item.id.toString()}
+                      contentContainerStyle={{ padding: 16 }}
+                      shouldRasterizeIOS={true}
+                      keyboardShouldPersistTaps="handled"
+                      renderItem={({ item }) => {
+                        console.log(JSON.stringify(item, null, 2));
+                        return (
+                          <TouchableOpacity
+                            style={currentStyles.autocompleteItem}
+                            onPress={() => selectSchool(item)}
+                          >
+                            <View style={currentStyles.schoolResultIcon}>
+                              <Ionicons name="school" size={24} color={theme.colors.primary} />
+                            </View>
+                            <View style={currentStyles.schoolResultInfo}>
+                              <Text style={currentStyles.schoolResultName}>
+                                {language === 'ar' ? item.name : item.name_en || item.name}
+                              </Text>
+                              {item.governorate && item.area ? (
+                                <Text style={currentStyles.schoolResultMeta}>
+                                  {item.governorate} {item.area ? `• ${item.area}` : ''}{' '}
+                                </Text>
+                              ) : null}
+                            </View>
+                            {item.is_verified && (
+                              <Ionicons
+                                name="checkmark-circle"
+                                size={24}
+                                color="#059669"
+                                style={{ marginHorizontal: 8 }}
+                              />
+                            )}
+                            <Ionicons
+                              name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                              size={20}
+                              color={theme.colors.border}
+                            />
+                          </TouchableOpacity>
+                        );
+                      }}
+                      ListEmptyComponent={() => (
+                        <View style={{ alignItems: 'center', marginTop: 100 }}>
+                          <Ionicons
+                            name="business-outline"
+                            size={64}
+                            color="#E2E8F0"
+                            style={{ marginBottom: 16 }}
+                          />
+                          <Text
+                            style={[
+                              currentStyles.subtitle,
+                              { textAlign: 'center', opacity: schoolSearchQuery ? 1 : 0.5 },
+                            ]}
+                          >
+                            {schoolSearchQuery
+                              ? t('auth.no_schools_found')
+                              : t('auth.start_typing_school')}
                           </Text>
                         </View>
-                        {school.is_verified && (
-                          <Ionicons name="checkmark-circle" size={16} color="#059669" />
-                        )}
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-              )}
+                      )}
+                    />
+                  </KeyboardAvoidingView>
+                </SafeAreaView>
+              </Modal>
             </>
           )}
 
@@ -975,7 +1063,7 @@ const styles = (
     scrollContainer: {
       flexGrow: 1,
       paddingHorizontal: layout.screenPadding,
-      paddingTop: 60,
+      paddingTop: common.insets.top + 60,
       paddingBottom: Math.max(common.insets.bottom, 20),
     },
     header: { alignItems: 'center', marginBottom: 32 },
@@ -993,8 +1081,27 @@ const styles = (
       fontWeight: '500',
     },
     form: { marginBottom: 24 },
+    languageButton: {
+      position: 'absolute',
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 20,
+      backgroundColor: theme.colors.card,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      gap: 6,
+      zIndex: 10,
+      ...layout.shadow,
+    },
+    languageText: {
+      ...typography('label'),
+      fontWeight: '700',
+      color: theme.colors.primary,
+    },
     inputWrapper: {
-      flexDirection: isRTL ? 'row-reverse' : 'row',
+      flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: '#F8FAFC',
       borderWidth: 1,
@@ -1050,7 +1157,7 @@ const styles = (
       marginBottom: 16,
     },
     stepDots: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       gap: 8,
       marginBottom: 8,
     },
@@ -1166,26 +1273,70 @@ const styles = (
       shadowRadius: 8,
       elevation: 5,
     },
-    autocompleteItem: {
-      flexDirection: isRTL ? 'row-reverse' : 'row',
-      alignItems: 'center',
-      padding: 12,
+    modalSearchInputContainer: {
       borderBottomWidth: 1,
-      borderBottomColor: '#F1F5F9',
+      borderBottomColor: theme.colors.border,
+      backgroundColor: theme.colors.surface,
+      backgroundColor: 'transparent',
+    },
+    modalSearchInputWrapper: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#F1F5F9',
+      borderRadius: 12,
+      paddingHorizontal: 12,
+      height: 48,
+    },
+    modalSearchInput: {
+      flex: 1,
+      ...typography('body'),
+      color: '#1E293B',
+      textAlign: isRTL ? 'right' : 'left',
+    },
+    autocompleteItem: {
+      marginTop: spacing.sm,
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 10,
+      borderWidth: 1.5,
+      borderColor: '#E2E8F0',
+      borderRadius: 16,
+      marginBottom: 12,
+      backgroundColor: '#FFF',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+      elevation: 2,
+      height: 150,
+    },
+    schoolResultIcon: {
+      width: 44,
+      height: 44,
+      borderRadius: 12,
+      backgroundColor: 'rgba(30, 58, 138, 0.05)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: isRTL ? 0 : 10,
+      marginLeft: isRTL ? 10 : 0,
     },
     schoolResultInfo: {
       flex: 1,
-      alignItems: isRTL ? 'flex-end' : 'flex-start',
+      justifyContent: 'center',
+      padding: 10,
     },
     schoolResultName: {
-      ...typography('label'),
+      ...typography('h3'),
       fontWeight: '700',
-      color: '#1E293B',
+      color: theme.colors.text,
+      textAlign: 'left',
     },
     schoolResultMeta: {
       ...typography('caption'),
-      color: '#64748B',
-      marginTop: 2,
+      color: theme.colors.textSecondary,
+      marginTop: 4,
+      textAlign: 'left',
     },
     countryCodeContainer: {
       paddingHorizontal: 12,
@@ -1198,6 +1349,10 @@ const styles = (
       ...typography('label'),
       fontWeight: '700',
       color: '#1E293B',
+    },
+    modalSearchContainer: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
     },
     modalContainer: {
       flex: 1,

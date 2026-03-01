@@ -1,10 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import { useLanguage } from '../context/LanguageContext';
 import { useTypography } from '../hooks/useTypography';
 import AppButton from '../components/AppButton';
 import { layout } from '../config/layout';
+import { Ionicons } from '@expo/vector-icons';
 
 interface OnboardingScreenProps {
   onGetStarted: () => void;
@@ -13,10 +15,15 @@ interface OnboardingScreenProps {
 
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted, onLogin }) => {
   const { t } = useTranslation();
+  const { language, setLanguage, isRTL } = useLanguage();
   const { typography } = useTypography();
   const insets = useSafeAreaInsets();
 
-  const currentStyles = styles(typography, insets);
+  const currentStyles = styles(typography, insets, isRTL);
+
+  const toggleLanguage = () => {
+    setLanguage(language === 'ar' ? 'en' : 'ar');
+  };
 
   return (
     <View style={currentStyles.container}>
@@ -28,13 +35,27 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted, onLog
       />
 
       <View style={currentStyles.safeArea}>
-        {/* 2. Top Logo Overlay */}
+        {/* 2. Top Header with Logo & Language Switcher */}
         <View style={currentStyles.header}>
+          <TouchableOpacity
+            style={currentStyles.languageButton}
+            onPress={toggleLanguage}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="globe-outline" size={20} color="#1E3A8A" />
+            <Text style={currentStyles.languageText}>
+              {language === 'ar' ? 'English' : 'العربية'}
+            </Text>
+          </TouchableOpacity>
+
           <Image
             source={require('../../assets/logo-icon.png')}
             style={currentStyles.logo}
             resizeMode="contain"
           />
+
+          {/* Empty view for header balancing if needed */}
+          <View style={{ width: 44 }} />
         </View>
 
         {/* Spacer to push content to bottom */}
@@ -61,7 +82,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted, onLog
   );
 };
 
-const styles = (typography: any, insets: { top: number; bottom: number }) =>
+const styles = (typography: any, insets: { top: number; bottom: number }, isRTL: boolean) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -78,14 +99,36 @@ const styles = (typography: any, insets: { top: number; bottom: number }) =>
       zIndex: -1,
     },
     header: {
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
-      marginTop: 30,
+      justifyContent: 'space-between',
+      marginTop: 20,
       paddingHorizontal: layout.screenPadding,
+    },
+    languageButton: {
+      flexDirection: isRTL ? 'row-reverse' : 'row',
+      alignItems: 'center',
+      backgroundColor: 'rgba(255, 255, 255, 0.85)',
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderRadius: 25,
+      gap: 8,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    languageText: {
+      ...typography('button'),
+      fontSize: 14,
+      color: '#1E3A8A',
+      fontWeight: '700',
     },
     logo: {
       zIndex: 1,
-      width: 400,
-      height: 100,
+      width: 150, // Reduced from 400 to fit header properly
+      height: 40,
     },
     spacer: {
       flex: 1,

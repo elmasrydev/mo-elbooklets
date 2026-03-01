@@ -17,6 +17,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
+import { useAutoReset } from '../hooks/useAutoReset';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -35,8 +36,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister, onBack 
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const [touchedMobile, setTouchedMobile] = useState(false);
-  const [touchedPassword, setTouchedPassword] = useState(false);
+  const [touchedMobile, setTouchedMobile] = useAutoReset(false);
+  const [touchedPassword, setTouchedPassword] = useAutoReset(false);
 
   const passwordRef = useRef<TextInput>(null);
 
@@ -121,6 +122,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister, onBack 
               style={currentStyles.inputIcon}
             />
             <TextInput
+              autoFocus
               style={currentStyles.input}
               value={mobile}
               onChangeText={setMobile}
