@@ -89,11 +89,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister, onBack 
     >
       <BackButton
         onPress={onBack}
-        style={[
-          currentStyles.backButton,
-          { top: insets.top + spacing.sm },
-          common.start(spacing.lg),
-        ]}
+        style={[currentStyles.backButton, { top: insets.top + spacing.sm, left: spacing.lg }]}
         color={theme.colors.text}
       />
 
@@ -123,7 +119,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister, onBack 
             />
             <TextInput
               autoFocus
-              style={currentStyles.input}
+              style={[currentStyles.input]}
               value={mobile}
               onChangeText={setMobile}
               placeholder={t('auth.mobile_placeholder')}
@@ -131,7 +127,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister, onBack 
               keyboardType="phone-pad"
               autoCapitalize="none"
               editable={!isLoading}
-              textAlign={common.textAlign}
+              textAlign={isRTL ? 'right' : 'left'}
               returnKeyType="next"
               onSubmitEditing={() => passwordRef.current?.focus()}
               onBlur={() => setTouchedMobile(true)}
@@ -174,7 +170,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister, onBack 
               secureTextEntry={!showPassword}
               autoCapitalize="none"
               editable={!isLoading}
-              textAlign={common.textAlign}
+              textAlign={isRTL ? 'right' : 'left'}
               returnKeyType="done"
               onSubmitEditing={handleLogin}
               onBlur={() => setTouchedPassword(true)}
@@ -260,7 +256,7 @@ const styles = (
     },
     form: { marginBottom: 32 },
     inputWrapper: {
-      flexDirection: isRTL ? 'row-reverse' : 'row',
+      flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: '#F8FAFC',
       borderWidth: 1,
@@ -271,8 +267,8 @@ const styles = (
       height: 56,
     },
     inputIcon: {
-      marginRight: isRTL ? 0 : 12,
-      marginLeft: isRTL ? 12 : 0,
+      marginRight: 12,
+      marginLeft: 12,
     },
     input: {
       flex: 1,
@@ -281,7 +277,7 @@ const styles = (
       height: '100%',
     },
     forgotContainer: {
-      alignSelf: isRTL ? 'flex-start' : 'flex-end',
+      alignSelf: 'flex-start',
       marginBottom: 32,
     },
     forgotText: {
@@ -290,7 +286,7 @@ const styles = (
       fontWeight: '600',
     },
     footer: {
-      flexDirection: isRTL ? 'row-reverse' : 'row',
+      flexDirection: 'row',
       justifyContent: 'center',
       alignItems: 'center',
       marginBottom: 24,
@@ -315,11 +311,11 @@ const styles = (
       elevation: 3,
     },
     langRow: {
-      flexDirection: isRTL ? 'row-reverse' : 'row',
+      flexDirection: 'row',
       justifyContent: 'center',
     },
     langButton: {
-      flexDirection: isRTL ? 'row-reverse' : 'row',
+      flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
       paddingVertical: 8,
