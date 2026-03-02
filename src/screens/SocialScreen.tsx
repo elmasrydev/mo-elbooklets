@@ -76,7 +76,7 @@ const SocialScreen: React.FC = () => {
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography } = useTypography();
+  const { typography, fontWeight} = useTypography();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Student[]>([]);
@@ -241,7 +241,7 @@ const SocialScreen: React.FC = () => {
     }
   };
 
-  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius, typography);
+  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius, typography, fontWeight);
 
   const renderContent = () => {
     if (searchQuery.length >= 2) {
@@ -420,6 +420,7 @@ const styles = (
   spacing: any,
   borderRadius: any,
   typography: any,
+  fontWeight: any,
 ) =>
   StyleSheet.create({
     refreshButton: {
@@ -449,7 +450,7 @@ const styles = (
       flex: 1,
       ...typography('body'),
       color: theme.colors.text,
-      fontWeight: '500',
+      ...fontWeight('500'),
       ...common.marginStart(10),
     },
     clearButton: { padding: 4 },
@@ -470,11 +471,11 @@ const styles = (
       justifyContent: 'center',
       alignItems: 'center',
     },
-    avatarText: { color: theme.colors.primary, fontWeight: 'bold', ...typography('h3') },
+    avatarText: { color: theme.colors.primary, ...fontWeight('bold'), ...typography('h3') },
     studentDetails: { flex: 1, ...common.marginStart(12), alignItems: common.alignStart },
     studentName: {
       ...typography('label'),
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       color: theme.colors.text,
       textAlign: common.textAlign,
     },
@@ -485,7 +486,7 @@ const styles = (
       textAlign: common.textAlign,
     },
     studentStats: { flexDirection: common.rowDirection, alignItems: 'center', marginTop: 4 },
-    studentStat: { ...typography('caption'), color: theme.colors.primary, fontWeight: '600' },
+    studentStat: { ...typography('caption'), color: theme.colors.primary, ...fontWeight('600') },
     studentStatSeparator: {
       ...typography('caption'),
       marginHorizontal: 6,
@@ -512,7 +513,7 @@ const styles = (
     },
     emptyStateTitle: {
       ...typography('h3'),
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       color: theme.colors.text,
       marginTop: spacing.lg,
       textAlign: 'center',

@@ -52,7 +52,7 @@ const QuizTakingScreen: React.FC = () => {
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography } = useTypography();
+  const { typography, fontWeight} = useTypography();
   const insets = useSafeAreaInsets();
 
   const [quiz, setQuiz] = useState<Quiz | null>(null);
@@ -250,7 +250,7 @@ const QuizTakingScreen: React.FC = () => {
     };
   }, []);
 
-  const currentStyles = styles(theme, typography, spacing, borderRadius, common);
+  const currentStyles = styles(theme, typography, fontWeight, spacing, borderRadius, common);
 
   if (loading) {
     return (
@@ -431,7 +431,7 @@ const QuizTakingScreen: React.FC = () => {
   );
 };
 
-const styles = (theme: any, typography: any, spacing: any, borderRadius: any, common: any) =>
+const styles = (theme: any, typography: any, fontWeight: any, spacing: any, borderRadius: any, common: any) =>
   StyleSheet.create({
     backButton: {
       padding: 4,
@@ -470,7 +470,7 @@ const styles = (theme: any, typography: any, spacing: any, borderRadius: any, co
     progressTextCenter: {
       color: '#FFFFFF',
       ...typography('buttonSmall'),
-      fontWeight: 'bold',
+      ...fontWeight('bold')
     },
     content: {
       flex: 1,
@@ -497,7 +497,7 @@ const styles = (theme: any, typography: any, spacing: any, borderRadius: any, co
     },
     errorTitle: {
       ...typography('h2'),
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       marginBottom: spacing.sm,
       color: theme.colors.text,
     },
@@ -520,13 +520,13 @@ const styles = (theme: any, typography: any, spacing: any, borderRadius: any, co
     questionNumber: {
       ...typography('label'),
       color: theme.colors.primary,
-      fontWeight: '700',
+      ...fontWeight('700'),
       textAlign: common.textAlign,
     },
     questionText: {
       ...typography('h2'),
       color: '#111827',
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       marginBottom: spacing.lg,
       lineHeight: 30,
       textAlign: common.textAlign,
@@ -561,7 +561,7 @@ const styles = (theme: any, typography: any, spacing: any, borderRadius: any, co
     },
     answerLetterText: {
       ...typography('button'),
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       color: '#FFFFFF',
     },
     selectedAnswerLetterText: {
@@ -572,11 +572,11 @@ const styles = (theme: any, typography: any, spacing: any, borderRadius: any, co
       ...typography('body'),
       color: '#374151',
       textAlign: common.textAlign,
-      fontWeight: '500',
+      ...fontWeight('500')
     },
     selectedAnswerText: {
       color: '#FFFFFF',
-      fontWeight: '600',
+      ...fontWeight('600')
     },
     checkIconContainer: {
       width: 24,

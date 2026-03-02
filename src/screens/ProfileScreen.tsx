@@ -15,14 +15,14 @@ const ProfileScreen: React.FC = () => {
   const { theme, spacing, fontSizes, borderRadius } = useTheme();
   const common = useCommonStyles();
   const { isRTL } = useLanguage();
-  const { typography } = useTypography();
+  const { typography, fontWeight} = useTypography();
   const { t } = useTranslation();
 
   const handleLogout = async () => {
     await logout();
   };
 
-  const currentStyles = styles(theme, spacing, fontSizes, borderRadius, common, isRTL, typography);
+  const currentStyles = styles(theme, spacing, fontSizes, borderRadius, common, isRTL, typography, fontWeight);
 
   return (
     <View style={common.container}>
@@ -119,6 +119,7 @@ const styles = (
   common: any,
   isRTL: boolean,
   typography: any,
+  fontWeight: any,
 ) =>
   StyleSheet.create({
     content: {
@@ -145,7 +146,7 @@ const styles = (
     },
     avatarText: {
       ...typography('h3'),
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       color: '#ffffff',
     },
     userInfo: {
@@ -154,7 +155,7 @@ const styles = (
     },
     userName: {
       ...typography('h3'),
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       color: theme.colors.text,
       marginBottom: 4,
       textAlign: common.textAlign,
@@ -174,7 +175,7 @@ const styles = (
     userGrade: {
       ...typography('caption'),
       color: theme.colors.primary,
-      fontWeight: '600',
+      ...fontWeight('600'),
       textAlign: common.textAlign,
     },
     settingsSection: {
@@ -199,7 +200,7 @@ const styles = (
     },
     settingTitle: {
       ...typography('body'),
-      fontWeight: '600',
+      ...fontWeight('600'),
       color: theme.colors.text,
       marginBottom: 2,
       textAlign: common.textAlign,

@@ -151,7 +151,7 @@ const StudyLessonScreen: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { typography } = useTypography();
+  const { typography, fontWeight} = useTypography();
   const insets = useSafeAreaInsets();
 
   const [currentLesson, setCurrentLesson] = useState<Lesson>(route.params?.lesson);
@@ -163,7 +163,7 @@ const StudyLessonScreen: React.FC = () => {
   const previousLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
   const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
 
-  const currentStyles = styles(theme, isRTL, typography, insets, spacing, borderRadius);
+  const currentStyles = styles(theme, isRTL, typography, fontWeight, insets, spacing, borderRadius);
 
   const togglePoint = (pointId: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -317,6 +317,7 @@ const styles = (
   theme: any,
   isRTL: boolean,
   typography: any,
+  fontWeight: any,
   insets: { top: number; bottom: number },
   spacing: any,
   borderRadius: any,
@@ -356,7 +357,7 @@ const styles = (
     chapterBadge: {
       ...typography('caption'),
       fontSize: 13,
-      fontWeight: '700',
+      ...fontWeight('700'),
       color: theme.colors.primary,
       textAlign: 'left',
     },
@@ -364,7 +365,7 @@ const styles = (
       ...typography('h3'),
       fontSize: 16,
       lineHeight: 28,
-      fontWeight: '800',
+      ...fontWeight('800'),
       color: theme.colors.text,
       textAlign: 'left',
     },
@@ -392,7 +393,7 @@ const styles = (
     },
     sectionTitle: {
       ...typography('h3'),
-      fontWeight: '700',
+      ...fontWeight('700'),
       marginLeft: isRTL ? 0 : spacing.sm,
       marginRight: isRTL ? spacing.sm : 0,
       color: theme.colors.text,

@@ -16,10 +16,10 @@ interface OnboardingScreenProps {
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted, onLogin }) => {
   const { t } = useTranslation();
   const { language, setLanguage, isRTL } = useLanguage();
-  const { typography } = useTypography();
+  const { typography, fontWeight} = useTypography();
   const insets = useSafeAreaInsets();
 
-  const currentStyles = styles(typography, insets, isRTL);
+  const currentStyles = styles(typography, fontWeight, insets, isRTL);
 
   const toggleLanguage = () => {
     setLanguage(language === 'ar' ? 'en' : 'ar');
@@ -82,7 +82,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted, onLog
   );
 };
 
-const styles = (typography: any, insets: { top: number; bottom: number }, isRTL: boolean) =>
+const styles = (typography: any, fontWeight: any, insets: { top: number; bottom: number }, isRTL: boolean) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -123,7 +123,7 @@ const styles = (typography: any, insets: { top: number; bottom: number }, isRTL:
       ...typography('button'),
       fontSize: 14,
       color: '#1E3A8A',
-      fontWeight: '700',
+      ...fontWeight('700')
     },
     logo: {
       zIndex: 1,
@@ -140,7 +140,7 @@ const styles = (typography: any, insets: { top: number; bottom: number }, isRTL:
     },
     title: {
       ...typography('h1'),
-      fontWeight: '800',
+      ...fontWeight('800'),
       color: '#0F172A',
       textAlign: 'center',
       marginBottom: 14,
@@ -163,7 +163,7 @@ const styles = (typography: any, insets: { top: number; bottom: number }, isRTL:
     link: {
       ...typography('button'),
       color: '#1E3A8A',
-      fontWeight: '700',
+      ...fontWeight('700')
     },
   });
 

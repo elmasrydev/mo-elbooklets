@@ -27,8 +27,16 @@ const RTL_SYNC_ATTEMPTED_KEY = 'rtl_sync_attempted';
 
 export default function App() {
   const [fontsLoaded] = useFonts({
-    'Inter': require('./assets/fonts/Inter-Variable.ttf'),
-    'Cairo': require('./assets/fonts/Cairo-Variable.ttf'),
+    Inter: require('./assets/fonts/Inter-Variable.ttf'),
+    Cairo: require('./assets/fonts/Cairo-Variable.ttf'),
+    'Inter-Regular': require('./assets/fonts/static/Inter-Regular.ttf'),
+    'Inter-Medium': require('./assets/fonts/static/Inter-Medium.ttf'),
+    'Inter-SemiBold': require('./assets/fonts/static/Inter-SemiBold.ttf'),
+    'Inter-Bold': require('./assets/fonts/static/Inter-Bold.ttf'),
+    'Cairo-Regular': require('./assets/fonts/static/Cairo-Regular.ttf'),
+    'Cairo-Medium': require('./assets/fonts/static/Cairo-Medium.ttf'),
+    'Cairo-SemiBold': require('./assets/fonts/static/Cairo-SemiBold.ttf'),
+    'Cairo-Bold': require('./assets/fonts/static/Cairo-Bold.ttf'),
   });
   const [appReady, setAppReady] = useState(false);
   const [initialLanguage, setInitialLanguage] = useState<Language>('en');

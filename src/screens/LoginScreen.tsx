@@ -46,7 +46,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister, onBack 
   const { language, setLanguage } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography } = useTypography();
+  const { typography, fontWeight} = useTypography();
   const insets = useSafeAreaInsets();
 
   const handleLogin = async () => {
@@ -67,7 +67,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister, onBack 
   };
 
   const isRTL = language === 'ar';
-  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius, isRTL, typography);
+  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius, isRTL, typography, fontWeight);
 
   const isMobileValid = new RegExp('^01[0125][0-9]{8}$').test(mobile.trim());
   const isPasswordValid = password.length >= 8;
@@ -231,6 +231,7 @@ const styles = (
   borderRadius: any,
   isRTL: boolean,
   typography: any,
+  fontWeight: any,
 ) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.background },
@@ -252,7 +253,7 @@ const styles = (
       ...typography('body'),
       color: '#64748B',
       textAlign: 'center',
-      fontWeight: '500',
+      ...fontWeight('500')
     },
     form: { marginBottom: 32 },
     inputWrapper: {
@@ -283,7 +284,7 @@ const styles = (
     forgotText: {
       ...typography('label'),
       color: theme.colors.primary,
-      fontWeight: '600',
+      ...fontWeight('600')
     },
     footer: {
       flexDirection: 'row',
@@ -296,7 +297,7 @@ const styles = (
     linkText: {
       ...typography('button'),
       color: '#1E3A8A',
-      fontWeight: '700',
+      ...fontWeight('700')
     },
     backButton: {
       position: 'absolute',

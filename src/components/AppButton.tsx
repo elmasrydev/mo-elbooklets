@@ -46,7 +46,7 @@ const AppButton: React.FC<AppButtonProps> = ({
   ...props
 }) => {
   const { theme, spacing, borderRadius } = useTheme();
-  const { typography } = useTypography();
+  const { typography, fontWeight} = useTypography();
 
   const getVariantStyles = () => {
     switch (variant) {
@@ -104,7 +104,7 @@ const AppButton: React.FC<AppButtonProps> = ({
       case 'sm':
         return {
           button: { height: 42, paddingHorizontal: spacing.md },
-          text: { ...typography('caption'), fontWeight: '700' },
+          text: { ...typography('caption'), ...fontWeight('700') },
           subtitle: typography('caption'),
         };
       case 'lg':

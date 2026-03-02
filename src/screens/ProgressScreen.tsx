@@ -7,7 +7,8 @@ import { layout } from '../config/layout';
 
 const ProgressScreen: React.FC = () => {
   const { theme, spacing } = useTheme();
-  const { typography } = useTypography();
+  const { typography, fontWeight} = useTypography();
+  const styles = createProgressStyles(fontWeight);
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -49,7 +50,7 @@ const ProgressScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createProgressStyles = (fontWeight: any) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
@@ -60,7 +61,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   title: {
-    fontWeight: 'bold',
+    ...fontWeight('bold')
   },
   subtitle: {
     marginTop: 4,
@@ -84,7 +85,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   emptyStateTitle: {
-    fontWeight: '600',
+    ...fontWeight('600'),
     marginBottom: 8,
   },
   emptyStateSubtitle: {

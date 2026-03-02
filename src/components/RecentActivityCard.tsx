@@ -30,12 +30,12 @@ const RecentActivityCard: React.FC<ActivityCardProps> = ({ activity, onPress }) 
   const { language } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography } = useTypography();
+  const { typography, fontWeight} = useTypography();
 
   const scorePercent = Math.round((activity.score / activity.totalQuestions) * 100);
   const scoreColor = getScoreColor(scorePercent);
   const subjectConfig = getSubjectConfig(activity.subject?.name, theme);
-  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius, typography);
+  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius, typography, fontWeight);
 
   return (
     <TouchableOpacity
@@ -67,6 +67,7 @@ const styles = (
   spacing: any,
   borderRadius: any,
   typography: any,
+  fontWeight: any,
 ) =>
   StyleSheet.create({
     card: {
@@ -95,14 +96,14 @@ const styles = (
     },
     subjectName: {
       ...typography('body'),
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       color: theme.colors.text,
     },
     timeText: {
       ...typography('caption'),
       color: theme.colors.textSecondary,
       marginTop: spacing.xxs,
-      fontWeight: '500',
+      ...fontWeight('500')
     },
     rightContainer: {
       ...common.marginStart(spacing.md),

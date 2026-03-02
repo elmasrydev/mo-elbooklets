@@ -23,7 +23,7 @@ const ConnectionCard: React.FC<ConnectionCardProps> = ({ item }) => {
   const { language } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography } = useTypography();
+  const { typography, fontWeight} = useTypography();
 
   const getInitials = (name: string) =>
     name
@@ -32,7 +32,7 @@ const ConnectionCard: React.FC<ConnectionCardProps> = ({ item }) => {
       .join('')
       .toUpperCase()
       .substring(0, 2);
-  const currentStyles = createStyles(theme, common, fontSizes, spacing, borderRadius, typography);
+  const currentStyles = createStyles(theme, common, fontSizes, spacing, borderRadius, typography, fontWeight);
 
   return (
     <View style={currentStyles.card}>
@@ -65,6 +65,7 @@ const createStyles = (
   spacing: any,
   borderRadius: any,
   typography: any,
+  fontWeight: any,
 ) =>
   StyleSheet.create({
     card: {
@@ -91,18 +92,18 @@ const createStyles = (
       borderWidth: 2,
       borderColor: theme.colors.border,
     },
-    avatarText: { ...typography('body'), fontWeight: '700', color: theme.colors.primary },
+    avatarText: { ...typography('body'), ...fontWeight('700'), color: theme.colors.primary },
     connectionIcon: { alignItems: 'center', gap: 4 },
     connectedLabel: {
       ...typography('caption'),
       fontSize: 10,
-      fontWeight: '800',
+      ...fontWeight('800'),
       color: '#10B981',
       textTransform: 'uppercase',
     },
     names: {
       ...typography('body'),
-      fontWeight: '800',
+      ...fontWeight('800'),
       color: theme.colors.text,
       textAlign: 'center',
       marginBottom: 4,
@@ -110,7 +111,7 @@ const createStyles = (
     timeAgo: {
       ...typography('caption'),
       fontSize: 11,
-      fontWeight: '700',
+      ...fontWeight('700'),
       color: theme.colors.textTertiary,
     },
   });

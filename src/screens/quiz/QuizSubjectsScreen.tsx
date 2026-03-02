@@ -32,7 +32,7 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography } = useTypography();
+  const { typography, fontWeight} = useTypography();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -72,7 +72,7 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
     return '📖';
   };
 
-  const currentStyles = styles(theme, common, typography, fontSizes, spacing, borderRadius);
+  const currentStyles = styles(theme, common, typography, fontWeight, fontSizes, spacing, borderRadius);
 
   if (loading)
     return (
@@ -179,6 +179,7 @@ const styles = (
   theme: any,
   common: any,
   typography: any,
+  fontWeight: any,
   fontSizes: any,
   spacing: any,
   borderRadius: any,
@@ -199,7 +200,7 @@ const styles = (
     },
     errorTitle: {
       ...typography('h3'),
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       marginTop: spacing.md,
       marginBottom: spacing.md,
       color: theme.colors.text,
@@ -228,7 +229,7 @@ const styles = (
     subjectIconText: { fontSize: 24 },
     subjectName: {
       ...typography('body'),
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       textAlign: 'center',
       marginBottom: spacing.sm,
       color: theme.colors.text,
@@ -242,7 +243,7 @@ const styles = (
     },
     subjectStatsText: {
       ...typography('caption'),
-      fontWeight: '700',
+      ...fontWeight('700'),
       color: theme.colors.primary,
       fontSize: 10,
     },
@@ -257,7 +258,7 @@ const styles = (
     },
     emptyStateTitle: {
       ...typography('h3'),
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       marginTop: spacing.md,
       marginBottom: spacing.xs,
       color: theme.colors.text,

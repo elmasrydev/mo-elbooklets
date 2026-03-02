@@ -27,7 +27,7 @@ const RankChangeCard: React.FC<RankChangeCardProps> = ({ item }) => {
   const { language } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography } = useTypography();
+  const { typography, fontWeight} = useTypography();
 
   const rankColors: { [key: number]: string } = { 1: '#F59E0B', 2: '#94A3B8', 3: '#EA580C' };
   const rankColor = rankColors[item.rankData.newRank] || '#EA580C';
@@ -45,7 +45,7 @@ const RankChangeCard: React.FC<RankChangeCardProps> = ({ item }) => {
     spacing,
     borderRadius,
     rankColor,
-    typography,
+    typography, fontWeight,
   );
 
   return (
@@ -91,6 +91,7 @@ const createStyles = (
   borderRadius: any,
   rankColor: string,
   typography: any,
+  fontWeight: any,
 ) =>
   StyleSheet.create({
     cardBorder: { ...common.borderStartWidth(4), ...common.borderStartColor(rankColor) },
@@ -108,19 +109,19 @@ const createStyles = (
       alignItems: 'center',
       justifyContent: 'center',
     },
-    rankNumber: { ...typography('h3'), fontWeight: '900', color: '#fff' },
+    rankNumber: { ...typography('h3'), ...fontWeight('900'), color: '#fff' },
     userInfo: { flex: 1, gap: 4, alignItems: common.alignStart },
-    userName: { ...typography('body'), fontWeight: '800', color: theme.colors.text },
+    userName: { ...typography('body'), ...fontWeight('800'), color: theme.colors.text },
     rankChange: {
       ...typography('caption'),
       fontSize: 13,
-      fontWeight: '600',
+      ...fontWeight('600'),
       color: theme.colors.textSecondary,
     },
     subjectLabel: {
       ...typography('caption'),
       fontSize: 12,
-      fontWeight: '700',
+      ...fontWeight('700'),
       color: rankColor,
       marginTop: 2,
     },
@@ -128,7 +129,7 @@ const createStyles = (
     timeAgo: {
       ...typography('caption'),
       fontSize: 11,
-      fontWeight: '700',
+      ...fontWeight('700'),
       color: theme.colors.textTertiary,
     },
   });

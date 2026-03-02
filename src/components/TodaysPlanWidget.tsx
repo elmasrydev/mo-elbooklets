@@ -38,7 +38,7 @@ const TodaysPlanWidget: React.FC = () => {
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography } = useTypography();
+  const { typography, fontWeight} = useTypography();
 
   interface TodayScheduleData {
     todaySchedule: {
@@ -54,7 +54,7 @@ const TodaysPlanWidget: React.FC = () => {
     pollInterval: 60000,
   });
 
-  const currentStyles = styles(theme, common, typography, fontSizes, spacing, borderRadius);
+  const currentStyles = styles(theme, common, typography, fontWeight, fontSizes, spacing, borderRadius);
 
   if (loading && !data)
     return (
@@ -204,6 +204,7 @@ const styles = (
   theme: any,
   common: any,
   typography: any,
+  fontWeight: any,
   fontSizes: any,
   spacing: any,
   borderRadius: any,
@@ -223,12 +224,12 @@ const styles = (
       marginTop: spacing.xxs,
       ...common.marginStart(spacing.xl),
     },
-    linkText: { ...typography('bodySmall'), color: theme.colors.primary, fontWeight: '600' },
+    linkText: { ...typography('bodySmall'), color: theme.colors.primary, ...fontWeight('600') },
     loadingContainer: { padding: spacing.xl, alignItems: 'center' },
     emptyContainer: { alignItems: 'center', padding: spacing.lg },
     emptyText: {
       ...typography('body'),
-      fontWeight: '600',
+      ...fontWeight('600'),
       color: theme.colors.text,
       marginBottom: spacing.xs,
     },
@@ -253,11 +254,11 @@ const styles = (
     subjectIconText: { ...typography('h3'), color: theme.colors.primary },
     itemInfo: { flex: 1, alignItems: common.alignStart },
     itemHeader: { flexDirection: common.rowDirection, alignItems: 'center', gap: spacing.sm },
-    subjectName: { ...typography('body'), fontWeight: '600', color: theme.colors.text },
+    subjectName: { ...typography('body'), ...fontWeight('600'), color: theme.colors.text },
     completeBadge: {
       ...typography('caption'),
       fontSize: 10,
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       color: theme.colors.success,
       backgroundColor: theme.colors.success + '1A',
       paddingHorizontal: spacing.xs,
@@ -267,7 +268,7 @@ const styles = (
     goalsRow: { flexDirection: common.rowDirection, gap: spacing.md, marginTop: 2 },
     goalText: { ...typography('caption'), fontSize: 12, color: theme.colors.textSecondary },
     progressContainer: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
-    progressText: { ...typography('bodySmall'), fontWeight: 'bold', color: theme.colors.text },
+    progressText: { ...typography('bodySmall'), ...fontWeight('bold'), color: theme.colors.text },
   });
 
 export default TodaysPlanWidget;

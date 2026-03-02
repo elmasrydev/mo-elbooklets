@@ -110,7 +110,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
   const { t } = useTranslation();
   const common = useCommonStyles();
   const insets = useSafeAreaInsets();
-  const { typography } = useTypography();
+  const { typography, fontWeight} = useTypography();
   const isRTL = language === 'ar';
 
   const [gradesData, setGradesData] = useState<{ grades: any[] } | null>(null);
@@ -333,7 +333,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
     }
   };
 
-  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius, isRTL, typography);
+  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius, isRTL, typography, fontWeight);
 
   const StepIndicator = () => (
     <View style={currentStyles.stepIndicatorContainer}>
@@ -1061,6 +1061,7 @@ const styles = (
   borderRadius: any,
   isRTL: boolean,
   typography: any,
+  fontWeight: any,
 ) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.background },
@@ -1082,7 +1083,7 @@ const styles = (
       ...typography('body'),
       color: '#64748B',
       textAlign: 'center',
-      fontWeight: '500',
+      ...fontWeight('500')
     },
     form: { marginBottom: 24 },
     languageButton: {
@@ -1101,7 +1102,7 @@ const styles = (
     },
     languageText: {
       ...typography('label'),
-      fontWeight: '700',
+      ...fontWeight('700'),
       color: theme.colors.primary,
     },
     inputWrapper: {
@@ -1142,7 +1143,7 @@ const styles = (
     linkText: {
       ...typography('button'),
       color: '#1E3A8A',
-      fontWeight: '700',
+      ...fontWeight('700')
     },
     backButton: {
       position: 'absolute',
@@ -1180,7 +1181,7 @@ const styles = (
     },
     stepText: {
       ...typography('caption'),
-      fontWeight: '600',
+      ...fontWeight('600'),
       color: '#64748B',
     },
     gridContainer: {
@@ -1211,7 +1212,7 @@ const styles = (
     },
     gridItemText: {
       ...typography('label'),
-      fontWeight: '700',
+      ...fontWeight('700'),
       color: '#64748B',
     },
     gridItemTextActive: {
@@ -1219,7 +1220,7 @@ const styles = (
     },
     sectionTitle: {
       ...typography('h3'),
-      fontWeight: '800',
+      ...fontWeight('800'),
       color: '#0F172A',
       marginTop: 8,
       marginBottom: 16,
@@ -1249,7 +1250,7 @@ const styles = (
     },
     systemCardText: {
       ...typography('caption'),
-      fontWeight: '700',
+      ...fontWeight('700'),
       color: '#64748B',
       textAlign: 'center',
     },
@@ -1331,7 +1332,7 @@ const styles = (
     },
     schoolResultName: {
       ...typography('h3'),
-      fontWeight: '700',
+      ...fontWeight('700'),
       color: theme.colors.text,
       textAlign: 'left',
     },
@@ -1350,7 +1351,7 @@ const styles = (
     },
     countryCodeText: {
       ...typography('label'),
-      fontWeight: '700',
+      ...fontWeight('700'),
       color: '#1E293B',
     },
     modalSearchContainer: {
@@ -1382,7 +1383,7 @@ const styles = (
       ...typography('button'),
       color: '#1E3A8A',
       fontSize: 18,
-      fontWeight: '700',
+      ...fontWeight('700')
     },
     genderContainer: {
       marginBottom: 16,
@@ -1390,7 +1391,7 @@ const styles = (
     sectionLabel: {
       ...typography('caption'),
       fontSize: 10,
-      fontWeight: '900',
+      ...fontWeight('900'),
       color: '#64748B',
       textTransform: 'uppercase',
       letterSpacing: 1.5,
@@ -1458,14 +1459,14 @@ const styles = (
     },
     disclaimerTitle: {
       ...typography('h3'),
-      fontWeight: '900',
+      ...fontWeight('900'),
       color: '#0F172A',
       textAlign: 'center',
       marginBottom: 8,
     },
     disclaimerMessage: {
       ...typography('label'),
-      fontWeight: '700',
+      ...fontWeight('700'),
       color: '#64748B',
       textAlign: 'center',
       lineHeight: 22,

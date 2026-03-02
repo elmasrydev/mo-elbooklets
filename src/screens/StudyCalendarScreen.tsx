@@ -78,7 +78,7 @@ const StudyCalendarScreen: React.FC = () => {
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography } = useTypography();
+  const { typography, fontWeight} = useTypography();
 
   const [selectedDay, setSelectedDay] = useState(0);
   const [scheduleData, setScheduleData] = useState<{ [key: number]: ScheduleEntry[] }>({});
@@ -175,7 +175,7 @@ const StudyCalendarScreen: React.FC = () => {
     saveSchedule({ variables: { entries: allEntries } });
   };
 
-  const currentStyles = styles(theme, isRTL, typography, spacing, borderRadius);
+  const currentStyles = styles(theme, isRTL, typography, fontWeight, spacing, borderRadius);
 
   if (loadingSchedule || loadingSubjects) {
     return (
@@ -348,7 +348,7 @@ const StudyCalendarScreen: React.FC = () => {
   );
 };
 
-const styles = (theme: any, isRTL: boolean, typography: any, spacing: any, borderRadius: any) =>
+const styles = (theme: any, isRTL: boolean, typography: any, fontWeight: any, spacing: any, borderRadius: any) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -391,7 +391,7 @@ const styles = (theme: any, isRTL: boolean, typography: any, spacing: any, borde
     },
     dayTabText: {
       ...typography('label'),
-      fontWeight: '600',
+      ...fontWeight('600'),
       color: theme.colors.text,
     },
     dayTabTextActive: {
@@ -411,12 +411,12 @@ const styles = (theme: any, isRTL: boolean, typography: any, spacing: any, borde
     dayBadgeText: {
       ...typography('caption'),
       fontSize: 10,
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       color: theme.colors.primary,
     },
     dayTitle: {
       ...typography('h2'),
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       color: theme.colors.text,
       marginBottom: spacing.sectionGap,
       textAlign: isRTL ? 'right' : 'left',
@@ -434,7 +434,7 @@ const styles = (theme: any, isRTL: boolean, typography: any, spacing: any, borde
     },
     entryLabel: {
       ...typography('label'),
-      fontWeight: '600',
+      ...fontWeight('600'),
       color: theme.colors.textSecondary,
       marginBottom: spacing.sm,
       textAlign: isRTL ? 'right' : 'left',
@@ -470,7 +470,7 @@ const styles = (theme: any, isRTL: boolean, typography: any, spacing: any, borde
     },
     goalLabel: {
       ...typography('caption'),
-      fontWeight: '600',
+      ...fontWeight('600'),
       color: theme.colors.textSecondary,
       marginBottom: spacing.xs,
       textAlign: isRTL ? 'right' : 'left',
@@ -480,7 +480,7 @@ const styles = (theme: any, isRTL: boolean, typography: any, spacing: any, borde
       borderRadius: borderRadius.md,
       padding: spacing.sm,
       ...typography('h3'),
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       color: theme.colors.text,
       textAlign: 'center',
       borderWidth: 1,
@@ -505,7 +505,7 @@ const styles = (theme: any, isRTL: boolean, typography: any, spacing: any, borde
     removeButtonText: {
       ...typography('label'),
       color: theme.colors.error || '#EF4444',
-      fontWeight: '600',
+      ...fontWeight('600')
     },
     addButton: {
       padding: spacing.lg,
@@ -518,7 +518,7 @@ const styles = (theme: any, isRTL: boolean, typography: any, spacing: any, borde
     },
     addButtonText: {
       ...typography('button'),
-      fontWeight: '600',
+      ...fontWeight('600'),
       color: theme.colors.textSecondary,
     },
     saveButton: {
@@ -530,7 +530,7 @@ const styles = (theme: any, isRTL: boolean, typography: any, spacing: any, borde
     },
     saveButtonText: {
       ...typography('button'),
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       color: '#fff',
     },
   });

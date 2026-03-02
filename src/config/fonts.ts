@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { COLORS } from './colors';
 
 /**
@@ -22,7 +23,7 @@ export const fontFamilies = {
 
 // Font weights matching the guide reference
 export const fontWeights = {
-  regular: '400' as const,
+  regular: 'normal' as const,
   medium: '500' as const,
   semiBold: '600' as const,
   bold: '700' as const,
@@ -82,20 +83,44 @@ export const getTextStyle = (style: keyof typeof textStyles, isArabic: boolean =
   const baseStyle = textStyles[style] || textStyles.body;
   const weight = (baseStyle as any).fontWeight || fontWeights.regular;
 
+  // Resolve precise font-family for Android static fonts
+  let resolvedFontFamily = isArabic ? 'Cairo' : 'Inter';
+  if (Platform.OS === 'android') {
+    if (isArabic) {
+      if (weight === '700' || weight === 'bold') resolvedFontFamily = 'Cairo-Bold';
+      else if (weight === '600') resolvedFontFamily = 'Cairo-SemiBold';
+      else if (weight === '500') resolvedFontFamily = 'Cairo-Medium';
+      else resolvedFontFamily = 'Cairo-Regular';
+    } else {
+      if (weight === '700' || weight === 'bold') resolvedFontFamily = 'Inter-Bold';
+      else if (weight === '600') resolvedFontFamily = 'Inter-SemiBold';
+      else if (weight === '500') resolvedFontFamily = 'Inter-Medium';
+      else resolvedFontFamily = 'Inter-Regular';
+    }
+  }
+
+  // Pass undefined as fontWeight on Android when we use a custom weight-specific font file
+  // to prevent Android from trying to apply faux-bold on top of a bold font or dropping the family.
+  const resolvedWeight = Platform.OS === 'android' ? undefined : weight;
+
   if (isArabic) {
     return {
       ...baseStyle,
-      fontFamily: 'Cairo',
+      fontFamily: resolvedFontFamily,
+      fontWeight: resolvedWeight,
       // Decrease size by 2px as requested
       fontSize: baseStyle.fontSize - 1.5,
       // Adjust line height
-      lineHeight: baseStyle.lineHeight ? Math.round(baseStyle.lineHeight * 1.15) : undefined,
+      lineHeight: (baseStyle as any).lineHeight
+        ? Math.round((baseStyle as any).lineHeight * 1.15)
+        : undefined,
     };
   }
 
   return {
     ...baseStyle,
-    fontFamily: 'Inter',
+    fontFamily: resolvedFontFamily,
+    fontWeight: resolvedWeight,
     lineHeight: Math.round(baseStyle.fontSize * 1.5),
   };
 };

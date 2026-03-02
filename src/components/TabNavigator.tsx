@@ -51,7 +51,7 @@ const TabScreens: React.FC = () => {
   const { isRTL, language } = useLanguage();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { typography } = useTypography();
+  const { typography, fontWeight} = useTypography();
 
   // Debugging Order
   useEffect(() => {
@@ -95,7 +95,7 @@ const TabScreens: React.FC = () => {
         tabBarLabelStyle: {
           ...typography('caption'),
           fontSize: 12, // Keeping the smaller size for tabs
-          fontWeight: '600',
+          ...fontWeight('600'),
           marginTop: -5,
         },
       }}

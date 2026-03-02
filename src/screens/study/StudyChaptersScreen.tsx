@@ -189,7 +189,7 @@ const StudyChaptersScreen: React.FC = () => {
                 />
               </View>
               <View style={currentStyles.chapterInfo}>
-                <Text style={currentStyles.chapterName}> {chapter.name} </Text>
+                <Text style={currentStyles.chapterName}>الدرس {chapter.name} </Text>
                 <Text style={currentStyles.lessonCount}>
                   {chapter.lessons.length} {t('study_chapters.lessons')}
                 </Text>
@@ -275,7 +275,6 @@ const styles = (
     },
     errorTitle: {
       ...typography('h3'),
-      fontWeight: 'bold',
       marginTop: spacing.md,
       marginBottom: spacing.xs,
       color: theme.colors.text,
@@ -314,8 +313,7 @@ const styles = (
     },
     chapterInfo: { flex: 1, alignItems: common.alignStart },
     chapterName: {
-      ...typography('body'),
-      fontWeight: 'bold',
+      ...typography('h3'),
       color: theme.colors.text,
       textAlign: common.textAlign,
     },
@@ -338,7 +336,6 @@ const styles = (
     lessonInfo: { flex: 1, alignItems: common.alignStart },
     lessonName: {
       ...typography('caption'),
-      fontWeight: '600',
       color: theme.colors.text,
       textAlign: common.textAlign,
       fontSize: 13,
@@ -353,7 +350,6 @@ const styles = (
     emptyState: { padding: spacing.xl, alignItems: 'center', marginTop: spacing.xl },
     emptyStateTitle: {
       ...typography('h3'),
-      fontWeight: 'bold',
       marginTop: spacing.md,
       marginBottom: spacing.xs,
       color: theme.colors.text,

@@ -29,7 +29,7 @@ const QuizReviewScreen: React.FC = () => {
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography } = useTypography();
+  const { typography, fontWeight} = useTypography();
   const insets = useSafeAreaInsets();
 
   const [loading, setLoading] = useState(true);
@@ -100,7 +100,7 @@ const QuizReviewScreen: React.FC = () => {
     }
   }, [quizId]);
 
-  const currentStyles = styles(theme, spacing, borderRadius, common, insets, typography, isRTL);
+  const currentStyles = styles(theme, spacing, borderRadius, common, insets, typography, fontWeight, isRTL);
 
   if (loading) {
     return (
@@ -247,6 +247,7 @@ const styles = (
   common: any,
   insets: any,
   typography: any,
+  fontWeight: any,
   isRTL: boolean,
 ) =>
   StyleSheet.create({
@@ -278,14 +279,14 @@ const styles = (
     },
     headerTitle: {
       ...typography('h2'),
-      fontWeight: '900',
+      ...fontWeight('900'),
       color: theme.colors.text,
       textAlign: common.textAlign,
     },
     headerSubtitle: {
       ...typography('caption'),
       color: theme.colors.textSecondary,
-      fontWeight: '600',
+      ...fontWeight('600'),
       textAlign: common.textAlign,
     },
     scrollContent: {
@@ -313,14 +314,14 @@ const styles = (
     badgeText: {
       color: '#fff',
       fontSize: 11,
-      fontWeight: '800',
+      ...fontWeight('800'),
       textTransform: 'uppercase',
     },
     questionText: {
       ...typography('h3'),
       fontSize: 18,
       lineHeight: 26,
-      fontWeight: '700',
+      ...fontWeight('700'),
       color: theme.colors.text,
       marginBottom: 24,
       textAlign: common.textAlign,
@@ -358,7 +359,7 @@ const styles = (
       marginLeft: isRTL ? 12 : 0,
     },
     optionLetter: {
-      fontWeight: '900',
+      ...fontWeight('900'),
       fontSize: 15,
       color: theme.colors.textSecondary,
     },
@@ -384,7 +385,7 @@ const styles = (
     },
     explanationTitle: {
       color: '#1E40AF',
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       marginBottom: 4,
       textAlign: common.textAlign,
     },
@@ -392,7 +393,7 @@ const styles = (
       ...typography('bodySmall'),
       color: '#3B82F6',
       textAlign: common.textAlign,
-      fontWeight: '500',
+      ...fontWeight('500')
     },
   });
 

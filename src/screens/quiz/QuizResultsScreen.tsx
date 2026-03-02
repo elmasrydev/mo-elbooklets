@@ -100,7 +100,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography } = useTypography();
+  const { typography, fontWeight} = useTypography();
   const insets = useSafeAreaInsets();
   const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
   const [loading, setLoading] = useState(true);
@@ -200,7 +200,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
     return crumbs;
   };
 
-  const currentStyles = styles(theme, fontSizes, typography, spacing, borderRadius, common, insets);
+  const currentStyles = styles(theme, fontSizes, typography, fontWeight, spacing, borderRadius, common, insets);
   const breadcrumbs = quizResult ? getBreadcrumbs() : [];
 
   if (loading) {
@@ -391,7 +391,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
                     ? crumb.lessons.map((lesson, lessonIdx) => (
                         <React.Fragment key={lessonIdx}>
                           {lessonIdx > 0 && (
-                            <Text style={{ color: theme.colors.primary, fontWeight: '700' }}>
+                            <Text style={{ color: theme.colors.primary, ...fontWeight('700') }}>,
                               {' '}
                               +{' '}
                             </Text>
@@ -416,6 +416,7 @@ const styles = (
   theme: any,
   fontSizes: any,
   typography: any,
+  fontWeight: any,
   spacing: any,
   borderRadius: any,
   common: any,
@@ -462,14 +463,14 @@ const styles = (
     },
     breadcrumbSubjectText: {
       ...typography('caption'),
-      fontWeight: '600',
+      ...fontWeight('600'),
       color: theme.colors.primary,
       flex: 1,
       textAlign: common.textAlign,
     },
     breadcrumbQuizText: {
       ...typography('bodySmall'),
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       color: theme.colors.text,
       flex: 1,
       lineHeight: 20,
@@ -493,7 +494,7 @@ const styles = (
     },
     errorTitle: {
       ...typography('h2'),
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       marginBottom: spacing.sm,
       color: theme.colors.text,
     },
@@ -520,21 +521,21 @@ const styles = (
     scoreFraction: {
       ...typography('h2'),
       fontSize: 28,
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       color: theme.colors.text,
       lineHeight: 34,
     },
     scorePercentText: {
       ...typography('h3'),
       fontSize: 20,
-      fontWeight: '600',
+      ...fontWeight('600')
     },
     statusTextWrapper: {
       marginBottom: spacing.xl,
     },
     congratsText: {
       ...typography('h2'),
-      fontWeight: '900',
+      ...fontWeight('900'),
       textAlign: 'center',
     },
     statsGrid: {
@@ -553,12 +554,12 @@ const styles = (
     },
     statValueText: {
       ...typography('h2'),
-      fontWeight: '800',
+      ...fontWeight('800'),
       marginBottom: 2,
     },
     statLabelText: {
       ...typography('caption'),
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       fontSize: 12,
     },
     actionsContainer: {

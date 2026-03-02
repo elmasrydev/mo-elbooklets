@@ -113,7 +113,7 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
   const { language } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography } = useTypography();
+  const { typography, fontWeight} = useTypography();
 
   const scorePercent = Math.round((item.quizData.score / item.quizData.totalQuestions) * 100);
   const color = getScoreColor(scorePercent);
@@ -137,7 +137,7 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
       .join('')
       .toUpperCase()
       .substring(0, 2);
-  const currentStyles = createStyles(theme, common, fontSizes, spacing, borderRadius, typography);
+  const currentStyles = createStyles(theme, common, fontSizes, spacing, borderRadius, typography, fontWeight);
 
   return (
     <View
@@ -241,6 +241,7 @@ const createStyles = (
   spacing: any,
   borderRadius: any,
   typography: any,
+  fontWeight: any,
 ) =>
   StyleSheet.create({
     cardPerfect: { borderStyle: 'dashed', borderColor: theme.colors.primary, borderWidth: 2 },
@@ -274,15 +275,15 @@ const createStyles = (
       borderWidth: 1,
       borderColor: theme.colors.border,
     },
-    avatarText: { ...typography('caption'), fontWeight: '900', color: theme.colors.textSecondary },
+    avatarText: { ...typography('caption'), ...fontWeight('900'), color: theme.colors.textSecondary },
     userInfo: { gap: 2, alignItems: common.alignStart, flex: 1 },
     nameRow: { flexDirection: common.rowDirection, alignItems: 'center', gap: 6 },
-    userName: { ...typography('label'), fontWeight: '900', color: theme.colors.text },
+    userName: { ...typography('label'), ...fontWeight('900'), color: theme.colors.text },
     fireEmoji: { fontSize: 16 },
     timeAgo: {
       ...typography('caption'),
       fontSize: 10,
-      fontWeight: '700',
+      ...fontWeight('700'),
       color: theme.colors.textTertiary,
       textTransform: 'uppercase',
       letterSpacing: 0.5,
@@ -298,25 +299,25 @@ const createStyles = (
       minWidth: 60,
       ...common.marginStart(8),
     },
-    xpValue: { ...typography('body'), fontWeight: '900', color: theme.colors.primary },
+    xpValue: { ...typography('body'), ...fontWeight('900'), color: theme.colors.primary },
     xpLabel: {
       ...typography('caption'),
       fontSize: 8,
-      fontWeight: '900',
+      ...fontWeight('900'),
       color: theme.colors.textTertiary,
       textTransform: 'uppercase',
       letterSpacing: 1,
     },
     title: {
       ...typography('h3'),
-      fontWeight: '600',
+      ...fontWeight('600'),
       color: theme.colors.text,
       marginBottom: spacing.sm,
       lineHeight: 24,
     },
     description: {
       ...typography('caption'),
-      fontWeight: '500',
+      ...fontWeight('500'),
       color: theme.colors.textSecondary,
       marginBottom: spacing.lg,
       lineHeight: 20,
@@ -334,7 +335,7 @@ const createStyles = (
     actionText: {
       ...typography('caption'),
       fontSize: 12,
-      fontWeight: '900',
+      ...fontWeight('900'),
       color: theme.colors.textSecondary,
     },
     actionTextLiked: { color: '#EF4444' },
@@ -349,7 +350,7 @@ const createStyles = (
     reviewButtonText: {
       ...typography('caption'),
       fontSize: 10,
-      fontWeight: '900',
+      ...fontWeight('900'),
       color: theme.colors.primary,
       textTransform: 'uppercase',
       letterSpacing: 1,

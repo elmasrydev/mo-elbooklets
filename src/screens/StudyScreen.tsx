@@ -34,7 +34,7 @@ const StudyScreen: React.FC = () => {
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography } = useTypography();
+  const { typography, fontWeight} = useTypography();
   const navigation = useNavigation<any>();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
@@ -101,7 +101,7 @@ const StudyScreen: React.FC = () => {
     navigation.navigate('StudyChapters', { subject });
   };
 
-  const currentStyles = styles(theme, fontSizes, spacing, borderRadius, common, isRTL, typography);
+  const currentStyles = styles(theme, fontSizes, spacing, borderRadius, common, isRTL, typography, fontWeight);
 
   return (
     <View style={currentStyles.container}>
@@ -198,6 +198,7 @@ const styles = (
   common: any,
   isRTL: boolean,
   typography: any,
+  fontWeight: any,
 ) =>
   StyleSheet.create({
     container: {
@@ -281,7 +282,7 @@ const styles = (
     },
     subjectName: {
       ...typography('bodyLarge'),
-      fontWeight: '700',
+      ...fontWeight('700'),
       color: theme.colors.text,
       marginBottom: spacing.xxs,
       textAlign: common.textAlign,

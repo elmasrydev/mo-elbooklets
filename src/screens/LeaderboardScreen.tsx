@@ -47,7 +47,7 @@ const LeaderboardScreen: React.FC = () => {
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography } = useTypography();
+  const { typography, fontWeight} = useTypography();
   const navigation = useNavigation<any>();
 
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -153,7 +153,7 @@ const LeaderboardScreen: React.FC = () => {
     }
   };
 
-  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius, typography);
+  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius, typography, fontWeight);
 
   const renderCurrentUserCard = (userEntry: Student | null) => {
     if (!userEntry) return null;
@@ -398,6 +398,7 @@ const styles = (
   spacing: any,
   borderRadius: any,
   typography: any,
+  fontWeight: any,
 ) =>
   StyleSheet.create({
     refreshButton: {
@@ -420,7 +421,7 @@ const styles = (
       borderColor: theme.colors.border,
     },
     tabActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
-    tabText: { ...typography('label'), fontWeight: '700' },
+    tabText: { ...typography('label'), ...fontWeight('700') },
     tabTextActive: { color: theme.colors.textOnDark },
     tabTextInactive: { color: theme.colors.textSecondary },
     content: { flex: 1 },
@@ -449,7 +450,7 @@ const styles = (
     },
     userStatusRankText: {
       color: theme.colors.textOnDark,
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       ...typography('h3'),
     },
     userStatusAvatarContainer: {
@@ -464,14 +465,14 @@ const styles = (
     userStatusAvatarText: {
       color: theme.colors.textOnDark,
       ...typography('h2'),
-      fontWeight: '600',
+      ...fontWeight('600')
     },
     userStatusInfo: {
       flex: 1,
     },
     userStatusName: {
       ...typography('h3'),
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       color: theme.colors.text,
     },
     userStatusPoints: {
@@ -485,7 +486,7 @@ const styles = (
     },
     userStatusFooter: {
       textAlign: 'center',
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       color: theme.colors.text,
       ...typography('label'),
     },
@@ -543,7 +544,7 @@ const styles = (
     },
     podiumNameText: {
       ...typography('caption'),
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       color: theme.colors.text,
       textAlign: 'center',
       paddingHorizontal: 4,
@@ -551,7 +552,7 @@ const styles = (
     podiumPointsText: {
       ...typography('caption'),
       fontSize: 10,
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       color: theme.colors.textSecondary,
       textAlign: 'center',
     },
@@ -580,7 +581,7 @@ const styles = (
     listItemRank: {
       width: 40,
       ...typography('body'),
-      fontWeight: '600',
+      ...fontWeight('600'),
       color: theme.colors.textSecondary,
     },
     listItemAvatar: {
@@ -596,14 +597,14 @@ const styles = (
     },
     listItemName: {
       ...typography('body'),
-      fontWeight: '600',
+      ...fontWeight('600'),
       color: theme.colors.text,
       flex: 1,
       textAlign: common.textAlign,
     },
     listItemPoints: {
       ...typography('body'),
-      fontWeight: '600',
+      ...fontWeight('600'),
       color: theme.colors.text,
     },
 

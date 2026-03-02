@@ -26,10 +26,10 @@ const LessonNavBar: React.FC<LessonNavBarProps> = ({
   const { theme, borderRadius, spacing } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
-  const { typography } = useTypography();
+  const { typography, fontWeight} = useTypography();
   const insets = useSafeAreaInsets();
 
-  const currentStyles = styles(theme, spacing, borderRadius);
+  const currentStyles = styles(theme, spacing, borderRadius, fontWeight);
 
   return (
     <View
@@ -106,7 +106,7 @@ const LessonNavBar: React.FC<LessonNavBarProps> = ({
   );
 };
 
-const styles = (theme: any, spacing: any, borderRadius: any) =>
+const styles = (theme: any, spacing: any, borderRadius: any, fontWeight: any) =>
   StyleSheet.create({
     container: {
       flexDirection: 'row',
@@ -128,7 +128,7 @@ const styles = (theme: any, spacing: any, borderRadius: any) =>
       backgroundColor: theme.colors.primary + '1A',
     },
     counterText: {
-      fontWeight: '700',
+      ...fontWeight('700'),
       color: theme.colors.primary,
     },
   });

@@ -69,10 +69,11 @@ const WheelOfSuccess: React.FC<{
   data: WheelOfSuccessData | null;
   t: any;
   typography: any;
+  fontWeight: any;
   common: any;
   spacing: any;
   borderRadius: any;
-}> = ({ theme, data, t, typography, common, spacing, borderRadius }) => {
+}> = ({ theme, data, t, typography, fontWeight, common, spacing, borderRadius }) => {
   if (!data || !data.arms || data.arms.length === 0) return null;
 
   const size = width - layout.screenPadding * 2;
@@ -88,7 +89,15 @@ const WheelOfSuccess: React.FC<{
   const segmentCount = arms.length;
   const anglePerSegment = (2 * Math.PI) / segmentCount;
 
-  const currentWheelStyles = wheelStyles(typography, common, theme, spacing, borderRadius, layout);
+  const currentWheelStyles = wheelStyles(
+    typography,
+    fontWeight,
+    common,
+    theme,
+    spacing,
+    borderRadius,
+    layout,
+  );
 
   return (
     <View style={currentWheelStyles.container}>
@@ -233,7 +242,8 @@ const WeeklyPerformanceChart: React.FC<{
   common: any;
   data: WeeklyPerformance[];
   typography: any;
-}> = ({ theme, common, data, typography }) => {
+  fontWeight: any;
+}> = ({ theme, common, data, typography, fontWeight }) => {
   if (!data || data.length === 0) return null;
   const chartHeight = 84;
   const chartWidth = width - layout.screenPadding * 4;
@@ -258,7 +268,7 @@ const WeeklyPerformanceChart: React.FC<{
     return d;
   };
 
-  const currentChartStyles = chartStyles(typography, theme);
+  const currentChartStyles = chartStyles(typography, fontWeight, theme);
 
   return (
     <View style={currentChartStyles.chartContainer}>
@@ -290,7 +300,7 @@ const WeeklyPerformanceChart: React.FC<{
   );
 };
 
-const chartStyles = (typography: any, theme: any) =>
+const chartStyles = (typography: any, fontWeight: any, theme: any) =>
   StyleSheet.create({
     chartContainer: { height: 120, justifyContent: 'center', paddingTop: 10 },
     chartWrapper: { height: 84, alignItems: 'center' },
@@ -308,7 +318,7 @@ const HomeScreen: React.FC = () => {
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography } = useTypography();
+  const { typography, fontWeight } = useTypography();
   const [activitiesData, setActivitiesData] = useState<ActivitiesData | null>(null);
   const [wheelData, setWheelData] = useState<WheelOfSuccessData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -362,6 +372,7 @@ const HomeScreen: React.FC = () => {
     borderRadius,
     isRTL,
     typography,
+    fontWeight,
     layout,
   );
 
@@ -463,6 +474,7 @@ const HomeScreen: React.FC = () => {
           data={wheelData}
           t={t}
           typography={typography}
+          fontWeight={fontWeight}
           common={common}
           spacing={spacing}
           borderRadius={borderRadius}
@@ -520,6 +532,7 @@ const HomeScreen: React.FC = () => {
             common={common}
             data={activitiesData?.weekly_performance || []}
             typography={typography}
+            fontWeight={fontWeight}
           />
         </View>
 
@@ -648,6 +661,7 @@ const HomeScreen: React.FC = () => {
 
 const wheelStyles = (
   typography: any,
+  fontWeight: any,
   common: any,
   theme: any,
   spacing: any,
@@ -695,7 +709,7 @@ const wheelStyles = (
     },
     masteryValue: {
       ...typography('body'),
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       color: theme.colors.primary,
       textAlign: 'center',
     },
@@ -732,11 +746,11 @@ const wheelStyles = (
     legendText: {
       ...typography('caption'),
       color: theme.colors.text,
-      fontWeight: '600',
+      ...fontWeight('600'),
     },
     legendValue: {
       ...typography('caption'),
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       ...common.marginStart(spacing.xxs),
     },
   });
@@ -749,6 +763,7 @@ const styles = (
   borderRadius: any,
   isRTL: boolean,
   typography: any,
+  fontWeight: any,
   layout: any,
 ) =>
   StyleSheet.create({
@@ -882,7 +897,7 @@ const styles = (
     },
     featureTitle: {
       ...typography('bodySmall'),
-      fontWeight: '600',
+      ...fontWeight('600'),
       color: theme.colors.text,
     },
     performanceHeader: {
@@ -894,7 +909,7 @@ const styles = (
     performanceTitle: {
       ...typography('caption'),
       color: theme.colors.textSecondary,
-      fontWeight: '700',
+      ...fontWeight('700'),
     },
     performanceStatus: {
       ...typography('h2'),
@@ -910,7 +925,7 @@ const styles = (
     },
     trendText: {
       ...typography('caption'),
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       ...common.marginStart(spacing.xxs),
     },
     section: {
@@ -960,13 +975,13 @@ const styles = (
     },
     quickActionTitle: {
       ...typography('bodySmall'),
-      fontWeight: '600',
+      ...fontWeight('600'),
       color: theme.colors.text,
       textAlign: 'center',
     },
     quickActionTitleWhite: {
       ...typography('bodySmall'),
-      fontWeight: '600',
+      ...fontWeight('600'),
       color: theme.colors.textOnDark,
       textAlign: 'center',
     },

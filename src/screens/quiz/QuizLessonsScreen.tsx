@@ -58,7 +58,7 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography } = useTypography();
+  const { typography, fontWeight} = useTypography();
   const insets = useSafeAreaInsets();
   const [selectedLessons, setSelectedLessons] = useState<Set<string>>(new Set());
   const [chapters, setChapters] = useState<Chapter[]>([]);
@@ -125,7 +125,7 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
     }, 500);
   };
 
-  const currentStyles = styles(theme, common, typography, spacing, borderRadius, insets);
+  const currentStyles = styles(theme, common, typography, fontWeight, spacing, borderRadius, insets);
 
   if (loading)
     return (
@@ -279,6 +279,7 @@ const styles = (
   theme: any,
   common: any,
   typography: any,
+  fontWeight: any,
   spacing: any,
   borderRadius: any,
   insets: any,
@@ -313,7 +314,7 @@ const styles = (
     chapterCheckbox: { padding: spacing.xxs, ...common.marginEnd(spacing.xs) },
     chapterName: {
       ...typography('body'),
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       color: theme.colors.text,
       textAlign: common.textAlign,
     },
@@ -340,11 +341,11 @@ const styles = (
       textAlign: common.textAlign,
       fontSize: 14,
     },
-    lessonNameSelected: { color: theme.colors.primary, fontWeight: '700' },
+    lessonNameSelected: { color: theme.colors.primary, ...fontWeight('700') },
     emptyState: { padding: spacing.xl, alignItems: 'center', marginTop: spacing.xl },
     emptyStateTitle: {
       ...typography('h3'),
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       marginTop: spacing.md,
       marginBottom: spacing.xs,
       color: theme.colors.text,

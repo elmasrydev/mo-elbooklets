@@ -41,7 +41,7 @@ const QuizSettingsModal: React.FC<QuizSettingsModalProps> = ({
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography } = useTypography();
+  const { typography, fontWeight} = useTypography();
   const [selectedTypeId, setSelectedTypeId] = useState<string | null>(initialQuizTypeId || null);
 
   useEffect(() => {
@@ -57,7 +57,7 @@ const QuizSettingsModal: React.FC<QuizSettingsModalProps> = ({
     }
   };
 
-  const currentStyles = styles(theme, common, typography, fontSizes, spacing, borderRadius);
+  const currentStyles = styles(theme, common, typography, fontWeight, fontSizes, spacing, borderRadius);
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -160,6 +160,7 @@ const styles = (
   theme: any,
   common: any,
   typography: any,
+  fontWeight: any,
   fontSizes: any,
   spacing: any,
   borderRadius: any,
@@ -210,7 +211,7 @@ const styles = (
     },
     title: {
       ...typography('h2'),
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       color: theme.colors.text,
       textAlign: common.textAlign,
     },
@@ -227,7 +228,7 @@ const styles = (
     },
     sectionTitle: {
       ...typography('body'),
-      fontWeight: '600',
+      ...fontWeight('600'),
       color: theme.colors.text,
       marginBottom: spacing.md,
       textAlign: common.textAlign,
@@ -265,7 +266,7 @@ const styles = (
     },
     optionTitle: {
       ...typography('body'),
-      fontWeight: '600',
+      ...fontWeight('600'),
       color: theme.colors.text,
       textAlign: common.textAlign,
     },
@@ -332,7 +333,7 @@ const styles = (
     },
     startButtonText: {
       ...typography('h3'),
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       color: '#fff',
     },
   });

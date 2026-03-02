@@ -10,7 +10,8 @@ import { useTranslation } from 'react-i18next';
 const BookletsScreen: React.FC = () => {
   const common = useCommonStyles();
   const { theme } = useTheme();
-  const { typography } = useTypography();
+  const { typography, fontWeight} = useTypography();
+  const styles = createBookletStyles(fontWeight);
   const { t } = useTranslation();
 
   return (
@@ -49,7 +50,7 @@ const BookletsScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createBookletStyles = (fontWeight: any) => StyleSheet.create({
   emptyState: {
     padding: 40,
     borderRadius: 12,
@@ -66,7 +67,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   emptyStateTitle: {
-    fontWeight: '600',
+    ...fontWeight('600'),
     marginBottom: 8,
     textAlign: 'center',
   },

@@ -17,7 +17,7 @@ const MoreScreen: React.FC = () => {
   const { language, setLanguage, isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography } = useTypography();
+  const { typography, fontWeight} = useTypography();
 
   const handleLogout = () => {
     Alert.alert(t('more_screen.logout'), t('more_screen.logout_confirm'), [
@@ -83,7 +83,7 @@ const MoreScreen: React.FC = () => {
     },
   ];
 
-  const currentStyles = styles(theme, fontSizes, spacing, borderRadius, common, isRTL, typography);
+  const currentStyles = styles(theme, fontSizes, spacing, borderRadius, common, isRTL, typography, fontWeight);
 
   return (
     <View style={currentStyles.container}>
@@ -257,6 +257,7 @@ const styles = (
   common: any,
   isRTL: boolean,
   typography: any,
+  fontWeight: any,
 ) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.background },
@@ -287,11 +288,11 @@ const styles = (
       backgroundColor: theme.colors.primary,
       ...common.marginEnd(spacing.ssm),
     },
-    userAvatarText: { ...typography('h2'), fontWeight: 'bold', color: theme.colors.textOnDark },
+    userAvatarText: { ...typography('h2'), ...fontWeight('bold'), color: theme.colors.textOnDark },
     userInfo: { flex: 1, alignItems: common.alignStart },
     userName: {
       ...typography('h3'),
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       marginBottom: spacing.xxs,
       color: theme.colors.text,
       textAlign: common.textAlign,
@@ -310,7 +311,7 @@ const styles = (
     },
     userGrade: {
       ...typography('caption'),
-      fontWeight: '600',
+      ...fontWeight('600'),
       color: theme.colors.primary,
       textAlign: common.textAlign,
     },
@@ -360,7 +361,7 @@ const styles = (
     menuTextContainer: { flex: 1, alignItems: common.alignStart },
     menuTitle: {
       ...typography('bodySmall'),
-      fontWeight: '500',
+      ...fontWeight('500'),
       color: theme.colors.text,
       textAlign: common.textAlign,
     },
@@ -393,8 +394,8 @@ const styles = (
       borderColor: theme.colors.primary,
       backgroundColor: theme.colors.primary + '1A',
     },
-    langText: { ...typography('label'), color: theme.colors.text, fontWeight: '500' },
-    langTextSelected: { color: theme.colors.primary, fontWeight: '700' },
+    langText: { ...typography('label'), color: theme.colors.text, ...fontWeight('500') },
+    langTextSelected: { color: theme.colors.primary, ...fontWeight('700') },
     colorPickerContainer: {
       padding: spacing.md,
       paddingTop: 0,

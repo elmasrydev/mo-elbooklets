@@ -11,7 +11,7 @@ interface SplashScreenProps {
 const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   const { isLoading, isAuthenticated } = useAuth();
   const { theme } = useTheme();
-  const { typography } = useTypography();
+  const { typography, fontWeight} = useTypography();
 
   useEffect(() => {
     if (!isLoading) {
@@ -23,7 +23,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
     }
   }, [isLoading, isAuthenticated, onFinish]);
 
-  const currentStyles = styles(theme, typography);
+  const currentStyles = styles(theme, typography, fontWeight);
 
   return (
     <View style={currentStyles.container}>
@@ -54,7 +54,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   );
 };
 
-const styles = (theme: any, typography: any) =>
+const styles = (theme: any, typography: any, fontWeight: any) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -84,7 +84,7 @@ const styles = (theme: any, typography: any) =>
     loadingText: {
       ...typography('body'),
       color: theme.colors.textSecondary,
-      fontWeight: '600',
+      ...fontWeight('600'),
       backgroundColor: 'rgba(255, 255, 255, 0.6)',
       paddingHorizontal: 12,
       paddingVertical: 4,

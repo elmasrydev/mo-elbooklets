@@ -28,10 +28,10 @@ const QuizStartScreen: React.FC<QuizStartScreenProps> = ({
   const { theme, spacing, borderRadius } = useTheme();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography } = useTypography();
+  const { typography, fontWeight} = useTypography();
   const insets = useSafeAreaInsets();
 
-  const currentStyles = styles(theme, common, typography, spacing, borderRadius, insets);
+  const currentStyles = styles(theme, common, typography, fontWeight, spacing, borderRadius, insets);
 
   return (
     <View style={common.container}>
@@ -119,6 +119,7 @@ const styles = (
   theme: any,
   common: any,
   typography: any,
+  fontWeight: any,
   spacing: any,
   borderRadius: any,
   insets: { bottom: number },
@@ -150,7 +151,7 @@ const styles = (
     },
     readyTitle: {
       ...typography('h1'),
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       color: theme.colors.text,
       marginBottom: spacing.sm,
       textAlign: 'center',
@@ -197,7 +198,7 @@ const styles = (
     },
     infoValue: {
       ...typography('body'),
-      fontWeight: '700',
+      ...fontWeight('700'),
       color: theme.colors.text,
       textAlign: common.textAlign,
     },
