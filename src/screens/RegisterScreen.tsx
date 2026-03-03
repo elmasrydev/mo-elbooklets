@@ -554,125 +554,6 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                   ]),
                 }}
               />
-
-              {/* Enhanced School Search Modal */}
-              <Modal
-                visible={isSchoolModalVisible}
-                animationType="slide"
-                presentationStyle="pageSheet"
-                onRequestClose={() => setIsSchoolModalVisible(false)}
-              >
-                <SafeAreaView style={currentStyles.modalSearchContainer}>
-                  <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                    style={{ flex: 1 }}
-                  >
-                    <UnifiedHeader
-                      title={
-                        <Text
-                          style={[
-                            common.headerTitle,
-                            { ...typography('h2'), color: theme.colors.headerText },
-                          ]}
-                        >
-                          {t('auth.select_school_title')}
-                        </Text>
-                      }
-                      leftContent={<CloseButton onPress={() => setIsSchoolModalVisible(false)} />}
-                      showBorder={true}
-                    />
-
-                    <FlatList
-                      style={{ marginBottom: insets.bottom }}
-                      ListHeaderComponent={
-                        <View style={currentStyles.modalSearchInputContainer}>
-                          <View style={currentStyles.modalSearchInputWrapper}>
-                            <TextInput
-                              ref={schoolSearchInputRef}
-                              style={currentStyles.modalSearchInput}
-                              placeholder={t('auth.school_search_placeholder')}
-                              value={schoolSearchQuery}
-                              onChangeText={setSchoolSearchQuery}
-                              placeholderTextColor={theme.colors.textSecondary}
-                              autoCapitalize="none"
-                              autoCorrect={false}
-                            />
-                            {isSearchingSchools && (
-                              <ActivityIndicator size="small" color={theme.colors.primary} />
-                            )}
-                            <Ionicons
-                              name="search-outline"
-                              size={20}
-                              color={theme.colors.textSecondary}
-                              style={{ marginRight: 10 }}
-                            />
-                          </View>
-                        </View>
-                      }
-                      data={schoolResults}
-                      keyExtractor={(item) => item.id.toString()}
-                      contentContainerStyle={{ padding: 16 }}
-                      shouldRasterizeIOS={true}
-                      keyboardShouldPersistTaps="handled"
-                      renderItem={({ item }) => {
-                        return (
-                          <TouchableOpacity
-                            style={currentStyles.autocompleteItem}
-                            onPress={() => selectSchool(item)}
-                          >
-                            <View style={currentStyles.schoolResultIcon}>
-                              <Ionicons name="school" size={24} color={theme.colors.primary} />
-                            </View>
-                            <View style={currentStyles.schoolResultInfo}>
-                              <Text style={currentStyles.schoolResultName}>
-                                {language === 'ar' ? item.name : item.name_en || item.name}
-                              </Text>
-                              {item.governorate && item.area ? (
-                                <Text style={currentStyles.schoolResultMeta}>
-                                  {item.governorate} {item.area ? `• ${item.area}` : ''}{' '}
-                                </Text>
-                              ) : null}
-                            </View>
-                            {item.is_verified && (
-                              <Ionicons
-                                name="checkmark-circle"
-                                size={24}
-                                color="#059669"
-                                style={{ marginHorizontal: 8 }}
-                              />
-                            )}
-                            <Ionicons
-                              name={isRTL ? 'chevron-back' : 'chevron-forward'}
-                              size={20}
-                              color={theme.colors.border}
-                            />
-                          </TouchableOpacity>
-                        );
-                      }}
-                      ListEmptyComponent={() => (
-                        <View style={{ alignItems: 'center', marginTop: 100 }}>
-                          <Ionicons
-                            name="business-outline"
-                            size={64}
-                            color="#E2E8F0"
-                            style={{ marginBottom: 16 }}
-                          />
-                          <Text
-                            style={[
-                              currentStyles.subtitle,
-                              { textAlign: 'center', opacity: schoolSearchQuery ? 1 : 0.5 },
-                            ]}
-                          >
-                            {schoolSearchQuery
-                              ? t('auth.no_schools_found')
-                              : t('auth.start_typing_school')}
-                          </Text>
-                        </View>
-                      )}
-                    />
-                  </KeyboardAvoidingView>
-                </SafeAreaView>
-              </Modal>
             </>
           )}
 
@@ -1025,6 +906,191 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Enhanced School Search Modal */}
+      <Modal
+        visible={isSchoolModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsSchoolModalVisible(false)}
+      >
+        <View style={currentStyles.modalSearchContainer}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            style={{ flex: 1 }}
+          >
+            <UnifiedHeader
+              title={
+                <Text
+                  style={[
+                    common.headerTitle,
+                    { ...typography('h2'), color: theme.colors.headerText },
+                  ]}
+                >
+                  {t('auth.select_school_title')}
+                </Text>
+              }
+              leftContent={<CloseButton onPress={() => setIsSchoolModalVisible(false)} />}
+              showBorder={true}
+              isModal={true}
+            />
+
+            <FlatList
+              style={{ marginBottom: insets.bottom }}
+              ListHeaderComponent={
+                <View style={{ paddingBottom: 8 }}>
+                  <View style={currentStyles.modalSearchInputContainer}>
+                    <View style={currentStyles.modalSearchInputWrapper}>
+                      <TextInput
+                        ref={schoolSearchInputRef}
+                        style={currentStyles.modalSearchInput}
+                        placeholder={t('auth.school_search_placeholder')}
+                        value={schoolSearchQuery}
+                        onChangeText={setSchoolSearchQuery}
+                        placeholderTextColor={theme.colors.textSecondary}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                      />
+                      {isSearchingSchools && (
+                        <ActivityIndicator size="small" color={theme.colors.primary} />
+                      )}
+                      <Ionicons
+                        name="search-outline"
+                        size={20}
+                        color={theme.colors.textSecondary}
+                        style={{ marginRight: 10 }}
+                      />
+                    </View>
+                  </View>
+                  {schoolSearchQuery.trim().length >= 2 && !isSearchingSchools && (
+                    <TouchableOpacity
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        padding: 16,
+                        marginTop: 8,
+                        marginHorizontal: 16,
+                        borderRadius: 12,
+                        borderWidth: 1.5,
+                        borderColor: theme.colors.primary,
+                        borderStyle: 'dashed',
+                        backgroundColor: theme.colors.primary + '08',
+                      }}
+                      onPress={() => {
+                        setSchoolName(schoolSearchQuery.trim());
+                        setIsSchoolModalVisible(false);
+                        setSchoolSearchQuery('');
+                        setSchoolResults([]);
+                        setTouchedSchool(true);
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 20,
+                          backgroundColor: theme.colors.primary + '15',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          marginRight: isRTL ? 0 : 12,
+                          marginLeft: isRTL ? 12 : 0,
+                        }}
+                      >
+                        <Ionicons
+                          name="add-circle-outline"
+                          size={24}
+                          color={theme.colors.primary}
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={{
+                            ...typography('body'),
+                            color: theme.colors.primary,
+                            fontWeight: '600',
+                          }}
+                        >
+                          {t('auth.use_custom_school', 'Use "{{name}}" as school name', {
+                            name: schoolSearchQuery.trim(),
+                          })}
+                        </Text>
+                        <Text
+                          style={{
+                            ...typography('caption'),
+                            color: theme.colors.textSecondary,
+                            marginTop: 2,
+                          }}
+                        >
+                          {t('auth.school_not_in_list', "Can't find your school? Add it manually")}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              }
+              data={schoolResults}
+              keyExtractor={(item) => item.id.toString()}
+              contentContainerStyle={{ padding: 16 }}
+              shouldRasterizeIOS={true}
+              keyboardShouldPersistTaps="handled"
+              renderItem={({ item }) => {
+                return (
+                  <TouchableOpacity
+                    style={currentStyles.autocompleteItem}
+                    onPress={() => selectSchool(item)}
+                  >
+                    <View style={currentStyles.schoolResultIcon}>
+                      <Ionicons name="school" size={24} color={theme.colors.primary} />
+                    </View>
+                    <View style={currentStyles.schoolResultInfo}>
+                      <Text style={currentStyles.schoolResultName}>
+                        {language === 'ar' ? item.name : item.name_en || item.name}
+                      </Text>
+                      {item.governorate && item.area ? (
+                        <Text style={currentStyles.schoolResultMeta}>
+                          {item.governorate} {item.area ? `• ${item.area}` : ''}{' '}
+                        </Text>
+                      ) : null}
+                    </View>
+                    {item.is_verified && (
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={24}
+                        color="#059669"
+                        style={{ marginHorizontal: 8 }}
+                      />
+                    )}
+                    <Ionicons
+                      name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                      size={20}
+                      color={theme.colors.border}
+                    />
+                  </TouchableOpacity>
+                );
+              }}
+              ListFooterComponent={null}
+              ListEmptyComponent={() => (
+                <View style={{ alignItems: 'center', marginTop: 80 }}>
+                  <Ionicons
+                    name="business-outline"
+                    size={64}
+                    color="#E2E8F0"
+                    style={{ marginBottom: 16 }}
+                  />
+                  <Text
+                    style={[
+                      currentStyles.subtitle,
+                      { textAlign: 'center', opacity: schoolSearchQuery ? 1 : 0.5 },
+                    ]}
+                  >
+                    {schoolSearchQuery ? t('auth.no_schools_found') : t('auth.start_typing_school')}
+                  </Text>
+                </View>
+              )}
+            />
+          </KeyboardAvoidingView>
+        </View>
+      </Modal>
 
       {/* Registration Disclaimer Modal */}
       <Modal

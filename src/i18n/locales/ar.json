@@ -323,6 +323,8 @@
     "school_search_placeholder": "ابحث عن مدرستك...",
     "no_schools_found": "لا توجد مدارس مطابقة",
     "start_typing_school": "ابدأ بكتابة اسم مدرستك...",
+    "use_custom_school": "استخدام \"{{name}}\" كاسم المدرسة",
+    "school_not_in_list": "لم تجد مدرستك؟ أضفها يدوياً",
     "parent_mobile": "رقم هاتف ولي الأمر",
     "parent_mobile_placeholder": "أدخل رقم هاتف ولي الأمر",
     "second_parent_mobile": "رقم هاتف ولي أمر ثانٍ (اختياري)",
