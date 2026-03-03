@@ -967,9 +967,9 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                       style={{
                         flexDirection: 'row',
                         alignItems: 'center',
-                        padding: 16,
-                        marginTop: 8,
-                        marginHorizontal: 16,
+                        padding: spacing.md,
+                        marginTop: spacing.md,
+                        marginHorizontal: spacing.xxs,
                         borderRadius: 12,
                         borderWidth: 1.5,
                         borderColor: theme.colors.primary,
@@ -992,8 +992,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                           backgroundColor: theme.colors.primary + '15',
                           justifyContent: 'center',
                           alignItems: 'center',
-                          marginRight: isRTL ? 0 : 12,
-                          marginLeft: isRTL ? 12 : 0,
+                          marginHorizontal: spacing.sm,
                         }}
                       >
                         <Ionicons
@@ -1008,6 +1007,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                             ...typography('body'),
                             color: theme.colors.primary,
                             fontWeight: '600',
+                            textAlign: 'left',
                           }}
                         >
                           {t('auth.use_custom_school', 'Use "{{name}}" as school name', {
@@ -1019,6 +1019,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                             ...typography('caption'),
                             color: theme.colors.textSecondary,
                             marginTop: 2,
+                            textAlign: 'left',
                           }}
                         >
                           {t('auth.school_not_in_list', "Can't find your school? Add it manually")}
