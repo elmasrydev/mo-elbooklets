@@ -38,7 +38,7 @@ const TodaysPlanWidget: React.FC = () => {
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography, fontWeight} = useTypography();
+  const { typography, fontWeight } = useTypography();
 
   interface TodayScheduleData {
     todaySchedule: {
@@ -54,7 +54,15 @@ const TodaysPlanWidget: React.FC = () => {
     pollInterval: 60000,
   });
 
-  const currentStyles = styles(theme, common, typography, fontWeight, fontSizes, spacing, borderRadius);
+  const currentStyles = styles(
+    theme,
+    common,
+    typography,
+    fontWeight,
+    fontSizes,
+    spacing,
+    borderRadius,
+  );
 
   if (loading && !data)
     return (
@@ -216,7 +224,7 @@ const styles = (
       alignItems: 'flex-start',
       marginBottom: spacing.md,
     },
-    titleSection: { alignItems: common.alignStart },
+    titleSection: { flex: 1, alignItems: common.alignStart },
     title: { ...typography('h3'), color: theme.colors.text },
     subtitle: {
       ...typography('caption'),
@@ -224,7 +232,12 @@ const styles = (
       marginTop: spacing.xxs,
       ...common.marginStart(spacing.xl),
     },
-    linkText: { ...typography('bodySmall'), color: theme.colors.primary, ...fontWeight('600') },
+    linkText: {
+      ...typography('bodySmall'),
+      color: theme.colors.primary,
+      ...fontWeight('600'),
+      flexShrink: 0,
+    },
     loadingContainer: { padding: spacing.xl, alignItems: 'center' },
     emptyContainer: { alignItems: 'center', padding: spacing.lg },
     emptyText: {
