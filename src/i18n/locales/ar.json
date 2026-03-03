@@ -56,6 +56,9 @@
   "study_screen": {
     "header_title": "المذاكرة",
     "header_subtitle": "تعلم ومراجعة الدروس",
+    "page_title": "اختر المادة",
+    "page_subtitle": "ماذا ستدرس اليوم؟",
+    "available_booklets": "كتيب متاح",
     "loading_subjects": "جارٍ تحميل المواد...",
     "error_loading_subjects": "خطأ في تحميل المواد",
     "no_subjects_available": "لا توجد مواد متاحة",

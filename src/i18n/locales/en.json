@@ -56,6 +56,9 @@
   "study_screen": {
     "header_title": "Study",
     "header_subtitle": "Learn and review lessons",
+    "page_title": "Select Subject",
+    "page_subtitle": "What are you studying today?",
+    "available_booklets": "Booklets available",
     "loading_subjects": "Loading subjects...",
     "error_loading_subjects": "Error Loading Subjects",
     "no_subjects_available": "No Subjects Available",

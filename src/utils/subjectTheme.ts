@@ -1,7 +1,9 @@
-import { ColorValue } from 'react-native';
+import { ImageSourcePropType } from 'react-native';
 
 export interface SubjectThemeConfig {
-  icon: any; // Ionicons name
+  icon?: string; // Ionicons name fallback
+  localIcon?: ImageSourcePropType;
+  localIconGrey?: ImageSourcePropType;
   color: string;
   bg: string;
 }
@@ -9,48 +11,68 @@ export interface SubjectThemeConfig {
 export const getSubjectConfig = (subjectName: string, theme: any): SubjectThemeConfig => {
   const name = (subjectName || '').toLowerCase();
 
-  // Mathematics: Blue/Greyish theme
+  // Mathematics: Orange theme
   if (name.includes('math') || name.includes('رياضيات')) {
-    return { icon: 'calculator-outline', color: '#3B82F6', bg: '#EFF6FF' };
+    return {
+      localIcon: require('../../assets/images/MathIcon.png'),
+      localIconGrey: require('../../assets/images/MathIconGrey.png'),
+      icon: 'calculator-outline',
+      color: '#EA580C',
+      bg: '#FFEDD5',
+    };
   }
   // Science: Green theme
   if (name.includes('science') || name.includes('علوم')) {
-    return { icon: 'flask-outline', color: '#10B981', bg: '#ECFDF5' };
+    return {
+      localIcon: require('../../assets/images/scienceIcon.png'),
+      localIconGrey: require('../../assets/images/scienceIconGrey.png'),
+      icon: 'flask-outline',
+      color: '#10B981',
+      bg: '#D1FAE5',
+    };
   }
-  // Physics: Violet/Indigo
-  if (name.includes('physics') || name.includes('فيزياء')) {
-    return { icon: 'magnet-outline', color: '#8B5CF6', bg: '#F5F3FF' };
+  // History
+  if (name.includes('history') || name.includes('تاريخ')) {
+    return {
+      localIcon: require('../../assets/images/historyIcon.png'),
+      localIconGrey: require('../../assets/images/historyIconGrey.png'),
+      icon: 'time-outline',
+      color: '#D97706',
+      bg: '#FEF3C7',
+    };
   }
-  // Chemistry: Pink/Rose
-  if (name.includes('chemistry') || name.includes('كيمياء')) {
-    return { icon: 'beaker-outline', color: '#EC4899', bg: '#FDF2F8' };
+  // Geography
+  if (name.includes('geography') || name.includes('جغرافيا') || name.includes('دراسات')) {
+    return {
+      localIcon: require('../../assets/images/GeoIcon.png'),
+      localIconGrey: require('../../assets/images/GeoIconGrey.png'),
+      icon: 'earth-outline',
+      color: '#06B6D4',
+      bg: '#CFFAFE',
+    };
   }
-  // Biology: Emerald
-  if (name.includes('biology') || name.includes('أحياء')) {
-    return { icon: 'leaf-outline', color: '#059669', bg: '#D1FAE5' };
+  // Arabic: Indigo/Purple
+  if (name.includes('arabic') || name.includes('عرب')) {
+    return {
+      localIcon: require('../../assets/images/ArIcon.png'),
+      localIconGrey: require('../../assets/images/arIconGrey.png'),
+      icon: 'globe-outline',
+      color: '#4F46E5',
+      bg: '#E0E7FF',
+    };
   }
-  // Social Studies / Geography: Yellow/Amber
-  if (
-    name.includes('social') ||
-    name.includes('دراسات') ||
-    name.includes('history') ||
-    name.includes('تاريخ') ||
-    name.includes('geography') ||
-    name.includes('جغرافيا')
-  ) {
-    return { icon: 'earth-outline', color: '#F59E0B', bg: '#FFFBEB' };
-  }
-  // Arabic: Purple/Deep
-  if (name.includes('arabic') || name.includes('عربي')) {
-    return { icon: 'book-outline', color: '#7C3AED', bg: '#F5F3FF' };
-  }
-  // English: Red/Orange
+  // English: Blue
   if (name.includes('english') || name.includes('انجليزي')) {
-    return { icon: 'text-outline', color: '#EF4444', bg: '#FEF2F2' };
+    return {
+      localIcon: require('../../assets/images/EnIcon.png'),
+      localIconGrey: require('../../assets/images/EnIconGrey.png'),
+      icon: 'text-outline',
+      color: '#2563EB',
+      bg: '#DBEAFE',
+    };
   }
 
   // Default: Primary Theme Color
-  // Ensure we fallback gracefully if theme is undefined (though it shouldn't be)
   const primary = theme?.colors?.primary || '#3B82F6'; // Default Blue
   const primaryLight = theme?.colors?.primaryLight || `${primary}20`;
 
