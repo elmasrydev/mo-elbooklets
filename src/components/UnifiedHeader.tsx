@@ -94,7 +94,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
   };
 
   const sidePadding = layout.screenPadding;
-  const headerTop = isModal ? 0 : insets.top;
+  const headerTop = isModal && Platform.OS === 'ios' ? 0 : insets.top;
   const totalHeight = headerTop + HEADER_CONTENT_HEIGHT;
 
   const containerStyle: ViewStyle[] = [

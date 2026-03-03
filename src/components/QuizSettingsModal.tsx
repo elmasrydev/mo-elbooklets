@@ -8,6 +8,7 @@ import {
   TouchableWithoutFeedback,
   ScrollView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
@@ -41,7 +42,8 @@ const QuizSettingsModal: React.FC<QuizSettingsModalProps> = ({
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography, fontWeight} = useTypography();
+  const { typography, fontWeight } = useTypography();
+  const insets = useSafeAreaInsets();
   const [selectedTypeId, setSelectedTypeId] = useState<string | null>(initialQuizTypeId || null);
 
   useEffect(() => {
@@ -57,7 +59,15 @@ const QuizSettingsModal: React.FC<QuizSettingsModalProps> = ({
     }
   };
 
-  const currentStyles = styles(theme, common, typography, fontWeight, fontSizes, spacing, borderRadius);
+  const currentStyles = styles(
+    theme,
+    common,
+    typography,
+    fontWeight,
+    fontSizes,
+    spacing,
+    borderRadius,
+  );
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -132,7 +142,12 @@ const QuizSettingsModal: React.FC<QuizSettingsModalProps> = ({
                 </View>
               </ScrollView>
 
-              <View style={currentStyles.footer}>
+              <View
+                style={[
+                  currentStyles.footer,
+                  { paddingBottom: Math.max(insets.bottom, spacing.md) },
+                ]}
+              >
                 <AppButton
                   title={t('quiz_lessons.start_quiz')}
                   onPress={handleStart}

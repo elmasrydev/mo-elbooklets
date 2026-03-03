@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -29,7 +30,7 @@ const QuizReviewScreen: React.FC = () => {
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography, fontWeight} = useTypography();
+  const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
 
   const [loading, setLoading] = useState(true);
@@ -100,7 +101,16 @@ const QuizReviewScreen: React.FC = () => {
     }
   }, [quizId]);
 
-  const currentStyles = styles(theme, spacing, borderRadius, common, insets, typography, fontWeight, isRTL);
+  const currentStyles = styles(
+    theme,
+    spacing,
+    borderRadius,
+    common,
+    insets,
+    typography,
+    fontWeight,
+    isRTL,
+  );
 
   if (loading) {
     return (
@@ -133,11 +143,12 @@ const QuizReviewScreen: React.FC = () => {
   }
 
   const incorrectCount = result.userAnswers.filter((a: any) => !a.is_correct).length;
+  const headerTop = Platform.OS === 'ios' ? 0 : insets.top;
 
   return (
     <View style={[common.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
-      <View style={[currentStyles.header, { paddingTop: 18 }]}>
+      <View style={[currentStyles.header, { paddingTop: Math.max(headerTop, 18) }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={currentStyles.closeButton}>
           <Ionicons name="close" size={28} color={theme.colors.text} />
         </TouchableOpacity>
@@ -214,7 +225,7 @@ const QuizReviewScreen: React.FC = () => {
               })}
             </View>
 
-            {(ua.question.explanation || ua.explanation) && (
+            {!!(ua.question.explanation || ua.explanation) && (
               <View style={currentStyles.explanationBox}>
                 <Text style={currentStyles.explanationTitle}>
                   {' '}
@@ -393,7 +404,7 @@ const styles = (
       ...typography('bodySmall'),
       color: '#3B82F6',
       textAlign: common.textAlign,
-      ...fontWeight('500')
+      ...fontWeight('500'),
     },
   });
 
