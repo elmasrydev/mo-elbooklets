@@ -1081,7 +1081,7 @@ const styles = (
       paddingBottom: Math.max(common.insets.bottom, 20),
     },
     header: { alignItems: 'center', marginBottom: 32 },
-    logo: { width: 120, height: 120, marginBottom: 24 },
+    logo: { width: 100, height: 85, marginBottom: 24 },
     title: {
       ...typography('h1'),
       color: '#0F172A',

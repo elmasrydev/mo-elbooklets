@@ -133,8 +133,8 @@ const styles = (
     },
     logo: {
       zIndex: 1,
-      width: 120, // Unified size
-      height: 120,
+      width: 100,
+      height: 85,
     },
     spacer: {
       flex: 1,
