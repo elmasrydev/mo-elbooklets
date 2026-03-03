@@ -109,7 +109,7 @@ export const getTextStyle = (style: keyof typeof textStyles, isArabic: boolean =
       fontFamily: resolvedFontFamily,
       fontWeight: resolvedWeight,
       // Decrease size by 2px as requested
-      fontSize: baseStyle.fontSize - 1.5,
+      fontSize: baseStyle.fontSize - 1.6,
       // Adjust line height
       lineHeight: (baseStyle as any).lineHeight
         ? Math.round((baseStyle as any).lineHeight * 1.15)

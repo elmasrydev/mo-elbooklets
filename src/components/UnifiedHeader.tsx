@@ -70,7 +70,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
     return leftContent || null;
   };
 
-  const HEADER_CONTENT_HEIGHT = Platform.OS === 'ios' ? (isModal ? 66 : 58) : isModal ? 66 : 61;
+  const HEADER_CONTENT_HEIGHT = Platform.OS === 'ios' ? (isModal ? 62 : 54) : isModal ? 62 : 57;
 
   const effectiveCenterAlign = centerAlign;
 
@@ -147,6 +147,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
               alignItems: 'flex-start',
               justifyContent: 'center',
               height: HEADER_CONTENT_HEIGHT,
+              paddingBottom: 4,
             }}
           >
             {renderLeft()}
@@ -157,6 +158,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
               alignItems: 'flex-end',
               justifyContent: 'center',
               height: HEADER_CONTENT_HEIGHT,
+              paddingBottom: 4,
             }}
           >
             {rightContent}
@@ -176,7 +178,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
           height: HEADER_CONTENT_HEIGHT,
         }}
       >
-        <View style={{ justifyContent: 'center', height: HEADER_CONTENT_HEIGHT }}>
+        <View style={{ justifyContent: 'center', height: HEADER_CONTENT_HEIGHT, paddingBottom: 4 }}>
           {' '}
           {renderLeft()}{' '}
         </View>
@@ -195,6 +197,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
               marginLeft: 'auto',
               justifyContent: 'center',
               height: HEADER_CONTENT_HEIGHT,
+              paddingBottom: 4,
             }}
           >
             {rightContent}
