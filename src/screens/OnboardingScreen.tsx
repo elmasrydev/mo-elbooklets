@@ -16,7 +16,7 @@ interface OnboardingScreenProps {
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted, onLogin }) => {
   const { t } = useTranslation();
   const { language, setLanguage, isRTL } = useLanguage();
-  const { typography, fontWeight} = useTypography();
+  const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
 
   const currentStyles = styles(typography, fontWeight, insets, isRTL);
@@ -49,13 +49,10 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted, onLog
           </TouchableOpacity>
 
           <Image
-            source={require('../../assets/logo-icon.png')}
+            source={require('../../assets/logo-transparent.png')}
             style={currentStyles.logo}
             resizeMode="contain"
           />
-
-          {/* Empty view for header balancing if needed */}
-          <View style={{ width: 44 }} />
         </View>
 
         {/* Spacer to push content to bottom */}
@@ -82,7 +79,12 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted, onLog
   );
 };
 
-const styles = (typography: any, fontWeight: any, insets: { top: number; bottom: number }, isRTL: boolean) =>
+const styles = (
+  typography: any,
+  fontWeight: any,
+  insets: { top: number; bottom: number },
+  isRTL: boolean,
+) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -99,13 +101,16 @@ const styles = (typography: any, fontWeight: any, insets: { top: number; bottom:
       zIndex: -1,
     },
     header: {
-      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
+      justifyContent: 'center', // Center the logo
+      flexDirection: 'row',
       marginTop: 20,
       paddingHorizontal: layout.screenPadding,
+      position: 'relative', // Need relative for absolute inner elements
     },
     languageButton: {
+      position: 'absolute',
+      ...(isRTL ? { right: layout.screenPadding } : { left: layout.screenPadding }),
       flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
       backgroundColor: 'rgba(255, 255, 255, 0.85)',
@@ -118,17 +123,18 @@ const styles = (typography: any, fontWeight: any, insets: { top: number; bottom:
       shadowOpacity: 0.1,
       shadowRadius: 4,
       elevation: 2,
+      zIndex: 10, // Ensure it's clickable over the header area
     },
     languageText: {
       ...typography('button'),
       fontSize: 14,
       color: '#1E3A8A',
-      ...fontWeight('700')
+      ...fontWeight('700'),
     },
     logo: {
       zIndex: 1,
-      width: 150, // Reduced from 400 to fit header properly
-      height: 40,
+      width: 120, // Unified size
+      height: 120,
     },
     spacer: {
       flex: 1,
@@ -163,7 +169,7 @@ const styles = (typography: any, fontWeight: any, insets: { top: number; bottom:
     link: {
       ...typography('button'),
       color: '#1E3A8A',
-      ...fontWeight('700')
+      ...fontWeight('700'),
     },
   });
 

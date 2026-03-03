@@ -110,7 +110,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
   const { t } = useTranslation();
   const common = useCommonStyles();
   const insets = useSafeAreaInsets();
-  const { typography, fontWeight} = useTypography();
+  const { typography, fontWeight } = useTypography();
   const isRTL = language === 'ar';
 
   const [gradesData, setGradesData] = useState<{ grades: any[] } | null>(null);
@@ -333,7 +333,16 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
     }
   };
 
-  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius, isRTL, typography, fontWeight);
+  const currentStyles = styles(
+    theme,
+    common,
+    fontSizes,
+    spacing,
+    borderRadius,
+    isRTL,
+    typography,
+    fontWeight,
+  );
 
   const StepIndicator = () => (
     <View style={currentStyles.stepIndicatorContainer}>
@@ -386,7 +395,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
       >
         <View style={currentStyles.header}>
           <Image
-            source={require('../../assets/logo-icon.png')}
+            source={require('../../assets/logo-transparent.png')}
             style={currentStyles.logo}
             resizeMode="contain"
           />
@@ -1072,7 +1081,7 @@ const styles = (
       paddingBottom: Math.max(common.insets.bottom, 20),
     },
     header: { alignItems: 'center', marginBottom: 32 },
-    logo: { width: 100, height: 100, marginBottom: 16 },
+    logo: { width: 120, height: 120, marginBottom: 24 },
     title: {
       ...typography('h1'),
       color: '#0F172A',
@@ -1083,7 +1092,7 @@ const styles = (
       ...typography('body'),
       color: '#64748B',
       textAlign: 'center',
-      ...fontWeight('500')
+      ...fontWeight('500'),
     },
     form: { marginBottom: 24 },
     languageButton: {
@@ -1143,7 +1152,7 @@ const styles = (
     linkText: {
       ...typography('button'),
       color: '#1E3A8A',
-      ...fontWeight('700')
+      ...fontWeight('700'),
     },
     backButton: {
       position: 'absolute',
@@ -1383,7 +1392,7 @@ const styles = (
       ...typography('button'),
       color: '#1E3A8A',
       fontSize: 18,
-      ...fontWeight('700')
+      ...fontWeight('700'),
     },
     genderContainer: {
       marginBottom: 16,
