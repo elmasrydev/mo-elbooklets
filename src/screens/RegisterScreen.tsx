@@ -365,553 +365,556 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
   );
 
   return (
-    <KeyboardAvoidingView
-      style={currentStyles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <BackButton
-        onPress={handleBack}
-        style={[currentStyles.backButton, { top: insets.top + spacing.sm }, { left: spacing.lg }]}
-        color={theme.colors.text}
-      />
-
-      {currentStep === 1 && (
-        <TouchableOpacity
-          onPress={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
-          style={[
-            currentStyles.languageButton,
-            { top: insets.top + spacing.sm },
-            { right: spacing.lg },
-          ]}
-        >
-          <Ionicons name="language-outline" size={20} color={theme.colors.primary} />
-          <Text style={currentStyles.languageText}>{language === 'ar' ? 'English' : 'عربي'}</Text>
-        </TouchableOpacity>
-      )}
-
-      <ScrollView
-        contentContainerStyle={currentStyles.scrollContainer}
-        showsVerticalScrollIndicator={false}
+    <>
+      <KeyboardAvoidingView
+        style={currentStyles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <View style={currentStyles.header}>
-          <Image
-            source={require('../../assets/logo-transparent.png')}
-            style={currentStyles.logo}
-            resizeMode="contain"
-          />
-          <StepIndicator />
-          <Text style={currentStyles.title}>
-            {currentStep === 1 && t('auth.personal_info', 'Personal Info')}
-            {currentStep === 2 && t('auth.select_grade_title', 'Select Your Grade')}
-            {currentStep === 3 && t('auth.login_info', 'Login Info')}
-            {currentStep === 4 && t('auth.parent_data', 'Parent Data')}
-          </Text>
-        </View>
+        <BackButton
+          onPress={handleBack}
+          style={[currentStyles.backButton, { top: insets.top + spacing.sm }, { left: spacing.lg }]}
+          color={theme.colors.text}
+        />
 
-        <View style={currentStyles.form}>
-          {currentStep === 1 && (
-            <>
-              <View
-                style={[
-                  currentStyles.inputWrapper,
-                  { borderColor: getBorderColor(touchedName, isNameValid) },
-                ]}
-              >
-                <Ionicons
-                  name="person-outline"
-                  size={20}
-                  color={isNameValid ? '#10B981' : theme.colors.textSecondary}
-                  style={currentStyles.inputIcon}
-                />
-                <TextInput
-                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left', flex: 1 }]}
-                  value={name}
-                  onChangeText={setName}
-                  placeholder={t('auth.name_placeholder')}
-                  placeholderTextColor={theme.colors.textSecondary}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  editable={!isLoading}
-                  returnKeyType="next"
-                  onSubmitEditing={() => emailRef.current?.focus()}
-                  onBlur={() => setTouchedName(true)}
-                  blurOnSubmit={false}
-                />
-                {touchedName && isNameValid && (
-                  <Ionicons
-                    name="checkmark-circle-outline"
-                    size={20}
-                    color="#10B981"
-                    style={{ marginHorizontal: 8 }}
-                  />
-                )}
-                {touchedName && !isNameValid && (
-                  <Ionicons
-                    name="alert-circle-outline"
-                    size={20}
-                    color="#F59E0B"
-                    style={{ marginHorizontal: 8 }}
-                  />
-                )}
-              </View>
+        {currentStep === 1 && (
+          <TouchableOpacity
+            onPress={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
+            style={[
+              currentStyles.languageButton,
+              { top: insets.top + spacing.sm },
+              { right: spacing.lg },
+            ]}
+          >
+            <Ionicons name="language-outline" size={20} color={theme.colors.primary} />
+            <Text style={currentStyles.languageText}>{language === 'ar' ? 'English' : 'عربي'}</Text>
+          </TouchableOpacity>
+        )}
 
-              <View
-                style={[
-                  currentStyles.inputWrapper,
-                  { borderColor: getBorderColor(touchedEmail, isEmailValid) },
-                ]}
-              >
-                <Ionicons
-                  name="mail-outline"
-                  size={20}
-                  color={isEmailValid ? '#10B981' : theme.colors.textSecondary}
-                  style={currentStyles.inputIcon}
-                />
-                <TextInput
-                  // @ts-ignore
-                  ref={emailRef}
-                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left', flex: 1 }]}
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder={t('auth.email_placeholder')}
-                  placeholderTextColor={theme.colors.textSecondary}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  editable={!isLoading}
-                  returnKeyType="done"
-                  onBlur={() => setTouchedEmail(true)}
-                />
-                {touchedEmail && isEmailValid && (
-                  <Ionicons
-                    name="checkmark-circle-outline"
-                    size={20}
-                    color="#10B981"
-                    style={{ marginHorizontal: 8 }}
-                  />
-                )}
-                {touchedEmail && !isEmailValid && (
-                  <Ionicons
-                    name="alert-circle-outline"
-                    size={20}
-                    color="#F59E0B"
-                    style={{ marginHorizontal: 8 }}
-                  />
-                )}
-              </View>
+        <ScrollView
+          contentContainerStyle={currentStyles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={currentStyles.header}>
+            <Image
+              source={require('../../assets/logo-transparent.png')}
+              style={currentStyles.logo}
+              resizeMode="contain"
+            />
+            <StepIndicator />
+            <Text style={currentStyles.title}>
+              {currentStep === 1 && t('auth.personal_info', 'Personal Info')}
+              {currentStep === 2 && t('auth.select_grade_title', 'Select Your Grade')}
+              {currentStep === 3 && t('auth.login_info', 'Login Info')}
+              {currentStep === 4 && t('auth.parent_data', 'Parent Data')}
+            </Text>
+          </View>
 
-              <View style={currentStyles.genderContainer}>
-                <Text style={currentStyles.sectionLabel}> {t('auth.gender')} </Text>
-                <View style={currentStyles.genderRow}>
-                  <TouchableOpacity
-                    style={[
-                      currentStyles.genderButton,
-                      gender === 'male' && currentStyles.genderButtonActive,
-                    ]}
-                    onPress={() => setGender('male')}
-                  >
-                    <Text style={currentStyles.genderEmoji}>👦</Text>
-                    <Text
-                      style={[
-                        currentStyles.genderText,
-                        gender === 'male' && currentStyles.genderTextActive,
-                      ]}
-                    >
-                      {t('auth.boy')}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      currentStyles.genderButton,
-                      gender === 'female' && currentStyles.genderButtonActive,
-                    ]}
-                    onPress={() => setGender('female')}
-                  >
-                    <Text style={currentStyles.genderEmoji}>👧</Text>
-                    <Text
-                      style={[
-                        currentStyles.genderText,
-                        gender === 'female' && currentStyles.genderTextActive,
-                      ]}
-                    >
-                      {t('auth.girl')}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              <PickerTrigger
-                value={schoolName}
-                placeholder={t('auth.school_placeholder')}
-                icon="business-outline"
-                onPress={() => setIsSchoolModalVisible(true)}
-                theme={theme}
-                currentStyles={{
-                  ...currentStyles,
-                  inputWrapper: StyleSheet.flatten([
-                    currentStyles.inputWrapper,
-                    { borderColor: getBorderColor(touchedSchool, isSchoolValid) },
-                  ]),
-                }}
-              />
-            </>
-          )}
-
-          {currentStep === 2 && (
-            <>
-              <View style={currentStyles.gridContainer}>
-                {gradesData?.grades?.map((grade: any) => (
-                  <TouchableOpacity
-                    key={grade.id}
-                    style={[
-                      currentStyles.gridItem,
-                      selectedGrade === grade.id && currentStyles.gridItemActive,
-                    ]}
-                    onPress={() => setSelectedGrade(grade.id)}
-                  >
-                    <Text
-                      style={[
-                        currentStyles.gridItemText,
-                        selectedGrade === grade.id && currentStyles.gridItemTextActive,
-                      ]}
-                    >
-                      {grade.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <Text style={currentStyles.sectionTitle}>
-                {t('auth.select_curriculum_type', 'Select Curriculum Type')}
-              </Text>
-              <View style={currentStyles.systemsContainer}>
-                {systemsData?.educationalSystems?.map((system: any) => (
-                  <TouchableOpacity
-                    key={system.id}
-                    style={[
-                      currentStyles.systemCard,
-                      selectedSystem === system.id && currentStyles.systemCardActive,
-                    ]}
-                    onPress={() => setSelectedSystem(system.id)}
-                  >
-                    <Text
-                      style={[
-                        currentStyles.systemCardText,
-                        selectedSystem === system.id && currentStyles.systemCardTextActive,
-                      ]}
-                    >
-                      {system.name}
-                    </Text>
-                    {selectedSystem === system.id && (
-                      <Ionicons
-                        name="checkmark-circle"
-                        size={20}
-                        color="#1E3A8A"
-                        style={currentStyles.checkIcon}
-                      />
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </>
-          )}
-
-          {currentStep === 3 && (
-            <>
-              <View
-                style={[
-                  currentStyles.inputWrapper,
-                  {
-                    paddingLeft: 0,
-                    paddingRight: 0,
-                    borderColor: getBorderColor(touchedMobile, isMobileValid),
-                  },
-                ]}
-              >
+          <View style={currentStyles.form}>
+            {currentStep === 1 && (
+              <>
                 <View
                   style={[
-                    currentStyles.countryCodeContainer,
-                    isRTL
-                      ? { borderLeftWidth: 1, borderLeftColor: '#E2E8F0' }
-                      : { borderRightWidth: 1, borderRightColor: '#E2E8F0' },
+                    currentStyles.inputWrapper,
+                    { borderColor: getBorderColor(touchedName, isNameValid) },
                   ]}
                 >
-                  <Text style={currentStyles.countryCodeText}>🇪🇬 +2 </Text>
+                  <Ionicons
+                    name="person-outline"
+                    size={20}
+                    color={isNameValid ? '#10B981' : theme.colors.textSecondary}
+                    style={currentStyles.inputIcon}
+                  />
+                  <TextInput
+                    style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left', flex: 1 }]}
+                    value={name}
+                    onChangeText={setName}
+                    placeholder={t('auth.name_placeholder')}
+                    placeholderTextColor={theme.colors.textSecondary}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    editable={!isLoading}
+                    returnKeyType="next"
+                    onSubmitEditing={() => emailRef.current?.focus()}
+                    onBlur={() => setTouchedName(true)}
+                    blurOnSubmit={false}
+                  />
+                  {touchedName && isNameValid && (
+                    <Ionicons
+                      name="checkmark-circle-outline"
+                      size={20}
+                      color="#10B981"
+                      style={{ marginHorizontal: 8 }}
+                    />
+                  )}
+                  {touchedName && !isNameValid && (
+                    <Ionicons
+                      name="alert-circle-outline"
+                      size={20}
+                      color="#F59E0B"
+                      style={{ marginHorizontal: 8 }}
+                    />
+                  )}
                 </View>
-                <TextInput
-                  style={[
-                    currentStyles.input,
-                    { flex: 1, textAlign: isRTL ? 'right' : 'left', paddingHorizontal: 16 },
-                  ]}
-                  value={mobile}
-                  onChangeText={setMobile}
-                  placeholder={t('auth.mobile_placeholder')}
-                  placeholderTextColor={theme.colors.textSecondary}
-                  keyboardType="phone-pad"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  editable={!isLoading}
-                  returnKeyType="next"
-                  onSubmitEditing={() => passwordRef.current?.focus()}
-                  onBlur={() => setTouchedMobile(true)}
-                  blurOnSubmit={false}
-                />
-                {touchedMobile && isMobileValid && (
-                  <Ionicons
-                    name="checkmark-circle-outline"
-                    size={20}
-                    color="#10B981"
-                    style={{ marginHorizontal: 12 }}
-                  />
-                )}
-                {touchedMobile && !isMobileValid && (
-                  <Ionicons
-                    name="alert-circle-outline"
-                    size={20}
-                    color="#F59E0B"
-                    style={{ marginHorizontal: 12 }}
-                  />
-                )}
-              </View>
 
-              <View
-                style={[
-                  currentStyles.inputWrapper,
-                  { borderColor: getBorderColor(touchedPassword, isPasswordValid) },
-                ]}
-              >
-                <Ionicons
-                  name="lock-closed-outline"
-                  size={20}
-                  color={isPasswordValid ? '#10B981' : theme.colors.textSecondary}
-                  style={currentStyles.inputIcon}
-                />
-                <TextInput
-                  // @ts-ignore
-                  ref={passwordRef}
-                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left', flex: 1 }]}
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder={t('auth.password_placeholder')}
-                  placeholderTextColor={theme.colors.textSecondary}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  editable={!isLoading}
-                  returnKeyType="next"
-                  onSubmitEditing={() => confirmPasswordRef.current?.focus()}
-                  onBlur={() => setTouchedPassword(true)}
-                  blurOnSubmit={false}
-                />
-                <TouchableOpacity
-                  onPress={() => setShowPassword(!showPassword)}
-                  style={{ marginHorizontal: 8 }}
+                <View
+                  style={[
+                    currentStyles.inputWrapper,
+                    { borderColor: getBorderColor(touchedEmail, isEmailValid) },
+                  ]}
                 >
                   <Ionicons
-                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                    name="mail-outline"
+                    size={20}
+                    color={isEmailValid ? '#10B981' : theme.colors.textSecondary}
+                    style={currentStyles.inputIcon}
+                  />
+                  <TextInput
+                    // @ts-ignore
+                    ref={emailRef}
+                    style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left', flex: 1 }]}
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder={t('auth.email_placeholder')}
+                    placeholderTextColor={theme.colors.textSecondary}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    editable={!isLoading}
+                    returnKeyType="done"
+                    onBlur={() => setTouchedEmail(true)}
+                  />
+                  {touchedEmail && isEmailValid && (
+                    <Ionicons
+                      name="checkmark-circle-outline"
+                      size={20}
+                      color="#10B981"
+                      style={{ marginHorizontal: 8 }}
+                    />
+                  )}
+                  {touchedEmail && !isEmailValid && (
+                    <Ionicons
+                      name="alert-circle-outline"
+                      size={20}
+                      color="#F59E0B"
+                      style={{ marginHorizontal: 8 }}
+                    />
+                  )}
+                </View>
+
+                <View style={currentStyles.genderContainer}>
+                  <Text style={currentStyles.sectionLabel}> {t('auth.gender')} </Text>
+                  <View style={currentStyles.genderRow}>
+                    <TouchableOpacity
+                      style={[
+                        currentStyles.genderButton,
+                        gender === 'male' && currentStyles.genderButtonActive,
+                      ]}
+                      onPress={() => setGender('male')}
+                    >
+                      <Text style={currentStyles.genderEmoji}>👦</Text>
+                      <Text
+                        style={[
+                          currentStyles.genderText,
+                          gender === 'male' && currentStyles.genderTextActive,
+                        ]}
+                      >
+                        {t('auth.boy')}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        currentStyles.genderButton,
+                        gender === 'female' && currentStyles.genderButtonActive,
+                      ]}
+                      onPress={() => setGender('female')}
+                    >
+                      <Text style={currentStyles.genderEmoji}>👧</Text>
+                      <Text
+                        style={[
+                          currentStyles.genderText,
+                          gender === 'female' && currentStyles.genderTextActive,
+                        ]}
+                      >
+                        {t('auth.girl')}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <PickerTrigger
+                  value={schoolName}
+                  placeholder={t('auth.school_placeholder')}
+                  icon="business-outline"
+                  onPress={() => setIsSchoolModalVisible(true)}
+                  theme={theme}
+                  currentStyles={{
+                    ...currentStyles,
+                    inputWrapper: StyleSheet.flatten([
+                      currentStyles.inputWrapper,
+                      { borderColor: getBorderColor(touchedSchool, isSchoolValid) },
+                    ]),
+                  }}
+                />
+              </>
+            )}
+
+            {currentStep === 2 && (
+              <>
+                <View style={currentStyles.gridContainer}>
+                  {gradesData?.grades?.map((grade: any) => (
+                    <TouchableOpacity
+                      key={grade.id}
+                      style={[
+                        currentStyles.gridItem,
+                        selectedGrade === grade.id && currentStyles.gridItemActive,
+                      ]}
+                      onPress={() => setSelectedGrade(grade.id)}
+                    >
+                      <Text
+                        style={[
+                          currentStyles.gridItemText,
+                          selectedGrade === grade.id && currentStyles.gridItemTextActive,
+                        ]}
+                      >
+                        {grade.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <Text style={currentStyles.sectionTitle}>
+                  {t('auth.select_curriculum_type', 'Select Curriculum Type')}
+                </Text>
+                <View style={currentStyles.systemsContainer}>
+                  {systemsData?.educationalSystems?.map((system: any) => (
+                    <TouchableOpacity
+                      key={system.id}
+                      style={[
+                        currentStyles.systemCard,
+                        selectedSystem === system.id && currentStyles.systemCardActive,
+                      ]}
+                      onPress={() => setSelectedSystem(system.id)}
+                    >
+                      <Text
+                        style={[
+                          currentStyles.systemCardText,
+                          selectedSystem === system.id && currentStyles.systemCardTextActive,
+                        ]}
+                      >
+                        {system.name}
+                      </Text>
+                      {selectedSystem === system.id && (
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={20}
+                          color="#1E3A8A"
+                          style={currentStyles.checkIcon}
+                        />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )}
+
+            {currentStep === 3 && (
+              <>
+                <View
+                  style={[
+                    currentStyles.inputWrapper,
+                    {
+                      paddingLeft: 0,
+                      paddingRight: 0,
+                      borderColor: getBorderColor(touchedMobile, isMobileValid),
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      currentStyles.countryCodeContainer,
+                      isRTL
+                        ? { borderLeftWidth: 1, borderLeftColor: '#E2E8F0' }
+                        : { borderRightWidth: 1, borderRightColor: '#E2E8F0' },
+                    ]}
+                  >
+                    <Text style={currentStyles.countryCodeText}>🇪🇬 +2 </Text>
+                  </View>
+                  <TextInput
+                    style={[
+                      currentStyles.input,
+                      { flex: 1, textAlign: isRTL ? 'right' : 'left', paddingHorizontal: 16 },
+                    ]}
+                    value={mobile}
+                    onChangeText={setMobile}
+                    placeholder={t('auth.mobile_placeholder')}
+                    placeholderTextColor={theme.colors.textSecondary}
+                    keyboardType="phone-pad"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    editable={!isLoading}
+                    returnKeyType="next"
+                    onSubmitEditing={() => passwordRef.current?.focus()}
+                    onBlur={() => setTouchedMobile(true)}
+                    blurOnSubmit={false}
+                  />
+                  {touchedMobile && isMobileValid && (
+                    <Ionicons
+                      name="checkmark-circle-outline"
+                      size={20}
+                      color="#10B981"
+                      style={{ marginHorizontal: 12 }}
+                    />
+                  )}
+                  {touchedMobile && !isMobileValid && (
+                    <Ionicons
+                      name="alert-circle-outline"
+                      size={20}
+                      color="#F59E0B"
+                      style={{ marginHorizontal: 12 }}
+                    />
+                  )}
+                </View>
+
+                <View
+                  style={[
+                    currentStyles.inputWrapper,
+                    { borderColor: getBorderColor(touchedPassword, isPasswordValid) },
+                  ]}
+                >
+                  <Ionicons
+                    name="lock-closed-outline"
+                    size={20}
+                    color={isPasswordValid ? '#10B981' : theme.colors.textSecondary}
+                    style={currentStyles.inputIcon}
+                  />
+                  <TextInput
+                    // @ts-ignore
+                    ref={passwordRef}
+                    style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left', flex: 1 }]}
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder={t('auth.password_placeholder')}
+                    placeholderTextColor={theme.colors.textSecondary}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    editable={!isLoading}
+                    returnKeyType="next"
+                    onSubmitEditing={() => confirmPasswordRef.current?.focus()}
+                    onBlur={() => setTouchedPassword(true)}
+                    blurOnSubmit={false}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    style={{ marginHorizontal: 8 }}
+                  >
+                    <Ionicons
+                      name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                      size={20}
+                      color={theme.colors.textSecondary}
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                <View
+                  style={[
+                    currentStyles.inputWrapper,
+                    { borderColor: getBorderColor(touchedConfirm, isConfirmValid) },
+                  ]}
+                >
+                  <Ionicons
+                    name="shield-checkmark-outline"
+                    size={20}
+                    color={isConfirmValid ? '#10B981' : theme.colors.textSecondary}
+                    style={currentStyles.inputIcon}
+                  />
+                  <TextInput
+                    // @ts-ignore
+                    ref={confirmPasswordRef}
+                    style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left', flex: 1 }]}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    placeholder={t('auth.confirm_password_placeholder')}
+                    placeholderTextColor={theme.colors.textSecondary}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    editable={!isLoading}
+                    returnKeyType="done"
+                    onBlur={() => setTouchedConfirm(true)}
+                  />
+                  {touchedConfirm && isConfirmValid && (
+                    <Ionicons
+                      name="checkmark-circle-outline"
+                      size={20}
+                      color="#10B981"
+                      style={{ marginHorizontal: 8 }}
+                    />
+                  )}
+                  {touchedConfirm && !isConfirmValid && (
+                    <Ionicons
+                      name="alert-circle-outline"
+                      size={20}
+                      color="#F59E0B"
+                      style={{ marginHorizontal: 8 }}
+                    />
+                  )}
+                </View>
+              </>
+            )}
+
+            {currentStep === 4 && (
+              <>
+                <View
+                  style={[
+                    currentStyles.inputWrapper,
+                    {
+                      paddingLeft: 0,
+                      paddingRight: 0,
+                      borderColor: getBorderColor(touchedParentMobile, isParentMobileValid),
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      currentStyles.countryCodeContainer,
+                      isRTL
+                        ? { borderLeftWidth: 1, borderLeftColor: '#E2E8F0' }
+                        : { borderRightWidth: 1, borderRightColor: '#E2E8F0' },
+                    ]}
+                  >
+                    <Text style={currentStyles.countryCodeText}>🇪🇬 +2 </Text>
+                  </View>
+                  <TextInput
+                    style={[
+                      currentStyles.input,
+                      { flex: 1, textAlign: isRTL ? 'right' : 'left', paddingHorizontal: 16 },
+                    ]}
+                    value={parentMobile}
+                    onChangeText={setParentMobile}
+                    placeholder={t('auth.parent_mobile_placeholder')}
+                    placeholderTextColor={theme.colors.textSecondary}
+                    keyboardType="phone-pad"
+                    autoCorrect={false}
+                    editable={!isLoading}
+                    returnKeyType="next"
+                    onSubmitEditing={() => parentMobile2Ref.current?.focus()}
+                    onBlur={() => setTouchedParentMobile(true)}
+                    blurOnSubmit={false}
+                  />
+                  {touchedParentMobile && isParentMobileValid && (
+                    <Ionicons
+                      name="checkmark-circle-outline"
+                      size={20}
+                      color="#10B981"
+                      style={{ marginHorizontal: 12 }}
+                    />
+                  )}
+                  {touchedParentMobile && !isParentMobileValid && (
+                    <Ionicons
+                      name="alert-circle-outline"
+                      size={20}
+                      color="#F59E0B"
+                      style={{ marginHorizontal: 12 }}
+                    />
+                  )}
+                </View>
+
+                <View style={[currentStyles.inputWrapper, { paddingLeft: 0, paddingRight: 0 }]}>
+                  <View
+                    style={[
+                      currentStyles.countryCodeContainer,
+                      isRTL
+                        ? { borderLeftWidth: 1, borderLeftColor: '#E2E8F0' }
+                        : { borderRightWidth: 1, borderRightColor: '#E2E8F0' },
+                    ]}
+                  >
+                    <Text style={currentStyles.countryCodeText}>🇪🇬 +2 </Text>
+                  </View>
+                  <TextInput
+                    // @ts-ignore
+                    ref={parentMobile2Ref}
+                    style={[
+                      currentStyles.input,
+                      { flex: 1, textAlign: isRTL ? 'right' : 'left', paddingHorizontal: 16 },
+                    ]}
+                    value={parentMobile2}
+                    onChangeText={setParentMobile2}
+                    placeholder={t('auth.second_parent_mobile')}
+                    placeholderTextColor={theme.colors.textSecondary}
+                    keyboardType="phone-pad"
+                    autoCorrect={false}
+                    editable={!isLoading}
+                    returnKeyType="next"
+                    onSubmitEditing={() => promoCodeRef.current?.focus()}
+                    blurOnSubmit={false}
+                  />
+                  {parentMobile2.trim().length > 0 && MOBILE_REGEX.test(parentMobile2.trim()) && (
+                    <Ionicons
+                      name="checkmark-circle-outline"
+                      size={20}
+                      color="#10B981"
+                      style={{ marginHorizontal: 12 }}
+                    />
+                  )}
+                  {parentMobile2.trim().length > 0 && !MOBILE_REGEX.test(parentMobile2.trim()) && (
+                    <Ionicons
+                      name="alert-circle-outline"
+                      size={20}
+                      color="#F59E0B"
+                      style={{ marginHorizontal: 12 }}
+                    />
+                  )}
+                </View>
+
+                <View style={currentStyles.inputWrapper}>
+                  <Ionicons
+                    name="gift-outline"
                     size={20}
                     color={theme.colors.textSecondary}
+                    style={currentStyles.inputIcon}
                   />
-                </TouchableOpacity>
-              </View>
-
-              <View
-                style={[
-                  currentStyles.inputWrapper,
-                  { borderColor: getBorderColor(touchedConfirm, isConfirmValid) },
-                ]}
-              >
-                <Ionicons
-                  name="shield-checkmark-outline"
-                  size={20}
-                  color={isConfirmValid ? '#10B981' : theme.colors.textSecondary}
-                  style={currentStyles.inputIcon}
-                />
-                <TextInput
-                  // @ts-ignore
-                  ref={confirmPasswordRef}
-                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left', flex: 1 }]}
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  placeholder={t('auth.confirm_password_placeholder')}
-                  placeholderTextColor={theme.colors.textSecondary}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  editable={!isLoading}
-                  returnKeyType="done"
-                  onBlur={() => setTouchedConfirm(true)}
-                />
-                {touchedConfirm && isConfirmValid && (
-                  <Ionicons
-                    name="checkmark-circle-outline"
-                    size={20}
-                    color="#10B981"
-                    style={{ marginHorizontal: 8 }}
+                  <TextInput
+                    // @ts-ignore
+                    ref={promoCodeRef}
+                    style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left', flex: 1 }]}
+                    value={promoCode}
+                    onChangeText={setPromoCode}
+                    placeholder={t('auth.promo_code_placeholder')}
+                    placeholderTextColor={theme.colors.textSecondary}
+                    autoCapitalize="characters"
+                    autoCorrect={false}
+                    editable={!isLoading}
+                    returnKeyType="done"
+                    onSubmitEditing={handleNext}
                   />
-                )}
-                {touchedConfirm && !isConfirmValid && (
-                  <Ionicons
-                    name="alert-circle-outline"
-                    size={20}
-                    color="#F59E0B"
-                    style={{ marginHorizontal: 8 }}
-                  />
-                )}
-              </View>
-            </>
-          )}
-
-          {currentStep === 4 && (
-            <>
-              <View
-                style={[
-                  currentStyles.inputWrapper,
-                  {
-                    paddingLeft: 0,
-                    paddingRight: 0,
-                    borderColor: getBorderColor(touchedParentMobile, isParentMobileValid),
-                  },
-                ]}
-              >
-                <View
-                  style={[
-                    currentStyles.countryCodeContainer,
-                    isRTL
-                      ? { borderLeftWidth: 1, borderLeftColor: '#E2E8F0' }
-                      : { borderRightWidth: 1, borderRightColor: '#E2E8F0' },
-                  ]}
-                >
-                  <Text style={currentStyles.countryCodeText}>🇪🇬 +2 </Text>
                 </View>
-                <TextInput
-                  style={[
-                    currentStyles.input,
-                    { flex: 1, textAlign: isRTL ? 'right' : 'left', paddingHorizontal: 16 },
-                  ]}
-                  value={parentMobile}
-                  onChangeText={setParentMobile}
-                  placeholder={t('auth.parent_mobile_placeholder')}
-                  placeholderTextColor={theme.colors.textSecondary}
-                  keyboardType="phone-pad"
-                  autoCorrect={false}
-                  editable={!isLoading}
-                  returnKeyType="next"
-                  onSubmitEditing={() => parentMobile2Ref.current?.focus()}
-                  onBlur={() => setTouchedParentMobile(true)}
-                  blurOnSubmit={false}
-                />
-                {touchedParentMobile && isParentMobileValid && (
-                  <Ionicons
-                    name="checkmark-circle-outline"
-                    size={20}
-                    color="#10B981"
-                    style={{ marginHorizontal: 12 }}
-                  />
-                )}
-                {touchedParentMobile && !isParentMobileValid && (
-                  <Ionicons
-                    name="alert-circle-outline"
-                    size={20}
-                    color="#F59E0B"
-                    style={{ marginHorizontal: 12 }}
-                  />
-                )}
-              </View>
+              </>
+            )}
 
-              <View style={[currentStyles.inputWrapper, { paddingLeft: 0, paddingRight: 0 }]}>
-                <View
-                  style={[
-                    currentStyles.countryCodeContainer,
-                    isRTL
-                      ? { borderLeftWidth: 1, borderLeftColor: '#E2E8F0' }
-                      : { borderRightWidth: 1, borderRightColor: '#E2E8F0' },
-                  ]}
-                >
-                  <Text style={currentStyles.countryCodeText}>🇪🇬 +2 </Text>
-                </View>
-                <TextInput
-                  // @ts-ignore
-                  ref={parentMobile2Ref}
-                  style={[
-                    currentStyles.input,
-                    { flex: 1, textAlign: isRTL ? 'right' : 'left', paddingHorizontal: 16 },
-                  ]}
-                  value={parentMobile2}
-                  onChangeText={setParentMobile2}
-                  placeholder={t('auth.second_parent_mobile')}
-                  placeholderTextColor={theme.colors.textSecondary}
-                  keyboardType="phone-pad"
-                  autoCorrect={false}
-                  editable={!isLoading}
-                  returnKeyType="next"
-                  onSubmitEditing={() => promoCodeRef.current?.focus()}
-                  blurOnSubmit={false}
-                />
-                {parentMobile2.trim().length > 0 && MOBILE_REGEX.test(parentMobile2.trim()) && (
-                  <Ionicons
-                    name="checkmark-circle-outline"
-                    size={20}
-                    color="#10B981"
-                    style={{ marginHorizontal: 12 }}
-                  />
-                )}
-                {parentMobile2.trim().length > 0 && !MOBILE_REGEX.test(parentMobile2.trim()) && (
-                  <Ionicons
-                    name="alert-circle-outline"
-                    size={20}
-                    color="#F59E0B"
-                    style={{ marginHorizontal: 12 }}
-                  />
-                )}
-              </View>
+            <AppButton
+              title={currentStep === 4 ? t('auth.sign_up') : t('common.continue', 'Continue')}
+              onPress={handleNext}
+              size="lg"
+              loading={isLoading}
+            />
+          </View>
 
-              <View style={currentStyles.inputWrapper}>
-                <Ionicons
-                  name="gift-outline"
-                  size={20}
-                  color={theme.colors.textSecondary}
-                  style={currentStyles.inputIcon}
-                />
-                <TextInput
-                  // @ts-ignore
-                  ref={promoCodeRef}
-                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left', flex: 1 }]}
-                  value={promoCode}
-                  onChangeText={setPromoCode}
-                  placeholder={t('auth.promo_code_placeholder')}
-                  placeholderTextColor={theme.colors.textSecondary}
-                  autoCapitalize="characters"
-                  autoCorrect={false}
-                  editable={!isLoading}
-                  returnKeyType="done"
-                  onSubmitEditing={handleNext}
-                />
-              </View>
-            </>
-          )}
-
-          <AppButton
-            title={currentStep === 4 ? t('auth.sign_up') : t('common.continue', 'Continue')}
-            onPress={handleNext}
-            size="lg"
-            loading={isLoading}
-          />
-        </View>
-
-        <View style={currentStyles.footer}>
-          <Text style={currentStyles.footerText}> {t('auth.already_have_account')} </Text>
-          <TouchableOpacity onPress={onNavigateToLogin} disabled={isLoading}>
-            <Text style={currentStyles.linkText}> {t('auth.sign_in')} </Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+          <View style={currentStyles.footer}>
+            <Text style={currentStyles.footerText}> {t('auth.already_have_account')} </Text>
+            <TouchableOpacity onPress={onNavigateToLogin} disabled={isLoading}>
+              <Text style={currentStyles.linkText}> {t('auth.sign_in')} </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Enhanced School Search Modal */}
       <Modal
         visible={isSchoolModalVisible}
         animationType="slide"
-        presentationStyle="pageSheet"
+        {...(Platform.OS === 'ios' ? { presentationStyle: 'pageSheet' } : {})}
         onRequestClose={() => setIsSchoolModalVisible(false)}
       >
         <View style={currentStyles.modalSearchContainer}>
@@ -1125,7 +1128,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
           </View>
         </View>
       </Modal>
-    </KeyboardAvoidingView>
+    </>
   );
 };
 
