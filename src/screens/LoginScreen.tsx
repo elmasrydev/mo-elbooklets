@@ -102,6 +102,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister, onBack 
         color={theme.colors.text}
       />
 
+      <TouchableOpacity
+        onPress={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
+        style={[currentStyles.languageButton, { top: insets.top + spacing.sm, right: spacing.lg }]}
+      >
+        <Ionicons name="language-outline" size={20} color={theme.colors.primary} />
+        <Text style={currentStyles.languageText}>{language === 'ar' ? 'English' : 'عربي'}</Text>
+      </TouchableOpacity>
+
       <ScrollView
         contentContainerStyle={currentStyles.scrollContainer}
         showsVerticalScrollIndicator={false}
@@ -214,19 +222,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister, onBack 
             <Text style={currentStyles.linkText}> {t('auth.sign_up')} </Text>
           </TouchableOpacity>
         </View>
-
-        {/* Language switch button */}
-        <View style={currentStyles.langRow}>
-          <TouchableOpacity
-            style={currentStyles.langButton}
-            onPress={() => setLanguage(language === 'en' ? 'ar' : 'en')}
-          >
-            <Ionicons name="language-outline" size={18} color={theme.colors.primary} />
-            <Text style={currentStyles.langButtonText}>
-              {language === 'en' ? t('common.arabic') : t('common.english')}
-            </Text>
-          </TouchableOpacity>
-        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -247,10 +242,10 @@ const styles = (
     scrollContainer: {
       flexGrow: 1,
       paddingHorizontal: layout.screenPadding,
-      paddingTop: 60,
+      paddingTop: Platform.OS === 'ios' ? common.insets.top : common.insets.top + 30,
       paddingBottom: Math.max(common.insets.bottom, 20),
     },
-    header: { alignItems: 'center', marginBottom: 50 },
+    header: { alignItems: 'center', marginBottom: 32 },
     logo: { width: 100, height: 85, marginBottom: 24 },
     title: {
       ...typography('display'),
@@ -265,6 +260,25 @@ const styles = (
       ...fontWeight('500'),
     },
     form: { marginBottom: 32 },
+    languageButton: {
+      position: 'absolute',
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 20,
+      backgroundColor: theme.colors.card,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      gap: 6,
+      zIndex: 10,
+      ...layout.shadow,
+    },
+    languageText: {
+      ...typography('label'),
+      ...fontWeight('700'),
+      color: theme.colors.primary,
+    },
     inputWrapper: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -319,25 +333,6 @@ const styles = (
       shadowOpacity: 0.1,
       shadowRadius: 4,
       elevation: 3,
-    },
-    langRow: {
-      flexDirection: 'row',
-      justifyContent: 'center',
-    },
-    langButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      paddingVertical: 8,
-      paddingHorizontal: 14,
-      borderRadius: borderRadius.lg,
-      borderWidth: 1,
-      borderColor: theme.colors.primary,
-      backgroundColor: 'rgba(30, 58, 138, 0.05)',
-    },
-    langButtonText: {
-      ...typography('buttonSmall'),
-      color: theme.colors.primary,
     },
   });
 

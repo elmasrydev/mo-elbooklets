@@ -1077,7 +1077,7 @@ const styles = (
     scrollContainer: {
       flexGrow: 1,
       paddingHorizontal: layout.screenPadding,
-      paddingTop: common.insets.top + 60,
+      paddingTop: Platform.OS === 'ios' ? common.insets.top : common.insets.top + 30,
       paddingBottom: Math.max(common.insets.bottom, 20),
     },
     header: { alignItems: 'center', marginBottom: 32 },

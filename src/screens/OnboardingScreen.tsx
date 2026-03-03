@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../context/LanguageContext';
@@ -7,6 +7,7 @@ import { useTypography } from '../hooks/useTypography';
 import AppButton from '../components/AppButton';
 import { layout } from '../config/layout';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 
 interface OnboardingScreenProps {
   onGetStarted: () => void;
@@ -18,8 +19,9 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted, onLog
   const { language, setLanguage, isRTL } = useLanguage();
   const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
+  const { theme, spacing } = useTheme();
 
-  const currentStyles = styles(typography, fontWeight, insets, isRTL);
+  const currentStyles = styles(typography, fontWeight, insets, isRTL, theme);
 
   const toggleLanguage = () => {
     setLanguage(language === 'ar' ? 'en' : 'ar');
@@ -36,18 +38,18 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted, onLog
 
       <View style={currentStyles.safeArea}>
         {/* 2. Top Header with Logo & Language Switcher */}
-        <View style={currentStyles.header}>
-          <TouchableOpacity
-            style={currentStyles.languageButton}
-            onPress={toggleLanguage}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="globe-outline" size={20} color="#1E3A8A" />
-            <Text style={currentStyles.languageText}>
-              {language === 'ar' ? 'English' : 'العربية'}
-            </Text>
-          </TouchableOpacity>
+        <TouchableOpacity
+          onPress={toggleLanguage}
+          style={[
+            currentStyles.languageButton,
+            { top: insets.top + spacing.sm, right: spacing.lg },
+          ]}
+        >
+          <Ionicons name="language-outline" size={20} color={theme.colors.primary} />
+          <Text style={currentStyles.languageText}>{language === 'ar' ? 'English' : 'عربي'}</Text>
+        </TouchableOpacity>
 
+        <View style={currentStyles.header}>
           <Image
             source={require('../../assets/logo-transparent.png')}
             style={currentStyles.logo}
@@ -84,6 +86,7 @@ const styles = (
   fontWeight: any,
   insets: { top: number; bottom: number },
   isRTL: boolean,
+  theme: any,
 ) =>
   StyleSheet.create({
     container: {
@@ -91,7 +94,6 @@ const styles = (
     },
     safeArea: {
       flex: 1,
-      paddingTop: insets.top,
     },
     onboardingBg: {
       ...StyleSheet.absoluteFillObject,
@@ -102,39 +104,32 @@ const styles = (
     },
     header: {
       alignItems: 'center',
-      justifyContent: 'center', // Center the logo
-      flexDirection: 'row',
-      marginTop: 20,
-      paddingHorizontal: layout.screenPadding,
-      position: 'relative', // Need relative for absolute inner elements
+      marginBottom: 32,
+      paddingTop: Platform.OS === 'ios' ? insets.top : insets.top + 30,
     },
     languageButton: {
       position: 'absolute',
-      ...(isRTL ? { right: layout.screenPadding } : { left: layout.screenPadding }),
-      flexDirection: isRTL ? 'row-reverse' : 'row',
+      flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: 'rgba(255, 255, 255, 0.85)',
-      paddingHorizontal: 16,
-      paddingVertical: 10,
-      borderRadius: 25,
-      gap: 8,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 2,
-      zIndex: 10, // Ensure it's clickable over the header area
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 20,
+      backgroundColor: theme.colors.card,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      gap: 6,
+      zIndex: 10,
+      ...layout.shadow,
     },
     languageText: {
-      ...typography('button'),
-      fontSize: 14,
-      color: '#1E3A8A',
+      ...typography('label'),
       ...fontWeight('700'),
+      color: theme.colors.primary,
     },
     logo: {
-      zIndex: 1,
       width: 100,
       height: 85,
+      marginBottom: 24,
     },
     spacer: {
       flex: 1,
