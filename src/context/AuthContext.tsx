@@ -9,6 +9,7 @@ interface User {
   name: string;
   email: string;
   mobile: string;
+  country_code: string;
   grade_id?: string;
   grade?: { id: string; name: string };
   educational_system_id?: string;
@@ -101,6 +102,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               name
               email
               mobile
+              country_code
               grade_id
               grade {
                 id

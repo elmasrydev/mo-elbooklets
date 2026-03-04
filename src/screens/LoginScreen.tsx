@@ -138,7 +138,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister, onBack 
               autoFocus
               style={[currentStyles.input]}
               value={mobile}
-              onChangeText={setMobile}
+              onChangeText={(val) => setMobile(val.replace(/[^0-9]/g, '').slice(0, 11))}
+              maxLength={11}
               placeholder={t('auth.mobile_placeholder')}
               placeholderTextColor={theme.colors.textSecondary}
               keyboardType="phone-pad"

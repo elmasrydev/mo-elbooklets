@@ -13,7 +13,6 @@ import {
   Image,
   Modal,
   FlatList,
-  SafeAreaView,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -31,7 +30,7 @@ import CloseButton from '../components/navigation/CloseButton';
 import AppButton from '../components/AppButton';
 import UnifiedHeader from '../components/UnifiedHeader';
 import { layout } from '../config/layout';
-import { textAlign } from '../lib/rtl';
+// import { textAlign } from '../lib/rtl';
 
 interface RegisterScreenProps {
   onNavigateToLogin: () => void;
@@ -313,8 +312,8 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
         mobile: mobile.trim(),
         country_code: countryCode,
         password,
-        grade_id: selectedGrade?.id,
-        educational_system_id: selectedSystem?.id || '1',
+        grade_id: selectedGrade,
+        educational_system_id: selectedSystem || '1',
         gender: gender || 'male',
         school_name: schoolName ? schoolName : undefined,
         parent_mobile: parentMobile ? parentMobile.trim() : undefined,
@@ -428,7 +427,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                   <TextInput
                     style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left', flex: 1 }]}
                     value={name}
-                    onChangeText={setName}
+                    onChangeText={(val) => setName(val.replace(/[^a-zA-Z\s\u0621-\u064A]/g, ''))}
                     placeholder={t('auth.name_placeholder')}
                     placeholderTextColor={theme.colors.textSecondary}
                     autoCapitalize="none"
@@ -646,7 +645,8 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                       { flex: 1, textAlign: isRTL ? 'right' : 'left', paddingHorizontal: 16 },
                     ]}
                     value={mobile}
-                    onChangeText={setMobile}
+                    onChangeText={(val) => setMobile(val.replace(/[^0-9]/g, '').slice(0, 11))}
+                    maxLength={11}
                     placeholder={t('auth.mobile_placeholder')}
                     placeholderTextColor={theme.colors.textSecondary}
                     keyboardType="phone-pad"
@@ -792,7 +792,8 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                       { flex: 1, textAlign: isRTL ? 'right' : 'left', paddingHorizontal: 16 },
                     ]}
                     value={parentMobile}
-                    onChangeText={setParentMobile}
+                    onChangeText={(val) => setParentMobile(val.replace(/[^0-9]/g, '').slice(0, 11))}
+                    maxLength={11}
                     placeholder={t('auth.parent_mobile_placeholder')}
                     placeholderTextColor={theme.colors.textSecondary}
                     keyboardType="phone-pad"
@@ -840,7 +841,8 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                       { flex: 1, textAlign: isRTL ? 'right' : 'left', paddingHorizontal: 16 },
                     ]}
                     value={parentMobile2}
-                    onChangeText={setParentMobile2}
+                    onChangeText={(val) => setParentMobile2(val.replace(/[^0-9]/g, '').slice(0, 11))}
+                    maxLength={11}
                     placeholder={t('auth.second_parent_mobile')}
                     placeholderTextColor={theme.colors.textSecondary}
                     keyboardType="phone-pad"
