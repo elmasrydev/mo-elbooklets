@@ -1,11 +1,22 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator, Modal } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  ActivityIndicator,
+  Modal,
+  TouchableOpacity,
+  Image,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
+import { useLanguage } from '../context/LanguageContext';
 import { layout } from '../config/layout';
 import { tryFetchWithFallback } from '../config/api';
 import { useTranslation } from 'react-i18next';
@@ -38,7 +49,8 @@ const QuizScreen: React.FC = () => {
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography } = useTypography();
+  const { typography, fontWeight } = useTypography();
+  const { isRTL } = useLanguage();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
 
@@ -183,22 +195,46 @@ const QuizScreen: React.FC = () => {
       />
     );
 
-  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius, typography);
+  const currentStyles = styles(
+    theme,
+    common,
+    fontSizes,
+    spacing,
+    borderRadius,
+    typography,
+    fontWeight,
+  );
 
   return (
     <View style={common.container}>
       <UnifiedHeader title={t('quiz_screen.header_title')} />
 
       <View style={currentStyles.actionSection}>
-        <AppButton
-          title={t('quiz_screen.take_new_quiz')}
-          subtitle={t('quiz_screen.start_new_challenge')}
-          onPress={() => setSubjectModalVisible(true)}
-          style={currentStyles.takeQuizButton}
-          icon={<Ionicons name="flash" size={spacing.icon.xl} color={theme.colors.textOnDark} />}
-          iconPosition="right"
-          size="lg"
-        />
+        <View style={currentStyles.quizCTACard}>
+          <View style={currentStyles.quizCTAContent}>
+            <Text style={currentStyles.quizCTATitle}>{t('quiz_screen.take_new_quiz')}</Text>
+            <Text style={currentStyles.quizCTASubtitle}>
+              {t('quiz_screen.start_new_challenge')}
+            </Text>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => setSubjectModalVisible(true)}
+              style={currentStyles.quizCTAButton}
+            >
+              <Ionicons name="play" size={14} color={theme.colors.primary} />
+              <Text style={currentStyles.quizCTAButtonText}>{t('home_screen.play_now')}</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={currentStyles.quizCTAIconBg}>
+            <Image
+              source={require('../../assets/images/quiz-illustration.png')}
+              style={[
+                currentStyles.quizCTAIllustration,
+                { transform: [{ scaleX: isRTL ? -1 : 1 }] },
+              ]}
+            />
+          </View>
+        </View>
       </View>
 
       <View style={currentStyles.historySection}>
@@ -304,6 +340,7 @@ const styles = (
   spacing: any,
   borderRadius: any,
   typography: any,
+  fontWeight: any,
 ) =>
   StyleSheet.create({
     actionSection: {
@@ -316,14 +353,67 @@ const styles = (
       ...layout.shadow,
       minHeight: 70,
     },
+    quizCTACard: {
+      backgroundColor: theme.colors.primary,
+      borderRadius: borderRadius.xl,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.lg,
+      marginBottom: spacing.xxs,
+      flexDirection: common.rowDirection,
+      overflow: 'hidden',
+      position: 'relative',
+      ...layout.shadow,
+    },
+    quizCTAContent: {
+      zIndex: 1,
+      flex: 1,
+    },
+    quizCTATitle: {
+      ...typography('h1'),
+      color: theme.colors.textOnDark,
+      marginBottom: spacing.xxs,
+      textAlign: 'left',
+    },
+    quizCTASubtitle: {
+      ...typography('caption'),
+      color: 'rgba(255,255,255,0.8)',
+      marginBottom: spacing.md,
+      textAlign: 'left',
+    },
+    quizCTAButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#ffffff',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+      borderRadius: borderRadius.lg,
+      alignSelf: 'flex-start',
+      gap: 6,
+    },
+    quizCTAButtonText: {
+      ...typography('bodySmall'),
+      ...fontWeight('bold'),
+      color: theme.colors.primary,
+    },
+    quizCTAIconBg: {
+      position: 'absolute',
+      right: -8,
+      bottom: -8,
+      opacity: 1,
+    },
+    quizCTAIllustration: {
+      width: 120,
+      height: 120,
+      resizeMode: 'contain',
+    },
     historySection: {
       flex: 1,
       paddingHorizontal: layout.screenPadding,
-      marginTop: spacing.md,
+      marginTop: spacing.sm,
     },
     historyList: {
       flex: 1,
-      marginTop: spacing.md,
+      marginTop: spacing.sm,
     },
     historyItemWrapper: {},
     loadingState: {
