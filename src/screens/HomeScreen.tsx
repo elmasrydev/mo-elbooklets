@@ -389,20 +389,21 @@ const HomeScreen: React.FC = () => {
         {/* ─── 3b. Weekly Performance ────────────────────────────── */}
         {activitiesData?.weekly_performance && activitiesData.weekly_performance.length > 0 && (
           <View style={s.weeklyCard}>
-            <Text style={s.sectionTitle}>{t('home_screen.performance')}</Text>
+            <Text style={[s.sectionTitle, { marginBottom: spacing.md }]}>
+              {t('home_screen.performance')}
+            </Text>
             <View style={s.weeklyBarsContainer}>
               {activitiesData.weekly_performance.slice(-7).map((wp, index) => {
                 const barHeight = Math.max(8, (wp.score / 100) * 120);
-                const dayLabel =
-                  wp.week?.substring(0, 3) || ['S', 'M', 'T', 'W', 'T', 'F', 'S'][index % 7];
+                const weekLabel = `W${index + 1}`;
                 const isHighScore = wp.score >= 70;
-                const isToday = index === activitiesData!.weekly_performance.slice(-7).length - 1;
+                const isLatest = index === activitiesData!.weekly_performance.slice(-7).length - 1;
                 return (
                   <View key={`${wp.week}-${index}`} style={s.weeklyBarColumn}>
                     <Text
                       style={[
                         s.weeklyBarValue,
-                        isToday && { color: theme.colors.primary, ...fontWeight('bold') },
+                        isLatest && { color: theme.colors.primary, ...fontWeight('bold') },
                       ]}
                     >
                       {round(wp.score)}%
@@ -413,7 +414,7 @@ const HomeScreen: React.FC = () => {
                           s.weeklyBarFill,
                           {
                             height: barHeight,
-                            backgroundColor: isToday
+                            backgroundColor: isLatest
                               ? theme.colors.primary
                               : isHighScore
                                 ? theme.colors.success || '#10B981'
@@ -425,10 +426,10 @@ const HomeScreen: React.FC = () => {
                     <Text
                       style={[
                         s.weeklyBarLabel,
-                        isToday && { color: theme.colors.primary, ...fontWeight('bold') },
+                        isLatest && { color: theme.colors.primary, ...fontWeight('bold') },
                       ]}
                     >
-                      {dayLabel}
+                      {weekLabel}
                     </Text>
                   </View>
                 );
@@ -838,7 +839,7 @@ const getStyles = (
     weeklyCard: {
       backgroundColor: theme.colors.surface,
       borderRadius: borderRadius.xl,
-      padding: spacing.lg,
+      padding: spacing.md,
       marginBottom: spacing.sectionGap,
       borderWidth: 1,
       borderColor: theme.colors.border,
