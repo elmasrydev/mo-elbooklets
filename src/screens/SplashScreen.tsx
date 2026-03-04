@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, StyleSheet, ActivityIndicator, Image, Dimensions } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const LOGO_WIDTH = SCREEN_WIDTH * 0.8;
@@ -13,6 +14,7 @@ interface SplashScreenProps {
 
 const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   const { isLoading, isAuthenticated } = useAuth();
+  const { theme } = useTheme();
 
   useEffect(() => {
     if (!isLoading) {
@@ -41,7 +43,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
       />
 
       {/* Loading indicator at the bottom */}
-      <ActivityIndicator size="large" color="#1E3A8A" style={styles.loader} />
+      <ActivityIndicator size="large" color={theme.colors.primary} style={styles.loader} />
     </View>
   );
 };

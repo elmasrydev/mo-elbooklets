@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   Alert,
   ActivityIndicator,
   Modal,
@@ -200,6 +200,82 @@ const QuizScreen: React.FC = () => {
     [theme, common, fontSizes, spacing, borderRadius, typography, fontWeight],
   );
 
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchQuizHistory();
+    setRefreshing(false);
+  }, []);
+
+  const renderHistoryItem = useCallback(
+    ({ item: quiz }: { item: QuizHistory }) => (
+      <View style={currentStyles.historyItemWrapper}>
+        <RecentActivityCard
+          activity={quiz}
+          onPress={() => navigation.navigate('QuizResults', { quizId: quiz.id })}
+        />
+      </View>
+    ),
+    [currentStyles, navigation],
+  );
+
+  const historyKeyExtractor = useCallback((item: QuizHistory) => item.id, []);
+
+  const ListHeader = useMemo(
+    () => (
+      <View style={currentStyles.historySection}>
+        <Text style={common.sectionTitle}> {t('quiz_screen.quiz_history')} </Text>
+      </View>
+    ),
+    [currentStyles, common, t],
+  );
+
+  const ListEmptyComponent = useMemo(() => {
+    if (historyLoading && !refreshing)
+      return (
+        <View style={currentStyles.loadingState}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={currentStyles.loadingText}> {t('quiz_screen.loading_quiz_history')} </Text>
+        </View>
+      );
+    if (historyError)
+      return (
+        <View style={currentStyles.errorState}>
+          <Ionicons name="alert-circle-outline" size={spacing.icon.xl} color={theme.colors.error} />
+          <Text style={currentStyles.errorStateTitle}>
+            {t('quiz_screen.error_loading_history')}
+          </Text>
+          <AppButton
+            title={t('home_screen.try_again')}
+            onPress={fetchQuizHistory}
+            size="sm"
+            fullWidth={false}
+          />
+        </View>
+      );
+    return (
+      <View style={currentStyles.emptyState}>
+        <Ionicons
+          name="document-text-outline"
+          size={spacing.icon.xl}
+          color={theme.colors.textTertiary}
+        />
+        <Text style={currentStyles.emptyStateTitle}> {t('quiz_screen.no_quizzes_yet')} </Text>
+        <Text style={currentStyles.emptyStateSubtitle}>{t('quiz_screen.take_first_quiz')}</Text>
+      </View>
+    );
+  }, [
+    historyLoading,
+    historyError,
+    refreshing,
+    currentStyles,
+    theme,
+    spacing,
+    t,
+    fetchQuizHistory,
+  ]);
+
   return (
     <View style={common.container}>
       <UnifiedHeader title={t('quiz_screen.header_title')} />
@@ -232,65 +308,25 @@ const QuizScreen: React.FC = () => {
         </View>
       </View>
 
-      <View style={currentStyles.historySection}>
-        <Text style={common.sectionTitle}> {t('quiz_screen.quiz_history')} </Text>
-        {historyLoading ? (
-          <View style={currentStyles.loadingState}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text style={currentStyles.loadingText}> {t('quiz_screen.loading_quiz_history')} </Text>
-          </View>
-        ) : historyError ? (
-          <View style={currentStyles.errorState}>
-            <Ionicons
-              name="alert-circle-outline"
-              size={spacing.icon.xl}
-              color={theme.colors.error}
-            />
-            <Text style={currentStyles.errorStateTitle}>
-              {t('quiz_screen.error_loading_history')}
-            </Text>
-            <AppButton
-              title={t('home_screen.try_again')}
-              onPress={fetchQuizHistory}
-              size="sm"
-              fullWidth={false}
-            />
-          </View>
-        ) : quizHistory.length === 0 ? (
-          <View style={currentStyles.emptyState}>
-            <Ionicons
-              name="document-text-outline"
-              size={spacing.icon.xl}
-              color={theme.colors.textTertiary}
-            />
-            <Text style={currentStyles.emptyStateTitle}> {t('quiz_screen.no_quizzes_yet')} </Text>
-            <Text style={currentStyles.emptyStateSubtitle}>
-              {' '}
-              {t('quiz_screen.take_first_quiz')}{' '}
-            </Text>
-          </View>
-        ) : (
-          <ScrollView
-            style={currentStyles.historyList}
-            contentContainerStyle={[
-              currentStyles.historyContentContainer,
-              { paddingBottom: Math.max(common.insets.bottom, spacing.xl) },
-            ]}
-            showsVerticalScrollIndicator={false}
-          >
-            {quizHistory.map((quiz) => (
-              <View key={quiz.id} style={currentStyles.historyItemWrapper}>
-                <RecentActivityCard
-                  activity={quiz}
-                  onPress={() => {
-                    navigation.navigate('QuizResults', { quizId: quiz.id });
-                  }}
-                />
-              </View>
-            ))}
-          </ScrollView>
-        )}
-      </View>
+      <FlatList
+        data={quizHistory}
+        renderItem={renderHistoryItem}
+        keyExtractor={historyKeyExtractor}
+        style={{ flex: 1 }}
+        contentContainerStyle={[
+          currentStyles.historyContentContainer,
+          {
+            paddingBottom: Math.max(common.insets.bottom, spacing.xl),
+            flexGrow: 1,
+            marginHorizontal: layout.screenPadding,
+          },
+        ]}
+        showsVerticalScrollIndicator={false}
+        ListHeaderComponent={ListHeader}
+        ListEmptyComponent={ListEmptyComponent}
+        onRefresh={onRefresh}
+        refreshing={refreshing}
+      />
 
       <Modal
         visible={subjectModalVisible}
@@ -402,12 +438,7 @@ const styles = (
       resizeMode: 'contain',
     },
     historySection: {
-      flex: 1,
       paddingHorizontal: layout.screenPadding,
-      marginTop: spacing.sm,
-    },
-    historyList: {
-      flex: 1,
       marginTop: spacing.sm,
     },
     historyItemWrapper: {},

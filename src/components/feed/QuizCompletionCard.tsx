@@ -33,53 +33,55 @@ interface QuizCompletionCardProps {
   isCurrentUser?: boolean;
 }
 
-const ConfettiPiece: React.FC<{ delay: number; color: string }> = ({ delay, color }) => {
-  const translateY = useRef(new Animated.Value(0)).current;
-  const translateX = useRef(new Animated.Value(0)).current;
-  const opacity = useRef(new Animated.Value(1)).current;
-  const rotate = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(0)).current;
+// Lightweight confetti: 16 pieces (down from 64), 1 animated value each (down from 5)
+const CONFETTI_COLORS = [
+  '#FFD700',
+  '#FF6B6B',
+  '#4ECDC4',
+  '#45B7D1',
+  '#96CEB4',
+  '#ff9ff3',
+  '#feca57',
+  '#5f27cd',
+];
+const CONFETTI_PIECES = CONFETTI_COLORS.flatMap((color, ci) =>
+  [0, 1].map((i) => ({
+    key: `${ci}-${i}`,
+    color,
+    delay: ci * 100 + i * 180,
+    offsetX: -130 + ci * 33 + i * 16,
+    endY: -(50 + (ci % 4) * 30 + i * 40),
+  })),
+);
+
+const ConfettiPiece = React.memo<{
+  delay: number;
+  color: string;
+  offsetX: number;
+  endY: number;
+}>(({ delay, color, offsetX, endY }) => {
+  const anim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    const randomX = (Math.random() - 0.5) * 200;
-    const randomY = -Math.random() * 150 - 50;
-    Animated.loop(
-      Animated.sequence([
-        Animated.delay(delay),
-        Animated.parallel([
-          Animated.timing(translateY, {
-            toValue: randomY,
-            duration: 2000,
-            easing: Easing.out(Easing.cubic),
-            useNativeDriver: true,
-          }),
-          Animated.timing(translateX, {
-            toValue: randomX,
-            duration: 2000,
-            easing: Easing.out(Easing.cubic),
-            useNativeDriver: true,
-          }),
-          Animated.timing(scale, { toValue: 1, duration: 300, useNativeDriver: true }),
-          Animated.timing(rotate, {
-            toValue: Math.random() * 360,
-            duration: 2000,
-            useNativeDriver: true,
-          }),
-          Animated.sequence([
-            Animated.delay(1000),
-            Animated.timing(opacity, { toValue: 0, duration: 1000, useNativeDriver: true }),
-          ]),
-        ]),
-        Animated.parallel([
-          Animated.timing(translateY, { toValue: 0, duration: 0, useNativeDriver: true }),
-          Animated.timing(translateX, { toValue: 0, duration: 0, useNativeDriver: true }),
-          Animated.timing(opacity, { toValue: 1, duration: 0, useNativeDriver: true }),
-          Animated.timing(scale, { toValue: 0, duration: 0, useNativeDriver: true }),
-          Animated.timing(rotate, { toValue: 0, duration: 0, useNativeDriver: true }),
-        ]),
-      ]),
-    ).start();
-  }, [delay]);
+    const driftX = offsetX * 0.4;
+    const run = () => {
+      anim.setValue(0);
+      Animated.timing(anim, {
+        toValue: 1,
+        duration: 2200,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }).start(() => {
+        // Restart after a pause
+        setTimeout(run, delay);
+      });
+    };
+    const initialTimeout = setTimeout(run, delay);
+    return () => clearTimeout(initialTimeout);
+  }, []);
+
+  const driftX = offsetX * 0.4;
+  const rotateDeg = `${(offsetX + 100) * 4}deg`;
 
   return (
     <Animated.View
@@ -87,20 +89,31 @@ const ConfettiPiece: React.FC<{ delay: number; color: string }> = ({ delay, colo
         styles.confettiPiece,
         {
           backgroundColor: color,
+          opacity: anim.interpolate({
+            inputRange: [0, 0.05, 0.6, 1],
+            outputRange: [0, 1, 0.8, 0],
+          }),
           transform: [
-            { translateX },
-            { translateY },
-            { scale },
             {
-              rotate: rotate.interpolate({ inputRange: [0, 360], outputRange: ['0deg', '360deg'] }),
+              translateX: anim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, offsetX + driftX],
+              }),
             },
+            { translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [0, endY] }) },
+            {
+              scale: anim.interpolate({
+                inputRange: [0, 0.05, 0.7, 1],
+                outputRange: [0, 1, 0.8, 0],
+              }),
+            },
+            { rotate: anim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', rotateDeg] }) },
           ],
-          opacity,
         },
       ]}
     />
   );
-};
+});
 
 const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
   item,
@@ -119,16 +132,6 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
   const color = getScoreColor(scorePercent);
   const xpEarned = Math.round(scorePercent * 1.2);
   const isPerfect = scorePercent >= 95;
-  const confettiColors = [
-    '#FFD700',
-    '#FF6B6B',
-    '#4ECDC4',
-    '#45B7D1',
-    '#96CEB4',
-    '#ff9ff3',
-    '#feca57',
-    '#5f27cd',
-  ];
 
   const getInitials = (name: string) =>
     name
@@ -157,11 +160,15 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
     >
       {isPerfect && (
         <View style={currentStyles.confettiContainer}>
-          {confettiColors.map((color, index) =>
-            Array.from({ length: 8 }).map((_, i) => (
-              <ConfettiPiece key={`${index}-${i}`} delay={Math.random() * 1000} color={color} />
-            )),
-          )}
+          {CONFETTI_PIECES.map((p) => (
+            <ConfettiPiece
+              key={p.key}
+              delay={p.delay}
+              color={p.color}
+              offsetX={p.offsetX}
+              endY={p.endY}
+            />
+          ))}
         </View>
       )}
 

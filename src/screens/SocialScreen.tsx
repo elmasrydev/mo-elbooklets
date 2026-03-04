@@ -3,7 +3,8 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
+  RefreshControl,
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
@@ -121,7 +122,6 @@ const SocialScreen: React.FC = () => {
         undefined,
         token,
       );
-
       if (result.data?.socialTimeline) {
         setFeedItems(result.data.socialTimeline);
       } else {
@@ -249,7 +249,74 @@ const SocialScreen: React.FC = () => {
     [theme, common, fontSizes, spacing, borderRadius, typography, fontWeight],
   );
 
-  const renderContent = () => {
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    lastFetchRef.current = 0;
+    await fetchTimeline();
+    setRefreshing(false);
+  }, [fetchTimeline]);
+
+  const renderFeedItem = useCallback(
+    ({ item }: { item: NewsFeedItem }) => {
+      if (item.type === 'quiz_completion' && item.quizData)
+        return (
+          <QuizCompletionCard
+            item={item as any}
+            onLike={() => handleLike(item)}
+            onComment={() => Alert.alert('Comment', t('social_screen.comment_coming_soon'))}
+          />
+        );
+      if (item.type === 'new_connection' && item.connectedUser)
+        return <ConnectionCard item={item as any} />;
+      if (item.type === 'rank_change' && item.rankData)
+        return <RankChangeCard item={item as any} />;
+      return null;
+    },
+    [t, handleLike, currentStyles],
+  );
+
+  const renderSearchItem = useCallback(
+    ({ item: student }: { item: Student }) => (
+      <View style={[common.card, { marginBottom: spacing.sectionGap }]}>
+        <View style={currentStyles.studentCardContent}>
+          <View style={currentStyles.studentInfo}>
+            <View style={currentStyles.avatarPlaceholder}>
+              <Text style={currentStyles.avatarText}>{student.name.charAt(0).toUpperCase()}</Text>
+            </View>
+            <View style={currentStyles.studentDetails}>
+              <Text style={currentStyles.studentName}> {student.name} </Text>
+              <Text style={currentStyles.studentGrade}> {student.grade.name} </Text>
+              <View style={currentStyles.studentStats}>
+                <Text style={currentStyles.studentStat}>
+                  {student.totalQuizzes} {t('common.quizzes')}
+                </Text>
+                <Text style={currentStyles.studentStatSeparator}>•</Text>
+                <Text style={currentStyles.studentStat}>
+                  {student.avgScore} % {t('common.avg')}
+                </Text>
+              </View>
+            </View>
+          </View>
+          <AppButton
+            title={student.isFollowing ? t('common.following') : t('common.follow')}
+            onPress={() => handleFollowToggle(student)}
+            variant={student.isFollowing ? 'outline' : 'primary'}
+            size="sm"
+            fullWidth={false}
+            style={currentStyles.followButton}
+          />
+        </View>
+      </View>
+    ),
+    [common, spacing, currentStyles, t, handleFollowToggle],
+  );
+
+  const feedKeyExtractor = useCallback((item: NewsFeedItem) => item.id, []);
+  const searchKeyExtractor = useCallback((item: Student) => item.id, []);
+
+  const ListEmptyComponent = useMemo(() => {
     if (searchQuery.length >= 2) {
       if (searchLoading)
         return (
@@ -258,61 +325,18 @@ const SocialScreen: React.FC = () => {
             <Text style={currentStyles.loadingText}> {t('social_screen.searching')} </Text>
           </View>
         );
-
-      if (searchResults.length === 0)
-        return (
-          <View style={currentStyles.emptyState}>
-            <Ionicons name="search-outline" size={64} color={theme.colors.textTertiary} />
-            <Text style={currentStyles.emptyStateTitle}> {t('social_screen.no_results')} </Text>
-            <Text style={currentStyles.emptyStateSubtitle}>
-              {t('social_screen.try_different_search')}
-            </Text>
-          </View>
-        );
-
       return (
-        <View style={currentStyles.searchResultsContainer}>
-          <Text style={common.sectionTitle}> {t('social_screen.search_results')} </Text>
-          {searchResults.map((student) => (
-            <View key={student.id} style={[common.card, { marginBottom: spacing.sectionGap }]}>
-              <View style={currentStyles.studentCardContent}>
-                <View style={currentStyles.studentInfo}>
-                  <View style={currentStyles.avatarPlaceholder}>
-                    <Text style={currentStyles.avatarText}>
-                      {student.name.charAt(0).toUpperCase()}
-                    </Text>
-                  </View>
-                  <View style={currentStyles.studentDetails}>
-                    <Text style={currentStyles.studentName}> {student.name} </Text>
-                    <Text style={currentStyles.studentGrade}> {student.grade.name} </Text>
-                    <View style={currentStyles.studentStats}>
-                      <Text style={currentStyles.studentStat}>
-                        {student.totalQuizzes} {t('common.quizzes')}
-                      </Text>
-                      <Text style={currentStyles.studentStatSeparator}>•</Text>
-                      <Text style={currentStyles.studentStat}>
-                        {student.avgScore} % {t('common.avg')}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-
-                <AppButton
-                  title={student.isFollowing ? t('common.following') : t('common.follow')}
-                  onPress={() => handleFollowToggle(student)}
-                  variant={student.isFollowing ? 'outline' : 'primary'}
-                  size="sm"
-                  fullWidth={false}
-                  style={currentStyles.followButton}
-                />
-              </View>
-            </View>
-          ))}
+        <View style={currentStyles.emptyState}>
+          <Ionicons name="search-outline" size={64} color={theme.colors.textTertiary} />
+          <Text style={currentStyles.emptyStateTitle}> {t('social_screen.no_results')} </Text>
+          <Text style={currentStyles.emptyStateSubtitle}>
+            {t('social_screen.try_different_search')}
+          </Text>
         </View>
       );
     }
 
-    if (timelineLoading)
+    if (timelineLoading && !refreshing)
       return (
         <View style={currentStyles.loadingState}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -336,51 +360,44 @@ const SocialScreen: React.FC = () => {
         </View>
       );
 
-    if (feedItems.length === 0)
-      return (
-        <View style={currentStyles.emptyState}>
-          <Ionicons name="people-outline" size={64} color={theme.colors.textTertiary} />
-          <Text style={currentStyles.emptyStateTitle}> {t('social_screen.no_activity_yet')} </Text>
-          <Text style={currentStyles.emptyStateSubtitle}>
-            {t('social_screen.follow_students_hint')}
-          </Text>
-        </View>
-      );
-
     return (
-      <View style={currentStyles.timelineContainer}>
-        <Text style={common.sectionTitle}> {t('social_screen.recent_activity')} </Text>
-        {feedItems.map((item) => {
-          if (item.type === 'quiz_completion' && item.quizData)
-            return (
-              <QuizCompletionCard
-                key={item.id}
-                item={item as any}
-                onLike={() => handleLike(item)}
-                onComment={() => Alert.alert('Comment', t('social_screen.comment_coming_soon'))}
-              />
-            );
-          if (item.type === 'new_connection' && item.connectedUser)
-            return <ConnectionCard key={item.id} item={item as any} />;
-          if (item.type === 'rank_change' && item.rankData)
-            return <RankChangeCard key={item.id} item={item as any} />;
-          return null;
-        })}
+      <View style={currentStyles.emptyState}>
+        <Ionicons name="people-outline" size={64} color={theme.colors.textTertiary} />
+        <Text style={currentStyles.emptyStateTitle}> {t('social_screen.no_activity_yet')} </Text>
+        <Text style={currentStyles.emptyStateSubtitle}>
+          {t('social_screen.follow_students_hint')}
+        </Text>
       </View>
     );
-  };
+  }, [
+    searchQuery,
+    searchLoading,
+    timelineLoading,
+    timelineError,
+    refreshing,
+    currentStyles,
+    theme,
+    t,
+    fetchTimeline,
+  ]);
+
+  const FeedHeader = useMemo(() => {
+    if (searchQuery.length >= 2 && searchResults.length > 0) {
+      return <Text style={common.sectionTitle}> {t('social_screen.search_results')} </Text>;
+    }
+    if (searchQuery.length < 2 && feedItems.length > 0) {
+      return <Text style={common.sectionTitle}> {t('social_screen.recent_activity')} </Text>;
+    }
+    return null;
+  }, [searchQuery, searchResults.length, feedItems.length, common, t]);
+
+  const isSearchMode = searchQuery.length >= 2;
 
   return (
     <View style={common.container}>
       <UnifiedHeader
         title={t('social_screen.header_title')}
         subtitle={t('social_screen.header_subtitle')}
-        showBackButton={true}
-        rightContent={
-          <TouchableOpacity style={currentStyles.refreshButton} onPress={fetchTimeline}>
-            <Ionicons name="refresh-outline" size={24} color="#fff" />
-          </TouchableOpacity>
-        }
       />
 
       <View style={currentStyles.searchContainer}>
@@ -408,13 +425,31 @@ const SocialScreen: React.FC = () => {
         </View>
       </View>
 
-      <ScrollView
-        style={currentStyles.content}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={currentStyles.contentContainer}
-      >
-        {renderContent()}
-      </ScrollView>
+      {isSearchMode ? (
+        <FlatList
+          data={searchResults}
+          renderItem={renderSearchItem}
+          keyExtractor={searchKeyExtractor}
+          style={currentStyles.content}
+          contentContainerStyle={currentStyles.contentContainer}
+          showsVerticalScrollIndicator={false}
+          ListHeaderComponent={FeedHeader}
+          ListEmptyComponent={ListEmptyComponent}
+        />
+      ) : (
+        <FlatList
+          data={feedItems}
+          renderItem={renderFeedItem}
+          keyExtractor={feedKeyExtractor}
+          style={currentStyles.content}
+          contentContainerStyle={[currentStyles.contentContainer, { flexGrow: 1 }]}
+          showsVerticalScrollIndicator={false}
+          ListHeaderComponent={FeedHeader}
+          ListEmptyComponent={ListEmptyComponent}
+          onRefresh={onRefresh}
+          refreshing={refreshing}
+        />
+      )}
     </View>
   );
 };
@@ -429,14 +464,6 @@ const styles = (
   fontWeight: any,
 ) =>
   StyleSheet.create({
-    refreshButton: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      backgroundColor: 'rgba(255,255,255,0.15)',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
     searchContainer: {
       padding: layout.screenPadding,
       backgroundColor: theme.colors.background,
