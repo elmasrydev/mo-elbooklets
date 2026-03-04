@@ -17,6 +17,7 @@ import { layout } from '../../config/layout';
 import { tryFetchWithFallback } from '../../config/api';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import AppButton from '../../components/AppButton';
+import SubjectIcon from '../../components/SubjectIcon';
 
 interface Subject {
   id: string;
@@ -32,7 +33,7 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography, fontWeight} = useTypography();
+  const { typography, fontWeight } = useTypography();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,17 +63,19 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
   };
 
   const getSubjectIcon = (subjectName: string): string => {
-    const name = subjectName.toLowerCase();
-    if (name.includes('math') || name.includes('رياضيات')) return '🔢';
-    if (name.includes('english') || name.includes('language') || name.includes('لغة')) return '📝';
-    if (name.includes('science') || name.includes('علوم')) return '🔬';
-    if (name.includes('history') || name.includes('social') || name.includes('تاريخ')) return '📜';
-    if (name.includes('art') || name.includes('فن')) return '🎨';
-    if (name.includes('physical') || name.includes('sport') || name.includes('رياضة')) return '⚽';
-    return '📖';
+    // Replaced by SubjectIcon component
+    return '';
   };
 
-  const currentStyles = styles(theme, common, typography, fontWeight, fontSizes, spacing, borderRadius);
+  const currentStyles = styles(
+    theme,
+    common,
+    typography,
+    fontWeight,
+    fontSizes,
+    spacing,
+    borderRadius,
+  );
 
   if (loading)
     return (
@@ -138,9 +141,11 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
               onPress={() => onSubjectSelect(subject)}
               activeOpacity={0.7}
             >
-              <View style={currentStyles.subjectIcon}>
-                <Text style={currentStyles.subjectIconText}> {getSubjectIcon(subject.name)} </Text>
-              </View>
+              <SubjectIcon
+                subjectName={subject.name}
+                size={64}
+                style={{ marginBottom: spacing.md }}
+              />
               <Text style={currentStyles.subjectName} numberOfLines={1}>
                 {subject.name}
               </Text>
@@ -216,15 +221,6 @@ const styles = (
       borderWidth: 1,
       borderColor: theme.colors.border,
       ...layout.shadow,
-    },
-    subjectIcon: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginBottom: spacing.sm,
-      backgroundColor: theme.colors.primary + '0D',
     },
     subjectIconText: { fontSize: 24 },
     subjectName: {

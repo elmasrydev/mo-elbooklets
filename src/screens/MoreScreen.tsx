@@ -241,8 +241,8 @@ const styles = (
     },
     profileSection: {
       alignItems: 'center',
-      paddingVertical: spacing.xl,
-      marginBottom: spacing.md,
+      paddingVertical: spacing.lg,
+      marginBottom: 0,
     },
     avatarRingWrapper: {
       position: 'relative',

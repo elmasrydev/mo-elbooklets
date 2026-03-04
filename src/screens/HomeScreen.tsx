@@ -26,6 +26,7 @@ import RecentActivityCard from '../components/RecentActivityCard';
 import UnifiedHeader from '../components/UnifiedHeader';
 import { textAlign } from '../lib/rtl';
 import { getSubjectConfig } from '../utils/subjectTheme';
+import SubjectIcon from '../components/SubjectIcon';
 
 const { width } = Dimensions.get('window');
 
@@ -519,7 +520,7 @@ const HomeScreen: React.FC = () => {
                     onPress={() => navigation.navigate('StudyChapters', { subject })}
                   >
                     <View style={[s.subjectCardHeader, { flexDirection: common.rowDirection }]}>
-                      <Ionicons name={config.icon as any} size={24} color={config.color} />
+                      <SubjectIcon subjectName={subject.name} size={32} />
                       <Text style={s.subjectChapterCount}>{chaptersCount}</Text>
                     </View>
                     <Text style={s.subjectName}>{subject.name}</Text>

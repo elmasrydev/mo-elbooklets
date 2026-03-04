@@ -22,6 +22,7 @@ import { layout } from '../config/layout';
 import { tryFetchWithFallback } from '../config/api';
 import UnifiedHeader from '../components/UnifiedHeader';
 import AppButton from '../components/AppButton';
+import SubjectIcon from '../components/SubjectIcon';
 
 interface Subject {
   id: string;
@@ -189,17 +190,11 @@ const StudyScreen: React.FC = () => {
                 style={currentStyles.subjectCard}
                 onPress={() => handleSubjectSelect(subject)}
               >
-                <View style={[currentStyles.iconBox, { backgroundColor: config.bg }]}>
-                  {config.localIcon ? (
-                    <Image
-                      source={config.localIcon}
-                      style={{ width: 22, height: 22 }}
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <Ionicons name={config.icon as any} size={24} color={config.color} />
-                  )}
-                </View>
+                <SubjectIcon
+                  subjectName={subject.name}
+                  size={56}
+                  style={currentStyles.iconBoxOverride}
+                />
 
                 <View style={currentStyles.subjectInfo}>
                   <Text style={currentStyles.subjectName}>{subject.name}</Text>
@@ -325,12 +320,7 @@ const styles = (
       borderWidth: 0,
       ...layout.shadow,
     },
-    iconBox: {
-      width: 56,
-      height: 56,
-      borderRadius: borderRadius.lg,
-      justifyContent: 'center',
-      alignItems: 'center',
+    iconBoxOverride: {
       ...common.marginEnd(spacing.md),
     },
     subjectInfo: {

@@ -8,7 +8,7 @@ import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
 import { layout } from '../config/layout';
 import { getTimeAgo } from '../lib/dateUtils';
-import { getSubjectConfig } from '../utils/subjectTheme';
+import SubjectIcon from './SubjectIcon';
 
 interface ActivityCardProps {
   activity: {
@@ -30,16 +30,13 @@ const RecentActivityCard: React.FC<ActivityCardProps> = ({ activity, onPress }) 
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
 
-  const subjectConfig = getSubjectConfig(activity.subject?.name, theme);
   const scorePercent = Math.round((activity.score / activity.totalQuestions) * 100);
   const s = styles(theme, common, fontSizes, spacing, borderRadius, typography, fontWeight);
 
   return (
     <TouchableOpacity style={s.card} onPress={onPress} activeOpacity={onPress ? 0.7 : 1}>
       {/* Colored icon box */}
-      <View style={[s.iconBox, { backgroundColor: subjectConfig.bg }]}>
-        <Ionicons name={subjectConfig.icon as any} size={22} color={subjectConfig.color} />
-      </View>
+      <SubjectIcon subjectName={activity.subject?.name} size={48} />
 
       {/* Title + subtitle */}
       <View style={s.info}>
@@ -80,13 +77,6 @@ const styles = (
       borderColor: theme.colors.border,
       ...layout.shadow,
       gap: spacing.md,
-    },
-    iconBox: {
-      width: 48,
-      height: 48,
-      borderRadius: borderRadius.lg,
-      justifyContent: 'center',
-      alignItems: 'center',
     },
     info: {
       flex: 1,
