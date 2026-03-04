@@ -57,4 +57,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SubjectIcon;
+export default React.memo(SubjectIcon);

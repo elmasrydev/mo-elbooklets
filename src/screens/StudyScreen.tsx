@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -53,14 +53,16 @@ const StudyScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchSubjects();
-  }, []);
+  const lastFetchRef = React.useRef<number>(0);
+  const STALE_MS = 30_000;
 
   useFocusEffect(
     useCallback(() => {
+      const now = Date.now();
+      if (now - lastFetchRef.current < STALE_MS && subjects.length > 0) return;
+      lastFetchRef.current = now;
       fetchSubjects();
-    }, []),
+    }, [subjects.length]),
   );
 
   const fetchSubjects = async (isRefresh = false) => {
@@ -115,15 +117,9 @@ const StudyScreen: React.FC = () => {
 
   const subjectsToRender = USE_DUMMY_DATA ? DUMMY_SUBJECTS : subjects;
 
-  const currentStyles = styles(
-    theme,
-    fontSizes,
-    spacing,
-    borderRadius,
-    common,
-    isRTL,
-    typography,
-    fontWeight,
+  const currentStyles = useMemo(
+    () => styles(theme, fontSizes, spacing, borderRadius, common, isRTL, typography, fontWeight),
+    [theme, fontSizes, spacing, borderRadius, common, isRTL, typography, fontWeight],
   );
 
   return (

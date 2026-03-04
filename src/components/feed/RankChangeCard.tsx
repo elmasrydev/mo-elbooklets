@@ -27,7 +27,7 @@ const RankChangeCard: React.FC<RankChangeCardProps> = ({ item }) => {
   const { language } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography, fontWeight} = useTypography();
+  const { typography, fontWeight } = useTypography();
 
   const rankColors: { [key: number]: string } = { 1: '#F59E0B', 2: '#94A3B8', 3: '#EA580C' };
   const rankColor = rankColors[item.rankData.newRank] || '#EA580C';
@@ -45,7 +45,8 @@ const RankChangeCard: React.FC<RankChangeCardProps> = ({ item }) => {
     spacing,
     borderRadius,
     rankColor,
-    typography, fontWeight,
+    typography,
+    fontWeight,
   );
 
   return (
@@ -134,4 +135,4 @@ const createStyles = (
     },
   });
 
-export default RankChangeCard;
+export default React.memo(RankChangeCard);

@@ -102,4 +102,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AnimatedNavbarLogo;
+export default React.memo(AnimatedNavbarLogo);

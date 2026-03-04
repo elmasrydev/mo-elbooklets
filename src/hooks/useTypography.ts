@@ -1,3 +1,4 @@
+import { useCallback, useMemo } from 'react';
 import { Platform } from 'react-native';
 import { useLanguage } from '../context/LanguageContext';
 import { getTextStyle, textStyles, TextStyleType } from '../config/fonts';
@@ -33,28 +34,26 @@ export const useTypography = () => {
   const { language } = useLanguage();
   const isArabic = language === 'ar';
 
-  /**
-   * Returns a complete style object (fontSize, fontWeight, lineHeight, fontFamily)
-   * for the requested typography style preset.
-   */
-  const typography = (style: TextStyleType) => getTextStyle(style, isArabic);
+  const typography = useCallback(
+    (style: TextStyleType) => getTextStyle(style, isArabic),
+    [isArabic],
+  );
 
-  /**
-   * Returns a style partial for the given font weight that works cross-platform.
-   * On Android: sets fontFamily to the weight-specific static font and omits fontWeight.
-   * On iOS: sets fontWeight normally (variable font handles it).
-   *
-   * Usage: `{ ...typography('body'), ...fontWeight('bold') }`,
-   */
-  const fontWeight = (weight: 'normal' | '500' | '600' | '700' | '800' | '900' | 'bold') => {
-    if (Platform.OS === 'android') {
-      return {
-        fontFamily: resolveWeightFamily(weight, isArabic),
-        fontWeight: undefined as any,
-      };
-    }
-    return { fontWeight: weight };
-  };
+  const fontWeight = useCallback(
+    (weight: 'normal' | '500' | '600' | '700' | '800' | '900' | 'bold') => {
+      if (Platform.OS === 'android') {
+        return {
+          fontFamily: resolveWeightFamily(weight, isArabic),
+          fontWeight: weight,
+        };
+      }
+      return { fontWeight: weight };
+    },
+    [isArabic],
+  );
 
-  return { typography, fontWeight, isArabic, language };
+  return useMemo(
+    () => ({ typography, fontWeight, isArabic, language }),
+    [typography, fontWeight, isArabic, language],
+  );
 };

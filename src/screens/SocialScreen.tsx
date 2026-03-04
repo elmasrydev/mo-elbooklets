@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -76,7 +76,7 @@ const SocialScreen: React.FC = () => {
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography, fontWeight} = useTypography();
+  const { typography, fontWeight } = useTypography();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Student[]>([]);
@@ -135,14 +135,17 @@ const SocialScreen: React.FC = () => {
     }
   }, [t]);
 
-  useEffect(() => {
-    fetchTimeline();
-  }, [fetchTimeline]);
+  const lastFetchRef = React.useRef<number>(0);
+  const STALE_MS = 30_000;
 
   useFocusEffect(
     useCallback(() => {
-      if (searchQuery.length === 0) fetchTimeline();
-    }, [searchQuery, fetchTimeline]),
+      if (searchQuery.length > 0) return;
+      const now = Date.now();
+      if (now - lastFetchRef.current < STALE_MS && feedItems.length > 0) return;
+      lastFetchRef.current = now;
+      fetchTimeline();
+    }, [searchQuery, fetchTimeline, feedItems.length]),
   );
 
   useEffect(() => {
@@ -241,7 +244,10 @@ const SocialScreen: React.FC = () => {
     }
   };
 
-  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius, typography, fontWeight);
+  const currentStyles = useMemo(
+    () => styles(theme, common, fontSizes, spacing, borderRadius, typography, fontWeight),
+    [theme, common, fontSizes, spacing, borderRadius, typography, fontWeight],
+  );
 
   const renderContent = () => {
     if (searchQuery.length >= 2) {

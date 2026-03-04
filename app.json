@@ -19,7 +19,7 @@
         "ITSAppUsesNonExemptEncryption": false
       },
       "bundleIdentifier": "com.agmryde.app",
-      "buildNumber": "35"
+      "buildNumber": "37"
     },
     "android": {
       "package": "com.elmasrydev.elbooklets",

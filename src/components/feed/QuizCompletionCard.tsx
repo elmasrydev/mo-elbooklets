@@ -113,7 +113,7 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
   const { language } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography, fontWeight} = useTypography();
+  const { typography, fontWeight } = useTypography();
 
   const scorePercent = Math.round((item.quizData.score / item.quizData.totalQuestions) * 100);
   const color = getScoreColor(scorePercent);
@@ -137,7 +137,15 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
       .join('')
       .toUpperCase()
       .substring(0, 2);
-  const currentStyles = createStyles(theme, common, fontSizes, spacing, borderRadius, typography, fontWeight);
+  const currentStyles = createStyles(
+    theme,
+    common,
+    fontSizes,
+    spacing,
+    borderRadius,
+    typography,
+    fontWeight,
+  );
 
   return (
     <View
@@ -275,7 +283,11 @@ const createStyles = (
       borderWidth: 1,
       borderColor: theme.colors.border,
     },
-    avatarText: { ...typography('caption'), ...fontWeight('900'), color: theme.colors.textSecondary },
+    avatarText: {
+      ...typography('caption'),
+      ...fontWeight('900'),
+      color: theme.colors.textSecondary,
+    },
     userInfo: { gap: 2, alignItems: common.alignStart, flex: 1 },
     nameRow: { flexDirection: common.rowDirection, alignItems: 'center', gap: 6 },
     userName: { ...typography('label'), ...fontWeight('900'), color: theme.colors.text },
@@ -363,4 +375,4 @@ const styles = StyleSheet.create({
   confettiPiece: { position: 'absolute', width: 8, height: 8, borderRadius: 2 },
 });
 
-export default QuizCompletionCard;
+export default React.memo(QuizCompletionCard);

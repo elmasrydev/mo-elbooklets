@@ -284,4 +284,4 @@ const styles = (
     progressText: { ...typography('bodySmall'), ...fontWeight('bold'), color: theme.colors.text },
   });
 
-export default TodaysPlanWidget;
+export default React.memo(TodaysPlanWidget);

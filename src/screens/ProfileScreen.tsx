@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -45,16 +45,20 @@ const ProfileScreen: React.FC = () => {
     ]);
   };
 
-  const currentStyles = styles(
-    theme,
-    spacing,
-    fontSizes,
-    borderRadius,
-    common,
-    isRTL,
-    typography,
-    fontWeight,
-    isDark,
+  const currentStyles = useMemo(
+    () =>
+      styles(
+        theme,
+        spacing,
+        fontSizes,
+        borderRadius,
+        common,
+        isRTL,
+        typography,
+        fontWeight,
+        isDark,
+      ),
+    [theme, spacing, fontSizes, borderRadius, common, isRTL, typography, fontWeight, isDark],
   );
 
   return (
@@ -299,7 +303,7 @@ const styles = (
     },
     userSubtitle: {
       ...typography('body'),
-      ...fontWeight('500'),
+      ...fontWeight('bold'),
       color: theme.colors.textSecondary,
       textAlign: 'center',
     },

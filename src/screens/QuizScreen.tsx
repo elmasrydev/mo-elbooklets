@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -195,14 +195,9 @@ const QuizScreen: React.FC = () => {
       />
     );
 
-  const currentStyles = styles(
-    theme,
-    common,
-    fontSizes,
-    spacing,
-    borderRadius,
-    typography,
-    fontWeight,
+  const currentStyles = useMemo(
+    () => styles(theme, common, fontSizes, spacing, borderRadius, typography, fontWeight),
+    [theme, common, fontSizes, spacing, borderRadius, typography, fontWeight],
   );
 
   return (

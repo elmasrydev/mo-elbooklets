@@ -26,7 +26,7 @@ const LessonNavBar: React.FC<LessonNavBarProps> = ({
   const { theme, borderRadius, spacing } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
-  const { typography, fontWeight} = useTypography();
+  const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
 
   const currentStyles = styles(theme, spacing, borderRadius, fontWeight);
@@ -133,4 +133,4 @@ const styles = (theme: any, spacing: any, borderRadius: any, fontWeight: any) =>
     },
   });
 
-export default LessonNavBar;
+export default React.memo(LessonNavBar);

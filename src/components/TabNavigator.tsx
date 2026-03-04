@@ -71,11 +71,6 @@ const TabScreens: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { typography, fontWeight } = useTypography();
 
-  // Debugging Order
-  useEffect(() => {
-    console.log(`TabNavigator Render: lang=${language}, isRTL=${isRTL}`);
-  }, [language, isRTL]);
-
   // Define tabs in LTR order (Home -> Profile) — Stitch design layout
   const tabs: TabConfig[] = [
     {

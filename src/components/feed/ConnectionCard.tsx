@@ -23,7 +23,7 @@ const ConnectionCard: React.FC<ConnectionCardProps> = ({ item }) => {
   const { language } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography, fontWeight} = useTypography();
+  const { typography, fontWeight } = useTypography();
 
   const getInitials = (name: string) =>
     name
@@ -32,7 +32,15 @@ const ConnectionCard: React.FC<ConnectionCardProps> = ({ item }) => {
       .join('')
       .toUpperCase()
       .substring(0, 2);
-  const currentStyles = createStyles(theme, common, fontSizes, spacing, borderRadius, typography, fontWeight);
+  const currentStyles = createStyles(
+    theme,
+    common,
+    fontSizes,
+    spacing,
+    borderRadius,
+    typography,
+    fontWeight,
+  );
 
   return (
     <View style={currentStyles.card}>
@@ -116,4 +124,4 @@ const createStyles = (
     },
   });
 
-export default ConnectionCard;
+export default React.memo(ConnectionCard);

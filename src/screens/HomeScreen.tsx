@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -273,25 +273,21 @@ const HomeScreen: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => {
-    fetchHomeData();
-  }, [fetchHomeData]);
+  const lastFetchRef = React.useRef<number>(0);
+  const STALE_MS = 30_000; // 30 seconds
 
   useFocusEffect(
     useCallback(() => {
+      const now = Date.now();
+      if (now - lastFetchRef.current < STALE_MS && activitiesData) return;
+      lastFetchRef.current = now;
       fetchHomeData();
-    }, [fetchHomeData]),
+    }, [fetchHomeData, activitiesData]),
   );
 
-  const s = getStyles(
-    theme,
-    common,
-    fontSizes,
-    spacing,
-    borderRadius,
-    isRTL,
-    typography,
-    fontWeight,
+  const s = useMemo(
+    () => getStyles(theme, common, fontSizes, spacing, borderRadius, isRTL, typography, fontWeight),
+    [theme, common, fontSizes, spacing, borderRadius, isRTL, typography, fontWeight],
   );
 
   if (loading && !activitiesData) {

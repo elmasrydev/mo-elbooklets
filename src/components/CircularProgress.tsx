@@ -19,7 +19,7 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
   color,
   showText = true,
 }) => {
-  const { typography, fontWeight} = useTypography();
+  const { typography, fontWeight } = useTypography();
   const { theme } = useTheme();
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
@@ -71,4 +71,4 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
   );
 };
 
-export default CircularProgress;
+export default React.memo(CircularProgress);

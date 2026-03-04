@@ -52,4 +52,4 @@ const styles = (theme: any, borderRadius: any) =>
     },
   });
 
-export default CloseButton;
+export default React.memo(CloseButton);

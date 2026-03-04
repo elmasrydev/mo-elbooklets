@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -332,15 +332,9 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
     }
   };
 
-  const currentStyles = styles(
-    theme,
-    common,
-    fontSizes,
-    spacing,
-    borderRadius,
-    isRTL,
-    typography,
-    fontWeight,
+  const currentStyles = useMemo(
+    () => styles(theme, common, fontSizes, spacing, borderRadius, isRTL, typography, fontWeight),
+    [theme, common, fontSizes, spacing, borderRadius, isRTL, typography, fontWeight],
   );
 
   const StepIndicator = () => (
@@ -841,7 +835,9 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
                       { flex: 1, textAlign: isRTL ? 'right' : 'left', paddingHorizontal: 16 },
                     ]}
                     value={parentMobile2}
-                    onChangeText={(val) => setParentMobile2(val.replace(/[^0-9]/g, '').slice(0, 11))}
+                    onChangeText={(val) =>
+                      setParentMobile2(val.replace(/[^0-9]/g, '').slice(0, 11))
+                    }
                     maxLength={11}
                     placeholder={t('auth.second_parent_mobile')}
                     placeholderTextColor={theme.colors.textSecondary}

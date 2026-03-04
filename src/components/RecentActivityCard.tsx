@@ -101,4 +101,4 @@ const styles = (
     },
   });
 
-export default RecentActivityCard;
+export default React.memo(RecentActivityCard);

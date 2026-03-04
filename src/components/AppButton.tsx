@@ -46,7 +46,7 @@ const AppButton: React.FC<AppButtonProps> = ({
   ...props
 }) => {
   const { theme, spacing, borderRadius } = useTheme();
-  const { typography, fontWeight} = useTypography();
+  const { typography, fontWeight } = useTypography();
 
   const getVariantStyles = () => {
     switch (variant) {
@@ -220,4 +220,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AppButton;
+export default React.memo(AppButton);

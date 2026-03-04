@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -47,7 +47,7 @@ const LeaderboardScreen: React.FC = () => {
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography, fontWeight} = useTypography();
+  const { typography, fontWeight } = useTypography();
   const navigation = useNavigation<any>();
 
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -75,10 +75,16 @@ const LeaderboardScreen: React.FC = () => {
     if (selectedTab && subjects.length > 0) fetchLeaderboard(selectedTab);
   }, [selectedTab]);
 
+  const lastFetchRef = React.useRef<number>(0);
+  const STALE_MS = 30_000;
+
   useFocusEffect(
     useCallback(() => {
+      const now = Date.now();
+      if (now - lastFetchRef.current < STALE_MS && allLeaderboard.entries.length > 0) return;
+      lastFetchRef.current = now;
       if (selectedTab && subjects.length > 0) fetchLeaderboard(selectedTab);
-    }, [selectedTab, subjects.length]),
+    }, [selectedTab, subjects.length, allLeaderboard]),
   );
 
   const fetchSubjects = async () => {
@@ -153,7 +159,10 @@ const LeaderboardScreen: React.FC = () => {
     }
   };
 
-  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius, typography, fontWeight);
+  const currentStyles = useMemo(
+    () => styles(theme, common, fontSizes, spacing, borderRadius, typography, fontWeight),
+    [theme, common, fontSizes, spacing, borderRadius, typography, fontWeight],
+  );
 
   const renderCurrentUserCard = (userEntry: Student | null) => {
     if (!userEntry) return null;
@@ -465,7 +474,7 @@ const styles = (
     userStatusAvatarText: {
       color: theme.colors.textOnDark,
       ...typography('h2'),
-      ...fontWeight('600')
+      ...fontWeight('600'),
     },
     userStatusInfo: {
       flex: 1,

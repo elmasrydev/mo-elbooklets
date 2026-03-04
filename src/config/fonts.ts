@@ -99,9 +99,9 @@ export const getTextStyle = (style: keyof typeof textStyles, isArabic: boolean =
     }
   }
 
-  // Pass undefined as fontWeight on Android when we use a custom weight-specific font file
-  // to prevent Android from trying to apply faux-bold on top of a bold font or dropping the family.
-  const resolvedWeight = Platform.OS === 'android' ? undefined : weight;
+  // Keep the fontWeight value on Android alongside the weight-specific fontFamily.
+  // Setting undefined strips the weight and causes bold fonts to render as normal.
+  const resolvedWeight = weight;
 
   if (isArabic) {
     return {

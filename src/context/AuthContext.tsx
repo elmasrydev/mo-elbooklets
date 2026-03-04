@@ -1,4 +1,11 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  ReactNode,
+} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { tryFetchWithFallback, setAuthErrorHandler } from '../config/api';
 import { setLogoutHandler } from '../lib/apollo';
@@ -64,7 +71,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     // Create logout function to share between handlers
     const handleSessionExpired = () => {
-      console.log('Session expired - logging out');
+      if (__DEV__) console.log('Session expired - logging out');
       setUser(null);
     };
 
@@ -90,10 +97,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const login = async (input: LoginInput): Promise<{ success: boolean; error?: string }> => {
-    try {
-      const result = await tryFetchWithFallback(
-        `
+  const login = useCallback(
+    async (input: LoginInput): Promise<{ success: boolean; error?: string }> => {
+      try {
+        const result = await tryFetchWithFallback(
+          `
         mutation Login($input: LoginInput!) {
           login(input: $input) {
             access_token
@@ -117,31 +125,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }
         }
       `,
-        { input },
-      );
+          { input },
+        );
 
-      if (result.data?.login) {
-        const authPayload = result.data.login;
-        await AsyncStorage.setItem('auth_token', authPayload.access_token);
-        await AsyncStorage.setItem('user_data', JSON.stringify(authPayload.user));
-        setUser(authPayload.user);
-        return { success: true };
+        if (result.data?.login) {
+          const authPayload = result.data.login;
+          await AsyncStorage.setItem('auth_token', authPayload.access_token);
+          await AsyncStorage.setItem('user_data', JSON.stringify(authPayload.user));
+          setUser(authPayload.user);
+          return { success: true };
+        }
+
+        return { success: false, error: result.errors?.[0]?.message || 'Login failed' };
+      } catch (error: any) {
+        console.error('Login error:', error);
+        return {
+          success: false,
+          error: error.message || 'An error occurred during login',
+        };
       }
+    },
+    [],
+  );
 
-      return { success: false, error: result.errors?.[0]?.message || 'Login failed' };
-    } catch (error: any) {
-      console.error('Login error:', error);
-      return {
-        success: false,
-        error: error.message || 'An error occurred during login',
-      };
-    }
-  };
-
-  const register = async (input: RegisterInput): Promise<{ success: boolean; error?: string }> => {
-    try {
-      const result = await tryFetchWithFallback(
-        `
+  const register = useCallback(
+    async (input: RegisterInput): Promise<{ success: boolean; error?: string }> => {
+      try {
+        const result = await tryFetchWithFallback(
+          `
         mutation Register($input: RegisterInput!) {
           register(input: $input) {
             access_token
@@ -165,28 +176,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }
         }
       `,
-        { input },
-      );
+          { input },
+        );
 
-      if (result.data?.register) {
-        const authPayload = result.data.register;
-        await AsyncStorage.setItem('auth_token', authPayload.access_token);
-        await AsyncStorage.setItem('user_data', JSON.stringify(authPayload.user));
-        setUser(authPayload.user);
-        return { success: true };
+        if (result.data?.register) {
+          const authPayload = result.data.register;
+          await AsyncStorage.setItem('auth_token', authPayload.access_token);
+          await AsyncStorage.setItem('user_data', JSON.stringify(authPayload.user));
+          setUser(authPayload.user);
+          return { success: true };
+        }
+
+        return { success: false, error: result.errors?.[0]?.message || 'Registration failed' };
+      } catch (error: any) {
+        console.error('Registration error:', error);
+        return {
+          success: false,
+          error: error.message || 'An error occurred during registration',
+        };
       }
+    },
+    [],
+  );
 
-      return { success: false, error: result.errors?.[0]?.message || 'Registration failed' };
-    } catch (error: any) {
-      console.error('Registration error:', error);
-      return {
-        success: false,
-        error: error.message || 'An error occurred during registration',
-      };
-    }
-  };
-
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       await AsyncStorage.removeItem('auth_token');
       await AsyncStorage.removeItem('user_data');
@@ -194,7 +207,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('Logout error:', error);
     }
-  };
+  }, []);
 
   const value: AuthContextType = React.useMemo(
     () => ({

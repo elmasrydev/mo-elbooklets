@@ -227,4 +227,4 @@ const styles = (theme: any, spacing: any, borderRadius: any) =>
     },
   });
 
-export default UnifiedHeader;
+export default React.memo(UnifiedHeader);
