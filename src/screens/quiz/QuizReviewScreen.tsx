@@ -55,6 +55,7 @@ const QuizReviewScreen: React.FC = () => {
               question {
                 id
                 question
+                type
                 answer_1
                 answer_2
                 answer_3
@@ -63,6 +64,7 @@ const QuizReviewScreen: React.FC = () => {
               }
               selected_answer
               is_correct
+              score
               explanation
             }
           }
@@ -75,9 +77,12 @@ const QuizReviewScreen: React.FC = () => {
           ...response.data.quizResults,
           userAnswers: response.data.quizResults.userAnswers.map((ua: any) => {
             const q = ua.question;
-            const answers = [q.answer_1, q.answer_2, q.answer_3, q.answer_4].filter(
-              (a) => a !== null && a !== undefined && a !== '',
-            );
+            const isDescriptive = ['what_happens', 'give_a_reason'].includes(q.type);
+            const answers = isDescriptive
+              ? [] // No MCQ options for descriptive
+              : [q.answer_1, q.answer_2, q.answer_3, q.answer_4].filter(
+                  (a) => a !== null && a !== undefined && a !== '',
+                );
             return { ...ua, question: { ...q, answers } };
           }),
         };
@@ -145,6 +150,9 @@ const QuizReviewScreen: React.FC = () => {
   const incorrectCount = result.userAnswers.filter((a: any) => !a.is_correct).length;
   const headerTop = Platform.OS === 'ios' ? 0 : insets.top;
 
+  const isDescriptiveType = (type: string) =>
+    ['what_happens', 'give_a_reason'].includes(type);
+
   return (
     <View style={[common.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
@@ -164,81 +172,193 @@ const QuizReviewScreen: React.FC = () => {
         contentContainerStyle={currentStyles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {result.userAnswers.map((ua: any, index: number) => (
-          <View key={ua.question.id} style={currentStyles.questionCard}>
-            <View style={currentStyles.badgeRow}>
-              <View
-                style={[
-                  currentStyles.questionBadge,
-                  { backgroundColor: ua.is_correct ? '#10B981' : '#EF4444' },
-                ]}
-              >
-                <Text style={currentStyles.badgeText}>
-                  {t('quiz_taking.question_number', { number: index + 1 })}
-                </Text>
-              </View>
-              {!ua.is_correct && (
+        {result.userAnswers.map((ua: any, index: number) => {
+          const isDescriptive = isDescriptiveType(ua.question.type);
+
+          return (
+            <View key={ua.question.id} style={currentStyles.questionCard}>
+              <View style={currentStyles.badgeRow}>
                 <View
                   style={[
                     currentStyles.questionBadge,
-                    { backgroundColor: 'rgba(239, 68, 68, 0.1)', marginHorizontal: 8 },
+                    { backgroundColor: ua.is_correct ? '#10B981' : '#EF4444' },
                   ]}
                 >
-                  <Text style={[currentStyles.badgeText, { color: '#EF4444' }]}>
-                    {t('common.incorrect')}
+                  <Text style={currentStyles.badgeText}>
+                    {t('quiz_taking.question_number', { number: index + 1 })}
+                  </Text>
+                </View>
+                {isDescriptive && (
+                  <View
+                    style={[
+                      currentStyles.questionBadge,
+                      { backgroundColor: '#EFF6FF', marginHorizontal: 8 },
+                    ]}
+                  >
+                    <Text style={[currentStyles.badgeText, { color: '#1E40AF' }]}>
+                      {ua.question.type === 'what_happens'
+                        ? t('quiz_taking.what_happens', 'What Happens?')
+                        : t('quiz_taking.give_a_reason', 'Give a Reason')}
+                    </Text>
+                  </View>
+                )}
+                {!ua.is_correct && !isDescriptive && (
+                  <View
+                    style={[
+                      currentStyles.questionBadge,
+                      { backgroundColor: 'rgba(239, 68, 68, 0.1)', marginHorizontal: 8 },
+                    ]}
+                  >
+                    <Text style={[currentStyles.badgeText, { color: '#EF4444' }]}>
+                      {t('common.incorrect')}
+                    </Text>
+                  </View>
+                )}
+                {isDescriptive && ua.score !== undefined && (
+                  <View
+                    style={[
+                      currentStyles.questionBadge,
+                      { backgroundColor: ua.is_correct ? '#ECFDF5' : '#FEF2F2', marginHorizontal: 8 },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        currentStyles.badgeText,
+                        { color: ua.is_correct ? '#10B981' : '#EF4444' },
+                      ]}
+                    >
+                      {Math.round((ua.score || 0) * 100)}%
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              <Text style={currentStyles.questionText}> {ua.question.question} </Text>
+
+              {isDescriptive ? (
+                /* Descriptive review: show student answer + model answer */
+                <View style={{ gap: 16 }}>
+                  {/* Student answer */}
+                  <View
+                    style={{
+                      backgroundColor: '#F8FAFC',
+                      borderWidth: 1.5,
+                      borderColor: ua.is_correct ? '#10B981' : '#EF4444',
+                      borderRadius: 16,
+                      padding: 16,
+                    }}
+                  >
+                    <Text
+                      style={[
+                        currentStyles.badgeText,
+                        {
+                          color: ua.is_correct ? '#10B981' : '#EF4444',
+                          marginBottom: 8,
+                          textTransform: 'none',
+                          fontSize: 12,
+                        },
+                      ]}
+                    >
+                      {t('quiz_review.your_answer', 'Your Answer')}:
+                    </Text>
+                    <Text
+                      style={{
+                        ...typography('body'),
+                        color: '#374151',
+                        lineHeight: 22,
+                        textAlign: common.textAlign as any,
+                      }}
+                    >
+                      {ua.selected_answer || t('quiz_review.no_answer', 'No answer provided')}
+                    </Text>
+                  </View>
+
+                  {/* Model answer */}
+                  <View
+                    style={{
+                      backgroundColor: '#F0FDF4',
+                      borderWidth: 1.5,
+                      borderColor: '#10B981',
+                      borderRadius: 16,
+                      padding: 16,
+                    }}
+                  >
+                    <Text
+                      style={[
+                        currentStyles.badgeText,
+                        {
+                          color: '#10B981',
+                          marginBottom: 8,
+                          textTransform: 'none',
+                          fontSize: 12,
+                        },
+                      ]}
+                    >
+                      {t('quiz_review.model_answer', 'Model Answer')}:
+                    </Text>
+                    <Text
+                      style={{
+                        ...typography('body'),
+                        color: '#374151',
+                        lineHeight: 22,
+                        textAlign: common.textAlign as any,
+                      }}
+                    >
+                      {ua.question.answer_1}
+                    </Text>
+                  </View>
+                </View>
+              ) : (
+                /* MCQ review: show options */
+                <View style={currentStyles.optionsContainer}>
+                  {ua.question.answers?.map((opt: string, optIndex: number) => {
+                    const isSelected = ua.selected_answer === opt;
+                    const isAnswerCorrect = ua.question.answer_1 === opt;
+                    let optStyle = currentStyles.optionDefault;
+
+                    if (isAnswerCorrect) {
+                      optStyle = currentStyles.optionCorrect;
+                    } else if (isSelected && !ua.is_correct) {
+                      optStyle = currentStyles.optionIncorrect;
+                    }
+
+                    return (
+                      <View key={optIndex} style={[currentStyles.optionItem, optStyle]}>
+                        <View style={currentStyles.optionLetterCircle}>
+                          <Text style={currentStyles.optionLetter}>
+                            {String.fromCharCode(65 + optIndex)}
+                          </Text>
+                        </View>
+                        <Text style={currentStyles.optionText}> {opt} </Text>
+                        <View style={currentStyles.dotIconContainer}>
+                          {isAnswerCorrect ? (
+                            <Ionicons name="checkmark-circle" size={22} color="#10B981" />
+                          ) : isSelected && !ua.is_correct ? (
+                            <Ionicons name="close-circle" size={22} color="#EF4444" />
+                          ) : null}
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+
+              {!!(ua.question.explanation || ua.explanation) && (
+                <View style={currentStyles.explanationBox}>
+                  <Text style={currentStyles.explanationTitle}>
+                    {' '}
+                    {t('quiz_results.explanation')}{' '}
+                  </Text>
+                  <Text style={currentStyles.explanationText}>
+                    {' '}
+                    {ua.question.explanation || ua.explanation}{' '}
                   </Text>
                 </View>
               )}
             </View>
+          );
+        })}
 
-            <Text style={currentStyles.questionText}> {ua.question.question} </Text>
-
-            <View style={currentStyles.optionsContainer}>
-              {ua.question.answers?.map((opt: string, optIndex: number) => {
-                const isSelected = ua.selected_answer === opt;
-                const isAnswerCorrect = ua.question.answer_1 === opt;
-                let optStyle = currentStyles.optionDefault;
-
-                if (isAnswerCorrect) {
-                  optStyle = currentStyles.optionCorrect;
-                } else if (isSelected && !ua.is_correct) {
-                  optStyle = currentStyles.optionIncorrect;
-                }
-
-                return (
-                  <View key={optIndex} style={[currentStyles.optionItem, optStyle]}>
-                    <View style={currentStyles.optionLetterCircle}>
-                      <Text style={currentStyles.optionLetter}>
-                        {String.fromCharCode(65 + optIndex)}
-                      </Text>
-                    </View>
-                    <Text style={currentStyles.optionText}> {opt} </Text>
-                    <View style={currentStyles.dotIconContainer}>
-                      {isAnswerCorrect ? (
-                        <Ionicons name="checkmark-circle" size={22} color="#10B981" />
-                      ) : isSelected && !ua.is_correct ? (
-                        <Ionicons name="close-circle" size={22} color="#EF4444" />
-                      ) : null}
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-
-            {!!(ua.question.explanation || ua.explanation) && (
-              <View style={currentStyles.explanationBox}>
-                <Text style={currentStyles.explanationTitle}>
-                  {' '}
-                  {t('quiz_results.explanation')}{' '}
-                </Text>
-                <Text style={currentStyles.explanationText}>
-                  {' '}
-                  {ua.question.explanation || ua.explanation}{' '}
-                </Text>
-              </View>
-            )}
-          </View>
-        ))}
 
         <AppButton
           title={t('quiz_results.back_to_results', { defaultValue: 'Back to Results' })}

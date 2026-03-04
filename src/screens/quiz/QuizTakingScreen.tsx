@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
+  TextInput,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
@@ -22,9 +23,12 @@ import { layout } from '../../config/layout';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import AppButton from '../../components/AppButton';
 
+const DESCRIPTIVE_TYPES = ['what_happens', 'give_a_reason'];
+
 interface QuizQuestion {
   id: string;
   question: string;
+  type: string;
   answers: string[];
   questionNumber: number;
   explanation?: string;
@@ -106,6 +110,7 @@ const QuizTakingScreen: React.FC = () => {
             questions {
               id
               question
+              type
               answers
               questionNumber
               explanation
@@ -140,12 +145,23 @@ const QuizTakingScreen: React.FC = () => {
     }));
   };
 
+  const handleDescriptiveAnswer = (questionId: string, text: string) => {
+    setSelectedAnswers((prev) => ({
+      ...prev,
+      [questionId]: text,
+    }));
+  };
+
+  const isDescriptiveQuestion = (question: QuizQuestion): boolean => {
+    return DESCRIPTIVE_TYPES.includes(question.type);
+  };
+
   const handleNextQuestion = () => {
     if (!quiz) return;
 
     const currentQuestion = quiz.questions[currentQuestionIndex];
 
-    if (!selectedAnswers[currentQuestion.id]) {
+    if (!selectedAnswers[currentQuestion.id] || selectedAnswers[currentQuestion.id].trim() === '') {
       Alert.alert(t('quiz_taking.answer_required'), t('quiz_taking.select_answer_first'), [
         { text: t('common.ok') },
       ]);
@@ -168,14 +184,16 @@ const QuizTakingScreen: React.FC = () => {
 
     const currentQuestion = quiz.questions[currentQuestionIndex];
 
-    if (!selectedAnswers[currentQuestion.id]) {
+    if (!selectedAnswers[currentQuestion.id] || selectedAnswers[currentQuestion.id].trim() === '') {
       Alert.alert(t('quiz_taking.answer_required'), t('quiz_taking.select_answer_last'), [
         { text: t('common.ok') },
       ]);
       return;
     }
 
-    const unansweredQuestions = quiz.questions.filter((q) => !selectedAnswers[q.id]);
+    const unansweredQuestions = quiz.questions.filter(
+      (q) => !selectedAnswers[q.id] || selectedAnswers[q.id].trim() === ''
+    );
     if (unansweredQuestions.length > 0) {
       Alert.alert(
         t('quiz_taking.incomplete_quiz'),
@@ -222,13 +240,11 @@ const QuizTakingScreen: React.FC = () => {
 
       if (result.data?.submitQuizAnswers) {
         // Navigate back to the main tabs with completion param
-        // This ensures checking MainTabs > Quiz > route.params.completedQuizId
         navigation.navigate('MainTabs', {
           screen: 'Quiz',
           params: { completedQuizId: quiz.id },
         });
       } else {
-        // Show alert for submission error instead of replacing screen with error view
         const errorMessage = result.errors?.[0]?.message || t('common.unexpected_error');
         Alert.alert(t('common.error'), errorMessage);
       }
@@ -308,6 +324,7 @@ const QuizTakingScreen: React.FC = () => {
 
   const currentQuestion = quiz.questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / quiz.questions.length) * 100;
+  const isDescriptive = isDescriptiveQuestion(currentQuestion);
 
   return (
     <View style={common.container}>
@@ -340,52 +357,88 @@ const QuizTakingScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         <View style={currentStyles.questionContainer}>
+          {/* Question type badge for descriptive */}
+          {isDescriptive && (
+            <View style={currentStyles.descriptiveBadge}>
+              <Ionicons name="create-outline" size={14} color="#1E40AF" />
+              <Text style={currentStyles.descriptiveBadgeText}>
+                {currentQuestion.type === 'what_happens'
+                  ? t('quiz_taking.what_happens', 'What Happens?')
+                  : t('quiz_taking.give_a_reason', 'Give a Reason')}
+              </Text>
+            </View>
+          )}
+
           <Text style={currentStyles.questionText}> {currentQuestion.question} </Text>
 
-          <View style={currentStyles.answersContainer}>
-            {currentQuestion.answers.map((answer, index) => {
-              const isSelected = selectedAnswers[currentQuestion.id] === answer;
-              return (
-                <TouchableOpacity
-                  key={index}
-                  style={[currentStyles.answerButton, isSelected && currentStyles.selectedAnswer]}
-                  onPress={() => handleAnswerSelect(currentQuestion.id, answer)}
-                  activeOpacity={0.8}
-                >
-                  <View
-                    style={[
-                      currentStyles.answerLetter,
-                      isSelected && currentStyles.selectedAnswerLetter,
-                    ]}
+          {isDescriptive ? (
+            /* Descriptive answer: multi-line text input */
+            <View style={currentStyles.descriptiveContainer}>
+              <TextInput
+                style={[
+                  currentStyles.descriptiveInput,
+                  { textAlign: isRTL ? 'right' : 'left' },
+                ]}
+                value={selectedAnswers[currentQuestion.id] || ''}
+                onChangeText={(text) => handleDescriptiveAnswer(currentQuestion.id, text)}
+                placeholder={t('quiz_taking.write_your_answer', 'Write your answer here...')}
+                placeholderTextColor={theme.colors.textSecondary}
+                multiline
+                textAlignVertical="top"
+                maxLength={2000}
+              />
+              <Text style={currentStyles.charCount}>
+                {(selectedAnswers[currentQuestion.id] || '').length} / 2000
+              </Text>
+            </View>
+          ) : (
+            /* MCQ / True-False answer buttons */
+            <View style={currentStyles.answersContainer}>
+              {currentQuestion.answers.map((answer, index) => {
+                const isSelected = selectedAnswers[currentQuestion.id] === answer;
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    style={[currentStyles.answerButton, isSelected && currentStyles.selectedAnswer]}
+                    onPress={() => handleAnswerSelect(currentQuestion.id, answer)}
+                    activeOpacity={0.8}
                   >
-                    <Text
+                    <View
                       style={[
-                        currentStyles.answerLetterText,
-                        isSelected && currentStyles.selectedAnswerLetterText,
+                        currentStyles.answerLetter,
+                        isSelected && currentStyles.selectedAnswerLetter,
                       ]}
                     >
-                      {String.fromCharCode(65 + index)}
-                    </Text>
-                  </View>
-                  <Text
-                    style={[
-                      currentStyles.answerText,
-                      isSelected && currentStyles.selectedAnswerText,
-                    ]}
-                  >
-                    {answer}
-                  </Text>
-                  {isSelected && (
-                    <View style={currentStyles.checkIconContainer}>
-                      <Ionicons name="checkmark" size={16} color="#20A66E" />
+                      <Text
+                        style={[
+                          currentStyles.answerLetterText,
+                          isSelected && currentStyles.selectedAnswerLetterText,
+                        ]}
+                      >
+                        {String.fromCharCode(65 + index)}
+                      </Text>
                     </View>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+                    <Text
+                      style={[
+                        currentStyles.answerText,
+                        isSelected && currentStyles.selectedAnswerText,
+                      ]}
+                    >
+                      {answer}
+                    </Text>
+                    {isSelected && (
+                      <View style={currentStyles.checkIconContainer}>
+                        <Ionicons name="checkmark" size={16} color="#20A66E" />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
         </View>
       </ScrollView>
+
 
       {/* Navigation Footer */}
       <View
@@ -586,6 +639,41 @@ const styles = (theme: any, typography: any, fontWeight: any, spacing: any, bord
       justifyContent: 'center',
       alignItems: 'center',
       ...common.marginStart(spacing.sm),
+    },
+    descriptiveBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#EFF6FF',
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 10,
+      alignSelf: 'flex-start',
+      marginBottom: spacing.sm,
+      gap: 6,
+    },
+    descriptiveBadgeText: {
+      ...typography('caption'),
+      ...fontWeight('700'),
+      color: '#1E40AF',
+    },
+    descriptiveContainer: {
+      gap: 8,
+    },
+    descriptiveInput: {
+      backgroundColor: '#F8FAFC',
+      borderWidth: 1.5,
+      borderColor: '#CBD5E1',
+      borderRadius: 16,
+      padding: 16,
+      minHeight: 180,
+      ...typography('body'),
+      color: '#1E293B',
+      lineHeight: 24,
+    },
+    charCount: {
+      ...typography('caption'),
+      color: theme.colors.textSecondary,
+      textAlign: 'right',
     },
     navigationContainer: {
       flexDirection: common.rowDirection,
