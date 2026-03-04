@@ -395,5 +395,19 @@
     "header_subtitle": "استكشف المواد التعليمية المتاحة",
     "no_booklets": "لا توجد كتيبات متاحة",
     "no_booklets_subtitle": "ستظهر الكتيبات هنا بمجرد إضافتها للنظام"
+  },
+  "profile_screen": {
+    "header_title": "حسابي",
+    "edit_profile": "تعديل الملف الشخصي",
+    "change_language": "تغيير اللغة",
+    "change_language_desc": "العربية",
+    "badges": "الشارات",
+    "help_support": "المساعدة والدعم",
+    "dark_mode": "الوضع الداكن",
+    "log_out": "تسجيل الخروج",
+    "choose_language": "اختر اللغة",
+    "select_language_msg": "اختر لغتك المفضلة",
+    "cancel": "إلغاء",
+    "not_specified": "غير محدد"
   }
 }
