@@ -5,15 +5,15 @@ import { COLORS } from './colors';
  * Font and Typography Configuration for El-Booklets
  *
  * Defines font families, sizes, and styles matching the UI guide.
- * Uses Inter (Latin) and Cairo (Arabic) variable fonts.
+ * Uses Lexend (Latin) and Cairo (Arabic) variable fonts.
  */
 
 // Font family names
 export const fontFamilies = {
-  regular: 'Inter',
-  medium: 'Inter',
-  semiBold: 'Inter',
-  bold: 'Inter',
+  regular: 'Lexend',
+  medium: 'Lexend',
+  semiBold: 'Lexend',
+  bold: 'Lexend',
 
   arabicRegular: 'Cairo',
   arabicMedium: 'Cairo',
@@ -84,7 +84,7 @@ export const getTextStyle = (style: keyof typeof textStyles, isArabic: boolean =
   const weight = (baseStyle as any).fontWeight || fontWeights.regular;
 
   // Resolve precise font-family for Android static fonts
-  let resolvedFontFamily = isArabic ? 'Cairo' : 'Inter';
+  let resolvedFontFamily = isArabic ? 'Cairo' : 'Lexend';
   if (Platform.OS === 'android') {
     if (isArabic) {
       if (weight === '700' || weight === 'bold') resolvedFontFamily = 'Cairo-Bold';
@@ -92,10 +92,10 @@ export const getTextStyle = (style: keyof typeof textStyles, isArabic: boolean =
       else if (weight === '500') resolvedFontFamily = 'Cairo-Medium';
       else resolvedFontFamily = 'Cairo-Regular';
     } else {
-      if (weight === '700' || weight === 'bold') resolvedFontFamily = 'Inter-Bold';
-      else if (weight === '600') resolvedFontFamily = 'Inter-SemiBold';
-      else if (weight === '500') resolvedFontFamily = 'Inter-Medium';
-      else resolvedFontFamily = 'Inter-Regular';
+      if (weight === '700' || weight === 'bold') resolvedFontFamily = 'Lexend-Bold';
+      else if (weight === '600') resolvedFontFamily = 'Lexend-SemiBold';
+      else if (weight === '500') resolvedFontFamily = 'Lexend-Medium';
+      else resolvedFontFamily = 'Lexend-Regular';
     }
   }
 

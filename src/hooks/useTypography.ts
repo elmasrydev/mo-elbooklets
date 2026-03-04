@@ -8,7 +8,7 @@ import { getTextStyle, textStyles, TextStyleType } from '../config/fonts';
  * On iOS, variable fonts handle fontWeight natively, so we return the base family.
  */
 const resolveWeightFamily = (weight: string, isArabic: boolean): string => {
-  const base = isArabic ? 'Cairo' : 'Inter';
+  const base = isArabic ? 'Cairo' : 'Lexend';
   if (Platform.OS !== 'android') return base;
 
   switch (weight) {
@@ -28,7 +28,7 @@ const resolveWeightFamily = (weight: string, isArabic: boolean): string => {
 
 /**
  * A hook that provides language-aware typography styles.
- * It automatically selects the correct font family (Inter for LTR, Cairo for RTL).
+ * It automatically selects the correct font family (Lexend for LTR, Cairo for RTL).
  */
 export const useTypography = () => {
   const { language } = useLanguage();
