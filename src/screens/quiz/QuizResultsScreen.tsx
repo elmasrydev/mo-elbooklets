@@ -31,7 +31,12 @@ interface UserQuizAnswer {
   };
   selected_answer: string;
   is_correct: boolean;
+  score?: number;
   explanation?: string;
+  descriptive_feedback?: {
+    coverage_percentage: number;
+    score_out_of_10: number;
+  };
 }
 
 interface QuizResult {
@@ -146,12 +151,18 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
               question {
                 id
                 question
+                type
                 answer_1
                 explanation
               }
               selected_answer
               is_correct
+              score
               explanation
+              descriptive_feedback {
+                coverage_percentage
+                score_out_of_10
+              }
             }
             isPassed
           }

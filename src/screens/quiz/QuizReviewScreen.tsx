@@ -66,6 +66,15 @@ const QuizReviewScreen: React.FC = () => {
               is_correct
               score
               explanation
+              descriptive_feedback {
+                coverage_percentage
+                score_out_of_10
+                covered_concepts
+                partially_covered
+                missing_concepts
+                contradictions
+                feedback
+              }
             }
           }
         }
@@ -147,7 +156,8 @@ const QuizReviewScreen: React.FC = () => {
     );
   }
 
-  const incorrectCount = result.userAnswers.filter((a: any) => !a.is_correct).length;
+  const wrongAnswers = result.userAnswers.filter((a: any) => !a.is_correct);
+  const incorrectCount = wrongAnswers.length;
   const headerTop = Platform.OS === 'ios' ? 0 : insets.top;
 
   const isDescriptiveType = (type: string) =>
@@ -172,8 +182,18 @@ const QuizReviewScreen: React.FC = () => {
         contentContainerStyle={currentStyles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {result.userAnswers.map((ua: any, index: number) => {
+        {wrongAnswers.length === 0 && (
+          <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+            <Ionicons name="checkmark-circle" size={64} color="#10B981" style={{ marginBottom: 16 }} />
+            <Text style={{ ...typography('h3'), ...fontWeight('700'), color: '#10B981', textAlign: 'center' }}>
+              {t('quiz_review.all_correct', 'All answers are correct! 🎉')}
+            </Text>
+          </View>
+        )}
+        {wrongAnswers.map((ua: any) => {
           const isDescriptive = isDescriptiveType(ua.question.type);
+          // Find the original index in the full result list
+          const originalIndex = result.userAnswers.findIndex((ans: any) => ans.question.id === ua.question.id);
 
           return (
             <View key={ua.question.id} style={currentStyles.questionCard}>
@@ -185,7 +205,7 @@ const QuizReviewScreen: React.FC = () => {
                   ]}
                 >
                   <Text style={currentStyles.badgeText}>
-                    {t('quiz_taking.question_number', { number: index + 1 })}
+                    {t('quiz_taking.question_number', { number: originalIndex + 1 })}
                   </Text>
                 </View>
                 {isDescriptive && (
@@ -227,7 +247,9 @@ const QuizReviewScreen: React.FC = () => {
                         { color: ua.is_correct ? '#10B981' : '#EF4444' },
                       ]}
                     >
-                      {Math.round((ua.score || 0) * 100)}%
+                      {isDescriptive && ua.descriptive_feedback?.coverage_percentage !== undefined
+                        ? Math.round(ua.descriptive_feedback.coverage_percentage)
+                        : Math.round((ua.score || 0) * 100)}%
                     </Text>
                   </View>
                 )}
@@ -236,14 +258,14 @@ const QuizReviewScreen: React.FC = () => {
               <Text style={currentStyles.questionText}> {ua.question.question} </Text>
 
               {isDescriptive ? (
-                /* Descriptive review: show student answer + model answer */
+                /* Descriptive review: show student answer + LLM feedback */
                 <View style={{ gap: 16 }}>
                   {/* Student answer */}
                   <View
                     style={{
                       backgroundColor: '#F8FAFC',
                       borderWidth: 1.5,
-                      borderColor: ua.is_correct ? '#10B981' : '#EF4444',
+                      borderColor: '#EF4444',
                       borderRadius: 16,
                       padding: 16,
                     }}
@@ -252,7 +274,7 @@ const QuizReviewScreen: React.FC = () => {
                       style={[
                         currentStyles.badgeText,
                         {
-                          color: ua.is_correct ? '#10B981' : '#EF4444',
+                          color: '#EF4444',
                           marginBottom: 8,
                           textTransform: 'none',
                           fontSize: 12,
@@ -273,7 +295,7 @@ const QuizReviewScreen: React.FC = () => {
                     </Text>
                   </View>
 
-                  {/* Model answer */}
+                  {/* Always show Model Answer (Educative Purpose) - Moved to top for quick comparison */}
                   <View
                     style={{
                       backgroundColor: '#F0FDF4',
@@ -286,12 +308,7 @@ const QuizReviewScreen: React.FC = () => {
                     <Text
                       style={[
                         currentStyles.badgeText,
-                        {
-                          color: '#10B981',
-                          marginBottom: 8,
-                          textTransform: 'none',
-                          fontSize: 12,
-                        },
+                        { color: '#10B981', marginBottom: 8, textTransform: 'none', fontSize: 12 },
                       ]}
                     >
                       {t('quiz_review.model_answer', 'Model Answer')}:
@@ -307,7 +324,190 @@ const QuizReviewScreen: React.FC = () => {
                       {ua.question.answer_1}
                     </Text>
                   </View>
+
+                  {/* LLM Feedback / Concept Analysis (Source of Truth) */}
+                  {ua.descriptive_feedback && (
+                    <View style={{ gap: 12 }}>
+                      {/* Covered concepts */}
+                      {ua.descriptive_feedback.covered_concepts?.length > 0 && (
+                        <View
+                          style={{
+                            backgroundColor: '#F0FDF4',
+                            borderWidth: 1.5,
+                            borderColor: '#10B981',
+                            borderRadius: 16,
+                            padding: 16,
+                          }}
+                        >
+                          <Text
+                            style={[
+                              currentStyles.badgeText,
+                              { color: '#065F46', marginBottom: 8, textTransform: 'none', fontSize: 12 },
+                            ]}
+                          >
+                            ✅ {t('quiz_review.covered_concepts', 'Covered Concepts')}:
+                          </Text>
+                          {ua.descriptive_feedback.covered_concepts.map((concept: string, i: number) => (
+                            <Text
+                              key={i}
+                              style={{
+                                ...typography('bodySmall'),
+                                color: '#047857',
+                                lineHeight: 20,
+                                textAlign: common.textAlign as any,
+                                marginBottom: 2,
+                              }}
+                            >
+                              ✓ {concept}
+                            </Text>
+                          ))}
+                        </View>
+                      )}
+
+                      {/* Partially covered concepts */}
+                      {ua.descriptive_feedback.partially_covered?.length > 0 && (
+                        <View
+                          style={{
+                            backgroundColor: '#FFFBEB',
+                            borderWidth: 1.5,
+                            borderColor: '#F59E0B',
+                            borderRadius: 16,
+                            padding: 16,
+                          }}
+                        >
+                          <Text
+                            style={[
+                              currentStyles.badgeText,
+                              { color: '#92400E', marginBottom: 8, textTransform: 'none', fontSize: 12 },
+                            ]}
+                          >
+                            ⛅ {t('quiz_review.partially_covered', 'Partially Covered')}:
+                          </Text>
+                          {ua.descriptive_feedback.partially_covered.map((concept: string, i: number) => (
+                            <Text
+                              key={i}
+                              style={{
+                                ...typography('bodySmall'),
+                                color: '#78350F',
+                                lineHeight: 20,
+                                textAlign: common.textAlign as any,
+                                marginBottom: 2,
+                              }}
+                            >
+                              • {concept}
+                            </Text>
+                          ))}
+                        </View>
+                      )}
+
+                      {/* Missing concepts */}
+                      {ua.descriptive_feedback.missing_concepts?.length > 0 && (
+                        <View
+                          style={{
+                            backgroundColor: '#FEF2F2',
+                            borderWidth: 1.5,
+                            borderColor: '#EF4444',
+                            borderRadius: 16,
+                            padding: 16,
+                          }}
+                        >
+                          <Text
+                            style={[
+                              currentStyles.badgeText,
+                              { color: '#991B1B', marginBottom: 8, textTransform: 'none', fontSize: 12 },
+                            ]}
+                          >
+                            ❌ {t('quiz_review.missing_concepts', 'Missing Concepts')}:
+                          </Text>
+                          {ua.descriptive_feedback.missing_concepts.map((concept: string, i: number) => (
+                            <Text
+                              key={i}
+                              style={{
+                                ...typography('bodySmall'),
+                                color: '#DC2626',
+                                lineHeight: 20,
+                                textAlign: common.textAlign as any,
+                                marginBottom: 2,
+                              }}
+                            >
+                              • {concept}
+                            </Text>
+                          ))}
+                        </View>
+                      )}
+
+                      {/* Contradictions warning */}
+                      {ua.descriptive_feedback.contradictions?.length > 0 && (
+                        <View
+                          style={{
+                            backgroundColor: '#FEF2F2',
+                            borderWidth: 1.5,
+                            borderColor: '#B91C1C',
+                            borderRadius: 16,
+                            padding: 16,
+                          }}
+                        >
+                          <Text
+                            style={[
+                              currentStyles.badgeText,
+                              { color: '#7F1D1D', marginBottom: 8, textTransform: 'none', fontSize: 12 },
+                            ]}
+                          >
+                            ⚠️ {t('quiz_review.contradictions', 'Contradictions')}:
+                          </Text>
+                          {ua.descriptive_feedback.contradictions.map((item: string, i: number) => (
+                            <Text
+                              key={i}
+                              style={{
+                                ...typography('bodySmall'),
+                                color: '#991B1B',
+                                lineHeight: 20,
+                                textAlign: common.textAlign as any,
+                                marginBottom: 2,
+                              }}
+                            >
+                              • {item}
+                            </Text>
+                          ))}
+                        </View>
+                      )}
+
+                      {/* Feedback text from LLM */}
+                      {ua.descriptive_feedback.feedback && (
+                        <View
+                          style={{
+                            backgroundColor: '#F0F9FF',
+                            borderWidth: 1.5,
+                            borderColor: '#0EA5E9',
+                            borderRadius: 16,
+                            padding: 16,
+                          }}
+                        >
+                          <Text
+                            style={[
+                              currentStyles.badgeText,
+                              { color: '#0369A1', marginBottom: 8, textTransform: 'none', fontSize: 12 },
+                            ]}
+                          >
+                            💡 {t('quiz_review.feedback', 'Feedback')}:
+                          </Text>
+                          <Text
+                            style={{
+                              ...typography('body'),
+                              color: '#075985',
+                              lineHeight: 22,
+                              textAlign: common.textAlign as any,
+                            }}
+                          >
+                            {ua.descriptive_feedback.feedback}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  )}
                 </View>
+
+
               ) : (
                 /* MCQ review: show options */
                 <View style={currentStyles.optionsContainer}>
