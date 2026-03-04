@@ -11,7 +11,7 @@ import HomeScreen from '../screens/HomeScreen';
 import StudyScreen from '../screens/StudyScreen';
 import QuizScreen from '../screens/QuizScreen';
 import LeaderboardScreen from '../screens/LeaderboardScreen';
-import MoreScreen from '../screens/MoreScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 import SocialScreen from '../screens/SocialScreen';
 import StudyCalendarScreen from '../screens/StudyCalendarScreen';
 import StudyChaptersScreen from '../screens/study/StudyChaptersScreen';
@@ -104,7 +104,7 @@ const TabScreens: React.FC = () => {
     },
     {
       name: 'Profile',
-      component: MoreScreen,
+      component: ProfileScreen,
       labelKey: 'common.profile',
       customIcon: require('../../assets/images/profileTab.png'),
     },

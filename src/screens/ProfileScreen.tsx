@@ -22,7 +22,7 @@ import { Ionicons } from '@expo/vector-icons';
 // #TODO: set the correct version
 const APP_VERSION = 'EL-Booklets v1.0.0';
 
-const MoreScreen: React.FC = () => {
+const ProfileScreen: React.FC = () => {
   const { user, logout } = useAuth();
   const { theme, spacing, fontSizes, borderRadius, isDark, toggleTheme } = useTheme();
   const common = useCommonStyles();
@@ -392,4 +392,4 @@ const styles = (
     },
   });
 
-export default MoreScreen;
+export default ProfileScreen;
