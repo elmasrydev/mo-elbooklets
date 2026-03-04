@@ -66,10 +66,10 @@ const MoreScreen: React.FC = () => {
 
       <ScrollView
         style={currentStyles.scrollView}
-        contentContainerStyle={{
-          padding: layout.screenPadding,
-          paddingBottom: Math.max(common.insets.bottom, spacing['2xl']),
-        }}
+        contentContainerStyle={[
+          currentStyles.scrollContentContainer,
+          { paddingBottom: Math.max(common.insets.bottom, spacing['2xl']) },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {/* Profile Section */}
@@ -386,6 +386,9 @@ const styles = (
       color: theme.colors.textSecondary,
       textAlign: 'center',
       marginTop: spacing['2xl'],
+    },
+    scrollContentContainer: {
+      padding: layout.screenPadding,
     },
   });
 

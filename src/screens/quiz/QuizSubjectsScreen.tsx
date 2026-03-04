@@ -62,11 +62,6 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
     }
   };
 
-  const getSubjectIcon = (subjectName: string): string => {
-    // Replaced by SubjectIcon component
-    return '';
-  };
-
   const currentStyles = styles(
     theme,
     common,
@@ -222,7 +217,7 @@ const styles = (
       borderColor: theme.colors.border,
       ...layout.shadow,
     },
-    subjectIconText: { fontSize: 24 },
+
     subjectName: {
       ...typography('body'),
       ...fontWeight('bold'),

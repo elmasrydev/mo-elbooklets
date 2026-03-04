@@ -7,7 +7,6 @@ import {
   ScrollView,
   ActivityIndicator,
   Dimensions,
-  Platform,
   Image,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -24,7 +23,6 @@ import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, Circle, G, Text as SvgText } from 'react-native-svg';
 import RecentActivityCard from '../components/RecentActivityCard';
 import UnifiedHeader from '../components/UnifiedHeader';
-import { textAlign } from '../lib/rtl';
 import { getSubjectConfig } from '../utils/subjectTheme';
 import SubjectIcon from '../components/SubjectIcon';
 
@@ -108,7 +106,8 @@ const WheelOfSuccessSimple: React.FC<{
   common: any;
   spacing: any;
   borderRadius: any;
-}> = ({ theme, data, t, typography, fontWeight, common, spacing, borderRadius }) => {
+  wheelStyles: any;
+}> = ({ theme, data, t, typography, fontWeight, common, spacing, borderRadius, wheelStyles }) => {
   if (!data || !data.arms || data.arms.length === 0) return null;
 
   const ringSize = 184;
@@ -123,38 +122,11 @@ const WheelOfSuccessSimple: React.FC<{
   const innerOffset = innerCircumference - (avgArmProgress / 100) * innerCircumference;
 
   return (
-    <View
-      style={{
-        backgroundColor: theme.colors.surface,
-        padding: spacing.lg,
-        borderRadius: borderRadius.xl,
-        marginBottom: spacing.sectionGap,
-        borderWidth: 1,
-        borderColor: theme.colors.border,
-        ...layout.shadow,
-        alignItems: 'center',
-      }}
-    >
-      <Text
-        style={{
-          ...typography('h3'),
-          color: theme.colors.text,
-          marginBottom: spacing.lg,
-          textAlign: 'center',
-        }}
-      >
-        {t('home_screen.wheel_of_success')}
-      </Text>
+    <View style={wheelStyles.wheelCard}>
+      <Text style={wheelStyles.wheelTitle}>{t('home_screen.wheel_of_success')}</Text>
 
-      <View
-        style={{
-          width: ringSize,
-          height: ringSize,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Svg width={ringSize} height={ringSize} style={{ transform: [{ rotate: '-90deg' }] }}>
+      <View style={wheelStyles.ringContainer}>
+        <Svg width={ringSize} height={ringSize} style={wheelStyles.svgRotate}>
           <Circle
             cx={cx}
             cy={cy}
@@ -194,42 +166,13 @@ const WheelOfSuccessSimple: React.FC<{
             strokeLinecap="round"
           />
         </Svg>
-        <View style={{ position: 'absolute', alignItems: 'center', justifyContent: 'center' }}>
-          <Text
-            style={{
-              ...typography('h1'),
-              ...fontWeight('bold'),
-              color: theme.colors.text,
-              fontSize: 28,
-            }}
-          >
-            {round(data.overallProgress)}%
-          </Text>
-          <Text
-            style={{
-              ...typography('caption'),
-              fontSize: 9,
-              color: theme.colors.textSecondary,
-              letterSpacing: 1.5,
-              textTransform: 'uppercase',
-              ...fontWeight('bold'),
-            }}
-          >
-            {t('common.progress')}
-          </Text>
+        <View style={wheelStyles.ringCenterOverlay}>
+          <Text style={wheelStyles.ringPercentText}>{round(data.overallProgress)}%</Text>
+          <Text style={wheelStyles.ringProgressLabel}>{t('common.progress')}</Text>
         </View>
       </View>
 
-      <Text
-        style={{
-          ...typography('bodySmall'),
-          color: theme.colors.textSecondary,
-          marginTop: spacing.lg,
-          textAlign: 'center',
-        }}
-      >
-        {t('home_screen.keep_completing')}
-      </Text>
+      <Text style={wheelStyles.wheelFooterText}>{t('home_screen.keep_completing')}</Text>
     </View>
   );
 };
@@ -354,7 +297,7 @@ const HomeScreen: React.FC = () => {
     return (
       <View style={common.container}>
         <UnifiedHeader title={isRTL ? 'البوكلتس' : 'EL-Booklets'} />
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <View style={s.loadingCenter}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
       </View>
@@ -366,7 +309,7 @@ const HomeScreen: React.FC = () => {
       <UnifiedHeader title={isRTL ? 'البوكلتس' : 'EL-Booklets'} />
 
       <ScrollView
-        style={{ flex: 1 }}
+        style={s.scrollFlex}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingBottom: Math.max(common.insets.bottom, spacing.xl),
@@ -375,7 +318,7 @@ const HomeScreen: React.FC = () => {
       >
         {/* ─── 1. Greeting Card ──────────────────────────────────── */}
         <View style={s.greetingCard}>
-          <View style={{ flex: 1 }}>
+          <View style={s.flex1}>
             <Text style={s.greetingName}>
               {t('home_screen.hi')}, {user?.name?.split(' ')[0] || 'Student'}! 👋
             </Text>
@@ -391,7 +334,7 @@ const HomeScreen: React.FC = () => {
 
         {/* ─── 2. Quiz CTA Card ──────────────────────────────────── */}
         <View style={s.quizCTACard}>
-          <View style={{ zIndex: 1, flex: 1 }}>
+          <View style={s.quizCTAContent}>
             <Text style={s.quizCTATitle}>{t('home_screen.take_quiz')}</Text>
             <Text style={s.quizCTASubtitle}>{t('home_screen.test_knowledge_subtitle')}</Text>
             <TouchableOpacity
@@ -406,13 +349,7 @@ const HomeScreen: React.FC = () => {
           <View style={s.quizCTAIconBg}>
             <Image
               source={require('../../assets/images/quiz-illustration.png')}
-              style={{
-                transform: [{ scaleX: isRTL ? -1 : 1 }],
-                width: 120,
-                height: 120,
-                //opacity: 0.9,
-                resizeMode: 'contain',
-              }}
+              style={[s.quizCTAIllustration, { transform: [{ scaleX: isRTL ? -1 : 1 }] }]}
             />
           </View>
         </View>
@@ -428,7 +365,7 @@ const HomeScreen: React.FC = () => {
             >
               <Ionicons name="document-text" size={27} color={theme.colors.success || '#10B981'} />
             </View>
-            <View style={{ flex: 1, justifyContent: 'center' }}>
+            <View style={s.statContent}>
               <Text style={s.statValue}>{activitiesData?.total_quizzes ?? 0}</Text>
               <Text style={s.statLabel}>{t('home_screen.quizzes_done')}</Text>
             </View>
@@ -501,7 +438,7 @@ const HomeScreen: React.FC = () => {
         )}
         {/* ─── 4. My Subjects Grid ───────────────────────────────── */}
         {subjects.length > 0 && (
-          <View style={{ marginBottom: spacing.sectionGap }}>
+          <View style={s.sectionGapWrapper}>
             <View style={s.sectionHeader}>
               <Text style={s.sectionTitle}>{t('home_screen.my_subjects')}</Text>
               <TouchableOpacity onPress={() => navigation.navigate('Study')}>
@@ -578,11 +515,12 @@ const HomeScreen: React.FC = () => {
           common={common}
           spacing={spacing}
           borderRadius={borderRadius}
+          wheelStyles={s}
         />
 
         {/* ─── 6. Community Feed ─────────────────────────────────── */}
         {socialFeed.length > 0 && (
-          <View style={{ marginBottom: spacing.sectionGap }}>
+          <View style={s.sectionGapWrapper}>
             <Text style={[s.sectionTitle, { marginBottom: spacing.sectionGap }]}>
               {t('home_screen.community_feed')}
             </Text>
@@ -598,13 +536,7 @@ const HomeScreen: React.FC = () => {
                     {item.user?.name?.charAt(0).toUpperCase() || '?'}
                   </Text>
                 </View>
-                <View
-                  style={{
-                    flex: 1,
-                    ...common.marginStart(spacing.md),
-                    alignItems: common.alignStart,
-                  }}
-                >
+                <View style={s.feedContentArea}>
                   <Text style={s.feedUserName}>{item.user?.name}</Text>
                   {item.type === 'quiz_completion' && item.quizData && (
                     <Text style={s.feedText} numberOfLines={2}>
@@ -615,11 +547,11 @@ const HomeScreen: React.FC = () => {
                     </Text>
                   )}
                   <View style={[s.feedActions, { flexDirection: common.rowDirection }]}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                    <View style={s.feedActionRow}>
                       <Ionicons name="heart-outline" size={14} color={theme.colors.textTertiary} />
                       <Text style={s.feedActionText}> {item.likes}</Text>
                     </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                    <View style={s.feedActionRow}>
                       <Ionicons
                         name="chatbubble-outline"
                         size={14}
@@ -656,9 +588,7 @@ const HomeScreen: React.FC = () => {
                       },
                     ]}
                   >
-                    <View
-                      style={{ flexDirection: common.rowDirection, alignItems: 'center', flex: 1 }}
-                    >
+                    <View style={s.leaderboardRowInner}>
                       <Text
                         style={[
                           s.leaderboardRank,
@@ -692,7 +622,7 @@ const HomeScreen: React.FC = () => {
                           : entry.name}
                       </Text>
                     </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={s.leaderboardPointsRow}>
                       <Text
                         style={[
                           s.leaderboardPoints,
@@ -704,19 +634,19 @@ const HomeScreen: React.FC = () => {
                       {index === 0 ? (
                         <Image
                           source={require('../../assets/images/leader1medal.png')}
-                          style={{ width: 16, height: 16, marginLeft: 6 }}
+                          style={s.medalIcon}
                           resizeMode="contain"
                         />
                       ) : index === 1 ? (
                         <Image
                           source={require('../../assets/images/leader2medal.png')}
-                          style={{ width: 16, height: 16, marginLeft: 6 }}
+                          style={s.medalIcon}
                           resizeMode="contain"
                         />
                       ) : index === 2 ? (
                         <Image
                           source={require('../../assets/images/leader3medal.png')}
-                          style={{ width: 16, height: 16, marginLeft: 6 }}
+                          style={s.medalIcon}
                           resizeMode="contain"
                         />
                       ) : null}
@@ -726,11 +656,7 @@ const HomeScreen: React.FC = () => {
               })}
             </View>
             <TouchableOpacity
-              style={{
-                alignItems: 'center',
-                paddingVertical: spacing.md,
-                marginTop: spacing.sm,
-              }}
+              style={s.leaderboardViewAllBtn}
               onPress={() => navigation.navigate('Leaderboard')}
             >
               <Text style={s.viewAllLink}>{t('home_screen.view_all')}</Text>
@@ -740,7 +666,7 @@ const HomeScreen: React.FC = () => {
 
         {/* ─── 8. Recent Activity ────────────────────────────────── */}
         {activitiesData && activitiesData.activities?.length > 0 && (
-          <View style={{ marginBottom: spacing.sectionGap }}>
+          <View style={s.sectionGapWrapper}>
             <View style={s.sectionHeader}>
               <Text style={s.sectionTitle}>{t('home_screen.recent_activity')}</Text>
               <TouchableOpacity onPress={() => navigation.navigate('Quiz')}>
@@ -1156,6 +1082,124 @@ const getStyles = (
       alignItems: 'center',
       borderTopWidth: 1,
       borderTopColor: theme.colors.border,
+    },
+
+    // Wheel of Success
+    wheelCard: {
+      backgroundColor: theme.colors.surface,
+      padding: spacing.lg,
+      borderRadius: borderRadius.xl,
+      marginBottom: spacing.sectionGap,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      ...layout.shadow,
+      alignItems: 'center',
+    },
+    wheelTitle: {
+      ...typography('h3'),
+      color: theme.colors.text,
+      marginBottom: spacing.lg,
+      textAlign: 'center',
+    },
+    ringContainer: {
+      width: 184,
+      height: 184,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    svgRotate: {
+      transform: [{ rotate: '-90deg' }],
+    },
+    ringCenterOverlay: {
+      position: 'absolute',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    ringPercentText: {
+      ...typography('h1'),
+      ...fontWeight('bold'),
+      color: theme.colors.text,
+      fontSize: 28,
+    },
+    ringProgressLabel: {
+      ...typography('caption'),
+      fontSize: 9,
+      color: theme.colors.textSecondary,
+      letterSpacing: 1.5,
+      textTransform: 'uppercase',
+      ...fontWeight('bold'),
+    },
+    wheelFooterText: {
+      ...typography('bodySmall'),
+      color: theme.colors.textSecondary,
+      marginTop: spacing.lg,
+      textAlign: 'center',
+    },
+
+    // Layout Helpers
+    loadingCenter: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    scrollFlex: {
+      flex: 1,
+    },
+    flex1: {
+      flex: 1,
+    },
+    sectionGapWrapper: {
+      marginBottom: spacing.sectionGap,
+    },
+
+    // Quiz CTA Extras
+    quizCTAContent: {
+      zIndex: 1,
+      flex: 1,
+    },
+    quizCTAIllustration: {
+      width: 120,
+      height: 120,
+      resizeMode: 'contain',
+    },
+
+    // Stat Content
+    statContent: {
+      flex: 1,
+      justifyContent: 'center',
+    },
+
+    // Feed Extras
+    feedContentArea: {
+      flex: 1,
+      ...common.marginStart(spacing.md),
+      alignItems: common.alignStart,
+    },
+    feedActionRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+    },
+
+    // Leaderboard Extras
+    leaderboardRowInner: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      flex: 1,
+    },
+    leaderboardPointsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    medalIcon: {
+      width: 16,
+      height: 16,
+      marginLeft: 6,
+    },
+    leaderboardViewAllBtn: {
+      alignItems: 'center',
+      paddingVertical: spacing.md,
+      marginTop: spacing.sm,
     },
   });
 

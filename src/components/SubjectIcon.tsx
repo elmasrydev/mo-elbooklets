@@ -34,14 +34,14 @@ const SubjectIcon: React.FC<SubjectIconProps> = ({ subjectName, size = 56, style
           style={[
             styles.subjectIcon,
             {
-              width: size * 0.5,
-              height: size * 0.5,
+              width: size * 0.48,
+              height: size * 0.48,
             },
             iconStyle,
           ]}
         />
       ) : (
-        <Ionicons name={config.icon as any} size={size * 0.5} color={config.color} />
+        <Ionicons name={config.icon as any} size={size * 0.48} color={config.color} />
       )}
     </View>
   );

@@ -1,18 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-  ActivityIndicator,
-  Modal,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
-import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
@@ -45,7 +35,6 @@ interface QuizHistory {
 type QuizFlowStep = 'history' | 'ready';
 
 const QuizScreen: React.FC = () => {
-  const { user } = useAuth();
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { t } = useTranslation();
   const common = useCommonStyles();
@@ -252,7 +241,10 @@ const QuizScreen: React.FC = () => {
         ) : (
           <ScrollView
             style={currentStyles.historyList}
-            contentContainerStyle={{ paddingBottom: Math.max(common.insets.bottom, spacing.xl) }}
+            contentContainerStyle={[
+              currentStyles.historyContentContainer,
+              { paddingBottom: Math.max(common.insets.bottom, spacing.xl) },
+            ]}
             showsVerticalScrollIndicator={false}
           >
             {quizHistory.map((quiz) => (
@@ -378,6 +370,7 @@ const styles = (
       textAlign: 'center',
       color: theme.colors.textSecondary,
     },
+    historyContentContainer: {},
   });
 
 export default QuizScreen;
