@@ -1,249 +1,216 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  Switch,
+  Alert,
+  Platform,
+} from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { useLanguage } from '../context/LanguageContext';
-import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
-import { layout } from '../config/layout';
-import ColorThemePicker from '../components/ColorThemePicker';
+import { useLanguage } from '../context/LanguageContext';
 import { useTypography } from '../hooks/useTypography';
+import { layout } from '../config/layout';
 import UnifiedHeader from '../components/UnifiedHeader';
+import { useTranslation } from 'react-i18next';
+import { Ionicons } from '@expo/vector-icons';
+// #TODO: set the correct version
+const APP_VERSION = 'EL-Booklets v1.0.0';
 
 const MoreScreen: React.FC = () => {
   const { user, logout } = useAuth();
-  const { theme, toggleTheme, isDark, fontSizes, spacing, borderRadius } = useTheme();
-  const { language, setLanguage, isRTL } = useLanguage();
-  const { t } = useTranslation();
+  const { theme, spacing, fontSizes, borderRadius, isDark, toggleTheme } = useTheme();
   const common = useCommonStyles();
-  const { typography, fontWeight} = useTypography();
+  const { isRTL, setLanguage } = useLanguage();
+  const { typography, fontWeight } = useTypography();
+  const { t } = useTranslation();
 
   const handleLogout = () => {
-    Alert.alert(t('more_screen.logout'), t('more_screen.logout_confirm'), [
+    Alert.alert(t('profile_screen.log_out'), t('more_screen.logout_confirm'), [
       { text: t('common.cancel'), style: 'cancel' },
-      { text: t('more_screen.logout'), style: 'destructive', onPress: logout },
+      { text: t('profile_screen.log_out'), style: 'destructive', onPress: logout },
     ]);
   };
 
-  const menuItems = [
-    {
-      id: 'profile',
-      title: t('more_screen.edit_profile'),
-      subtitle: t('more_screen.update_profile_info'),
-      icon: 'person-outline',
-      iconColor: theme.colors.primary,
-      iconBg: theme.colors.primary + '1A',
-      action: () => {},
-    },
-    {
-      id: 'language',
-      title: t('more_screen.language'),
-      subtitle: t('more_screen.choose_language'),
-      icon: 'language-outline',
-      iconColor: theme.colors.success,
-      iconBg: theme.colors.success + '1A',
-      isLanguageSelector: true,
-    },
-    {
-      id: 'theme',
-      title: t('more_screen.dark_mode'),
-      subtitle: t('more_screen.switch_dark'),
-      icon: 'moon-outline',
-      iconColor: theme.colors.primary,
-      iconBg: theme.colors.primary + '1A',
-      isSwitch: true,
-    },
-    {
-      id: 'color_theme',
-      title: t('more_screen.color_theme'),
-      subtitle: t('more_screen.choose_app_color'),
-      icon: 'color-palette-outline',
-      iconColor: theme.colors.orange,
-      iconBg: theme.colors.orange + '1A',
-      isColorThemePicker: true,
-    },
-    {
-      id: 'help',
-      title: t('more_screen.help_support'),
-      subtitle: t('more_screen.get_assistance'),
-      icon: 'help-circle-outline',
-      iconColor: theme.colors.info,
-      iconBg: theme.colors.info + '1A',
-      action: () => {},
-    },
-    {
-      id: 'logout',
-      title: t('more_screen.logout'),
-      icon: 'log-out-outline',
-      iconColor: theme.colors.error,
-      iconBg: theme.colors.error + '1A',
-      action: handleLogout,
-      isDestructive: true,
-    },
-  ];
+  const handleLanguagePress = () => {
+    Alert.alert(t('profile_screen.choose_language'), t('profile_screen.select_language_msg'), [
+      { text: 'English (US)', onPress: () => setLanguage('en') },
+      { text: 'العربية', onPress: () => setLanguage('ar') },
+      { text: t('common.cancel') || 'Cancel', style: 'cancel' },
+    ]);
+  };
 
-  const currentStyles = styles(theme, fontSizes, spacing, borderRadius, common, isRTL, typography, fontWeight);
+  const currentStyles = styles(
+    theme,
+    spacing,
+    fontSizes,
+    borderRadius,
+    common,
+    isRTL,
+    typography,
+    fontWeight,
+    isDark,
+  );
 
   return (
-    <View style={currentStyles.container}>
-      <UnifiedHeader title={t('more_screen.header_title')} />
+    <View style={currentStyles.mainContainer}>
+      <UnifiedHeader
+        title={t('profile_screen.header_title')}
+        style={currentStyles.headerOverride}
+      />
 
       <ScrollView
         style={currentStyles.scrollView}
-        contentContainerStyle={currentStyles.contentContainer}
+        contentContainerStyle={{
+          padding: layout.screenPadding,
+          paddingBottom: Math.max(common.insets.bottom, spacing['2xl']),
+        }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={currentStyles.userCard}>
-          <View style={currentStyles.userAvatar}>
-            <Text style={currentStyles.userAvatarText}>
-              {user?.name?.charAt(0).toUpperCase() || 'U'}
+        {/* Profile Section */}
+        <View style={currentStyles.profileSection}>
+          <View style={currentStyles.avatarRingWrapper}>
+            <View style={currentStyles.avatarOuterRing}>
+              <View style={[currentStyles.avatarImage, currentStyles.avatarFallback]}>
+                <Text style={currentStyles.avatarFallbackText}>
+                  {user?.name?.charAt(0).toUpperCase() || 'U'}
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity style={currentStyles.editAvatarButton}>
+              <Ionicons name="pencil" size={14} color="#ffffff" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={currentStyles.userInfoTextContainer}>
+            <Text style={currentStyles.userName}>{user?.name || 'User'}</Text>
+            <Text style={currentStyles.userSubtitle}>
+              {user?.grade?.name || t('profile_screen.not_specified')}{' '}
+              {user?.grade?.name ? `• International` : ''}
             </Text>
           </View>
-          <View style={currentStyles.userInfo}>
-            <Text style={currentStyles.userName}> {user?.name || 'User'}</Text>
-            <Text style={currentStyles.userEmail}> {user?.email || 'No email'}</Text>
-            <View style={currentStyles.userGradeContainer}>
-              <Text style={currentStyles.userGrade}>
-                {t('more_screen.grade')}: {user?.grade?.name || t('more_screen.not_specified')}
+        </View>
+
+        {/* Menu Section */}
+        <View style={currentStyles.menuSection}>
+          {/* Edit Profile */}
+          <TouchableOpacity style={currentStyles.settingItem}>
+            <View style={currentStyles.settingIconBox}>
+              <Image
+                source={require('../../assets/images/editProfile.png')}
+                style={currentStyles.menuImage}
+              />
+            </View>
+            <View style={currentStyles.settingContent}>
+              <Text style={currentStyles.settingTitle}>{t('profile_screen.edit_profile')}</Text>
+            </View>
+            <Ionicons
+              name={isRTL ? 'chevron-back' : 'chevron-forward'}
+              size={20}
+              color={theme.colors.textTertiary}
+            />
+          </TouchableOpacity>
+
+          {/* Change Language */}
+          <TouchableOpacity style={currentStyles.settingItem} onPress={handleLanguagePress}>
+            <View style={currentStyles.settingIconBox}>
+              <Image
+                source={require('../../assets/images/changeLang.png')}
+                style={currentStyles.menuImage}
+              />
+            </View>
+            <View style={currentStyles.settingContent}>
+              <Text style={currentStyles.settingTitle}>{t('profile_screen.change_language')}</Text>
+              <Text style={currentStyles.settingSubtitle}>
+                {t('profile_screen.change_language_desc')}
               </Text>
             </View>
-          </View>
-          <TouchableOpacity style={currentStyles.editButton}>
-            <Ionicons name="pencil" size={spacing.icon.sm} color={theme.colors.primary} />
+            <Ionicons
+              name={isRTL ? 'chevron-back' : 'chevron-forward'}
+              size={20}
+              color={theme.colors.textTertiary}
+            />
           </TouchableOpacity>
+
+          {/* Badges */}
+          <TouchableOpacity style={currentStyles.settingItem}>
+            <View style={currentStyles.settingIconBox}>
+              <Image
+                source={require('../../assets/images/Badges.png')}
+                style={currentStyles.menuImage}
+              />
+            </View>
+            <View style={currentStyles.settingContent}>
+              <Text style={currentStyles.settingTitle}>{t('profile_screen.badges')}</Text>
+            </View>
+            <Ionicons
+              name={isRTL ? 'chevron-back' : 'chevron-forward'}
+              size={20}
+              color={theme.colors.textTertiary}
+            />
+          </TouchableOpacity>
+
+          {/* Help and Support */}
+          <TouchableOpacity style={currentStyles.settingItem}>
+            <View style={currentStyles.settingIconBox}>
+              <Image
+                source={require('../../assets/images/help.png')}
+                style={currentStyles.menuImage}
+              />
+            </View>
+            <View style={currentStyles.settingContent}>
+              <Text style={currentStyles.settingTitle}>{t('profile_screen.help_support')}</Text>
+            </View>
+            <Ionicons
+              name={isRTL ? 'chevron-back' : 'chevron-forward'}
+              size={20}
+              color={theme.colors.textTertiary}
+            />
+          </TouchableOpacity>
+
+          {/* Dark Mode Toggle */}
+          <View style={currentStyles.settingItem}>
+            <View style={currentStyles.settingIconBox}>
+              <Image
+                source={require('../../assets/images/darkMode.png')}
+                style={currentStyles.menuImage}
+              />
+            </View>
+            <View style={currentStyles.settingContent}>
+              <Text style={currentStyles.settingTitle}>{t('profile_screen.dark_mode')}</Text>
+            </View>
+            <Switch
+              value={isDark}
+              onValueChange={toggleTheme}
+              trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
+              thumbColor={Platform.OS === 'ios' ? '#ffffff' : isDark ? '#ffffff' : '#f4f3f4'}
+              ios_backgroundColor={theme.colors.border}
+            />
+          </View>
+
+          {/* Log Out */}
+          <View style={currentStyles.logoutContainer}>
+            <TouchableOpacity style={currentStyles.logoutItem} onPress={handleLogout}>
+              <View style={currentStyles.logoutIconBox}>
+                <Image
+                  source={require('../../assets/images/logout.png')}
+                  style={currentStyles.logoutMenuImage}
+                />
+              </View>
+              <View style={currentStyles.settingContent}>
+                <Text style={currentStyles.logoutTitle}>{t('profile_screen.log_out')}</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
         </View>
 
-        <View style={currentStyles.menuSection}>
-          {menuItems
-            .filter((item) => item.id !== 'color_theme')
-            .map((item, index, filteredItems) => {
-              const isLast = index === filteredItems.length - 1;
-              return (
-                <View key={item.id}>
-                  <TouchableOpacity
-                    style={[
-                      currentStyles.menuItem,
-                      isLast &&
-                        !item.isLanguageSelector &&
-                        !item.isColorThemePicker &&
-                        currentStyles.lastMenuItem,
-                    ]}
-                    onPress={item.action}
-                    disabled={
-                      !!item.isSwitch || !!item.isLanguageSelector || !!item.isColorThemePicker
-                    }
-                    activeOpacity={0.7}
-                  >
-                    <View style={currentStyles.menuItemContent}>
-                      <View
-                        style={[currentStyles.menuIconContainer, { backgroundColor: item.iconBg }]}
-                      >
-                        <Ionicons
-                          name={item.icon as any}
-                          size={spacing.icon.md}
-                          color={item.iconColor}
-                        />
-                      </View>
-                      <View style={currentStyles.menuTextContainer}>
-                        <Text
-                          style={[
-                            currentStyles.menuTitle,
-                            item.isDestructive && { color: item.iconColor },
-                          ]}
-                        >
-                          {item.title}
-                        </Text>
-                        {item.subtitle && !item.isLanguageSelector && !item.isColorThemePicker && (
-                          <Text style={currentStyles.menuSubtitle}> {item.subtitle} </Text>
-                        )}
-                      </View>
-                    </View>
-
-                    {item.isSwitch ? (
-                      <View style={common.marginStart(spacing.md)}>
-                        <Switch
-                          value={isDark}
-                          onValueChange={toggleTheme}
-                          trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
-                          thumbColor={theme.colors.textOnDark}
-                        />
-                      </View>
-                    ) : item.isLanguageSelector || item.isColorThemePicker ? null : (
-                      <Ionicons
-                        name={isRTL ? 'chevron-back' : 'chevron-forward'}
-                        size={spacing.icon.sm}
-                        color={theme.colors.textTertiary}
-                      />
-                    )}
-                  </TouchableOpacity>
-
-                  {item.isLanguageSelector && (
-                    <View style={currentStyles.languageSelector}>
-                      <TouchableOpacity
-                        style={[
-                          currentStyles.langOption,
-                          language === 'ar' && currentStyles.langSelected,
-                        ]}
-                        onPress={() => setLanguage('ar')}
-                      >
-                        <Text
-                          style={[
-                            currentStyles.langText,
-                            language === 'ar' && currentStyles.langTextSelected,
-                          ]}
-                        >
-                          العربية
-                        </Text>
-                        {language === 'ar' && (
-                          <Ionicons
-                            name="checkmark-circle"
-                            size={spacing.icon.sm}
-                            color={theme.colors.primary}
-                          />
-                        )}
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[
-                          currentStyles.langOption,
-                          language === 'en' && currentStyles.langSelected,
-                        ]}
-                        onPress={() => setLanguage('en')}
-                      >
-                        <Text
-                          style={[
-                            currentStyles.langText,
-                            language === 'en' && currentStyles.langTextSelected,
-                          ]}
-                        >
-                          English
-                        </Text>
-                        {language === 'en' && (
-                          <Ionicons
-                            name="checkmark-circle"
-                            size={spacing.icon.sm}
-                            color={theme.colors.primary}
-                          />
-                        )}
-                      </TouchableOpacity>
-                    </View>
-                  )}
-
-                  {item.isColorThemePicker && (
-                    <View style={currentStyles.colorPickerContainer}>
-                      <ColorThemePicker />
-                    </View>
-                  )}
-
-                  {!isLast && <View style={currentStyles.separator} />}
-                </View>
-              );
-            })}
-        </View>
-
-        <View style={currentStyles.versionContainer}>
-          <Text style={currentStyles.versionText}> ElBooklets {t('common.version')} 1.0.0 </Text>
-        </View>
+        {/* Version Info */}
+        <Text style={currentStyles.versionText}>{APP_VERSION}</Text>
       </ScrollView>
     </View>
   );
@@ -251,161 +218,175 @@ const MoreScreen: React.FC = () => {
 
 const styles = (
   theme: any,
-  fontSizes: any,
   spacing: any,
+  fontSizes: any,
   borderRadius: any,
   common: any,
   isRTL: boolean,
   typography: any,
   fontWeight: any,
+  isDark: boolean,
 ) =>
   StyleSheet.create({
-    container: { flex: 1, backgroundColor: theme.colors.background },
+    mainContainer: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    headerOverride: {
+      backgroundColor: '#1E40AF', // Enforce specific blue from HTML design
+      borderBottomWidth: 0,
+    },
     scrollView: {
       flex: 1,
     },
-    contentContainer: {
-      padding: layout.screenPadding,
-      alignItems: 'stretch',
-    },
-    userCard: {
-      padding: spacing.ssm,
-      borderRadius: borderRadius.xl,
-      flexDirection: common.rowDirection,
+    profileSection: {
       alignItems: 'center',
-      marginBottom: spacing.sectionGap,
-      backgroundColor: theme.colors.card,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      ...layout.shadow,
+      paddingVertical: spacing.xl,
+      marginBottom: spacing.md,
     },
-    userAvatar: {
-      width: 60,
-      height: 60,
-      borderRadius: 30,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: theme.colors.primary,
-      ...common.marginEnd(spacing.ssm),
+    avatarRingWrapper: {
+      position: 'relative',
     },
-    userAvatarText: { ...typography('h2'), ...fontWeight('bold'), color: theme.colors.textOnDark },
-    userInfo: { flex: 1, alignItems: common.alignStart },
-    userName: {
-      ...typography('h3'),
-      ...fontWeight('bold'),
-      marginBottom: spacing.xxs,
-      color: theme.colors.text,
-      textAlign: common.textAlign,
-    },
-    userEmail: {
-      ...typography('caption'),
-      color: theme.colors.textSecondary,
-      textAlign: common.textAlign,
-    },
-    userGradeContainer: {
-      marginTop: spacing.sm,
-      backgroundColor: theme.colors.primary + '1A',
-      paddingHorizontal: spacing.ssm,
-      paddingVertical: 2,
-      borderRadius: borderRadius.sm,
-    },
-    userGrade: {
-      ...typography('caption'),
-      ...fontWeight('600'),
-      color: theme.colors.primary,
-      textAlign: common.textAlign,
-    },
-    editButton: {
-      width: 40,
-      height: 40,
+    avatarOuterRing: {
+      padding: 4,
       borderRadius: borderRadius.full,
-      backgroundColor: theme.colors.background,
+      backgroundColor: theme.colors.primary100,
+      borderWidth: 2,
+      borderColor: theme.colors.primary + '33', // 20% opacity
+    },
+    avatarImage: {
+      width: 110,
+      height: 110,
+      borderRadius: 55,
+      borderWidth: 4,
+      borderColor: theme.colors.card,
+    },
+    avatarFallback: {
+      backgroundColor: theme.colors.primary,
       justifyContent: 'center',
       alignItems: 'center',
-      borderWidth: 1,
-      borderColor: theme.colors.border,
+    },
+    avatarFallbackText: {
+      ...typography('h1'),
+      ...fontWeight('bold'),
+      color: '#ffffff',
+    },
+    editAvatarButton: {
+      position: 'absolute',
+      bottom: 4,
+      right: 4,
+      backgroundColor: theme.colors.primary,
+      padding: spacing.xs,
+      borderRadius: borderRadius.full,
+      borderWidth: 2,
+      borderColor: theme.colors.card,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+      elevation: 4,
+    },
+    userInfoTextContainer: {
+      marginTop: spacing.md,
+      alignItems: 'center',
+    },
+    userName: {
+      ...typography('h2'),
+      ...fontWeight('bold'),
+      color: theme.colors.text,
+      marginBottom: 2,
+      textAlign: 'center',
+    },
+    userSubtitle: {
+      ...typography('body'),
+      ...fontWeight('500'),
+      color: theme.colors.textSecondary,
+      textAlign: 'center',
     },
     menuSection: {
-      borderRadius: borderRadius.xl,
+      marginTop: spacing.sm,
+    },
+    settingItem: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
       backgroundColor: theme.colors.card,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      overflow: 'hidden',
+      padding: spacing.md,
+      borderRadius: borderRadius.xl,
+      marginBottom: spacing.sm,
       ...layout.shadow,
+      shadowOpacity: 0.05,
+      shadowRadius: 3,
+      elevation: 2,
     },
-    menuItem: {
-      flexDirection: common.rowDirection,
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: spacing.ssm,
-    },
-    lastMenuItem: { borderBottomWidth: 0 },
-    separator: {
-      height: 1,
-      backgroundColor: theme.colors.border,
-      ...common.marginStart(spacing.xl + spacing.md),
-    },
-    menuItemContent: {
-      flexDirection: common.rowDirection,
-      alignItems: 'center',
-      flex: 1,
-    },
-    menuIconContainer: {
-      width: 44,
-      height: 44,
-      borderRadius: borderRadius.full,
+    settingIconBox: {
+      width: 40,
+      height: 40,
+      borderRadius: borderRadius.md,
+      backgroundColor: isDark ? theme.colors.primary + '1A' : theme.colors.primary100,
       justifyContent: 'center',
       alignItems: 'center',
-      ...common.marginEnd(spacing.ssm),
+      ...common.marginEnd(spacing.md),
     },
-    menuTextContainer: { flex: 1, alignItems: common.alignStart },
-    menuTitle: {
-      ...typography('bodySmall'),
-      ...fontWeight('500'),
+    menuImage: {
+      width: 21,
+      height: 21,
+      resizeMode: 'contain',
+    },
+    logoutMenuImage: {
+      width: 21,
+      height: 21,
+      resizeMode: 'contain',
+    },
+    settingContent: {
+      flex: 1,
+      alignItems: common.alignStart,
+      justifyContent: 'center',
+    },
+    settingTitle: {
+      ...typography('body'),
+      ...fontWeight('600'),
       color: theme.colors.text,
       textAlign: common.textAlign,
     },
-    menuSubtitle: {
-      ...typography('label'),
+    settingSubtitle: {
+      ...typography('caption'),
       color: theme.colors.textSecondary,
       marginTop: 2,
       textAlign: common.textAlign,
     },
-    languageSelector: {
-      flexDirection: common.rowDirection,
-      padding: spacing.md,
-      paddingTop: 0,
-      gap: spacing.md,
+    logoutContainer: {
+      paddingTop: spacing.md,
     },
-    langOption: {
-      flex: 1,
+    logoutItem: {
       flexDirection: common.rowDirection,
-      paddingVertical: spacing.sm,
-      paddingHorizontal: spacing.md,
       alignItems: 'center',
-      justifyContent: 'center',
-      borderRadius: borderRadius.lg,
-      backgroundColor: theme.colors.background,
+      backgroundColor: isDark ? theme.colors.error + '1A' : '#FEF2F2', // red-50
+      padding: spacing.md,
+      borderRadius: borderRadius.xl,
       borderWidth: 1,
-      borderColor: theme.colors.border,
-      gap: spacing.xs,
+      borderColor: isDark ? theme.colors.error + '33' : '#FEE2E2', // red-100
     },
-    langSelected: {
-      borderColor: theme.colors.primary,
-      backgroundColor: theme.colors.primary + '1A',
-    },
-    langText: { ...typography('label'), color: theme.colors.text, ...fontWeight('500') },
-    langTextSelected: { color: theme.colors.primary, ...fontWeight('700') },
-    colorPickerContainer: {
-      padding: spacing.md,
-      paddingTop: 0,
-    },
-    versionContainer: {
+    logoutIconBox: {
+      width: 40,
+      height: 40,
+      borderRadius: borderRadius.md,
+      backgroundColor: isDark ? theme.colors.error + '33' : '#FEE2E2',
+      justifyContent: 'center',
       alignItems: 'center',
-      marginTop: spacing['3xl'],
-      marginBottom: Math.max(common.insets.bottom, spacing.xl),
+      ...common.marginEnd(spacing.md),
     },
-    versionText: { ...typography('caption'), color: theme.colors.textTertiary, opacity: 0.7 },
+    logoutTitle: {
+      ...typography('body'),
+      ...fontWeight('bold'),
+      color: theme.colors.error,
+      textAlign: common.textAlign,
+    },
+    versionText: {
+      ...typography('caption'),
+      color: theme.colors.textSecondary,
+      textAlign: 'center',
+      marginTop: spacing['2xl'],
+    },
   });
 
 export default MoreScreen;

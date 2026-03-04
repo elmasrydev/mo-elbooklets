@@ -393,19 +393,16 @@
   },
   "profile_screen": {
     "header_title": "Profile",
-    "header_subtitle": "Manage your account settings",
-    "settings": "Settings",
     "edit_profile": "Edit Profile",
-    "update_profile_info": "Update your personal information",
-    "notifications": "Notifications",
-    "manage_notifications": "Manage your notification preferences",
-    "privacy_security": "Privacy & Security",
-    "privacy_subtitle": "Password and privacy settings",
-    "help_support": "Help & Support",
-    "help_subtitle": "Get help and contact support",
-    "sign_out": "Sign Out",
-    "grade": "Grade",
-    "not_specified": "Not specified"
+    "change_language": "Change Language",
+    "change_language_desc": "English (US)",
+    "badges": "Badges",
+    "help_support": "Help and Support",
+    "dark_mode": "Dark Mode",
+    "log_out": "Log Out",
+    "choose_language": "Choose Language",
+    "select_language_msg": "Select your preferred language",
+    "cancel": "Cancel"
   },
   "booklets_screen": {
     "header_title": "Booklets",
