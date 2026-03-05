@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  Modal,
   TouchableOpacity,
   TouchableWithoutFeedback,
   ScrollView,
@@ -39,7 +38,6 @@ interface SelectedUnit {
 }
 
 interface QuizSettingsModalProps {
-  visible: boolean;
   onClose: () => void;
   onStart: (quizTypeId: string) => void;
   quizTypes: QuizType[];
@@ -49,7 +47,6 @@ interface QuizSettingsModalProps {
 }
 
 const QuizSettingsModal: React.FC<QuizSettingsModalProps> = ({
-  visible,
   onClose,
   onStart,
   quizTypes,
@@ -67,11 +64,11 @@ const QuizSettingsModal: React.FC<QuizSettingsModalProps> = ({
   const [timedMode, setTimedMode] = useState(false);
 
   useEffect(() => {
-    if (visible && !selectedTypeId && quizTypes.length > 0) {
+    if (!selectedTypeId && quizTypes.length > 0) {
       const defaultType = quizTypes.find((qt) => qt.isDefault) || quizTypes[0];
       setSelectedTypeId(defaultType.id);
     }
-  }, [visible, quizTypes, selectedTypeId]);
+  }, [quizTypes, selectedTypeId]);
 
   const handleStart = () => {
     if (selectedTypeId) {
@@ -92,148 +89,141 @@ const QuizSettingsModal: React.FC<QuizSettingsModalProps> = ({
   );
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={currentStyles.container}>
-        <UnifiedHeader
-          title={t('quiz_lessons.quiz_settings')}
-          showBackButton={true}
-          onBackPress={onClose}
-          isModal={true}
-          centerAlign={true}
-        />
+    <View style={currentStyles.container}>
+      <UnifiedHeader
+        title={t('quiz_lessons.quiz_settings')}
+        showBackButton={true}
+        onBackPress={onClose}
+        isModal={true}
+        centerAlign={true}
+      />
 
-        <ScrollView style={currentStyles.content} showsVerticalScrollIndicator={false}>
-          {/* Hero Section */}
-          <View style={currentStyles.heroSection}>
-            <Text style={currentStyles.heroTitle}>{t('quiz_lessons.configure_quiz_title')}</Text>
-            <Text style={currentStyles.heroSubtitle}>{t('quiz_lessons.customize_experience')}</Text>
+      <ScrollView style={currentStyles.content} showsVerticalScrollIndicator={false}>
+        {/* Hero Section */}
+        <View style={currentStyles.heroSection}>
+          <Text style={currentStyles.heroTitle}>{t('quiz_lessons.configure_quiz_title')}</Text>
+          <Text style={currentStyles.heroSubtitle}>{t('quiz_lessons.customize_experience')}</Text>
+        </View>
+
+        {/* Subject Badge */}
+        {subjectName ? (
+          <View style={currentStyles.subjectBadgeCard}>
+            <View style={currentStyles.subjectBadgeIconContainer}>
+              <Ionicons name="book" size={24} color={theme.colors.textOnDark} />
+            </View>
+            <View style={currentStyles.subjectBadgeInfo}>
+              <Text style={currentStyles.subjectBadgeLabel}>{t('quiz_lessons.current_topic')}</Text>
+              <Text style={currentStyles.subjectBadgeTitle}>{subjectName}</Text>
+            </View>
           </View>
+        ) : null}
 
-          {/* Subject Badge */}
-          {subjectName ? (
-            <View style={currentStyles.subjectBadgeCard}>
-              <View style={currentStyles.subjectBadgeIconContainer}>
-                <Ionicons name="book" size={24} color={theme.colors.textOnDark} />
-              </View>
-              <View style={currentStyles.subjectBadgeInfo}>
-                <Text style={currentStyles.subjectBadgeLabel}>
-                  {t('quiz_lessons.current_topic')}
-                </Text>
-                <Text style={currentStyles.subjectBadgeTitle}>{subjectName}</Text>
-              </View>
-            </View>
-          ) : null}
-
-          {/* Selected Lessons Breadcrumbs */}
-          {selectedUnits && selectedUnits.length > 0 && (
-            <View style={currentStyles.breadcrumbsContainer}>
-              {selectedUnits.map((unit) => (
-                <View key={unit.id} style={currentStyles.unitBreadcrumb}>
-                  <View style={currentStyles.unitBreadcrumbHeader}>
-                    <View style={currentStyles.breadcrumbDot} />
-                    <Text style={currentStyles.unitBreadcrumbName}>{unit.name}</Text>
-                  </View>
-                  <View style={currentStyles.lessonBreadcrumbsList}>
-                    {unit.lessons.map((lesson) => (
-                      <View key={lesson.id} style={currentStyles.lessonBreadcrumbItem}>
-                        <View style={currentStyles.lessonBreadcrumbDot} />
-                        <Text style={currentStyles.lessonBreadcrumbName}>{lesson.name}</Text>
-                      </View>
-                    ))}
-                  </View>
+        {/* Selected Lessons Breadcrumbs */}
+        {selectedUnits && selectedUnits.length > 0 && (
+          <View style={currentStyles.breadcrumbsContainer}>
+            {selectedUnits.map((unit) => (
+              <View key={unit.id} style={currentStyles.unitBreadcrumb}>
+                <View style={currentStyles.unitBreadcrumbHeader}>
+                  <View style={currentStyles.breadcrumbDot} />
+                  <Text style={currentStyles.unitBreadcrumbName}>{unit.name}</Text>
                 </View>
-              ))}
-            </View>
-          )}
-
-          {/* Question Selection */}
-          <View style={currentStyles.sectionContainer}>
-            <Text style={currentStyles.sectionTitle}>{t('quiz_lessons.select_quiz_type')}</Text>
-            <View style={currentStyles.optionsContainer}>
-              {quizTypes.map((type) => {
-                const isSelected = selectedTypeId === type.id;
-                return (
-                  <TouchableOpacity
-                    key={type.id}
-                    style={[
-                      currentStyles.optionCard,
-                      isSelected && currentStyles.optionCardSelected,
-                    ]}
-                    onPress={() => setSelectedTypeId(type.id)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={currentStyles.optionInfo}>
-                      <Text
-                        style={[
-                          currentStyles.optionTitle,
-                          isSelected && currentStyles.optionTitleSelected,
-                        ]}
-                      >
-                        {t(`quiz_types.${type.slug}`, { defaultValue: type.name })}
-                      </Text>
-                      <Text style={currentStyles.optionSubtitle}>
-                        {type.questionCount} {t('quiz_lessons.questions')}
-                      </Text>
+                <View style={currentStyles.lessonBreadcrumbsList}>
+                  {unit.lessons.map((lesson) => (
+                    <View key={lesson.id} style={currentStyles.lessonBreadcrumbItem}>
+                      <View style={currentStyles.lessonBreadcrumbDot} />
+                      <Text style={currentStyles.lessonBreadcrumbName}>{lesson.name}</Text>
                     </View>
-                    <View
+                  ))}
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Question Selection */}
+        <View style={currentStyles.sectionContainer}>
+          <Text style={currentStyles.sectionTitle}>{t('quiz_lessons.select_quiz_type')}</Text>
+          <View style={currentStyles.optionsContainer}>
+            {quizTypes.map((type) => {
+              const isSelected = selectedTypeId === type.id;
+              return (
+                <TouchableOpacity
+                  key={type.id}
+                  style={[currentStyles.optionCard, isSelected && currentStyles.optionCardSelected]}
+                  onPress={() => setSelectedTypeId(type.id)}
+                  activeOpacity={0.7}
+                >
+                  <View style={currentStyles.optionInfo}>
+                    <Text
                       style={[
-                        currentStyles.radioButton,
-                        isSelected && currentStyles.radioButtonSelected,
+                        currentStyles.optionTitle,
+                        isSelected && currentStyles.optionTitleSelected,
                       ]}
                     >
-                      {isSelected && <View style={currentStyles.radioButtonInner} />}
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+                      {t(`quiz_types.${type.slug}`, { defaultValue: type.name })}
+                    </Text>
+                    <Text style={currentStyles.optionSubtitle}>
+                      {type.questionCount} {t('quiz_lessons.questions')}
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      currentStyles.radioButton,
+                      isSelected && currentStyles.radioButtonSelected,
+                    ]}
+                  >
+                    {isSelected && <View style={currentStyles.radioButtonInner} />}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
           </View>
-
-          {/* Additional Settings */}
-          <View style={currentStyles.additionalSettingsContainer}>
-            <View style={currentStyles.settingRow}>
-              <View style={currentStyles.settingInfo}>
-                <Ionicons
-                  name="timer-outline"
-                  size={20}
-                  color={theme.colors.textSecondary}
-                  style={currentStyles.settingIcon}
-                />
-                <Text style={currentStyles.settingLabel}>{t('quiz_lessons.timed_mode')}</Text>
-              </View>
-              <TouchableOpacity
-                style={[
-                  currentStyles.toggleTrack,
-                  timedMode ? currentStyles.toggleTrackActive : currentStyles.toggleTrackInactive,
-                ]}
-                onPress={() => setTimedMode(!timedMode)}
-                activeOpacity={0.8}
-              >
-                <View
-                  style={[
-                    currentStyles.toggleThumb,
-                    timedMode ? currentStyles.toggleThumbActive : currentStyles.toggleThumbInactive,
-                  ]}
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </ScrollView>
-
-        {/* Start Button Area inside scroll view so it flows naturally if screen is small */}
-        <View style={currentStyles.actionArea}>
-          <AppButton
-            title={t('quiz_lessons.start_quiz')}
-            onPress={handleStart}
-            disabled={!selectedTypeId}
-            size="lg"
-            icon={<Ionicons name="play" size={20} color={theme.colors.textOnDark} />}
-            iconPosition="right"
-          />
-          <Text style={currentStyles.disclaimerText}>{t('quiz_lessons.progress_saved')}</Text>
         </View>
+
+        {/* Additional Settings */}
+        <View style={currentStyles.additionalSettingsContainer}>
+          <View style={currentStyles.settingRow}>
+            <View style={currentStyles.settingInfo}>
+              <Ionicons
+                name="timer-outline"
+                size={20}
+                color={theme.colors.textSecondary}
+                style={currentStyles.settingIcon}
+              />
+              <Text style={currentStyles.settingLabel}>{t('quiz_lessons.timed_mode')}</Text>
+            </View>
+            <TouchableOpacity
+              style={[
+                currentStyles.toggleTrack,
+                timedMode ? currentStyles.toggleTrackActive : currentStyles.toggleTrackInactive,
+              ]}
+              onPress={() => setTimedMode(!timedMode)}
+              activeOpacity={0.8}
+            >
+              <View
+                style={[
+                  currentStyles.toggleThumb,
+                  timedMode ? currentStyles.toggleThumbActive : currentStyles.toggleThumbInactive,
+                ]}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* Start Button Area inside scroll view so it flows naturally if screen is small */}
+      <View style={currentStyles.actionArea}>
+        <AppButton
+          title={t('quiz_lessons.start_quiz')}
+          onPress={handleStart}
+          disabled={!selectedTypeId}
+          size="lg"
+          icon={<Ionicons name="play" size={20} color={theme.colors.textOnDark} />}
+          iconPosition="right"
+        />
+        <Text style={currentStyles.disclaimerText}>{t('quiz_lessons.progress_saved')}</Text>
       </View>
-    </Modal>
+    </View>
   );
 };
 
@@ -260,13 +250,13 @@ const styles = (
     },
     heroSection: {
       marginBottom: spacing.xl,
-      alignItems: common.alignStart,
     },
     heroTitle: {
       fontSize: Math.max(24, fontSizes.xl),
       ...fontWeight('700'),
       color: theme.colors.text,
-      marginBottom: spacing.xs,
+      marginBottom: spacing.md,
+      marginHorizontal: spacing.sm,
       textAlign: common.textAlign,
     },
     heroSubtitle: {
@@ -274,6 +264,7 @@ const styles = (
       color: theme.colors.textSecondary,
       textAlign: common.textAlign,
       lineHeight: 22,
+      marginHorizontal: spacing.sm,
     },
     subjectBadgeCard: {
       flexDirection: common.rowDirection,
@@ -284,6 +275,7 @@ const styles = (
       borderRadius: borderRadius.xl || 16,
       padding: spacing.md,
       marginBottom: spacing.xl,
+      gap: spacing.md,
     },
     subjectBadgeIconContainer: {
       width: 48,
@@ -292,7 +284,6 @@ const styles = (
       backgroundColor: theme.colors.primary,
       justifyContent: 'center',
       alignItems: 'center',
-      ...common.marginEnd(spacing.md),
     },
     subjectBadgeInfo: {
       flex: 1,
@@ -317,9 +308,11 @@ const styles = (
     },
     breadcrumbsContainer: {
       marginBottom: spacing.lg,
+      marginHorizontal: spacing.sm,
     },
     unitBreadcrumb: {
       marginBottom: spacing.sm,
+      marginHorizontal: spacing.sm,
     },
     unitBreadcrumbHeader: {
       flexDirection: common.rowDirection,
@@ -340,10 +333,10 @@ const styles = (
       textAlign: common.textAlign,
     },
     lessonBreadcrumbsList: {
-      marginStart: 11, // align with the center of the unit dot (8/2 = 4 + margin)
-      borderStartWidth: 2,
-      borderStartColor: theme.colors.border,
-      paddingStart: spacing.md,
+      ...common.marginStart(11),
+      ...common.borderStartWidth(2),
+      ...common.borderStartColor(theme.colors.border),
+      ...common.paddingStart(spacing.md),
       paddingVertical: spacing.xs,
     },
     lessonBreadcrumbItem: {
@@ -366,13 +359,13 @@ const styles = (
     },
     sectionContainer: {
       marginBottom: spacing.xl,
-      alignItems: common.alignStart,
     },
     sectionTitle: {
       ...typography('h3'),
       ...fontWeight('700'),
       color: theme.colors.text,
       marginBottom: spacing.md,
+      marginHorizontal: spacing.sm,
       textAlign: common.textAlign,
     },
     optionsContainer: {
@@ -444,6 +437,7 @@ const styles = (
       flexDirection: common.rowDirection,
       alignItems: 'center',
       justifyContent: 'space-between',
+      marginHorizontal: spacing.sm,
     },
     settingInfo: {
       flexDirection: common.rowDirection,

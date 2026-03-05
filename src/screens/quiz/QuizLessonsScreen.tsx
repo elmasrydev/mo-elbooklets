@@ -157,6 +157,18 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
       </View>
     );
 
+  if (settingsModalVisible) {
+    return (
+      <QuizSettingsModal
+        onClose={() => setSettingsModalVisible(false)}
+        onStart={handleStartQuiz}
+        quizTypes={quizTypes}
+        subjectName={subject.name}
+        selectedUnits={selectedUnits}
+      />
+    );
+  }
+
   return (
     <View style={common.container}>
       <UnifiedHeader
@@ -249,7 +261,7 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
                 })}
               </View>
 
-              {/* Divider between Units (except last one, but we can safely render it for all via CSS gap) */}
+              {/* Divider between Units */}
               <View style={currentStyles.unitDivider} />
             </View>
           );
@@ -290,15 +302,6 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
           />
         </View>
       )}
-
-      <QuizSettingsModal
-        visible={settingsModalVisible}
-        onClose={() => setSettingsModalVisible(false)}
-        onStart={handleStartQuiz}
-        quizTypes={quizTypes}
-        subjectName={subject.name}
-        selectedUnits={selectedUnits}
-      />
     </View>
   );
 };
