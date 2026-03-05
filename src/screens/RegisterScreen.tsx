@@ -24,6 +24,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../context/LanguageContext';
 import { useTypography } from '../hooks/useTypography';
 import { useAutoReset } from '../hooks/useAutoReset';
+import { useNavigation } from '@react-navigation/native';
 
 import BackButton from '../components/navigation/BackButton';
 import CloseButton from '../components/navigation/CloseButton';
@@ -31,11 +32,6 @@ import AppButton from '../components/AppButton';
 import UnifiedHeader from '../components/UnifiedHeader';
 import { layout } from '../config/layout';
 // import { textAlign } from '../lib/rtl';
-
-interface RegisterScreenProps {
-  onNavigateToLogin: () => void;
-  onBack: () => void;
-}
 
 const PickerTrigger = ({ value, placeholder, icon, onPress, theme, currentStyles }: any) => {
   return (
@@ -60,7 +56,8 @@ const PickerTrigger = ({ value, placeholder, icon, onPress, theme, currentStyles
   );
 };
 
-const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBack }) => {
+const RegisterScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
   const [currentStep, setCurrentStep] = useState(1);
   const [countryCode, setCountryCode] = useState('+2');
   const [parentCountryCode, setParentCountryCode] = useState('+2');
@@ -281,7 +278,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     } else {
-      onBack();
+      navigation.goBack();
     }
   };
 
@@ -901,7 +898,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin, onBa
 
           <View style={currentStyles.footer}>
             <Text style={currentStyles.footerText}> {t('auth.already_have_account')} </Text>
-            <TouchableOpacity onPress={onNavigateToLogin} disabled={isLoading}>
+            <TouchableOpacity onPress={() => navigation.navigate('Login')} disabled={isLoading}>
               <Text style={currentStyles.linkText}> {t('auth.sign_in')} </Text>
             </TouchableOpacity>
           </View>

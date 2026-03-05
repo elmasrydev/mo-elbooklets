@@ -174,28 +174,15 @@ const TabNavigator: React.FC = () => {
         component={require('../screens/LeaderboardScreen').default}
       />
       <Stack.Screen name="StudyCalendar" component={StudyCalendarScreen} />
-      <Stack.Screen
-        name="StudyChapters"
-        component={StudyChaptersScreen}
-        options={{
-          animation: 'slide_from_right',
-        }}
-      />
+      <Stack.Screen name="StudyChapters" component={StudyChaptersScreen} options={{}} />
       <Stack.Screen
         name="StudyLesson"
         component={StudyLessonScreen}
         options={{
           presentation: 'fullScreenModal',
-          animation: 'slide_from_bottom',
         }}
       />
-      <Stack.Screen
-        name="QuizTaking"
-        component={QuizTakingScreen}
-        options={{
-          animation: 'slide_from_right',
-        }}
-      />
+      <Stack.Screen name="QuizTaking" component={QuizTakingScreen} options={{}} />
       <Stack.Screen name="QuizResults" component={QuizResultsScreen as any} options={{}} />
       <Stack.Screen
         name="QuizReview"

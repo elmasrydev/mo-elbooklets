@@ -19,18 +19,15 @@ import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
 import { useAutoReset } from '../hooks/useAutoReset';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BackButton from '../components/navigation/BackButton';
 import AppButton from '../components/AppButton';
 import { layout } from '../config/layout';
 
-interface LoginScreenProps {
-  onNavigateToRegister: () => void;
-  onBack: () => void;
-}
-
-const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister, onBack }) => {
+const LoginScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -97,7 +94,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister, onBack 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <BackButton
-        onPress={onBack}
+        onPress={() => navigation.goBack()}
         style={[currentStyles.backButton, { top: insets.top + spacing.sm, left: spacing.lg }]}
         color={theme.colors.text}
       />
@@ -219,7 +216,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister, onBack 
 
         <View style={currentStyles.footer}>
           <Text style={currentStyles.footerText}> {t('auth.dont_have_account')} </Text>
-          <TouchableOpacity onPress={onNavigateToRegister} disabled={isLoading}>
+          <TouchableOpacity onPress={() => navigation.navigate('Register')} disabled={isLoading}>
             <Text style={currentStyles.linkText}> {t('auth.sign_up')} </Text>
           </TouchableOpacity>
         </View>

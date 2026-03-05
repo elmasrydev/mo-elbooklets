@@ -8,13 +8,10 @@ import AppButton from '../components/AppButton';
 import { layout } from '../config/layout';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import { useNavigation } from '@react-navigation/native';
 
-interface OnboardingScreenProps {
-  onGetStarted: () => void;
-  onLogin: () => void;
-}
-
-const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted, onLogin }) => {
+const OnboardingScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
   const { t } = useTranslation();
   const { language, setLanguage, isRTL } = useLanguage();
   const { typography, fontWeight } = useTypography();
@@ -65,12 +62,16 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted, onLog
           <Text style={currentStyles.title}> {t('onboarding.title')} </Text>
           <Text style={currentStyles.subtitle}> {t('onboarding.subtitle')} </Text>
 
-          <AppButton title={t('onboarding.get_started')} onPress={onGetStarted} size="lg" />
+          <AppButton
+            title={t('onboarding.get_started')}
+            onPress={() => navigation.navigate('Register')}
+            size="lg"
+          />
 
           <View style={[currentStyles.footer]}>
             <Text style={currentStyles.footerText}>
               {t('onboarding.already_have_account')}{' '}
-              <Text style={currentStyles.link} onPress={onLogin}>
+              <Text style={currentStyles.link} onPress={() => navigation.navigate('Login')}>
                 {t('onboarding.sign_in')}
               </Text>
             </Text>
