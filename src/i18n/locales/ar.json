@@ -291,7 +291,9 @@
     "partially_covered": "مغطى جزئياً",
     "missing_concepts": "مفقود",
     "feedback": "ملاحظات",
-    "all_correct": "جميع الإجابات صحيحة! 🎉"
+    "all_correct": "جميع الإجابات صحيحة! 🎉",
+    "overall_performance": "الأداء العام",
+    "correct": "صحيحة"
   },
   "social_screen": {
     "header_title": "اجتماعي",

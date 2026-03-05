@@ -20,6 +20,7 @@ import { layout } from '../../config/layout';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
 import AppButton from '../../components/AppButton';
+import { textAlign } from '../../lib/rtl';
 
 const QuizReviewScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -171,16 +172,41 @@ const QuizReviewScreen: React.FC = () => {
         </TouchableOpacity>
         <View style={currentStyles.headerTextContainer}>
           <Text style={currentStyles.headerTitle}> {t('home_screen.review')} </Text>
-          <Text style={currentStyles.headerSubtitle}>
-            {incorrectCount} {t('quiz_results.incorrect_questions')} / {result.userAnswers.length}
-          </Text>
         </View>
       </View>
-
       <ScrollView
         contentContainerStyle={currentStyles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        <View style={currentStyles.summaryCard}>
+          <View style={currentStyles.summaryHeader}>
+            <Text style={currentStyles.summaryTitle}>{t('quiz_review.overall_performance')}</Text>
+            <View style={{ flexShrink: 0 }}>
+              <Text style={currentStyles.summaryScore}>
+                {result.userAnswers.length - incorrectCount}/{result.userAnswers.length}{' '}
+                {t('quiz_review.correct')}
+              </Text>
+            </View>
+          </View>
+          <View style={currentStyles.summaryProgressBarBg}>
+            <View
+              style={[
+                currentStyles.summaryProgressBarFill,
+                {
+                  width: `${Math.max(
+                    0,
+                    Math.min(
+                      100,
+                      ((result.userAnswers.length - incorrectCount) / result.userAnswers.length) *
+                        100,
+                    ),
+                  )}%`,
+                },
+              ]}
+            />
+          </View>
+        </View>
+
         {wrongAnswers.length === 0 && (
           <View style={{ alignItems: 'center', paddingVertical: 40 }}>
             <Ionicons
@@ -630,26 +656,32 @@ const QuizReviewScreen: React.FC = () => {
                     const isSelected = ua.selected_answer === opt;
                     const isAnswerCorrect = ua.question.answer_1 === opt;
                     let optStyle = currentStyles.optionDefault;
+                    let letterCircleStyle = currentStyles.optionLetterCircleDefault;
+                    let letterTextStyle = currentStyles.optionLetterDefault;
 
                     if (isAnswerCorrect) {
                       optStyle = currentStyles.optionCorrect;
+                      letterCircleStyle = currentStyles.optionLetterCircleCorrect;
+                      letterTextStyle = currentStyles.optionLetterCorrect;
                     } else if (isSelected && !ua.is_correct) {
                       optStyle = currentStyles.optionIncorrect;
+                      letterCircleStyle = currentStyles.optionLetterCircleIncorrect;
+                      letterTextStyle = currentStyles.optionLetterIncorrect;
                     }
 
                     return (
                       <View key={optIndex} style={[currentStyles.optionItem, optStyle]}>
-                        <View style={currentStyles.optionLetterCircle}>
-                          <Text style={currentStyles.optionLetter}>
+                        <View style={[currentStyles.optionLetterCircle, letterCircleStyle]}>
+                          <Text style={[currentStyles.optionLetter, letterTextStyle]}>
                             {String.fromCharCode(65 + optIndex)}
                           </Text>
                         </View>
                         <Text style={currentStyles.optionText}> {opt} </Text>
                         <View style={currentStyles.dotIconContainer}>
                           {isAnswerCorrect ? (
-                            <Ionicons name="checkmark-circle" size={22} color="#10B981" />
+                            <Ionicons name="checkmark-circle" size={24} color="#10B981" />
                           ) : isSelected && !ua.is_correct ? (
-                            <Ionicons name="close-circle" size={22} color="#EF4444" />
+                            <Ionicons name="close" size={24} color="#EF4444" />
                           ) : null}
                         </View>
                       </View>
@@ -660,13 +692,21 @@ const QuizReviewScreen: React.FC = () => {
 
               {!!(ua.question.explanation || ua.explanation) && (
                 <View style={currentStyles.explanationBox}>
-                  <Text style={currentStyles.explanationTitle}>
-                    {' '}
-                    {t('quiz_results.explanation')}{' '}
-                  </Text>
+                  <View
+                    style={{
+                      flexDirection: common.rowDirection,
+                      alignItems: 'center',
+                      marginBottom: 8,
+                      gap: 8,
+                    }}
+                  >
+                    <Ionicons name="bulb" size={20} color="#0284C7" />
+                    <Text style={currentStyles.explanationTitle}>
+                      {t('quiz_results.explanation')}
+                    </Text>
+                  </View>
                   <Text style={currentStyles.explanationText}>
-                    {' '}
-                    {ua.question.explanation || ua.explanation}{' '}
+                    {ua.question.explanation || ua.explanation}
                   </Text>
                 </View>
               )}
@@ -728,15 +768,49 @@ const styles = (
       color: theme.colors.text,
       textAlign: common.textAlign,
     },
-    headerSubtitle: {
-      ...typography('caption'),
-      color: theme.colors.textSecondary,
-      ...fontWeight('600'),
-      textAlign: common.textAlign,
-    },
     scrollContent: {
       padding: 16,
       paddingBottom: Math.max(insets.bottom, 20),
+    },
+    summaryCard: {
+      backgroundColor: theme.colors.card,
+      borderRadius: 16,
+      padding: 20,
+      marginBottom: spacing.sectionGap,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      ...layout.shadow,
+    },
+    summaryHeader: {
+      flexDirection: common.rowDirection,
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 20,
+    },
+    summaryTitle: {
+      fontSize: 13,
+      ...fontWeight('700'),
+      textAlign: 'left',
+      color: '#64748B', // Slate 500
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      flex: 1,
+    },
+    summaryScore: {
+      fontSize: 18,
+      ...fontWeight('900'),
+      color: '#1E40AF', // Blue 800
+    },
+    summaryProgressBarBg: {
+      height: 12,
+      backgroundColor: 'rgba(0,0,0,0.05)',
+      borderRadius: 6,
+      overflow: 'hidden',
+    },
+    summaryProgressBarFill: {
+      height: '100%',
+      backgroundColor: '#10B981', // Matching design color
+      borderRadius: 6,
     },
     questionCard: {
       backgroundColor: theme.colors.card,
@@ -772,48 +846,70 @@ const styles = (
       textAlign: common.textAlign,
     },
     optionsContainer: {
-      gap: 12,
+      gap: 16,
     },
     optionItem: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      padding: 10,
-      borderRadius: 14,
+      padding: 16,
+      borderRadius: 12,
       borderWidth: 2,
-      borderColor: theme.colors.border,
+      borderColor: 'transparent',
     },
     optionDefault: {
       backgroundColor: theme.colors.background,
+      borderColor: theme.colors.border,
+      opacity: 0.7,
+      borderWidth: 1,
     },
     optionCorrect: {
       backgroundColor: '#F0FDF4',
       borderColor: '#10B981',
+      opacity: 1,
+      borderWidth: 2,
     },
     optionIncorrect: {
       backgroundColor: '#FEF2F2',
       borderColor: '#EF4444',
+      opacity: 1,
+      borderWidth: 2,
     },
     optionLetterCircle: {
       width: 32,
       height: 32,
       borderRadius: 16,
-      backgroundColor: 'rgba(0,0,0,0.05)',
       justifyContent: 'center',
       alignItems: 'center',
-      marginRight: isRTL ? 0 : 12,
-      marginLeft: isRTL ? 12 : 0,
+    },
+    optionLetterCircleDefault: {
+      backgroundColor: 'rgba(0,0,0,0.05)',
+    },
+    optionLetterCircleCorrect: {
+      backgroundColor: '#10B981',
+    },
+    optionLetterCircleIncorrect: {
+      backgroundColor: '#EF4444',
     },
     optionLetter: {
       ...fontWeight('900'),
-      fontSize: 15,
+      fontSize: 14,
+    },
+    optionLetterDefault: {
       color: theme.colors.textSecondary,
+    },
+    optionLetterCorrect: {
+      color: '#FFFFFF',
+    },
+    optionLetterIncorrect: {
+      color: '#FFFFFF',
     },
     optionText: {
       flex: 1,
       ...typography('body'),
+      ...fontWeight('500'),
       color: theme.colors.text,
       textAlign: common.textAlign,
-      marginStart: 10,
+      marginStart: 4,
     },
     dotIconContainer: {
       width: 28,
@@ -821,24 +917,25 @@ const styles = (
       justifyContent: 'center',
     },
     explanationBox: {
-      backgroundColor: '#EFF6FF',
-      padding: 16,
-      borderRadius: 16,
+      backgroundColor: '#F0F9FF',
+      padding: 20,
+      borderRadius: 12,
       marginTop: 24,
       borderWidth: 1,
-      borderColor: '#BFDBFE',
+      borderColor: '#E0F2FE',
     },
     explanationTitle: {
-      color: '#1E40AF',
+      color: '#0369A1',
       ...fontWeight('bold'),
-      marginBottom: 4,
+      fontSize: 16,
       textAlign: common.textAlign,
     },
     explanationText: {
       ...typography('bodySmall'),
-      color: '#3B82F6',
+      color: '#334155',
       textAlign: common.textAlign,
-      ...fontWeight('500'),
+      ...fontWeight('400'),
+      lineHeight: 22,
     },
   });
 

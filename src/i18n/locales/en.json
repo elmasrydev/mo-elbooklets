@@ -299,7 +299,9 @@
     "partially_covered": "Partially Covered",
     "missing_concepts": "Missing",
     "feedback": "Feedback",
-    "all_correct": "All answers are correct! 🎉"
+    "all_correct": "All answers are correct! 🎉",
+    "overall_performance": "Overall Performance",
+    "correct": "Correct"
   },
   "social_screen": {
     "header_title": "Social",
