@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
@@ -17,7 +18,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { layout } from '../../config/layout';
 import { useTypography } from '../../hooks/useTypography';
-import QuizSettingsModal from '../../components/QuizSettingsModal';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import AppButton from '../../components/AppButton';
 
@@ -43,17 +43,11 @@ interface QuizType {
   questionCount: number;
   isDefault: boolean;
 }
-interface QuizLessonsScreenProps {
-  subject: Subject;
-  onLessonsSelect: (lessonIds: string[], quizTypeId?: string) => void;
-  onBack: () => void;
-}
 
-const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
-  subject,
-  onLessonsSelect,
-  onBack,
-}) => {
+const QuizLessonsScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const subject = route.params?.subject;
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
@@ -63,13 +57,12 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
   const [selectedLessons, setSelectedLessons] = useState<Set<string>>(new Set());
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [quizTypes, setQuizTypes] = useState<QuizType[]>([]);
-  const [settingsModalVisible, setSettingsModalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
-  }, [subject.id]);
+  }, [subject?.id]);
 
   const fetchData = async () => {
     try {
@@ -118,11 +111,13 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
     setSelectedLessons(newSelected);
   };
 
-  const handleStartQuiz = (quizTypeId: string) => {
-    setSettingsModalVisible(false);
-    setTimeout(() => {
-      onLessonsSelect(Array.from(selectedLessons), quizTypeId);
-    }, 500);
+  const handlePrepareQuiz = () => {
+    navigation.navigate('QuizFlowSettings', {
+      subject,
+      quizTypes,
+      selectedUnits,
+      selectedLessonIds: Array.from(selectedLessons),
+    });
   };
 
   const selectedUnits = useMemo(() => {
@@ -149,7 +144,7 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
   if (loading)
     return (
       <View style={common.container}>
-        <UnifiedHeader isModal title={t('quiz_lessons.header_title')} />
+        <UnifiedHeader title={t('quiz_lessons.header_title')} />
         <View style={currentStyles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={currentStyles.loadingText}> {t('quiz_lessons.loading_lessons')} </Text>
@@ -157,26 +152,13 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
       </View>
     );
 
-  if (settingsModalVisible) {
-    return (
-      <QuizSettingsModal
-        onClose={() => setSettingsModalVisible(false)}
-        onStart={handleStartQuiz}
-        quizTypes={quizTypes}
-        subjectName={subject.name}
-        selectedUnits={selectedUnits}
-      />
-    );
-  }
-
   return (
     <View style={common.container}>
       <UnifiedHeader
-        isModal
         showBackButton
-        onBackPress={onBack}
+        onBackPress={() => navigation.goBack()}
         title={t('quiz_lessons.header_title')}
-        subtitle={subject.name}
+        subtitle={subject?.name}
       />
 
       <ScrollView
@@ -290,7 +272,7 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
         <View style={currentStyles.footer}>
           <AppButton
             title={`${t('quiz_lessons.prepare_quiz')} (${selectedLessons.size})`}
-            onPress={() => setSettingsModalVisible(true)}
+            onPress={() => handlePrepareQuiz()}
             icon={
               <Ionicons
                 name={isRTL ? 'arrow-back' : 'arrow-forward'}

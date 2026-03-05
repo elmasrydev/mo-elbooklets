@@ -15,6 +15,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
 import { layout } from '../../config/layout';
+import { useNavigation } from '@react-navigation/native';
 import { tryFetchWithFallback } from '../../config/api';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import AppButton from '../../components/AppButton';
@@ -25,12 +26,9 @@ interface Subject {
   name: string;
   description?: string;
 }
-interface QuizSubjectsScreenProps {
-  onSubjectSelect: (subject: Subject) => void;
-  onBack: () => void;
-}
 
-const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect, onBack }) => {
+const QuizSubjectsScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
@@ -79,7 +77,7 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
       <View style={currentStyles.container}>
         <UnifiedHeader
           showBackButton
-          onBackPress={onBack}
+          onBackPress={() => navigation.goBack()}
           title={t('quiz_subjects.header_title')}
         />
         <View style={currentStyles.loadingContainer}>
@@ -94,7 +92,7 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
       <View style={currentStyles.container}>
         <UnifiedHeader
           showBackButton
-          onBackPress={onBack}
+          onBackPress={() => navigation.goBack()}
           title={t('quiz_subjects.header_title')}
         />
         <View style={currentStyles.errorContainer}>
@@ -116,9 +114,8 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
   return (
     <View style={currentStyles.container}>
       <UnifiedHeader
-        isModal
         showBackButton
-        onBackPress={onBack}
+        onBackPress={() => navigation.goBack()}
         title={t('quiz_subjects.header_title')}
         subtitle={t('quiz_subjects.header_subtitle')}
       />
@@ -140,7 +137,7 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
             <TouchableOpacity
               key={subject.id}
               style={currentStyles.subjectCard}
-              onPress={() => onSubjectSelect(subject)}
+              onPress={() => navigation.navigate('QuizFlowLessons', { subject })}
               activeOpacity={0.7}
             >
               <View style={currentStyles.subjectMain}>

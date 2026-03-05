@@ -4,9 +4,7 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  Alert,
   ActivityIndicator,
-  Modal,
   TouchableOpacity,
   Image,
 } from 'react-native';
@@ -20,18 +18,9 @@ import { useLanguage } from '../context/LanguageContext';
 import { layout } from '../config/layout';
 import { tryFetchWithFallback } from '../config/api';
 import { useTranslation } from 'react-i18next';
-import QuizSubjectsScreen from './quiz/QuizSubjectsScreen';
-import QuizLessonsScreen from './quiz/QuizLessonsScreen';
-import QuizStartScreen from './quiz/QuizStartScreen';
 import RecentActivityCard from '../components/RecentActivityCard';
 import UnifiedHeader from '../components/UnifiedHeader';
 import AppButton from '../components/AppButton';
-
-interface Subject {
-  id: string;
-  name: string;
-  description?: string;
-}
 
 interface QuizHistory {
   id: string;
@@ -42,9 +31,6 @@ interface QuizHistory {
   completedAt: string;
   isPassed: boolean;
 }
-
-type QuizFlowStep = 'history' | 'ready';
-
 const QuizScreen: React.FC = () => {
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { t } = useTranslation();
@@ -57,15 +43,6 @@ const QuizScreen: React.FC = () => {
   const [quizHistory, setQuizHistory] = useState<QuizHistory[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState<string | null>(null);
-  const [currentStep, setCurrentStep] = useState<QuizFlowStep>('history');
-  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
-  const [selectedLessons, setSelectedLessons] = useState<string[]>([]);
-  const [selectedQuizTypeId, setSelectedQuizTypeId] = useState<string | undefined>(undefined);
-  const [selectedQuizTypeName, setSelectedQuizTypeName] = useState<string | undefined>(undefined);
-  const [currentQuizId, setCurrentQuizId] = useState<string | null>(null);
-
-  const [subjectModalVisible, setSubjectModalVisible] = useState(false);
-  const [lessonsModalVisible, setLessonsModalVisible] = useState(false);
 
   useEffect(() => {
     fetchQuizHistory();
@@ -76,34 +53,13 @@ const QuizScreen: React.FC = () => {
       if (route.params?.completedQuizId) {
         const completedId = route.params.completedQuizId;
         navigation.setParams({ completedQuizId: undefined });
-        setCurrentStep('history');
-        setCurrentQuizId(completedId);
         fetchQuizHistory();
         navigation.navigate('QuizResults', { quizId: completedId });
       } else {
-        if (currentStep === 'history') fetchQuizHistory();
+        fetchQuizHistory();
       }
-    }, [route.params?.completedQuizId, currentStep]),
+    }, [route.params?.completedQuizId]),
   );
-
-  useEffect(() => {
-    if (route.params?.retakeQuizId) {
-      const { subject, lessons } = route.params;
-      navigation.setParams({
-        retakeQuizId: undefined,
-        subject: undefined,
-        lessons: undefined,
-      });
-      resetFlow();
-      if (subject && lessons) {
-        setSelectedSubject(subject);
-        setSelectedLessons(lessons.map((l: any) => l.id));
-        setCurrentStep('ready');
-      } else {
-        setSubjectModalVisible(true);
-      }
-    }
-  }, [route.params?.retakeQuizId]);
 
   const fetchQuizHistory = async () => {
     try {
@@ -124,76 +80,6 @@ const QuizScreen: React.FC = () => {
       setHistoryLoading(false);
     }
   };
-
-  const handleLessonsSelect = async (lessonIds: string[], quizTypeId?: string) => {
-    setLessonsModalVisible(false);
-    setSelectedLessons(lessonIds);
-    setSelectedQuizTypeId(quizTypeId);
-    setTimeout(() => {
-      setCurrentStep('ready');
-    }, 500);
-  };
-
-  const startQuiz = async (
-    subjectId: string,
-    lessonIds: string[],
-    quizTypeId?: string,
-  ): Promise<{ success: boolean; quizId?: string; error?: string }> => {
-    try {
-      const token = await AsyncStorage.getItem('auth_token');
-      if (!token) return { success: false, error: t('common.error') };
-      const result = await tryFetchWithFallback(
-        `mutation StartQuiz($subjectId: ID!, $lessonIds: [ID!]!, $quizTypeId: ID) { startQuiz(subjectId: $subjectId, lessonIds: $lessonIds, quizTypeId: $quizTypeId) { id } }`,
-        { subjectId, lessonIds, quizTypeId },
-        token,
-      );
-      return result.data?.startQuiz
-        ? { success: true, quizId: result.data.startQuiz.id }
-        : { success: false, error: t('quiz_screen.error_loading_history') };
-    } catch (error: any) {
-      return { success: false, error: error.message };
-    }
-  };
-
-  const handleStartQuiz = async () => {
-    if (!selectedSubject) return;
-    try {
-      const result = await startQuiz(selectedSubject.id, selectedLessons, selectedQuizTypeId);
-      if (result.success && result.quizId) {
-        setCurrentQuizId(result.quizId);
-        navigation.navigate('QuizTaking', {
-          quizId: result.quizId,
-        });
-      } else {
-        Alert.alert(t('common.error'), result.error || t('quiz_screen.error_loading_history'));
-      }
-    } catch (error) {
-      Alert.alert(t('common.error'), t('quiz_screen.error_loading_history'));
-    }
-  };
-
-  const resetFlow = () => {
-    setSelectedSubject(null);
-    setSelectedLessons([]);
-    setSelectedQuizTypeId(undefined);
-    setSelectedQuizTypeName(undefined);
-    setCurrentQuizId(null);
-    setCurrentStep('history');
-  };
-
-  if (currentStep === 'ready' && selectedSubject)
-    return (
-      <QuizStartScreen
-        subjectName={selectedSubject.name}
-        lessonsCount={selectedLessons.length}
-        quizTypeName={selectedQuizTypeName}
-        onStart={handleStartQuiz}
-        onBack={() => {
-          setCurrentStep('history');
-          setLessonsModalVisible(true);
-        }}
-      />
-    );
 
   const currentStyles = useMemo(
     () => styles(theme, common, fontSizes, spacing, borderRadius, typography, fontWeight),
@@ -289,7 +175,7 @@ const QuizScreen: React.FC = () => {
             </Text>
             <TouchableOpacity
               activeOpacity={0.85}
-              onPress={() => setSubjectModalVisible(true)}
+              onPress={() => navigation.navigate('QuizFlowSubjects')}
               style={currentStyles.quizCTAButton}
             >
               <Ionicons name="play" size={14} color={theme.colors.primary} />
@@ -327,39 +213,6 @@ const QuizScreen: React.FC = () => {
         onRefresh={onRefresh}
         refreshing={refreshing}
       />
-
-      <Modal
-        visible={subjectModalVisible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setSubjectModalVisible(false)}
-      >
-        <QuizSubjectsScreen
-          onSubjectSelect={(s) => {
-            setSubjectModalVisible(false);
-            setTimeout(() => {
-              setSelectedSubject(s);
-              setLessonsModalVisible(true);
-            }, 300);
-          }}
-          onBack={() => setSubjectModalVisible(false)}
-        />
-      </Modal>
-
-      <Modal
-        visible={lessonsModalVisible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setLessonsModalVisible(false)}
-      >
-        {selectedSubject && (
-          <QuizLessonsScreen
-            subject={selectedSubject}
-            onLessonsSelect={handleLessonsSelect}
-            onBack={() => setLessonsModalVisible(false)}
-          />
-        )}
-      </Modal>
     </View>
   );
 };

@@ -6,17 +6,21 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../context/ThemeContext';
-import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
-import { useCommonStyles } from '../hooks/useCommonStyles';
-import { useTypography } from '../hooks/useTypography';
-import UnifiedHeader from './UnifiedHeader';
-import AppButton from './AppButton';
-import { layout } from '../config/layout';
+import { useCommonStyles } from '../../hooks/useCommonStyles';
+import { useTypography } from '../../hooks/useTypography';
+import { tryFetchWithFallback } from '../../config/api';
+import UnifiedHeader from '../../components/UnifiedHeader';
+import AppButton from '../../components/AppButton';
+import { layout } from '../../config/layout';
 
 interface QuizType {
   id: string;
@@ -37,42 +41,64 @@ interface SelectedUnit {
   lessons: SelectedLesson[];
 }
 
-interface QuizSettingsModalProps {
-  onClose: () => void;
-  onStart: (quizTypeId: string) => void;
-  quizTypes: QuizType[];
-  initialQuizTypeId?: string | null;
-  subjectName?: string;
-  selectedUnits?: SelectedUnit[];
-}
+const QuizSettingsScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const {
+    subject,
+    quizTypes = [],
+    selectedUnits = [],
+    selectedLessonIds = [],
+  } = route.params || {};
 
-const QuizSettingsModal: React.FC<QuizSettingsModalProps> = ({
-  onClose,
-  onStart,
-  quizTypes,
-  initialQuizTypeId,
-  subjectName,
-  selectedUnits,
-}) => {
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
-  const [selectedTypeId, setSelectedTypeId] = useState<string | null>(initialQuizTypeId || null);
+  const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null);
   const [timedMode, setTimedMode] = useState(false);
+  const [starting, setStarting] = useState(false);
 
   useEffect(() => {
     if (!selectedTypeId && quizTypes.length > 0) {
-      const defaultType = quizTypes.find((qt) => qt.isDefault) || quizTypes[0];
+      const defaultType = quizTypes.find((qt: QuizType) => qt.isDefault) || quizTypes[0];
       setSelectedTypeId(defaultType.id);
     }
   }, [quizTypes, selectedTypeId]);
 
-  const handleStart = () => {
-    if (selectedTypeId) {
-      onStart(selectedTypeId);
+  const handleStartQuiz = async () => {
+    if (!selectedTypeId || !subject) return;
+    try {
+      setStarting(true);
+      const token = await AsyncStorage.getItem('auth_token');
+      if (!token) return;
+      const result = await tryFetchWithFallback(
+        `mutation StartQuiz($subjectId: ID!, $lessonIds: [ID!]!, $quizTypeId: ID) { startQuiz(subjectId: $subjectId, lessonIds: $lessonIds, quizTypeId: $quizTypeId) { id } }`,
+        { subjectId: subject.id, lessonIds: selectedLessonIds, quizTypeId: selectedTypeId },
+        token,
+      );
+      if (result.data?.startQuiz) {
+        const quizId = result.data.startQuiz.id;
+        // Dismiss the entire quiz flow modal stack and navigate to QuizTaking
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: 'MainTabs' }],
+          }),
+        );
+        // Navigate to QuizTaking after resetting (500ms delay for smooth transition)
+        setTimeout(() => {
+          navigation.navigate('QuizTaking', { quizId });
+        }, 500);
+      } else {
+        Alert.alert(t('common.error'), t('quiz_screen.error_loading_history'));
+      }
+    } catch (error: any) {
+      Alert.alert(t('common.error'), error.message || t('quiz_screen.error_loading_history'));
+    } finally {
+      setStarting(false);
     }
   };
 
@@ -93,8 +119,7 @@ const QuizSettingsModal: React.FC<QuizSettingsModalProps> = ({
       <UnifiedHeader
         title={t('quiz_lessons.quiz_settings')}
         showBackButton={true}
-        onBackPress={onClose}
-        isModal={true}
+        onBackPress={() => navigation.goBack()}
         centerAlign={true}
       />
 
@@ -106,14 +131,14 @@ const QuizSettingsModal: React.FC<QuizSettingsModalProps> = ({
         </View>
 
         {/* Subject Badge */}
-        {subjectName ? (
+        {subject?.name ? (
           <View style={currentStyles.subjectBadgeCard}>
             <View style={currentStyles.subjectBadgeIconContainer}>
               <Ionicons name="book" size={24} color={theme.colors.textOnDark} />
             </View>
             <View style={currentStyles.subjectBadgeInfo}>
               <Text style={currentStyles.subjectBadgeLabel}>{t('quiz_lessons.current_topic')}</Text>
-              <Text style={currentStyles.subjectBadgeTitle}>{subjectName}</Text>
+              <Text style={currentStyles.subjectBadgeTitle}>{subject.name}</Text>
             </View>
           </View>
         ) : null}
@@ -121,14 +146,14 @@ const QuizSettingsModal: React.FC<QuizSettingsModalProps> = ({
         {/* Selected Lessons Breadcrumbs */}
         {selectedUnits && selectedUnits.length > 0 && (
           <View style={currentStyles.breadcrumbsContainer}>
-            {selectedUnits.map((unit) => (
+            {selectedUnits.map((unit: SelectedUnit) => (
               <View key={unit.id} style={currentStyles.unitBreadcrumb}>
                 <View style={currentStyles.unitBreadcrumbHeader}>
                   <View style={currentStyles.breadcrumbDot} />
                   <Text style={currentStyles.unitBreadcrumbName}>{unit.name}</Text>
                 </View>
                 <View style={currentStyles.lessonBreadcrumbsList}>
-                  {unit.lessons.map((lesson) => (
+                  {unit.lessons.map((lesson: SelectedLesson) => (
                     <View key={lesson.id} style={currentStyles.lessonBreadcrumbItem}>
                       <View style={currentStyles.lessonBreadcrumbDot} />
                       <Text style={currentStyles.lessonBreadcrumbName}>{lesson.name}</Text>
@@ -144,7 +169,7 @@ const QuizSettingsModal: React.FC<QuizSettingsModalProps> = ({
         <View style={currentStyles.sectionContainer}>
           <Text style={currentStyles.sectionTitle}>{t('quiz_lessons.select_quiz_type')}</Text>
           <View style={currentStyles.optionsContainer}>
-            {quizTypes.map((type) => {
+            {quizTypes.map((type: QuizType) => {
               const isSelected = selectedTypeId === type.id;
               return (
                 <TouchableOpacity
@@ -211,12 +236,13 @@ const QuizSettingsModal: React.FC<QuizSettingsModalProps> = ({
         </View>
       </ScrollView>
 
-      {/* Start Button Area inside scroll view so it flows naturally if screen is small */}
+      {/* Start Button Area */}
       <View style={currentStyles.actionArea}>
         <AppButton
           title={t('quiz_lessons.start_quiz')}
-          onPress={handleStart}
-          disabled={!selectedTypeId}
+          onPress={handleStartQuiz}
+          disabled={!selectedTypeId || starting}
+          loading={starting}
           size="lg"
           icon={<Ionicons name="play" size={20} color={theme.colors.textOnDark} />}
           iconPosition="right"
@@ -269,9 +295,9 @@ const styles = (
     subjectBadgeCard: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      backgroundColor: theme.colors.primary + '0D', // Very light primary shade
+      backgroundColor: theme.colors.primary + '0D',
       borderWidth: 1,
-      borderColor: theme.colors.primary + '1A', // Light border
+      borderColor: theme.colors.primary + '1A',
       borderRadius: borderRadius.xl || 16,
       padding: spacing.md,
       marginBottom: spacing.xl,
@@ -383,7 +409,7 @@ const styles = (
     },
     optionCardSelected: {
       borderColor: theme.colors.primary,
-      backgroundColor: theme.colors.primary + '05', // tiny hint of blue
+      backgroundColor: theme.colors.primary + '05',
     },
     optionInfo: {
       flex: 1,
@@ -473,12 +499,8 @@ const styles = (
       borderRadius: 10,
       backgroundColor: '#FFF',
     },
-    toggleThumbActive: {
-      // additional active thumb styling if needed
-    },
-    toggleThumbInactive: {
-      // additional inactive thumb styling if needed
-    },
+    toggleThumbActive: {},
+    toggleThumbInactive: {},
     actionArea: {
       paddingHorizontal: layout.screenPadding,
       paddingTop: spacing.lg,
@@ -501,4 +523,4 @@ const styles = (
     },
   });
 
-export default QuizSettingsModal;
+export default QuizSettingsScreen;

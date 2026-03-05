@@ -19,6 +19,9 @@ import StudyLessonScreen from '../screens/study/StudyLessonScreen';
 import QuizTakingScreen from '../screens/quiz/QuizTakingScreen';
 import QuizReviewScreen from '../screens/quiz/QuizReviewScreen';
 import QuizResultsScreen from '../screens/quiz/QuizResultsScreen';
+import QuizSubjectsScreen from '../screens/quiz/QuizSubjectsScreen';
+import QuizLessonsScreen from '../screens/quiz/QuizLessonsScreen';
+import QuizSettingsScreen from '../screens/quiz/QuizSettingsScreen';
 import { useTranslation } from 'react-i18next';
 
 const Tab = createBottomTabNavigator();
@@ -192,6 +195,11 @@ const TabNavigator: React.FC = () => {
           animation: 'slide_from_bottom',
         }}
       />
+      <Stack.Group screenOptions={{ presentation: 'fullScreenModal' }}>
+        <Stack.Screen name="QuizFlowSubjects" component={QuizSubjectsScreen} />
+        <Stack.Screen name="QuizFlowLessons" component={QuizLessonsScreen} />
+        <Stack.Screen name="QuizFlowSettings" component={QuizSettingsScreen} />
+      </Stack.Group>
     </Stack.Navigator>
   );
 };
