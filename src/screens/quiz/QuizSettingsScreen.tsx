@@ -1,13 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  ScrollView,
-  Alert,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
@@ -81,14 +73,12 @@ const QuizSettingsScreen: React.FC = () => {
       );
       if (result.data?.startQuiz) {
         const quizId = result.data.startQuiz.id;
-        // Dismiss the entire quiz flow modal stack and navigate to QuizTaking
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
             routes: [{ name: 'MainTabs' }],
           }),
         );
-        // Navigate to QuizTaking after resetting (500ms delay for smooth transition)
         setTimeout(() => {
           navigation.navigate('QuizTaking', { quizId });
         }, 500);
@@ -123,14 +113,16 @@ const QuizSettingsScreen: React.FC = () => {
         centerAlign={true}
       />
 
-      <ScrollView style={currentStyles.content} showsVerticalScrollIndicator={false}>
-        {/* Hero Section */}
+      <ScrollView
+        style={currentStyles.content}
+        contentContainerStyle={currentStyles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={currentStyles.heroSection}>
           <Text style={currentStyles.heroTitle}>{t('quiz_lessons.configure_quiz_title')}</Text>
           <Text style={currentStyles.heroSubtitle}>{t('quiz_lessons.customize_experience')}</Text>
         </View>
 
-        {/* Subject Badge */}
         {subject?.name ? (
           <View style={currentStyles.subjectBadgeCard}>
             <View style={currentStyles.subjectBadgeIconContainer}>
@@ -143,7 +135,6 @@ const QuizSettingsScreen: React.FC = () => {
           </View>
         ) : null}
 
-        {/* Selected Lessons Breadcrumbs */}
         {selectedUnits && selectedUnits.length > 0 && (
           <View style={currentStyles.breadcrumbsContainer}>
             {selectedUnits.map((unit: SelectedUnit) => (
@@ -165,7 +156,6 @@ const QuizSettingsScreen: React.FC = () => {
           </View>
         )}
 
-        {/* Question Selection */}
         <View style={currentStyles.sectionContainer}>
           <Text style={currentStyles.sectionTitle}>{t('quiz_lessons.select_quiz_type')}</Text>
           <View style={currentStyles.optionsContainer}>
@@ -205,7 +195,6 @@ const QuizSettingsScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Additional Settings */}
         <View style={currentStyles.additionalSettingsContainer}>
           <View style={currentStyles.settingRow}>
             <View style={currentStyles.settingInfo}>
@@ -236,7 +225,6 @@ const QuizSettingsScreen: React.FC = () => {
         </View>
       </ScrollView>
 
-      {/* Start Button Area */}
       <View style={currentStyles.actionArea}>
         <AppButton
           title={t('quiz_lessons.start_quiz')}
@@ -245,7 +233,7 @@ const QuizSettingsScreen: React.FC = () => {
           loading={starting}
           size="lg"
           icon={<Ionicons name="play" size={20} color={theme.colors.textOnDark} />}
-          iconPosition="right"
+          iconPosition={isRTL ? 'left' : 'right'}
         />
         <Text style={currentStyles.disclaimerText}>{t('quiz_lessons.progress_saved')}</Text>
       </View>
@@ -271,29 +259,32 @@ const styles = (
     },
     content: {
       flex: 1,
+    },
+    scrollContent: {
       paddingHorizontal: layout.screenPadding,
       paddingTop: spacing.lg,
+      paddingBottom: spacing.xl,
+      alignItems: 'stretch', // Critical for preventing the "right-align jump"
     },
     heroSection: {
       marginBottom: spacing.xl,
+      width: '100%',
     },
     heroTitle: {
       fontSize: Math.max(24, fontSizes.xl),
       ...fontWeight('700'),
       color: theme.colors.text,
       marginBottom: spacing.md,
-      marginHorizontal: spacing.sm,
-      textAlign: common.textAlign,
+      textAlign: 'left',
     },
     heroSubtitle: {
       ...typography('body'),
       color: theme.colors.textSecondary,
-      textAlign: common.textAlign,
+      textAlign: 'left',
       lineHeight: 22,
-      marginHorizontal: spacing.sm,
     },
     subjectBadgeCard: {
-      flexDirection: common.rowDirection,
+      flexDirection: 'row', // Let React Native handle the flip
       alignItems: 'center',
       backgroundColor: theme.colors.primary + '0D',
       borderWidth: 1,
@@ -301,7 +292,6 @@ const styles = (
       borderRadius: borderRadius.xl || 16,
       padding: spacing.md,
       marginBottom: spacing.xl,
-      gap: spacing.md,
     },
     subjectBadgeIconContainer: {
       width: 48,
@@ -313,35 +303,30 @@ const styles = (
     },
     subjectBadgeInfo: {
       flex: 1,
-      alignItems: common.alignStart,
-      justifyContent: 'center',
+      paddingStart: spacing.md, // Use paddingStart instead of gap for better RTL support
+      alignItems: 'flex-start',
     },
     subjectBadgeLabel: {
       ...typography('caption'),
       ...fontWeight('600'),
       color: theme.colors.primary,
       textTransform: 'uppercase',
-      opacity: 0.8,
-      marginBottom: 2,
-      letterSpacing: 0.5,
-      textAlign: common.textAlign,
+      textAlign: isRTL ? 'right' : 'left',
     },
     subjectBadgeTitle: {
       fontSize: Math.max(16, fontSizes.lg),
       ...fontWeight('700'),
       color: theme.colors.text,
-      textAlign: common.textAlign,
+      textAlign: isRTL ? 'right' : 'left',
     },
     breadcrumbsContainer: {
       marginBottom: spacing.lg,
-      marginHorizontal: spacing.sm,
     },
     unitBreadcrumb: {
       marginBottom: spacing.sm,
-      marginHorizontal: spacing.sm,
     },
     unitBreadcrumbHeader: {
-      flexDirection: common.rowDirection,
+      flexDirection: 'row',
       alignItems: 'center',
       marginBottom: spacing.xs,
     },
@@ -350,23 +335,23 @@ const styles = (
       height: 8,
       borderRadius: 4,
       backgroundColor: theme.colors.primary,
-      ...common.marginEnd(spacing.sm),
+      marginEnd: spacing.sm,
     },
     unitBreadcrumbName: {
       ...typography('body'),
       ...fontWeight('bold'),
       color: theme.colors.text,
-      textAlign: common.textAlign,
+      textAlign: isRTL ? 'right' : 'left',
     },
     lessonBreadcrumbsList: {
-      ...common.marginStart(11),
-      ...common.borderStartWidth(2),
-      ...common.borderStartColor(theme.colors.border),
-      ...common.paddingStart(spacing.md),
+      marginStart: 11,
+      borderStartWidth: 2,
+      borderStartColor: theme.colors.border,
+      paddingStart: spacing.md,
       paddingVertical: spacing.xs,
     },
     lessonBreadcrumbItem: {
-      flexDirection: common.rowDirection,
+      flexDirection: 'row',
       alignItems: 'center',
       marginBottom: spacing.xs,
     },
@@ -375,13 +360,13 @@ const styles = (
       height: 6,
       borderRadius: 3,
       backgroundColor: theme.colors.textTertiary,
-      ...common.marginEnd(spacing.sm),
+      marginEnd: spacing.sm,
     },
     lessonBreadcrumbName: {
       ...typography('caption'),
       fontSize: 13,
       color: theme.colors.textSecondary,
-      textAlign: common.textAlign,
+      textAlign: isRTL ? 'right' : 'left',
     },
     sectionContainer: {
       marginBottom: spacing.xl,
@@ -391,21 +376,20 @@ const styles = (
       ...fontWeight('700'),
       color: theme.colors.text,
       marginBottom: spacing.md,
-      marginHorizontal: spacing.sm,
-      textAlign: common.textAlign,
+      textAlign: 'left',
     },
     optionsContainer: {
       width: '100%',
-      gap: spacing.md,
     },
     optionCard: {
-      flexDirection: common.rowDirection,
+      flexDirection: 'row',
       alignItems: 'center',
       padding: spacing.lg,
       borderRadius: borderRadius.xl || 16,
       backgroundColor: theme.colors.card,
       borderWidth: 2,
       borderColor: theme.colors.border,
+      marginBottom: spacing.md,
     },
     optionCardSelected: {
       borderColor: theme.colors.primary,
@@ -413,15 +397,13 @@ const styles = (
     },
     optionInfo: {
       flex: 1,
-      alignItems: common.alignStart,
-      justifyContent: 'center',
+      alignItems: 'flex-start',
     },
     optionTitle: {
       fontSize: Math.max(16, fontSizes.lg),
       ...fontWeight('700'),
       color: theme.colors.text,
-      marginBottom: 2,
-      textAlign: common.textAlign,
+      textAlign: isRTL ? 'right' : 'left',
     },
     optionTitleSelected: {
       color: theme.colors.primary,
@@ -430,8 +412,7 @@ const styles = (
       ...typography('caption'),
       fontSize: 13,
       color: theme.colors.textSecondary,
-      fontStyle: 'italic',
-      textAlign: common.textAlign,
+      textAlign: isRTL ? 'right' : 'left',
     },
     radioButton: {
       width: 24,
@@ -441,7 +422,7 @@ const styles = (
       borderColor: theme.colors.border,
       justifyContent: 'center',
       alignItems: 'center',
-      ...common.marginStart(spacing.md),
+      marginStart: spacing.md,
     },
     radioButtonSelected: {
       borderColor: theme.colors.primary,
@@ -460,23 +441,22 @@ const styles = (
       marginBottom: spacing.xl,
     },
     settingRow: {
-      flexDirection: common.rowDirection,
+      flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginHorizontal: spacing.sm,
     },
     settingInfo: {
-      flexDirection: common.rowDirection,
+      flexDirection: 'row',
       alignItems: 'center',
     },
     settingIcon: {
-      ...common.marginEnd(spacing.sm),
+      marginEnd: spacing.sm,
     },
     settingLabel: {
       ...typography('body'),
       ...fontWeight('500'),
       color: theme.colors.text,
-      textAlign: common.textAlign,
+      textAlign: isRTL ? 'right' : 'left',
     },
     toggleTrack: {
       width: 48,
@@ -508,11 +488,6 @@ const styles = (
       backgroundColor: theme.colors.background,
       borderTopWidth: 1,
       borderTopColor: theme.colors.border,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: -2 },
-      shadowOpacity: 0.05,
-      shadowRadius: 5,
-      elevation: 5,
     },
     disclaimerText: {
       ...typography('caption'),
