@@ -189,7 +189,7 @@
     "error_loading_lessons": "Error Loading Lessons",
     "no_lessons_available": "No Lessons Available",
     "no_lessons_for_subject": "No lessons are available for this subject at the moment.",
-    "lessons_selected": "{{count}}/{{total}} lessons selected",
+    "lessons_selected": "lessons selected",
     "no_lessons_selected": "No Lessons Selected",
     "select_at_least_one": "Please select at least one lesson to start the quiz.",
     "start_quiz": "Start Quiz",

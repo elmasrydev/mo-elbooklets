@@ -189,7 +189,7 @@
     "error_loading_lessons": "خطأ في تحميل الدروس",
     "no_lessons_available": "لا توجد دروس متاحة",
     "no_lessons_for_subject": "لا توجد دروس متاحة لهذه المادة حالياً.",
-    "lessons_selected": "{{count}}/{{total}} دروس مختارة",
+    "lessons_selected": "دروس مختارة",
     "no_lessons_selected": "لم يتم اختيار دروس",
     "select_at_least_one": "يرجى اختيار درس واحد على الأقل لبدء الاختبار.",
     "start_quiz": "ابدأ الاختبار",

@@ -116,7 +116,7 @@ const AppButton: React.FC<AppButtonProps> = ({
       case 'md':
       default:
         return {
-          button: { height: 44, paddingHorizontal: spacing.lg },
+          button: { height: 46, paddingHorizontal: spacing.lg },
           text: typography('button'),
           subtitle: typography('label'),
         };
