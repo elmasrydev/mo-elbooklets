@@ -430,7 +430,13 @@
     "log_out": "تسجيل الخروج",
     "choose_language": "اختر اللغة",
     "select_language_msg": "اختر لغتك المفضلة",
-    "cancel": "إلغاء",
     "not_specified": "غير محدد"
+  },
+  "quiz_types": {
+    "default": "الافتراضي",
+    "revision": "مراجعة",
+    "final_revision": "مراجعة نهائية",
+    "final-revision": "مراجعة نهائية",
+    "practice": "تدريب"
   }
 }

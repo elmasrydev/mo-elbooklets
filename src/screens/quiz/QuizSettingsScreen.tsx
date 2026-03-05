@@ -328,7 +328,8 @@ const styles = (
     unitBreadcrumbHeader: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginBottom: spacing.xs,
+      marginBottom: spacing.sm,
+      flexShrink: 1,
     },
     breadcrumbDot: {
       width: 8,
@@ -338,15 +339,13 @@ const styles = (
       marginEnd: spacing.sm,
     },
     unitBreadcrumbName: {
-      ...typography('body'),
-      ...fontWeight('bold'),
+      ...typography('subtitle2'),
+      ...fontWeight('700'),
       color: theme.colors.text,
-      textAlign: isRTL ? 'right' : 'left',
+      flexShrink: 1,
+      textAlign: 'left',
     },
     lessonBreadcrumbsList: {
-      marginStart: 11,
-      borderStartWidth: 2,
-      borderStartColor: theme.colors.border,
       paddingStart: spacing.md,
       paddingVertical: spacing.xs,
     },
@@ -354,6 +353,7 @@ const styles = (
       flexDirection: 'row',
       alignItems: 'center',
       marginBottom: spacing.xs,
+      flexShrink: 1,
     },
     lessonBreadcrumbDot: {
       width: 6,
@@ -366,7 +366,8 @@ const styles = (
       ...typography('caption'),
       fontSize: 13,
       color: theme.colors.textSecondary,
-      textAlign: isRTL ? 'right' : 'left',
+      flexShrink: 1,
+      textAlign: 'left',
     },
     sectionContainer: {
       marginBottom: spacing.xl,

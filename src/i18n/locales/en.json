@@ -109,6 +109,13 @@
     "not_specified": "Not specified",
     "logout": "Logout"
   },
+  "quiz_types": {
+    "default": "Default",
+    "revision": "Revision",
+    "final_revision": "Final Revision",
+    "final-revision": "Final Revision",
+    "practice": "Practice"
+  },
   "home_screen": {
     "hi": "Hi",
     "lets_learn": "Let's learn something new.",
