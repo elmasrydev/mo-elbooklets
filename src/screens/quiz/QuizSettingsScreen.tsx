@@ -80,7 +80,7 @@ const QuizSettingsScreen: React.FC = () => {
           }),
         );
         setTimeout(() => {
-          navigation.navigate('QuizTaking', { quizId });
+          navigation.navigate('QuizTaking', { quizId, isTimed: timedMode });
         }, 500);
       } else {
         Alert.alert(t('common.error'), t('quiz_screen.error_loading_history'));

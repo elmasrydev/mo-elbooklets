@@ -240,7 +240,11 @@
     "continue_quiz": "Continue",
     "leave_quiz": "Leave Quiz",
     "what_happens": "What Happens?",
-    "give_a_reason": "Give a Reason"
+    "give_a_reason": "Give a Reason",
+    "progress": "Progress",
+    "question": "Question",
+    "of": "of",
+    "write_your_answer": "Write your answer here..."
   },
   "quiz_results": {
     "header_title": "Quiz Results",

@@ -240,7 +240,11 @@
     "continue_quiz": "متابعة",
     "leave_quiz": "مغادرة الاختبار",
     "what_happens": "ماذا يحدث؟",
-    "give_a_reason": "أعطِ سبباً"
+    "give_a_reason": "أعطِ سبباً",
+    "progress": "التقدم",
+    "question": "السؤال",
+    "of": "من",
+    "write_your_answer": "اكتب إجابتك هنا..."
   },
   "quiz_results": {
     "header_title": "نتائج الاختبار",

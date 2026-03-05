@@ -50,13 +50,13 @@ interface Quiz {
 const QuizTakingScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { quizId } = route.params || {};
+  const { quizId, isTimed } = route.params || {};
 
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography, fontWeight} = useTypography();
+  const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
 
   const [quiz, setQuiz] = useState<Quiz | null>(null);
@@ -65,6 +65,28 @@ const QuizTakingScreen: React.FC = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<{ [questionId: string]: string }>({});
   const [submitting, setSubmitting] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [isTimerPaused, setIsTimerPaused] = useState(false);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (isTimed && !isTimerPaused) {
+      timer = setInterval(() => {
+        setElapsedSeconds((prev) => prev + 1);
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [isTimed, isTimerPaused]);
+
+  const formatTime = (totalSeconds: number) => {
+    const m = Math.floor(totalSeconds / 60)
+      .toString()
+      .padStart(2, '0');
+    const s = (totalSeconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
 
   const handleBackPress = () => {
     Alert.alert(t('quiz_taking.leave_quiz_title'), t('quiz_taking.leave_quiz_message'), [
@@ -192,7 +214,7 @@ const QuizTakingScreen: React.FC = () => {
     }
 
     const unansweredQuestions = quiz.questions.filter(
-      (q) => !selectedAnswers[q.id] || selectedAnswers[q.id].trim() === ''
+      (q) => !selectedAnswers[q.id] || selectedAnswers[q.id].trim() === '',
     );
     if (unansweredQuestions.length > 0) {
       Alert.alert(
@@ -201,6 +223,10 @@ const QuizTakingScreen: React.FC = () => {
         [{ text: t('common.ok') }],
       );
       return;
+    }
+
+    if (isTimed) {
+      setIsTimerPaused(true);
     }
 
     submitAnswers();
@@ -327,7 +353,7 @@ const QuizTakingScreen: React.FC = () => {
   const isDescriptive = isDescriptiveQuestion(currentQuestion);
 
   return (
-    <View style={common.container}>
+    <View style={[common.container, currentStyles.screenContainer]}>
       {/* Header */}
       <UnifiedHeader
         showBackButton
@@ -339,15 +365,42 @@ const QuizTakingScreen: React.FC = () => {
         }
       />
 
-      {/* Progress Bar */}
-      <View style={currentStyles.progressContainer}>
-        <View style={currentStyles.progressBar}>
-          <View style={[currentStyles.progressFill, { width: `${progress}%` }]} />
-          <View style={currentStyles.progressTextContainer}>
-            <View style={currentStyles.progressTextWrapper}>
-              <Text style={currentStyles.progressTextCenter}> {Math.round(progress)} % </Text>
-            </View>
+      {/* Progress Section */}
+      <View style={currentStyles.progressSection}>
+        <View style={currentStyles.progressRow}>
+          <View>
+            <Text style={currentStyles.progressLabel}>
+              {t('quiz_taking.progress', 'PROGRESS').toUpperCase()}
+            </Text>
+            <Text style={currentStyles.progressSteps}>
+              <Text style={currentStyles.progressCurrentStep}>
+                {t('quiz_taking.question', 'Question')}{' '}
+                {(currentQuestionIndex + 1).toString().padStart(2, '0')}
+              </Text>{' '}
+              {t('quiz_taking.of', 'of')} {quiz.questions.length}
+            </Text>
           </View>
+          {isTimed ? (
+            <View
+              style={[currentStyles.timerBadge, isTimerPaused && currentStyles.timerBadgePaused]}
+            >
+              <Ionicons
+                name="timer-outline"
+                size={16}
+                color={isTimerPaused ? '#9CA3AF' : '#284196'}
+              />
+              <Text
+                style={[currentStyles.timerText, isTimerPaused && currentStyles.timerTextPaused]}
+              >
+                {formatTime(elapsedSeconds)}
+              </Text>
+            </View>
+          ) : (
+            <View />
+          )}
+        </View>
+        <View style={currentStyles.progressBarBackground}>
+          <View style={[currentStyles.progressBarFill, { width: `${progress}%` }]} />
         </View>
       </View>
 
@@ -356,8 +409,7 @@ const QuizTakingScreen: React.FC = () => {
         contentContainerStyle={currentStyles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        <View style={currentStyles.questionContainer}>
-          {/* Question type badge for descriptive */}
+        <View style={currentStyles.questionWrapper}>
           {isDescriptive && (
             <View style={currentStyles.descriptiveBadge}>
               <Ionicons name="create-outline" size={14} color="#1E40AF" />
@@ -369,16 +421,13 @@ const QuizTakingScreen: React.FC = () => {
             </View>
           )}
 
-          <Text style={currentStyles.questionText}> {currentQuestion.question} </Text>
+          <Text style={currentStyles.questionText}>{currentQuestion.question}</Text>
 
           {isDescriptive ? (
             /* Descriptive answer: multi-line text input */
             <View style={currentStyles.descriptiveContainer}>
               <TextInput
-                style={[
-                  currentStyles.descriptiveInput,
-                  { textAlign: isRTL ? 'right' : 'left' },
-                ]}
+                style={[currentStyles.descriptiveInput, { textAlign: isRTL ? 'right' : 'left' }]}
                 value={selectedAnswers[currentQuestion.id] || ''}
                 onChangeText={(text) => handleDescriptiveAnswer(currentQuestion.id, text)}
                 placeholder={t('quiz_taking.write_your_answer', 'Write your answer here...')}
@@ -396,41 +445,51 @@ const QuizTakingScreen: React.FC = () => {
             <View style={currentStyles.answersContainer}>
               {currentQuestion.answers.map((answer, index) => {
                 const isSelected = selectedAnswers[currentQuestion.id] === answer;
+                // Basic split strategy if the text clearly has a title and description
+                // Using newline if available, else we just use the text as title layout
+                const parts = answer.split('\n');
+                const hasSubtitle = parts.length > 1;
+
                 return (
                   <TouchableOpacity
                     key={index}
-                    style={[currentStyles.answerButton, isSelected && currentStyles.selectedAnswer]}
+                    style={[
+                      currentStyles.answerCard,
+                      isSelected && currentStyles.selectedAnswerCard,
+                    ]}
                     onPress={() => handleAnswerSelect(currentQuestion.id, answer)}
                     activeOpacity={0.8}
                   >
-                    <View
-                      style={[
-                        currentStyles.answerLetter,
-                        isSelected && currentStyles.selectedAnswerLetter,
-                      ]}
-                    >
-                      <Text
+                    <View style={currentStyles.radioContainer}>
+                      <View
                         style={[
-                          currentStyles.answerLetterText,
-                          isSelected && currentStyles.selectedAnswerLetterText,
+                          currentStyles.radioCircle,
+                          isSelected && currentStyles.selectedRadioCircle,
                         ]}
                       >
-                        {String.fromCharCode(65 + index)}
-                      </Text>
-                    </View>
-                    <Text
-                      style={[
-                        currentStyles.answerText,
-                        isSelected && currentStyles.selectedAnswerText,
-                      ]}
-                    >
-                      {answer}
-                    </Text>
-                    {isSelected && (
-                      <View style={currentStyles.checkIconContainer}>
-                        <Ionicons name="checkmark" size={16} color="#20A66E" />
+                        {isSelected && <View style={currentStyles.radioDot} />}
                       </View>
-                    )}
+                    </View>
+                    <View style={currentStyles.answerTextContainer}>
+                      <Text
+                        style={[
+                          currentStyles.answerTitle,
+                          isSelected && currentStyles.selectedAnswerTitle,
+                        ]}
+                      >
+                        {parts[0]}
+                      </Text>
+                      {hasSubtitle && (
+                        <Text
+                          style={[
+                            currentStyles.answerSubtitle,
+                            isSelected && currentStyles.selectedAnswerSubtitle,
+                          ]}
+                        >
+                          {parts.slice(1).join('\n')}
+                        </Text>
+                      )}
+                    </View>
                   </TouchableOpacity>
                 );
               })}
@@ -439,99 +498,308 @@ const QuizTakingScreen: React.FC = () => {
         </View>
       </ScrollView>
 
-
       {/* Navigation Footer */}
-      <View
-        style={[currentStyles.navigationContainer, { paddingBottom: Math.max(insets.bottom, 20) }]}
-      >
-        <AppButton
-          title={t('common.previous')}
+      <View style={[currentStyles.footerContainer, { paddingBottom: Math.max(insets.bottom, 24) }]}>
+        <TouchableOpacity
+          style={[
+            currentStyles.navButton,
+            currentStyles.prevButton,
+            currentQuestionIndex === 0 && currentStyles.navButtonDisabled,
+          ]}
           onPress={handlePreviousQuestion}
-          variant="secondary"
-          size="md"
           disabled={currentQuestionIndex === 0}
-          icon={
-            <Ionicons
-              name={isRTL ? 'arrow-forward' : 'arrow-back'}
-              size={20}
-              color={currentQuestionIndex === 0 ? theme.colors.textTertiary : theme.colors.text}
-            />
-          }
-          iconPosition="left"
-          style={{ flex: 1 }}
-        />
+        >
+          <Ionicons
+            name={isRTL ? 'arrow-forward' : 'arrow-back'}
+            size={20}
+            color={currentQuestionIndex === 0 ? '#9CA3AF' : '#374151'}
+          />
+          <Text
+            style={[
+              currentStyles.navButtonText,
+              currentStyles.prevButtonText,
+              currentQuestionIndex === 0 && currentStyles.navButtonTextDisabled,
+            ]}
+          >
+            {t('common.previous', 'Previous')}
+          </Text>
+        </TouchableOpacity>
 
         {currentQuestionIndex === quiz.questions.length - 1 ? (
-          <AppButton
-            title={submitting ? t('quiz_taking.submitting') : t('quiz_taking.submit_quiz')}
+          <TouchableOpacity
+            style={[
+              currentStyles.navButton,
+              currentStyles.nextButton,
+              submitting && currentStyles.navButtonDisabled,
+            ]}
             onPress={handleSubmitQuiz}
-            loading={submitting}
-            icon={!submitting && <Ionicons name="checkmark-done" size={20} color="#fff" />}
-            iconPosition="left"
-            style={{ flex: 1 }}
-          />
+            disabled={submitting}
+          >
+            {submitting ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <>
+                <Text style={[currentStyles.navButtonText, currentStyles.nextButtonText]}>
+                  {t('quiz_taking.submit_quiz', 'Submit')}
+                </Text>
+                <Ionicons name="checkmark-done" size={20} color="#FFFFFF" />
+              </>
+            )}
+          </TouchableOpacity>
         ) : (
-          <AppButton
-            title={t('common.next')}
+          <TouchableOpacity
+            style={[currentStyles.navButton, currentStyles.nextButton]}
             onPress={handleNextQuestion}
-            icon={<Ionicons name={isRTL ? 'arrow-back' : 'arrow-forward'} size={20} color="#fff" />}
-            iconPosition="right"
-            style={{ flex: 1 }}
-          />
+          >
+            <Text style={[currentStyles.navButtonText, currentStyles.nextButtonText]}>
+              {t('common.next', 'Next')}
+            </Text>
+            <Ionicons name={isRTL ? 'arrow-back' : 'arrow-forward'} size={20} color="#FFFFFF" />
+          </TouchableOpacity>
         )}
       </View>
     </View>
   );
 };
 
-const styles = (theme: any, typography: any, fontWeight: any, spacing: any, borderRadius: any, common: any) =>
+const styles = (
+  theme: any,
+  typography: any,
+  fontWeight: any,
+  spacing: any,
+  borderRadius: any,
+  common: any,
+) =>
   StyleSheet.create({
-    backButton: {
-      padding: 4,
-      marginRight: common.isRTL ? 0 : 16,
-      marginLeft: common.isRTL ? 16 : 0,
+    screenContainer: {
+      backgroundColor: '#FFFFFF',
     },
-    progressContainer: {
+    // Progress Area
+    progressSection: {
       paddingHorizontal: layout.screenPadding,
-      paddingVertical: spacing.sm,
-      backgroundColor: theme.colors.surface,
+      paddingTop: 14,
+      paddingBottom: 14,
+      backgroundColor: '#FFFFFF',
     },
-    progressBar: {
-      height: 24,
-      borderRadius: 12,
-      backgroundColor: '#E5E9F2',
+    progressRow: {
+      flexDirection: common.rowDirection,
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: 16,
+    },
+    progressLabel: {
+      ...typography('caption'),
+      color: '#6B7280',
+      ...fontWeight('700'),
+      marginBottom: 4,
+      textAlign: common.textAlign,
+    },
+    progressSteps: {
+      ...typography('body'),
+      color: '#6B7280',
+      textAlign: common.textAlign,
+    },
+    progressCurrentStep: {
+      color: '#111827',
+      ...fontWeight('bold'),
+    },
+    timerBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#EFF6FF',
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      borderRadius: 16,
+      gap: 6,
+    },
+    timerBadgePaused: {
+      backgroundColor: '#F3F4F6',
+    },
+    timerText: {
+      ...typography('label'),
+      ...fontWeight('bold'),
+      color: '#284196',
+    },
+    timerTextPaused: {
+      color: '#9CA3AF',
+    },
+    progressBarBackground: {
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: '#F3F4F6',
+      width: '100%',
       overflow: 'hidden',
-      position: 'relative',
     },
-    progressFill: {
+    progressBarFill: {
       height: '100%',
-      borderRadius: 12,
+      borderRadius: 3,
       backgroundColor: '#284196',
     },
-    progressTextContainer: {
-      ...StyleSheet.absoluteFillObject,
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 1,
-    },
-    progressTextWrapper: {
-      backgroundColor: 'rgba(0, 0, 0, 0.3)',
-      paddingHorizontal: 8,
-      paddingVertical: 2,
-      borderRadius: 12,
-    },
-    progressTextCenter: {
-      color: '#FFFFFF',
-      ...typography('buttonSmall'),
-      ...fontWeight('bold')
-    },
+    // Content Area
     content: {
       flex: 1,
+      backgroundColor: '#FFFFFF',
     },
     contentContainer: {
-      padding: layout.screenPadding,
-      paddingBottom: 16,
+      paddingHorizontal: layout.screenPadding,
+      paddingBottom: 40,
     },
+    questionWrapper: {
+      paddingTop: 12,
+    },
+    questionText: {
+      ...typography('h1'),
+      color: '#111827',
+      ...fontWeight('bold'),
+      marginBottom: 24,
+      lineHeight: 34,
+      textAlign: common.textAlign,
+    },
+    // Options
+    answersContainer: {
+      gap: 16,
+    },
+    answerCard: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      backgroundColor: '#FFFFFF',
+      padding: 16,
+      borderRadius: 24, // High rounding per Calm Design mockup
+      borderWidth: 1.5,
+      borderColor: '#E5E7EB',
+    },
+    selectedAnswerCard: {
+      backgroundColor: '#F8FAFF',
+      borderColor: '#284196',
+    },
+    radioContainer: {
+      justifyContent: 'center',
+      alignItems: 'center',
+      ...common.marginEnd(16),
+    },
+    radioCircle: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      borderWidth: 2,
+      borderColor: '#D1D5DB',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    selectedRadioCircle: {
+      borderColor: '#284196',
+    },
+    radioDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: '#284196',
+    },
+    answerTextContainer: {
+      flex: 1,
+      justifyContent: 'center',
+    },
+    answerTitle: {
+      ...typography('body'),
+      color: '#374151',
+      ...fontWeight('bold'),
+      textAlign: common.textAlign,
+    },
+    selectedAnswerTitle: {
+      color: '#284196',
+    },
+    answerSubtitle: {
+      ...typography('caption'),
+      color: '#6B7280',
+      marginTop: 4,
+      lineHeight: 20,
+      textAlign: common.textAlign,
+    },
+    selectedAnswerSubtitle: {
+      color: '#4B5563',
+    },
+    // Descriptive answers styling
+    descriptiveBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#EFF6FF',
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 10,
+      alignSelf: 'flex-start',
+      marginBottom: 16,
+      gap: 6,
+    },
+    descriptiveBadgeText: {
+      ...typography('caption'),
+      ...fontWeight('700'),
+      color: '#1E40AF',
+    },
+    descriptiveContainer: {
+      gap: 8,
+    },
+    descriptiveInput: {
+      backgroundColor: '#F8FAFC',
+      borderWidth: 1.5,
+      borderColor: '#CBD5E1',
+      borderRadius: 16,
+      padding: 16,
+      minHeight: 180,
+      ...typography('body'),
+      color: '#1E293B',
+      lineHeight: 24,
+    },
+    charCount: {
+      ...typography('caption'),
+      color: theme.colors.textSecondary,
+      textAlign: 'right',
+    },
+    // Footer Navigation
+    footerContainer: {
+      flexDirection: common.rowDirection,
+      justifyContent: 'space-between',
+      paddingHorizontal: layout.screenPadding,
+      paddingTop: 12,
+      backgroundColor: '#FFFFFF',
+      gap: 16,
+      borderTopWidth: 1,
+      borderTopColor: '#F3F4F6',
+    },
+    navButton: {
+      flex: 1,
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 14,
+      borderRadius: 24,
+      gap: 8,
+    },
+    prevButton: {
+      backgroundColor: '#FFFFFF',
+      borderWidth: 1,
+      borderColor: '#E5E7EB',
+    },
+    nextButton: {
+      backgroundColor: '#284196',
+    },
+    navButtonDisabled: {
+      opacity: 0.5,
+    },
+    navButtonText: {
+      ...typography('button'),
+      ...fontWeight('bold'),
+    },
+    prevButtonText: {
+      color: '#374151',
+    },
+    nextButtonText: {
+      color: '#FFFFFF',
+    },
+    navButtonTextDisabled: {
+      color: '#9CA3AF',
+    },
+
+    // Legacy placeholders to ensure no crash if common uses them
     loadingContainer: {
       flex: 1,
       justifyContent: 'center',
@@ -559,131 +827,6 @@ const styles = (theme: any, typography: any, fontWeight: any, spacing: any, bord
       textAlign: 'center',
       marginBottom: 20,
       color: theme.colors.textSecondary,
-    },
-    questionContainer: {
-      backgroundColor: theme.colors.card,
-      padding: spacing.lg,
-      borderRadius: borderRadius.xl,
-      marginBottom: spacing.sectionGap,
-      ...layout.shadow,
-    },
-    questionHeader: {
-      marginBottom: spacing.sm,
-    },
-    questionNumber: {
-      ...typography('label'),
-      color: theme.colors.primary,
-      ...fontWeight('700'),
-      textAlign: common.textAlign,
-    },
-    questionText: {
-      ...typography('h2'),
-      color: '#111827',
-      ...fontWeight('bold'),
-      marginBottom: spacing.lg,
-      lineHeight: 30,
-      textAlign: common.textAlign,
-    },
-    answersContainer: {
-      gap: spacing.sm,
-    },
-    answerButton: {
-      flexDirection: common.rowDirection,
-      alignItems: 'center',
-      backgroundColor: '#F3F4F6',
-      padding: 12,
-      borderRadius: 16,
-      borderWidth: 1,
-      borderColor: '#E5E7EB',
-    },
-    selectedAnswer: {
-      backgroundColor: '#20A66E',
-      borderColor: '#20A66E',
-    },
-    answerLetter: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      backgroundColor: '#284196',
-      justifyContent: 'center',
-      alignItems: 'center',
-      ...common.marginEnd(spacing.md),
-    },
-    selectedAnswerLetter: {
-      backgroundColor: '#FFFFFF',
-    },
-    answerLetterText: {
-      ...typography('button'),
-      ...fontWeight('bold'),
-      color: '#FFFFFF',
-    },
-    selectedAnswerLetterText: {
-      color: '#20A66E',
-    },
-    answerText: {
-      flex: 1,
-      ...typography('body'),
-      color: '#374151',
-      textAlign: common.textAlign,
-      ...fontWeight('500')
-    },
-    selectedAnswerText: {
-      color: '#FFFFFF',
-      ...fontWeight('600')
-    },
-    checkIconContainer: {
-      width: 24,
-      height: 24,
-      borderRadius: 12,
-      backgroundColor: '#FFFFFF',
-      justifyContent: 'center',
-      alignItems: 'center',
-      ...common.marginStart(spacing.sm),
-    },
-    descriptiveBadge: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: '#EFF6FF',
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 10,
-      alignSelf: 'flex-start',
-      marginBottom: spacing.sm,
-      gap: 6,
-    },
-    descriptiveBadgeText: {
-      ...typography('caption'),
-      ...fontWeight('700'),
-      color: '#1E40AF',
-    },
-    descriptiveContainer: {
-      gap: 8,
-    },
-    descriptiveInput: {
-      backgroundColor: '#F8FAFC',
-      borderWidth: 1.5,
-      borderColor: '#CBD5E1',
-      borderRadius: 16,
-      padding: 16,
-      minHeight: 180,
-      ...typography('body'),
-      color: '#1E293B',
-      lineHeight: 24,
-    },
-    charCount: {
-      ...typography('caption'),
-      color: theme.colors.textSecondary,
-      textAlign: 'right',
-    },
-    navigationContainer: {
-      flexDirection: common.rowDirection,
-      justifyContent: 'space-between',
-      paddingHorizontal: layout.screenPadding,
-      paddingVertical: spacing.md - 4,
-      backgroundColor: theme.colors.surface,
-      borderTopWidth: 1,
-      borderTopColor: theme.colors.border,
-      gap: spacing.md,
     },
   });
 
