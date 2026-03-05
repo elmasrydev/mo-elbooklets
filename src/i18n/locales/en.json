@@ -199,9 +199,13 @@
     "questions": "questions",
     "prepare_quiz": "Prepare Quiz",
     "back_to_lessons": "Back to Lessons",
-    "quiz_settings": "Quiz Settings",
-    "customize_experience": "Customize your quiz experience",
-    "settings_info_text": "More settings coming soon!"
+    "quiz_settings": "Quiz Setup",
+    "customize_experience": "Customize your session to match your learning pace. Choose the volume of questions you'd like to tackle today.",
+    "settings_info_text": "More settings coming soon!",
+    "configure_quiz_title": "Configure Your Quiz",
+    "current_topic": "Current subject",
+    "timed_mode": "Timed Mode",
+    "progress_saved": "Progress is automatically saved every question."
   },
   "quiz_start": {
     "header_title": "Ready to Start",

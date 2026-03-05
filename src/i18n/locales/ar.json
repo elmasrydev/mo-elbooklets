@@ -199,9 +199,13 @@
     "questions": "سؤال",
     "prepare_quiz": "تحضير الاختبار",
     "back_to_lessons": "العودة للدروس",
-    "quiz_settings": "إعدادات الاختبار",
-    "customize_experience": "خصّص تجربة الاختبار",
-    "settings_info_text": "المزيد من الإعدادات قريباً!"
+    "quiz_settings": "إعداد الاختبار",
+    "customize_experience": "قم بتخصيص جلستك لتناسب وتيرة تعلمك. اختر حجم الأسئلة الذي ترغب في معالجته اليوم.",
+    "settings_info_text": "المزيد من الإعدادات قريباً!",
+    "configure_quiz_title": "جهز اختبارك",
+    "current_topic": "المادة الحالية",
+    "timed_mode": "الوضع المقنن بوقت",
+    "progress_saved": "يتم حفظ التقدم تلقائيًا بعد كل سؤال."
   },
   "quiz_start": {
     "header_title": "جاهز للبدء",

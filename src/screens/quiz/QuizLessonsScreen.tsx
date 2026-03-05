@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -124,6 +124,16 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
       onLessonsSelect(Array.from(selectedLessons), quizTypeId);
     }, 500);
   };
+
+  const selectedUnits = useMemo(() => {
+    return chapters
+      .map((chapter) => ({
+        id: chapter.id,
+        name: chapter.name,
+        lessons: chapter.lessons.filter((lesson) => selectedLessons.has(lesson.id)),
+      }))
+      .filter((chapter) => chapter.lessons.length > 0);
+  }, [chapters, selectedLessons]);
 
   const currentStyles = styles(
     theme,
@@ -286,6 +296,8 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
         onClose={() => setSettingsModalVisible(false)}
         onStart={handleStartQuiz}
         quizTypes={quizTypes}
+        subjectName={subject.name}
+        selectedUnits={selectedUnits}
       />
     </View>
   );
