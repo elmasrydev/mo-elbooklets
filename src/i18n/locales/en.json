@@ -232,7 +232,9 @@
     "leave_quiz_title": "Leave Quiz?",
     "leave_quiz_message": "Your progress will be lost if you leave now. Are you sure?",
     "continue_quiz": "Continue",
-    "leave_quiz": "Leave Quiz"
+    "leave_quiz": "Leave Quiz",
+    "what_happens": "What Happens?",
+    "give_a_reason": "Give a Reason"
   },
   "quiz_results": {
     "header_title": "Quiz Results",
@@ -256,6 +258,17 @@
     "back_to_results": "Back to Results",
     "incorrect_questions": "Incorrect Question",
     "score": "Score"
+  },
+  "quiz_review": {
+    "your_answer": "Your Answer",
+    "no_answer": "No answer provided",
+    "model_answer": "Model Answer",
+    "concept_analysis": "Concept Analysis",
+    "covered_concepts": "Covered",
+    "partially_covered": "Partially Covered",
+    "missing_concepts": "Missing",
+    "feedback": "Feedback",
+    "all_correct": "All answers are correct! 🎉"
   },
   "social_screen": {
     "header_title": "Social",

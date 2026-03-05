@@ -427,6 +427,7 @@ const QuizReviewScreen: React.FC = () => {
                                       ...fontWeight('700'),
                                       color: '#10B981',
                                       marginBottom: 2,
+                                      textAlign: common.textAlign as any,
                                     }}
                                   >
                                     {t('quiz_review.covered_concepts', 'Covered')}
@@ -470,6 +471,7 @@ const QuizReviewScreen: React.FC = () => {
                                       ...fontWeight('700'),
                                       color: '#D97706',
                                       marginBottom: 2,
+                                      textAlign: common.textAlign as any,
                                     }}
                                   >
                                     {t('quiz_review.partially_covered', 'Partially Covered')}
@@ -513,6 +515,7 @@ const QuizReviewScreen: React.FC = () => {
                                       ...fontWeight('700'),
                                       color: '#EF4444',
                                       marginBottom: 2,
+                                      textAlign: common.textAlign as any,
                                     }}
                                   >
                                     {t('quiz_review.missing_concepts', 'Missing')}
@@ -574,46 +577,49 @@ const QuizReviewScreen: React.FC = () => {
                         backgroundColor: '#F0F9FF',
                         borderRadius: 16,
                         padding: 16,
-                        flexDirection: common.rowDirection,
-                        gap: 12,
-                        alignItems: 'flex-start',
                       }}
                     >
                       <View
                         style={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: 16,
-                          backgroundColor: '#DBEAFE',
-                          justifyContent: 'center',
+                          flexDirection: common.rowDirection,
                           alignItems: 'center',
-                          marginTop: 2,
+                          marginBottom: 10,
+                          gap: 8,
                         }}
                       >
-                        <Ionicons name="bulb-outline" size={18} color="#2563EB" />
-                      </View>
-                      <View style={{ flex: 1 }}>
+                        <View
+                          style={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: 14,
+                            backgroundColor: '#DBEAFE',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <Ionicons name="bulb-outline" size={16} color="#2563EB" />
+                        </View>
                         <Text
                           style={{
-                            ...typography('label'),
+                            ...typography('bodySmall'),
                             ...fontWeight('700'),
                             color: '#1E40AF',
-                            marginBottom: 6,
+                            textAlign: common.textAlign as any,
                           }}
                         >
                           {t('quiz_review.feedback', 'Feedback')}
                         </Text>
-                        <Text
-                          style={{
-                            ...typography('bodySmall'),
-                            color: '#1E3A5F',
-                            lineHeight: 21,
-                            textAlign: common.textAlign as any,
-                          }}
-                        >
-                          {ua.descriptive_feedback.feedback}
-                        </Text>
                       </View>
+                      <Text
+                        style={{
+                          ...typography('bodySmall'),
+                          color: '#1E3A5F',
+                          lineHeight: 21,
+                          textAlign: common.textAlign as any,
+                        }}
+                      >
+                        {ua.descriptive_feedback.feedback}
+                      </Text>
                     </View>
                   )}
                 </View>

@@ -232,7 +232,9 @@
     "leave_quiz_title": "مغادرة الاختبار؟",
     "leave_quiz_message": "سيتم فقدان تقدمك إذا غادرت الآن. هل أنت متأكد؟",
     "continue_quiz": "متابعة",
-    "leave_quiz": "مغادرة الاختبار"
+    "leave_quiz": "مغادرة الاختبار",
+    "what_happens": "ماذا يحدث؟",
+    "give_a_reason": "أعطِ سبباً"
   },
   "quiz_results": {
     "header_title": "نتائج الاختبار",
@@ -255,6 +257,17 @@
     "incorrect_questions": "سؤال غير صحيح",
     "back_to_results": "العودة للنتائج",
     "score": "النتيجة"
+  },
+  "quiz_review": {
+    "your_answer": "إجابتك",
+    "no_answer": "لم يتم تقديم إجابة",
+    "model_answer": "الإجابة النموذجية",
+    "concept_analysis": "تحليل المفاهيم",
+    "covered_concepts": "تمت تغطيته",
+    "partially_covered": "مغطى جزئياً",
+    "missing_concepts": "مفقود",
+    "feedback": "ملاحظات",
+    "all_correct": "جميع الإجابات صحيحة! 🎉"
   },
   "social_screen": {
     "header_title": "اجتماعي",
