@@ -18,9 +18,9 @@ import { tryFetchWithFallback } from '../../config/api';
 import { layout } from '../../config/layout';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
-import CircularProgress from '../../components/CircularProgress';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import AppButton from '../../components/AppButton';
+import { textAlign } from '../../lib/rtl';
 
 interface UserQuizAnswer {
   question: {
@@ -62,8 +62,9 @@ interface QuizResult {
 
 interface QuizResultsScreenProps {
   quizId: string;
-  onBack: () => void;
-  onRetakeQuiz: () => void;
+  timeTaken?: number;
+  onBack?: () => void;
+  onGoHome?: () => void;
 }
 
 const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
@@ -82,30 +83,17 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
       }
     });
 
-  const onRetakeQuiz =
-    props.onRetakeQuiz ||
+  const onGoHome =
+    props.onGoHome ||
     (() => {
-      // First go back
-      navigation.goBack();
-      // Wait 1 second (per user request) then open the quiz start logic
-      setTimeout(() => {
-        navigation.navigate('MainTabs', {
-          screen: 'Quiz',
-          params: {
-            retakeQuizId: quizId,
-            // Pass extra info if available to skip selection steps
-            subject: quizResult?.quiz?.subject,
-            lessons: quizResult?.quiz?.lessons,
-          },
-        });
-      }, 1000);
+      navigation.navigate('MainTabs', { screen: 'Home' });
     });
 
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography, fontWeight} = useTypography();
+  const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
   const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
   const [loading, setLoading] = useState(true);
@@ -211,7 +199,16 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
     return crumbs;
   };
 
-  const currentStyles = styles(theme, fontSizes, typography, fontWeight, spacing, borderRadius, common, insets);
+  const currentStyles = styles(
+    theme,
+    fontSizes,
+    typography,
+    fontWeight,
+    spacing,
+    borderRadius,
+    common,
+    insets,
+  );
   const breadcrumbs = quizResult ? getBreadcrumbs() : [];
 
   if (loading) {
@@ -275,10 +272,52 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
   const percentage = Math.round((quizResult.score / quizResult.totalQuestions) * 100);
   const correctAnswers = quizResult.userAnswers.filter((answer) => answer.is_correct).length;
 
+  const timeTaken = props.timeTaken ?? route.params?.timeTaken;
+
+  const formatTime = (seconds?: number) => {
+    if (seconds === undefined || seconds === null) return null;
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const formattedTime = formatTime(timeTaken);
+
+  // Determine state based on percentage
+  let stateTheme = {
+    color: '#10B981', // green
+    bg: '#D1FAE5',
+    icon: 'ribbon-outline' as any,
+    title: t('quiz_results.outstanding', 'Outstanding!'),
+    subtitle: t('quiz_results.mastered_perfectly', "You've mastered this topic perfectly."),
+  };
+
+  if (percentage < 60) {
+    stateTheme = {
+      color: '#EF4444', // red
+      bg: '#FEE2E2',
+      icon: 'alert-circle-outline' as any,
+      title: t('quiz_results.keep_trying', 'Keep Trying!'),
+      subtitle: t('quiz_results.dont_give_up', "Don't give up, review the material."),
+    };
+  } else if (percentage < 80) {
+    stateTheme = {
+      color: '#F59E0B', // amber
+      bg: '#FEF3C7',
+      icon: 'star-outline' as any,
+      title: t('quiz_results.good_job', 'Good job!'),
+      subtitle: t('quiz_results.can_do_better', "You're getting there! Keep practicing."),
+    };
+  }
+
   return (
     <View style={common.container}>
       {/* Navbar Area */}
-      <UnifiedHeader showBackButton onBackPress={onBack} title={t('quiz_results.header_title')} />
+      <UnifiedHeader
+        showBackButton
+        onBackPress={onBack}
+        title={t('quiz_results.header_title', 'Quiz Results')}
+      />
 
       <ScrollView
         style={currentStyles.content}
@@ -286,70 +325,78 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
         showsVerticalScrollIndicator={false}
       >
         {/* Score Summary */}
-        <View style={currentStyles.scoreGridContainer}>
-          <View style={currentStyles.mainScoreWrapper}>
-            <CircularProgress
-              size={180}
-              strokeWidth={15}
-              percentage={percentage}
-              color={quizResult.isPassed ? theme.colors.success : theme.colors.error}
-              showText={false}
-            />
-            <View style={currentStyles.innerScoreText}>
-              <Text style={currentStyles.scoreFraction}>
-                {quizResult.score} / {quizResult.totalQuestions}
+        <View style={currentStyles.celebrationContainer}>
+          <View style={[currentStyles.iconBadge, { backgroundColor: stateTheme.bg }]}>
+            <Ionicons name={stateTheme.icon} size={40} color={stateTheme.color} />
+          </View>
+          <Text style={currentStyles.celebrationTitle}>{stateTheme.title}</Text>
+          <Text style={currentStyles.celebrationSubtitle}>{stateTheme.subtitle}</Text>
+        </View>
+
+        <View style={currentStyles.progressCardContainer}>
+          <View style={currentStyles.progressCardHeader}>
+            <View style={currentStyles.progressCardLeft}>
+              <Text style={currentStyles.yourScoreLabel}>
+                {t('quiz_results.your_score', 'YOUR SCORE')}
               </Text>
-              <Text
-                style={[
-                  currentStyles.scorePercentText,
-                  { color: quizResult.isPassed ? theme.colors.success : theme.colors.error },
-                ]}
-              >
-                {percentage} %
+              <Text style={[currentStyles.yourScoreValue, { color: stateTheme.color }]}>
+                {percentage}%
+              </Text>
+            </View>
+            <View style={currentStyles.progressCardRight}>
+              <View style={[currentStyles.passStatusBadge, { backgroundColor: stateTheme.bg }]}>
+                <Text style={[currentStyles.passStatusBadgeText, { color: stateTheme.color }]}>
+                  {t('quiz_results.pass_status', 'Pass Status')}
+                </Text>
+              </View>
+              <Text style={currentStyles.passStatusValue}>
+                {percentage >= 60
+                  ? t('home_screen.passed', 'Passed')
+                  : t('home_screen.failed', 'Failed')}
               </Text>
             </View>
           </View>
 
-          <View style={currentStyles.statusTextWrapper}>
-            <Text
+          <View style={currentStyles.progressBarBackground}>
+            <View
               style={[
-                currentStyles.congratsText,
-                { color: quizResult.isPassed ? theme.colors.success : theme.colors.error },
+                currentStyles.progressBarFill,
+                { width: `${percentage}%`, backgroundColor: stateTheme.color },
               ]}
-            >
-              {quizResult.isPassed
-                ? t('quiz_results.congratulations_passed')
-                : t('quiz_results.need_practice')}
-            </Text>
+            />
+          </View>
+        </View>
+
+        <View style={currentStyles.statsGrid}>
+          <View style={currentStyles.statCard}>
+            <View style={currentStyles.statHeader}>
+              <Ionicons name="checkmark-circle" size={20} color={theme.colors.primary} />
+              <Text style={currentStyles.statLabelText}>{t('common.correct', 'Correct')}</Text>
+            </View>
+            <Text style={currentStyles.statValueText}>{correctAnswers}</Text>
           </View>
 
-          <View style={currentStyles.statsGrid}>
-            <View style={[currentStyles.statCard, { backgroundColor: '#ECFDF5' }]}>
-              <Text style={[currentStyles.statValueText, { color: '#10B981' }]}>
-                {' '}
-                {correctAnswers}{' '}
-              </Text>
-              <Text style={[currentStyles.statLabelText, { color: '#047857' }]}>
-                {t('common.correct')}
+          <View style={currentStyles.statCard}>
+            <View style={currentStyles.statHeader}>
+              <Ionicons name="locate" size={20} color={theme.colors.primary} />
+              <Text style={currentStyles.statLabelText}>
+                {t('quiz_results.accuracy_label', 'Accuracy')}
               </Text>
             </View>
-            <View style={[currentStyles.statCard, { backgroundColor: '#FEF2F2' }]}>
-              <Text style={[currentStyles.statValueText, { color: '#EF4444' }]}>
-                {quizResult.totalQuestions - correctAnswers}
-              </Text>
-              <Text style={[currentStyles.statLabelText, { color: '#B91C1C' }]}>
-                {t('common.incorrect')}
-              </Text>
-            </View>
-            <View style={[currentStyles.statCard, { backgroundColor: '#EFF6FF' }]}>
-              <Text style={[currentStyles.statValueText, { color: '#3B82F6' }]}>
-                {quizResult.totalQuestions}
-              </Text>
-              <Text style={[currentStyles.statLabelText, { color: '#1D4ED8' }]}>
-                {t('common.total')}
-              </Text>
-            </View>
+            <Text style={currentStyles.statValueText}>{percentage}%</Text>
           </View>
+
+          {formattedTime && (
+            <View style={[currentStyles.statCard, currentStyles.statCardFullWidth]}>
+              <View style={currentStyles.statHeader}>
+                <Ionicons name="timer-outline" size={20} color="#3B82F6" />
+                <Text style={currentStyles.statLabelText}>
+                  {t('quiz_results.time_taken_label', 'Time Taken')}
+                </Text>
+              </View>
+              <Text style={currentStyles.statValueText}>{formattedTime}</Text>
+            </View>
+          )}
         </View>
 
         {/* Action Buttons */}
@@ -362,60 +409,53 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
           />
 
           <AppButton
-            title={t('quiz_results.retake_quiz')}
-            onPress={onRetakeQuiz}
+            title={t('home_screen.home', 'Home')}
+            onPress={onGoHome}
             variant="outline"
-            icon={<Ionicons name="refresh-outline" size={20} color={theme.colors.primary} />}
+            icon={<Ionicons name="home" size={20} color={theme.colors.textSecondary} />}
+            textStyle={{ color: theme.colors.textSecondary }}
+            style={{ borderColor: theme.colors.border }}
             size="lg"
           />
         </View>
 
-        {/* Breadcrumb: Vertical Stack */}
-        <View style={[currentStyles.breadcrumbContainer]}>
-          {/* Always show Subject first */}
-          <View style={[currentStyles.breadcrumbRow]}>
-            <View style={currentStyles.iconContainer}>
-              <Ionicons name="library" size={16} color={theme.colors.primary} />
+        {/* Breadcrumb matching settings design */}
+        {quizResult?.quiz?.subject?.name ? (
+          <View style={currentStyles.subjectBadgeCard}>
+            <View style={currentStyles.subjectBadgeIconContainer}>
+              <Ionicons name="book" size={24} color="#FFFFFF" />
             </View>
-            <Text style={currentStyles.breadcrumbSubjectText}>
-              {quizResult?.quiz?.subject?.name}
-            </Text>
+            <View style={currentStyles.subjectBadgeInfo}>
+              <Text style={currentStyles.subjectBadgeLabel}>
+                {t('quiz_lessons.current_topic', 'Current Topic')}
+              </Text>
+              <Text style={currentStyles.subjectBadgeTitle}>{quizResult.quiz.subject.name}</Text>
+            </View>
           </View>
+        ) : null}
 
-          {/* Show Chapters and Lessons */}
-          {breadcrumbs.map((crumb, index) => (
-            <View key={index} style={[currentStyles.breadcrumbRow]}>
-              <View style={currentStyles.iconContainer}>
-                <Ionicons name="folder-open" size={16} color={theme.colors.textSecondary} />
+        {breadcrumbs && breadcrumbs.length > 0 && (
+          <View style={currentStyles.breadcrumbsContainer}>
+            {breadcrumbs.map((crumb, index) => (
+              <View key={index} style={currentStyles.unitBreadcrumb}>
+                <View style={currentStyles.unitBreadcrumbHeader}>
+                  <View style={currentStyles.breadcrumbDot} />
+                  <Text style={currentStyles.unitBreadcrumbName}>{crumb.title}</Text>
+                </View>
+                {crumb.lessons && (
+                  <View style={currentStyles.lessonBreadcrumbsList}>
+                    {crumb.lessons.map((lesson, lessonIdx) => (
+                      <View key={lessonIdx} style={currentStyles.lessonBreadcrumbItem}>
+                        <View style={currentStyles.lessonBreadcrumbDot} />
+                        <Text style={currentStyles.lessonBreadcrumbName}>{lesson}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
               </View>
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={[
-                    currentStyles.breadcrumbQuizText,
-                    { color: theme.colors.textSecondary, fontSize: fontSizes.xs, marginBottom: 2 },
-                  ]}
-                >
-                  {crumb.title}
-                </Text>
-                <Text style={currentStyles.breadcrumbQuizText}>
-                  {crumb.lessons
-                    ? crumb.lessons.map((lesson, lessonIdx) => (
-                        <React.Fragment key={lessonIdx}>
-                          {lessonIdx > 0 && (
-                            <Text style={{ color: theme.colors.primary, ...fontWeight('700') }}>,
-                              {' '}
-                              +{' '}
-                            </Text>
-                          )}
-                          <Text>{lesson} </Text>
-                        </React.Fragment>
-                      ))
-                    : crumb.title}
-                </Text>
-              </View>
-            </View>
-          ))}
-        </View>
+            ))}
+          </View>
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -446,45 +486,94 @@ const styles = (
       padding: layout.screenPadding,
       alignItems: 'stretch',
     },
-    breadcrumbContainer: {
-      flexDirection: 'column',
-      backgroundColor: theme.colors.card,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.md,
-      borderRadius: borderRadius.lg,
-      marginBottom: spacing.sectionGap,
+    subjectBadgeCard: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      backgroundColor: theme.colors.primary + '0D',
       borderWidth: 1,
-      borderColor: theme.colors.border,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 2,
-      elevation: 1,
-      width: '100%',
+      borderColor: theme.colors.primary + '1A',
+      borderRadius: borderRadius.xl || 16,
+      padding: spacing.md,
+      marginBottom: spacing.xl,
     },
-    breadcrumbRow: {
-      flexDirection: 'row',
+    subjectBadgeIconContainer: {
+      width: 48,
+      height: 48,
+      borderRadius: borderRadius.lg || 12,
+      backgroundColor: theme.colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    subjectBadgeInfo: {
+      flex: 1,
+      paddingLeft: spacing.md,
+      paddingRight: spacing.md,
       alignItems: 'flex-start',
-      marginBottom: 8,
     },
-    iconContainer: {
-      marginTop: 2,
-      marginRight: 12,
-      marginLeft: 12,
-    },
-    breadcrumbSubjectText: {
+    subjectBadgeLabel: {
       ...typography('caption'),
       ...fontWeight('600'),
       color: theme.colors.primary,
-      flex: 1,
+      textTransform: 'uppercase',
       textAlign: common.textAlign,
     },
-    breadcrumbQuizText: {
-      ...typography('bodySmall'),
-      ...fontWeight('bold'),
+    subjectBadgeTitle: {
+      fontSize: Math.max(16, fontSizes.lg),
+      ...fontWeight('700'),
       color: theme.colors.text,
-      flex: 1,
-      lineHeight: 20,
+      textAlign: common.textAlign,
+    },
+    breadcrumbsContainer: {
+      marginBottom: spacing.lg,
+    },
+    unitBreadcrumb: {
+      marginBottom: spacing.sm,
+    },
+    unitBreadcrumbHeader: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      marginBottom: spacing.sm,
+      flexShrink: 1,
+    },
+    breadcrumbDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: theme.colors.primary,
+      marginLeft: spacing.sm,
+      marginRight: spacing.sm,
+    },
+    unitBreadcrumbName: {
+      ...typography('subtitle2'),
+      ...fontWeight('700'),
+      color: theme.colors.text,
+      flexShrink: 1,
+      textAlign: common.textAlign,
+    },
+    lessonBreadcrumbsList: {
+      paddingLeft: spacing.md,
+      paddingRight: spacing.md,
+      paddingVertical: spacing.xs,
+    },
+    lessonBreadcrumbItem: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      marginBottom: spacing.xs,
+      flexShrink: 1,
+    },
+    lessonBreadcrumbDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: theme.colors.textTertiary || '#9CA3AF',
+      marginLeft: spacing.sm,
+      marginRight: spacing.sm,
+    },
+    lessonBreadcrumbName: {
+      ...typography('caption'),
+      fontSize: 13,
+      color: theme.colors.textSecondary,
+      flexShrink: 1,
       textAlign: common.textAlign,
     },
     loadingContainer: {
@@ -515,63 +604,141 @@ const styles = (
       marginBottom: spacing.xl,
       color: theme.colors.textSecondary,
     },
-    scoreGridContainer: {
+    celebrationContainer: {
       alignItems: 'center',
-      marginBottom: spacing.sectionGap,
+      marginTop: spacing.sm,
+      marginBottom: spacing.xl,
     },
-    mainScoreWrapper: {
-      position: 'relative',
+    iconBadge: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: spacing.lg,
     },
-    innerScoreText: {
-      position: 'absolute',
-      alignItems: 'center',
-    },
-    scoreFraction: {
+    celebrationTitle: {
       ...typography('h2'),
-      fontSize: 28,
       ...fontWeight('bold'),
       color: theme.colors.text,
-      lineHeight: 34,
-    },
-    scorePercentText: {
-      ...typography('h3'),
-      fontSize: 20,
-      ...fontWeight('600')
-    },
-    statusTextWrapper: {
-      marginBottom: spacing.xl,
-    },
-    congratsText: {
-      ...typography('h2'),
-      ...fontWeight('900'),
+      marginBottom: spacing.xs,
       textAlign: 'center',
+    },
+    celebrationSubtitle: {
+      ...typography('body'),
+      color: theme.colors.textSecondary,
+      textAlign: 'center',
+    },
+    progressCardContainer: {
+      backgroundColor: theme.colors.card,
+      borderRadius: borderRadius.xl,
+      padding: spacing.lg,
+      marginBottom: spacing.xl,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 3,
+      elevation: 2,
+    },
+    progressCardHeader: {
+      flexDirection: common.rowDirection,
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing.lg,
+    },
+    progressCardLeft: {
+      alignItems: 'flex-start',
+      justifyContent: 'center',
+      flex: 1,
+    },
+    progressCardRight: {
+      alignItems: 'flex-end',
+      justifyContent: 'center',
+      flex: 1,
+    },
+    yourScoreLabel: {
+      ...typography('caption'),
+      ...fontWeight('bold'),
+      color: theme.colors.textSecondary,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+      marginBottom: 2,
+      textAlign: common.textAlign,
+    },
+    yourScoreValue: {
+      ...typography('h1'),
+      fontSize: 40,
+      lineHeight: 48,
+      paddingTop: 4,
+      ...fontWeight('bold'),
+      textAlign: common.textAlign,
+    },
+    passStatusBadge: {
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+      borderRadius: borderRadius.md,
+      marginBottom: spacing.xs,
+    },
+    passStatusBadgeText: {
+      ...typography('caption'),
+      ...fontWeight('600'),
+    },
+    passStatusValue: {
+      ...typography('subtitle1'),
+      ...fontWeight('bold'),
+      color: theme.colors.text,
+      textAlign: common.textAlign,
+    },
+    progressBarBackground: {
+      height: 12,
+      backgroundColor: theme.colors.border,
+      borderRadius: 6,
+      overflow: 'hidden',
+      flexDirection: common.rowDirection,
+    },
+    progressBarFill: {
+      height: '100%',
+      borderRadius: 6,
     },
     statsGrid: {
       flexDirection: common.rowDirection,
-      justifyContent: 'space-between',
-      width: '100%',
-      gap: 12,
+      flexWrap: 'wrap',
+      gap: spacing.md,
+      marginBottom: spacing.xl,
     },
     statCard: {
       flex: 1,
+      minWidth: '45%',
+      backgroundColor: theme.colors.card,
+      borderRadius: borderRadius.xl,
       padding: spacing.md,
-      borderRadius: borderRadius.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    statCardFullWidth: {
+      minWidth: '100%',
+    },
+    statHeader: {
+      flexDirection: common.rowDirection,
       alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: 80,
+      marginBottom: spacing.sm,
+      gap: spacing.sm,
     },
     statValueText: {
       ...typography('h2'),
-      ...fontWeight('800'),
-      marginBottom: 2,
+      ...fontWeight('bold'),
+      color: theme.colors.text,
+      textAlign: common.textAlign,
     },
     statLabelText: {
       ...typography('caption'),
-      ...fontWeight('bold'),
-      fontSize: 12,
+      ...fontWeight('600'),
+      color: theme.colors.textSecondary,
+      marginLeft: common.isRTL ? 0 : 8,
+      marginRight: common.isRTL ? 8 : 0,
+      textAlign: common.textAlign,
     },
     actionsContainer: {
       width: '100%',

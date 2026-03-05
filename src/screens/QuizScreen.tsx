@@ -53,9 +53,10 @@ const QuizScreen: React.FC = () => {
     useCallback(() => {
       if (route.params?.completedQuizId) {
         const completedId = route.params.completedQuizId;
-        navigation.setParams({ completedQuizId: undefined });
+        const passedTimeTaken = route.params.timeTaken;
+        navigation.setParams({ completedQuizId: undefined, timeTaken: undefined });
         fetchQuizHistory();
-        navigation.navigate('QuizResults', { quizId: completedId });
+        navigation.navigate('QuizResults', { quizId: completedId, timeTaken: passedTimeTaken });
       } else {
         fetchQuizHistory();
       }

@@ -274,7 +274,21 @@
     "incorrect": "Incorrect",
     "back_to_results": "Back to Results",
     "incorrect_questions": "Incorrect Question",
-    "score": "Score"
+    "score": "Score",
+    "outstanding": "Outstanding!",
+    "nailed_it": "You nailed it! Keep up the brilliant work.",
+    "almost_there": "Almost There!",
+    "great_effort": "Great effort! A little more practice and you'll get it perfectly.",
+    "keep_trying": "Keep Trying!",
+    "dont_give_up": "Don't give up, review the material.",
+    "good_job": "Good job!",
+    "can_do_better": "You're getting there! Keep practicing.",
+    "passing_score_60": "Passing score is 60%",
+    "correct_answers_label": "Correct Answers",
+    "accuracy_label": "Accuracy",
+    "time_taken_label": "Time Taken",
+    "your_score": "Your Score",
+    "pass_status": "Pass Status"
   },
   "quiz_review": {
     "your_answer": "Your Answer",

@@ -268,7 +268,7 @@ const QuizTakingScreen: React.FC = () => {
         // Navigate back to the main tabs with completion param
         navigation.navigate('MainTabs', {
           screen: 'Quiz',
-          params: { completedQuizId: quiz.id },
+          params: { completedQuizId: quiz.id, timeTaken: isTimed ? elapsedSeconds : undefined },
         });
       } else {
         const errorMessage = result.errors?.[0]?.message || t('common.unexpected_error');

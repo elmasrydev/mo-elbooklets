@@ -266,7 +266,21 @@
     "retake_quiz": "إعادة الاختبار",
     "incorrect_questions": "سؤال غير صحيح",
     "back_to_results": "العودة للنتائج",
-    "score": "النتيجة"
+    "score": "النتيجة",
+    "outstanding": "عمل رائع!",
+    "nailed_it": "لقد نجحت! استمر في العمل الرائع.",
+    "almost_there": "قريب جداً!",
+    "great_effort": "مجهود رائع! بقليل من التدريب ستحقق العلامة الكاملة.",
+    "keep_trying": "استمر في المحاولة!",
+    "dont_give_up": "لا تستسلم، راجع المواد مرة أخرى.",
+    "good_job": "عمل جيد!",
+    "can_do_better": "أنت في الطريق الصحيح! واصل التدريب.",
+    "passing_score_60": "درجة النجاح هي 60%",
+    "correct_answers_label": "الإجابات الصحيحة",
+    "accuracy_label": "الدقة",
+    "time_taken_label": "الوقت المستغرق",
+    "your_score": "نتيجتك",
+    "pass_status": "حالة النجاح"
   },
   "quiz_review": {
     "your_answer": "إجابتك",
