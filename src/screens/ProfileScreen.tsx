@@ -26,7 +26,7 @@ const ProfileScreen: React.FC = () => {
   const { user, logout } = useAuth();
   const { theme, spacing, fontSizes, borderRadius, isDark, toggleTheme } = useTheme();
   const common = useCommonStyles();
-  const { isRTL, setLanguage } = useLanguage();
+  const { isRTL, setLanguage, language } = useLanguage();
   const { typography, fontWeight } = useTypography();
   const { t } = useTranslation();
 
@@ -39,9 +39,10 @@ const ProfileScreen: React.FC = () => {
 
   const handleLanguagePress = () => {
     Alert.alert(t('profile_screen.choose_language'), t('profile_screen.select_language_msg'), [
-      { text: 'English (US)', onPress: () => setLanguage('en') },
-      { text: 'العربية', onPress: () => setLanguage('ar') },
-      { text: t('common.cancel') || 'Cancel', style: 'cancel' },
+      language === 'ar'
+        ? { text: 'English (US)', onPress: () => setLanguage('en') }
+        : { text: 'العربية', onPress: () => setLanguage('ar') },
+      { text: t('common.cancel') || 'Cancel', style: 'destructive' },
     ]);
   };
 
