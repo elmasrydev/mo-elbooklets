@@ -31,6 +31,7 @@ interface QuizHistory {
   completedAt: string;
   isPassed: boolean;
 }
+
 const QuizScreen: React.FC = () => {
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { t } = useTranslation();
@@ -82,8 +83,8 @@ const QuizScreen: React.FC = () => {
   };
 
   const currentStyles = useMemo(
-    () => styles(theme, common, fontSizes, spacing, borderRadius, typography, fontWeight),
-    [theme, common, fontSizes, spacing, borderRadius, typography, fontWeight],
+    () => styles(theme, common, fontSizes, spacing, borderRadius, typography, fontWeight, isRTL),
+    [theme, common, fontSizes, spacing, borderRadius, typography, fontWeight, isRTL],
   );
 
   const [refreshing, setRefreshing] = useState(false);
@@ -110,11 +111,13 @@ const QuizScreen: React.FC = () => {
 
   const ListHeader = useMemo(
     () => (
-      <View style={currentStyles.historySection}>
-        <Text style={common.sectionTitle}> {t('quiz_screen.quiz_history')} </Text>
+      <View style={currentStyles.historySectionHeader}>
+        <Text style={[common.sectionTitle, { textAlign: 'left' }]}>
+          {t('quiz_screen.quiz_history')}
+        </Text>
       </View>
     ),
-    [currentStyles, common, t],
+    [currentStyles, common, t, isRTL],
   );
 
   const ListEmptyComponent = useMemo(() => {
@@ -163,7 +166,7 @@ const QuizScreen: React.FC = () => {
   ]);
 
   return (
-    <View style={common.container}>
+    <View style={[common.container, { alignItems: 'stretch' }]}>
       <UnifiedHeader title={t('quiz_screen.header_title')} />
 
       <View style={currentStyles.actionSection}>
@@ -204,7 +207,6 @@ const QuizScreen: React.FC = () => {
           {
             paddingBottom: Math.max(common.insets.bottom, spacing.xl),
             flexGrow: 1,
-            marginHorizontal: layout.screenPadding,
           },
         ]}
         showsVerticalScrollIndicator={false}
@@ -225,25 +227,19 @@ const styles = (
   borderRadius: any,
   typography: any,
   fontWeight: any,
+  isRTL: boolean,
 ) =>
   StyleSheet.create({
     actionSection: {
-      padding: layout.screenPadding,
-    },
-    takeQuizButton: {
-      padding: spacing.md,
-      borderRadius: borderRadius.xl,
-      backgroundColor: theme.colors.primary,
-      ...layout.shadow,
-      minHeight: 70,
+      paddingHorizontal: layout.screenPadding,
+      paddingVertical: spacing.md,
     },
     quizCTACard: {
       backgroundColor: theme.colors.primary,
       borderRadius: borderRadius.xl,
       paddingHorizontal: spacing.lg,
       paddingVertical: spacing.lg,
-      marginBottom: spacing.xxs,
-      flexDirection: common.rowDirection,
+      flexDirection: 'row', // Let RN handle the flip automatically
       overflow: 'hidden',
       position: 'relative',
       ...layout.shadow,
@@ -251,6 +247,7 @@ const styles = (
     quizCTAContent: {
       zIndex: 1,
       flex: 1,
+      alignItems: 'flex-start', // Essential for RTL button positioning
     },
     quizCTATitle: {
       ...typography('h1'),
@@ -271,7 +268,6 @@ const styles = (
       paddingHorizontal: spacing.lg,
       paddingVertical: spacing.sm,
       borderRadius: borderRadius.lg,
-      alignSelf: 'flex-start',
       gap: 6,
     },
     quizCTAButtonText: {
@@ -283,18 +279,24 @@ const styles = (
       position: 'absolute',
       right: -8,
       bottom: -8,
-      opacity: 1,
     },
     quizCTAIllustration: {
       width: 120,
       height: 120,
       resizeMode: 'contain',
     },
-    historySection: {
+    historySectionHeader: {
       paddingHorizontal: layout.screenPadding,
       marginTop: spacing.sm,
+      marginBottom: spacing.sm,
     },
-    historyItemWrapper: {},
+    historyItemWrapper: {
+      paddingHorizontal: layout.screenPadding,
+      marginBottom: spacing.sm,
+    },
+    historyContentContainer: {
+      width: '100%',
+    },
     loadingState: {
       flex: 1,
       alignItems: 'center',
@@ -307,6 +309,7 @@ const styles = (
       color: theme.colors.textSecondary,
     },
     errorState: {
+      marginHorizontal: layout.screenPadding,
       alignItems: 'center',
       justifyContent: 'center',
       padding: spacing.xl,
@@ -339,7 +342,6 @@ const styles = (
       textAlign: 'center',
       color: theme.colors.textSecondary,
     },
-    historyContentContainer: {},
   });
 
 export default QuizScreen;
