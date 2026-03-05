@@ -174,6 +174,8 @@
   "quiz_subjects": {
     "header_title": "اختر المادة",
     "header_subtitle": "اختر مادة لبدء الاختبار",
+    "page_title": "اختر مسار تعلمك",
+    "page_subtitle": "اختر مادة للبدء.",
     "loading_subjects": "جارٍ تحميل المواد...",
     "error_loading_subjects": "خطأ في تحميل المواد",
     "no_subjects_available": "لا توجد مواد متاحة",

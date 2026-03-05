@@ -11,6 +11,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import { useLanguage } from '../../context/LanguageContext';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
 import { layout } from '../../config/layout';
@@ -31,6 +32,7 @@ interface QuizSubjectsScreenProps {
 
 const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect, onBack }) => {
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
+  const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
@@ -128,7 +130,12 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
         }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={currentStyles.subjectsGrid}>
+        <View style={currentStyles.pageHeader}>
+          <Text style={currentStyles.pageTitle}>{t('quiz_subjects.page_title')}</Text>
+          <Text style={currentStyles.pageSubtitle}>{t('quiz_subjects.page_subtitle')}</Text>
+        </View>
+
+        <View style={currentStyles.subjectsContainer}>
           {subjects.map((subject: Subject) => (
             <TouchableOpacity
               key={subject.id}
@@ -136,20 +143,27 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
               onPress={() => onSubjectSelect(subject)}
               activeOpacity={0.7}
             >
-              <SubjectIcon
-                subjectName={subject.name}
-                size={64}
-                style={{ marginBottom: spacing.md }}
-              />
-              <Text style={currentStyles.subjectName} numberOfLines={1}>
-                {subject.name}
-              </Text>
-              <View style={currentStyles.subjectStats}>
-                <Text style={currentStyles.subjectStatsText}>
-                  {' '}
-                  {t('quiz_subjects.tap_to_start')}{' '}
-                </Text>
+              <View style={currentStyles.subjectMain}>
+                <SubjectIcon
+                  subjectName={subject.name}
+                  size={48}
+                  style={currentStyles.iconBoxOverride}
+                />
+                <View style={currentStyles.subjectInfo}>
+                  <Text style={currentStyles.subjectName} numberOfLines={1}>
+                    {subject.name}
+                  </Text>
+                  <Text style={currentStyles.subjectStatsText}>
+                    {t('quiz_subjects.tap_to_start')}
+                  </Text>
+                </View>
               </View>
+
+              <Ionicons
+                name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                size={24}
+                color={theme.colors.textTertiary || '#E2E8F0'}
+              />
             </TouchableOpacity>
           ))}
         </View>
@@ -205,38 +219,61 @@ const styles = (
       marginBottom: spacing.md,
       color: theme.colors.text,
     },
-    subjectsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+    pageHeader: {
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.xl,
+    },
+    pageTitle: {
+      fontSize: Math.max(24, fontSizes.xl),
+      ...fontWeight('700'),
+      color: theme.colors.text,
+      marginBottom: spacing.xs,
+      textAlign: common.textAlign,
+    },
+    pageSubtitle: {
+      ...typography('body'),
+      color: theme.colors.textSecondary,
+      textAlign: common.textAlign,
+    },
+    subjectsContainer: {
+      flexDirection: 'column',
+      gap: spacing.sm,
+    },
     subjectCard: {
-      width: '48%',
-      padding: spacing.md,
-      borderRadius: borderRadius.xl,
+      flexDirection: common.rowDirection,
       alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: spacing.lg,
+      marginBottom: spacing.sm,
       backgroundColor: theme.colors.card,
-      marginBottom: spacing.sectionGap,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
+      borderRadius: borderRadius.xl || 16,
+      borderWidth: 0,
       ...layout.shadow,
     },
-
-    subjectName: {
-      ...typography('body'),
-      ...fontWeight('bold'),
-      textAlign: 'center',
-      marginBottom: spacing.sm,
-      color: theme.colors.text,
+    subjectMain: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      flex: 1,
     },
-
-    subjectStats: {
-      paddingHorizontal: spacing.sm,
-      paddingVertical: 4,
-      borderRadius: borderRadius.md,
-      backgroundColor: theme.colors.primary + '1A',
+    iconBoxOverride: {
+      ...common.marginEnd(spacing.md),
+    },
+    subjectInfo: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: common.alignStart,
+    },
+    subjectName: {
+      fontSize: Math.max(18, fontSizes.lg),
+      ...fontWeight('700'),
+      color: theme.colors.text,
+      marginBottom: 2,
+      textAlign: common.textAlign,
     },
     subjectStatsText: {
       ...typography('caption'),
-      ...fontWeight('700'),
-      color: theme.colors.primary,
-      fontSize: 10,
+      color: theme.colors.textSecondary,
+      textAlign: common.textAlign,
     },
     emptyState: {
       padding: spacing.xl,
