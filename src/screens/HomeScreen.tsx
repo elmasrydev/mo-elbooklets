@@ -503,18 +503,19 @@ const HomeScreen: React.FC = () => {
           </View>
         )}
 
-        {/* ─── 5. Wheel of Success ───────────────────────────────── */}
-        <WheelOfSuccessSimple
-          theme={theme}
-          data={wheelData}
-          t={t}
-          typography={typography}
-          fontWeight={fontWeight}
-          common={common}
-          spacing={spacing}
-          borderRadius={borderRadius}
-          wheelStyles={s}
-        />
+        {/* ─── 5. Wheel of Success ─────────────────────────────────
+          
+          // <WheelOfSuccessSimple
+        //   theme={theme}
+        //   data={wheelData}
+        //   t={t}
+        //   typography={typography}
+        //   fontWeight={fontWeight}
+        //   common={common}
+        //   spacing={spacing}
+        //   borderRadius={borderRadius}
+        //   wheelStyles={s}
+        // />*/}
 
         {/* ─── 6. Community Feed ─────────────────────────────────── */}
         {socialFeed.length > 0 && (
