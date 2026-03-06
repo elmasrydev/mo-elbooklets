@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  RefreshControl,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -283,11 +285,16 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
 
   const formattedTime = formatTime(timeTaken);
 
-  // Determine state based on percentage
+  // Determine state based on percentage and determine icon asset
+  const celebrationIcon = percentage < 60
+    ? require('../../../assets/images/quizzLowIcon.png')
+    : percentage < 80
+      ? require('../../../assets/images/quizzNormalIcon.png')
+      : require('../../../assets/images/quizzSucessIcon.png');
+
   let stateTheme = {
     color: '#10B981', // green
     bg: '#D1FAE5',
-    icon: 'ribbon-outline' as any,
     title: t('quiz_results.outstanding', 'Outstanding!'),
     subtitle: t('quiz_results.mastered_perfectly', "You've mastered this topic perfectly."),
   };
@@ -296,7 +303,6 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
     stateTheme = {
       color: '#FF6B6B', // red
       bg: '#FEE2E2',
-      icon: 'alert-circle-outline' as any,
       title: t('quiz_results.keep_trying', 'Keep Trying!'),
       subtitle: t('quiz_results.dont_give_up', "Don't give up, review the material."),
     };
@@ -304,7 +310,6 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
     stateTheme = {
       color: '#F59E0B', // amber
       bg: '#FEF3C7',
-      icon: 'star-outline' as any,
       title: t('quiz_results.good_job', 'Good job!'),
       subtitle: t('quiz_results.can_do_better', "You're getting there! Keep practicing."),
     };
@@ -326,9 +331,11 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
       >
         {/* Score Summary */}
         <View style={currentStyles.celebrationContainer}>
-          <View style={[currentStyles.iconBadge, { backgroundColor: stateTheme.bg }]}>
-            <Ionicons name={stateTheme.icon} size={40} color={stateTheme.color} />
-          </View>
+          <Image
+            source={celebrationIcon}
+            style={currentStyles.celebrationIcon}
+            resizeMode="contain"
+          />
           <Text style={currentStyles.celebrationTitle}>{stateTheme.title}</Text>
           <Text style={currentStyles.celebrationSubtitle}>{stateTheme.subtitle}</Text>
         </View>
@@ -609,12 +616,9 @@ const styles = (
       marginTop: spacing.sm,
       marginBottom: spacing.xl,
     },
-    iconBadge: {
-      width: 80,
-      height: 80,
-      borderRadius: 40,
-      alignItems: 'center',
-      justifyContent: 'center',
+    celebrationIcon: {
+      width: 100,
+      height: 100,
       marginBottom: spacing.lg,
     },
     celebrationTitle: {

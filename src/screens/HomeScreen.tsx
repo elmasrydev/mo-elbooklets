@@ -481,7 +481,9 @@ const HomeScreen: React.FC = () => {
                               borderColor: theme.colors.primary + '1A',
                             },
                       ]}
-                      onPress={() => navigation.navigate('StudyChapters', { subject })}
+                      onPress={() => 
+                        navigation.navigate(chaptersCount >= 5 ? 'Quiz' : 'Study')
+                      }
                     >
                       <Text
                         style={[
