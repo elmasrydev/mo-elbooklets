@@ -293,7 +293,7 @@ const HomeScreen: React.FC = () => {
   if (loading && !activitiesData) {
     return (
       <View style={common.container}>
-        <UnifiedHeader title={<AnimatedNavbarLogo isRTL={isRTL} />} />
+        <UnifiedHeader leftContent={<AnimatedNavbarLogo isRTL={isRTL} />} />
         <View style={s.loadingCenter}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
@@ -303,7 +303,7 @@ const HomeScreen: React.FC = () => {
 
   return (
     <View style={common.container}>
-      <UnifiedHeader title={<AnimatedNavbarLogo isRTL={isRTL} />} />
+      <UnifiedHeader leftContent={<AnimatedNavbarLogo isRTL={isRTL} />} />
 
       <ScrollView
         style={s.scrollFlex}

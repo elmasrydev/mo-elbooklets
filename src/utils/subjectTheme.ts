@@ -34,11 +34,11 @@ export const getSubjectConfig = (subjectName: string, theme: any): SubjectThemeC
   // History
   if (name.includes('history') || name.includes('تاريخ')) {
     return {
-      localIcon: require('../../assets/images/GeoIcon.png'),
-      localIconGrey: require('../../assets/images/GeoIconGrey.png'),
+      localIcon: require('../../assets/images/historyIcon.png'),
+      localIconGrey: require('../../assets/images/historyIcon.png'),
       icon: 'earth-outline',
-      color: '#F59E0B',
-      bg: '#F59E0B',
+      color: '#64748B',
+      bg: '#64748B',
     };
   }
   // Geography

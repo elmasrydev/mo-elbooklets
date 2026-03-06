@@ -1,20 +1,27 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Text } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withDelay,
   withSpring,
 } from 'react-native-reanimated';
+import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
+import { useTheme } from '../context/ThemeContext';
+import { useTypography } from '../hooks/useTypography';
+import { useLanguage } from '../context/LanguageContext';
 
 interface AnimatedNavbarLogoProps {
   isRTL?: boolean;
 }
 
-const LOGO_WIDTH = 148;
-const LOGO_HEIGHT = 40;
-
 const AnimatedNavbarLogo: React.FC<AnimatedNavbarLogoProps> = () => {
+  const { t } = useTranslation();
+  const { theme, spacing } = useTheme();
+  const { typography } = useTypography();
+  const { isRTL } = useLanguage();
+
   // Logo animation values
   const logoScale = useSharedValue(0.7);
   const logoOpacity = useSharedValue(0);
@@ -31,26 +38,24 @@ const AnimatedNavbarLogo: React.FC<AnimatedNavbarLogoProps> = () => {
   }));
 
   return (
-    <View style={styles.container}>
-      <Animated.Image
-        source={require('../../assets/homeLogo.png')}
-        style={[styles.logo, logoStyle]}
-        resizeMode="contain"
-      />
-    </View>
+    <Animated.View style={[styles.container, logoStyle]}>
+      <Ionicons name="home-sharp" size={24} color="#FFF" />
+      <Text style={[styles.brandName, { marginLeft: 8 }]}>{t('common.brand_name')}</Text>
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    height: 40,
-    minWidth: 150,
   },
-  logo: {
-    width: LOGO_WIDTH,
-    height: LOGO_HEIGHT,
+  brandName: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#FFF',
+    letterSpacing: 0.5,
   },
 });
 
