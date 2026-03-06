@@ -20,10 +20,7 @@ import { useTypography } from '../hooks/useTypography';
 import { useAutoReset } from '../hooks/useAutoReset';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import BackButton from '../components/navigation/BackButton';
-import AppButton from '../components/AppButton';
 import { layout } from '../config/layout';
 
 const LoginScreen: React.FC = () => {
@@ -40,7 +37,7 @@ const LoginScreen: React.FC = () => {
 
   const { login } = useAuth();
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
@@ -63,7 +60,6 @@ const LoginScreen: React.FC = () => {
     }
   };
 
-  const isRTL = language === 'ar';
   const currentStyles = styles(
     theme,
     common,
@@ -73,19 +69,22 @@ const LoginScreen: React.FC = () => {
     isRTL,
     typography,
     fontWeight,
+    insets,
   );
 
   const isMobileValid = new RegExp('^01[0125][0-9]{8}$').test(mobile.trim());
   const isPasswordValid = password.length >= 8;
 
   const getMobileBorderColor = () => {
-    if (!touchedMobile) return '#E2E8F0';
-    return isMobileValid ? '#10B981' : '#F59E0B';
+    if (touchedMobile && !isMobileValid) return '#EF4444'; // Red-500
+    if (mobile.length > 0) return theme.colors.primary;
+    return theme.colors.border;
   };
 
   const getPasswordBorderColor = () => {
-    if (!touchedPassword) return '#E2E8F0';
-    return isPasswordValid ? '#10B981' : '#F59E0B';
+    if (touchedPassword && !isPasswordValid) return '#EF4444';
+    if (password.length > 0) return theme.colors.primary;
+    return theme.colors.border;
   };
 
   return (
@@ -93,132 +92,163 @@ const LoginScreen: React.FC = () => {
       style={currentStyles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <BackButton
-        onPress={() => navigation.goBack()}
-        style={[currentStyles.backButton, { top: insets.top + spacing.sm, left: spacing.lg }]}
-        color={theme.colors.text}
-      />
-
-      <TouchableOpacity
-        onPress={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
-        style={[currentStyles.languageButton, { top: insets.top + spacing.sm, right: spacing.lg }]}
-      >
-        <Ionicons name="language-outline" size={20} color={theme.colors.primary} />
-        <Text style={currentStyles.languageText}>{language === 'ar' ? 'English' : 'عربي'}</Text>
-      </TouchableOpacity>
-
       <ScrollView
         contentContainerStyle={currentStyles.scrollContainer}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={currentStyles.header}>
-          <Image
-            source={require('../../assets/logo-transparent.png')}
-            style={currentStyles.logo}
-            resizeMode="contain"
-          />
-          <Text style={currentStyles.title}> {t('auth.welcome_back')} </Text>
-          <Text style={currentStyles.subtitle}> {t('auth.sign_in_subtitle')} </Text>
-        </View>
-
-        <View style={currentStyles.form}>
-          {/* Mobile Input */}
-          <View style={[currentStyles.inputWrapper, { borderColor: getMobileBorderColor() }]}>
-            <Ionicons
-              name="call-outline"
-              size={20}
-              color={isMobileValid ? '#10B981' : theme.colors.textSecondary}
-              style={currentStyles.inputIcon}
-            />
-            <TextInput
-              autoFocus
-              style={[currentStyles.input]}
-              value={mobile}
-              onChangeText={(val) => setMobile(val.replace(/[^0-9]/g, '').slice(0, 11))}
-              maxLength={11}
-              placeholder={t('auth.mobile_placeholder')}
-              placeholderTextColor={theme.colors.textSecondary}
-              keyboardType="phone-pad"
-              autoCapitalize="none"
-              editable={!isLoading}
-              textAlign={isRTL ? 'right' : 'left'}
-              returnKeyType="next"
-              onSubmitEditing={() => passwordRef.current?.focus()}
-              onBlur={() => setTouchedMobile(true)}
-              blurOnSubmit={false}
-            />
-            {touchedMobile && !isMobileValid && (
-              <Ionicons
-                name="alert-circle-outline"
-                size={20}
-                color="#F59E0B"
-                style={{ marginHorizontal: 8 }}
-              />
-            )}
-            {isMobileValid && (
-              <Ionicons
-                name="checkmark-circle-outline"
-                size={20}
-                color="#10B981"
-                style={{ marginHorizontal: 8 }}
-              />
-            )}
-          </View>
-
-          {/* Password Input */}
-          <View style={[currentStyles.inputWrapper, { borderColor: getPasswordBorderColor() }]}>
-            <Ionicons
-              name="lock-closed-outline"
-              size={20}
-              color={theme.colors.textSecondary}
-              style={currentStyles.inputIcon}
-            />
-            <TextInput
-              // @ts-ignore: React Native types sometimes incorrectly omit `ref` from TextInputProps
-              ref={passwordRef}
-              style={[currentStyles.input, { flex: 1 }]}
-              value={password}
-              onChangeText={setPassword}
-              placeholder={t('auth.password_placeholder')}
-              placeholderTextColor={theme.colors.textSecondary}
-              secureTextEntry={!showPassword}
-              autoCapitalize="none"
-              editable={!isLoading}
-              textAlign={isRTL ? 'right' : 'left'}
-              returnKeyType="done"
-              onSubmitEditing={handleLogin}
-              onBlur={() => setTouchedPassword(true)}
-            />
+        <View style={currentStyles.card}>
+          {/* Header */}
+          <View style={currentStyles.headerTop}>
             <TouchableOpacity
-              onPress={() => setShowPassword(!showPassword)}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              onPress={() => navigation.goBack()}
+              style={currentStyles.backButtonContainer}
             >
               <Ionicons
-                name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                size={20}
+                name={isRTL ? 'arrow-forward' : 'arrow-back'}
+                size={22}
                 color={theme.colors.textSecondary}
               />
             </TouchableOpacity>
+            <Text style={currentStyles.headerTitle}>{t('auth.login')}</Text>
+            <View style={{ width: 40 }} />
           </View>
 
-          <TouchableOpacity style={currentStyles.forgotContainer}>
-            <Text style={currentStyles.forgotText}> {t('auth.forgot_password')} </Text>
-          </TouchableOpacity>
+          {/* Hero */}
+          <View style={currentStyles.hero}>
+            <Image
+              source={require('../../assets/logo-transparent.png')}
+              style={currentStyles.logo}
+              resizeMode="contain"
+            />
+            <Text style={currentStyles.title}>{t('auth.welcome_back')}</Text>
+            <Text style={currentStyles.subtitle}>{t('auth.sign_in_subtitle')}</Text>
+          </View>
 
-          <AppButton
-            title={t('auth.sign_in')}
-            onPress={handleLogin}
-            size="lg"
-            loading={isLoading}
-          />
-        </View>
+          {/* Form */}
+          <View style={currentStyles.form}>
+            {/* Mobile/Email */}
+            <View style={currentStyles.inputGroup}>
+              <Text style={currentStyles.inputLabel}>{t('auth.mobile_placeholder')}</Text>
+              <View style={[currentStyles.inputWrapper, { borderColor: getMobileBorderColor() }]}>
+                <Ionicons
+                  name="mail-outline"
+                  size={20}
+                  color={theme.colors.textTertiary}
+                  style={currentStyles.inputIconLeft}
+                />
+                <TextInput
+                  style={currentStyles.input}
+                  value={mobile}
+                  onChangeText={(val) => setMobile(val.replace(/[^0-9]/g, '').slice(0, 11))}
+                  maxLength={11}
+                  placeholder={t('auth.mobile_placeholder')}
+                  placeholderTextColor={theme.colors.textTertiary}
+                  keyboardType="phone-pad"
+                  autoCapitalize="none"
+                  editable={!isLoading}
+                  textAlign={isRTL ? 'right' : 'left'}
+                  returnKeyType="next"
+                  onSubmitEditing={() => passwordRef.current?.focus()}
+                  onBlur={() => setTouchedMobile(true)}
+                  blurOnSubmit={false}
+                />
+              </View>
+            </View>
 
-        <View style={currentStyles.footer}>
-          <Text style={currentStyles.footerText}> {t('auth.dont_have_account')} </Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Register')} disabled={isLoading}>
-            <Text style={currentStyles.linkText}> {t('auth.sign_up')} </Text>
-          </TouchableOpacity>
+            {/* Password */}
+            <View style={currentStyles.inputGroup}>
+              <View style={currentStyles.passwordLabelRow}>
+                <Text style={currentStyles.inputLabel}>{t('auth.password_placeholder')}</Text>
+                <TouchableOpacity>
+                  <Text style={currentStyles.forgotText}>{t('auth.forgot_password')}</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={[currentStyles.inputWrapper, { borderColor: getPasswordBorderColor() }]}>
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={20}
+                  color={theme.colors.textTertiary}
+                  style={currentStyles.inputIconLeft}
+                />
+                <TextInput
+                  // @ts-ignore
+                  ref={passwordRef}
+                  style={currentStyles.input}
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder={t('auth.password_placeholder')}
+                  placeholderTextColor={theme.colors.textTertiary}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  editable={!isLoading}
+                  textAlign={isRTL ? 'right' : 'left'}
+                  returnKeyType="done"
+                  onSubmitEditing={handleLogin}
+                  onBlur={() => setTouchedPassword(true)}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  style={currentStyles.inputIconRight}
+                >
+                  <Ionicons
+                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                    size={20}
+                    color={theme.colors.textTertiary}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Sign In Button */}
+            <TouchableOpacity
+              style={currentStyles.signInButton}
+              onPress={handleLogin}
+              disabled={isLoading}
+              activeOpacity={0.8}
+            >
+              <Text style={currentStyles.signInButtonText}>{t('auth.sign_in')}</Text>
+              <Ionicons
+                name={isRTL ? 'log-in-outline' : 'log-in-outline'}
+                size={20}
+                color="#FFF"
+                style={{ transform: [{ scaleX: isRTL ? -1 : 1 }] }}
+              />
+            </TouchableOpacity>
+
+            {/* Divider */}
+            <View style={currentStyles.dividerRow}>
+              <View style={currentStyles.dividerLine} />
+              <Text style={currentStyles.dividerText}>{'        '}</Text>
+              <View style={currentStyles.dividerLine} />
+            </View>
+
+            {/* Language Toggle */}
+            <TouchableOpacity
+              style={currentStyles.languageButton}
+              onPress={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="language-outline" size={20} color={theme.colors.primary} />
+              <Text style={currentStyles.languageButtonText}>
+                {language === 'ar' ? 'English' : 'عربي'}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Footer */}
+            <View style={currentStyles.footer}>
+              <Text style={currentStyles.footerText}>{t('auth.dont_have_account')} </Text>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('Register')}
+                disabled={isLoading}
+              >
+                <Text style={currentStyles.createAccountText}>{t('auth.sign_up')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Bottom Primary Border */}
+          <View style={currentStyles.bottomBorder} />
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -234,103 +264,215 @@ const styles = (
   isRTL: boolean,
   typography: any,
   fontWeight: any,
+  insets: any,
 ) =>
   StyleSheet.create({
-    container: { flex: 1, backgroundColor: theme.colors.background },
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
     scrollContainer: {
       flexGrow: 1,
-      paddingHorizontal: layout.screenPadding,
-      paddingTop: Platform.OS === 'ios' ? common.insets.top : common.insets.top + 30,
-      paddingBottom: Math.max(common.insets.bottom, 20),
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: spacing.md,
+      paddingTop: Math.max(insets.top + spacing.xl, spacing.xxl * 2),
+      paddingBottom: Math.max(insets.bottom + spacing.xl, spacing.xxl * 2),
     },
-    header: { alignItems: 'center', marginBottom: 32 },
-    logo: { width: 100, height: 85, marginBottom: 24 },
-    title: {
-      ...typography('display'),
-      color: '#0F172A',
-      marginBottom: 8,
+    card: {
+      width: '100%',
+      maxWidth: 440,
+      backgroundColor: theme.colors.card,
+      borderRadius: borderRadius.xl || 16,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 10 },
+          shadowOpacity: 0.1,
+          shadowRadius: 15,
+        },
+        android: {
+          elevation: 10,
+        },
+        web: {
+          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+        },
+      }),
+    },
+    headerTop: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.sm,
+    },
+    backButtonContainer: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: theme.colors.background,
+    },
+    headerTitle: {
+      ...typography('subtitle1'),
+      ...fontWeight('700'),
+      color: theme.colors.text,
+      flex: 1,
       textAlign: 'center',
+    },
+    hero: {
+      alignItems: 'center',
+      paddingHorizontal: spacing.xl,
+      paddingTop: spacing.xl,
+      paddingBottom: spacing.md,
+    },
+    logo: {
+      width: 100,
+      height: 80,
+      marginBottom: spacing.xl,
+    },
+    title: {
+      fontSize: 28,
+      ...fontWeight('700'),
+      color: theme.colors.text,
+      textAlign: 'center',
+      marginBottom: spacing.xs,
     },
     subtitle: {
       ...typography('body'),
-      color: '#64748B',
+      color: theme.colors.textSecondary,
       textAlign: 'center',
-      ...fontWeight('500'),
     },
-    form: { marginBottom: 32 },
-    languageButton: {
-      position: 'absolute',
+    form: {
+      paddingHorizontal: spacing.xl,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.xl,
+    },
+    inputGroup: {
+      marginBottom: spacing.lg,
+    },
+    inputLabel: {
+      ...typography('caption'),
+      ...fontWeight('600'),
+      color: theme.colors.textSecondary,
+      marginBottom: spacing.xs,
+      textAlign: 'left',
+    },
+    passwordLabelRow: {
       flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      borderRadius: 20,
-      backgroundColor: theme.colors.card,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      gap: 6,
-      zIndex: 10,
-      ...layout.shadow,
+      justifyContent: 'space-between',
+      alignItems: 'flex-end',
+      marginBottom: spacing.xs,
     },
-    languageText: {
-      ...typography('label'),
-      ...fontWeight('700'),
+    forgotText: {
+      fontSize: 12,
+      ...fontWeight('600'),
       color: theme.colors.primary,
     },
     inputWrapper: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: '#F8FAFC',
-      borderWidth: 1,
-      borderColor: '#E2E8F0',
-      borderRadius: 12,
-      paddingHorizontal: 16,
-      marginBottom: 16,
       height: 56,
+      borderWidth: 1,
+      borderRadius: borderRadius.lg || 12,
+      backgroundColor: theme.colors.background,
     },
-    inputIcon: {
-      marginRight: 12,
-      marginLeft: 12,
+    inputIconLeft: {
+      paddingHorizontal: spacing.md,
+    },
+    inputIconRight: {
+      paddingHorizontal: spacing.md,
     },
     input: {
       flex: 1,
       fontSize: fontSizes.base,
-      color: '#1E293B',
+      color: theme.colors.text,
       height: '100%',
     },
-    forgotContainer: {
-      alignSelf: 'flex-start',
-      marginBottom: 32,
+    signInButton: {
+      height: 56,
+      backgroundColor: theme.colors.primary,
+      borderRadius: borderRadius.lg || 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      ...Platform.select({
+        ios: {
+          shadowColor: theme.colors.primary,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 8,
+        },
+        android: {
+          elevation: 6,
+        },
+      }),
+      marginTop: spacing.sm,
     },
-    forgotText: {
-      ...typography('label'),
-      color: theme.colors.primary,
+    signInButtonText: {
+      ...typography('button'),
+      ...fontWeight('700'),
+      color: '#FFFFFF',
+      marginRight: spacing.sm,
+      marginLeft: isRTL ? spacing.sm : 0,
+    },
+    dividerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: spacing.sm,
+    },
+    dividerLine: {
+      flex: 1,
+      height: 1,
+      backgroundColor: theme.colors.border,
+    },
+    dividerText: {
+      marginHorizontal: spacing.md,
+      fontSize: 14,
+      color: theme.colors.textTertiary,
+    },
+    languageButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: 48,
+      borderRadius: borderRadius.lg || 12,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.background,
+      marginBottom: spacing.md,
+    },
+    languageButtonText: {
+      fontSize: 14,
       ...fontWeight('600'),
+      color: theme.colors.text,
+      marginLeft: spacing.sm,
+      marginRight: isRTL ? spacing.sm : 0,
     },
     footer: {
       flexDirection: 'row',
       justifyContent: 'center',
       alignItems: 'center',
-      marginBottom: 24,
-      gap: 4,
+      paddingBottom: spacing.lg,
     },
-    footerText: { ...typography('body'), color: '#64748B' },
-    linkText: {
-      ...typography('button'),
-      color: '#1E3A8A',
+    footerText: {
+      fontSize: 14,
+      color: theme.colors.textSecondary,
+    },
+    createAccountText: {
+      fontSize: 14,
       ...fontWeight('700'),
+      color: theme.colors.primary,
     },
-    backButton: {
-      position: 'absolute',
-      zIndex: 10,
-      padding: 8,
-      borderRadius: 20,
-      backgroundColor: theme.colors.surface,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 3,
+    bottomBorder: {
+      height: 8,
+      backgroundColor: theme.colors.primary,
+      width: '100%',
     },
   });
 
