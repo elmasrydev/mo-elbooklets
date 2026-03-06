@@ -54,7 +54,6 @@ interface Chapter {
   lessons: Lesson[];
 }
 
-
 const StudyChaptersScreen: React.FC = () => {
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
@@ -190,7 +189,7 @@ const StudyChaptersScreen: React.FC = () => {
                 />
               </View>
               <View style={currentStyles.chapterInfo}>
-                <Text style={currentStyles.chapterName}>الدرس {chapter.name} </Text>
+                <Text style={currentStyles.chapterName}>{chapter.name} </Text>
                 <Text style={currentStyles.lessonCount}>
                   {chapter.lessons.length} {t('study_chapters.lessons')}
                 </Text>
@@ -348,14 +347,14 @@ const styles = (
     lessonIconContainer: { ...common.marginEnd(spacing.sm) },
     lessonInfo: { flex: 1, alignItems: common.alignStart },
     lessonName: {
-      ...typography('caption'),
+      ...typography('bodySmall'),
+      fontSize: 15,
       color: theme.colors.text,
       textAlign: common.textAlign,
-      fontSize: 13,
     },
     lessonSummary: {
       ...typography('caption'),
-      fontSize: 11,
+      fontSize: 13,
       marginTop: 2,
       color: theme.colors.textSecondary,
       textAlign: common.textAlign,
