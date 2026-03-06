@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 const BookletsScreen: React.FC = () => {
   const common = useCommonStyles();
   const { theme } = useTheme();
-  const { typography, fontWeight} = useTypography();
+  const { typography, fontWeight } = useTypography();
   const styles = createBookletStyles(fontWeight);
   const { t } = useTranslation();
 
@@ -50,30 +50,31 @@ const BookletsScreen: React.FC = () => {
   );
 };
 
-const createBookletStyles = (fontWeight: any) => StyleSheet.create({
-  emptyState: {
-    padding: 40,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginBottom: 10, // matching sectionGap
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  emptyStateIcon: {
-    fontSize: 64,
-    marginBottom: 20,
-  },
-  emptyStateTitle: {
-    ...fontWeight('600'),
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  emptyStateSubtitle: {
-    textAlign: 'center',
-  },
-});
+const createBookletStyles = (fontWeight: any) =>
+  StyleSheet.create({
+    emptyState: {
+      padding: 40,
+      borderRadius: 12,
+      alignItems: 'center',
+      marginBottom: 10, // matching sectionGap
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    emptyStateIcon: {
+      fontSize: 64,
+      marginBottom: 20,
+    },
+    emptyStateTitle: {
+      ...fontWeight('600'),
+      marginBottom: 8,
+      textAlign: 'center',
+    },
+    emptyStateSubtitle: {
+      textAlign: 'center',
+    },
+  });
 
 export default BookletsScreen;

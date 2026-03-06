@@ -78,7 +78,7 @@ const StudyCalendarScreen: React.FC = () => {
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography, fontWeight} = useTypography();
+  const { typography, fontWeight } = useTypography();
 
   const [selectedDay, setSelectedDay] = useState(0);
   const [scheduleData, setScheduleData] = useState<{ [key: number]: ScheduleEntry[] }>({});
@@ -348,7 +348,14 @@ const StudyCalendarScreen: React.FC = () => {
   );
 };
 
-const styles = (theme: any, isRTL: boolean, typography: any, fontWeight: any, spacing: any, borderRadius: any) =>
+const styles = (
+  theme: any,
+  isRTL: boolean,
+  typography: any,
+  fontWeight: any,
+  spacing: any,
+  borderRadius: any,
+) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -505,7 +512,7 @@ const styles = (theme: any, isRTL: boolean, typography: any, fontWeight: any, sp
     removeButtonText: {
       ...typography('label'),
       color: theme.colors.error || '#EF4444',
-      ...fontWeight('600')
+      ...fontWeight('600'),
     },
     addButton: {
       padding: spacing.lg,

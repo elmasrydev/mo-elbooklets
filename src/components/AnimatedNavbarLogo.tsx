@@ -21,10 +21,7 @@ const AnimatedNavbarLogo: React.FC<AnimatedNavbarLogoProps> = () => {
 
   useEffect(() => {
     // Zoom in with spring effect and fade in
-    logoScale.value = withDelay(
-      100,
-      withSpring(1, { damping: 18, stiffness: 80 })
-    );
+    logoScale.value = withDelay(100, withSpring(1, { damping: 18, stiffness: 80 }));
     logoOpacity.value = withDelay(100, withSpring(1));
   }, []);
 

@@ -7,7 +7,7 @@ import { layout } from '../config/layout';
 
 const ProgressScreen: React.FC = () => {
   const { theme, spacing } = useTheme();
-  const { typography, fontWeight} = useTypography();
+  const { typography, fontWeight } = useTypography();
   const styles = createProgressStyles(fontWeight);
 
   return (
@@ -50,47 +50,48 @@ const ProgressScreen: React.FC = () => {
   );
 };
 
-const createProgressStyles = (fontWeight: any) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    padding: layout.screenPadding,
-    paddingTop: 50,
-    borderBottomWidth: 1,
-  },
-  title: {
-    ...fontWeight('bold')
-  },
-  subtitle: {
-    marginTop: 4,
-  },
-  content: {
-    flex: 1,
-    padding: layout.screenPadding,
-  },
-  emptyState: {
-    padding: 40,
-    borderRadius: 12,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  emptyStateIcon: {
-    fontSize: 64,
-    marginBottom: 20,
-  },
-  emptyStateTitle: {
-    ...fontWeight('600'),
-    marginBottom: 8,
-  },
-  emptyStateSubtitle: {
-    textAlign: 'center',
-  },
-});
+const createProgressStyles = (fontWeight: any) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: '#f5f5f5',
+    },
+    header: {
+      padding: layout.screenPadding,
+      paddingTop: 50,
+      borderBottomWidth: 1,
+    },
+    title: {
+      ...fontWeight('bold'),
+    },
+    subtitle: {
+      marginTop: 4,
+    },
+    content: {
+      flex: 1,
+      padding: layout.screenPadding,
+    },
+    emptyState: {
+      padding: 40,
+      borderRadius: 12,
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    emptyStateIcon: {
+      fontSize: 64,
+      marginBottom: 20,
+    },
+    emptyStateTitle: {
+      ...fontWeight('600'),
+      marginBottom: 8,
+    },
+    emptyStateSubtitle: {
+      textAlign: 'center',
+    },
+  });
 
 export default ProgressScreen;
