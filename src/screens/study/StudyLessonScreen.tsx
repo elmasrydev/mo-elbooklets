@@ -151,7 +151,7 @@ const StudyLessonScreen: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { typography, fontWeight} = useTypography();
+  const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
 
   const [currentLesson, setCurrentLesson] = useState<Lesson>(route.params?.lesson);
@@ -205,8 +205,8 @@ const StudyLessonScreen: React.FC = () => {
         <View style={currentStyles.titleBreadcrumbContainer}>
           <View style={currentStyles.breadcrumbRow}>
             <Ionicons
-              name="folder-open"
-              size={14}
+              name="library"
+              size={20}
               color={theme.colors.primary}
               style={currentStyles.breadcrumbIcon}
             />
@@ -228,8 +228,10 @@ const StudyLessonScreen: React.FC = () => {
 
         <View style={currentStyles.section}>
           <View style={currentStyles.sectionHeader}>
-            <View style={currentStyles.sectionIcon}>
-              <Ionicons name="document-text-outline" size={20} color={theme.colors.primary} />
+            <View
+              style={[currentStyles.sectionIcon, { backgroundColor: theme.colors.primary + '1A' }]}
+            >
+              <Ionicons name="newspaper-outline" size={20} color={theme.colors.primary} />
             </View>
             <Text style={currentStyles.sectionTitle}> {t('study_lesson.summary')} </Text>
           </View>
@@ -243,9 +245,9 @@ const StudyLessonScreen: React.FC = () => {
         <View style={currentStyles.section}>
           <View style={currentStyles.sectionHeader}>
             <View
-              style={[currentStyles.sectionIcon, { backgroundColor: theme.colors.success + '1A' }]}
+              style={[currentStyles.sectionIcon, { backgroundColor: theme.colors.primary + '1A' }]}
             >
-              <Ionicons name="checkmark-done" size={20} color={theme.colors.success} />
+              <Ionicons name="star-outline" size={20} color={theme.colors.primary} />
             </View>
             <Text style={currentStyles.sectionTitle}> {t('study_lesson.key_points')} </Text>
           </View>
@@ -262,8 +264,13 @@ const StudyLessonScreen: React.FC = () => {
                     activeOpacity={point.explanation ? 0.7 : 1}
                   >
                     <View style={currentStyles.pointHeader}>
-                      <View style={currentStyles.pointBullet}>
-                        <Ionicons name="checkmark" size={12} color={theme.colors.textOnDark} />
+                      <View
+                        style={[
+                          currentStyles.pointBullet,
+                          { backgroundColor: theme.colors.primary },
+                        ]}
+                      >
+                        <Ionicons name="bookmark" size={12} color={theme.colors.textOnDark} />
                       </View>
                       <Text style={currentStyles.pointText}> {point.title} </Text>
                       {point.explanation && (
@@ -288,8 +295,10 @@ const StudyLessonScreen: React.FC = () => {
               {currentLesson.points!.map((point, index) => (
                 <View key={index} style={currentStyles.pointItem}>
                   <View style={currentStyles.pointHeader}>
-                    <View style={currentStyles.pointBullet}>
-                      <Ionicons name="checkmark" size={12} color={theme.colors.textOnDark} />
+                    <View
+                      style={[currentStyles.pointBullet, { backgroundColor: theme.colors.primary }]}
+                    >
+                      <Ionicons name="bookmark" size={12} color={theme.colors.textOnDark} />
                     </View>
                     <Text style={currentStyles.pointText}> {point} </Text>
                   </View>

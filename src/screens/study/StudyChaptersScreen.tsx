@@ -54,6 +54,7 @@ interface Chapter {
   lessons: Lesson[];
 }
 
+
 const StudyChaptersScreen: React.FC = () => {
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
@@ -183,8 +184,8 @@ const StudyChaptersScreen: React.FC = () => {
             <View style={currentStyles.chapterHeader}>
               <View style={currentStyles.chapterIconContainer}>
                 <Ionicons
-                  name="folder-open-outline"
-                  size={spacing.icon.sm}
+                  name="library-outline"
+                  size={spacing.icon.lg}
                   color={theme.colors.primary}
                 />
               </View>
@@ -196,18 +197,30 @@ const StudyChaptersScreen: React.FC = () => {
               </View>
             </View>
             <View style={currentStyles.lessonsContainer}>
-              {chapter.lessons.map((lesson) => (
+              {chapter.lessons.map((lesson, index) => (
                 <TouchableOpacity
                   key={lesson.id}
                   style={currentStyles.lessonItem}
                   onPress={() => handleLessonPress(lesson)}
                   activeOpacity={0.7}
                 >
-                  <View style={currentStyles.lessonIconContainer}>
+                  <View
+                    style={[
+                      currentStyles.lessonIconContainer,
+                      {
+                        backgroundColor: theme.colors.primary + '0D', // 5% opacity
+                        width: 32,
+                        height: 32,
+                        borderRadius: borderRadius.sm,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      },
+                    ]}
+                  >
                     <Ionicons
-                      name="document-text-outline"
+                      name="newspaper-outline"
                       size={spacing.icon.sm}
-                      color={theme.colors.textSecondary}
+                      color={theme.colors.primary}
                     />
                   </View>
                   <View style={currentStyles.lessonInfo}>
@@ -303,8 +316,8 @@ const styles = (
       borderBottomColor: theme.colors.border,
     },
     chapterIconContainer: {
-      width: 32,
-      height: 32,
+      width: 38,
+      height: 38,
       borderRadius: borderRadius.full,
       backgroundColor: theme.colors.primary + '1A',
       justifyContent: 'center',
