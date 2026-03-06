@@ -353,7 +353,7 @@ const styles = (
       marginBottom: spacing.sectionGap,
       alignItems: 'flex-start',
       backgroundColor: theme.colors.card,
-      padding: spacing.mdd,
+      padding: spacing.md,
       borderRadius: borderRadius.xl,
       borderWidth: 1,
       borderColor: theme.colors.border,

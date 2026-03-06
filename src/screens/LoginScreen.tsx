@@ -92,165 +92,170 @@ const LoginScreen: React.FC = () => {
       style={currentStyles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView
-        contentContainerStyle={currentStyles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
+      <View style={currentStyles.cardContainer}>
         <View style={currentStyles.card}>
-          {/* Header */}
-          <View style={currentStyles.headerTop}>
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              style={currentStyles.backButtonContainer}
-            >
-              <Ionicons
-                name={isRTL ? 'arrow-forward' : 'arrow-back'}
-                size={22}
-                color={theme.colors.textSecondary}
-              />
-            </TouchableOpacity>
-            <Text style={currentStyles.headerTitle}>{t('auth.login')}</Text>
-            <View style={{ width: 40 }} />
-          </View>
-
-          {/* Hero */}
-          <View style={currentStyles.hero}>
-            <Image
-              source={require('../../assets/logo-transparent.png')}
-              style={currentStyles.logo}
-              resizeMode="contain"
-            />
-            <Text style={currentStyles.title}>{t('auth.welcome_back')}</Text>
-            <Text style={currentStyles.subtitle}>{t('auth.sign_in_subtitle')}</Text>
-          </View>
-
-          {/* Form */}
-          <View style={currentStyles.form}>
-            {/* Mobile/Email */}
-            <View style={currentStyles.inputGroup}>
-              <Text style={currentStyles.inputLabel}>{t('auth.mobile_placeholder')}</Text>
-              <View style={[currentStyles.inputWrapper, { borderColor: getMobileBorderColor() }]}>
+            {/* Fixed Header */}
+            <View style={currentStyles.headerTop}>
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                style={currentStyles.backButtonContainer}
+              >
                 <Ionicons
-                  name="mail-outline"
-                  size={20}
-                  color={theme.colors.textTertiary}
-                  style={currentStyles.inputIconLeft}
+                  name={isRTL ? 'arrow-forward' : 'arrow-back'}
+                  size={22}
+                  color={theme.colors.textSecondary}
                 />
-                <TextInput
-                  style={currentStyles.input}
-                  value={mobile}
-                  onChangeText={(val) => setMobile(val.replace(/[^0-9]/g, '').slice(0, 11))}
-                  maxLength={11}
-                  placeholder={t('auth.mobile_placeholder')}
-                  placeholderTextColor={theme.colors.textTertiary}
-                  keyboardType="phone-pad"
-                  autoCapitalize="none"
-                  editable={!isLoading}
-                  textAlign={isRTL ? 'right' : 'left'}
-                  returnKeyType="next"
-                  onSubmitEditing={() => passwordRef.current?.focus()}
-                  onBlur={() => setTouchedMobile(true)}
-                  blurOnSubmit={false}
-                />
-              </View>
+              </TouchableOpacity>
+              <Text style={currentStyles.headerTitle}>{t('auth.login')}</Text>
+              <View style={{ width: 40 }} />
             </View>
 
-            {/* Password */}
-            <View style={currentStyles.inputGroup}>
-              <View style={currentStyles.passwordLabelRow}>
-                <Text style={currentStyles.inputLabel}>{t('auth.password_placeholder')}</Text>
-                <TouchableOpacity>
-                  <Text style={currentStyles.forgotText}>{t('auth.forgot_password')}</Text>
-                </TouchableOpacity>
+            <ScrollView
+              style={currentStyles.cardScrollView}
+              contentContainerStyle={currentStyles.cardContent}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              {/* Hero */}
+              <View style={currentStyles.hero}>
+                <Image
+                  source={require('../../assets/logo-transparent.png')}
+                  style={currentStyles.logo}
+                  resizeMode="contain"
+                />
+                <Text style={currentStyles.title}>{t('auth.welcome_back')}</Text>
+                <Text style={currentStyles.subtitle}>{t('auth.sign_in_subtitle')}</Text>
               </View>
-              <View style={[currentStyles.inputWrapper, { borderColor: getPasswordBorderColor() }]}>
-                <Ionicons
-                  name="lock-closed-outline"
-                  size={20}
-                  color={theme.colors.textTertiary}
-                  style={currentStyles.inputIconLeft}
-                />
-                <TextInput
-                  // @ts-ignore
-                  ref={passwordRef}
-                  style={currentStyles.input}
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder={t('auth.password_placeholder')}
-                  placeholderTextColor={theme.colors.textTertiary}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                  editable={!isLoading}
-                  textAlign={isRTL ? 'right' : 'left'}
-                  returnKeyType="done"
-                  onSubmitEditing={handleLogin}
-                  onBlur={() => setTouchedPassword(true)}
-                />
-                <TouchableOpacity
-                  onPress={() => setShowPassword(!showPassword)}
-                  style={currentStyles.inputIconRight}
-                >
+
+            {/* Form */}
+            <View style={currentStyles.form}>
+              {/* Mobile/Email */}
+              <View style={currentStyles.inputGroup}>
+                <Text style={currentStyles.inputLabel}>{t('auth.mobile_placeholder')}</Text>
+                <View style={[currentStyles.inputWrapper, { borderColor: getMobileBorderColor() }]}>
                   <Ionicons
-                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                    name="mail-outline"
                     size={20}
                     color={theme.colors.textTertiary}
+                    style={currentStyles.inputIconLeft}
                   />
+                  <TextInput
+                    style={currentStyles.input}
+                    value={mobile}
+                    onChangeText={(val) => setMobile(val.replace(/[^0-9]/g, '').slice(0, 11))}
+                    maxLength={11}
+                    placeholder={t('auth.mobile_placeholder')}
+                    placeholderTextColor={theme.colors.textTertiary}
+                    keyboardType="phone-pad"
+                    autoCapitalize="none"
+                    editable={!isLoading}
+                    textAlign={isRTL ? 'right' : 'left'}
+                    returnKeyType="next"
+                    onSubmitEditing={() => passwordRef.current?.focus()}
+                    onBlur={() => setTouchedMobile(true)}
+                    blurOnSubmit={false}
+                  />
+                </View>
+              </View>
+
+              {/* Password */}
+              <View style={currentStyles.inputGroup}>
+                <View style={currentStyles.passwordLabelRow}>
+                  <Text style={currentStyles.inputLabel}>{t('auth.password_placeholder')}</Text>
+                  <TouchableOpacity>
+                    <Text style={currentStyles.forgotText}>{t('auth.forgot_password')}</Text>
+                  </TouchableOpacity>
+                </View>
+                <View
+                  style={[currentStyles.inputWrapper, { borderColor: getPasswordBorderColor() }]}
+                >
+                  <Ionicons
+                    name="lock-closed-outline"
+                    size={20}
+                    color={theme.colors.textTertiary}
+                    style={currentStyles.inputIconLeft}
+                  />
+                  <TextInput
+                    // @ts-ignore
+                    ref={passwordRef}
+                    style={currentStyles.input}
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder={t('auth.password_placeholder')}
+                    placeholderTextColor={theme.colors.textTertiary}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    editable={!isLoading}
+                    textAlign={isRTL ? 'right' : 'left'}
+                    returnKeyType="done"
+                    onSubmitEditing={handleLogin}
+                    onBlur={() => setTouchedPassword(true)}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    style={currentStyles.inputIconRight}
+                  >
+                    <Ionicons
+                      name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                      size={20}
+                      color={theme.colors.textTertiary}
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Sign In Button */}
+              <TouchableOpacity
+                style={currentStyles.signInButton}
+                onPress={handleLogin}
+                disabled={isLoading}
+                activeOpacity={0.8}
+              >
+                <Text style={currentStyles.signInButtonText}>{t('auth.sign_in')}</Text>
+                <Ionicons
+                  name={isRTL ? 'log-in-outline' : 'log-in-outline'}
+                  size={20}
+                  color="#FFF"
+                  style={{ transform: [{ scaleX: isRTL ? -1 : 1 }] }}
+                />
+              </TouchableOpacity>
+
+              {/* Divider */}
+              <View style={currentStyles.dividerRow}>
+                <View style={currentStyles.dividerLine} />
+                <Text style={currentStyles.dividerText}>{'        '}</Text>
+                <View style={currentStyles.dividerLine} />
+              </View>
+
+              {/* Language Toggle */}
+              <TouchableOpacity
+                style={currentStyles.languageButton}
+                onPress={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="language-outline" size={20} color={theme.colors.primary} />
+                <Text style={currentStyles.languageButtonText}>
+                  {language === 'ar' ? 'English' : 'عربي'}
+                </Text>
+              </TouchableOpacity>
+
+              {/* Footer */}
+              <View style={currentStyles.footer}>
+                <Text style={currentStyles.footerText}>{t('auth.dont_have_account')} </Text>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('Register')}
+                  disabled={isLoading}
+                >
+                  <Text style={currentStyles.createAccountText}>{t('auth.sign_up')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
-
-            {/* Sign In Button */}
-            <TouchableOpacity
-              style={currentStyles.signInButton}
-              onPress={handleLogin}
-              disabled={isLoading}
-              activeOpacity={0.8}
-            >
-              <Text style={currentStyles.signInButtonText}>{t('auth.sign_in')}</Text>
-              <Ionicons
-                name={isRTL ? 'log-in-outline' : 'log-in-outline'}
-                size={20}
-                color="#FFF"
-                style={{ transform: [{ scaleX: isRTL ? -1 : 1 }] }}
-              />
-            </TouchableOpacity>
-
-            {/* Divider */}
-            <View style={currentStyles.dividerRow}>
-              <View style={currentStyles.dividerLine} />
-              <Text style={currentStyles.dividerText}>{'        '}</Text>
-              <View style={currentStyles.dividerLine} />
-            </View>
-
-            {/* Language Toggle */}
-            <TouchableOpacity
-              style={currentStyles.languageButton}
-              onPress={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="language-outline" size={20} color={theme.colors.primary} />
-              <Text style={currentStyles.languageButtonText}>
-                {language === 'ar' ? 'English' : 'عربي'}
-              </Text>
-            </TouchableOpacity>
-
-            {/* Footer */}
-            <View style={currentStyles.footer}>
-              <Text style={currentStyles.footerText}>{t('auth.dont_have_account')} </Text>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('Register')}
-                disabled={isLoading}
-              >
-                <Text style={currentStyles.createAccountText}>{t('auth.sign_up')}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          </ScrollView>
 
           {/* Bottom Primary Border */}
           <View style={currentStyles.bottomBorder} />
         </View>
-      </ScrollView>
+      </View>
     </KeyboardAvoidingView>
   );
 };
@@ -271,20 +276,21 @@ const styles = (
       flex: 1,
       backgroundColor: theme.colors.background,
     },
-    scrollContainer: {
-      flexGrow: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
+    cardContainer: {
+      flex: 1,
       padding: spacing.md,
-      paddingTop: Math.max(insets.top + spacing.xl, spacing.xxl * 2),
-      paddingBottom: Math.max(insets.bottom + spacing.xl, spacing.xxl * 2),
+      paddingTop: insets.top + spacing.md,
+      paddingBottom: insets.bottom + spacing.md,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     card: {
+      flex: 1,
       width: '100%',
-      maxWidth: 440,
       backgroundColor: theme.colors.card,
-      borderRadius: borderRadius.xl || 16,
+      borderRadius: borderRadius.xl || 24,
       overflow: 'hidden',
+      position: 'relative',
       borderWidth: 1,
       borderColor: theme.colors.border,
       ...Platform.select({
@@ -297,10 +303,13 @@ const styles = (
         android: {
           elevation: 10,
         },
-        web: {
-          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
-        },
       }),
+    },
+    cardScrollView: {
+      flex: 1,
+    },
+    cardContent: {
+      flexGrow: 1,
     },
     headerTop: {
       flexDirection: 'row',
@@ -328,13 +337,13 @@ const styles = (
     hero: {
       alignItems: 'center',
       paddingHorizontal: spacing.xl,
-      paddingTop: spacing.xl,
+      paddingTop: spacing.md,
       paddingBottom: spacing.md,
     },
     logo: {
       width: 100,
       height: 80,
-      marginBottom: spacing.xl,
+      marginBottom: spacing.lg,
     },
     title: {
       fontSize: 28,
@@ -349,7 +358,7 @@ const styles = (
       textAlign: 'center',
     },
     form: {
-      paddingHorizontal: spacing.xl,
+      paddingHorizontal: spacing.md,
       paddingTop: spacing.sm,
       paddingBottom: spacing.xl,
     },
