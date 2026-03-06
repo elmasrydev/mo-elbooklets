@@ -166,9 +166,9 @@ const QuizReviewScreen: React.FC = () => {
   return (
     <View style={[common.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
-      <View style={[currentStyles.header, { paddingTop: Math.max(headerTop, 18) }]}>
+      <View style={[currentStyles.header, { paddingTop: Math.max(headerTop, 12) }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={currentStyles.closeButton}>
-          <Ionicons name="close" size={28} color={theme.colors.text} />
+          <Ionicons name="close" size={28} color={theme.colors.primary} />
         </TouchableOpacity>
         <View style={currentStyles.headerTextContainer}>
           <Text style={currentStyles.headerTitle}> {t('home_screen.review')} </Text>
@@ -744,8 +744,8 @@ const styles = (
       flexDirection: common.rowDirection,
       alignItems: 'center',
       paddingHorizontal: 20,
-      paddingBottom: 20,
-      backgroundColor: theme.colors.surface,
+      paddingBottom: 12,
+      backgroundColor: theme.colors.primary,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.border,
     },
@@ -765,7 +765,7 @@ const styles = (
     headerTitle: {
       ...typography('h2'),
       ...fontWeight('900'),
-      color: theme.colors.text,
+      color: '#ffffff',
       textAlign: common.textAlign,
     },
     scrollContent: {
