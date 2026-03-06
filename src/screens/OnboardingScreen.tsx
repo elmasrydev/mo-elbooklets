@@ -25,15 +25,8 @@ const OnboardingScreen: React.FC = () => {
   };
 
   return (
-    <View style={currentStyles.container}>
-      {/* 1. Full-screen Background Image */}
-      <Image
-        source={require('../../assets/onboarding-bg.png')}
-        style={currentStyles.onboardingBg}
-        resizeMode="cover"
-      />
-
-      <View style={currentStyles.safeArea}>
+    <>
+      <View style={currentStyles.container}>
         {/* 2. Top Header with Logo & Language Switcher */}
         <TouchableOpacity
           onPress={toggleLanguage}
@@ -46,16 +39,17 @@ const OnboardingScreen: React.FC = () => {
           <Text style={currentStyles.languageText}>{language === 'ar' ? 'English' : 'عربي'}</Text>
         </TouchableOpacity>
 
-        <View style={currentStyles.header}>
-          <Image
-            source={require('../../assets/logo-transparent.png')}
-            style={currentStyles.logo}
-            resizeMode="contain"
-          />
-        </View>
+        <Image
+          source={require('../../assets/logo-transparent.png')}
+          style={currentStyles.logo}
+          resizeMode="contain"
+        />
 
-        {/* Spacer to push content to bottom */}
-        <View style={currentStyles.spacer} />
+        <Image
+          source={require('../../assets/onboarding-bg.png')}
+          style={currentStyles.onboardingBg}
+          resizeMode="contain"
+        />
 
         {/* 3. Bottom Content */}
         <View style={currentStyles.bottomContent}>
@@ -78,7 +72,7 @@ const OnboardingScreen: React.FC = () => {
           </View>
         </View>
       </View>
-    </View>
+    </>
   );
 };
 
@@ -92,21 +86,12 @@ const styles = (
   StyleSheet.create({
     container: {
       flex: 1,
-    },
-    safeArea: {
-      flex: 1,
+      backgroundColor: theme.colors.background,
+      alignItems: 'center',
+      paddingTop: insets.top,
     },
     onboardingBg: {
-      ...StyleSheet.absoluteFillObject,
-      width: '100%',
-      height: '100%',
-      resizeMode: 'cover',
-      zIndex: -1,
-    },
-    header: {
-      alignItems: 'center',
-      marginBottom: 32,
-      paddingTop: Platform.OS === 'ios' ? insets.top : insets.top + 30,
+      width: '95%',
     },
     languageButton: {
       position: 'absolute',
@@ -130,14 +115,10 @@ const styles = (
     logo: {
       width: 100,
       height: 85,
-      marginBottom: 24,
-    },
-    spacer: {
-      flex: 1,
     },
     bottomContent: {
       paddingHorizontal: layout.screenPadding,
-      paddingBottom: Math.max(insets.bottom, 70),
+      paddingBottom: Math.max(insets.bottom, 20),
       alignItems: 'center',
     },
     title: {
@@ -145,13 +126,13 @@ const styles = (
       ...fontWeight('800'),
       color: '#0F172A',
       textAlign: 'center',
-      marginBottom: 14,
+      marginBottom: 10,
     },
     subtitle: {
       ...typography('body'),
       color: '#64748B',
       textAlign: 'center',
-      marginBottom: 32,
+      marginBottom: 20,
     },
     footer: {
       marginTop: 25,
