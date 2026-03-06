@@ -76,13 +76,13 @@ const LoginScreen: React.FC = () => {
   const isPasswordValid = password.length >= 8;
 
   const getMobileBorderColor = () => {
-    if (touchedMobile && !isMobileValid) return '#EF4444'; // Red-500
+    if (touchedMobile && !isMobileValid) return '#FF6B6B'; // Red-500
     if (mobile.length > 0) return theme.colors.primary;
     return theme.colors.border;
   };
 
   const getPasswordBorderColor = () => {
-    if (touchedPassword && !isPasswordValid) return '#EF4444';
+    if (touchedPassword && !isPasswordValid) return '#FF6B6B';
     if (password.length > 0) return theme.colors.primary;
     return theme.colors.border;
   };

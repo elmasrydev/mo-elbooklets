@@ -216,7 +216,7 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
                 <Ionicons
                   name={item.isLiked ? 'heart' : 'heart-outline'}
                   size={20}
-                  color={item.isLiked ? '#EF4444' : theme.colors.textSecondary}
+                  color={item.isLiked ? '#FF6B6B' : theme.colors.textSecondary}
                 />
                 <Text
                   style={[currentStyles.actionText, item.isLiked && currentStyles.actionTextLiked]}
@@ -357,7 +357,7 @@ const createStyles = (
       ...fontWeight('900'),
       color: theme.colors.textSecondary,
     },
-    actionTextLiked: { color: '#EF4444' },
+    actionTextLiked: { color: '#FF6B6B' },
     reviewButton: {
       backgroundColor: `${theme.colors.primary}15`,
       paddingHorizontal: 16,

@@ -294,7 +294,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
 
   if (percentage < 60) {
     stateTheme = {
-      color: '#EF4444', // red
+      color: '#FF6B6B', // red
       bg: '#FEE2E2',
       icon: 'alert-circle-outline' as any,
       title: t('quiz_results.keep_trying', 'Keep Trying!'),

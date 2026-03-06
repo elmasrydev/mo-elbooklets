@@ -240,7 +240,7 @@ const QuizReviewScreen: React.FC = () => {
                 <View
                   style={[
                     currentStyles.questionBadge,
-                    { backgroundColor: ua.is_correct ? '#10B981' : '#EF4444' },
+                    { backgroundColor: ua.is_correct ? '#10B981' : '#FF6B6B' },
                   ]}
                 >
                   <Text style={currentStyles.badgeText}>
@@ -268,7 +268,7 @@ const QuizReviewScreen: React.FC = () => {
                       { backgroundColor: 'rgba(239, 68, 68, 0.1)', marginHorizontal: 8 },
                     ]}
                   >
-                    <Text style={[currentStyles.badgeText, { color: '#EF4444' }]}>
+                    <Text style={[currentStyles.badgeText, { color: '#FF6B6B' }]}>
                       {t('common.incorrect')}
                     </Text>
                   </View>
@@ -286,7 +286,7 @@ const QuizReviewScreen: React.FC = () => {
                     <Text
                       style={[
                         currentStyles.badgeText,
-                        { color: ua.is_correct ? '#10B981' : '#EF4444' },
+                        { color: ua.is_correct ? '#10B981' : '#FF6B6B' },
                       ]}
                     >
                       {isDescriptive && ua.descriptive_feedback?.coverage_percentage !== undefined
@@ -322,12 +322,12 @@ const QuizReviewScreen: React.FC = () => {
                             gap: 6,
                           }}
                         >
-                          <Ionicons name="person-outline" size={14} color="#EF4444" />
+                          <Ionicons name="person-outline" size={14} color="#FF6B6B" />
                           <Text
                             style={{
                               ...typography('label'),
                               ...fontWeight('700'),
-                              color: '#EF4444',
+                              color: '#FF6B6B',
                               textTransform: 'uppercase' as any,
                             }}
                           >
@@ -531,7 +531,7 @@ const QuizReviewScreen: React.FC = () => {
                                 <Ionicons
                                   name="close-circle"
                                   size={18}
-                                  color="#EF4444"
+                                  color="#FF6B6B"
                                   style={{ marginTop: 1 }}
                                 />
                                 <View style={{ flex: 1 }}>
@@ -539,7 +539,7 @@ const QuizReviewScreen: React.FC = () => {
                                     style={{
                                       ...typography('label'),
                                       ...fontWeight('700'),
-                                      color: '#EF4444',
+                                      color: '#FF6B6B',
                                       marginBottom: 2,
                                       textAlign: common.textAlign as any,
                                     }}
@@ -681,7 +681,7 @@ const QuizReviewScreen: React.FC = () => {
                           {isAnswerCorrect ? (
                             <Ionicons name="checkmark-circle" size={24} color="#10B981" />
                           ) : isSelected && !ua.is_correct ? (
-                            <Ionicons name="close" size={24} color="#EF4444" />
+                            <Ionicons name="close" size={24} color="#FF6B6B" />
                           ) : null}
                         </View>
                       </View>
@@ -870,7 +870,7 @@ const styles = (
     },
     optionIncorrect: {
       backgroundColor: '#FEF2F2',
-      borderColor: '#EF4444',
+      borderColor: '#FF6B6B',
       opacity: 1,
       borderWidth: 2,
     },
@@ -888,7 +888,7 @@ const styles = (
       backgroundColor: '#10B981',
     },
     optionLetterCircleIncorrect: {
-      backgroundColor: '#EF4444',
+      backgroundColor: '#FF6B6B',
     },
     optionLetter: {
       ...fontWeight('900'),

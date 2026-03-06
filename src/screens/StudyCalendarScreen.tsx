@@ -511,7 +511,7 @@ const styles = (
     },
     removeButtonText: {
       ...typography('label'),
-      color: theme.colors.error || '#EF4444',
+      color: theme.colors.error || '#FF6B6B',
       ...fontWeight('600'),
     },
     addButton: {
