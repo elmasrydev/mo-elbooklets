@@ -241,7 +241,12 @@ const StudyLessonScreen: React.FC = () => {
             >
               <Ionicons name="newspaper-outline" size={20} color={theme.colors.primary} />
             </View>
-            <Text style={currentStyles.sectionTitle}> {t('study_lesson.summary')} </Text>
+            <Text
+              style={[currentStyles.sectionTitle, { color: theme.colors.primary, fontSize: 24 }]}
+            >
+              {' '}
+              {t('study_lesson.summary')}
+            </Text>
           </View>
           {currentLesson.summary ? (
             <Text style={currentStyles.summaryText}> {currentLesson.summary} </Text>
