@@ -156,6 +156,35 @@ const QuizSettingsScreen: React.FC = () => {
           </View>
         )}
 
+        <View style={currentStyles.additionalSettingsContainer}>
+          <View style={currentStyles.settingRow}>
+            <View style={currentStyles.settingInfo}>
+              <Ionicons
+                name="timer-outline"
+                size={20}
+                color={theme.colors.textSecondary}
+                style={currentStyles.settingIcon}
+              />
+              <Text style={currentStyles.settingLabel}>{t('quiz_lessons.timed_mode')}</Text>
+            </View>
+            <TouchableOpacity
+              style={[
+                currentStyles.toggleTrack,
+                timedMode ? currentStyles.toggleTrackActive : currentStyles.toggleTrackInactive,
+              ]}
+              onPress={() => setTimedMode(!timedMode)}
+              activeOpacity={0.8}
+            >
+              <View
+                style={[
+                  currentStyles.toggleThumb,
+                  timedMode ? currentStyles.toggleThumbActive : currentStyles.toggleThumbInactive,
+                ]}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+
         <View style={currentStyles.sectionContainer}>
           <Text style={currentStyles.sectionTitle}>{t('quiz_lessons.select_quiz_type')}</Text>
           <View style={currentStyles.optionsContainer}>
@@ -192,35 +221,6 @@ const QuizSettingsScreen: React.FC = () => {
                 </TouchableOpacity>
               );
             })}
-          </View>
-        </View>
-
-        <View style={currentStyles.additionalSettingsContainer}>
-          <View style={currentStyles.settingRow}>
-            <View style={currentStyles.settingInfo}>
-              <Ionicons
-                name="timer-outline"
-                size={20}
-                color={theme.colors.textSecondary}
-                style={currentStyles.settingIcon}
-              />
-              <Text style={currentStyles.settingLabel}>{t('quiz_lessons.timed_mode')}</Text>
-            </View>
-            <TouchableOpacity
-              style={[
-                currentStyles.toggleTrack,
-                timedMode ? currentStyles.toggleTrackActive : currentStyles.toggleTrackInactive,
-              ]}
-              onPress={() => setTimedMode(!timedMode)}
-              activeOpacity={0.8}
-            >
-              <View
-                style={[
-                  currentStyles.toggleThumb,
-                  timedMode ? currentStyles.toggleThumbActive : currentStyles.toggleThumbInactive,
-                ]}
-              />
-            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
@@ -436,10 +436,8 @@ const styles = (
       backgroundColor: '#FFF',
     },
     additionalSettingsContainer: {
-      borderTopWidth: 1,
-      borderTopColor: theme.colors.border,
-      paddingTop: spacing.lg,
-      marginBottom: spacing.xl,
+      paddingTop: spacing.sm,
+      marginBottom: spacing.lg,
     },
     settingRow: {
       flexDirection: 'row',
