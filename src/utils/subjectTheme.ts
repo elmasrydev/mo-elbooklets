@@ -17,8 +17,8 @@ export const getSubjectConfig = (subjectName: string, theme: any): SubjectThemeC
       localIcon: require('../../assets/images/MathIcon.png'),
       localIconGrey: require('../../assets/images/MathIconGrey.png'),
       icon: 'calculator-outline',
-      color: '#EA580C',
-      bg: '#FFEDD5',
+      color: '#EF4444',
+      bg: '#EF4444',
     };
   }
   // Science: Green theme
@@ -28,17 +28,17 @@ export const getSubjectConfig = (subjectName: string, theme: any): SubjectThemeC
       localIconGrey: require('../../assets/images/scienceIconGrey.png'),
       icon: 'flask-outline',
       color: '#10B981',
-      bg: '#D1FAE5',
+      bg: '#10B981',
     };
   }
   // History
   if (name.includes('history') || name.includes('تاريخ')) {
     return {
-      localIcon: require('../../assets/images/historyIcon.png'),
-      localIconGrey: require('../../assets/images/historyIconGrey.png'),
-      icon: 'time-outline',
-      color: '#D97706',
-      bg: '#FEF3C7',
+      localIcon: require('../../assets/images/GeoIcon.png'),
+      localIconGrey: require('../../assets/images/GeoIconGrey.png'),
+      icon: 'earth-outline',
+      color: '#F59E0B',
+      bg: '#F59E0B',
     };
   }
   // Geography
@@ -47,8 +47,8 @@ export const getSubjectConfig = (subjectName: string, theme: any): SubjectThemeC
       localIcon: require('../../assets/images/GeoIcon.png'),
       localIconGrey: require('../../assets/images/GeoIconGrey.png'),
       icon: 'earth-outline',
-      color: '#06B6D4',
-      bg: '#CFFAFE',
+      color: '#F59E0B',
+      bg: '#F59E0B',
     };
   }
   // Arabic: Indigo/Purple
@@ -57,8 +57,8 @@ export const getSubjectConfig = (subjectName: string, theme: any): SubjectThemeC
       localIcon: require('../../assets/images/ArIcon.png'),
       localIconGrey: require('../../assets/images/arIconGrey.png'),
       icon: 'globe-outline',
-      color: '#4F46E5',
-      bg: '#E0E7FF',
+      color: '#3B82F6',
+      bg: '#3B82F6',
     };
   }
   // English: Blue
@@ -67,8 +67,8 @@ export const getSubjectConfig = (subjectName: string, theme: any): SubjectThemeC
       localIcon: require('../../assets/images/EnIcon.png'),
       localIconGrey: require('../../assets/images/EnIconGrey.png'),
       icon: 'text-outline',
-      color: '#2563EB',
-      bg: '#DBEAFE',
+      color: '#1E3A8A',
+      bg: '#1E3A8A',
     };
   }
 

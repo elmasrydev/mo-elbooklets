@@ -23,7 +23,6 @@ const SubjectIcon: React.FC<SubjectIconProps> = ({ subjectName, size = 56, style
           width: size,
           height: size,
           borderRadius: size * 0.2, // proportional border radius
-          backgroundColor: config.bg,
         },
         style,
       ]}
@@ -34,14 +33,15 @@ const SubjectIcon: React.FC<SubjectIconProps> = ({ subjectName, size = 56, style
           style={[
             styles.subjectIcon,
             {
-              width: size * 0.48,
-              height: size * 0.48,
+              width: size,
+              height: size,
+              borderRadius: size * 0.2,
             },
             iconStyle,
           ]}
         />
       ) : (
-        <Ionicons name={config.icon as any} size={size * 0.48} color={config.color} />
+        <Ionicons name={config.icon as any} size={size * 0.6} color={config.color} />
       )}
     </View>
   );

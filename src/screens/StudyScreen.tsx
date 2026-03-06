@@ -199,21 +199,13 @@ const StudyScreen: React.FC = () => {
                   </Text>
                 </View>
 
-                {/* Right Subject Icon as Watermark */}
-                {config.localIconGrey ? (
-                  <Image
-                    source={config.localIconGrey}
-                    style={[currentStyles.watermarkIcon]}
-                    resizeMode="center"
-                  />
-                ) : (
-                  <Ionicons
-                    name={config.icon as any}
-                    size={28}
-                    color={theme.colors.border}
-                    style={currentStyles.watermarkIcon}
-                  />
-                )}
+                {/* Right Chevron Icon */}
+                <Ionicons
+                  name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                  size={20}
+                  color={theme.colors.textTertiary}
+                  style={currentStyles.chevronIcon}
+                />
               </TouchableOpacity>
             );
           })}
@@ -335,10 +327,8 @@ const styles = (
       color: theme.colors.textSecondary,
       textAlign: common.textAlign,
     },
-    watermarkIcon: {
-      opacity: 0.6,
-      width: 20,
-      height: 20,
+    chevronIcon: {
+      opacity: 0.8,
       ...common.marginStart(spacing.sm),
     },
     scrollContentContainer: {
