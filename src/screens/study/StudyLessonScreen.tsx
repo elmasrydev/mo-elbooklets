@@ -21,7 +21,7 @@ import CloseButton from '../../components/navigation/CloseButton';
 import LessonNavBar from '../../components/navigation/LessonNavBar';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import { useTypography } from '../../hooks/useTypography';
-import { textAlign } from '../../lib/rtl';
+import { isRTL, textAlign } from '../../lib/rtl';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -117,7 +117,11 @@ const LessonVideoPlayer: React.FC<{ url: string; theme: any; spacing: any; borde
             onPress={() => handleSkip(-10)}
             style={currentVideoStyles.controlButton}
           >
-            <Ionicons name="play-back" size={24} color={theme.colors.textOnDark} />
+            <Ionicons
+              name={isRTL() ? 'play-forward' : 'play-back'}
+              size={24}
+              color={theme.colors.textOnDark}
+            />
           </TouchableOpacity>
           <TouchableOpacity onPress={handlePlayPause} style={currentVideoStyles.playButton}>
             <Ionicons
@@ -127,7 +131,11 @@ const LessonVideoPlayer: React.FC<{ url: string; theme: any; spacing: any; borde
             />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => handleSkip(10)} style={currentVideoStyles.controlButton}>
-            <Ionicons name="play-forward" size={24} color={theme.colors.textOnDark} />
+            <Ionicons
+              name={isRTL() ? 'play-back' : 'play-forward'}
+              size={24}
+              color={theme.colors.textOnDark}
+            />
           </TouchableOpacity>
         </View>
         <TouchableOpacity
@@ -270,7 +278,7 @@ const StudyLessonScreen: React.FC = () => {
                           { backgroundColor: theme.colors.primary },
                         ]}
                       >
-                        <Ionicons name="bookmark" size={12} color={theme.colors.textOnDark} />
+                        <Ionicons name="bookmark" size={13} color={theme.colors.textOnDark} />
                       </View>
                       <Text style={currentStyles.pointText}> {point.title} </Text>
                       {point.explanation && (
@@ -388,7 +396,7 @@ const styles = (
       ...layout.shadow,
     },
     sectionHeader: {
-      flexDirection: isRTL ? 'row-reverse' : 'row',
+      flexDirection: 'row',
       alignItems: 'center',
       marginBottom: spacing.md,
     },
@@ -403,8 +411,8 @@ const styles = (
     sectionTitle: {
       ...typography('h3'),
       ...fontWeight('700'),
-      marginLeft: isRTL ? 0 : spacing.sm,
-      marginRight: isRTL ? spacing.sm : 0,
+      marginLeft: spacing.sm,
+      marginRight: spacing.sm,
       color: theme.colors.text,
     },
     videoSection: {
@@ -418,13 +426,13 @@ const styles = (
       ...typography('bodyLarge'),
       lineHeight: 24,
       color: theme.colors.text,
-      textAlign: isRTL ? 'right' : 'left',
+      textAlign: 'left',
     },
     noContentText: {
       ...typography('caption'),
       fontStyle: 'italic',
       color: theme.colors.textSecondary,
-      textAlign: isRTL ? 'right' : 'left',
+      textAlign: 'left',
     },
     pointsList: {
       gap: spacing.sm,
@@ -438,7 +446,7 @@ const styles = (
       borderColor: theme.colors.border,
     },
     pointHeader: {
-      flexDirection: isRTL ? 'row-reverse' : 'row',
+      flexDirection: 'row',
       alignItems: 'center',
     },
     pointBullet: {
@@ -453,10 +461,10 @@ const styles = (
     pointText: {
       flex: 1,
       ...typography('body'),
-      marginLeft: isRTL ? 0 : spacing.sm,
-      marginRight: isRTL ? spacing.sm : 0,
+      marginLeft: spacing.sm,
+      marginRight: 0,
       color: theme.colors.text,
-      textAlign: isRTL ? 'right' : 'left',
+      textAlign: 'left',
       fontWeight: '600',
     },
     explanationContainer: {
@@ -464,15 +472,15 @@ const styles = (
       paddingTop: spacing.sm,
       borderTopWidth: 1,
       borderTopColor: theme.colors.border,
-      marginLeft: isRTL ? 0 : 28,
-      marginRight: isRTL ? 28 : 0,
+      marginLeft: 28,
+      marginRight: 28,
     },
     explanationText: {
       ...typography('caption'),
-      fontSize: 13,
+      fontSize: 15,
       lineHeight: 20,
       color: theme.colors.textSecondary,
-      textAlign: isRTL ? 'right' : 'left',
+      textAlign: 'left',
     },
   });
 
