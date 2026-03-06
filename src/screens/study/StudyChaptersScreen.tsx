@@ -310,8 +310,8 @@ const styles = (
       flexDirection: common.rowDirection,
       alignItems: 'center',
       padding: spacing.md,
-      backgroundColor: theme.colors.surface,
-      borderBottomWidth: 1,
+      backgroundColor: theme.colors.primary + '0D', // Very light tint of primary color
+      borderBottomWidth: 1.5,
       borderBottomColor: theme.colors.border,
     },
     chapterIconContainer: {
