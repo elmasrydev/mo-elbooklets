@@ -23,7 +23,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, Circle, G, Text as SvgText } from 'react-native-svg';
 import RecentActivityCard from '../components/RecentActivityCard';
 import UnifiedHeader from '../components/UnifiedHeader';
-import AnimatedNavbarLogo from '../components/AnimatedNavbarLogo';
+// import AnimatedNavbarLogo from '../components/AnimatedNavbarLogo';
 import { getSubjectConfig } from '../utils/subjectTheme';
 import SubjectIcon from '../components/SubjectIcon';
 
@@ -293,7 +293,15 @@ const HomeScreen: React.FC = () => {
   if (loading && !activitiesData) {
     return (
       <View style={common.container}>
-        <UnifiedHeader title={<AnimatedNavbarLogo isRTL={isRTL} />} />
+        {/* <UnifiedHeader title={<AnimatedNavbarLogo isRTL={isRTL} />} /> */}
+        <UnifiedHeader
+          title={
+            <Image
+              source={require('../../assets/homeLogo.png')}
+              style={{ width: 148, height: 40, resizeMode: 'contain' }}
+            />
+          }
+        />
         <View style={s.loadingCenter}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
@@ -303,7 +311,15 @@ const HomeScreen: React.FC = () => {
 
   return (
     <View style={common.container}>
-      <UnifiedHeader title={<AnimatedNavbarLogo isRTL={isRTL} />} />
+      {/* <UnifiedHeader title={<AnimatedNavbarLogo isRTL={isRTL} />} /> */}
+      <UnifiedHeader
+        title={
+          <Image
+            source={require('../../assets/homeLogo.png')}
+            style={{ width: 148, height: 40, resizeMode: 'contain' }}
+          />
+        }
+      />
 
       <ScrollView
         style={s.scrollFlex}

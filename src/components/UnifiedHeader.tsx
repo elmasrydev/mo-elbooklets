@@ -55,15 +55,21 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
         <TouchableOpacity
           style={currentStyles.iconButton}
           onPress={handleBackPress}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          hitSlop={{ top: 13, bottom: 13, left: 13, right: 13 }}
         >
-          <View style={currentStyles.backButtonBackground}>
-            <Ionicons
-              name={isRTL ? 'arrow-forward' : 'arrow-back'}
-              size={spacing.icon.md}
-              color={theme.colors.headerText}
-            />
-          </View>
+          <Ionicons
+            name={
+              Platform.OS === 'ios'
+                ? isRTL
+                  ? 'chevron-forward'
+                  : 'chevron-back'
+                : isRTL
+                  ? 'arrow-forward'
+                  : 'arrow-back'
+            }
+            size={spacing.icon.xl}
+            color={theme.colors.headerText}
+          />
         </TouchableOpacity>
       );
     }
@@ -217,13 +223,9 @@ const styles = (theme: any, spacing: any, borderRadius: any) =>
       justifyContent: 'center',
       alignItems: 'center',
     },
+    // backButtonBackground removed for native look
     backButtonBackground: {
-      width: 40,
-      height: 40,
-      borderRadius: borderRadius.full,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: theme.colors.headerText + '26',
+      display: 'none',
     },
   });
 

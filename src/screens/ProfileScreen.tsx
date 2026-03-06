@@ -96,7 +96,7 @@ const ProfileScreen: React.FC = () => {
             <Text style={currentStyles.userName}>{user?.name || 'User'}</Text>
             <Text style={currentStyles.userSubtitle}>
               {user?.grade?.name || t('profile_screen.not_specified')}{' '}
-              {user?.grade?.name ? `• International` : ''}
+              {user?.educational_system?.name ? `• ${user.educational_system.name}` : ''}
             </Text>
           </View>
         </View>
