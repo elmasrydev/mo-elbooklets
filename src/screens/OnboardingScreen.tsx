@@ -32,7 +32,7 @@ const OnboardingScreen: React.FC = () => {
           onPress={toggleLanguage}
           style={[
             currentStyles.languageButton,
-            { top: insets.top + spacing.sm, right: spacing.lg },
+            { top: insets.top + spacing.sm, right: spacing.md },
           ]}
         >
           <Ionicons name="language-outline" size={20} color={theme.colors.primary} />
@@ -97,8 +97,8 @@ const styles = (
       position: 'absolute',
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: 12,
-      paddingVertical: 8,
+      paddingHorizontal: 20,
+      paddingVertical: 12,
       borderRadius: 20,
       backgroundColor: theme.colors.card,
       borderWidth: 1,
@@ -108,11 +108,12 @@ const styles = (
       ...layout.shadow,
     },
     languageText: {
-      ...typography('label'),
+      ...typography('bodySmall'),
       ...fontWeight('700'),
       color: theme.colors.primary,
     },
     logo: {
+      marginTop: 20,
       width: 100,
       height: 85,
     },
