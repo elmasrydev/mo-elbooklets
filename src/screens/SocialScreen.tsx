@@ -396,6 +396,7 @@ const SocialScreen: React.FC = () => {
   return (
     <View style={common.container}>
       <UnifiedHeader
+        showBackButton
         title={t('social_screen.header_title')}
         subtitle={t('social_screen.header_subtitle')}
       />
