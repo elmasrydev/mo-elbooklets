@@ -40,7 +40,7 @@ const OnboardingScreen: React.FC = () => {
         </TouchableOpacity>
 
         <Image
-          source={require('../../assets/logo-transparent.png')}
+          source={require('../../assets/transWithSlogan.png')}
           style={currentStyles.logo}
           resizeMode="contain"
         />
@@ -113,9 +113,12 @@ const styles = (
       color: theme.colors.primary,
     },
     logo: {
-      marginTop: 20,
-      width: 100,
-      height: 85,
+      marginTop: 50,
+      marginBottom: -10,
+      // width: 100,
+      // height: 85,
+      height: 80,
+      width: 262,
     },
     bottomContent: {
       paddingHorizontal: layout.screenPadding,
