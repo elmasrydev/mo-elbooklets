@@ -21,7 +21,7 @@ import CloseButton from '../../components/navigation/CloseButton';
 import LessonNavBar from '../../components/navigation/LessonNavBar';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import { useTypography } from '../../hooks/useTypography';
-import { textAlign } from '../../lib/rtl';
+import { isRTL, textAlign } from '../../lib/rtl';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -117,7 +117,11 @@ const LessonVideoPlayer: React.FC<{ url: string; theme: any; spacing: any; borde
             onPress={() => handleSkip(-10)}
             style={currentVideoStyles.controlButton}
           >
-            <Ionicons name="play-back" size={24} color={theme.colors.textOnDark} />
+            <Ionicons
+              name={isRTL() ? 'play-forward' : 'play-back'}
+              size={24}
+              color={theme.colors.textOnDark}
+            />
           </TouchableOpacity>
           <TouchableOpacity onPress={handlePlayPause} style={currentVideoStyles.playButton}>
             <Ionicons
@@ -127,7 +131,11 @@ const LessonVideoPlayer: React.FC<{ url: string; theme: any; spacing: any; borde
             />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => handleSkip(10)} style={currentVideoStyles.controlButton}>
-            <Ionicons name="play-forward" size={24} color={theme.colors.textOnDark} />
+            <Ionicons
+              name={isRTL() ? 'play-back' : 'play-forward'}
+              size={24}
+              color={theme.colors.textOnDark}
+            />
           </TouchableOpacity>
         </View>
         <TouchableOpacity
@@ -151,7 +159,7 @@ const StudyLessonScreen: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { typography } = useTypography();
+  const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
 
   const [currentLesson, setCurrentLesson] = useState<Lesson>(route.params?.lesson);
@@ -163,7 +171,7 @@ const StudyLessonScreen: React.FC = () => {
   const previousLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
   const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
 
-  const currentStyles = styles(theme, isRTL, typography, insets, spacing, borderRadius);
+  const currentStyles = styles(theme, isRTL, typography, fontWeight, insets, spacing, borderRadius);
 
   const togglePoint = (pointId: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -205,8 +213,8 @@ const StudyLessonScreen: React.FC = () => {
         <View style={currentStyles.titleBreadcrumbContainer}>
           <View style={currentStyles.breadcrumbRow}>
             <Ionicons
-              name="folder-open"
-              size={14}
+              name="library"
+              size={20}
               color={theme.colors.primary}
               style={currentStyles.breadcrumbIcon}
             />
@@ -228,10 +236,17 @@ const StudyLessonScreen: React.FC = () => {
 
         <View style={currentStyles.section}>
           <View style={currentStyles.sectionHeader}>
-            <View style={currentStyles.sectionIcon}>
-              <Ionicons name="document-text-outline" size={20} color={theme.colors.primary} />
+            <View
+              style={[currentStyles.sectionIcon, { backgroundColor: theme.colors.primary + '1A' }]}
+            >
+              <Ionicons name="newspaper-outline" size={20} color={theme.colors.primary} />
             </View>
-            <Text style={currentStyles.sectionTitle}> {t('study_lesson.summary')} </Text>
+            <Text
+              style={[currentStyles.sectionTitle, { color: theme.colors.primary, fontSize: 24 }]}
+            >
+              {' '}
+              {t('study_lesson.summary')}
+            </Text>
           </View>
           {currentLesson.summary ? (
             <Text style={currentStyles.summaryText}> {currentLesson.summary} </Text>
@@ -243,9 +258,9 @@ const StudyLessonScreen: React.FC = () => {
         <View style={currentStyles.section}>
           <View style={currentStyles.sectionHeader}>
             <View
-              style={[currentStyles.sectionIcon, { backgroundColor: theme.colors.success + '1A' }]}
+              style={[currentStyles.sectionIcon, { backgroundColor: theme.colors.primary + '1A' }]}
             >
-              <Ionicons name="checkmark-done" size={20} color={theme.colors.success} />
+              <Ionicons name="star-outline" size={20} color={theme.colors.primary} />
             </View>
             <Text style={currentStyles.sectionTitle}> {t('study_lesson.key_points')} </Text>
           </View>
@@ -262,8 +277,13 @@ const StudyLessonScreen: React.FC = () => {
                     activeOpacity={point.explanation ? 0.7 : 1}
                   >
                     <View style={currentStyles.pointHeader}>
-                      <View style={currentStyles.pointBullet}>
-                        <Ionicons name="checkmark" size={12} color={theme.colors.textOnDark} />
+                      <View
+                        style={[
+                          currentStyles.pointBullet,
+                          { backgroundColor: theme.colors.primary },
+                        ]}
+                      >
+                        <Ionicons name="bookmark" size={13} color={theme.colors.textOnDark} />
                       </View>
                       <Text style={currentStyles.pointText}> {point.title} </Text>
                       {point.explanation && (
@@ -288,8 +308,10 @@ const StudyLessonScreen: React.FC = () => {
               {currentLesson.points!.map((point, index) => (
                 <View key={index} style={currentStyles.pointItem}>
                   <View style={currentStyles.pointHeader}>
-                    <View style={currentStyles.pointBullet}>
-                      <Ionicons name="checkmark" size={12} color={theme.colors.textOnDark} />
+                    <View
+                      style={[currentStyles.pointBullet, { backgroundColor: theme.colors.primary }]}
+                    >
+                      <Ionicons name="bookmark" size={12} color={theme.colors.textOnDark} />
                     </View>
                     <Text style={currentStyles.pointText}> {point} </Text>
                   </View>
@@ -317,6 +339,7 @@ const styles = (
   theme: any,
   isRTL: boolean,
   typography: any,
+  fontWeight: any,
   insets: { top: number; bottom: number },
   spacing: any,
   borderRadius: any,
@@ -330,7 +353,7 @@ const styles = (
       marginBottom: spacing.sectionGap,
       alignItems: 'flex-start',
       backgroundColor: theme.colors.card,
-      padding: spacing.mdd,
+      padding: spacing.md,
       borderRadius: borderRadius.xl,
       borderWidth: 1,
       borderColor: theme.colors.border,
@@ -356,7 +379,7 @@ const styles = (
     chapterBadge: {
       ...typography('caption'),
       fontSize: 13,
-      fontWeight: '700',
+      ...fontWeight('700'),
       color: theme.colors.primary,
       textAlign: 'left',
     },
@@ -364,7 +387,7 @@ const styles = (
       ...typography('h3'),
       fontSize: 16,
       lineHeight: 28,
-      fontWeight: '800',
+      ...fontWeight('800'),
       color: theme.colors.text,
       textAlign: 'left',
     },
@@ -378,7 +401,7 @@ const styles = (
       ...layout.shadow,
     },
     sectionHeader: {
-      flexDirection: isRTL ? 'row-reverse' : 'row',
+      flexDirection: 'row',
       alignItems: 'center',
       marginBottom: spacing.md,
     },
@@ -392,9 +415,9 @@ const styles = (
     },
     sectionTitle: {
       ...typography('h3'),
-      fontWeight: '700',
-      marginLeft: isRTL ? 0 : spacing.sm,
-      marginRight: isRTL ? spacing.sm : 0,
+      ...fontWeight('700'),
+      marginLeft: spacing.sm,
+      marginRight: spacing.sm,
       color: theme.colors.text,
     },
     videoSection: {
@@ -408,13 +431,13 @@ const styles = (
       ...typography('bodyLarge'),
       lineHeight: 24,
       color: theme.colors.text,
-      textAlign: isRTL ? 'right' : 'left',
+      textAlign: 'left',
     },
     noContentText: {
       ...typography('caption'),
       fontStyle: 'italic',
       color: theme.colors.textSecondary,
-      textAlign: isRTL ? 'right' : 'left',
+      textAlign: 'left',
     },
     pointsList: {
       gap: spacing.sm,
@@ -428,7 +451,7 @@ const styles = (
       borderColor: theme.colors.border,
     },
     pointHeader: {
-      flexDirection: isRTL ? 'row-reverse' : 'row',
+      flexDirection: 'row',
       alignItems: 'center',
     },
     pointBullet: {
@@ -443,10 +466,10 @@ const styles = (
     pointText: {
       flex: 1,
       ...typography('body'),
-      marginLeft: isRTL ? 0 : spacing.sm,
-      marginRight: isRTL ? spacing.sm : 0,
+      marginLeft: spacing.sm,
+      marginRight: 0,
       color: theme.colors.text,
-      textAlign: isRTL ? 'right' : 'left',
+      textAlign: 'left',
       fontWeight: '600',
     },
     explanationContainer: {
@@ -454,15 +477,15 @@ const styles = (
       paddingTop: spacing.sm,
       borderTopWidth: 1,
       borderTopColor: theme.colors.border,
-      marginLeft: isRTL ? 0 : 28,
-      marginRight: isRTL ? 28 : 0,
+      marginLeft: 28,
+      marginRight: 28,
     },
     explanationText: {
       ...typography('caption'),
-      fontSize: 13,
+      fontSize: 15,
       lineHeight: 20,
       color: theme.colors.textSecondary,
-      textAlign: isRTL ? 'right' : 'left',
+      textAlign: 'left',
     },
   });
 

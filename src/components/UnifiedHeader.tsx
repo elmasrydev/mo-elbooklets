@@ -55,22 +55,28 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
         <TouchableOpacity
           style={currentStyles.iconButton}
           onPress={handleBackPress}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          hitSlop={{ top: 13, bottom: 13, left: 13, right: 13 }}
         >
-          <View style={currentStyles.backButtonBackground}>
-            <Ionicons
-              name={isRTL ? 'arrow-forward' : 'arrow-back'}
-              size={spacing.icon.md}
-              color={theme.colors.headerText}
-            />
-          </View>
+          <Ionicons
+            name={
+              Platform.OS === 'ios'
+                ? isRTL
+                  ? 'chevron-forward'
+                  : 'chevron-back'
+                : isRTL
+                  ? 'arrow-forward'
+                  : 'arrow-back'
+            }
+            size={spacing.icon.xl}
+            color={theme.colors.headerText}
+          />
         </TouchableOpacity>
       );
     }
     return leftContent || null;
   };
 
-  const HEADER_CONTENT_HEIGHT = Platform.OS === 'ios' ? (isModal ? 56 : 49) : isModal ? 66 : 61;
+  const HEADER_CONTENT_HEIGHT = Platform.OS === 'ios' ? (isModal ? 62 : 54) : isModal ? 62 : 57;
 
   const effectiveCenterAlign = centerAlign;
 
@@ -94,7 +100,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
   };
 
   const sidePadding = layout.screenPadding;
-  const headerTop = isModal ? 0 : insets.top;
+  const headerTop = isModal && Platform.OS === 'ios' ? 0 : insets.top;
   const totalHeight = headerTop + HEADER_CONTENT_HEIGHT;
 
   const containerStyle: ViewStyle[] = [
@@ -147,6 +153,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
               alignItems: 'flex-start',
               justifyContent: 'center',
               height: HEADER_CONTENT_HEIGHT,
+              paddingBottom: 4,
             }}
           >
             {renderLeft()}
@@ -157,6 +164,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
               alignItems: 'flex-end',
               justifyContent: 'center',
               height: HEADER_CONTENT_HEIGHT,
+              paddingBottom: 4,
             }}
           >
             {rightContent}
@@ -176,7 +184,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
           height: HEADER_CONTENT_HEIGHT,
         }}
       >
-        <View style={{ justifyContent: 'center', height: HEADER_CONTENT_HEIGHT }}>
+        <View style={{ justifyContent: 'center', height: HEADER_CONTENT_HEIGHT, paddingBottom: 4 }}>
           {' '}
           {renderLeft()}{' '}
         </View>
@@ -195,6 +203,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
               marginLeft: 'auto',
               justifyContent: 'center',
               height: HEADER_CONTENT_HEIGHT,
+              paddingBottom: 4,
             }}
           >
             {rightContent}
@@ -214,14 +223,10 @@ const styles = (theme: any, spacing: any, borderRadius: any) =>
       justifyContent: 'center',
       alignItems: 'center',
     },
+    // backButtonBackground removed for native look
     backButtonBackground: {
-      width: 40,
-      height: 40,
-      borderRadius: borderRadius.full,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: theme.colors.headerText + '26',
+      display: 'none',
     },
   });
 
-export default UnifiedHeader;
+export default React.memo(UnifiedHeader);

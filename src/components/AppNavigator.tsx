@@ -1,62 +1,39 @@
 import React, { useState } from 'react';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
 import SplashScreen from '../screens/SplashScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import TabNavigator from './TabNavigator';
-
 import OnboardingScreen from '../screens/OnboardingScreen';
 
-type AppState = 'splash' | 'onboarding' | 'auth' | 'main';
-type AuthState = 'login' | 'register';
+const RootStack = createNativeStackNavigator();
 
 const AppNavigator: React.FC = () => {
   const { isLoading, isAuthenticated } = useAuth();
-  const [appState, setAppState] = useState<AppState>('splash');
-  const [authState, setAuthState] = useState<AuthState>('login');
+  const [showSplash, setShowSplash] = useState(true);
 
   const handleSplashFinish = (authenticated: boolean) => {
-    setAppState(authenticated ? 'main' : 'onboarding');
+    setShowSplash(false);
   };
 
-  const handleOnboardingGetStarted = () => {
-    setAuthState('register');
-    setAppState('auth');
-  };
-
-  const handleOnboardingLogin = () => {
-    setAuthState('login');
-    setAppState('auth');
-  };
-
-  // Show splash screen while loading or during initial state
-  if (isLoading || appState === 'splash') {
+  // Show splash screen while loading or during initial delay
+  if (isLoading || showSplash) {
     return <SplashScreen onFinish={handleSplashFinish} />;
   }
 
-  // If user is authenticated, show main app
-  if (isAuthenticated) {
-    return <TabNavigator />;
-  }
-
-  // Show onboarding screen
-  if (appState === 'onboarding') {
-    return (
-      <OnboardingScreen onGetStarted={handleOnboardingGetStarted} onLogin={handleOnboardingLogin} />
-    );
-  }
-
-  // Show authentication screens
-  return authState === 'login' ? (
-    <LoginScreen
-      onNavigateToRegister={() => setAuthState('register')}
-      onBack={() => setAppState('onboarding')}
-    />
-  ) : (
-    <RegisterScreen
-      onNavigateToLogin={() => setAuthState('login')}
-      onBack={() => setAppState('onboarding')}
-    />
+  return (
+    <RootStack.Navigator screenOptions={{ headerShown: false }}>
+      {isAuthenticated ? (
+        <RootStack.Screen name="MainTabs" component={TabNavigator} />
+      ) : (
+        <RootStack.Group>
+          <RootStack.Screen name="Onboarding" component={OnboardingScreen} />
+          <RootStack.Screen name="Login" component={LoginScreen} />
+          <RootStack.Screen name="Register" component={RegisterScreen} />
+        </RootStack.Group>
+      )}
+    </RootStack.Navigator>
   );
 };
 

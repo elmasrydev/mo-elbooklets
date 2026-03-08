@@ -4,12 +4,12 @@
     "slug": "mobile-elbooklets",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/logo-icon.png",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash.png",
-      "resizeMode": "contain",
+      "resizeMode": "cover",
       "backgroundColor": "#ffffff"
     },
     "ios": {
@@ -19,7 +19,7 @@
         "ITSAppUsesNonExemptEncryption": false
       },
       "bundleIdentifier": "com.agmryde.app",
-      "buildNumber": "33"
+      "buildNumber": "39"
     },
     "android": {
       "package": "com.elmasrydev.elbooklets",
@@ -34,7 +34,7 @@
       "permissions": ["INTERNET", "ACCESS_NETWORK_STATE"]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/adaptive-icon.png"
     },
     "updates": {
       "url": "https://u.expo.dev/d4dcdf3d-7581-496d-96a9-c5acca79629d",

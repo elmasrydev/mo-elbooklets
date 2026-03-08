@@ -27,8 +27,16 @@ const RTL_SYNC_ATTEMPTED_KEY = 'rtl_sync_attempted';
 
 export default function App() {
   const [fontsLoaded] = useFonts({
-    'Inter': require('./assets/fonts/Inter-Variable.ttf'),
-    'Cairo': require('./assets/fonts/Cairo-Variable.ttf'),
+    Lexend: require('@expo-google-fonts/lexend/400Regular/Lexend_400Regular.ttf'),
+    Cairo: require('./assets/fonts/Cairo-Variable.ttf'),
+    'Lexend-Regular': require('@expo-google-fonts/lexend/400Regular/Lexend_400Regular.ttf'),
+    'Lexend-Medium': require('@expo-google-fonts/lexend/500Medium/Lexend_500Medium.ttf'),
+    'Lexend-SemiBold': require('@expo-google-fonts/lexend/600SemiBold/Lexend_600SemiBold.ttf'),
+    'Lexend-Bold': require('@expo-google-fonts/lexend/700Bold/Lexend_700Bold.ttf'),
+    'Cairo-Regular': require('./assets/fonts/static/Cairo-Regular.ttf'),
+    'Cairo-Medium': require('./assets/fonts/static/Cairo-Medium.ttf'),
+    'Cairo-SemiBold': require('./assets/fonts/static/Cairo-SemiBold.ttf'),
+    'Cairo-Bold': require('./assets/fonts/static/Cairo-Bold.ttf'),
   });
   const [appReady, setAppReady] = useState(false);
   const [initialLanguage, setInitialLanguage] = useState<Language>('en');

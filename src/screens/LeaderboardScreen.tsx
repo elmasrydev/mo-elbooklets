@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,8 +7,9 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Image,
+  FlatList,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
@@ -39,15 +40,13 @@ interface Student {
   rank: number;
 }
 
-const podiumBg = require('../../assets/leaderboard-bg.png');
-
 const LeaderboardScreen: React.FC = () => {
   const { user } = useAuth();
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography } = useTypography();
+  const { typography, fontWeight } = useTypography();
   const navigation = useNavigation<any>();
 
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -75,10 +74,16 @@ const LeaderboardScreen: React.FC = () => {
     if (selectedTab && subjects.length > 0) fetchLeaderboard(selectedTab);
   }, [selectedTab]);
 
+  const lastFetchRef = React.useRef<number>(0);
+  const STALE_MS = 30_000;
+
   useFocusEffect(
     useCallback(() => {
+      const now = Date.now();
+      if (now - lastFetchRef.current < STALE_MS && allLeaderboard.entries.length > 0) return;
+      lastFetchRef.current = now;
       if (selectedTab && subjects.length > 0) fetchLeaderboard(selectedTab);
-    }, [selectedTab, subjects.length]),
+    }, [selectedTab, subjects.length, allLeaderboard]),
   );
 
   const fetchSubjects = async () => {
@@ -153,71 +158,89 @@ const LeaderboardScreen: React.FC = () => {
     }
   };
 
-  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius, typography);
-
-  const renderCurrentUserCard = (userEntry: Student | null) => {
-    if (!userEntry) return null;
-    return (
-      <View style={currentStyles.userStatusCard}>
-        <View style={currentStyles.userStatusHeader}>
-          <View style={currentStyles.userStatusRankBadge}>
-            <Text style={currentStyles.userStatusRankText}>#{userEntry.rank} </Text>
-          </View>
-          <View style={currentStyles.userStatusAvatarContainer}>
-            <Text style={currentStyles.userStatusAvatarText}>
-              {userEntry.name.charAt(0).toUpperCase()}
-            </Text>
-          </View>
-          <View style={currentStyles.userStatusInfo}>
-            <Text style={currentStyles.userStatusName} numberOfLines={1}>
-              {userEntry.name}
-            </Text>
-            <Text style={currentStyles.userStatusPoints}>
-              {userEntry.xp.toLocaleString()} {t('leaderboard_screen.points')}
-            </Text>
-          </View>
-        </View>
-        <View style={currentStyles.userStatusSeparator} />
-        <Text style={currentStyles.userStatusFooter}>
-          {t('leaderboard_screen.your_rank')}: #{userEntry.rank}
-        </Text>
-      </View>
-    );
-  };
+  const currentStyles = useMemo(
+    () => styles(theme, common, fontSizes, spacing, borderRadius, typography, fontWeight),
+    [theme, common, fontSizes, spacing, borderRadius, typography, fontWeight],
+  );
 
   const Podium = ({ top3 }: { top3: Student[] }) => {
     const first = top3.find((s) => s.rank === 1);
     const second = top3.find((s) => s.rank === 2);
     const third = top3.find((s) => s.rank === 3);
 
-    const PodiumStudent = ({ student, rank, style }: any) => {
-      const name = student ? student.name : t('leaderboard_screen.no_student_yet');
-      const points = student
-        ? `${student.xp.toLocaleString()} ${t('leaderboard_screen.points')}`
-        : `- ${t('leaderboard_screen.points')}`;
+    const renderPodiumStudent = (student: Student | undefined, rank: 1 | 2 | 3) => {
+      const name = student
+        ? student.name
+        : t('leaderboard_screen.no_student_yet', { defaultValue: 'No Student' });
+      const points = student ? `${student.xp.toLocaleString()} XP` : `- XP`;
       const avatarUri = student
-        ? `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random&color=fff&size=128`
-        : `https://ui-avatars.com/api/?name=%3F&background=E2E8F0&color=475569&size=128`;
+        ? `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random&color=fff&size=200`
+        : `https://ui-avatars.com/api/?name=%3F&background=E2E8F0&color=475569&size=200`;
+
+      const isFirst = rank === 1;
+      const isSecond = rank === 2;
+
+      const avatarSizeStyle = isFirst
+        ? currentStyles.podiumAvatarLarge
+        : currentStyles.podiumAvatarNormal;
+      const borderStyle = isFirst
+        ? currentStyles.borderGold
+        : isSecond
+          ? currentStyles.borderSilver
+          : currentStyles.borderBronze;
+      const badgeBgStyle = isFirst
+        ? currentStyles.bgGold
+        : isSecond
+          ? currentStyles.bgSilver
+          : currentStyles.bgBronze;
+      const badgeTextStyle = isFirst
+        ? currentStyles.textWhite
+        : isSecond
+          ? currentStyles.textSlate800
+          : currentStyles.textAmber900;
+      const rankLabel = rank === 1 ? '1st' : rank === 2 ? '2nd' : '3rd';
+      const blockStyle = isFirst
+        ? currentStyles.blockFirst
+        : isSecond
+          ? currentStyles.blockSecond
+          : currentStyles.blockThird;
 
       return (
-        <View style={[currentStyles.podiumStudentOverlay, style]}>
-          <View style={[currentStyles.podiumAvatar, rank === 1 && currentStyles.podiumAvatarLarge]}>
-            <Image source={{ uri: avatarUri }} style={currentStyles.avatarImage} />
+        <View style={currentStyles.podiumColumn} key={rank}>
+          <View style={currentStyles.podiumAvatarContainer}>
+            {isFirst && (
+              <View style={currentStyles.crownIconContainer}>
+                <MaterialIcons name="workspace-premium" size={32} color="#EAB308" />
+              </View>
+            )}
+            <View style={[currentStyles.podiumAvatar, avatarSizeStyle, borderStyle]}>
+              <Image source={{ uri: avatarUri }} style={currentStyles.avatarImage} />
+            </View>
+            <View style={[currentStyles.podiumBadge, badgeBgStyle]}>
+              <Text style={[currentStyles.podiumBadgeText, badgeTextStyle]}>{rankLabel}</Text>
+            </View>
           </View>
           <Text style={currentStyles.podiumNameText} numberOfLines={1}>
             {name}
           </Text>
-          <Text style={currentStyles.podiumPointsText}> {points} </Text>
+          <Text style={currentStyles.podiumPointsText}>{points}</Text>
+          <View style={[currentStyles.podiumBlock, blockStyle]}>
+            <MaterialIcons
+              name={isFirst ? 'military-tech' : 'bar-chart'}
+              size={isFirst ? 48 : 24}
+              color={isFirst ? theme.colors.primary + '99' : theme.colors.primary + '66'}
+              style={isFirst ? { transform: [{ scale: 1.1 }] } : {}}
+            />
+          </View>
         </View>
       );
     };
 
     return (
       <View style={currentStyles.podiumWrapper}>
-        <Image source={podiumBg} style={currentStyles.podiumBackgroundImage} resizeMode="contain" />
-        <PodiumStudent student={second} rank={2} style={currentStyles.podiumPosSecond} />
-        <PodiumStudent student={first} rank={1} style={currentStyles.podiumPosFirst} />
-        <PodiumStudent student={third} rank={3} style={currentStyles.podiumPosThird} />
+        {renderPodiumStudent(second, 2)}
+        {renderPodiumStudent(first, 1)}
+        {renderPodiumStudent(third, 3)}
       </View>
     );
   };
@@ -225,23 +248,23 @@ const LeaderboardScreen: React.FC = () => {
   const renderLeaderboardContent = () => {
     if (leaderboardLoading)
       return (
-        <View style={currentStyles.loadingState}>
+        <View style={currentStyles.stateContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={currentStyles.loadingText}>
-            {t('leaderboard_screen.loading_leaderboard')}
+          <Text style={currentStyles.stateText}>
+            {t('leaderboard_screen.loading_leaderboard', {
+              defaultValue: 'Loading leaderboard...',
+            })}
           </Text>
         </View>
       );
 
     if (leaderboardError)
       return (
-        <View style={currentStyles.emptyState}>
+        <View style={currentStyles.stateContainer}>
           <Ionicons name="alert-circle-outline" size={spacing.icon.xl} color={theme.colors.error} />
-          <Text style={currentStyles.emptyStateTitle}>
-            {t('leaderboard_screen.error_loading_leaderboard')}
-          </Text>
+          <Text style={currentStyles.stateTitle}>{leaderboardError}</Text>
           <AppButton
-            title={t('home_screen.try_again')}
+            title={t('common.try_again', { defaultValue: 'Try Again' })}
             onPress={() => fetchLeaderboard(selectedTab)}
             size="sm"
             fullWidth={false}
@@ -256,15 +279,15 @@ const LeaderboardScreen: React.FC = () => {
 
     if (leaderboard.entries.length === 0)
       return (
-        <View style={currentStyles.emptyState}>
+        <View style={currentStyles.stateContainer}>
           <Ionicons
             name="trophy-outline"
             size={spacing.icon.xl}
             color={theme.colors.textTertiary}
             style={{ opacity: 0.5 }}
           />
-          <Text style={currentStyles.emptyStateTitle}>
-            {t('leaderboard_screen.no_rankings_yet')}
+          <Text style={currentStyles.stateTitle}>
+            {t('leaderboard_screen.no_rankings_yet', { defaultValue: 'No rankings yet.' })}
           </Text>
         </View>
       );
@@ -272,59 +295,84 @@ const LeaderboardScreen: React.FC = () => {
     const top3 = leaderboard.entries.filter((s) => s.rank <= 3);
     const rest = leaderboard.entries.filter((s) => s.rank > 3);
 
-    return (
-      <>
-        {renderCurrentUserCard(leaderboard.userEntry)}
-        <Podium top3={top3} />
+    // Ensure userEntry is in the list if they are ranked but not returned in the limit
+    const isUserInList = leaderboard.entries.some((s) => s.id === leaderboard.userEntry?.id);
+    if (!isUserInList && leaderboard.userEntry && leaderboard.userEntry.rank > 3) {
+      rest.push(leaderboard.userEntry);
+      rest.sort((a, b) => a.rank - b.rank);
+    }
 
-        {rest.length > 0 ? (
-          <View style={currentStyles.listCard}>
-            {rest.map((student, index) => (
-              <View
-                key={student.id}
-                style={[
-                  currentStyles.listItem,
-                  index === rest.length - 1 && { borderBottomWidth: 0 },
-                ]}
-              >
-                <View style={currentStyles.listItemLeft}>
-                  <Text style={currentStyles.listItemRank}>#{student.rank} </Text>
-                  <View style={currentStyles.listItemAvatar}>
-                    <Image
-                      source={{
-                        uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=E2E8F0&color=475569&size=64`,
-                      }}
-                      style={currentStyles.avatarImageSmall}
-                    />
+    return (
+      <FlatList
+        data={rest}
+        keyExtractor={(item) => item.id}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={currentStyles.leaderboardContentContainer}
+        ListHeaderComponent={
+          <View style={{ paddingTop: 30 }}>
+            <Podium top3={top3} />
+          </View>
+        }
+        renderItem={({ item }) => {
+          const isCurrentUser = leaderboard.userEntry?.id === item.id;
+          const avatarUri = `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}&background=E2E8F0&color=475569&size=100`;
+
+          if (isCurrentUser) {
+            return (
+              <View style={currentStyles.currentUserCard}>
+                <View style={currentStyles.currentUserLeft}>
+                  <Text style={currentStyles.currentUserRankBadge}>{item.rank}</Text>
+                  <View style={currentStyles.currentUserAvatarContainer}>
+                    <Image source={{ uri: avatarUri }} style={currentStyles.avatarImage} />
                   </View>
-                  <Text style={currentStyles.listItemName} numberOfLines={1}>
-                    {student.name}
-                  </Text>
+                  <View style={currentStyles.currentUserInfo}>
+                    <Text style={currentStyles.currentUserName} numberOfLines={1}>
+                      {t('leaderboard_screen.you', { defaultValue: 'You' })} ({item.name})
+                    </Text>
+                    <Text style={currentStyles.currentUserSub}>
+                      {t('leaderboard_screen.current_rank', {
+                        defaultValue: 'Current Rank',
+                      }).toUpperCase()}
+                    </Text>
+                  </View>
                 </View>
-                <Text style={currentStyles.listItemPoints}>
-                  {' '}
-                  {student.xp.toLocaleString()} {t('common.points')}{' '}
+                <Text style={currentStyles.currentUserPoints}>{item.xp.toLocaleString()} XP</Text>
+              </View>
+            );
+          }
+
+          return (
+            <View style={currentStyles.listItemCard}>
+              <View style={currentStyles.listItemLeft}>
+                <Text style={currentStyles.listItemRankText}>{item.rank}</Text>
+                <View style={currentStyles.listItemAvatar}>
+                  <Image source={{ uri: avatarUri }} style={currentStyles.avatarImage} />
+                </View>
+                <Text style={currentStyles.listItemNameText} numberOfLines={1}>
+                  {item.name}
                 </Text>
               </View>
-            ))}
-          </View>
-        ) : (
-          <View
-            style={[currentStyles.listCard, { alignItems: 'center', paddingVertical: spacing.xl }]}
-          >
-            <Text style={{ ...typography('caption'), color: theme.colors.textSecondary }}>
-              {t('leaderboard_screen.no_more_students')}
-            </Text>
-          </View>
-        )}
-      </>
+              <Text style={currentStyles.listItemPointsText}>{item.xp.toLocaleString()} XP</Text>
+            </View>
+          );
+        }}
+        ListEmptyComponent={
+          rest.length === 0 ? (
+            <View style={[currentStyles.stateContainer, { marginTop: spacing.xl }]}>
+              <Text style={{ ...typography('caption'), color: theme.colors.textSecondary }}>
+                {t('leaderboard_screen.no_more_students', { defaultValue: 'No more students' })}
+              </Text>
+            </View>
+          ) : null
+        }
+      />
     );
   };
 
   return (
     <View style={common.container}>
       <UnifiedHeader
-        title={t('leaderboard_screen.header_title')}
+        title={t('leaderboard_screen.header_title', { defaultValue: 'Leaderboard' })}
         showBackButton={true}
         rightContent={
           <TouchableOpacity
@@ -341,52 +389,50 @@ const LeaderboardScreen: React.FC = () => {
       />
 
       <View style={currentStyles.tabBarContainer}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={currentStyles.tabBarContent}
-        >
-          <TouchableOpacity
-            style={[currentStyles.tab, selectedTab === 'all' && currentStyles.tabActive]}
-            onPress={() => setSelectedTab('all')}
+        <View style={currentStyles.tabBarWrapper}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={currentStyles.tabBarContent}
           >
-            <Text
-              style={[
-                currentStyles.tabText,
-                selectedTab === 'all' ? currentStyles.tabTextActive : currentStyles.tabTextInactive,
-              ]}
-            >
-              {t('common.all')}
-            </Text>
-          </TouchableOpacity>
-          {subjects.map((s) => (
             <TouchableOpacity
-              key={s.id}
-              style={[currentStyles.tab, selectedTab === s.id && currentStyles.tabActive]}
-              onPress={() => setSelectedTab(s.id)}
+              style={[currentStyles.tab, selectedTab === 'all' && currentStyles.tabActive]}
+              onPress={() => setSelectedTab('all')}
             >
               <Text
                 style={[
                   currentStyles.tabText,
-                  selectedTab === s.id
+                  selectedTab === 'all'
                     ? currentStyles.tabTextActive
                     : currentStyles.tabTextInactive,
                 ]}
               >
-                {s.name}
+                {t('leaderboard_screen.all_time', { defaultValue: 'All Time' })}
               </Text>
             </TouchableOpacity>
-          ))}
-        </ScrollView>
+            {subjects.map((s) => (
+              <TouchableOpacity
+                key={s.id}
+                style={[currentStyles.tab, selectedTab === s.id && currentStyles.tabActive]}
+                onPress={() => setSelectedTab(s.id)}
+              >
+                <Text
+                  style={[
+                    currentStyles.tabText,
+                    selectedTab === s.id
+                      ? currentStyles.tabTextActive
+                      : currentStyles.tabTextInactive,
+                  ]}
+                >
+                  {s.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
       </View>
 
-      <ScrollView
-        style={currentStyles.content}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={currentStyles.contentContainer}
-      >
-        <View style={currentStyles.leaderboardContainer}> {renderLeaderboardContent()} </View>
-      </ScrollView>
+      <View style={currentStyles.content}>{renderLeaderboardContent()}</View>
     </View>
   );
 };
@@ -398,6 +444,7 @@ const styles = (
   spacing: any,
   borderRadius: any,
   typography: any,
+  fontWeight: any,
 ) =>
   StyleSheet.create({
     refreshButton: {
@@ -408,220 +455,240 @@ const styles = (
       justifyContent: 'center',
       alignItems: 'center',
     },
-    tabBarContainer: { paddingVertical: spacing.md, backgroundColor: theme.colors.background },
-    tabBarContent: { paddingHorizontal: layout.screenPadding, flexDirection: common.rowDirection },
-    tab: {
-      paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.sm,
-      ...common.marginEnd(spacing.xs),
-      borderRadius: borderRadius.lg,
-      backgroundColor: theme.colors.card,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
+    unifiedHeaderExtended: {
+      borderBottomLeftRadius: borderRadius.xl,
+      borderBottomRightRadius: borderRadius.xl,
+      ...layout.shadow,
     },
-    tabActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
-    tabText: { ...typography('label'), fontWeight: '700' },
+    tabBarContainer: {
+      paddingHorizontal: spacing.md,
+      marginTop: spacing.lg,
+      marginBottom: spacing.xs,
+    },
+    tabBarWrapper: {
+      backgroundColor: theme.colors.card,
+      borderRadius: borderRadius.lg,
+      padding: 4,
+      ...layout.shadow,
+    },
+    tabBarContent: { flexGrow: 1, flexDirection: common.rowDirection },
+    tab: {
+      flex: 1,
+      minWidth: 80,
+      alignItems: 'center',
+      paddingVertical: spacing.sm,
+      borderRadius: borderRadius.md,
+      justifyContent: 'center',
+    },
+    tabActive: { backgroundColor: theme.colors.primary, ...layout.shadow },
+    tabText: { ...typography('label'), ...fontWeight('600') },
     tabTextActive: { color: theme.colors.textOnDark },
     tabTextInactive: { color: theme.colors.textSecondary },
     content: { flex: 1 },
-    contentContainer: { paddingBottom: Math.max(common.insets.bottom, spacing.xl) },
-    leaderboardContainer: { paddingHorizontal: layout.screenPadding },
-
-    userStatusCard: {
-      backgroundColor: theme.colors.primary + '1A', // Using 10% opacity of primary
-      borderRadius: borderRadius.xl,
-      padding: spacing.lg,
-      marginBottom: spacing.sectionGap,
-      borderWidth: 1,
-      borderColor: theme.colors.primary + '33', // 20% opacity
-      ...layout.shadow,
-    },
-    userStatusHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    userStatusRankBadge: {
-      backgroundColor: theme.colors.orange,
-      paddingHorizontal: spacing.sm,
-      paddingVertical: spacing.xxs,
-      borderRadius: borderRadius.md,
-      ...common.marginEnd(spacing.md),
-    },
-    userStatusRankText: {
-      color: theme.colors.textOnDark,
-      fontWeight: 'bold',
-      ...typography('h3'),
-    },
-    userStatusAvatarContainer: {
-      width: 50,
-      height: 50,
-      borderRadius: 25,
-      backgroundColor: theme.colors.primary,
-      justifyContent: 'center',
-      alignItems: 'center',
-      ...common.marginEnd(spacing.md),
-    },
-    userStatusAvatarText: {
-      color: theme.colors.textOnDark,
-      ...typography('h2'),
-      fontWeight: '600',
-    },
-    userStatusInfo: {
-      flex: 1,
-    },
-    userStatusName: {
-      ...typography('h3'),
-      fontWeight: 'bold',
-      color: theme.colors.text,
-    },
-    userStatusPoints: {
-      ...typography('caption'),
-      color: theme.colors.textSecondary,
-    },
-    userStatusSeparator: {
-      height: 1,
-      backgroundColor: theme.colors.border,
-      marginVertical: spacing.md,
-    },
-    userStatusFooter: {
-      textAlign: 'center',
-      fontWeight: 'bold',
-      color: theme.colors.text,
-      ...typography('label'),
+    leaderboardContentContainer: {
+      paddingHorizontal: layout.screenPadding,
+      paddingBottom: Math.max(common.insets.bottom, spacing.xl),
     },
 
+    // Podium Styles
     podiumWrapper: {
-      position: 'relative',
-      width: '100%',
-      height: 300,
-      marginTop: spacing.md,
-      marginBottom: spacing.sm,
+      flexDirection: common.rowDirection,
+      alignItems: 'flex-end',
       justifyContent: 'center',
+      gap: spacing.xs,
+      paddingBottom: spacing.lg,
+      marginTop: spacing.xxl,
+    },
+    podiumColumn: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+    },
+    podiumAvatarContainer: {
+      position: 'relative',
+      marginBottom: spacing.sm,
       alignItems: 'center',
     },
-    podiumBackgroundImage: {
-      width: '100%',
-      height: '75%',
+    crownIconContainer: {
       position: 'absolute',
-      bottom: 0,
-    },
-    podiumStudentOverlay: {
-      position: 'absolute',
-      alignItems: 'center',
-      width: 100,
-    },
-    podiumPosFirst: {
-      top: 0,
+      top: -24,
+      alignSelf: 'center',
       zIndex: 10,
     },
-    podiumPosSecond: {
-      top: 45,
-      left: 15,
-    },
-    podiumPosThird: {
-      top: 65,
-      right: 15,
-    },
     podiumAvatar: {
-      width: 60,
-      height: 60,
-      borderRadius: 30,
-      borderWidth: 3,
-      borderColor: theme.colors.orange,
+      borderRadius: 999,
+      borderWidth: 4,
       overflow: 'hidden',
-      marginBottom: spacing.xs,
       backgroundColor: theme.colors.surface,
-    },
-    podiumAvatarLarge: {
-      width: 76,
-      height: 76,
-      borderRadius: 38,
-    },
-    avatarImage: {
-      width: '100%',
-      height: '100%',
-    },
-    podiumNameText: {
-      ...typography('caption'),
-      fontWeight: 'bold',
-      color: theme.colors.text,
-      textAlign: 'center',
-      paddingHorizontal: 4,
-    },
-    podiumPointsText: {
-      ...typography('caption'),
-      fontSize: 10,
-      fontWeight: 'bold',
-      color: theme.colors.textSecondary,
-      textAlign: 'center',
-    },
-
-    listCard: {
-      backgroundColor: theme.colors.card,
-      borderRadius: borderRadius.xl,
-      padding: spacing.md,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
       ...layout.shadow,
     },
-    listItem: {
-      flexDirection: 'row',
+    podiumAvatarNormal: { width: 64, height: 64 },
+    podiumAvatarLarge: { width: 96, height: 96 },
+    avatarImage: { width: '100%', height: '100%' },
+    borderGold: { borderColor: '#FBBF24' },
+    borderSilver: { borderColor: '#CBD5E1' },
+    borderBronze: { borderColor: 'rgba(217, 119, 6, 0.4)' },
+    podiumBadge: {
+      position: 'absolute',
+      bottom: -10,
+      alignSelf: 'center',
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 999,
+      minWidth: 36,
+      alignItems: 'center',
+      justifyContent: 'center',
+      ...layout.shadow,
+    },
+    bgGold: { backgroundColor: '#FBBF24' },
+    bgSilver: { backgroundColor: '#CBD5E1' },
+    bgBronze: { backgroundColor: 'rgba(217, 119, 6, 0.4)' },
+    textWhite: { color: '#FFFFFF' },
+    textSlate800: { color: '#1E293B' },
+    textAmber900: { color: '#78350F' },
+    podiumBadgeText: { fontSize: 10, ...fontWeight('bold') },
+    podiumNameText: {
+      ...typography('caption'),
+      ...fontWeight('bold'),
+      color: theme.colors.text,
+      textAlign: 'center',
+      width: '100%',
+    },
+    podiumPointsText: {
+      fontSize: 10,
+      ...fontWeight('bold'),
+      color: theme.colors.primary,
+      textAlign: 'center',
+    },
+    podiumBlock: {
+      width: '100%',
+      borderTopLeftRadius: borderRadius.lg,
+      borderTopRightRadius: borderRadius.lg,
+      marginTop: spacing.sm,
+      justifyContent: 'flex-end',
+      alignItems: 'center',
+      paddingBottom: spacing.sm,
+    },
+    blockFirst: { height: 128, backgroundColor: theme.colors.primary + '4D' },
+    blockSecond: { height: 80, backgroundColor: theme.colors.primary + '26' },
+    blockThird: { height: 64, backgroundColor: theme.colors.primary + '0D' },
+
+    // List Styles
+    listItemCard: {
+      backgroundColor: theme.colors.card,
+      borderRadius: borderRadius.lg,
+      padding: spacing.md,
+      marginBottom: spacing.sm,
+      flexDirection: common.rowDirection,
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingVertical: spacing.md,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
+      ...layout.shadow,
     },
     listItemLeft: {
-      flexDirection: 'row',
+      flexDirection: common.rowDirection,
       alignItems: 'center',
       flex: 1,
     },
-    listItemRank: {
-      width: 40,
+    listItemRankText: {
+      width: 28,
+      textAlign: 'center',
       ...typography('body'),
-      fontWeight: '600',
-      color: theme.colors.textSecondary,
+      ...fontWeight('bold'),
+      color: theme.colors.textTertiary,
     },
     listItemAvatar: {
       width: 40,
       height: 40,
       borderRadius: 20,
+      backgroundColor: theme.colors.surface,
       overflow: 'hidden',
-      ...common.marginEnd(spacing.md),
+      marginHorizontal: spacing.md,
+      ...layout.shadow,
     },
-    avatarImageSmall: {
-      width: '100%',
-      height: '100%',
-    },
-    listItemName: {
-      ...typography('body'),
-      fontWeight: '600',
-      color: theme.colors.text,
+    listItemNameText: {
       flex: 1,
+      ...typography('caption'),
+      ...fontWeight('700'),
+      color: theme.colors.text,
       textAlign: common.textAlign,
     },
-    listItemPoints: {
-      ...typography('body'),
-      fontWeight: '600',
-      color: theme.colors.text,
+    listItemPointsText: {
+      ...typography('caption'),
+      ...fontWeight('bold'),
+      color: theme.colors.primary,
     },
 
-    loadingText: {
+    // Current User Card
+    currentUserCard: {
+      backgroundColor: theme.colors.primary + '1A',
+      borderWidth: 2,
+      borderColor: theme.colors.primary,
+      borderRadius: borderRadius.lg,
+      padding: spacing.md,
+      marginBottom: spacing.sm,
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      ...layout.shadow,
+    },
+    currentUserLeft: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      flex: 1,
+    },
+    currentUserRankBadge: {
+      width: 28,
+      textAlign: 'center',
+      ...typography('body'),
+      ...fontWeight('black'),
+      color: theme.colors.primary,
+    },
+    currentUserAvatarContainer: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      borderWidth: 2,
+      borderColor: theme.colors.primary,
+      backgroundColor: theme.colors.surface,
+      overflow: 'hidden',
+      marginHorizontal: spacing.md,
+    },
+    currentUserInfo: {
+      flex: 1,
+    },
+    currentUserName: {
+      ...typography('caption'),
+      ...fontWeight('bold'),
+      color: theme.colors.primary,
+      textAlign: common.textAlign,
+    },
+    currentUserSub: {
+      fontSize: 10,
+      ...fontWeight('bold'),
+      color: theme.colors.primary + 'B3',
+      letterSpacing: 0.5,
+      textAlign: common.textAlign,
+    },
+    currentUserPoints: {
+      ...typography('body'),
+      ...fontWeight('black'),
+      color: theme.colors.primary,
+    },
+
+    // Global States
+    stateContainer: {
+      padding: spacing.xl,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: spacing.xxl,
+    },
+    stateText: {
       marginTop: spacing.md,
       ...typography('caption'),
       color: theme.colors.textSecondary,
       textAlign: 'center',
     },
-    loadingState: {
-      padding: spacing.xl,
-      alignItems: 'center',
-    },
-    emptyState: {
-      padding: spacing.xl,
-      alignItems: 'center',
-    },
-    emptyStateTitle: {
+    stateTitle: {
       ...typography('h3'),
       marginTop: spacing.md,
       marginBottom: spacing.sm,

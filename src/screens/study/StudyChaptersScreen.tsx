@@ -183,31 +183,43 @@ const StudyChaptersScreen: React.FC = () => {
             <View style={currentStyles.chapterHeader}>
               <View style={currentStyles.chapterIconContainer}>
                 <Ionicons
-                  name="folder-open-outline"
-                  size={spacing.icon.sm}
+                  name="library-outline"
+                  size={spacing.icon.lg}
                   color={theme.colors.primary}
                 />
               </View>
               <View style={currentStyles.chapterInfo}>
-                <Text style={currentStyles.chapterName}> {chapter.name} </Text>
+                <Text style={currentStyles.chapterName}>{chapter.name} </Text>
                 <Text style={currentStyles.lessonCount}>
                   {chapter.lessons.length} {t('study_chapters.lessons')}
                 </Text>
               </View>
             </View>
             <View style={currentStyles.lessonsContainer}>
-              {chapter.lessons.map((lesson) => (
+              {chapter.lessons.map((lesson, index) => (
                 <TouchableOpacity
                   key={lesson.id}
                   style={currentStyles.lessonItem}
                   onPress={() => handleLessonPress(lesson)}
                   activeOpacity={0.7}
                 >
-                  <View style={currentStyles.lessonIconContainer}>
+                  <View
+                    style={[
+                      currentStyles.lessonIconContainer,
+                      {
+                        backgroundColor: theme.colors.primary + '0D', // 5% opacity
+                        width: 32,
+                        height: 32,
+                        borderRadius: borderRadius.sm,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      },
+                    ]}
+                  >
                     <Ionicons
-                      name="document-text-outline"
+                      name="newspaper-outline"
                       size={spacing.icon.sm}
-                      color={theme.colors.textSecondary}
+                      color={theme.colors.primary}
                     />
                   </View>
                   <View style={currentStyles.lessonInfo}>
@@ -275,7 +287,6 @@ const styles = (
     },
     errorTitle: {
       ...typography('h3'),
-      fontWeight: 'bold',
       marginTop: spacing.md,
       marginBottom: spacing.xs,
       color: theme.colors.text,
@@ -299,13 +310,13 @@ const styles = (
       flexDirection: common.rowDirection,
       alignItems: 'center',
       padding: spacing.md,
-      backgroundColor: theme.colors.surface,
-      borderBottomWidth: 1,
+      backgroundColor: theme.colors.primary + '0D', // Very light tint of primary color
+      borderBottomWidth: 1.5,
       borderBottomColor: theme.colors.border,
     },
     chapterIconContainer: {
-      width: 32,
-      height: 32,
+      width: 38,
+      height: 38,
       borderRadius: borderRadius.full,
       backgroundColor: theme.colors.primary + '1A',
       justifyContent: 'center',
@@ -314,8 +325,7 @@ const styles = (
     },
     chapterInfo: { flex: 1, alignItems: common.alignStart },
     chapterName: {
-      ...typography('body'),
-      fontWeight: 'bold',
+      ...typography('h3'),
       color: theme.colors.text,
       textAlign: common.textAlign,
     },
@@ -337,15 +347,14 @@ const styles = (
     lessonIconContainer: { ...common.marginEnd(spacing.sm) },
     lessonInfo: { flex: 1, alignItems: common.alignStart },
     lessonName: {
-      ...typography('caption'),
-      fontWeight: '600',
+      ...typography('bodySmall'),
+      fontSize: 15,
       color: theme.colors.text,
       textAlign: common.textAlign,
-      fontSize: 13,
     },
     lessonSummary: {
       ...typography('caption'),
-      fontSize: 11,
+      fontSize: 13,
       marginTop: 2,
       color: theme.colors.textSecondary,
       textAlign: common.textAlign,
@@ -353,7 +362,6 @@ const styles = (
     emptyState: { padding: spacing.xl, alignItems: 'center', marginTop: spacing.xl },
     emptyStateTitle: {
       ...typography('h3'),
-      fontWeight: 'bold',
       marginTop: spacing.md,
       marginBottom: spacing.xs,
       color: theme.colors.text,

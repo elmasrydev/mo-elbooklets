@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { ViewStyle, TextStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
@@ -15,77 +16,77 @@ export const useCommonStyles = () => {
   const { typography } = useTypography();
   const insets = useSafeAreaInsets();
 
-  return {
-    ...rtl,
-    textAlign: rtl.textAlign,
-    insets,
-
-    // Main screen container
-    container: {
-      flex: 1,
-      backgroundColor: theme.colors.background,
-    } as ViewStyle,
-
-    headerTextWrapper: {
-      flex: 1,
-      alignItems: rtl.alignStart,
-      justifyContent: 'center',
-    } as ViewStyle,
-
-    headerTitle: {
-      ...typography('h3'), // Screen Title is h3 (20px / semi-Bold 600)
-      color: theme.colors.headerText,
+  return useMemo(
+    () => ({
+      ...rtl,
       textAlign: rtl.textAlign,
-    } as TextStyle,
+      insets,
 
-    headerSubtitle: {
-      ...typography('bodySmall'),
-      color: theme.colors.headerSubtitle,
-      marginTop: spacing.xs,
-      textAlign: rtl.textAlign,
-    } as TextStyle,
+      container: {
+        flex: 1,
+        backgroundColor: theme.colors.background,
+      } as ViewStyle,
 
-    // Content scroll container
-    content: {
-      flex: 1,
-      padding: layout.screenPadding,
-    } as ViewStyle,
+      headerTextWrapper: {
+        flex: 1,
+        alignItems: rtl.alignStart,
+        justifyContent: 'center',
+      } as ViewStyle,
 
-    scrollContentWithTabBar: {
-      paddingBottom: insets.bottom + layout.tabBarContentHeight + spacing.md,
-    } as ViewStyle,
+      headerTitle: {
+        ...typography('h3'),
+        color: theme.colors.headerText,
+        textAlign: rtl.textAlign,
+      } as TextStyle,
 
-    fixedBottomBar: {
-      paddingBottom: Math.max(insets.bottom, spacing.md),
-      paddingHorizontal: layout.screenPadding,
-    } as ViewStyle,
+      headerSubtitle: {
+        ...typography('bodySmall'),
+        color: theme.colors.headerSubtitle,
+        marginTop: spacing.xs,
+        textAlign: rtl.textAlign,
+      } as TextStyle,
 
-    // Standardized Card
-    card: {
-      backgroundColor: theme.colors.card,
-      borderRadius: borderRadius.lg,
-      padding: layout.cardPadding,
-      marginBottom: layout.cardGap,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      ...layout.shadow,
-    } as ViewStyle,
+      content: {
+        flex: 1,
+        padding: layout.screenPadding,
+      } as ViewStyle,
 
-    cardRow: {
-      flexDirection: rtl.rowDirection,
-      alignItems: 'center',
-    } as ViewStyle,
+      scrollContentWithTabBar: {
+        paddingBottom: insets.bottom + layout.tabBarContentHeight + spacing.md,
+      } as ViewStyle,
 
-    text: {
-      textAlign: rtl.textAlign,
-      color: theme.colors.text,
-    } as TextStyle,
+      fixedBottomBar: {
+        paddingBottom: Math.max(insets.bottom, spacing.md),
+        paddingHorizontal: layout.screenPadding,
+      } as ViewStyle,
 
-    sectionTitle: {
-      ...typography('h2'), // Section Header is H2 (24px / Semibold 600)
-      color: theme.colors.text,
-      textAlign: rtl.textAlign,
-      marginBottom: spacing.md,
-    } as TextStyle,
-  };
+      card: {
+        backgroundColor: theme.colors.card,
+        borderRadius: borderRadius.lg,
+        padding: layout.cardPadding,
+        marginBottom: layout.cardGap,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        ...layout.shadow,
+      } as ViewStyle,
+
+      cardRow: {
+        flexDirection: rtl.rowDirection,
+        alignItems: 'center',
+      } as ViewStyle,
+
+      text: {
+        textAlign: rtl.textAlign,
+        color: theme.colors.text,
+      } as TextStyle,
+
+      sectionTitle: {
+        ...typography('h2'),
+        color: theme.colors.text,
+        textAlign: rtl.textAlign,
+        marginBottom: spacing.md,
+      } as TextStyle,
+    }),
+    [theme, spacing, borderRadius, rtl, typography, insets],
+  );
 };

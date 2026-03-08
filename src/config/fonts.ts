@@ -1,18 +1,19 @@
+import { Platform } from 'react-native';
 import { COLORS } from './colors';
 
 /**
  * Font and Typography Configuration for El-Booklets
  *
  * Defines font families, sizes, and styles matching the UI guide.
- * Uses Inter (Latin) and Cairo (Arabic) variable fonts.
+ * Uses Lexend (Latin) and Cairo (Arabic) variable fonts.
  */
 
 // Font family names
 export const fontFamilies = {
-  regular: 'Inter',
-  medium: 'Inter',
-  semiBold: 'Inter',
-  bold: 'Inter',
+  regular: 'Lexend',
+  medium: 'Lexend',
+  semiBold: 'Lexend',
+  bold: 'Lexend',
 
   arabicRegular: 'Cairo',
   arabicMedium: 'Cairo',
@@ -22,7 +23,7 @@ export const fontFamilies = {
 
 // Font weights matching the guide reference
 export const fontWeights = {
-  regular: '400' as const,
+  regular: 'normal' as const,
   medium: '500' as const,
   semiBold: '600' as const,
   bold: '700' as const,
@@ -82,20 +83,44 @@ export const getTextStyle = (style: keyof typeof textStyles, isArabic: boolean =
   const baseStyle = textStyles[style] || textStyles.body;
   const weight = (baseStyle as any).fontWeight || fontWeights.regular;
 
+  // Resolve precise font-family for Android static fonts
+  let resolvedFontFamily = isArabic ? 'Cairo' : 'Lexend';
+  if (Platform.OS === 'android') {
+    if (isArabic) {
+      if (weight === '700' || weight === 'bold') resolvedFontFamily = 'Cairo-Bold';
+      else if (weight === '600') resolvedFontFamily = 'Cairo-SemiBold';
+      else if (weight === '500') resolvedFontFamily = 'Cairo-Medium';
+      else resolvedFontFamily = 'Cairo-Regular';
+    } else {
+      if (weight === '700' || weight === 'bold') resolvedFontFamily = 'Lexend-Bold';
+      else if (weight === '600') resolvedFontFamily = 'Lexend-SemiBold';
+      else if (weight === '500') resolvedFontFamily = 'Lexend-Medium';
+      else resolvedFontFamily = 'Lexend-Regular';
+    }
+  }
+
+  // Keep the fontWeight value on Android alongside the weight-specific fontFamily.
+  // Setting undefined strips the weight and causes bold fonts to render as normal.
+  const resolvedWeight = weight;
+
   if (isArabic) {
     return {
       ...baseStyle,
-      fontFamily: 'Cairo',
+      fontFamily: resolvedFontFamily,
+      fontWeight: resolvedWeight,
       // Decrease size by 2px as requested
-      fontSize: baseStyle.fontSize - 1.5,
+      fontSize: baseStyle.fontSize - 1.6,
       // Adjust line height
-      lineHeight: baseStyle.lineHeight ? Math.round(baseStyle.lineHeight * 1.15) : undefined,
+      lineHeight: (baseStyle as any).lineHeight
+        ? Math.round((baseStyle as any).lineHeight * 1.15)
+        : undefined,
     };
   }
 
   return {
     ...baseStyle,
-    fontFamily: 'Inter',
+    fontFamily: resolvedFontFamily,
+    fontWeight: resolvedWeight,
     lineHeight: Math.round(baseStyle.fontSize * 1.5),
   };
 };

@@ -29,12 +29,12 @@ export const layout = {
   shadow: Platform.select({
     ios: {
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.07,
+      shadowRadius: 3,
     },
     android: {
-      elevation: 3,
+      elevation: 2,
     },
   }),
 } as const;

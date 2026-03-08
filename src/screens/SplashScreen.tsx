@@ -1,8 +1,12 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Image } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Image, Dimensions } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { useTypography } from '../hooks/useTypography';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const LOGO_WIDTH = SCREEN_WIDTH * 0.8;
+const LOGO_ASPECT_RATIO = 768 / 1376; // splash-logo.png native ratio
+const LOGO_HEIGHT = LOGO_WIDTH / LOGO_ASPECT_RATIO;
 
 interface SplashScreenProps {
   onFinish: (isAuthenticated: boolean) => void;
@@ -11,86 +15,58 @@ interface SplashScreenProps {
 const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   const { isLoading, isAuthenticated } = useAuth();
   const { theme } = useTheme();
-  const { typography } = useTypography();
 
   useEffect(() => {
     if (!isLoading) {
       const timer = setTimeout(() => {
         onFinish(isAuthenticated);
-      }, 800); // Reduced to 3s for better UX while keeping it visible
+      }, 2500);
 
       return () => clearTimeout(timer);
     }
   }, [isLoading, isAuthenticated, onFinish]);
 
-  const currentStyles = styles(theme, typography);
-
   return (
-    <View style={currentStyles.container}>
-      {/* 1. Full-screen Background Image */}
+    <View style={styles.container}>
+      {/* Full-screen background */}
       <Image
-        source={require('../../assets/splash-bg-default.png')}
-        style={StyleSheet.absoluteFillObject}
+        source={require('../../assets/new-splash-bg.png')}
+        style={styles.background}
         resizeMode="cover"
       />
 
-      {/* 2. Centered Logo Overlay */}
-      <View style={currentStyles.logoOverlayContainer}>
-        <Image
-          source={require('../../assets/splash-logo.png')}
-          style={currentStyles.logo}
-          resizeMode="contain"
-        />
-      </View>
+      {/* Centered splash logo */}
+      <Image
+        source={require('../../assets/splash-logo.png')}
+        style={styles.logo}
+        resizeMode="contain"
+      />
 
-      {/* 3. Loading Indicator & Info */}
-      <View style={currentStyles.content}>
-        <ActivityIndicator size="large" color={theme.colors.primary} style={currentStyles.loader} />
-        <Text style={currentStyles.loadingText}> Loading...</Text>
-      </View>
-
-      {/* 4. Optional: Re-add footer if needed, but keeping it clean for now */}
+      {/* Loading indicator at the bottom */}
+      <ActivityIndicator size="large" color={theme.colors.primary} style={styles.loader} />
     </View>
   );
 };
 
-const styles = (theme: any, typography: any) =>
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    logoOverlayContainer: {
-      width: '150%',
-      aspectRatio: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: 'transparent',
-    },
-    logo: {
-      width: '100%',
-      height: '100%',
-      backgroundColor: 'transparent',
-    },
-    content: {
-      position: 'absolute',
-      bottom: 100,
-      alignItems: 'center',
-    },
-    loader: {
-      marginVertical: 15,
-    },
-    loadingText: {
-      ...typography('body'),
-      color: theme.colors.textSecondary,
-      fontWeight: '600',
-      backgroundColor: 'rgba(255, 255, 255, 0.6)',
-      paddingHorizontal: 12,
-      paddingVertical: 4,
-      borderRadius: 12,
-      overflow: 'hidden',
-    },
-  });
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  background: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
+  },
+  logo: {
+    width: LOGO_WIDTH,
+    height: LOGO_HEIGHT,
+  },
+  loader: {
+    position: 'absolute',
+    bottom: 80,
+  },
+});
 
 export default SplashScreen;

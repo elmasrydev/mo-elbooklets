@@ -33,53 +33,55 @@ interface QuizCompletionCardProps {
   isCurrentUser?: boolean;
 }
 
-const ConfettiPiece: React.FC<{ delay: number; color: string }> = ({ delay, color }) => {
-  const translateY = useRef(new Animated.Value(0)).current;
-  const translateX = useRef(new Animated.Value(0)).current;
-  const opacity = useRef(new Animated.Value(1)).current;
-  const rotate = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(0)).current;
+// Lightweight confetti: 16 pieces (down from 64), 1 animated value each (down from 5)
+const CONFETTI_COLORS = [
+  '#FFD700',
+  '#FF6B6B',
+  '#4ECDC4',
+  '#45B7D1',
+  '#96CEB4',
+  '#ff9ff3',
+  '#feca57',
+  '#5f27cd',
+];
+const CONFETTI_PIECES = CONFETTI_COLORS.flatMap((color, ci) =>
+  [0, 1].map((i) => ({
+    key: `${ci}-${i}`,
+    color,
+    delay: ci * 100 + i * 180,
+    offsetX: -130 + ci * 33 + i * 16,
+    endY: -(50 + (ci % 4) * 30 + i * 40),
+  })),
+);
+
+const ConfettiPiece = React.memo<{
+  delay: number;
+  color: string;
+  offsetX: number;
+  endY: number;
+}>(({ delay, color, offsetX, endY }) => {
+  const anim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    const randomX = (Math.random() - 0.5) * 200;
-    const randomY = -Math.random() * 150 - 50;
-    Animated.loop(
-      Animated.sequence([
-        Animated.delay(delay),
-        Animated.parallel([
-          Animated.timing(translateY, {
-            toValue: randomY,
-            duration: 2000,
-            easing: Easing.out(Easing.cubic),
-            useNativeDriver: true,
-          }),
-          Animated.timing(translateX, {
-            toValue: randomX,
-            duration: 2000,
-            easing: Easing.out(Easing.cubic),
-            useNativeDriver: true,
-          }),
-          Animated.timing(scale, { toValue: 1, duration: 300, useNativeDriver: true }),
-          Animated.timing(rotate, {
-            toValue: Math.random() * 360,
-            duration: 2000,
-            useNativeDriver: true,
-          }),
-          Animated.sequence([
-            Animated.delay(1000),
-            Animated.timing(opacity, { toValue: 0, duration: 1000, useNativeDriver: true }),
-          ]),
-        ]),
-        Animated.parallel([
-          Animated.timing(translateY, { toValue: 0, duration: 0, useNativeDriver: true }),
-          Animated.timing(translateX, { toValue: 0, duration: 0, useNativeDriver: true }),
-          Animated.timing(opacity, { toValue: 1, duration: 0, useNativeDriver: true }),
-          Animated.timing(scale, { toValue: 0, duration: 0, useNativeDriver: true }),
-          Animated.timing(rotate, { toValue: 0, duration: 0, useNativeDriver: true }),
-        ]),
-      ]),
-    ).start();
-  }, [delay]);
+    const driftX = offsetX * 0.4;
+    const run = () => {
+      anim.setValue(0);
+      Animated.timing(anim, {
+        toValue: 1,
+        duration: 2200,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }).start(() => {
+        // Restart after a pause
+        setTimeout(run, delay);
+      });
+    };
+    const initialTimeout = setTimeout(run, delay);
+    return () => clearTimeout(initialTimeout);
+  }, []);
+
+  const driftX = offsetX * 0.4;
+  const rotateDeg = `${(offsetX + 100) * 4}deg`;
 
   return (
     <Animated.View
@@ -87,20 +89,31 @@ const ConfettiPiece: React.FC<{ delay: number; color: string }> = ({ delay, colo
         styles.confettiPiece,
         {
           backgroundColor: color,
+          opacity: anim.interpolate({
+            inputRange: [0, 0.05, 0.6, 1],
+            outputRange: [0, 1, 0.8, 0],
+          }),
           transform: [
-            { translateX },
-            { translateY },
-            { scale },
             {
-              rotate: rotate.interpolate({ inputRange: [0, 360], outputRange: ['0deg', '360deg'] }),
+              translateX: anim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, offsetX + driftX],
+              }),
             },
+            { translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [0, endY] }) },
+            {
+              scale: anim.interpolate({
+                inputRange: [0, 0.05, 0.7, 1],
+                outputRange: [0, 1, 0.8, 0],
+              }),
+            },
+            { rotate: anim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', rotateDeg] }) },
           ],
-          opacity,
         },
       ]}
     />
   );
-};
+});
 
 const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
   item,
@@ -113,22 +126,12 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
   const { language } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography } = useTypography();
+  const { typography, fontWeight } = useTypography();
 
   const scorePercent = Math.round((item.quizData.score / item.quizData.totalQuestions) * 100);
   const color = getScoreColor(scorePercent);
   const xpEarned = Math.round(scorePercent * 1.2);
   const isPerfect = scorePercent >= 95;
-  const confettiColors = [
-    '#FFD700',
-    '#FF6B6B',
-    '#4ECDC4',
-    '#45B7D1',
-    '#96CEB4',
-    '#ff9ff3',
-    '#feca57',
-    '#5f27cd',
-  ];
 
   const getInitials = (name: string) =>
     name
@@ -137,7 +140,15 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
       .join('')
       .toUpperCase()
       .substring(0, 2);
-  const currentStyles = createStyles(theme, common, fontSizes, spacing, borderRadius, typography);
+  const currentStyles = createStyles(
+    theme,
+    common,
+    fontSizes,
+    spacing,
+    borderRadius,
+    typography,
+    fontWeight,
+  );
 
   return (
     <View
@@ -149,11 +160,15 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
     >
       {isPerfect && (
         <View style={currentStyles.confettiContainer}>
-          {confettiColors.map((color, index) =>
-            Array.from({ length: 8 }).map((_, i) => (
-              <ConfettiPiece key={`${index}-${i}`} delay={Math.random() * 1000} color={color} />
-            )),
-          )}
+          {CONFETTI_PIECES.map((p) => (
+            <ConfettiPiece
+              key={p.key}
+              delay={p.delay}
+              color={p.color}
+              offsetX={p.offsetX}
+              endY={p.endY}
+            />
+          ))}
         </View>
       )}
 
@@ -201,7 +216,7 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
                 <Ionicons
                   name={item.isLiked ? 'heart' : 'heart-outline'}
                   size={20}
-                  color={item.isLiked ? '#EF4444' : theme.colors.textSecondary}
+                  color={item.isLiked ? '#FF6B6B' : theme.colors.textSecondary}
                 />
                 <Text
                   style={[currentStyles.actionText, item.isLiked && currentStyles.actionTextLiked]}
@@ -241,6 +256,7 @@ const createStyles = (
   spacing: any,
   borderRadius: any,
   typography: any,
+  fontWeight: any,
 ) =>
   StyleSheet.create({
     cardPerfect: { borderStyle: 'dashed', borderColor: theme.colors.primary, borderWidth: 2 },
@@ -274,15 +290,19 @@ const createStyles = (
       borderWidth: 1,
       borderColor: theme.colors.border,
     },
-    avatarText: { ...typography('caption'), fontWeight: '900', color: theme.colors.textSecondary },
+    avatarText: {
+      ...typography('caption'),
+      ...fontWeight('900'),
+      color: theme.colors.textSecondary,
+    },
     userInfo: { gap: 2, alignItems: common.alignStart, flex: 1 },
     nameRow: { flexDirection: common.rowDirection, alignItems: 'center', gap: 6 },
-    userName: { ...typography('label'), fontWeight: '900', color: theme.colors.text },
+    userName: { ...typography('label'), ...fontWeight('900'), color: theme.colors.text },
     fireEmoji: { fontSize: 16 },
     timeAgo: {
       ...typography('caption'),
       fontSize: 10,
-      fontWeight: '700',
+      ...fontWeight('700'),
       color: theme.colors.textTertiary,
       textTransform: 'uppercase',
       letterSpacing: 0.5,
@@ -298,25 +318,25 @@ const createStyles = (
       minWidth: 60,
       ...common.marginStart(8),
     },
-    xpValue: { ...typography('body'), fontWeight: '900', color: theme.colors.primary },
+    xpValue: { ...typography('body'), ...fontWeight('900'), color: theme.colors.primary },
     xpLabel: {
       ...typography('caption'),
       fontSize: 8,
-      fontWeight: '900',
+      ...fontWeight('900'),
       color: theme.colors.textTertiary,
       textTransform: 'uppercase',
       letterSpacing: 1,
     },
     title: {
       ...typography('h3'),
-      fontWeight: '600',
+      ...fontWeight('600'),
       color: theme.colors.text,
       marginBottom: spacing.sm,
       lineHeight: 24,
     },
     description: {
       ...typography('caption'),
-      fontWeight: '500',
+      ...fontWeight('500'),
       color: theme.colors.textSecondary,
       marginBottom: spacing.lg,
       lineHeight: 20,
@@ -334,10 +354,10 @@ const createStyles = (
     actionText: {
       ...typography('caption'),
       fontSize: 12,
-      fontWeight: '900',
+      ...fontWeight('900'),
       color: theme.colors.textSecondary,
     },
-    actionTextLiked: { color: '#EF4444' },
+    actionTextLiked: { color: '#FF6B6B' },
     reviewButton: {
       backgroundColor: `${theme.colors.primary}15`,
       paddingHorizontal: 16,
@@ -349,7 +369,7 @@ const createStyles = (
     reviewButtonText: {
       ...typography('caption'),
       fontSize: 10,
-      fontWeight: '900',
+      ...fontWeight('900'),
       color: theme.colors.primary,
       textTransform: 'uppercase',
       letterSpacing: 1,
@@ -362,4 +382,4 @@ const styles = StyleSheet.create({
   confettiPiece: { position: 'absolute', width: 8, height: 8, borderRadius: 2 },
 });
 
-export default QuizCompletionCard;
+export default React.memo(QuizCompletionCard);

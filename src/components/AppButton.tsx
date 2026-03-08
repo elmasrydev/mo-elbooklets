@@ -46,7 +46,7 @@ const AppButton: React.FC<AppButtonProps> = ({
   ...props
 }) => {
   const { theme, spacing, borderRadius } = useTheme();
-  const { typography } = useTypography();
+  const { typography, fontWeight } = useTypography();
 
   const getVariantStyles = () => {
     switch (variant) {
@@ -104,7 +104,7 @@ const AppButton: React.FC<AppButtonProps> = ({
       case 'sm':
         return {
           button: { height: 42, paddingHorizontal: spacing.md },
-          text: { ...typography('caption'), fontWeight: '700' },
+          text: { ...typography('caption'), ...fontWeight('700') },
           subtitle: typography('caption'),
         };
       case 'lg':
@@ -116,7 +116,7 @@ const AppButton: React.FC<AppButtonProps> = ({
       case 'md':
       default:
         return {
-          button: { height: 44, paddingHorizontal: spacing.lg },
+          button: { height: 46, paddingHorizontal: spacing.lg },
           text: typography('button'),
           subtitle: typography('label'),
         };
@@ -220,4 +220,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AppButton;
+export default React.memo(AppButton);

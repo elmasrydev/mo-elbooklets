@@ -1,112 +1,142 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import { useLanguage } from '../context/LanguageContext';
 import { useTypography } from '../hooks/useTypography';
 import AppButton from '../components/AppButton';
 import { layout } from '../config/layout';
+import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
+import { useNavigation } from '@react-navigation/native';
 
-interface OnboardingScreenProps {
-  onGetStarted: () => void;
-  onLogin: () => void;
-}
-
-const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted, onLogin }) => {
+const OnboardingScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
   const { t } = useTranslation();
-  const { typography } = useTypography();
+  const { language, setLanguage, isRTL } = useLanguage();
+  const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
+  const { theme, spacing } = useTheme();
 
-  const currentStyles = styles(typography, insets);
+  const currentStyles = styles(typography, fontWeight, insets, isRTL, theme);
+
+  const toggleLanguage = () => {
+    setLanguage(language === 'ar' ? 'en' : 'ar');
+  };
 
   return (
-    <View style={currentStyles.container}>
-      {/* 1. Full-screen Background Image */}
-      <Image
-        source={require('../../assets/onboarding-bg.png')}
-        style={currentStyles.onboardingBg}
-        resizeMode="cover"
-      />
+    <>
+      <View style={currentStyles.container}>
+        {/* 2. Top Header with Logo & Language Switcher */}
+        <TouchableOpacity
+          onPress={toggleLanguage}
+          style={[
+            currentStyles.languageButton,
+            { top: insets.top + spacing.sm, right: spacing.md },
+          ]}
+        >
+          <Ionicons name="language-outline" size={20} color={theme.colors.primary} />
+          <Text style={currentStyles.languageText}>{language === 'ar' ? 'English' : 'عربي'}</Text>
+        </TouchableOpacity>
 
-      <View style={currentStyles.safeArea}>
-        {/* 2. Top Logo Overlay */}
-        <View style={currentStyles.header}>
-          <Image
-            source={require('../../assets/logo-icon.png')}
-            style={currentStyles.logo}
-            resizeMode="contain"
-          />
-        </View>
+        <Image
+          source={require('../../assets/transWithSlogan.png')}
+          style={currentStyles.logo}
+          resizeMode="contain"
+        />
 
-        {/* Spacer to push content to bottom */}
-        <View style={currentStyles.spacer} />
+        <Image
+          source={require('../../assets/onboarding-bg.png')}
+          style={currentStyles.onboardingBg}
+          resizeMode="contain"
+        />
 
         {/* 3. Bottom Content */}
         <View style={currentStyles.bottomContent}>
           <Text style={currentStyles.title}> {t('onboarding.title')} </Text>
           <Text style={currentStyles.subtitle}> {t('onboarding.subtitle')} </Text>
 
-          <AppButton title={t('onboarding.get_started')} onPress={onGetStarted} size="lg" />
+          <AppButton
+            title={t('onboarding.get_started')}
+            onPress={() => navigation.navigate('Register')}
+            size="lg"
+          />
 
           <View style={[currentStyles.footer]}>
             <Text style={currentStyles.footerText}>
               {t('onboarding.already_have_account')}{' '}
-              <Text style={currentStyles.link} onPress={onLogin}>
+              <Text style={currentStyles.link} onPress={() => navigation.navigate('Login')}>
                 {t('onboarding.sign_in')}
               </Text>
             </Text>
           </View>
         </View>
       </View>
-    </View>
+    </>
   );
 };
 
-const styles = (typography: any, insets: { top: number; bottom: number }) =>
+const styles = (
+  typography: any,
+  fontWeight: any,
+  insets: { top: number; bottom: number },
+  isRTL: boolean,
+  theme: any,
+) =>
   StyleSheet.create({
     container: {
       flex: 1,
-    },
-    safeArea: {
-      flex: 1,
+      backgroundColor: theme.colors.background,
+      alignItems: 'center',
       paddingTop: insets.top,
     },
     onboardingBg: {
-      ...StyleSheet.absoluteFillObject,
-      width: '100%',
-      height: '100%',
-      resizeMode: 'cover',
-      zIndex: -1,
+      width: '95%',
     },
-    header: {
+    languageButton: {
+      position: 'absolute',
+      flexDirection: 'row',
       alignItems: 'center',
-      marginTop: 30,
-      paddingHorizontal: layout.screenPadding,
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderRadius: 20,
+      backgroundColor: theme.colors.card,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      gap: 6,
+      zIndex: 10,
+      ...layout.shadow,
+    },
+    languageText: {
+      ...typography('bodySmall'),
+      ...fontWeight('700'),
+      color: theme.colors.primary,
     },
     logo: {
-      zIndex: 1,
-      width: 400,
-      height: 100,
-    },
-    spacer: {
-      flex: 1,
+      marginTop: 50,
+      marginBottom: -10,
+      // width: 100,
+      // height: 85,
+      height: 80,
+      width: 262,
     },
     bottomContent: {
       paddingHorizontal: layout.screenPadding,
-      paddingBottom: Math.max(insets.bottom, 70),
+      paddingBottom: Math.max(insets.bottom, 20),
       alignItems: 'center',
     },
     title: {
       ...typography('h1'),
-      fontWeight: '800',
+      ...fontWeight('800'),
       color: '#0F172A',
       textAlign: 'center',
-      marginBottom: 14,
+      marginBottom: 10,
     },
     subtitle: {
       ...typography('body'),
       color: '#64748B',
       textAlign: 'center',
-      marginBottom: 32,
+      marginBottom: 20,
     },
     footer: {
       marginTop: 25,
@@ -120,7 +150,7 @@ const styles = (typography: any, insets: { top: number; bottom: number }) =>
     link: {
       ...typography('button'),
       color: '#1E3A8A',
-      fontWeight: '700',
+      ...fontWeight('700'),
     },
   });
 

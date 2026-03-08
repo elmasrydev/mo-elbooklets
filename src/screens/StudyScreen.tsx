@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
+  Image,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -21,6 +22,7 @@ import { layout } from '../config/layout';
 import { tryFetchWithFallback } from '../config/api';
 import UnifiedHeader from '../components/UnifiedHeader';
 import AppButton from '../components/AppButton';
+import SubjectIcon from '../components/SubjectIcon';
 
 interface Subject {
   id: string;
@@ -29,26 +31,38 @@ interface Subject {
   chapters: { id: string }[];
 }
 
+const USE_DUMMY_DATA = false; // Flag for testing UI without real API data
+const DUMMY_SUBJECTS: Subject[] = [
+  { id: '1', name: 'Arabic / عربي', description: 'Secondary 1', chapters: [] },
+  { id: '2', name: 'English', description: 'Secondary 1', chapters: [] },
+  { id: '3', name: 'Math / رياضيات', description: 'Secondary 1', chapters: [] },
+  { id: '4', name: 'Science / علوم', description: 'Secondary 1', chapters: [] },
+  { id: '5', name: 'History / تاريخ', description: 'Secondary 1', chapters: [] },
+  { id: '6', name: 'Geography / جغرافيا', description: 'Secondary 1', chapters: [] },
+];
+
 const StudyScreen: React.FC = () => {
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
-  const { typography } = useTypography();
+  const { typography, fontWeight } = useTypography();
   const navigation = useNavigation<any>();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchSubjects();
-  }, []);
+  const lastFetchRef = React.useRef<number>(0);
+  const STALE_MS = 30_000;
 
   useFocusEffect(
     useCallback(() => {
+      const now = Date.now();
+      if (now - lastFetchRef.current < STALE_MS && subjects.length > 0) return;
+      lastFetchRef.current = now;
       fetchSubjects();
-    }, []),
+    }, [subjects.length]),
   );
 
   const fetchSubjects = async (isRefresh = false) => {
@@ -101,18 +115,23 @@ const StudyScreen: React.FC = () => {
     navigation.navigate('StudyChapters', { subject });
   };
 
-  const currentStyles = styles(theme, fontSizes, spacing, borderRadius, common, isRTL, typography);
+  const subjectsToRender = USE_DUMMY_DATA ? DUMMY_SUBJECTS : subjects;
+
+  const currentStyles = useMemo(
+    () => styles(theme, fontSizes, spacing, borderRadius, common, isRTL, typography, fontWeight),
+    [theme, fontSizes, spacing, borderRadius, common, isRTL, typography, fontWeight],
+  );
 
   return (
     <View style={currentStyles.container}>
       <UnifiedHeader title={t('study_screen.header_title')} />
 
-      {loading && subjects.length === 0 ? (
+      {loading && subjectsToRender.length === 0 && !USE_DUMMY_DATA ? (
         <View style={currentStyles.loadingState}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={currentStyles.loadingText}> {t('study_screen.loading_subjects')} </Text>
         </View>
-      ) : error ? (
+      ) : error && !USE_DUMMY_DATA ? (
         <View style={currentStyles.errorState}>
           <Ionicons name="alert-circle-outline" size={spacing.icon.xl} color={theme.colors.error} />
           <Text style={currentStyles.errorStateTitle}>
@@ -126,7 +145,7 @@ const StudyScreen: React.FC = () => {
             fullWidth={false}
           />
         </View>
-      ) : subjects.length === 0 ? (
+      ) : subjectsToRender.length === 0 ? (
         <View style={currentStyles.emptyState}>
           <Ionicons name="book-outline" size={spacing.icon.xl} color={theme.colors.textSecondary} />
           <Text style={currentStyles.emptyStateTitle}>
@@ -139,11 +158,10 @@ const StudyScreen: React.FC = () => {
       ) : (
         <ScrollView
           style={currentStyles.content}
-          contentContainerStyle={{
-            paddingHorizontal: layout.screenPadding,
-            paddingTop: spacing.md,
-            paddingBottom: Math.max(common.insets.bottom, spacing.xl),
-          }}
+          contentContainerStyle={[
+            currentStyles.scrollContentContainer,
+            { paddingBottom: Math.max(common.insets.bottom, spacing.xl) },
+          ]}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -154,7 +172,12 @@ const StudyScreen: React.FC = () => {
             />
           }
         >
-          {subjects.map((subject) => {
+          <View style={currentStyles.pageHeader}>
+            <Text style={currentStyles.pageTitle}>{t('study_screen.page_title')}</Text>
+            <Text style={currentStyles.pageSubtitle}>{t('study_screen.page_subtitle')}</Text>
+          </View>
+
+          {subjectsToRender.map((subject) => {
             const config = getSubjectConfig(subject.name, theme);
             return (
               <TouchableOpacity
@@ -162,25 +185,27 @@ const StudyScreen: React.FC = () => {
                 style={currentStyles.subjectCard}
                 onPress={() => handleSubjectSelect(subject)}
               >
-                <View style={[currentStyles.iconBox, { backgroundColor: config.bg }]}>
-                  <Ionicons name={config.icon as any} size={spacing.icon.lg} color={config.color} />
-                </View>
+                <SubjectIcon
+                  subjectName={subject.name}
+                  size={56}
+                  style={currentStyles.iconBoxOverride}
+                />
 
                 <View style={currentStyles.subjectInfo}>
-                  <Text style={currentStyles.subjectName}> {subject.name} </Text>
+                  <Text style={currentStyles.subjectName}>{subject.name}</Text>
                   <Text style={currentStyles.subjectChapters}>
-                    {subject.chapters?.length || 0} {t('study_screen.chapters')}
+                    {subject.chapters?.length || 0} {t('study_screen.available_booklets')}
                     {subject.description ? ` • ${subject.description}` : ''}
                   </Text>
                 </View>
 
-                <View style={currentStyles.arrowContainer}>
-                  <Ionicons
-                    name={isRTL ? 'chevron-back' : 'chevron-forward'}
-                    size={spacing.icon.md}
-                    color={theme.colors.textTertiary}
-                  />
-                </View>
+                {/* Right Chevron Icon */}
+                <Ionicons
+                  name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                  size={20}
+                  color={theme.colors.textTertiary}
+                  style={currentStyles.chevronIcon}
+                />
               </TouchableOpacity>
             );
           })}
@@ -198,6 +223,7 @@ const styles = (
   common: any,
   isRTL: boolean,
   typography: any,
+  fontWeight: any,
 ) =>
   StyleSheet.create({
     container: {
@@ -254,24 +280,34 @@ const styles = (
       textAlign: 'center',
       color: theme.colors.textSecondary,
     },
+    pageHeader: {
+      marginBottom: spacing.xl,
+      marginTop: spacing.sm,
+    },
+    pageTitle: {
+      ...typography('h1'),
+      ...fontWeight('700'),
+      color: theme.colors.text,
+      marginBottom: spacing.xs,
+      textAlign: common.textAlign,
+    },
+    pageSubtitle: {
+      ...typography('body'),
+      color: theme.colors.textSecondary,
+      textAlign: common.textAlign,
+    },
     subjectCard: {
+      minHeight: 90,
       flexDirection: common.rowDirection,
       alignItems: 'center',
       padding: spacing.md,
-      paddingVertical: spacing.md - 4,
-      marginBottom: spacing.sectionGap,
+      marginBottom: spacing.md,
       backgroundColor: theme.colors.card,
-      borderRadius: borderRadius.xl,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
+      borderRadius: borderRadius.lg || 20,
+      borderWidth: 0,
       ...layout.shadow,
     },
-    iconBox: {
-      width: 56,
-      height: 56,
-      borderRadius: borderRadius.lg,
-      justifyContent: 'center',
-      alignItems: 'center',
+    iconBoxOverride: {
       ...common.marginEnd(spacing.md),
     },
     subjectInfo: {
@@ -280,10 +316,10 @@ const styles = (
       alignItems: common.alignStart,
     },
     subjectName: {
-      ...typography('bodyLarge'),
-      fontWeight: '700',
+      ...typography('h3'),
+      ...fontWeight('700'),
       color: theme.colors.text,
-      marginBottom: spacing.xxs,
+      marginBottom: 2,
       textAlign: common.textAlign,
     },
     subjectChapters: {
@@ -291,10 +327,13 @@ const styles = (
       color: theme.colors.textSecondary,
       textAlign: common.textAlign,
     },
-    arrowContainer: {
-      justifyContent: 'center',
-      alignItems: 'center',
+    chevronIcon: {
+      opacity: 0.8,
       ...common.marginStart(spacing.sm),
+    },
+    scrollContentContainer: {
+      paddingHorizontal: layout.screenPadding,
+      paddingTop: spacing.md,
     },
   });
 

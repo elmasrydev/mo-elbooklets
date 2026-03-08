@@ -41,7 +41,7 @@ const errorLink = onError((errorResponse: any) => {
         err.message.toLowerCase().includes('unauthenticated') ||
         (err.extensions && err.extensions.code === 'UNAUTHENTICATED')
       ) {
-        console.log('Auth error detected, logging out...');
+        if (__DEV__) console.log('Auth error detected, logging out...');
         // Clear stored auth data
         AsyncStorage.removeItem('auth_token');
         AsyncStorage.removeItem('user_data');
@@ -55,7 +55,7 @@ const errorLink = onError((errorResponse: any) => {
   }
   // Also handle 401 network errors
   if (networkError && 'statusCode' in networkError && (networkError as any).statusCode === 401) {
-    console.log('401 error detected, logging out...');
+    if (__DEV__) console.log('401 error detected, logging out...');
     AsyncStorage.removeItem('auth_token');
     AsyncStorage.removeItem('user_data');
     if (logoutHandler) {

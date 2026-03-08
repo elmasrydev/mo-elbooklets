@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { I18nManager, Platform } from 'react-native';
+import { I18nManager, Platform, Image, ImageSourcePropType, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
@@ -10,15 +10,18 @@ import { useTypography } from '../hooks/useTypography';
 import HomeScreen from '../screens/HomeScreen';
 import StudyScreen from '../screens/StudyScreen';
 import QuizScreen from '../screens/QuizScreen';
-import SocialScreen from '../screens/SocialScreen';
 import LeaderboardScreen from '../screens/LeaderboardScreen';
-import MoreScreen from '../screens/MoreScreen';
+import ProfileScreen from '../screens/ProfileScreen';
+import SocialScreen from '../screens/SocialScreen';
 import StudyCalendarScreen from '../screens/StudyCalendarScreen';
 import StudyChaptersScreen from '../screens/study/StudyChaptersScreen';
 import StudyLessonScreen from '../screens/study/StudyLessonScreen';
 import QuizTakingScreen from '../screens/quiz/QuizTakingScreen';
 import QuizReviewScreen from '../screens/quiz/QuizReviewScreen';
 import QuizResultsScreen from '../screens/quiz/QuizResultsScreen';
+import QuizSubjectsScreen from '../screens/quiz/QuizSubjectsScreen';
+import QuizLessonsScreen from '../screens/quiz/QuizLessonsScreen';
+import QuizSettingsScreen from '../screens/quiz/QuizSettingsScreen';
 import { useTranslation } from 'react-i18next';
 
 const Tab = createBottomTabNavigator();
@@ -27,23 +30,41 @@ const Stack = createNativeStackNavigator();
 interface TabIconProps {
   color: string;
   focused: boolean;
-  name: keyof typeof Ionicons.glyphMap;
+  name?: keyof typeof Ionicons.glyphMap;
+  customIcon?: ImageSourcePropType;
 }
 
-const TabIcon: React.FC<TabIconProps> = ({ color, focused, name }) => (
-  <Ionicons
-    style={{ marginBottom: 5 }}
-    name={focused ? name : (`${name}-outline` as any)}
-    size={24}
-    color={color}
-  />
-);
+const TabIcon: React.FC<TabIconProps> = ({ color, focused, name, customIcon }) => {
+  if (customIcon) {
+    return (
+      <Image
+        source={customIcon}
+        style={{
+          width: 26,
+          height: 26,
+          marginBottom: 5,
+          tintColor: color, // applies active/inactive color over the image
+          resizeMode: 'center',
+        }}
+      />
+    );
+  }
+  return (
+    <Ionicons
+      style={{ marginBottom: 5 }}
+      name={focused ? name : (`${name}-outline` as any)}
+      size={24}
+      color={color}
+    />
+  );
+};
 
 interface TabConfig {
   name: string;
   component: React.ComponentType<any>;
   labelKey: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon?: keyof typeof Ionicons.glyphMap;
+  customIcon?: ImageSourcePropType;
 }
 
 const TabScreens: React.FC = () => {
@@ -51,19 +72,40 @@ const TabScreens: React.FC = () => {
   const { isRTL, language } = useLanguage();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { typography } = useTypography();
+  const { typography, fontWeight } = useTypography();
 
-  // Debugging Order
-  useEffect(() => {
-    console.log(`TabNavigator Render: lang=${language}, isRTL=${isRTL}`);
-  }, [language, isRTL]);
-
-  // Define tabs in LTR order (Home -> More)
+  // Define tabs in LTR order (Home -> Profile) — Stitch design layout
   const tabs: TabConfig[] = [
-    { name: 'Home', component: HomeScreen, labelKey: 'common.home', icon: 'home' },
-    { name: 'Study', component: StudyScreen, labelKey: 'common.study', icon: 'grid' },
-    { name: 'Quiz', component: QuizScreen, labelKey: 'common.quiz', icon: 'help-circle' },
-    { name: 'More', component: MoreScreen, labelKey: 'common.more', icon: 'ellipsis-horizontal' },
+    {
+      name: 'Home',
+      component: HomeScreen,
+      labelKey: 'common.home',
+      customIcon: require('../../assets/images/homeTab.png'),
+    },
+    {
+      name: 'Study',
+      component: StudyScreen,
+      labelKey: 'common.study',
+      customIcon: require('../../assets/images/studyTab.png'),
+    },
+    {
+      name: 'Quiz',
+      component: QuizScreen,
+      labelKey: 'common.quiz',
+      customIcon: require('../../assets/images/quizTab.png'),
+    },
+    {
+      name: 'Community',
+      component: SocialScreen,
+      labelKey: 'common.community',
+      customIcon: require('../../assets/images/communityTab.png'),
+    },
+    {
+      name: 'Profile',
+      component: ProfileScreen,
+      labelKey: 'common.profile',
+      customIcon: require('../../assets/images/profileTab.png'),
+    },
   ];
 
   // Hybrid tab ordering:
@@ -83,7 +125,7 @@ const TabScreens: React.FC = () => {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: theme.colors.textTertiary || 'gray',
+        tabBarInactiveTintColor: theme.colors.textTertiary || '#94A3B8',
         tabBarStyle: {
           backgroundColor: theme.colors.surface,
           borderTopWidth: 1,
@@ -91,12 +133,6 @@ const TabScreens: React.FC = () => {
           paddingBottom: Math.max(insets.bottom, 5),
           paddingTop: 5,
           height: tabBarHeight,
-        },
-        tabBarLabelStyle: {
-          ...typography('caption'),
-          fontSize: 12, // Keeping the smaller size for tabs
-          fontWeight: '600',
-          marginTop: -5,
         },
       }}
     >
@@ -106,8 +142,24 @@ const TabScreens: React.FC = () => {
           name={tab.name}
           component={tab.component}
           options={{
-            tabBarLabel: t(tab.labelKey),
-            tabBarIcon: (props) => <TabIcon {...props} name={tab.icon} />,
+            tabBarLabel: ({ focused, color }) => (
+              <Text
+                style={[
+                  typography('caption'),
+                  {
+                    color,
+                    fontSize: 10,
+                    marginTop: -5,
+                  },
+                  fontWeight('700'),
+                ]}
+              >
+                {t(tab.labelKey)}
+              </Text>
+            ),
+            tabBarIcon: (props) => (
+              <TabIcon {...props} name={tab.icon} customIcon={tab.customIcon} />
+            ),
           }}
         />
       ))}
@@ -119,31 +171,21 @@ const TabNavigator: React.FC = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MainTabs" component={TabScreens} />
-      <Stack.Screen name="Social" component={SocialScreen} />
-      <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
-      <Stack.Screen name="StudyCalendar" component={StudyCalendarScreen} />
+      <Stack.Screen name="Social" component={require('../screens/SocialScreen').default} />
       <Stack.Screen
-        name="StudyChapters"
-        component={StudyChaptersScreen}
-        options={{
-          animation: 'slide_from_right',
-        }}
+        name="Leaderboard"
+        component={require('../screens/LeaderboardScreen').default}
       />
+      <Stack.Screen name="StudyCalendar" component={StudyCalendarScreen} />
+      <Stack.Screen name="StudyChapters" component={StudyChaptersScreen} options={{}} />
       <Stack.Screen
         name="StudyLesson"
         component={StudyLessonScreen}
         options={{
           presentation: 'fullScreenModal',
-          animation: 'slide_from_bottom',
         }}
       />
-      <Stack.Screen
-        name="QuizTaking"
-        component={QuizTakingScreen}
-        options={{
-          animation: 'slide_from_right',
-        }}
-      />
+      <Stack.Screen name="QuizTaking" component={QuizTakingScreen} options={{}} />
       <Stack.Screen name="QuizResults" component={QuizResultsScreen as any} options={{}} />
       <Stack.Screen
         name="QuizReview"
@@ -153,6 +195,11 @@ const TabNavigator: React.FC = () => {
           animation: 'slide_from_bottom',
         }}
       />
+      <Stack.Group screenOptions={{ presentation: 'fullScreenModal' }}>
+        <Stack.Screen name="QuizFlowSubjects" component={QuizSubjectsScreen} />
+        <Stack.Screen name="QuizFlowLessons" component={QuizLessonsScreen} />
+        <Stack.Screen name="QuizFlowSettings" component={QuizSettingsScreen} />
+      </Stack.Group>
     </Stack.Navigator>
   );
 };
