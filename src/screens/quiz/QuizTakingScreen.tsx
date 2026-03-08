@@ -7,10 +7,10 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useModal } from '../../context/ModalContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
@@ -55,6 +55,7 @@ const QuizTakingScreen: React.FC = () => {
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
+  const { showConfirm } = useModal();
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
@@ -89,14 +90,14 @@ const QuizTakingScreen: React.FC = () => {
   };
 
   const handleBackPress = () => {
-    Alert.alert(t('quiz_taking.leave_quiz_title'), t('quiz_taking.leave_quiz_message'), [
-      { text: t('quiz_taking.continue_quiz'), style: 'cancel' },
-      {
-        text: t('quiz_taking.leave_quiz'),
-        style: 'destructive',
-        onPress: () => navigation.goBack(),
-      },
-    ]);
+    showConfirm({
+      title: t('quiz_taking.leave_quiz_title'),
+      message: t('quiz_taking.leave_quiz_message'),
+      confirmLabel: t('common.yes'),
+      cancelLabel: t('common.no'),
+      confirmVariant: 'danger',
+      onConfirm: () => navigation.goBack(),
+    });
   };
 
   useEffect(() => {
@@ -184,9 +185,12 @@ const QuizTakingScreen: React.FC = () => {
     const currentQuestion = quiz.questions[currentQuestionIndex];
 
     if (!selectedAnswers[currentQuestion.id] || selectedAnswers[currentQuestion.id].trim() === '') {
-      Alert.alert(t('quiz_taking.answer_required'), t('quiz_taking.select_answer_first'), [
-        { text: t('common.ok') },
-      ]);
+      showConfirm({
+        title: t('quiz_taking.answer_required'),
+        message: t('quiz_taking.select_answer_first'),
+        showCancel: false,
+        onConfirm: () => {},
+      });
       return;
     }
 
@@ -207,9 +211,12 @@ const QuizTakingScreen: React.FC = () => {
     const currentQuestion = quiz.questions[currentQuestionIndex];
 
     if (!selectedAnswers[currentQuestion.id] || selectedAnswers[currentQuestion.id].trim() === '') {
-      Alert.alert(t('quiz_taking.answer_required'), t('quiz_taking.select_answer_last'), [
-        { text: t('common.ok') },
-      ]);
+      showConfirm({
+        title: t('quiz_taking.answer_required'),
+        message: t('quiz_taking.select_answer_last'),
+        showCancel: false,
+        onConfirm: () => {},
+      });
       return;
     }
 
@@ -217,11 +224,12 @@ const QuizTakingScreen: React.FC = () => {
       (q) => !selectedAnswers[q.id] || selectedAnswers[q.id].trim() === '',
     );
     if (unansweredQuestions.length > 0) {
-      Alert.alert(
-        t('quiz_taking.incomplete_quiz'),
-        t('quiz_taking.unanswered_questions', { count: unansweredQuestions.length }),
-        [{ text: t('common.ok') }],
-      );
+      showConfirm({
+        title: t('quiz_taking.incomplete_quiz'),
+        message: t('quiz_taking.unanswered_questions', { count: unansweredQuestions.length }),
+        showCancel: false,
+        onConfirm: () => {},
+      });
       return;
     }
 
@@ -240,7 +248,12 @@ const QuizTakingScreen: React.FC = () => {
 
       const token = await AsyncStorage.getItem('auth_token');
       if (!token) {
-        Alert.alert(t('common.error'), t('common.error'));
+        showConfirm({
+          title: t('common.error'),
+          message: t('common.error'),
+          showCancel: false,
+          onConfirm: () => {},
+        });
         setSubmitting(false);
         return;
       }
@@ -272,11 +285,21 @@ const QuizTakingScreen: React.FC = () => {
         });
       } else {
         const errorMessage = result.errors?.[0]?.message || t('common.unexpected_error');
-        Alert.alert(t('common.error'), errorMessage);
+        showConfirm({
+          title: t('common.error'),
+          message: errorMessage,
+          showCancel: false,
+          onConfirm: () => {},
+        });
       }
     } catch (err: any) {
       console.error('Submit quiz error:', err);
-      Alert.alert(t('common.error'), err.message || t('common.unexpected_error'));
+      showConfirm({
+        title: t('common.error'),
+        message: err.message || t('common.unexpected_error'),
+        showCancel: false,
+        onConfirm: () => {},
+      });
     } finally {
       if (mountedRef.current) {
         setSubmitting(false);

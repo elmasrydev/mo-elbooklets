@@ -14,6 +14,8 @@ import AppNavigator from './src/components/AppNavigator';
 import { I18nextProvider } from 'react-i18next';
 import i18n, { getInitialLanguage, initI18n, LANGUAGE_KEY } from './src/i18n';
 import { LanguageProvider } from './src/context/LanguageContext';
+import { ModalProvider } from './src/context/ModalContext';
+import { GlobalModalHandler } from './src/components/GlobalModalHandler';
 
 import * as Updates from 'expo-updates';
 
@@ -139,15 +141,18 @@ export default function App() {
     <SafeAreaProvider>
       <ApolloProvider client={apolloClient}>
         <ThemeProvider>
-          <LanguageProvider initialLanguage={initialLanguage}>
-            <I18nextProvider i18n={i18n}>
-              <AuthProvider>
-                <NavigationContainer>
-                  <AppNavigator />
-                </NavigationContainer>
-              </AuthProvider>
-            </I18nextProvider>
-          </LanguageProvider>
+          <ModalProvider>
+            <LanguageProvider initialLanguage={initialLanguage}>
+              <I18nextProvider i18n={i18n}>
+                <AuthProvider>
+                  <NavigationContainer>
+                    <AppNavigator />
+                  </NavigationContainer>
+                  <GlobalModalHandler />
+                </AuthProvider>
+              </I18nextProvider>
+            </LanguageProvider>
+          </ModalProvider>
         </ThemeProvider>
       </ApolloProvider>
       <StatusBar style="auto" />

@@ -8,7 +8,6 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +16,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useModal } from '../context/ModalContext';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
@@ -78,6 +78,7 @@ const SocialScreen: React.FC = () => {
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
+  const { showConfirm } = useModal();
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
 
@@ -268,7 +269,14 @@ const SocialScreen: React.FC = () => {
           <QuizCompletionCard
             item={item as any}
             onLike={() => handleLike(item)}
-            onComment={() => Alert.alert('Comment', t('social_screen.comment_coming_soon'))}
+            onComment={() =>
+              showConfirm({
+                title: t('social_screen.comment', 'Comment'),
+                message: t('social_screen.comment_coming_soon'),
+                showCancel: false,
+                onConfirm: () => {},
+              })
+            }
           />
         );
       if (item.type === 'new_connection' && item.connectedUser)

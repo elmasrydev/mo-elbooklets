@@ -7,10 +7,10 @@ import {
   TouchableOpacity,
   Image,
   Switch,
-  Alert,
   Platform,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { useModal } from '../context/ModalContext';
 import { useTheme } from '../context/ThemeContext';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useLanguage } from '../context/LanguageContext';
@@ -24,6 +24,7 @@ const APP_VERSION = 'EL-Booklets v1.0.0';
 
 const ProfileScreen: React.FC = () => {
   const { user, logout } = useAuth();
+  const { showConfirm } = useModal();
   const { theme, spacing, fontSizes, borderRadius, isDark, toggleTheme } = useTheme();
   const common = useCommonStyles();
   const { isRTL, setLanguage, language } = useLanguage();
@@ -31,19 +32,24 @@ const ProfileScreen: React.FC = () => {
   const { t } = useTranslation();
 
   const handleLogout = () => {
-    Alert.alert(t('profile_screen.log_out'), t('more_screen.logout_confirm'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('profile_screen.log_out'), style: 'destructive', onPress: logout },
-    ]);
+    showConfirm({
+      title: t('profile_screen.log_out'),
+      message: t('more_screen.logout_confirm'),
+      confirmLabel: t('profile_screen.log_out'),
+      cancelLabel: t('common.cancel'),
+      confirmVariant: 'danger',
+      onConfirm: logout,
+    });
   };
 
   const handleLanguagePress = () => {
-    Alert.alert(t('profile_screen.choose_language'), t('profile_screen.select_language_msg'), [
-      language === 'ar'
-        ? { text: 'English (US)', onPress: () => setLanguage('en') }
-        : { text: 'العربية', onPress: () => setLanguage('ar') },
-      { text: t('common.cancel') || 'Cancel', style: 'destructive' },
-    ]);
+    showConfirm({
+      title: t('profile_screen.choose_language'),
+      message: t('profile_screen.select_language_msg'),
+      confirmLabel: language === 'ar' ? 'English (US)' : 'العربية',
+      cancelLabel: t('common.cancel') || 'Cancel',
+      onConfirm: () => setLanguage(language === 'ar' ? 'en' : 'ar'),
+    });
   };
 
   const currentStyles = useMemo(

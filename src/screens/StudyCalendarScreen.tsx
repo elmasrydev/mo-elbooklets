@@ -6,12 +6,12 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useModal } from '../context/ModalContext';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
 import { layout } from '../config/layout';
@@ -77,6 +77,7 @@ const StudyCalendarScreen: React.FC = () => {
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
+  const { showConfirm } = useModal();
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
 
@@ -95,11 +96,21 @@ const StudyCalendarScreen: React.FC = () => {
 
   const [saveSchedule, { loading: saving }] = useMutation(SAVE_SCHEDULE_MUTATION, {
     onCompleted: () => {
-      Alert.alert(t('study_calendar.schedule_saved'));
+      showConfirm({
+        title: t('common.success', 'Success'),
+        message: t('study_calendar.schedule_saved'),
+        showCancel: false,
+        onConfirm: () => {},
+      });
       refetch();
     },
     onError: (error: any) => {
-      Alert.alert(t('common.error'), error.message);
+      showConfirm({
+        title: t('common.error'),
+        message: error.message,
+        showCancel: false,
+        onConfirm: () => {},
+      });
     },
   });
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
@@ -13,6 +13,7 @@ import { tryFetchWithFallback } from '../../config/api';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import AppButton from '../../components/AppButton';
 import { layout } from '../../config/layout';
+import { useModal } from '../../context/ModalContext';
 
 interface QuizType {
   id: string;
@@ -46,6 +47,7 @@ const QuizSettingsScreen: React.FC = () => {
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
+  const { showConfirm } = useModal();
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
@@ -83,10 +85,20 @@ const QuizSettingsScreen: React.FC = () => {
           navigation.navigate('QuizTaking', { quizId, isTimed: timedMode });
         }, 500);
       } else {
-        Alert.alert(t('common.error'), t('quiz_screen.error_loading_history'));
+        showConfirm({
+          title: t('common.error'),
+          message: t('quiz_screen.error_loading_history'),
+          showCancel: false,
+          onConfirm: () => {},
+        });
       }
     } catch (error: any) {
-      Alert.alert(t('common.error'), error.message || t('quiz_screen.error_loading_history'));
+      showConfirm({
+        title: t('common.error'),
+        message: error.message || t('quiz_screen.error_loading_history'),
+        showCancel: false,
+        onConfirm: () => {},
+      });
     } finally {
       setStarting(false);
     }
