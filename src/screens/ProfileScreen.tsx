@@ -48,7 +48,7 @@ const ProfileScreen: React.FC = () => {
       message: t('profile_screen.select_language_msg'),
       confirmLabel: language === 'ar' ? 'English (US)' : 'العربية',
       cancelLabel: t('common.cancel') || 'Cancel',
-      onConfirm: () => setLanguage(language === 'ar' ? 'en' : 'ar'),
+      onConfirm: () => setLanguage(language === 'ar' ? 'en' : 'ar', true),
     });
   };
 

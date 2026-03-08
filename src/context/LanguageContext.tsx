@@ -13,7 +13,7 @@ const RTL_SYNC_ATTEMPTED_KEY = 'rtl_sync_attempted';
 
 interface LanguageContextType {
   language: Language;
-  setLanguage: (lang: Language) => Promise<void>;
+  setLanguage: (lang: Language, bypassConfirmation?: boolean) => Promise<void>;
   isRTL: boolean;
 }
 
@@ -73,7 +73,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({
   );
 
   const setLanguage = useCallback(
-    async (lang: Language) => {
+    async (lang: Language, bypassConfirmation = false) => {
       try {
         if (lang === language) return;
 
@@ -93,6 +93,11 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({
           // 4. Reload to apply native RTL change
           setTimeout(() => reloadApp(lang), 300);
         };
+
+        if (bypassConfirmation) {
+          await performChange();
+          return;
+        }
 
         // Show confirmation alert
         showConfirm({
