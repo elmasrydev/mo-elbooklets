@@ -32,6 +32,7 @@ const ConnectionCard: React.FC<ConnectionCardProps> = ({ item }) => {
       .join('')
       .toUpperCase()
       .substring(0, 2);
+
   const currentStyles = createStyles(
     theme,
     common,
@@ -47,20 +48,20 @@ const ConnectionCard: React.FC<ConnectionCardProps> = ({ item }) => {
       <View style={currentStyles.content}>
         <View style={currentStyles.avatarsRow}>
           <View style={currentStyles.avatar}>
-            <Text style={currentStyles.avatarText}> {getInitials(item.user.name)} </Text>
+            <Text style={currentStyles.avatarText}>{getInitials(item.user.name)}</Text>
           </View>
           <View style={currentStyles.connectionIcon}>
-            <Ionicons name="people" size={24} color="#10B981" />
-            <Text style={currentStyles.connectedLabel}> {t('social_screen.connected')} </Text>
+            <Ionicons name="people" size={24} color={theme.colors.success} />
+            <Text style={currentStyles.connectedLabel}>{t('social_screen.connected')}</Text>
           </View>
           <View style={currentStyles.avatar}>
-            <Text style={currentStyles.avatarText}> {getInitials(item.connectedUser.name)} </Text>
+            <Text style={currentStyles.avatarText}>{getInitials(item.connectedUser.name)}</Text>
           </View>
         </View>
         <Text style={currentStyles.names}>
           {item.user.name} & {item.connectedUser.name}
         </Text>
-        <Text style={currentStyles.timeAgo}> {getTimeAgo(item.createdAt, t, language)} </Text>
+        <Text style={currentStyles.timeAgo}>{getTimeAgo(item.createdAt, t, language)}</Text>
       </View>
     </View>
   );
@@ -77,11 +78,13 @@ const createStyles = (
 ) =>
   StyleSheet.create({
     card: {
-      backgroundColor: '#ECFDF5',
-      borderRadius: 24,
+      ...common.card,
+      backgroundColor: theme.mode === 'light' ? `${theme.colors.success}10` : `${theme.colors.success}15`,
+      borderWidth: 1,
+      borderColor: `${theme.colors.success}30`,
       padding: spacing.xl,
-      marginHorizontal: spacing.lg,
-      marginBottom: spacing.lg,
+      marginHorizontal: 0,
+      marginBottom: spacing.sectionGap,
     },
     content: { alignItems: 'center' },
     avatarsRow: {
@@ -91,23 +94,32 @@ const createStyles = (
       marginBottom: spacing.md,
     },
     avatar: {
-      width: 50,
-      height: 50,
-      borderRadius: 25,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
       backgroundColor: theme.colors.surface,
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 2,
       borderColor: theme.colors.border,
+      ...layout.shadow,
     },
-    avatarText: { ...typography('body'), ...fontWeight('700'), color: theme.colors.primary },
-    connectionIcon: { alignItems: 'center', gap: 4 },
+    avatarText: {
+      ...typography('h3'),
+      ...fontWeight('bold'),
+      color: theme.colors.primary,
+    },
+    connectionIcon: {
+      alignItems: 'center',
+      gap: 4,
+    },
     connectedLabel: {
       ...typography('caption'),
       fontSize: 10,
       ...fontWeight('800'),
-      color: '#10B981',
+      color: theme.colors.success,
       textTransform: 'uppercase',
+      letterSpacing: 1,
     },
     names: {
       ...typography('body'),

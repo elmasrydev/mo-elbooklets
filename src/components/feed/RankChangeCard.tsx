@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
 import { getTimeAgo } from '../../lib/dateUtils';
+import { layout } from '../../config/layout';
 
 interface RankChangeCardProps {
   item: {
@@ -29,8 +30,13 @@ const RankChangeCard: React.FC<RankChangeCardProps> = ({ item }) => {
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
 
-  const rankColors: { [key: number]: string } = { 1: '#F59E0B', 2: '#94A3B8', 3: '#EA580C' };
-  const rankColor = rankColors[item.rankData.newRank] || '#EA580C';
+  const rankColors: { [key: number]: string } = { 
+    1: theme.colors.gold || '#F59E0B', 
+    2: theme.colors.silver || '#94A3B8', 
+    3: theme.colors.bronze || '#EA580C' 
+  };
+  const rankColor = rankColors[item.rankData.newRank] || theme.colors.primary;
+
   const getRankLabel = (rank: number) => {
     if (rank === 1) return t('social_screen.rank_1st');
     if (rank === 2) return t('social_screen.rank_2nd');
@@ -50,11 +56,11 @@ const RankChangeCard: React.FC<RankChangeCardProps> = ({ item }) => {
   );
 
   return (
-    <View style={[common.card, currentStyles.cardBorder, { marginBottom: spacing.sectionGap }]}>
+    <View style={[currentStyles.card, currentStyles.cardAccent]}>
       <View style={currentStyles.contentRow}>
         <View style={currentStyles.leftSection}>
           <View style={currentStyles.rankBadge}>
-            <Text style={currentStyles.rankNumber}>#{item.rankData.newRank} </Text>
+            <Text style={currentStyles.rankNumber}>#{item.rankData.newRank}</Text>
           </View>
           <View style={currentStyles.userInfo}>
             <Text style={[currentStyles.userName, { textAlign: common.textAlign }]}>
@@ -68,16 +74,20 @@ const RankChangeCard: React.FC<RankChangeCardProps> = ({ item }) => {
                   })
                 : t('social_screen.reached_rank', { rank: getRankLabel(item.rankData.newRank) })}
             </Text>
-            <Text style={[currentStyles.subjectLabel, { textAlign: common.textAlign }]}>
-              {item.rankData.isOverall
-                ? t('social_screen.overall_ranking')
-                : item.rankData.subject?.name || t('common.quiz')}
-            </Text>
+            <View style={currentStyles.subjectChip}>
+              <Text style={currentStyles.subjectLabel}>
+                {item.rankData.isOverall
+                  ? t('social_screen.overall_ranking')
+                  : item.rankData.subject?.name || t('common.quiz')}
+              </Text>
+            </View>
           </View>
         </View>
         <View style={currentStyles.rightSection}>
-          <Ionicons name="trophy" size={40} color={rankColor} />
-          <Text style={currentStyles.timeAgo}> {getTimeAgo(item.createdAt, t, language)} </Text>
+          <View style={[currentStyles.trophyBg, { backgroundColor: `${rankColor}15` }]}>
+            <Ionicons name="trophy" size={32} color={rankColor} />
+          </View>
+          <Text style={currentStyles.timeAgo}>{getTimeAgo(item.createdAt, t, language)}</Text>
         </View>
       </View>
     </View>
@@ -95,43 +105,89 @@ const createStyles = (
   fontWeight: any,
 ) =>
   StyleSheet.create({
-    cardBorder: { ...common.borderStartWidth(4), ...common.borderStartColor(rankColor) },
+    card: {
+      ...common.card,
+      marginBottom: spacing.sectionGap,
+      overflow: 'hidden',
+    },
+    cardAccent: {
+      borderLeftWidth: 4,
+      borderLeftColor: rankColor,
+    },
     contentRow: {
       flexDirection: common.rowDirection,
       justifyContent: 'space-between',
       alignItems: 'center',
     },
-    leftSection: { flexDirection: common.rowDirection, alignItems: 'center', gap: 12, flex: 1 },
+    leftSection: { 
+      flexDirection: common.rowDirection, 
+      alignItems: 'center', 
+      gap: 16, 
+      flex: 1 
+    },
     rankBadge: {
-      width: 60,
-      height: 60,
-      borderRadius: 30,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
       backgroundColor: rankColor,
       alignItems: 'center',
       justifyContent: 'center',
+      ...layout.shadow,
     },
-    rankNumber: { ...typography('h3'), ...fontWeight('900'), color: '#fff' },
-    userInfo: { flex: 1, gap: 4, alignItems: common.alignStart },
-    userName: { ...typography('body'), ...fontWeight('800'), color: theme.colors.text },
+    rankNumber: { 
+      ...typography('h3'), 
+      ...fontWeight('900'), 
+      color: '#fff' 
+    },
+    userInfo: { 
+      flex: 1, 
+      gap: 4, 
+      alignItems: common.alignStart 
+    },
+    userName: { 
+      ...typography('label'), 
+      ...fontWeight('900'), 
+      color: theme.colors.text 
+    },
     rankChange: {
       ...typography('caption'),
       fontSize: 13,
       ...fontWeight('600'),
       color: theme.colors.textSecondary,
     },
+    subjectChip: {
+      backgroundColor: theme.mode === 'light' ? theme.colors.background : `${theme.colors.surface}80`,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 12,
+      marginTop: 4,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
     subjectLabel: {
       ...typography('caption'),
-      fontSize: 12,
-      ...fontWeight('700'),
+      fontSize: 11,
+      ...fontWeight('bold'),
       color: rankColor,
-      marginTop: 2,
     },
-    rightSection: { alignItems: 'center', gap: 6, ...common.marginStart(12) },
+    rightSection: { 
+      alignItems: 'center', 
+      gap: 8, 
+      ...common.marginStart(16) 
+    },
+    trophyBg: {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     timeAgo: {
       ...typography('caption'),
-      fontSize: 11,
+      fontSize: 10,
       ...fontWeight('700'),
       color: theme.colors.textTertiary,
+      textTransform: 'uppercase',
     },
   });
 

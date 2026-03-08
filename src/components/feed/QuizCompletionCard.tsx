@@ -33,7 +33,6 @@ interface QuizCompletionCardProps {
   isCurrentUser?: boolean;
 }
 
-// Lightweight confetti: 16 pieces (down from 64), 1 animated value each (down from 5)
 const CONFETTI_COLORS = [
   '#FFD700',
   '#FF6B6B',
@@ -63,7 +62,6 @@ const ConfettiPiece = React.memo<{
   const anim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    const driftX = offsetX * 0.4;
     const run = () => {
       anim.setValue(0);
       Animated.timing(anim, {
@@ -72,7 +70,6 @@ const ConfettiPiece = React.memo<{
         easing: Easing.out(Easing.quad),
         useNativeDriver: true,
       }).start(() => {
-        // Restart after a pause
         setTimeout(run, delay);
       });
     };
@@ -129,7 +126,7 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
   const { typography, fontWeight } = useTypography();
 
   const scorePercent = Math.round((item.quizData.score / item.quizData.totalQuestions) * 100);
-  const color = getScoreColor(scorePercent);
+  const scoreColor = getScoreColor(scorePercent);
   const xpEarned = Math.round(scorePercent * 1.2);
   const isPerfect = scorePercent >= 95;
 
@@ -140,6 +137,7 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
       .join('')
       .toUpperCase()
       .substring(0, 2);
+
   const currentStyles = createStyles(
     theme,
     common,
@@ -148,54 +146,46 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
     borderRadius,
     typography,
     fontWeight,
+    scoreColor,
   );
 
   return (
-    <View
-      style={[
-        common.card,
-        isPerfect && currentStyles.cardPerfect,
-        { marginBottom: spacing.sectionGap },
-      ]}
-    >
+    <View style={[common.card, isPerfect && currentStyles.cardPerfect, { marginBottom: spacing.sectionGap }]}>
       {isPerfect && (
         <View style={currentStyles.confettiContainer}>
           {CONFETTI_PIECES.map((p) => (
-            <ConfettiPiece
-              key={p.key}
-              delay={p.delay}
-              color={p.color}
-              offsetX={p.offsetX}
-              endY={p.endY}
-            />
+            <ConfettiPiece key={p.key} delay={p.delay} color={p.color} offsetX={p.offsetX} endY={p.endY} />
           ))}
         </View>
       )}
 
       <View style={currentStyles.contentRow}>
-        <View style={currentStyles.progressContainer}>
-          <CircularProgress size={80} strokeWidth={8} percentage={scorePercent} color={color} />
+        <View style={currentStyles.leftSection}>
+          <CircularProgress size={74} strokeWidth={7} percentage={scorePercent} color={scoreColor} />
+          {isPerfect && (
+            <View style={currentStyles.perfectBadge}>
+              <Ionicons name="star" size={14} color="#fff" />
+            </View>
+          )}
         </View>
-        <View style={currentStyles.mainContent}>
+
+        <View style={currentStyles.rightSection}>
           <View style={currentStyles.header}>
             <View style={currentStyles.headerLeft}>
               <View style={currentStyles.avatar}>
-                <Text style={currentStyles.avatarText}> {getInitials(item.user.name)} </Text>
+                <Text style={currentStyles.avatarText}>{getInitials(item.user.name)}</Text>
               </View>
               <View style={currentStyles.userInfo}>
                 <View style={currentStyles.nameRow}>
-                  <Text style={currentStyles.userName}> {item.user.name} </Text>
+                  <Text style={currentStyles.userName}>{item.user.name}</Text>
                   {isPerfect && <Text style={currentStyles.fireEmoji}>🔥</Text>}
                 </View>
-                <Text style={currentStyles.timeAgo}>
-                  {' '}
-                  {getTimeAgo(item.createdAt, t, language)}{' '}
-                </Text>
+                <Text style={currentStyles.timeAgo}>{getTimeAgo(item.createdAt, t, language)}</Text>
               </View>
             </View>
             <View style={currentStyles.xpBadge}>
-              <Text style={currentStyles.xpValue}> +{xpEarned} </Text>
-              <Text style={currentStyles.xpLabel}> XP </Text>
+              <Text style={currentStyles.xpValue}>+{xpEarned}</Text>
+              <Text style={currentStyles.xpLabel}>XP</Text>
             </View>
           </View>
 
@@ -210,41 +200,33 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
             })}
           </Text>
 
-          <View style={currentStyles.actionsRow}>
-            <View style={currentStyles.actionsLeft}>
-              <TouchableOpacity style={currentStyles.actionButton} onPress={onLike}>
+          <View style={currentStyles.footerActions}>
+            <View style={currentStyles.socialStats}>
+              <TouchableOpacity style={currentStyles.statBtn} onPress={onLike}>
                 <Ionicons
                   name={item.isLiked ? 'heart' : 'heart-outline'}
                   size={20}
-                  color={item.isLiked ? '#FF6B6B' : theme.colors.textSecondary}
+                  color={item.isLiked ? theme.colors.error : theme.colors.textSecondary}
                 />
-                <Text
-                  style={[currentStyles.actionText, item.isLiked && currentStyles.actionTextLiked]}
-                >
+                <Text style={[currentStyles.statText, item.isLiked && { color: theme.colors.error }]}>
                   {item.likes}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity style={currentStyles.actionButton} onPress={onComment}>
-                <Ionicons name="chatbubble-outline" size={18} color={theme.colors.textSecondary} />
-                <Text style={currentStyles.actionText}> {item.comments} </Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={currentStyles.actionButton}>
-                <Ionicons name="share-outline" size={18} color={theme.colors.textSecondary} />
+              <TouchableOpacity style={currentStyles.statBtn} onPress={onComment}>
+                <Ionicons name="chatbubble-outline" size={19} color={theme.colors.textSecondary} />
+                <Text style={currentStyles.statText}>{item.comments}</Text>
               </TouchableOpacity>
             </View>
+
             {isCurrentUser && onReview && (
-              <TouchableOpacity style={currentStyles.reviewButton} onPress={onReview}>
-                <Text style={currentStyles.reviewButtonText}> {t('home_screen.review')} </Text>
+              <TouchableOpacity style={currentStyles.reviewBtn} onPress={onReview}>
+                <Text style={currentStyles.reviewBtnText}>{t('home_screen.review')}</Text>
+                <Ionicons name="chevron-forward" size={12} color={theme.colors.primary} />
               </TouchableOpacity>
             )}
           </View>
         </View>
       </View>
-      {isPerfect && (
-        <View style={currentStyles.celebrationRow}>
-          <Text style={currentStyles.celebrationEmoji}>🎉</Text>
-        </View>
-      )}
     </View>
   );
 };
@@ -257,34 +239,61 @@ const createStyles = (
   borderRadius: any,
   typography: any,
   fontWeight: any,
+  scoreColor: string,
 ) =>
   StyleSheet.create({
-    cardPerfect: { borderStyle: 'dashed', borderColor: theme.colors.primary, borderWidth: 2 },
-    confettiContainer: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      alignItems: 'center',
-      justifyContent: 'flex-end',
-      paddingBottom: 40,
+    cardPerfect: {
+      borderWidth: 2,
+      borderColor: theme.colors.primary,
+      borderStyle: 'dashed',
     },
-    contentRow: { flexDirection: common.rowDirection, gap: 16 },
-    progressContainer: { alignItems: 'center', justifyContent: 'center' },
-    mainContent: { flex: 1 },
+    confettiContainer: {
+      ...StyleSheet.absoluteFillObject,
+      alignItems: 'center',
+      justifyContent: 'center',
+      pointerEvents: 'none',
+    },
+    contentRow: {
+      flexDirection: common.rowDirection,
+      gap: 16,
+    },
+    leftSection: {
+      alignItems: 'center',
+      justifyContent: 'flex-start',
+      paddingTop: 4,
+    },
+    perfectBadge: {
+      position: 'absolute',
+      bottom: -6,
+      backgroundColor: theme.colors.primary,
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 2,
+      borderColor: theme.colors.surface,
+    },
+    rightSection: {
+      flex: 1,
+    },
     header: {
       flexDirection: common.rowDirection,
       justifyContent: 'space-between',
-      alignItems: 'flex-start',
-      marginBottom: spacing.md,
+      alignItems: 'center',
+      marginBottom: 12,
     },
-    headerLeft: { flexDirection: common.rowDirection, alignItems: 'center', gap: 12, flex: 1 },
+    headerLeft: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      gap: 10,
+      flex: 1,
+    },
     avatar: {
-      width: 48,
-      height: 48,
-      borderRadius: borderRadius.md,
-      backgroundColor: theme.colors.background,
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: theme.mode === 'light' ? theme.colors.background : theme.colors.surface,
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1,
@@ -292,90 +301,104 @@ const createStyles = (
     },
     avatarText: {
       ...typography('caption'),
-      ...fontWeight('900'),
-      color: theme.colors.textSecondary,
+      ...fontWeight('bold'),
+      color: theme.colors.primary,
     },
-    userInfo: { gap: 2, alignItems: common.alignStart, flex: 1 },
-    nameRow: { flexDirection: common.rowDirection, alignItems: 'center', gap: 6 },
-    userName: { ...typography('label'), ...fontWeight('900'), color: theme.colors.text },
-    fireEmoji: { fontSize: 16 },
+    userInfo: {
+      flex: 1,
+      alignItems: common.alignStart,
+    },
+    nameRow: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      gap: 4,
+    },
+    userName: {
+      ...typography('caption'),
+      ...fontWeight('900'),
+      color: theme.colors.text,
+    },
+    fireEmoji: {
+      fontSize: 14,
+    },
     timeAgo: {
       ...typography('caption'),
       fontSize: 10,
-      ...fontWeight('700'),
       color: theme.colors.textTertiary,
-      textTransform: 'uppercase',
-      letterSpacing: 0.5,
+      marginTop: 1,
     },
     xpBadge: {
-      backgroundColor: theme.colors.background,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      borderRadius: borderRadius.md,
-      paddingHorizontal: 12,
-      paddingVertical: 8,
+      backgroundColor: theme.mode === 'light' ? `${theme.colors.primary}10` : `${theme.colors.primary}20`,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 12,
       alignItems: 'center',
-      minWidth: 60,
-      ...common.marginStart(8),
+      flexDirection: 'row',
+      gap: 3,
+      borderWidth: 1,
+      borderColor: `${theme.colors.primary}30`,
     },
-    xpValue: { ...typography('body'), ...fontWeight('900'), color: theme.colors.primary },
+    xpValue: {
+      ...typography('caption'),
+      ...fontWeight('900'),
+      color: theme.colors.primary,
+    },
     xpLabel: {
       ...typography('caption'),
       fontSize: 8,
       ...fontWeight('900'),
-      color: theme.colors.textTertiary,
-      textTransform: 'uppercase',
-      letterSpacing: 1,
+      color: theme.colors.primary,
+      opacity: 0.8,
     },
     title: {
-      ...typography('h3'),
-      ...fontWeight('600'),
+      ...typography('body'),
+      ...fontWeight('bold'),
       color: theme.colors.text,
-      marginBottom: spacing.sm,
-      lineHeight: 24,
+      marginBottom: 6,
     },
     description: {
       ...typography('caption'),
-      ...fontWeight('500'),
       color: theme.colors.textSecondary,
-      marginBottom: spacing.lg,
-      lineHeight: 20,
+      lineHeight: 18,
+      marginBottom: 16,
     },
-    actionsRow: {
+    footerActions: {
       flexDirection: common.rowDirection,
       justifyContent: 'space-between',
       alignItems: 'center',
+      paddingTop: 12,
       borderTopWidth: 1,
       borderTopColor: theme.colors.border,
-      paddingTop: spacing.md,
     },
-    actionsLeft: { flexDirection: common.rowDirection, gap: 16 },
-    actionButton: { flexDirection: common.rowDirection, alignItems: 'center', gap: 6 },
-    actionText: {
+    socialStats: {
+      flexDirection: common.rowDirection,
+      gap: 16,
+    },
+    statBtn: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      gap: 6,
+    },
+    statText: {
       ...typography('caption'),
-      fontSize: 12,
-      ...fontWeight('900'),
+      ...fontWeight('bold'),
       color: theme.colors.textSecondary,
     },
-    actionTextLiked: { color: '#FF6B6B' },
-    reviewButton: {
-      backgroundColor: `${theme.colors.primary}15`,
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-      borderRadius: borderRadius.md,
-      borderWidth: 1,
-      borderColor: `${theme.colors.primary}30`,
+    reviewBtn: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: `${theme.colors.primary}10`,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 8,
     },
-    reviewButtonText: {
+    reviewBtnText: {
       ...typography('caption'),
-      fontSize: 10,
       ...fontWeight('900'),
       color: theme.colors.primary,
-      textTransform: 'uppercase',
-      letterSpacing: 1,
+      fontSize: 11,
     },
-    celebrationRow: { alignItems: 'center', marginTop: spacing.md },
-    celebrationEmoji: { fontSize: 32 },
   });
 
 const styles = StyleSheet.create({

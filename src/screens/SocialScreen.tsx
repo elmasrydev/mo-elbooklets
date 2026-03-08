@@ -9,8 +9,10 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
@@ -85,6 +87,7 @@ const SocialScreen: React.FC = () => {
   const [feedItems, setFeedItems] = useState<NewsFeedItem[]>([]);
   const [timelineLoading, setTimelineLoading] = useState(true);
   const [timelineError, setTimelineError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchTimeline = useCallback(async () => {
     try {
@@ -185,6 +188,7 @@ const SocialScreen: React.FC = () => {
 
   const handleFollowToggle = async (student: Student) => {
     try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       const token = await AsyncStorage.getItem('auth_token');
       if (!token) return;
 
@@ -213,6 +217,7 @@ const SocialScreen: React.FC = () => {
 
   const handleLike = async (feedItem: NewsFeedItem) => {
     try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       const token = await AsyncStorage.getItem('auth_token');
       if (!token || feedItem.type !== 'quiz_completion' || !feedItem.quizData) return;
 
@@ -245,11 +250,9 @@ const SocialScreen: React.FC = () => {
   };
 
   const currentStyles = useMemo(
-    () => styles(theme, common, fontSizes, spacing, borderRadius, typography, fontWeight),
-    [theme, common, fontSizes, spacing, borderRadius, typography, fontWeight],
+    () => styles(theme, common, spacing, typography, fontWeight),
+    [theme, common, spacing, typography, fontWeight],
   );
-
-  const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -274,7 +277,7 @@ const SocialScreen: React.FC = () => {
         return <RankChangeCard item={item as any} />;
       return null;
     },
-    [t, handleLike, currentStyles],
+    [t, handleLike],
   );
 
   const renderSearchItem = useCallback(
@@ -286,16 +289,31 @@ const SocialScreen: React.FC = () => {
               <Text style={currentStyles.avatarText}>{student.name.charAt(0).toUpperCase()}</Text>
             </View>
             <View style={currentStyles.studentDetails}>
-              <Text style={currentStyles.studentName}> {student.name} </Text>
-              <Text style={currentStyles.studentGrade}> {student.grade.name} </Text>
+              <Text style={currentStyles.studentName}>{student.name}</Text>
+              <Text style={currentStyles.studentGrade}>{student.grade.name}</Text>
               <View style={currentStyles.studentStats}>
-                <Text style={currentStyles.studentStat}>
-                  {student.totalQuizzes} {t('common.quizzes')}
-                </Text>
-                <Text style={currentStyles.studentStatSeparator}>•</Text>
-                <Text style={currentStyles.studentStat}>
-                  {student.avgScore} % {t('common.avg')}
-                </Text>
+                <View
+                  style={[
+                    currentStyles.statBadge,
+                    { backgroundColor: `${theme.colors.primary}10` },
+                  ]}
+                >
+                  <Ionicons name="book-outline" size={12} color={theme.colors.primary} />
+                  <Text style={currentStyles.studentStat}>
+                    {student.totalQuizzes} {t('common.quizzes')}
+                  </Text>
+                </View>
+                <View
+                  style={[
+                    currentStyles.statBadge,
+                    { backgroundColor: `${theme.colors.success}10` },
+                  ]}
+                >
+                  <Ionicons name="star-outline" size={12} color={theme.colors.success} />
+                  <Text style={[currentStyles.studentStat, { color: theme.colors.success }]}>
+                    {student.avgScore}% {t('common.avg')}
+                  </Text>
+                </View>
               </View>
             </View>
           </View>
@@ -306,29 +324,31 @@ const SocialScreen: React.FC = () => {
             size="sm"
             fullWidth={false}
             style={currentStyles.followButton}
+            accessibilityLabel={`${student.isFollowing ? t('common.following') : t('common.follow')} ${student.name}`}
           />
         </View>
       </View>
     ),
-    [common, spacing, currentStyles, t, handleFollowToggle],
+    [common, spacing, currentStyles, t, handleFollowToggle, theme],
   );
 
-  const feedKeyExtractor = useCallback((item: NewsFeedItem) => item.id, []);
-  const searchKeyExtractor = useCallback((item: Student) => item.id, []);
+  const isSearchMode = searchQuery.length >= 2;
 
   const ListEmptyComponent = useMemo(() => {
-    if (searchQuery.length >= 2) {
+    if (isSearchMode) {
       if (searchLoading)
         return (
           <View style={currentStyles.loadingState}>
             <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text style={currentStyles.loadingText}> {t('social_screen.searching')} </Text>
+            <Text style={currentStyles.loadingText}>{t('social_screen.searching')}</Text>
           </View>
         );
       return (
         <View style={currentStyles.emptyState}>
-          <Ionicons name="search-outline" size={64} color={theme.colors.textTertiary} />
-          <Text style={currentStyles.emptyStateTitle}> {t('social_screen.no_results')} </Text>
+          <View style={currentStyles.emptyIconBg}>
+            <Ionicons name="search-outline" size={40} color={theme.colors.primary} />
+          </View>
+          <Text style={currentStyles.emptyStateTitle}>{t('social_screen.no_results')}</Text>
           <Text style={currentStyles.emptyStateSubtitle}>
             {t('social_screen.try_different_search')}
           </Text>
@@ -340,14 +360,16 @@ const SocialScreen: React.FC = () => {
       return (
         <View style={currentStyles.loadingState}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={currentStyles.loadingText}> {t('social_screen.loading_activities')} </Text>
+          <Text style={currentStyles.loadingText}>{t('social_screen.loading_activities')}</Text>
         </View>
       );
 
     if (timelineError)
       return (
         <View style={currentStyles.emptyState}>
-          <Ionicons name="alert-circle-outline" size={48} color={theme.colors.textSecondary} />
+          <View style={[currentStyles.emptyIconBg, { backgroundColor: `${theme.colors.error}10` }]}>
+            <Ionicons name="alert-circle-outline" size={40} color={theme.colors.error} />
+          </View>
           <Text style={currentStyles.emptyStateTitle}>
             {t('social_screen.error_loading_timeline')}
           </Text>
@@ -356,21 +378,24 @@ const SocialScreen: React.FC = () => {
             onPress={fetchTimeline}
             size="sm"
             fullWidth={false}
+            style={{ marginTop: 16 }}
           />
         </View>
       );
 
     return (
       <View style={currentStyles.emptyState}>
-        <Ionicons name="people-outline" size={64} color={theme.colors.textTertiary} />
-        <Text style={currentStyles.emptyStateTitle}> {t('social_screen.no_activity_yet')} </Text>
+        <View style={currentStyles.emptyIconBg}>
+          <Ionicons name="people-outline" size={40} color={theme.colors.primary} />
+        </View>
+        <Text style={currentStyles.emptyStateTitle}>{t('social_screen.no_activity_yet')}</Text>
         <Text style={currentStyles.emptyStateSubtitle}>
           {t('social_screen.follow_students_hint')}
         </Text>
       </View>
     );
   }, [
-    searchQuery,
+    isSearchMode,
     searchLoading,
     timelineLoading,
     timelineError,
@@ -382,28 +407,30 @@ const SocialScreen: React.FC = () => {
   ]);
 
   const FeedHeader = useMemo(() => {
-    if (searchQuery.length >= 2 && searchResults.length > 0) {
-      return <Text style={common.sectionTitle}> {t('social_screen.search_results')} </Text>;
+    if (isSearchMode && searchResults.length > 0) {
+      return <Text style={currentStyles.sectionTitle}>{t('social_screen.search_results')}</Text>;
     }
-    if (searchQuery.length < 2 && feedItems.length > 0) {
-      return <Text style={common.sectionTitle}> {t('social_screen.recent_activity')} </Text>;
+    if (!isSearchMode && feedItems.length > 0) {
+      return <Text style={currentStyles.sectionTitle}>{t('social_screen.recent_activity')}</Text>;
     }
     return null;
-  }, [searchQuery, searchResults.length, feedItems.length, common, t]);
-
-  const isSearchMode = searchQuery.length >= 2;
+  }, [isSearchMode, searchResults.length, feedItems.length, currentStyles, t]);
 
   return (
     <View style={common.container}>
       <UnifiedHeader
-        showBackButton
         title={t('social_screen.header_title')}
         subtitle={t('social_screen.header_subtitle')}
       />
 
-      <View style={currentStyles.searchContainer}>
-        <View style={currentStyles.searchInputContainer}>
-          <Ionicons name="search-outline" size={20} color={theme.colors.textSecondary} />
+      <View style={currentStyles.searchWrapper}>
+        <View style={currentStyles.searchInputBox}>
+          <Ionicons
+            name="search"
+            size={20}
+            color={theme.colors.primary}
+            style={currentStyles.searchIcon}
+          />
           <TextInput
             style={currentStyles.searchInput}
             placeholder={t('social_screen.search_placeholder')}
@@ -411,14 +438,17 @@ const SocialScreen: React.FC = () => {
             value={searchQuery}
             onChangeText={setSearchQuery}
             textAlign={common.textAlign}
+            returnKeyType="search"
+            clearButtonMode="while-editing"
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity
               onPress={() => {
                 setSearchQuery('');
                 setSearchResults([]);
+                Keyboard.dismiss();
               }}
-              style={currentStyles.clearButton}
+              style={currentStyles.clearBtn}
             >
               <Ionicons name="close-circle" size={20} color={theme.colors.textTertiary} />
             </TouchableOpacity>
@@ -430,20 +460,21 @@ const SocialScreen: React.FC = () => {
         <FlatList
           data={searchResults}
           renderItem={renderSearchItem}
-          keyExtractor={searchKeyExtractor}
+          keyExtractor={(item) => item.id}
           style={currentStyles.content}
           contentContainerStyle={currentStyles.contentContainer}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={FeedHeader}
           ListEmptyComponent={ListEmptyComponent}
+          keyboardShouldPersistTaps="handled"
         />
       ) : (
         <FlatList
           data={feedItems}
           renderItem={renderFeedItem}
-          keyExtractor={feedKeyExtractor}
+          keyExtractor={(item) => item.id}
           style={currentStyles.content}
-          contentContainerStyle={[currentStyles.contentContainer, { flexGrow: 1 }]}
+          contentContainerStyle={currentStyles.contentContainer}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={FeedHeader}
           ListEmptyComponent={ListEmptyComponent}
@@ -455,108 +486,149 @@ const SocialScreen: React.FC = () => {
   );
 };
 
-const styles = (
-  theme: any,
-  common: any,
-  fontSizes: any,
-  spacing: any,
-  borderRadius: any,
-  typography: any,
-  fontWeight: any,
-) =>
+const styles = (theme: any, common: any, spacing: any, typography: any, fontWeight: any) =>
   StyleSheet.create({
-    searchContainer: {
-      padding: layout.screenPadding,
+    searchWrapper: {
+      paddingHorizontal: layout.screenPadding,
+      paddingVertical: spacing.md,
       backgroundColor: theme.colors.background,
     },
-    searchInputContainer: {
+    searchInputBox: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      borderRadius: layout.borderRadius.xl,
-      paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.md,
-      backgroundColor: theme.colors.card,
+      backgroundColor: theme.mode === 'light' ? theme.colors.surface : theme.colors.card,
+      borderRadius: 16,
+      paddingHorizontal: 12,
+      height: 52,
       borderWidth: 1,
       borderColor: theme.colors.border,
       ...layout.shadow,
+    },
+    searchIcon: {
+      marginHorizontal: 4,
     },
     searchInput: {
       flex: 1,
       ...typography('body'),
       color: theme.colors.text,
       ...fontWeight('500'),
-      ...common.marginStart(10),
+      height: '100%',
     },
-    clearButton: { padding: 4 },
-    content: { flex: 1 },
-    contentContainer: { padding: layout.screenPadding, paddingTop: 0, alignItems: 'stretch' },
-    searchResultsContainer: { paddingBottom: Math.max(common.insets.bottom, 20) },
+    clearBtn: {
+      padding: 4,
+    },
+    content: {
+      flex: 1,
+    },
+    contentContainer: {
+      padding: layout.screenPadding,
+      paddingTop: spacing.xs,
+      paddingBottom: 40,
+    },
+    sectionTitle: {
+      ...typography('label'),
+      ...fontWeight('bold'),
+      color: theme.colors.textSecondary,
+      marginBottom: spacing.md,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+    },
     studentCardContent: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
       justifyContent: 'space-between',
     },
-    studentInfo: { flexDirection: common.rowDirection, alignItems: 'center', flex: 1 },
+    studentInfo: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      flex: 1,
+    },
     avatarPlaceholder: {
-      width: 50,
-      height: 50,
-      borderRadius: 25,
-      backgroundColor: theme.colors.primaryLight || 'rgba(147, 51, 234, 0.1)',
+      width: 52,
+      height: 52,
+      borderRadius: 26,
+      backgroundColor: `${theme.colors.primary}15`,
       justifyContent: 'center',
       alignItems: 'center',
+      borderWidth: 1,
+      borderColor: `${theme.colors.primary}30`,
     },
-    avatarText: { color: theme.colors.primary, ...fontWeight('bold'), ...typography('h3') },
-    studentDetails: { flex: 1, ...common.marginStart(12), alignItems: common.alignStart },
+    avatarText: {
+      color: theme.colors.primary,
+      ...fontWeight('bold'),
+      ...typography('h3'),
+    },
+    studentDetails: {
+      flex: 1,
+      ...common.marginStart(12),
+      alignItems: common.alignStart,
+    },
     studentName: {
-      ...typography('label'),
+      ...typography('body'),
       ...fontWeight('bold'),
       color: theme.colors.text,
-      textAlign: common.textAlign,
     },
     studentGrade: {
       ...typography('caption'),
       color: theme.colors.textSecondary,
       marginTop: 2,
-      textAlign: common.textAlign,
     },
-    studentStats: { flexDirection: common.rowDirection, alignItems: 'center', marginTop: 4 },
-    studentStat: { ...typography('caption'), color: theme.colors.primary, ...fontWeight('600') },
-    studentStatSeparator: {
-      ...typography('caption'),
-      marginHorizontal: 6,
-      color: theme.colors.textTertiary,
+    studentStats: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      marginTop: 8,
+      gap: 8,
+    },
+    statBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 8,
+    },
+    studentStat: {
+      ...typography('tiny'),
+      ...fontWeight('bold'),
+      color: theme.colors.primary,
     },
     followButton: {
-      paddingHorizontal: spacing.md,
-      minWidth: 90,
+      paddingHorizontal: 16,
+      minWidth: 100,
     },
-    timelineContainer: { paddingBottom: Math.max(common.insets.bottom, 20) },
-    loadingState: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
+    loadingState: {
+      paddingVertical: 60,
+      alignItems: 'center',
+    },
     loadingText: {
-      marginTop: spacing.md,
-      ...typography('body'),
+      marginTop: 16,
+      ...typography('bodySmall'),
       color: theme.colors.textSecondary,
-      textAlign: 'center',
     },
     emptyState: {
-      flex: 1,
+      paddingVertical: 60,
+      alignItems: 'center',
+    },
+    emptyIconBg: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      backgroundColor: `${theme.colors.primary}10`,
       justifyContent: 'center',
       alignItems: 'center',
-      padding: 40,
-      marginTop: 40,
+      marginBottom: 20,
     },
     emptyStateTitle: {
       ...typography('h3'),
       ...fontWeight('bold'),
       color: theme.colors.text,
-      marginTop: spacing.lg,
       textAlign: 'center',
     },
     emptyStateSubtitle: {
       ...typography('bodySmall'),
       color: theme.colors.textSecondary,
-      marginTop: spacing.sm,
       textAlign: 'center',
+      marginTop: 8,
       lineHeight: 20,
     },
   });
