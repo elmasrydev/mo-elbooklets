@@ -103,7 +103,7 @@ const AppButton: React.FC<AppButtonProps> = ({
     switch (size) {
       case 'sm':
         return {
-          button: { height: 42, paddingHorizontal: spacing.md },
+          button: { height: 44, paddingHorizontal: spacing.md },
           text: { ...typography('caption'), ...fontWeight('700') },
           subtitle: typography('caption'),
         };

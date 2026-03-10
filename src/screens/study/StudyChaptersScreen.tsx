@@ -132,7 +132,7 @@ const StudyChaptersScreen: React.FC = () => {
 
   const handleLessonPress = (lesson: Lesson) => {
     const allLessons = chapters.flatMap((ch) => ch.lessons);
-    navigation.navigate('StudyLesson', { lesson, allLessons });
+    navigation.navigate('StudyLesson', { lesson, allLessons, subject });
   };
 
   const currentStyles = styles(theme, fontSizes, spacing, borderRadius, common, typography);

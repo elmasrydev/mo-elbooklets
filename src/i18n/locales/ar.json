@@ -99,7 +99,9 @@
     "no_key_points": "لا توجد نقاط رئيسية متاحة لهذا الدرس.",
     "previous": "السابق",
     "next": "التالي",
-    "back_to_chapters": "العودة للفصول"
+    "back_to_chapters": "العودة للفصول",
+    "take_quiz": "ابدأ اختبار",
+    "test_your_knowledge": "اختبر معرفتك في هذا الدرس"
   },
   "more_screen": {
     "header_title": "المزيد",

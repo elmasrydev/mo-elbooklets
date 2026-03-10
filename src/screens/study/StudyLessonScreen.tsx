@@ -16,11 +16,12 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { Video, ResizeMode } from 'expo-av';
 import { layout } from '../../config/layout';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
 import CloseButton from '../../components/navigation/CloseButton';
 import LessonNavBar from '../../components/navigation/LessonNavBar';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import { useTypography } from '../../hooks/useTypography';
+import AppButton from '../../components/AppButton';
 import { isRTL, textAlign } from '../../lib/rtl';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -164,6 +165,7 @@ const StudyLessonScreen: React.FC = () => {
 
   const [currentLesson, setCurrentLesson] = useState<Lesson>(route.params?.lesson);
   const allLessons: Lesson[] = route.params?.allLessons || [];
+  const subject = route.params?.subject;
   const [expandedPoints, setExpandedPoints] = useState<Set<string>>(new Set());
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -191,6 +193,35 @@ const StudyLessonScreen: React.FC = () => {
     setCurrentLesson(lesson);
     setExpandedPoints(new Set());
     scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+  };
+
+  const handleTakeQuiz = () => {
+    const selectedUnits = [{
+      id: currentLesson.chapter.id,
+      name: currentLesson.chapter.name,
+      lessons: [{ id: currentLesson.id, name: currentLesson.name }],
+    }];
+    const selectedLessonIds = [currentLesson.id];
+
+    navigation.goBack();
+    setTimeout(() => {
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 1,
+          routes: [
+            { name: 'MainTabs', state: { routes: [{ name: 'Quiz' }] } },
+            {
+              name: 'QuizFlowSettings',
+              params: {
+                subject,
+                selectedUnits,
+                selectedLessonIds,
+              },
+            },
+          ],
+        }),
+      );
+    }, 400);
   };
 
   const hasNewPoints = currentLesson.lessonPoints && currentLesson.lessonPoints.length > 0;
@@ -317,6 +348,26 @@ const StudyLessonScreen: React.FC = () => {
             <Text style={currentStyles.noContentText}> {t('study_lesson.no_key_points')} </Text>
           )}
         </View>
+
+        {/* Take Quiz CTA */}
+        {subject && (
+          <View style={currentStyles.takeQuizSection}>
+            <View style={currentStyles.takeQuizDivider} />
+            <View style={currentStyles.takeQuizContent}>
+              <Ionicons name="school-outline" size={28} color={theme.colors.primary} />
+              <Text style={currentStyles.takeQuizLabel}>
+                {t('study_lesson.test_your_knowledge')}
+              </Text>
+              <AppButton
+                title={t('study_lesson.take_quiz')}
+                onPress={handleTakeQuiz}
+                size="lg"
+                icon={<Ionicons name="play" size={20} color={theme.colors.textOnDark} />}
+                iconPosition={isRTL ? 'left' : 'right'}
+              />
+            </View>
+          </View>
+        )}
       </ScrollView>
 
       <LessonNavBar
@@ -481,6 +532,29 @@ const styles = (
       lineHeight: 20,
       color: theme.colors.textSecondary,
       textAlign: 'left',
+    },
+    takeQuizSection: {
+      marginTop: spacing.lg,
+      marginBottom: spacing.xl,
+    },
+    takeQuizDivider: {
+      height: 1,
+      backgroundColor: theme.colors.border,
+      marginBottom: spacing.xl,
+    },
+    takeQuizContent: {
+      alignItems: 'center',
+      gap: spacing.md,
+      padding: spacing.md,
+      borderRadius: borderRadius.xl,
+      backgroundColor: theme.colors.card,
+      borderWidth: 1,
+      borderColor: theme.colors.primary + '1A',
+    },
+    takeQuizLabel: {
+      ...typography('body'),
+      color: theme.colors.textSecondary,
+      textAlign: 'center',
     },
   });
 

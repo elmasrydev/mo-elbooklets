@@ -99,7 +99,9 @@
     "no_key_points": "No key points available for this lesson.",
     "previous": "Previous",
     "next": "Next",
-    "back_to_chapters": "Back to Chapters"
+    "back_to_chapters": "Back to Chapters",
+    "take_quiz": "Take Quiz",
+    "test_your_knowledge": "Test your knowledge on this lesson"
   },
   "more_screen": {
     "header_title": "More",

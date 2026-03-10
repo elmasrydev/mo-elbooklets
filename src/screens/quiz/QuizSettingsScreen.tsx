@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { tryFetchWithFallback } from '../../config/api';
 import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
@@ -9,7 +10,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
-import { tryFetchWithFallback } from '../../config/api';
+
 import UnifiedHeader from '../../components/UnifiedHeader';
 import AppButton from '../../components/AppButton';
 import { layout } from '../../config/layout';
@@ -39,10 +40,13 @@ const QuizSettingsScreen: React.FC = () => {
   const route = useRoute<any>();
   const {
     subject,
-    quizTypes = [],
+    quizTypes: passedQuizTypes,
     selectedUnits = [],
     selectedLessonIds = [],
   } = route.params || {};
+
+  const [quizTypes, setQuizTypes] = useState<QuizType[]>(passedQuizTypes || []);
+  const [loadingTypes, setLoadingTypes] = useState(!passedQuizTypes || passedQuizTypes.length === 0);
 
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
@@ -54,6 +58,40 @@ const QuizSettingsScreen: React.FC = () => {
   const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null);
   const [timedMode, setTimedMode] = useState(false);
   const [starting, setStarting] = useState(false);
+
+  const fetchQuizTypes = useCallback(async () => {
+    try {
+      setLoadingTypes(true);
+      const token = await AsyncStorage.getItem('auth_token');
+      if (!token) return;
+      const result = await tryFetchWithFallback(
+        `query QuizTypes { quizTypes { id name slug question_count is_default } }`,
+        undefined,
+        token,
+      );
+      if (result.data?.quizTypes) {
+        setQuizTypes(
+          result.data.quizTypes.map((qt: any) => ({
+            id: qt.id,
+            name: qt.name,
+            slug: qt.slug,
+            questionCount: qt.question_count,
+            isDefault: qt.is_default,
+          })),
+        );
+      }
+    } catch (err) {
+      console.error('Fetch quiz types error:', err);
+    } finally {
+      setLoadingTypes(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!passedQuizTypes || passedQuizTypes.length === 0) {
+      fetchQuizTypes();
+    }
+  }, [passedQuizTypes, fetchQuizTypes]);
 
   useEffect(() => {
     if (!selectedTypeId && quizTypes.length > 0) {
