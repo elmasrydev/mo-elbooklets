@@ -1,0 +1,170 @@
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { Platform, AppState, AppStateStatus } from 'react-native';
+import {
+  getRemoteConfig,
+  setConfigSettings,
+  setDefaults,
+  fetchAndActivate,
+  getValue,
+} from '@react-native-firebase/remote-config';
+import DeviceInfo from 'react-native-device-info';
+
+export interface PlatformVersionConfig {
+  version: string;
+  forceUpdate: boolean;
+}
+
+export interface RemoteConfigVersionData {
+  ios: PlatformVersionConfig;
+  android: PlatformVersionConfig;
+}
+
+export interface ForceUpdateContextType {
+  shouldUpdate: boolean;
+  isForceUpdate: boolean;
+  remoteVersion: string;
+  checkForUpdate: () => Promise<void>;
+  dismissUpdate: () => void;
+}
+
+const ForceUpdateContext = createContext<ForceUpdateContextType | undefined>(undefined);
+
+const isDebugMode = __DEV__;
+
+// Remote Config key
+const REMOTE_CONFIG_KEY = isDebugMode ? 'mobileMinVersionDev' : 'mobileMinVersion';
+
+// Firebase cache duration in milliseconds
+const MINIMUM_FETCH_INTERVAL_MS = isDebugMode
+  ? 2 * 60 * 1000      // 2 minutes in debug mode
+  : 30 * 60 * 1000;    // 30 minutes in production
+
+export const ForceUpdateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [shouldUpdate, setShouldUpdate] = useState(false);
+  const [isForceUpdate, setIsForceUpdate] = useState(false);
+  const [remoteVersion, setRemoteVersion] = useState('');
+  const appStateRef = useRef(AppState.currentState);
+  const isInitializedRef = useRef(false);
+
+  const compareVersions = (currentVersion: string, remoteVersionStr: string): boolean => {
+    const current = currentVersion.split('.').map(Number);
+    const remote = remoteVersionStr.split('.').map(Number);
+
+    for (let i = 0; i < Math.max(current.length, remote.length); i++) {
+      const currentPart = current[i] || 0;
+      const remotePart = remote[i] || 0;
+
+      if (remotePart > currentPart) {
+        return true;
+      }
+      if (remotePart < currentPart) {
+        return false;
+      }
+    }
+    return false;
+  };
+
+  const initializeRemoteConfig = useCallback(async () => {
+    if (isInitializedRef.current) {
+      return;
+    }
+
+    try {
+      const remoteConfig = getRemoteConfig();
+      await setConfigSettings(remoteConfig, {
+        minimumFetchIntervalMillis: MINIMUM_FETCH_INTERVAL_MS,
+      });
+
+      await setDefaults(remoteConfig, {
+        [REMOTE_CONFIG_KEY]: JSON.stringify({
+          ios: { version: '0.0.1', forceUpdate: false },
+          android: { version: '0.0.1', forceUpdate: false },
+        }),
+      });
+
+      isInitializedRef.current = true;
+      console.log(`[ForceUpdate] Remote Config initialized (Key: ${REMOTE_CONFIG_KEY})`);
+    } catch (error) {
+      console.error('[ForceUpdate] Failed to initialize Remote Config:', error);
+    }
+  }, []);
+
+  const checkForUpdate = useCallback(async () => {
+    try {
+      await initializeRemoteConfig();
+
+      const remoteConfig = getRemoteConfig();
+      const fetchedRemotely = await fetchAndActivate(remoteConfig);
+      console.log(`[ForceUpdate] Fetched from ${fetchedRemotely ? 'server' : 'cache'}`);
+
+      const configValue = getValue(remoteConfig, REMOTE_CONFIG_KEY);
+      const versionData: RemoteConfigVersionData = JSON.parse(configValue.asString());
+
+      const currentVersion = DeviceInfo.getVersion();
+      const platform = Platform.OS as 'ios' | 'android';
+      const platformConfig = versionData[platform];
+
+      const needsUpdate = compareVersions(currentVersion, platformConfig.version);
+
+      if (needsUpdate) {
+        console.log(`[ForceUpdate] Needs update! (Force: ${platformConfig.forceUpdate})`);
+        setShouldUpdate(true);
+        setIsForceUpdate(platformConfig.forceUpdate);
+        setRemoteVersion(platformConfig.version);
+      } else {
+        setShouldUpdate(false);
+        setIsForceUpdate(false);
+        setRemoteVersion('');
+      }
+    } catch (error) {
+      console.error('[ForceUpdate] Error checking for updates:', error);
+    }
+  }, [initializeRemoteConfig]);
+
+  const dismissUpdate = useCallback(() => {
+    if (!isForceUpdate) {
+      setShouldUpdate(false);
+      setRemoteVersion('');
+    }
+  }, [isForceUpdate]);
+
+  useEffect(() => {
+    checkForUpdate();
+  }, [checkForUpdate]);
+
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (appStateRef.current.match(/inactive|background/) && nextAppState === 'active') {
+        checkForUpdate();
+      }
+      appStateRef.current = nextAppState;
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => {
+      subscription.remove();
+    };
+  }, [checkForUpdate]);
+
+  const value: ForceUpdateContextType = {
+    shouldUpdate,
+    isForceUpdate,
+    remoteVersion,
+    checkForUpdate,
+    dismissUpdate,
+  };
+
+  return (
+    <ForceUpdateContext.Provider value={value}>
+      {children}
+    </ForceUpdateContext.Provider>
+  );
+};
+
+export const useForceUpdate = (): ForceUpdateContextType => {
+  const context = useContext(ForceUpdateContext);
+  if (!context) {
+    throw new Error('useForceUpdate must be used within ForceUpdateProvider');
+  }
+  return context;
+};

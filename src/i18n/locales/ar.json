@@ -6,6 +6,15 @@
     "already_have_account": "لديك حساب بالفعل؟",
     "sign_in": "تسجيل الدخول"
   },
+  "forceUpdate": {
+    "requiredTitle": "تحديث مطلوب",
+    "optionalTitle": "تحديث متاح",
+    "requiredDescription": "وفّرنا تحديث إجباري لضمان استقرار التطبيق. يرجى التحديث إلى أحدث إصدار للاستمرار.",
+    "optionalDescription": "أصدرنا نسخة جديدة من التطبيق بميزات وتحسينات رائعة جديدة.",
+    "updateNow": "حدث الآن",
+    "later": "ربما لاحقاً",
+    "mandatoryUpdate": "تحديث إلزامي"
+  },
   "common": {
     "more": "المزيد",
     "home": "الرئيسية",

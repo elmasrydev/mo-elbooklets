@@ -17,6 +17,9 @@ import { LanguageProvider } from './src/context/LanguageContext';
 import { ModalProvider } from './src/context/ModalContext';
 import { GlobalModalHandler } from './src/components/GlobalModalHandler';
 
+import { ForceUpdateProvider } from './src/context/ForceUpdateContext';
+import ForceUpdateModal from './src/components/ForceUpdateModal';
+
 import * as Updates from 'expo-updates';
 
 type Language = 'ar' | 'en';
@@ -141,18 +144,21 @@ export default function App() {
     <SafeAreaProvider>
       <ApolloProvider client={apolloClient}>
         <ThemeProvider>
-          <ModalProvider>
-            <LanguageProvider initialLanguage={initialLanguage}>
-              <I18nextProvider i18n={i18n}>
-                <AuthProvider>
-                  <NavigationContainer>
-                    <AppNavigator />
-                  </NavigationContainer>
-                  <GlobalModalHandler />
-                </AuthProvider>
-              </I18nextProvider>
-            </LanguageProvider>
-          </ModalProvider>
+          <ForceUpdateProvider>
+            <ModalProvider>
+              <LanguageProvider initialLanguage={initialLanguage}>
+                <I18nextProvider i18n={i18n}>
+                  <AuthProvider>
+                    <NavigationContainer>
+                      <AppNavigator />
+                    </NavigationContainer>
+                    <ForceUpdateModal />
+                    <GlobalModalHandler />
+                  </AuthProvider>
+                </I18nextProvider>
+              </LanguageProvider>
+            </ModalProvider>
+          </ForceUpdateProvider>
         </ThemeProvider>
       </ApolloProvider>
       <StatusBar style="auto" />
