@@ -328,8 +328,8 @@ const styles = (
       alignItems: common.alignStart,
     },
     unitName: {
-      fontSize: Math.max(18, fontSizes.lg),
-      ...fontWeight('800'),
+      ...typography('h3'),
+      ...fontWeight('bold'),
       color: theme.colors.text,
       marginBottom: spacing.xs,
       textAlign: common.textAlign,
@@ -378,7 +378,7 @@ const styles = (
       alignItems: common.alignStart,
     },
     lessonName: {
-      fontSize: fontSizes.md,
+      ...typography('button'),
       ...fontWeight('500'),
       color: theme.colors.text,
       textAlign: common.textAlign,

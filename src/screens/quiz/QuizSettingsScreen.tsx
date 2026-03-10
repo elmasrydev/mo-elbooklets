@@ -135,39 +135,7 @@ const QuizSettingsScreen: React.FC = () => {
           <Text style={currentStyles.heroSubtitle}>{t('quiz_lessons.customize_experience')}</Text>
         </View>
 
-        {subject?.name ? (
-          <View style={currentStyles.subjectBadgeCard}>
-            <View style={currentStyles.subjectBadgeIconContainer}>
-              <Ionicons name="book" size={24} color={theme.colors.textOnDark} />
-            </View>
-            <View style={currentStyles.subjectBadgeInfo}>
-              <Text style={currentStyles.subjectBadgeLabel}>{t('quiz_lessons.current_topic')}</Text>
-              <Text style={currentStyles.subjectBadgeTitle}>{subject.name}</Text>
-            </View>
-          </View>
-        ) : null}
-
-        {selectedUnits && selectedUnits.length > 0 && (
-          <View style={currentStyles.breadcrumbsContainer}>
-            {selectedUnits.map((unit: SelectedUnit) => (
-              <View key={unit.id} style={currentStyles.unitBreadcrumb}>
-                <View style={currentStyles.unitBreadcrumbHeader}>
-                  <View style={currentStyles.breadcrumbDot} />
-                  <Text style={currentStyles.unitBreadcrumbName}>{unit.name}</Text>
-                </View>
-                <View style={currentStyles.lessonBreadcrumbsList}>
-                  {unit.lessons.map((lesson: SelectedLesson) => (
-                    <View key={lesson.id} style={currentStyles.lessonBreadcrumbItem}>
-                      <View style={currentStyles.lessonBreadcrumbDot} />
-                      <Text style={currentStyles.lessonBreadcrumbName}>{lesson.name}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
-
+        {/* 1. Timer Setting */}
         <View style={currentStyles.additionalSettingsContainer}>
           <View style={currentStyles.settingRow}>
             <View style={currentStyles.settingInfo}>
@@ -197,6 +165,7 @@ const QuizSettingsScreen: React.FC = () => {
           </View>
         </View>
 
+        {/* 2. Quiz Type Settings */}
         <View style={currentStyles.sectionContainer}>
           <Text style={currentStyles.sectionTitle}>{t('quiz_lessons.select_quiz_type')}</Text>
           <View style={currentStyles.optionsContainer}>
@@ -235,6 +204,41 @@ const QuizSettingsScreen: React.FC = () => {
             })}
           </View>
         </View>
+
+        {/* 3. Current Subject Badge */}
+        {subject?.name ? (
+          <View style={currentStyles.subjectBadgeCard}>
+            <View style={currentStyles.subjectBadgeIconContainer}>
+              <Ionicons name="book" size={24} color={theme.colors.textOnDark} />
+            </View>
+            <View style={currentStyles.subjectBadgeInfo}>
+              <Text style={currentStyles.subjectBadgeLabel}>{t('quiz_lessons.current_topic')}</Text>
+              <Text style={currentStyles.subjectBadgeTitle}>{subject.name}</Text>
+            </View>
+          </View>
+        ) : null}
+
+        {/* 4. Breadcrumb (Units & Lessons) */}
+        {selectedUnits && selectedUnits.length > 0 && (
+          <View style={currentStyles.breadcrumbsContainer}>
+            {selectedUnits.map((unit: SelectedUnit) => (
+              <View key={unit.id} style={currentStyles.unitBreadcrumb}>
+                <View style={currentStyles.unitBreadcrumbHeader}>
+                  <View style={currentStyles.breadcrumbDot} />
+                  <Text style={currentStyles.unitBreadcrumbName}>{unit.name}</Text>
+                </View>
+                <View style={currentStyles.lessonBreadcrumbsList}>
+                  {unit.lessons.map((lesson: SelectedLesson) => (
+                    <View key={lesson.id} style={currentStyles.lessonBreadcrumbItem}>
+                      <View style={currentStyles.lessonBreadcrumbDot} />
+                      <Text style={currentStyles.lessonBreadcrumbName}>{lesson.name}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
       </ScrollView>
 
       <View style={currentStyles.actionArea}>
@@ -276,14 +280,14 @@ const styles = (
       paddingHorizontal: layout.screenPadding,
       paddingTop: spacing.lg,
       paddingBottom: spacing.xl,
-      alignItems: 'stretch', // Critical for preventing the "right-align jump"
+      alignItems: 'stretch',
     },
     heroSection: {
       marginBottom: spacing.xl,
       width: '100%',
     },
     heroTitle: {
-      fontSize: Math.max(24, fontSizes.xl),
+      ...typography('h1'),
       ...fontWeight('700'),
       color: theme.colors.text,
       marginBottom: spacing.md,
@@ -296,7 +300,7 @@ const styles = (
       lineHeight: 22,
     },
     subjectBadgeCard: {
-      flexDirection: 'row', // Let React Native handle the flip
+      flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: theme.colors.primary + '0D',
       borderWidth: 1,
@@ -315,7 +319,7 @@ const styles = (
     },
     subjectBadgeInfo: {
       flex: 1,
-      paddingStart: spacing.md, // Use paddingStart instead of gap for better RTL support
+      paddingStart: spacing.md,
       alignItems: 'flex-start',
     },
     subjectBadgeLabel: {
