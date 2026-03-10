@@ -25,6 +25,8 @@ import { layout } from '../config/layout';
 import { tryFetchWithFallback } from '../config/api';
 import { QuizCompletionCard, ConnectionCard, RankChangeCard } from '../components/feed';
 import AppButton from '../components/AppButton';
+import { CardListSkeleton, GenericListSkeleton } from '../components/SkeletonLoader';
+import RetryView from '../components/RetryView';
 
 interface Student {
   id: string;
@@ -281,9 +283,13 @@ const SocialScreen: React.FC = () => {
           />
         );
       if (item.type === 'new_connection' && item.connectedUser)
-        return <ConnectionCard item={item as any} onLike={() => {}} onComment={handleDefaultComment} />;
+        return (
+          <ConnectionCard item={item as any} onLike={() => {}} onComment={handleDefaultComment} />
+        );
       if (item.type === 'rank_change' && item.rankData)
-        return <RankChangeCard item={item as any} onLike={() => {}} onComment={handleDefaultComment} />;
+        return (
+          <RankChangeCard item={item as any} onLike={() => {}} onComment={handleDefaultComment} />
+        );
       return null;
     },
     [t, handleLike, showConfirm],
@@ -347,9 +353,8 @@ const SocialScreen: React.FC = () => {
     if (isSearchMode) {
       if (searchLoading)
         return (
-          <View style={currentStyles.loadingState}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text style={currentStyles.loadingText}>{t('social_screen.searching')}</Text>
+          <View style={{ paddingTop: 16 }}>
+            <GenericListSkeleton numItems={4} />
           </View>
         );
       return (
@@ -367,29 +372,14 @@ const SocialScreen: React.FC = () => {
 
     if (timelineLoading && !refreshing)
       return (
-        <View style={currentStyles.loadingState}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={currentStyles.loadingText}>{t('social_screen.loading_activities')}</Text>
+        <View style={{ paddingTop: 16 }}>
+          <CardListSkeleton numItems={3} />
         </View>
       );
 
     if (timelineError)
       return (
-        <View style={currentStyles.emptyState}>
-          <View style={[currentStyles.emptyIconBg, { backgroundColor: `${theme.colors.error}10` }]}>
-            <Ionicons name="alert-circle-outline" size={40} color={theme.colors.error} />
-          </View>
-          <Text style={currentStyles.emptyStateTitle}>
-            {t('social_screen.error_loading_timeline')}
-          </Text>
-          <AppButton
-            title={t('home_screen.try_again')}
-            onPress={fetchTimeline}
-            size="sm"
-            fullWidth={false}
-            style={{ marginTop: 16 }}
-          />
-        </View>
+        <RetryView message={t('social_screen.error_loading_timeline')} onRetry={fetchTimeline} />
       );
 
     return (
@@ -417,10 +407,11 @@ const SocialScreen: React.FC = () => {
 
   const FeedHeader = useMemo(() => {
     if (isSearchMode && searchResults.length > 0) {
-      return <Text style={currentStyles.sectionTitle}>{t('social_screen.search_results', 'Search Results')}</Text>;
-    }
-    if (!isSearchMode && feedItems.length > 0) {
-      return <Text style={currentStyles.sectionTitle}>{t('social_screen.whats_happening', "What's Happening")}</Text>;
+      return (
+        <Text style={currentStyles.sectionTitle}>
+          {t('social_screen.search_results', 'Search Results')}
+        </Text>
+      );
     }
     return null;
   }, [isSearchMode, searchResults.length, feedItems.length, currentStyles, t]);

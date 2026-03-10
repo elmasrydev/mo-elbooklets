@@ -20,6 +20,8 @@ import { tryFetchWithFallback } from '../../config/api';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import AppButton from '../../components/AppButton';
 import SubjectIcon from '../../components/SubjectIcon';
+import { GenericListSkeleton } from '../../components/SkeletonLoader';
+import RetryView from '../../components/RetryView';
 
 interface Subject {
   id: string;
@@ -80,9 +82,8 @@ const QuizSubjectsScreen: React.FC = () => {
           onBackPress={() => navigation.goBack()}
           title={t('quiz_subjects.header_title')}
         />
-        <View style={currentStyles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={currentStyles.loadingText}> {t('quiz_subjects.loading_subjects')} </Text>
+        <View style={{ paddingTop: 16 }}>
+          <GenericListSkeleton numItems={5} />
         </View>
       </View>
     );
@@ -95,19 +96,10 @@ const QuizSubjectsScreen: React.FC = () => {
           onBackPress={() => navigation.goBack()}
           title={t('quiz_subjects.header_title')}
         />
-        <View style={currentStyles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={spacing.icon.xl} color={theme.colors.error} />
-          <Text style={currentStyles.errorTitle}>
-            {' '}
-            {t('quiz_subjects.error_loading_subjects')}{' '}
-          </Text>
-          <AppButton
-            title={t('home_screen.try_again')}
-            onPress={fetchSubjects}
-            size="sm"
-            fullWidth={false}
-          />
-        </View>
+        <RetryView 
+          message={t('quiz_subjects.error_loading_subjects')}
+          onRetry={fetchSubjects}
+        />
       </View>
     );
 

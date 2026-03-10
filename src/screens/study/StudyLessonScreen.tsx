@@ -277,13 +277,8 @@ const StudyLessonScreen: React.FC = () => {
                     activeOpacity={point.explanation ? 0.7 : 1}
                   >
                     <View style={currentStyles.pointHeader}>
-                      <View
-                        style={[
-                          currentStyles.pointBullet,
-                          { backgroundColor: theme.colors.primary },
-                        ]}
-                      >
-                        <Ionicons name="bookmark" size={13} color={theme.colors.textOnDark} />
+                      <View>
+                        <Ionicons name="checkmark-circle" size={26} color={theme.colors.success} />
                       </View>
                       <Text style={currentStyles.pointText}> {point.title} </Text>
                       {point.explanation && (

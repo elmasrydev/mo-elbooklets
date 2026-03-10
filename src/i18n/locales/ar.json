@@ -52,7 +52,11 @@
     "completed": "مكتمل",
     "unknown_unit": "وحدة غير معروفة",
     "points": "نقطة",
-    "subject": "المادة"
+    "subject": "المادة",
+    "true": "صح",
+    "false": "خطأ",
+    "yes": "نعم",
+    "no": "لا"
   },
   "study_screen": {
     "header_title": "المذاكرة",

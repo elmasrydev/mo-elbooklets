@@ -9,6 +9,7 @@ import { useTypography } from '../hooks/useTypography';
 import { layout } from '../config/layout';
 import { gql } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
+import { GenericListSkeleton } from './SkeletonLoader';
 
 const TODAY_SCHEDULE_QUERY = gql`
   query TodaySchedule {
@@ -78,8 +79,8 @@ const TodaysPlanWidget: React.FC = () => {
             <Text style={currentStyles.title}> {t('study_calendar.today_plan')} </Text>
           </View>
         </View>
-        <View style={currentStyles.loadingContainer}>
-          <ActivityIndicator size="small" color={theme.colors.primary} />
+        <View style={{ paddingTop: spacing.md, paddingHorizontal: spacing.sm }}>
+          <GenericListSkeleton numItems={3} />
         </View>
       </View>
     );

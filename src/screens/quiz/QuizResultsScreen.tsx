@@ -22,6 +22,8 @@ import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import AppButton from '../../components/AppButton';
+import RetryView from '../../components/RetryView';
+import { GenericListSkeleton } from '../../components/SkeletonLoader';
 import { textAlign } from '../../lib/rtl';
 
 interface UserQuizAnswer {
@@ -217,9 +219,8 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
     return (
       <View style={common.container}>
         <UnifiedHeader title={t('quiz_results.loading_results')} />
-        <View style={currentStyles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={currentStyles.loadingText}> {t('quiz_results.loading_quiz_results')} </Text>
+        <View style={{ paddingTop: 16 }}>
+          <GenericListSkeleton numItems={5} />
         </View>
       </View>
     );
@@ -233,22 +234,10 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
           onBackPress={onBack}
           title={t('quiz_results.results_error')}
         />
-        <View style={currentStyles.errorContainer}>
-          <Ionicons
-            name="alert-circle"
-            size={48}
-            color={theme.colors.error}
-            style={{ marginBottom: spacing.lg }}
-          />
-          <Text style={currentStyles.errorTitle}> {t('quiz_results.error_loading_results')} </Text>
-          <Text style={currentStyles.errorText}> {error} </Text>
-          <AppButton
-            title={t('home_screen.try_again')}
-            onPress={fetchQuizResults}
-            size="sm"
-            fullWidth={false}
-          />
-        </View>
+        <RetryView 
+          message={error}
+          onRetry={fetchQuizResults}
+        />
       </View>
     );
   }

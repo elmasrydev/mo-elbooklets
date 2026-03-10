@@ -20,6 +20,8 @@ import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
 import UnifiedHeader from '../components/UnifiedHeader';
 import AppButton from '../components/AppButton';
+import { GenericListSkeleton } from '../components/SkeletonLoader';
+import RetryView from '../components/RetryView';
 import { layout } from '../config/layout';
 import { tryFetchWithFallback } from '../config/api';
 
@@ -248,28 +250,17 @@ const LeaderboardScreen: React.FC = () => {
   const renderLeaderboardContent = () => {
     if (leaderboardLoading)
       return (
-        <View style={currentStyles.stateContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={currentStyles.stateText}>
-            {t('leaderboard_screen.loading_leaderboard', {
-              defaultValue: 'Loading leaderboard...',
-            })}
-          </Text>
+        <View style={{ paddingTop: 16 }}>
+          <GenericListSkeleton numItems={6} />
         </View>
       );
 
     if (leaderboardError)
       return (
-        <View style={currentStyles.stateContainer}>
-          <Ionicons name="alert-circle-outline" size={spacing.icon.xl} color={theme.colors.error} />
-          <Text style={currentStyles.stateTitle}>{leaderboardError}</Text>
-          <AppButton
-            title={t('common.try_again', { defaultValue: 'Try Again' })}
-            onPress={() => fetchLeaderboard(selectedTab)}
-            size="sm"
-            fullWidth={false}
-          />
-        </View>
+        <RetryView
+          message={leaderboardError}
+          onRetry={() => fetchLeaderboard(selectedTab)}
+        />
       );
 
     const leaderboard =

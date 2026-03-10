@@ -20,6 +20,7 @@ import { layout } from '../../config/layout';
 import { useTypography } from '../../hooks/useTypography';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import AppButton from '../../components/AppButton';
+import { GenericListSkeleton } from '../../components/SkeletonLoader';
 
 interface Subject {
   id: string;
@@ -145,9 +146,8 @@ const QuizLessonsScreen: React.FC = () => {
     return (
       <View style={common.container}>
         <UnifiedHeader title={t('quiz_lessons.header_title')} />
-        <View style={currentStyles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={currentStyles.loadingText}> {t('quiz_lessons.loading_lessons')} </Text>
+        <View style={{ paddingTop: 16 }}>
+          <GenericListSkeleton numItems={6} />
         </View>
       </View>
     );

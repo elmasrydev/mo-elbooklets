@@ -21,6 +21,8 @@ import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
 import AppButton from '../../components/AppButton';
 import { textAlign } from '../../lib/rtl';
+import { QuizScreenSkeleton } from '../../components/SkeletonLoader';
+import RetryView from '../../components/RetryView';
 
 const QuizReviewScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -129,31 +131,18 @@ const QuizReviewScreen: React.FC = () => {
 
   if (loading) {
     return (
-      <View style={[common.container, currentStyles.center]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
+      <View style={{ paddingTop: 16 }}>
+        <QuizScreenSkeleton />
       </View>
     );
   }
 
   if (error || !result) {
     return (
-      <View style={[common.container, currentStyles.center, { padding: 20 }]}>
-        <Ionicons
-          name="alert-circle-outline"
-          size={48}
-          color={theme.colors.error}
-          style={{ marginBottom: 16 }}
-        />
-        <Text style={{ ...common.text, textAlign: 'center', marginBottom: 20 }}>
-          {error || t('common.error')}
-        </Text>
-        <AppButton
-          title={t('home_screen.try_again')}
-          onPress={fetchResults}
-          size="sm"
-          fullWidth={false}
-        />
-      </View>
+      <RetryView 
+        message={error || t('common.error')}
+        onRetry={fetchResults}
+      />
     );
   }
 
@@ -676,7 +665,14 @@ const QuizReviewScreen: React.FC = () => {
                             {String.fromCharCode(65 + optIndex)}
                           </Text>
                         </View>
-                        <Text style={currentStyles.optionText}> {opt} </Text>
+                        <Text style={currentStyles.optionText}>
+                          {' '}
+                          {opt.toLowerCase() === 'true'
+                            ? t('common.true')
+                            : opt.toLowerCase() === 'false'
+                              ? t('common.false')
+                              : opt}{' '}
+                        </Text>
                         <View style={currentStyles.dotIconContainer}>
                           {isAnswerCorrect ? (
                             <Ionicons name="checkmark-circle" size={24} color="#10B981" />

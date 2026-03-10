@@ -21,6 +21,7 @@ import { gql } from '@apollo/client';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { Ionicons } from '@expo/vector-icons';
 import UnifiedHeader from '../components/UnifiedHeader';
+import { GenericListSkeleton } from '../components/SkeletonLoader';
 
 const STUDY_SCHEDULE_QUERY = gql`
   query StudySchedule {
@@ -190,9 +191,15 @@ const StudyCalendarScreen: React.FC = () => {
 
   if (loadingSchedule || loadingSubjects) {
     return (
-      <View style={currentStyles.loadingContainer}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={currentStyles.loadingText}> {t('study_calendar.loading_schedule')} </Text>
+      <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+        <UnifiedHeader
+          showBackButton
+          title={t('study_calendar.header_title')}
+          subtitle={t('study_calendar.header_subtitle')}
+        />
+        <View style={{ paddingTop: 16, paddingHorizontal: layout.screenPadding }}>
+          <GenericListSkeleton numItems={6} />
+        </View>
       </View>
     );
   }

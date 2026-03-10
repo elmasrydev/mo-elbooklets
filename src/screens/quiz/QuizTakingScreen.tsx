@@ -22,6 +22,8 @@ import { useTypography } from '../../hooks/useTypography';
 import { layout } from '../../config/layout';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import AppButton from '../../components/AppButton';
+import RetryView from '../../components/RetryView';
+import { QuizScreenSkeleton } from '../../components/SkeletonLoader';
 
 const DESCRIPTIVE_TYPES = ['what_happens', 'give_a_reason'];
 
@@ -321,9 +323,8 @@ const QuizTakingScreen: React.FC = () => {
     return (
       <View style={common.container}>
         <UnifiedHeader title={t('quiz_taking.loading_quiz')} />
-        <View style={currentStyles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={currentStyles.loadingText}> {t('quiz_taking.loading_quiz_questions')} </Text>
+        <View style={{ paddingTop: 16 }}>
+          <QuizScreenSkeleton />
         </View>
       </View>
     );
@@ -333,22 +334,10 @@ const QuizTakingScreen: React.FC = () => {
     return (
       <View style={common.container}>
         <UnifiedHeader showBackButton title={t('quiz_taking.quiz_error')} />
-        <View style={currentStyles.errorContainer}>
-          <Ionicons
-            name="alert-circle"
-            size={48}
-            color={theme.colors.error}
-            style={{ marginBottom: spacing.lg }}
-          />
-          <Text style={currentStyles.errorTitle}> {t('quiz_taking.error_loading_quiz')} </Text>
-          <Text style={currentStyles.errorText}> {error} </Text>
-          <AppButton
-            title={t('home_screen.try_again')}
-            onPress={fetchQuiz}
-            size="sm"
-            fullWidth={false}
-          />
-        </View>
+        <RetryView 
+          message={error}
+          onRetry={fetchQuiz}
+        />
       </View>
     );
   }
@@ -500,7 +489,11 @@ const QuizTakingScreen: React.FC = () => {
                           isSelected && currentStyles.selectedAnswerTitle,
                         ]}
                       >
-                        {parts[0]}
+                        {parts[0].toLowerCase() === 'true'
+                          ? t('common.true')
+                          : parts[0].toLowerCase() === 'false'
+                            ? t('common.false')
+                            : parts[0]}
                       </Text>
                       {hasSubtitle && (
                         <Text

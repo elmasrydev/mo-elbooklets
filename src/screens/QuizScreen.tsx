@@ -21,6 +21,8 @@ import { useTranslation } from 'react-i18next';
 import RecentActivityCard from '../components/RecentActivityCard';
 import UnifiedHeader from '../components/UnifiedHeader';
 import AppButton from '../components/AppButton';
+import { GenericListSkeleton } from '../components/SkeletonLoader';
+import RetryView from '../components/RetryView';
 
 interface QuizHistory {
   id: string;
@@ -124,25 +126,16 @@ const QuizScreen: React.FC = () => {
   const ListEmptyComponent = useMemo(() => {
     if (historyLoading && !refreshing)
       return (
-        <View style={currentStyles.loadingState}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={currentStyles.loadingText}> {t('quiz_screen.loading_quiz_history')} </Text>
+        <View style={{ paddingTop: 16, paddingHorizontal: layout.screenPadding }}>
+          <GenericListSkeleton numItems={5} />
         </View>
       );
     if (historyError)
       return (
-        <View style={currentStyles.errorState}>
-          <Ionicons name="alert-circle-outline" size={spacing.icon.xl} color={theme.colors.error} />
-          <Text style={currentStyles.errorStateTitle}>
-            {t('quiz_screen.error_loading_history')}
-          </Text>
-          <AppButton
-            title={t('home_screen.try_again')}
-            onPress={fetchQuizHistory}
-            size="sm"
-            fullWidth={false}
-          />
-        </View>
+        <RetryView 
+          message={historyError || t('quiz_screen.error_loading_history')} 
+          onRetry={fetchQuizHistory} 
+        />
       );
     return (
       <View style={currentStyles.emptyState}>

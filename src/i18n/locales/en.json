@@ -52,7 +52,11 @@
     "completed": "Completed",
     "unknown_unit": "Unknown Unit",
     "points": "Points",
-    "subject": "Subject"
+    "subject": "Subject",
+    "true": "True",
+    "false": "False",
+    "yes": "Yes",
+    "no": "No"
   },
   "study_screen": {
     "header_title": "Study",

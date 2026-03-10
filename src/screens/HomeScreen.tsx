@@ -29,6 +29,7 @@ import SubjectIcon from '../components/SubjectIcon';
 import QuizCompletionCard from '../components/feed/QuizCompletionCard';
 import RankChangeCard from '../components/feed/RankChangeCard';
 import ConnectionCard from '../components/feed/ConnectionCard';
+import { CardListSkeleton } from '../components/SkeletonLoader';
 
 const { width } = Dimensions.get('window');
 
@@ -297,8 +298,8 @@ const HomeScreen: React.FC = () => {
     return (
       <View style={common.container}>
         <UnifiedHeader leftContent={<AnimatedNavbarLogo isRTL={isRTL} />} />
-        <View style={s.loadingCenter}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+        <View style={{ flex: 1, paddingTop: 16 }}>
+          <CardListSkeleton numItems={4} />
         </View>
       </View>
     );
