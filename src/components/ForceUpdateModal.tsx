@@ -10,15 +10,15 @@ import { layout } from '../config/layout';
 const APP_STORE_URL = 'itms-apps://apps.apple.com/app/id123456789'; // TODO: Update ID when known
 const PLAY_STORE_URL = 'market://details?id=com.elbooklets.app';
 
-export const ForceUpdateModal: React.FC = () => {
-  const { t } = useTranslation();
+const ForceUpdateModal: React.FC = () => {
+  const { t } = useTranslation('common');
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { shouldUpdate, isForceUpdate, dismissUpdate } = useForceUpdate();
 
   useEffect(() => {
+    if (!shouldUpdate) return;
+
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      // Block back button if it's visible, regardless of force update or not.
-      // (Optional updates MUST be dismissed using the "Later" button).
       if (shouldUpdate) return true;
       return false;
     });
@@ -33,6 +33,8 @@ export const ForceUpdateModal: React.FC = () => {
   const handleSkip = () => {
     if (!isForceUpdate) dismissUpdate();
   };
+
+  if (!shouldUpdate) return null;
 
   return (
     <Modal visible={shouldUpdate} transparent animationType="fade" statusBarTranslucent onRequestClose={() => {}}>
@@ -49,7 +51,7 @@ export const ForceUpdateModal: React.FC = () => {
             </Text>
             
             <Text style={styles(theme, borderRadius, spacing).description}>
-              {isForceUpdate ? t('forceUpdate.requiredDescription', 'A critical update is required to continue using the application. Please upgrade to the latest version.') : t('forceUpdate.optionalDescription', 'We have released a new version of the app with great new features and improvements.')}
+              {isForceUpdate ? t('forceUpdate.requiredDescription', 'A critical update is required...') : t('forceUpdate.optionalDescription', 'New version available...')}
             </Text>
           </View>
 
@@ -93,7 +95,7 @@ const styles = (theme: any, borderRadius: any = {}, spacing: any = {}) => StyleS
   },
   container: {
     width: '100%',
-    backgroundColor: theme.colors?.card || '#FFF',
+    backgroundColor: theme.colors?.surface || theme.colors?.card || '#FFF',
     borderRadius: borderRadius.xl || 16,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -133,7 +135,7 @@ const styles = (theme: any, borderRadius: any = {}, spacing: any = {}) => StyleS
     top: spacing.md || 16,
     right: spacing.md || 16,
     backgroundColor: theme.colors?.error || '#ef4444',
-    borderRadius: 999, // default pill
+    borderRadius: 999, 
     paddingHorizontal: spacing.sm || 12,
     paddingVertical: 4,
     flexDirection: 'row',
@@ -147,4 +149,4 @@ const styles = (theme: any, borderRadius: any = {}, spacing: any = {}) => StyleS
   }
 });
 
-export default ForceUpdateModal;
+export default React.memo(ForceUpdateModal);

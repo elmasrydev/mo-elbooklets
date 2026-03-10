@@ -6,16 +6,20 @@
     "already_have_account": "Already have an account?",
     "sign_in": "Sign In"
   },
-  "forceUpdate": {
-    "requiredTitle": "Update Required",
-    "optionalTitle": "Update Available",
-    "requiredDescription": "A critical update is required to continue using the application. Please upgrade to the latest version.",
-    "optionalDescription": "We have released a new version of the app with great new features and improvements.",
-    "updateNow": "Update Now",
-    "later": "Maybe Later",
-    "mandatoryUpdate": "Mandatory Update"
-  },
   "common": {
+    "forceUpdate": {
+      "requiredTitle": "Update Required",
+      "optionalTitle": "Update Available",
+      "requiredDescription": "A critical update is required to continue using the application. Please upgrade to the latest version.",
+      "optionalDescription": "We have released a new version of the app with great new features and improvements.",
+      "updateNow": "Update Now",
+      "later": "Maybe Later",
+      "mandatoryUpdate": "Mandatory Update"
+    },
+    "maintenance": {
+      "title": "Under Maintenance",
+      "description": "We are currently performing scheduled maintenance to improve your experience. Please check back shortly."
+    },
     "more": "More",
     "home": "Home",
     "brand_name": "El-Booklets",

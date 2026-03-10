@@ -23,6 +23,7 @@ export interface ForceUpdateContextType {
   shouldUpdate: boolean;
   isForceUpdate: boolean;
   remoteVersion: string;
+  isMaintenanceMode: boolean;
   checkForUpdate: () => Promise<void>;
   dismissUpdate: () => void;
 }
@@ -33,16 +34,18 @@ const isDebugMode = __DEV__;
 
 // Remote Config key
 const REMOTE_CONFIG_KEY = isDebugMode ? 'mobileMinVersionDev' : 'mobileMinVersion';
+const MAINTENANCE_CONFIG_KEY = isDebugMode ? 'mobileMaintenanceDev' : 'mobileMaintenance';
 
 // Firebase cache duration in milliseconds
 const MINIMUM_FETCH_INTERVAL_MS = isDebugMode
-  ? 2 * 60 * 1000      // 2 minutes in debug mode
-  : 30 * 60 * 1000;    // 30 minutes in production
+  ? 1 * 60 * 1000 // 1 minutes in debug mode
+  : 30 * 60 * 1000; // 30 minutes in production
 
 export const ForceUpdateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [shouldUpdate, setShouldUpdate] = useState(false);
   const [isForceUpdate, setIsForceUpdate] = useState(false);
   const [remoteVersion, setRemoteVersion] = useState('');
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
   const appStateRef = useRef(AppState.currentState);
   const isInitializedRef = useRef(false);
 
@@ -77,9 +80,10 @@ export const ForceUpdateProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
       await setDefaults(remoteConfig, {
         [REMOTE_CONFIG_KEY]: JSON.stringify({
-          ios: { version: '0.0.1', forceUpdate: false },
-          android: { version: '0.0.1', forceUpdate: false },
+          ios: { version: '1.0.0', forceUpdate: false },
+          android: { version: '1.0.0', forceUpdate: false },
         }),
+        [MAINTENANCE_CONFIG_KEY]: false,
       });
 
       isInitializedRef.current = true;
@@ -106,7 +110,13 @@ export const ForceUpdateProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
       const needsUpdate = compareVersions(currentVersion, platformConfig.version);
 
-      if (needsUpdate) {
+      const maintenanceValue = getValue(remoteConfig, MAINTENANCE_CONFIG_KEY);
+      const isMaintenance = maintenanceValue.asBoolean();
+
+      console.log(`[ForceUpdate] Maintenance Mode: ${isMaintenance}`);
+      setIsMaintenanceMode(isMaintenance);
+
+      if (needsUpdate && !isMaintenance) {
         console.log(`[ForceUpdate] Needs update! (Force: ${platformConfig.forceUpdate})`);
         setShouldUpdate(true);
         setIsForceUpdate(platformConfig.forceUpdate);
@@ -150,15 +160,12 @@ export const ForceUpdateProvider: React.FC<{ children: React.ReactNode }> = ({ c
     shouldUpdate,
     isForceUpdate,
     remoteVersion,
+    isMaintenanceMode,
     checkForUpdate,
     dismissUpdate,
   };
 
-  return (
-    <ForceUpdateContext.Provider value={value}>
-      {children}
-    </ForceUpdateContext.Provider>
-  );
+  return <ForceUpdateContext.Provider value={value}>{children}</ForceUpdateContext.Provider>;
 };
 
 export const useForceUpdate = (): ForceUpdateContextType => {

@@ -19,6 +19,7 @@ import { GlobalModalHandler } from './src/components/GlobalModalHandler';
 
 import { ForceUpdateProvider } from './src/context/ForceUpdateContext';
 import ForceUpdateModal from './src/components/ForceUpdateModal';
+import MaintenanceModal from './src/components/MaintenanceModal';
 
 import * as Updates from 'expo-updates';
 
@@ -153,6 +154,7 @@ export default function App() {
                       <AppNavigator />
                     </NavigationContainer>
                     <ForceUpdateModal />
+                    <MaintenanceModal />
                     <GlobalModalHandler />
                   </AuthProvider>
                 </I18nextProvider>
