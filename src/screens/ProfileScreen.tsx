@@ -226,7 +226,8 @@ const ProfileScreen: React.FC = () => {
           </TouchableOpacity>
           */}
 
-          {/* Help and Support */}
+          {/* Help and Support - Hidden for now */}
+          {/*
           <TouchableOpacity style={currentStyles.settingItem}>
             <View style={currentStyles.settingIconBox}>
               <Image
@@ -243,6 +244,7 @@ const ProfileScreen: React.FC = () => {
               color={theme.colors.textTertiary}
             />
           </TouchableOpacity>
+          */}
 
           {/* Dark Mode Toggle */}
           <View style={currentStyles.settingItem}>

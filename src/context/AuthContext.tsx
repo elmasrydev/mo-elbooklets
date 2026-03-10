@@ -7,6 +7,7 @@ import React, {
   ReactNode,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { tryFetchWithFallback, setAuthErrorHandler } from '../config/api';
 import { setLogoutHandler } from '../lib/apollo';
 
@@ -84,7 +85,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       const userData = await AsyncStorage.getItem('user_data');
 
       if (token && userData) {
@@ -130,7 +131,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         if (result.data?.login) {
           const authPayload = result.data.login;
-          await AsyncStorage.setItem('auth_token', authPayload.access_token);
+          await SecureStore.setItemAsync('auth_token', authPayload.access_token);
           await AsyncStorage.setItem('user_data', JSON.stringify(authPayload.user));
           setUser(authPayload.user);
           return { success: true };
@@ -181,7 +182,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         if (result.data?.register) {
           const authPayload = result.data.register;
-          await AsyncStorage.setItem('auth_token', authPayload.access_token);
+          await SecureStore.setItemAsync('auth_token', authPayload.access_token);
           await AsyncStorage.setItem('user_data', JSON.stringify(authPayload.user));
           setUser(authPayload.user);
           return { success: true };
@@ -201,7 +202,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = useCallback(async () => {
     try {
-      await AsyncStorage.removeItem('auth_token');
+      await SecureStore.deleteItemAsync('auth_token');
       await AsyncStorage.removeItem('user_data');
       setUser(null);
     } catch (error) {

@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../../context/LanguageContext';
@@ -48,7 +49,7 @@ const QuizSubjectsScreen: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
       const result = await tryFetchWithFallback(
         `query SubjectsForUserGrade { subjectsForUserGrade { id name description } }`,

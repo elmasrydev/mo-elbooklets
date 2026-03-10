@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useModal } from '../../context/ModalContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -116,7 +117,7 @@ const QuizTakingScreen: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       if (!token) {
         setError(t('common.error'));
         return;
@@ -248,7 +249,7 @@ const QuizTakingScreen: React.FC = () => {
     try {
       setSubmitting(true);
 
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       if (!token) {
         showConfirm({
           title: t('common.error'),

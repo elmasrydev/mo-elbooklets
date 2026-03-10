@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -78,7 +79,7 @@ const StudyChaptersScreen: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       if (!token) {
         setError(t('common.error'));
         return;

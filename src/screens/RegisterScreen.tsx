@@ -948,25 +948,23 @@ const RegisterScreen: React.FC = () => {
                   disabled={isLoading}
                   activeOpacity={0.8}
                 >
+                  <Text style={currentStyles.submitButtonText}>
+                    {currentStep === 4 ? t('auth.sign_up') : t('common.continue')}
+                  </Text>
                   {isLoading ? (
-                    <ActivityIndicator color="#FFF" />
+                    <ActivityIndicator size="small" color="#FFF" />
                   ) : (
-                    <>
-                      <Text style={currentStyles.submitButtonText}>
-                        {currentStep === 4 ? t('auth.sign_up') : t('common.continue')}
-                      </Text>
-                      <Ionicons
-                        name={
-                          currentStep === 4
-                            ? 'person-add-outline'
-                            : isRTL
-                              ? 'arrow-back-outline'
-                              : 'arrow-forward-outline'
-                        }
-                        size={20}
-                        color="#FFF"
-                      />
-                    </>
+                    <Ionicons
+                      name={
+                        currentStep === 4
+                          ? 'person-add-outline'
+                          : isRTL
+                            ? 'arrow-back-outline'
+                            : 'arrow-forward-outline'
+                      }
+                      size={20}
+                      color="#FFF"
+                    />
                   )}
                 </TouchableOpacity>
 

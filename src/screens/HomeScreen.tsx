@@ -10,6 +10,7 @@ import {
   Image,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -203,7 +204,7 @@ const HomeScreen: React.FC = () => {
   const fetchHomeData = useCallback(async () => {
     try {
       setLoading(true);
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
 
       // Fetch all data in parallel

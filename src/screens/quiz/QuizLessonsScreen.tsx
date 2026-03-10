@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -69,7 +70,7 @@ const QuizLessonsScreen: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
       const [lessonsResult, quizTypesResult] = await Promise.all([
         tryFetchWithFallback(

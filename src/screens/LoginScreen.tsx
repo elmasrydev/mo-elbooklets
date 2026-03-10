@@ -9,6 +9,7 @@ import {
   Platform,
   ScrollView,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -229,12 +230,16 @@ const LoginScreen: React.FC = () => {
                 activeOpacity={0.8}
               >
                 <Text style={currentStyles.signInButtonText}>{t('auth.sign_in')}</Text>
-                <Ionicons
-                  name={isRTL ? 'log-in-outline' : 'log-in-outline'}
-                  size={20}
-                  color="#FFF"
-                  style={{ transform: [{ scaleX: isRTL ? -1 : 1 }] }}
-                />
+                {isLoading ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <Ionicons
+                    name={isRTL ? 'log-in-outline' : 'log-in-outline'}
+                    size={20}
+                    color="#FFF"
+                    style={{ transform: [{ scaleX: isRTL ? -1 : 1 }] }}
+                  />
+                )}
               </TouchableOpacity>
 
               {/* Divider */}

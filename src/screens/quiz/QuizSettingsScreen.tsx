@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { tryFetchWithFallback } from '../../config/api';
 import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';

@@ -2,6 +2,7 @@ import { ApolloClient, InMemoryCache, createHttpLink, from } from '@apollo/clien
 import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { PRIMARY_API_URL } from '../config/api';
 
 // Logout handler to be set by AuthContext
@@ -16,7 +17,7 @@ const httpLink = createHttpLink({
 
 const authLink = setContext(async (_, { headers }) => {
   // Get the authentication token from AsyncStorage
-  const token = await AsyncStorage.getItem('auth_token');
+  const token = await SecureStore.getItemAsync('auth_token');
 
   return {
     headers: {
@@ -43,7 +44,7 @@ const errorLink = onError((errorResponse: any) => {
       ) {
         if (__DEV__) console.log('Auth error detected, logging out...');
         // Clear stored auth data
-        AsyncStorage.removeItem('auth_token');
+        SecureStore.deleteItemAsync('auth_token');
         AsyncStorage.removeItem('user_data');
         // Trigger logout in AuthContext
         if (logoutHandler) {
@@ -56,7 +57,7 @@ const errorLink = onError((errorResponse: any) => {
   // Also handle 401 network errors
   if (networkError && 'statusCode' in networkError && (networkError as any).statusCode === 401) {
     if (__DEV__) console.log('401 error detected, logging out...');
-    AsyncStorage.removeItem('auth_token');
+    SecureStore.deleteItemAsync('auth_token');
     AsyncStorage.removeItem('user_data');
     if (logoutHandler) {
       logoutHandler();

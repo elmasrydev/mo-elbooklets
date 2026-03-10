@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useCommonStyles } from '../hooks/useCommonStyles';
@@ -69,7 +70,7 @@ const QuizScreen: React.FC = () => {
     try {
       setHistoryLoading(true);
       setHistoryError(null);
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
       const result = await tryFetchWithFallback(
         `query UserQuizHistory { userQuizHistory { id name subject { id name } score totalQuestions completedAt isPassed } }`,

@@ -13,6 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -96,7 +97,7 @@ const SocialScreen: React.FC = () => {
     try {
       setTimelineLoading(true);
       setTimelineError(null);
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       if (!token) {
         setTimelineError(t('common.error'));
         return;
@@ -166,7 +167,7 @@ const SocialScreen: React.FC = () => {
   const performSearch = async (query: string) => {
     try {
       setSearchLoading(true);
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
 
       const result = await tryFetchWithFallback(
@@ -192,7 +193,7 @@ const SocialScreen: React.FC = () => {
   const handleFollowToggle = async (student: Student) => {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
 
       const result = await tryFetchWithFallback(
@@ -221,7 +222,7 @@ const SocialScreen: React.FC = () => {
   const handleLike = async (feedItem: NewsFeedItem) => {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       if (!token || feedItem.type !== 'quiz_completion' || !feedItem.quizData) return;
 
       const result = await tryFetchWithFallback(

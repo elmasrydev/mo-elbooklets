@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -91,7 +92,7 @@ const LeaderboardScreen: React.FC = () => {
   const fetchSubjects = async () => {
     try {
       setLoading(true);
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
       const result = await tryFetchWithFallback(
         `query SubjectsForUserGrade { subjectsForUserGrade { id name description } }`,
@@ -110,7 +111,7 @@ const LeaderboardScreen: React.FC = () => {
     try {
       setLeaderboardLoading(true);
       setLeaderboardError(null);
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
 
       const subjectId = tabId === 'all' ? null : tabId;
