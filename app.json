@@ -18,11 +18,12 @@
         "CFBundleAllowMixedLocalizations": true,
         "ITSAppUsesNonExemptEncryption": false
       },
-      "bundleIdentifier": "com.agmryde.app",
-      "buildNumber": "39"
+      "bundleIdentifier": "com.elbooklets.app",
+      "buildNumber": "41",
+      "appleTeamId": "LVA2A6A56C"
     },
     "android": {
-      "package": "com.elmasrydev.elbooklets",
+      "package": "com.elbooklets.app",
       "versionCode": 3,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
