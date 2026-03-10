@@ -22,8 +22,8 @@
         "CFBundleAllowMixedLocalizations": true,
         "ITSAppUsesNonExemptEncryption": false
       },
-      "bundleIdentifier": "com.elbooklets.app",
-      "buildNumber": "41",
+      "bundleIdentifier": "com.agmryde.app",
+      "buildNumber": "42",
       "appleTeamId": "LVA2A6A56C"
     },
     "android": {
@@ -49,7 +49,12 @@
       "fallbackToCacheTimeout": 0
     },
     "runtimeVersion": "1.0.0",
-    "plugins": ["expo-font", "@react-native-firebase/app", "./plugins/withAndroidSigning.js"],
+    "plugins": [
+      "expo-font",
+      "./plugins/withAndroidSigning.js",
+      "./plugins/withIosModularHeaders.js",
+      "./plugins/withAndroidExtraStrings.js"
+    ],
     "extra": {
       "eas": {
         "projectId": "d4dcdf3d-7581-496d-96a9-c5acca79629d"
