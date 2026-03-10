@@ -1,12 +1,12 @@
 import React from 'react';
 import {
-  TouchableOpacity,
+  Pressable,
   Text,
   StyleSheet,
   ActivityIndicator,
   ViewStyle,
   TextStyle,
-  TouchableOpacityProps,
+  PressableProps,
   View,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
@@ -15,7 +15,7 @@ import { useTypography } from '../hooks/useTypography';
 export type AppButtonVariant = 'primary' | 'secondary' | 'outline' | 'danger' | 'success' | 'ghost';
 export type AppButtonSize = 'sm' | 'md' | 'lg';
 
-interface AppButtonProps extends TouchableOpacityProps {
+interface AppButtonProps extends PressableProps {
   title: string;
   subtitle?: string;
   variant?: AppButtonVariant;
@@ -178,10 +178,12 @@ const AppButton: React.FC<AppButtonProps> = ({
   const indicatorColor = (vStyles.text as any).color || theme.colors.textOnDark;
 
   return (
-    <TouchableOpacity
-      style={buttonStyles}
+    <Pressable
+      style={({ pressed }) => [
+        ...buttonStyles,
+        pressed && !disabled && !loading ? { opacity: 0.7 } : {},
+      ]}
       disabled={disabled || loading}
-      activeOpacity={0.7}
       {...props}
     >
       {loading ? (
@@ -200,7 +202,7 @@ const AppButton: React.FC<AppButtonProps> = ({
           )}
         </View>
       )}
-    </TouchableOpacity>
+    </Pressable>
   );
 };
 

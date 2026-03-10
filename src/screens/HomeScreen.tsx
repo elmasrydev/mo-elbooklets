@@ -26,6 +26,9 @@ import UnifiedHeader from '../components/UnifiedHeader';
 import AnimatedNavbarLogo from '../components/AnimatedNavbarLogo';
 import { getSubjectConfig } from '../utils/subjectTheme';
 import SubjectIcon from '../components/SubjectIcon';
+import QuizCompletionCard from '../components/feed/QuizCompletionCard';
+import RankChangeCard from '../components/feed/RankChangeCard';
+import ConnectionCard from '../components/feed/ConnectionCard';
 
 const { width } = Dimensions.get('window');
 
@@ -528,39 +531,31 @@ const HomeScreen: React.FC = () => {
             {socialFeed.map((item) => (
               <TouchableOpacity
                 key={item.id}
-                style={s.feedCard}
-                activeOpacity={0.7}
-                onPress={() => navigation.navigate('Social')}
+                activeOpacity={0.9}
+                onPress={() => navigation.navigate('Community')}
               >
-                <View style={[s.feedAvatarCircle, { flexDirection: common.rowDirection }]}>
-                  <Text style={s.feedAvatarText}>
-                    {item.user?.name?.charAt(0).toUpperCase() || '?'}
-                  </Text>
-                </View>
-                <View style={s.feedContentArea}>
-                  <Text style={s.feedUserName}>{item.user?.name}</Text>
+                <View pointerEvents="none">
                   {item.type === 'quiz_completion' && item.quizData && (
-                    <Text style={s.feedText} numberOfLines={2}>
-                      {t('social_screen.aced_quiz', {
-                        subject: item.quizData.quiz?.subject?.name || '',
-                      })}{' '}
-                      • {Math.round((item.quizData.score / item.quizData.totalQuestions) * 100)}%
-                    </Text>
+                    <QuizCompletionCard
+                      item={item as any}
+                      onLike={() => {}}
+                      onComment={() => {}}
+                    />
                   )}
-                  <View style={[s.feedActions, { flexDirection: common.rowDirection }]}>
-                    <View style={s.feedActionRow}>
-                      <Ionicons name="heart-outline" size={14} color={theme.colors.textTertiary} />
-                      <Text style={s.feedActionText}> {item.likes}</Text>
-                    </View>
-                    <View style={s.feedActionRow}>
-                      <Ionicons
-                        name="chatbubble-outline"
-                        size={14}
-                        color={theme.colors.textTertiary}
-                      />
-                      <Text style={s.feedActionText}> {item.comments}</Text>
-                    </View>
-                  </View>
+                  {item.type === 'new_connection' && (
+                    <ConnectionCard
+                      item={item as any}
+                      onLike={() => {}}
+                      onComment={() => {}}
+                    />
+                  )}
+                  {item.type === 'rank_change' && (
+                    <RankChangeCard
+                      item={item as any}
+                      onLike={() => {}}
+                      onComment={() => {}}
+                    />
+                  )}
                 </View>
               </TouchableOpacity>
             ))}

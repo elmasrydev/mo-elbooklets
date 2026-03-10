@@ -320,7 +320,16 @@
     "rank_3rd": "الثالث",
     "rank_th": "",
     "moved_to_rank": "انتقل من المركز #{{from}} إلى {{to}}",
-    "reached_rank": "حصل على المركز {{rank}}!"
+    "reached_rank": "حصل على المركز {{rank}}!",
+    "perfect_score": "درجة كاملة! 🎯",
+    "questions_correct_in": "أسئلة صحيحة في",
+    "great_accuracy": "دقة رائعة! 🎯",
+    "new_rank_achieved": "حصلت على شارة جديدة!",
+    "cheer": "تشجيع",
+    "comment": "تعليق",
+    "scored_prefix": "حصل على ",
+    "on_quiz_prefix": " في اختبار ",
+    "quiz_suffix": ""
   },
   "leaderboard_screen": {
     "header_title": "لوحة المتصدرين",

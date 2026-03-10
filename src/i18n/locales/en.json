@@ -328,7 +328,16 @@
     "rank_3rd": "3rd",
     "rank_th": "th",
     "moved_to_rank": "Moved from #{{from}} to {{to}} place",
-    "reached_rank": "Reached {{rank}} place!"
+    "reached_rank": "Reached {{rank}} place!",
+    "perfect_score": "Perfect Score! 🎯",
+    "questions_correct_in": "Questions Correct in",
+    "great_accuracy": "Great accuracy! 🎯",
+    "new_rank_achieved": "New Badge Earned!",
+    "cheer": "Cheer",
+    "comment": "Comment",
+    "scored_prefix": "Scored ",
+    "on_quiz_prefix": " on a ",
+    "quiz_suffix": " Quiz"
   },
   "leaderboard_screen": {
     "header_title": "Leaderboard",

@@ -264,28 +264,29 @@ const SocialScreen: React.FC = () => {
 
   const renderFeedItem = useCallback(
     ({ item }: { item: NewsFeedItem }) => {
+      const handleDefaultComment = () =>
+        showConfirm({
+          title: t('social_screen.comment', 'Comment'),
+          message: t('social_screen.comment_coming_soon', 'Comments coming soon!'),
+          showCancel: false,
+          onConfirm: () => {},
+        });
+
       if (item.type === 'quiz_completion' && item.quizData)
         return (
           <QuizCompletionCard
             item={item as any}
             onLike={() => handleLike(item)}
-            onComment={() =>
-              showConfirm({
-                title: t('social_screen.comment', 'Comment'),
-                message: t('social_screen.comment_coming_soon'),
-                showCancel: false,
-                onConfirm: () => {},
-              })
-            }
+            onComment={handleDefaultComment}
           />
         );
       if (item.type === 'new_connection' && item.connectedUser)
-        return <ConnectionCard item={item as any} />;
+        return <ConnectionCard item={item as any} onLike={() => {}} onComment={handleDefaultComment} />;
       if (item.type === 'rank_change' && item.rankData)
-        return <RankChangeCard item={item as any} />;
+        return <RankChangeCard item={item as any} onLike={() => {}} onComment={handleDefaultComment} />;
       return null;
     },
-    [t, handleLike],
+    [t, handleLike, showConfirm],
   );
 
   const renderSearchItem = useCallback(
@@ -416,10 +417,10 @@ const SocialScreen: React.FC = () => {
 
   const FeedHeader = useMemo(() => {
     if (isSearchMode && searchResults.length > 0) {
-      return <Text style={currentStyles.sectionTitle}>{t('social_screen.search_results')}</Text>;
+      return <Text style={currentStyles.sectionTitle}>{t('social_screen.search_results', 'Search Results')}</Text>;
     }
     if (!isSearchMode && feedItems.length > 0) {
-      return <Text style={currentStyles.sectionTitle}>{t('social_screen.recent_activity')}</Text>;
+      return <Text style={currentStyles.sectionTitle}>{t('social_screen.whats_happening', "What's Happening")}</Text>;
     }
     return null;
   }, [isSearchMode, searchResults.length, feedItems.length, currentStyles, t]);
