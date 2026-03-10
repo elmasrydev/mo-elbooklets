@@ -9,6 +9,7 @@ import {
   Switch,
   Platform,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
 import { useTheme } from '../context/ThemeContext';
@@ -23,6 +24,7 @@ import { Ionicons } from '@expo/vector-icons';
 const APP_VERSION = 'EL-Booklets v1.0.0';
 
 const ProfileScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
   const { user, logout } = useAuth();
   const { showConfirm } = useModal();
   const { theme, spacing, fontSizes, borderRadius, isDark, toggleTheme } = useTheme();
@@ -93,9 +95,10 @@ const ProfileScreen: React.FC = () => {
                 </Text>
               </View>
             </View>
-            <TouchableOpacity style={currentStyles.editAvatarButton}>
+            {/* Hide edit avatar button for now */}
+            {/* <TouchableOpacity style={currentStyles.editAvatarButton}>
               <Ionicons name="pencil" size={14} color="#ffffff" />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
 
           <View style={currentStyles.userInfoTextContainer}>
@@ -109,7 +112,8 @@ const ProfileScreen: React.FC = () => {
 
         {/* Menu Section */}
         <View style={currentStyles.menuSection}>
-          {/* Edit Profile */}
+          {/* Hide Edit Profile and Badges for now */}
+          {/*
           <TouchableOpacity style={currentStyles.settingItem}>
             <View style={currentStyles.settingIconBox}>
               <Image
@@ -126,6 +130,24 @@ const ProfileScreen: React.FC = () => {
               color={theme.colors.textTertiary}
             />
           </TouchableOpacity>
+
+          <TouchableOpacity style={currentStyles.settingItem}>
+            <View style={currentStyles.settingIconBox}>
+              <Image
+                source={require('../../assets/images/Badges.png')}
+                style={currentStyles.menuImage}
+              />
+            </View>
+            <View style={currentStyles.settingContent}>
+              <Text style={currentStyles.settingTitle}>{t('profile_screen.badges')}</Text>
+            </View>
+            <Ionicons
+              name={isRTL ? 'chevron-back' : 'chevron-forward'}
+              size={20}
+              color={theme.colors.textTertiary}
+            />
+          </TouchableOpacity>
+          */}
 
           {/* Change Language */}
           <TouchableOpacity style={currentStyles.settingItem} onPress={handleLanguagePress}>
@@ -148,7 +170,44 @@ const ProfileScreen: React.FC = () => {
             />
           </TouchableOpacity>
 
-          {/* Badges */}
+          {/* FAQ */}
+          <TouchableOpacity 
+            style={currentStyles.settingItem} 
+            onPress={() => navigation.navigate('FAQs')}
+          >
+            <View style={[currentStyles.settingIconBox, { backgroundColor: theme.colors.info + '20' }]}>
+              <Ionicons name="help-circle-outline" size={22} color={theme.colors.info} />
+            </View>
+            <View style={currentStyles.settingContent}>
+              <Text style={currentStyles.settingTitle}>{t('profile_screen.faqs')}</Text>
+            </View>
+            <Ionicons
+              name={isRTL ? 'chevron-back' : 'chevron-forward'}
+              size={20}
+              color={theme.colors.textTertiary}
+            />
+          </TouchableOpacity>
+
+          {/* Contact Us */}
+          <TouchableOpacity 
+            style={currentStyles.settingItem} 
+            onPress={() => navigation.navigate('ContactUs')}
+          >
+            <View style={[currentStyles.settingIconBox, { backgroundColor: theme.colors.warning + '20' }]}>
+              <Ionicons name="mail-outline" size={22} color={theme.colors.warning} />
+            </View>
+            <View style={currentStyles.settingContent}>
+              <Text style={currentStyles.settingTitle}>{t('profile_screen.contact_us')}</Text>
+            </View>
+            <Ionicons
+              name={isRTL ? 'chevron-back' : 'chevron-forward'}
+              size={20}
+              color={theme.colors.textTertiary}
+            />
+          </TouchableOpacity>
+
+          {/* Badges - Hidden */}
+          {/*
           <TouchableOpacity style={currentStyles.settingItem}>
             <View style={currentStyles.settingIconBox}>
               <Image
@@ -165,6 +224,7 @@ const ProfileScreen: React.FC = () => {
               color={theme.colors.textTertiary}
             />
           </TouchableOpacity>
+          */}
 
           {/* Help and Support */}
           <TouchableOpacity style={currentStyles.settingItem}>

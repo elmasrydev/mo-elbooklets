@@ -90,10 +90,6 @@ const ConnectionCard: React.FC<ConnectionCardProps> = ({ item, onLike, onComment
             <MaterialIcons name="thumb-up" size={14} color={item.isLiked ? theme.colors.primary : theme.colors.textSecondary} />
             <Text style={[currentStyles.likeBtnText, item.isLiked && { color: theme.colors.primary }]}>{t('common.like', 'Like')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={currentStyles.cheerBtn} onPress={onComment}>
-            <Ionicons name="chatbubble-outline" size={14} color="#fff" />
-            <Text style={currentStyles.cheerBtnText}>{t('social_screen.comment', 'Comment')}</Text>
-          </TouchableOpacity>
         </View>
       </View>
     </View>

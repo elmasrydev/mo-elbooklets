@@ -266,29 +266,21 @@ const SocialScreen: React.FC = () => {
 
   const renderFeedItem = useCallback(
     ({ item }: { item: NewsFeedItem }) => {
-      const handleDefaultComment = () =>
-        showConfirm({
-          title: t('social_screen.comment', 'Comment'),
-          message: t('social_screen.comment_coming_soon', 'Comments coming soon!'),
-          showCancel: false,
-          onConfirm: () => {},
-        });
 
       if (item.type === 'quiz_completion' && item.quizData)
         return (
           <QuizCompletionCard
             item={item as any}
             onLike={() => handleLike(item)}
-            onComment={handleDefaultComment}
           />
         );
       if (item.type === 'new_connection' && item.connectedUser)
         return (
-          <ConnectionCard item={item as any} onLike={() => {}} onComment={handleDefaultComment} />
+          <ConnectionCard item={item as any} onLike={() => {}} />
         );
       if (item.type === 'rank_change' && item.rankData)
         return (
-          <RankChangeCard item={item as any} onLike={() => {}} onComment={handleDefaultComment} />
+          <RankChangeCard item={item as any} onLike={() => {}} />
         );
       return null;
     },

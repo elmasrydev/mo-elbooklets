@@ -28,7 +28,7 @@ interface QuizCompletionCardProps {
     isLiked: boolean;
   };
   onLike: () => void;
-  onComment: () => void;
+  onComment?: () => void;
   onReview?: () => void;
   isCurrentUser?: boolean;
 }
@@ -198,13 +198,6 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({ item, onLike, o
           <TouchableOpacity style={currentStyles.likeBtn} onPress={onLike}>
             <MaterialIcons name="thumb-up" size={14} color={item.isLiked ? theme.colors.primary : theme.colors.textSecondary} />
             <Text style={[currentStyles.likeBtnText, item.isLiked && { color: theme.colors.primary }]}>{t('common.like', 'Like')}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[currentStyles.cheerBtn, { backgroundColor: isPerfect ? theme.colors.success : theme.colors.primary }]} 
-            onPress={onComment}
-          >
-            <Ionicons name="chatbubble-outline" size={14} color="#fff" />
-            <Text style={currentStyles.cheerBtnText}>{t('social_screen.comment', 'Comment')}</Text>
           </TouchableOpacity>
         </View>
       </View>

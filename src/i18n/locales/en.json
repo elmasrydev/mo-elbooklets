@@ -475,7 +475,33 @@
     "log_out": "Log Out",
     "choose_language": "Choose Language",
     "select_language_msg": "Select your preferred language",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "faqs": "FAQs",
+    "contact_us": "Contact Us"
+  },
+  "faq": {
+    "header_title": "FAQs",
+    "intro": "Here are answers to some questions you might have:",
+    "q1": "How can I subscribe?",
+    "a1": "You can subscribe through the subscriptions page in your account and choose the appropriate package.",
+    "q2": "Is the platform available on mobile?",
+    "a2": "Yes, the platform supports all devices through the browser, and there is also a dedicated mobile app.",
+    "q3": "Are the questions compatible with the Ministry's system?",
+    "a3": "Yes, questions are constantly updated to comply with the latest changes in the curriculum and examination system."
+  },
+  "contact_us": {
+    "header_title": "Contact Us",
+    "title": "Send us a message",
+    "subtitle": "Fill out the form below and we'll get back to you as soon as possible.",
+    "name": "Name",
+    "email": "Email Address",
+    "subject": "Subject",
+    "message": "Message",
+    "name_placeholder": "Your Name",
+    "email_placeholder": "your@email.com",
+    "subject_placeholder": "How can we help?",
+    "message_placeholder": "Tell us how we can help...",
+    "send_message": "Send Message"
   },
   "booklets_screen": {
     "header_title": "Booklets",
