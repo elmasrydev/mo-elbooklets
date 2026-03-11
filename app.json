@@ -24,7 +24,8 @@
       },
       "bundleIdentifier": "com.agmryde.app",
       "buildNumber": "42",
-      "appleTeamId": "LVA2A6A56C"
+      "appleTeamId": "LVA2A6A56C",
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "package": "com.elbooklets.app",
@@ -54,7 +55,9 @@
       "./plugins/withAndroidSigning.js",
       "./plugins/withIosModularHeaders.js",
       "./plugins/withAndroidExtraStrings.js",
-      "expo-secure-store"
+      "expo-secure-store",
+      "@react-native-firebase/app",
+      "@react-native-firebase/crashlytics"
     ],
     "extra": {
       "eas": {
