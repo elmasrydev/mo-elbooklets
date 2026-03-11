@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -20,6 +21,7 @@ import { layout } from '../../config/layout';
 import { useTypography } from '../../hooks/useTypography';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import AppButton from '../../components/AppButton';
+import { GenericListSkeleton } from '../../components/SkeletonLoader';
 
 interface Subject {
   id: string;
@@ -68,7 +70,7 @@ const QuizLessonsScreen: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
       const [lessonsResult, quizTypesResult] = await Promise.all([
         tryFetchWithFallback(
@@ -145,9 +147,8 @@ const QuizLessonsScreen: React.FC = () => {
     return (
       <View style={common.container}>
         <UnifiedHeader title={t('quiz_lessons.header_title')} />
-        <View style={currentStyles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={currentStyles.loadingText}> {t('quiz_lessons.loading_lessons')} </Text>
+        <View style={{ paddingTop: 16 }}>
+          <GenericListSkeleton numItems={6} />
         </View>
       </View>
     );
@@ -328,8 +329,8 @@ const styles = (
       alignItems: common.alignStart,
     },
     unitName: {
-      fontSize: Math.max(18, fontSizes.lg),
-      ...fontWeight('800'),
+      ...typography('h3'),
+      ...fontWeight('bold'),
       color: theme.colors.text,
       marginBottom: spacing.xs,
       textAlign: common.textAlign,
@@ -378,7 +379,7 @@ const styles = (
       alignItems: common.alignStart,
     },
     lessonName: {
-      fontSize: fontSizes.md,
+      ...typography('button'),
       ...fontWeight('500'),
       color: theme.colors.text,
       textAlign: common.textAlign,

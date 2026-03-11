@@ -7,11 +7,12 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useModal } from '../../context/ModalContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -22,6 +23,8 @@ import { useTypography } from '../../hooks/useTypography';
 import { layout } from '../../config/layout';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import AppButton from '../../components/AppButton';
+import RetryView from '../../components/RetryView';
+import { QuizScreenSkeleton } from '../../components/SkeletonLoader';
 
 const DESCRIPTIVE_TYPES = ['what_happens', 'give_a_reason'];
 
@@ -55,6 +58,7 @@ const QuizTakingScreen: React.FC = () => {
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
+  const { showConfirm } = useModal();
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
@@ -89,14 +93,14 @@ const QuizTakingScreen: React.FC = () => {
   };
 
   const handleBackPress = () => {
-    Alert.alert(t('quiz_taking.leave_quiz_title'), t('quiz_taking.leave_quiz_message'), [
-      { text: t('quiz_taking.continue_quiz'), style: 'cancel' },
-      {
-        text: t('quiz_taking.leave_quiz'),
-        style: 'destructive',
-        onPress: () => navigation.goBack(),
-      },
-    ]);
+    showConfirm({
+      title: t('quiz_taking.leave_quiz_title'),
+      message: t('quiz_taking.leave_quiz_message'),
+      confirmLabel: t('common.yes'),
+      cancelLabel: t('common.no'),
+      confirmVariant: 'danger',
+      onConfirm: () => navigation.goBack(),
+    });
   };
 
   useEffect(() => {
@@ -113,7 +117,7 @@ const QuizTakingScreen: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       if (!token) {
         setError(t('common.error'));
         return;
@@ -184,9 +188,12 @@ const QuizTakingScreen: React.FC = () => {
     const currentQuestion = quiz.questions[currentQuestionIndex];
 
     if (!selectedAnswers[currentQuestion.id] || selectedAnswers[currentQuestion.id].trim() === '') {
-      Alert.alert(t('quiz_taking.answer_required'), t('quiz_taking.select_answer_first'), [
-        { text: t('common.ok') },
-      ]);
+      showConfirm({
+        title: t('quiz_taking.answer_required'),
+        message: t('quiz_taking.select_answer_first'),
+        showCancel: false,
+        onConfirm: () => {},
+      });
       return;
     }
 
@@ -207,9 +214,12 @@ const QuizTakingScreen: React.FC = () => {
     const currentQuestion = quiz.questions[currentQuestionIndex];
 
     if (!selectedAnswers[currentQuestion.id] || selectedAnswers[currentQuestion.id].trim() === '') {
-      Alert.alert(t('quiz_taking.answer_required'), t('quiz_taking.select_answer_last'), [
-        { text: t('common.ok') },
-      ]);
+      showConfirm({
+        title: t('quiz_taking.answer_required'),
+        message: t('quiz_taking.select_answer_last'),
+        showCancel: false,
+        onConfirm: () => {},
+      });
       return;
     }
 
@@ -217,11 +227,12 @@ const QuizTakingScreen: React.FC = () => {
       (q) => !selectedAnswers[q.id] || selectedAnswers[q.id].trim() === '',
     );
     if (unansweredQuestions.length > 0) {
-      Alert.alert(
-        t('quiz_taking.incomplete_quiz'),
-        t('quiz_taking.unanswered_questions', { count: unansweredQuestions.length }),
-        [{ text: t('common.ok') }],
-      );
+      showConfirm({
+        title: t('quiz_taking.incomplete_quiz'),
+        message: t('quiz_taking.unanswered_questions', { count: unansweredQuestions.length }),
+        showCancel: false,
+        onConfirm: () => {},
+      });
       return;
     }
 
@@ -238,9 +249,14 @@ const QuizTakingScreen: React.FC = () => {
     try {
       setSubmitting(true);
 
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       if (!token) {
-        Alert.alert(t('common.error'), t('common.error'));
+        showConfirm({
+          title: t('common.error'),
+          message: t('common.error'),
+          showCancel: false,
+          onConfirm: () => {},
+        });
         setSubmitting(false);
         return;
       }
@@ -272,11 +288,21 @@ const QuizTakingScreen: React.FC = () => {
         });
       } else {
         const errorMessage = result.errors?.[0]?.message || t('common.unexpected_error');
-        Alert.alert(t('common.error'), errorMessage);
+        showConfirm({
+          title: t('common.error'),
+          message: errorMessage,
+          showCancel: false,
+          onConfirm: () => {},
+        });
       }
     } catch (err: any) {
       console.error('Submit quiz error:', err);
-      Alert.alert(t('common.error'), err.message || t('common.unexpected_error'));
+      showConfirm({
+        title: t('common.error'),
+        message: err.message || t('common.unexpected_error'),
+        showCancel: false,
+        onConfirm: () => {},
+      });
     } finally {
       if (mountedRef.current) {
         setSubmitting(false);
@@ -298,9 +324,8 @@ const QuizTakingScreen: React.FC = () => {
     return (
       <View style={common.container}>
         <UnifiedHeader title={t('quiz_taking.loading_quiz')} />
-        <View style={currentStyles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={currentStyles.loadingText}> {t('quiz_taking.loading_quiz_questions')} </Text>
+        <View style={{ paddingTop: 16 }}>
+          <QuizScreenSkeleton />
         </View>
       </View>
     );
@@ -310,22 +335,10 @@ const QuizTakingScreen: React.FC = () => {
     return (
       <View style={common.container}>
         <UnifiedHeader showBackButton title={t('quiz_taking.quiz_error')} />
-        <View style={currentStyles.errorContainer}>
-          <Ionicons
-            name="alert-circle"
-            size={48}
-            color={theme.colors.error}
-            style={{ marginBottom: spacing.lg }}
-          />
-          <Text style={currentStyles.errorTitle}> {t('quiz_taking.error_loading_quiz')} </Text>
-          <Text style={currentStyles.errorText}> {error} </Text>
-          <AppButton
-            title={t('home_screen.try_again')}
-            onPress={fetchQuiz}
-            size="sm"
-            fullWidth={false}
-          />
-        </View>
+        <RetryView 
+          message={error}
+          onRetry={fetchQuiz}
+        />
       </View>
     );
   }
@@ -477,7 +490,11 @@ const QuizTakingScreen: React.FC = () => {
                           isSelected && currentStyles.selectedAnswerTitle,
                         ]}
                       >
-                        {parts[0]}
+                        {parts[0].toLowerCase() === 'true'
+                          ? t('common.true')
+                          : parts[0].toLowerCase() === 'false'
+                            ? t('common.false')
+                            : parts[0]}
                       </Text>
                       {hasSubtitle && (
                         <Text

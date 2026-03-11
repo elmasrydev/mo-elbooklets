@@ -7,6 +7,19 @@
     "sign_in": "Sign In"
   },
   "common": {
+    "forceUpdate": {
+      "requiredTitle": "Update Required",
+      "optionalTitle": "Update Available",
+      "requiredDescription": "A critical update is required to continue using the application. Please upgrade to the latest version.",
+      "optionalDescription": "We have released a new version of the app with great new features and improvements.",
+      "updateNow": "Update Now",
+      "later": "Maybe Later",
+      "mandatoryUpdate": "Mandatory Update"
+    },
+    "maintenance": {
+      "title": "Under Maintenance",
+      "description": "We are currently performing scheduled maintenance to improve your experience. Please check back shortly."
+    },
     "more": "More",
     "home": "Home",
     "brand_name": "El-Booklets",
@@ -52,7 +65,11 @@
     "completed": "Completed",
     "unknown_unit": "Unknown Unit",
     "points": "Points",
-    "subject": "Subject"
+    "subject": "Subject",
+    "true": "True",
+    "false": "False",
+    "yes": "Yes",
+    "no": "No"
   },
   "study_screen": {
     "header_title": "Study",
@@ -82,7 +99,9 @@
     "no_key_points": "No key points available for this lesson.",
     "previous": "Previous",
     "next": "Next",
-    "back_to_chapters": "Back to Chapters"
+    "back_to_chapters": "Back to Chapters",
+    "take_quiz": "Take Quiz",
+    "test_your_knowledge": "Test your knowledge on this lesson"
   },
   "more_screen": {
     "header_title": "More",
@@ -328,7 +347,16 @@
     "rank_3rd": "3rd",
     "rank_th": "th",
     "moved_to_rank": "Moved from #{{from}} to {{to}} place",
-    "reached_rank": "Reached {{rank}} place!"
+    "reached_rank": "Reached {{rank}} place!",
+    "perfect_score": "Perfect Score! 🎯",
+    "questions_correct_in": "Questions Correct in",
+    "great_accuracy": "Great accuracy! 🎯",
+    "new_rank_achieved": "New Badge Earned!",
+    "cheer": "Cheer",
+    "comment": "Comment",
+    "scored_prefix": "Scored ",
+    "on_quiz_prefix": " on a ",
+    "quiz_suffix": " Quiz"
   },
   "leaderboard_screen": {
     "header_title": "Leaderboard",
@@ -449,7 +477,33 @@
     "log_out": "Log Out",
     "choose_language": "Choose Language",
     "select_language_msg": "Select your preferred language",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "faqs": "FAQs",
+    "contact_us": "Contact Us"
+  },
+  "faq": {
+    "header_title": "FAQs",
+    "intro": "Here are answers to some questions you might have:",
+    "q1": "How can I subscribe?",
+    "a1": "You can subscribe through the subscriptions page in your account and choose the appropriate package.",
+    "q2": "Is the platform available on mobile?",
+    "a2": "Yes, the platform supports all devices through the browser, and there is also a dedicated mobile app.",
+    "q3": "Are the questions compatible with the Ministry's system?",
+    "a3": "Yes, questions are constantly updated to comply with the latest changes in the curriculum and examination system."
+  },
+  "contact_us": {
+    "header_title": "Contact Us",
+    "title": "Send us a message",
+    "subtitle": "Fill out the form below and we'll get back to you as soon as possible.",
+    "name": "Name",
+    "email": "Email Address",
+    "subject": "Subject",
+    "message": "Message",
+    "name_placeholder": "Your Name",
+    "email_placeholder": "your@email.com",
+    "subject_placeholder": "How can we help?",
+    "message_placeholder": "Tell us how we can help...",
+    "send_message": "Send Message"
   },
   "booklets_screen": {
     "header_title": "Booklets",

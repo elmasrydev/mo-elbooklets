@@ -5,11 +5,11 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -17,6 +17,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
+import { useModal } from '../context/ModalContext';
 import { useAutoReset } from '../hooks/useAutoReset';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -36,6 +37,7 @@ const LoginScreen: React.FC = () => {
   const passwordRef = useRef<TextInput>(null);
 
   const { login } = useAuth();
+  const { showConfirm } = useModal();
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { language, setLanguage, isRTL } = useLanguage();
   const { t } = useTranslation();
@@ -45,16 +47,32 @@ const LoginScreen: React.FC = () => {
 
   const handleLogin = async () => {
     if (!mobile.trim() || !password.trim()) {
-      Alert.alert(t('common.error'), t('auth.fill_all_fields'));
+      showConfirm({
+        title: t('common.error'),
+        message: t('auth.fill_all_fields'),
+        showCancel: false,
+        onConfirm: () => {},
+      });
       return;
     }
     setIsLoading(true);
     try {
       const result = await login({ mobile: mobile.trim(), password });
-      if (!result.success)
-        Alert.alert(t('auth.login_failed'), result.error || t('auth.invalid_credentials'));
+      if (!result.success) {
+        showConfirm({
+          title: t('auth.login_failed'),
+          message: result.error || t('auth.invalid_credentials'),
+          showCancel: false,
+          onConfirm: () => {},
+        });
+      }
     } catch (error) {
-      Alert.alert(t('common.error'), t('common.unexpected_error'));
+      showConfirm({
+        title: t('common.error'),
+        message: t('common.unexpected_error'),
+        showCancel: false,
+        onConfirm: () => {},
+      });
     } finally {
       setIsLoading(false);
     }
@@ -212,12 +230,16 @@ const LoginScreen: React.FC = () => {
                 activeOpacity={0.8}
               >
                 <Text style={currentStyles.signInButtonText}>{t('auth.sign_in')}</Text>
-                <Ionicons
-                  name={isRTL ? 'log-in-outline' : 'log-in-outline'}
-                  size={20}
-                  color="#FFF"
-                  style={{ transform: [{ scaleX: isRTL ? -1 : 1 }] }}
-                />
+                {isLoading ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <Ionicons
+                    name={isRTL ? 'log-in-outline' : 'log-in-outline'}
+                    size={20}
+                    color="#FFF"
+                    style={{ transform: [{ scaleX: isRTL ? -1 : 1 }] }}
+                  />
+                )}
               </TouchableOpacity>
 
               {/* Divider */}

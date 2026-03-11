@@ -10,6 +10,7 @@ import {
   Image,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -26,6 +27,10 @@ import UnifiedHeader from '../components/UnifiedHeader';
 import AnimatedNavbarLogo from '../components/AnimatedNavbarLogo';
 import { getSubjectConfig } from '../utils/subjectTheme';
 import SubjectIcon from '../components/SubjectIcon';
+import QuizCompletionCard from '../components/feed/QuizCompletionCard';
+import RankChangeCard from '../components/feed/RankChangeCard';
+import ConnectionCard from '../components/feed/ConnectionCard';
+import { CardListSkeleton } from '../components/SkeletonLoader';
 
 const { width } = Dimensions.get('window');
 
@@ -199,7 +204,7 @@ const HomeScreen: React.FC = () => {
   const fetchHomeData = useCallback(async () => {
     try {
       setLoading(true);
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
 
       // Fetch all data in parallel
@@ -247,6 +252,8 @@ const HomeScreen: React.FC = () => {
                   quiz { name subject { name } }
                   score totalQuestions isPassed
                 }
+                connectedUser { id name grade { id name } }
+                rankData { previousRank newRank subject { id name } isOverall }
                 likes comments
               }
             }`,
@@ -294,8 +301,8 @@ const HomeScreen: React.FC = () => {
     return (
       <View style={common.container}>
         <UnifiedHeader leftContent={<AnimatedNavbarLogo isRTL={isRTL} />} />
-        <View style={s.loadingCenter}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+        <View style={{ flex: 1, paddingTop: 16 }}>
+          <CardListSkeleton numItems={4} />
         </View>
       </View>
     );
@@ -528,39 +535,31 @@ const HomeScreen: React.FC = () => {
             {socialFeed.map((item) => (
               <TouchableOpacity
                 key={item.id}
-                style={s.feedCard}
-                activeOpacity={0.7}
-                onPress={() => navigation.navigate('Social')}
+                activeOpacity={0.9}
+                onPress={() => navigation.navigate('Community')}
               >
-                <View style={[s.feedAvatarCircle, { flexDirection: common.rowDirection }]}>
-                  <Text style={s.feedAvatarText}>
-                    {item.user?.name?.charAt(0).toUpperCase() || '?'}
-                  </Text>
-                </View>
-                <View style={s.feedContentArea}>
-                  <Text style={s.feedUserName}>{item.user?.name}</Text>
+                <View pointerEvents="none">
                   {item.type === 'quiz_completion' && item.quizData && (
-                    <Text style={s.feedText} numberOfLines={2}>
-                      {t('social_screen.aced_quiz', {
-                        subject: item.quizData.quiz?.subject?.name || '',
-                      })}{' '}
-                      • {Math.round((item.quizData.score / item.quizData.totalQuestions) * 100)}%
-                    </Text>
+                    <QuizCompletionCard
+                      item={item as any}
+                      onLike={() => {}}
+                      onComment={() => {}}
+                    />
                   )}
-                  <View style={[s.feedActions, { flexDirection: common.rowDirection }]}>
-                    <View style={s.feedActionRow}>
-                      <Ionicons name="heart-outline" size={14} color={theme.colors.textTertiary} />
-                      <Text style={s.feedActionText}> {item.likes}</Text>
-                    </View>
-                    <View style={s.feedActionRow}>
-                      <Ionicons
-                        name="chatbubble-outline"
-                        size={14}
-                        color={theme.colors.textTertiary}
-                      />
-                      <Text style={s.feedActionText}> {item.comments}</Text>
-                    </View>
-                  </View>
+                  {item.type === 'new_connection' && (
+                    <ConnectionCard
+                      item={item as any}
+                      onLike={() => {}}
+                      onComment={() => {}}
+                    />
+                  )}
+                  {item.type === 'rank_change' && (
+                    <RankChangeCard
+                      item={item as any}
+                      onLike={() => {}}
+                      onComment={() => {}}
+                    />
+                  )}
                 </View>
               </TouchableOpacity>
             ))}

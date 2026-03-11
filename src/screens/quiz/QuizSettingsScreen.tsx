@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
+import { tryFetchWithFallback } from '../../config/api';
 import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
@@ -9,10 +11,11 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
-import { tryFetchWithFallback } from '../../config/api';
+
 import UnifiedHeader from '../../components/UnifiedHeader';
 import AppButton from '../../components/AppButton';
 import { layout } from '../../config/layout';
+import { useModal } from '../../context/ModalContext';
 
 interface QuizType {
   id: string;
@@ -38,20 +41,58 @@ const QuizSettingsScreen: React.FC = () => {
   const route = useRoute<any>();
   const {
     subject,
-    quizTypes = [],
+    quizTypes: passedQuizTypes,
     selectedUnits = [],
     selectedLessonIds = [],
   } = route.params || {};
 
+  const [quizTypes, setQuizTypes] = useState<QuizType[]>(passedQuizTypes || []);
+  const [loadingTypes, setLoadingTypes] = useState(!passedQuizTypes || passedQuizTypes.length === 0);
+
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
+  const { showConfirm } = useModal();
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
   const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null);
   const [timedMode, setTimedMode] = useState(false);
   const [starting, setStarting] = useState(false);
+
+  const fetchQuizTypes = useCallback(async () => {
+    try {
+      setLoadingTypes(true);
+      const token = await AsyncStorage.getItem('auth_token');
+      if (!token) return;
+      const result = await tryFetchWithFallback(
+        `query QuizTypes { quizTypes { id name slug question_count is_default } }`,
+        undefined,
+        token,
+      );
+      if (result.data?.quizTypes) {
+        setQuizTypes(
+          result.data.quizTypes.map((qt: any) => ({
+            id: qt.id,
+            name: qt.name,
+            slug: qt.slug,
+            questionCount: qt.question_count,
+            isDefault: qt.is_default,
+          })),
+        );
+      }
+    } catch (err) {
+      console.error('Fetch quiz types error:', err);
+    } finally {
+      setLoadingTypes(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!passedQuizTypes || passedQuizTypes.length === 0) {
+      fetchQuizTypes();
+    }
+  }, [passedQuizTypes, fetchQuizTypes]);
 
   useEffect(() => {
     if (!selectedTypeId && quizTypes.length > 0) {
@@ -83,10 +124,20 @@ const QuizSettingsScreen: React.FC = () => {
           navigation.navigate('QuizTaking', { quizId, isTimed: timedMode });
         }, 500);
       } else {
-        Alert.alert(t('common.error'), t('quiz_screen.error_loading_history'));
+        showConfirm({
+          title: t('common.error'),
+          message: t('quiz_screen.error_loading_history'),
+          showCancel: false,
+          onConfirm: () => {},
+        });
       }
     } catch (error: any) {
-      Alert.alert(t('common.error'), error.message || t('quiz_screen.error_loading_history'));
+      showConfirm({
+        title: t('common.error'),
+        message: error.message || t('quiz_screen.error_loading_history'),
+        showCancel: false,
+        onConfirm: () => {},
+      });
     } finally {
       setStarting(false);
     }
@@ -123,39 +174,7 @@ const QuizSettingsScreen: React.FC = () => {
           <Text style={currentStyles.heroSubtitle}>{t('quiz_lessons.customize_experience')}</Text>
         </View>
 
-        {subject?.name ? (
-          <View style={currentStyles.subjectBadgeCard}>
-            <View style={currentStyles.subjectBadgeIconContainer}>
-              <Ionicons name="book" size={24} color={theme.colors.textOnDark} />
-            </View>
-            <View style={currentStyles.subjectBadgeInfo}>
-              <Text style={currentStyles.subjectBadgeLabel}>{t('quiz_lessons.current_topic')}</Text>
-              <Text style={currentStyles.subjectBadgeTitle}>{subject.name}</Text>
-            </View>
-          </View>
-        ) : null}
-
-        {selectedUnits && selectedUnits.length > 0 && (
-          <View style={currentStyles.breadcrumbsContainer}>
-            {selectedUnits.map((unit: SelectedUnit) => (
-              <View key={unit.id} style={currentStyles.unitBreadcrumb}>
-                <View style={currentStyles.unitBreadcrumbHeader}>
-                  <View style={currentStyles.breadcrumbDot} />
-                  <Text style={currentStyles.unitBreadcrumbName}>{unit.name}</Text>
-                </View>
-                <View style={currentStyles.lessonBreadcrumbsList}>
-                  {unit.lessons.map((lesson: SelectedLesson) => (
-                    <View key={lesson.id} style={currentStyles.lessonBreadcrumbItem}>
-                      <View style={currentStyles.lessonBreadcrumbDot} />
-                      <Text style={currentStyles.lessonBreadcrumbName}>{lesson.name}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
-
+        {/* 1. Timer Setting */}
         <View style={currentStyles.additionalSettingsContainer}>
           <View style={currentStyles.settingRow}>
             <View style={currentStyles.settingInfo}>
@@ -185,6 +204,7 @@ const QuizSettingsScreen: React.FC = () => {
           </View>
         </View>
 
+        {/* 2. Quiz Type Settings */}
         <View style={currentStyles.sectionContainer}>
           <Text style={currentStyles.sectionTitle}>{t('quiz_lessons.select_quiz_type')}</Text>
           <View style={currentStyles.optionsContainer}>
@@ -223,6 +243,41 @@ const QuizSettingsScreen: React.FC = () => {
             })}
           </View>
         </View>
+
+        {/* 3. Current Subject Badge */}
+        {subject?.name ? (
+          <View style={currentStyles.subjectBadgeCard}>
+            <View style={currentStyles.subjectBadgeIconContainer}>
+              <Ionicons name="book" size={24} color={theme.colors.textOnDark} />
+            </View>
+            <View style={currentStyles.subjectBadgeInfo}>
+              <Text style={currentStyles.subjectBadgeLabel}>{t('quiz_lessons.current_topic')}</Text>
+              <Text style={currentStyles.subjectBadgeTitle}>{subject.name}</Text>
+            </View>
+          </View>
+        ) : null}
+
+        {/* 4. Breadcrumb (Units & Lessons) */}
+        {selectedUnits && selectedUnits.length > 0 && (
+          <View style={currentStyles.breadcrumbsContainer}>
+            {selectedUnits.map((unit: SelectedUnit) => (
+              <View key={unit.id} style={currentStyles.unitBreadcrumb}>
+                <View style={currentStyles.unitBreadcrumbHeader}>
+                  <View style={currentStyles.breadcrumbDot} />
+                  <Text style={currentStyles.unitBreadcrumbName}>{unit.name}</Text>
+                </View>
+                <View style={currentStyles.lessonBreadcrumbsList}>
+                  {unit.lessons.map((lesson: SelectedLesson) => (
+                    <View key={lesson.id} style={currentStyles.lessonBreadcrumbItem}>
+                      <View style={currentStyles.lessonBreadcrumbDot} />
+                      <Text style={currentStyles.lessonBreadcrumbName}>{lesson.name}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
       </ScrollView>
 
       <View style={currentStyles.actionArea}>
@@ -264,14 +319,14 @@ const styles = (
       paddingHorizontal: layout.screenPadding,
       paddingTop: spacing.lg,
       paddingBottom: spacing.xl,
-      alignItems: 'stretch', // Critical for preventing the "right-align jump"
+      alignItems: 'stretch',
     },
     heroSection: {
       marginBottom: spacing.xl,
       width: '100%',
     },
     heroTitle: {
-      fontSize: Math.max(24, fontSizes.xl),
+      ...typography('h1'),
       ...fontWeight('700'),
       color: theme.colors.text,
       marginBottom: spacing.md,
@@ -284,7 +339,7 @@ const styles = (
       lineHeight: 22,
     },
     subjectBadgeCard: {
-      flexDirection: 'row', // Let React Native handle the flip
+      flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: theme.colors.primary + '0D',
       borderWidth: 1,
@@ -303,7 +358,7 @@ const styles = (
     },
     subjectBadgeInfo: {
       flex: 1,
-      paddingStart: spacing.md, // Use paddingStart instead of gap for better RTL support
+      paddingStart: spacing.md,
       alignItems: 'flex-start',
     },
     subjectBadgeLabel: {

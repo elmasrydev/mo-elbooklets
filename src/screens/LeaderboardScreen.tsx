@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -20,6 +21,8 @@ import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
 import UnifiedHeader from '../components/UnifiedHeader';
 import AppButton from '../components/AppButton';
+import { GenericListSkeleton } from '../components/SkeletonLoader';
+import RetryView from '../components/RetryView';
 import { layout } from '../config/layout';
 import { tryFetchWithFallback } from '../config/api';
 
@@ -89,7 +92,7 @@ const LeaderboardScreen: React.FC = () => {
   const fetchSubjects = async () => {
     try {
       setLoading(true);
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
       const result = await tryFetchWithFallback(
         `query SubjectsForUserGrade { subjectsForUserGrade { id name description } }`,
@@ -108,7 +111,7 @@ const LeaderboardScreen: React.FC = () => {
     try {
       setLeaderboardLoading(true);
       setLeaderboardError(null);
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
 
       const subjectId = tabId === 'all' ? null : tabId;
@@ -248,28 +251,17 @@ const LeaderboardScreen: React.FC = () => {
   const renderLeaderboardContent = () => {
     if (leaderboardLoading)
       return (
-        <View style={currentStyles.stateContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={currentStyles.stateText}>
-            {t('leaderboard_screen.loading_leaderboard', {
-              defaultValue: 'Loading leaderboard...',
-            })}
-          </Text>
+        <View style={{ paddingTop: 16 }}>
+          <GenericListSkeleton numItems={6} />
         </View>
       );
 
     if (leaderboardError)
       return (
-        <View style={currentStyles.stateContainer}>
-          <Ionicons name="alert-circle-outline" size={spacing.icon.xl} color={theme.colors.error} />
-          <Text style={currentStyles.stateTitle}>{leaderboardError}</Text>
-          <AppButton
-            title={t('common.try_again', { defaultValue: 'Try Again' })}
-            onPress={() => fetchLeaderboard(selectedTab)}
-            size="sm"
-            fullWidth={false}
-          />
-        </View>
+        <RetryView
+          message={leaderboardError}
+          onRetry={() => fetchLeaderboard(selectedTab)}
+        />
       );
 
     const leaderboard =

@@ -10,6 +10,7 @@ import {
   Image,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
@@ -23,6 +24,8 @@ import { tryFetchWithFallback } from '../config/api';
 import UnifiedHeader from '../components/UnifiedHeader';
 import AppButton from '../components/AppButton';
 import SubjectIcon from '../components/SubjectIcon';
+import { GenericListSkeleton } from '../components/SkeletonLoader';
+import RetryView from '../components/RetryView';
 
 interface Subject {
   id: string;
@@ -70,7 +73,7 @@ const StudyScreen: React.FC = () => {
       if (!isRefresh) setLoading(true);
       setError(null);
 
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       if (!token) {
         setError(t('common.error'));
         return;
@@ -127,24 +130,14 @@ const StudyScreen: React.FC = () => {
       <UnifiedHeader title={t('study_screen.header_title')} />
 
       {loading && subjectsToRender.length === 0 && !USE_DUMMY_DATA ? (
-        <View style={currentStyles.loadingState}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={currentStyles.loadingText}> {t('study_screen.loading_subjects')} </Text>
+        <View style={{ paddingTop: 16, paddingHorizontal: layout.screenPadding }}>
+          <GenericListSkeleton numItems={6} />
         </View>
       ) : error && !USE_DUMMY_DATA ? (
-        <View style={currentStyles.errorState}>
-          <Ionicons name="alert-circle-outline" size={spacing.icon.xl} color={theme.colors.error} />
-          <Text style={currentStyles.errorStateTitle}>
-            {t('study_screen.error_loading_subjects')}
-          </Text>
-          <Text style={currentStyles.errorStateSubtitle}> {error} </Text>
-          <AppButton
-            title={t('home_screen.try_again')}
-            onPress={() => fetchSubjects()}
-            size="sm"
-            fullWidth={false}
-          />
-        </View>
+        <RetryView 
+          message={error || t('study_screen.error_loading_subjects')} 
+          onRetry={() => fetchSubjects()} 
+        />
       ) : subjectsToRender.length === 0 ? (
         <View style={currentStyles.emptyState}>
           <Ionicons name="book-outline" size={spacing.icon.xl} color={theme.colors.textSecondary} />

@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -22,6 +23,8 @@ import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import AppButton from '../../components/AppButton';
+import RetryView from '../../components/RetryView';
+import { GenericListSkeleton } from '../../components/SkeletonLoader';
 import { textAlign } from '../../lib/rtl';
 
 interface UserQuizAnswer {
@@ -110,7 +113,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
       setLoading(true);
       setError(null);
 
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       if (!token) {
         setError(t('common.error'));
         return;
@@ -217,9 +220,8 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
     return (
       <View style={common.container}>
         <UnifiedHeader title={t('quiz_results.loading_results')} />
-        <View style={currentStyles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={currentStyles.loadingText}> {t('quiz_results.loading_quiz_results')} </Text>
+        <View style={{ paddingTop: 16 }}>
+          <GenericListSkeleton numItems={5} />
         </View>
       </View>
     );
@@ -233,22 +235,10 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
           onBackPress={onBack}
           title={t('quiz_results.results_error')}
         />
-        <View style={currentStyles.errorContainer}>
-          <Ionicons
-            name="alert-circle"
-            size={48}
-            color={theme.colors.error}
-            style={{ marginBottom: spacing.lg }}
-          />
-          <Text style={currentStyles.errorTitle}> {t('quiz_results.error_loading_results')} </Text>
-          <Text style={currentStyles.errorText}> {error} </Text>
-          <AppButton
-            title={t('home_screen.try_again')}
-            onPress={fetchQuizResults}
-            size="sm"
-            fullWidth={false}
-          />
-        </View>
+        <RetryView 
+          message={error}
+          onRetry={fetchQuizResults}
+        />
       </View>
     );
   }
@@ -442,7 +432,10 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
         ) : null}
 
         {breadcrumbs && breadcrumbs.length > 0 && (
-          <View style={currentStyles.breadcrumbsContainer}>
+          <View style={currentStyles.breadcrumbsCard}>
+            <Text style={currentStyles.breadcrumbsCardTitle}>
+              {t('quiz_results.covered_topics', 'Covered Topics')}
+            </Text>
             {breadcrumbs.map((crumb, index) => (
               <View key={index} style={currentStyles.unitBreadcrumb}>
                 <View style={currentStyles.unitBreadcrumbHeader}>
@@ -530,8 +523,27 @@ const styles = (
       color: theme.colors.text,
       textAlign: common.textAlign,
     },
-    breadcrumbsContainer: {
-      marginBottom: spacing.lg,
+    breadcrumbsCard: {
+      backgroundColor: theme.colors.card,
+      borderRadius: borderRadius.xl || 16,
+      padding: spacing.lg,
+      marginBottom: spacing.xl,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 3,
+      elevation: 2,
+    },
+    breadcrumbsCardTitle: {
+      ...typography('caption'),
+      ...fontWeight('bold'),
+      color: theme.colors.textSecondary,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+      marginBottom: spacing.md,
+      textAlign: common.textAlign,
     },
     unitBreadcrumb: {
       marginBottom: spacing.sm,
@@ -547,8 +559,7 @@ const styles = (
       height: 8,
       borderRadius: 4,
       backgroundColor: theme.colors.primary,
-      marginLeft: spacing.sm,
-      marginRight: spacing.sm,
+      marginEnd: spacing.sm,
     },
     unitBreadcrumbName: {
       ...typography('subtitle2'),
@@ -558,8 +569,7 @@ const styles = (
       textAlign: common.textAlign,
     },
     lessonBreadcrumbsList: {
-      paddingLeft: spacing.md,
-      paddingRight: spacing.md,
+      paddingStart: 20,
       paddingVertical: spacing.xs,
     },
     lessonBreadcrumbItem: {
@@ -573,8 +583,7 @@ const styles = (
       height: 6,
       borderRadius: 3,
       backgroundColor: theme.colors.textTertiary || '#9CA3AF',
-      marginLeft: spacing.sm,
-      marginRight: spacing.sm,
+      marginEnd: spacing.sm,
     },
     lessonBreadcrumbName: {
       ...typography('caption'),

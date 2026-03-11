@@ -42,6 +42,7 @@ export const GRAPHQL_ENDPOINT = '/graphql';
 
 declare var __DEV__: boolean;
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 
 // Logout handler to be set by AuthContext
 let authErrorHandler: (() => void) | null = null;
@@ -71,7 +72,7 @@ const checkForAuthError = (data: any): boolean => {
  */
 const handleAuthError = async () => {
   if (__DEV__) console.log('Auth error detected in API - logging out...');
-  await AsyncStorage.removeItem('auth_token');
+  await SecureStore.deleteItemAsync('auth_token');
   await AsyncStorage.removeItem('user_data');
   if (authErrorHandler) {
     authErrorHandler();
@@ -92,7 +93,7 @@ export const tryFetchWithFallback = async (
   // Try to get token from AsyncStorage if not provided
   let authToken = token;
   if (!authToken) {
-    authToken = (await AsyncStorage.getItem('auth_token')) || undefined;
+    authToken = (await SecureStore.getItemAsync('auth_token')) || undefined;
   }
 
   for (const url of POSSIBLE_URLS) {

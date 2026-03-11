@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -24,6 +23,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../context/LanguageContext';
 import { useTypography } from '../hooks/useTypography';
 import { useAutoReset } from '../hooks/useAutoReset';
+import { useModal } from '../context/ModalContext';
 import { useNavigation } from '@react-navigation/native';
 
 import BackButton from '../components/navigation/BackButton';
@@ -101,6 +101,7 @@ const RegisterScreen: React.FC = () => {
   const [modalMessage, setModalMessage] = useState('');
 
   const { login, register } = useAuth();
+  const { showConfirm } = useModal();
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { language, setLanguage } = useLanguage();
   const { t } = useTranslation();
@@ -220,17 +221,24 @@ const RegisterScreen: React.FC = () => {
         setTouchedEmail(true);
         setTouchedSchool(true);
         if (!isNameValid || !isEmailValid || !gender || !isSchoolValid) {
-          Alert.alert(
-            t('common.error'),
-            t('auth.fill_all_fields', 'Please check highlighted fields'),
-          );
+          showConfirm({
+            title: t('common.error'),
+            message: t('auth.fill_all_fields', 'Please check highlighted fields'),
+            showCancel: false,
+            onConfirm: () => {},
+          });
           return false;
         }
         return true;
       }
       case 2:
         if (!selectedGrade || !selectedSystem) {
-          Alert.alert(t('common.error'), t('auth.fill_all_fields'));
+          showConfirm({
+            title: t('common.error'),
+            message: t('auth.fill_all_fields'),
+            showCancel: false,
+            onConfirm: () => {},
+          });
           return false;
         }
         return true;
@@ -239,10 +247,12 @@ const RegisterScreen: React.FC = () => {
         setTouchedPassword(true);
         setTouchedConfirm(true);
         if (!isMobileValid || !isPasswordValid || !isConfirmValid) {
-          Alert.alert(
-            t('common.error'),
-            t('auth.fill_all_fields', 'Please check highlighted fields'),
-          );
+          showConfirm({
+            title: t('common.error'),
+            message: t('auth.fill_all_fields', 'Please check highlighted fields'),
+            showCancel: false,
+            onConfirm: () => {},
+          });
           return false;
         }
         return true;
@@ -252,10 +262,12 @@ const RegisterScreen: React.FC = () => {
           !isParentMobileValid ||
           (parentMobile2.trim() && !MOBILE_REGEX.test(parentMobile2.trim()))
         ) {
-          Alert.alert(
-            t('common.error'),
-            t('auth.fill_all_fields', 'Please check highlighted fields'),
-          );
+          showConfirm({
+            title: t('common.error'),
+            message: t('auth.fill_all_fields', 'Please check highlighted fields'),
+            showCancel: false,
+            onConfirm: () => {},
+          });
           return false;
         }
         return true;
@@ -284,10 +296,12 @@ const RegisterScreen: React.FC = () => {
 
   const handleRegister = async () => {
     if (!parentMobile.trim()) {
-      Alert.alert(
-        t('common.error'),
-        t('auth.parent_mobile_required', 'Parent mobile number is required'),
-      );
+      showConfirm({
+        title: t('common.error'),
+        message: t('auth.parent_mobile_required', 'Parent mobile number is required'),
+        showCancel: false,
+        onConfirm: () => {},
+      });
       return;
     }
 
@@ -319,11 +333,22 @@ const RegisterScreen: React.FC = () => {
         parent_country_code_2: parentMobile2 ? parentCountryCode2 : undefined,
         promo_code: promoCode ? promoCode : undefined,
       });
-      if (!result.success)
-        Alert.alert(t('auth.registration_failed'), result.error || t('auth.registration_error'));
+      if (!result.success) {
+        showConfirm({
+          title: t('auth.registration_failed'),
+          message: result.error || t('auth.registration_error'),
+          showCancel: false,
+          onConfirm: () => {},
+        });
+      }
     } catch (error) {
       console.error('Registration error:', error);
-      Alert.alert(t('common.error'), t('common.unexpected_error'));
+      showConfirm({
+        title: t('common.error'),
+        message: t('common.unexpected_error'),
+        showCancel: false,
+        onConfirm: () => {},
+      });
     } finally {
       setIsLoading(false);
     }
@@ -923,25 +948,23 @@ const RegisterScreen: React.FC = () => {
                   disabled={isLoading}
                   activeOpacity={0.8}
                 >
+                  <Text style={currentStyles.submitButtonText}>
+                    {currentStep === 4 ? t('auth.sign_up') : t('common.continue')}
+                  </Text>
                   {isLoading ? (
-                    <ActivityIndicator color="#FFF" />
+                    <ActivityIndicator size="small" color="#FFF" />
                   ) : (
-                    <>
-                      <Text style={currentStyles.submitButtonText}>
-                        {currentStep === 4 ? t('auth.sign_up') : t('common.continue')}
-                      </Text>
-                      <Ionicons
-                        name={
-                          currentStep === 4
-                            ? 'person-add-outline'
-                            : isRTL
-                              ? 'arrow-back-outline'
-                              : 'arrow-forward-outline'
-                        }
-                        size={20}
-                        color="#FFF"
-                      />
-                    </>
+                    <Ionicons
+                      name={
+                        currentStep === 4
+                          ? 'person-add-outline'
+                          : isRTL
+                            ? 'arrow-back-outline'
+                            : 'arrow-forward-outline'
+                      }
+                      size={20}
+                      color="#FFF"
+                    />
                   )}
                 </TouchableOpacity>
 

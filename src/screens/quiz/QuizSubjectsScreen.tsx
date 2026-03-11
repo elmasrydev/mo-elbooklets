@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../../context/LanguageContext';
@@ -20,6 +21,8 @@ import { tryFetchWithFallback } from '../../config/api';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import AppButton from '../../components/AppButton';
 import SubjectIcon from '../../components/SubjectIcon';
+import { GenericListSkeleton } from '../../components/SkeletonLoader';
+import RetryView from '../../components/RetryView';
 
 interface Subject {
   id: string;
@@ -46,7 +49,7 @@ const QuizSubjectsScreen: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
       const result = await tryFetchWithFallback(
         `query SubjectsForUserGrade { subjectsForUserGrade { id name description } }`,
@@ -80,9 +83,8 @@ const QuizSubjectsScreen: React.FC = () => {
           onBackPress={() => navigation.goBack()}
           title={t('quiz_subjects.header_title')}
         />
-        <View style={currentStyles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={currentStyles.loadingText}> {t('quiz_subjects.loading_subjects')} </Text>
+        <View style={{ paddingTop: 16 }}>
+          <GenericListSkeleton numItems={5} />
         </View>
       </View>
     );
@@ -95,19 +97,10 @@ const QuizSubjectsScreen: React.FC = () => {
           onBackPress={() => navigation.goBack()}
           title={t('quiz_subjects.header_title')}
         />
-        <View style={currentStyles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={spacing.icon.xl} color={theme.colors.error} />
-          <Text style={currentStyles.errorTitle}>
-            {' '}
-            {t('quiz_subjects.error_loading_subjects')}{' '}
-          </Text>
-          <AppButton
-            title={t('home_screen.try_again')}
-            onPress={fetchSubjects}
-            size="sm"
-            fullWidth={false}
-          />
-        </View>
+        <RetryView 
+          message={t('quiz_subjects.error_loading_subjects')}
+          onRetry={fetchSubjects}
+        />
       </View>
     );
 

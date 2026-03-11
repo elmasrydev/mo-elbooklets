@@ -6,12 +6,12 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useModal } from '../context/ModalContext';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
 import { layout } from '../config/layout';
@@ -21,6 +21,7 @@ import { gql } from '@apollo/client';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { Ionicons } from '@expo/vector-icons';
 import UnifiedHeader from '../components/UnifiedHeader';
+import { GenericListSkeleton } from '../components/SkeletonLoader';
 
 const STUDY_SCHEDULE_QUERY = gql`
   query StudySchedule {
@@ -77,6 +78,7 @@ const StudyCalendarScreen: React.FC = () => {
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
+  const { showConfirm } = useModal();
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
 
@@ -95,11 +97,21 @@ const StudyCalendarScreen: React.FC = () => {
 
   const [saveSchedule, { loading: saving }] = useMutation(SAVE_SCHEDULE_MUTATION, {
     onCompleted: () => {
-      Alert.alert(t('study_calendar.schedule_saved'));
+      showConfirm({
+        title: t('common.success', 'Success'),
+        message: t('study_calendar.schedule_saved'),
+        showCancel: false,
+        onConfirm: () => {},
+      });
       refetch();
     },
     onError: (error: any) => {
-      Alert.alert(t('common.error'), error.message);
+      showConfirm({
+        title: t('common.error'),
+        message: error.message,
+        showCancel: false,
+        onConfirm: () => {},
+      });
     },
   });
 
@@ -179,9 +191,15 @@ const StudyCalendarScreen: React.FC = () => {
 
   if (loadingSchedule || loadingSubjects) {
     return (
-      <View style={currentStyles.loadingContainer}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={currentStyles.loadingText}> {t('study_calendar.loading_schedule')} </Text>
+      <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+        <UnifiedHeader
+          showBackButton
+          title={t('study_calendar.header_title')}
+          subtitle={t('study_calendar.header_subtitle')}
+        />
+        <View style={{ paddingTop: 16, paddingHorizontal: layout.screenPadding }}>
+          <GenericListSkeleton numItems={6} />
+        </View>
       </View>
     );
   }

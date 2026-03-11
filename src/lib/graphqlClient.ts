@@ -7,6 +7,7 @@
 
 import React from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { tryFetchWithFallback } from '../config/api';
 
 /**
@@ -20,7 +21,7 @@ export const executeGraphQL = async <TData = any, TVariables = any>(
   let token: string | null = null;
 
   if (requireAuth) {
-    token = await AsyncStorage.getItem('auth_token');
+    token = await SecureStore.getItemAsync('auth_token');
     if (!token) {
       throw new Error('Authentication required');
     }

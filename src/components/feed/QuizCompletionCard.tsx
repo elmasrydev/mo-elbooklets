@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
@@ -28,100 +28,74 @@ interface QuizCompletionCardProps {
     isLiked: boolean;
   };
   onLike: () => void;
-  onComment: () => void;
+  onComment?: () => void;
   onReview?: () => void;
   isCurrentUser?: boolean;
 }
 
-// Lightweight confetti: 16 pieces (down from 64), 1 animated value each (down from 5)
-const CONFETTI_COLORS = [
-  '#FFD700',
-  '#FF6B6B',
-  '#4ECDC4',
-  '#45B7D1',
-  '#96CEB4',
-  '#ff9ff3',
-  '#feca57',
-  '#5f27cd',
-];
+const CONFETTI_COLORS = ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#ff9ff3', '#feca57', '#5f27cd'];
 const CONFETTI_PIECES = CONFETTI_COLORS.flatMap((color, ci) =>
-  [0, 1].map((i) => ({
-    key: `${ci}-${i}`,
-    color,
-    delay: ci * 100 + i * 180,
-    offsetX: -130 + ci * 33 + i * 16,
-    endY: -(50 + (ci % 4) * 30 + i * 40),
-  })),
+  [0, 1, 2].map((i) => {
+    const index = ci * 3 + i;
+    const angle = (Math.PI * 2 * index) / 24;
+    const distance = 45 + (index % 3) * 20;
+    return {
+      key: `${ci}-${i}`,
+      color,
+      delay: (index % 5) * 80,
+      endX: Math.cos(angle) * distance,
+      endY: Math.sin(angle) * distance,
+      rotateDeg: `${180 + index * 45}deg`,
+    };
+  }),
 );
 
-const ConfettiPiece = React.memo<{
-  delay: number;
-  color: string;
-  offsetX: number;
-  endY: number;
-}>(({ delay, color, offsetX, endY }) => {
-  const anim = useRef(new Animated.Value(0)).current;
+const ConfettiPiece = React.memo<{ delay: number; color: string; endX: number; endY: number; rotateDeg: string }>(
+  ({ delay, color, endX, endY, rotateDeg }) => {
+    const anim = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    const driftX = offsetX * 0.4;
-    const run = () => {
-      anim.setValue(0);
-      Animated.timing(anim, {
-        toValue: 1,
-        duration: 2200,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }).start(() => {
-        // Restart after a pause
-        setTimeout(run, delay);
-      });
-    };
-    const initialTimeout = setTimeout(run, delay);
-    return () => clearTimeout(initialTimeout);
-  }, []);
+    useEffect(() => {
+      const run = () => {
+        anim.setValue(0);
+        Animated.timing(anim, {
+          toValue: 1,
+          duration: 2000,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }).start(() => {
+          setTimeout(run, delay + 500);
+        });
+      };
+      const initialTimeout = setTimeout(run, delay);
+      return () => clearTimeout(initialTimeout);
+    }, []);
 
-  const driftX = offsetX * 0.4;
-  const rotateDeg = `${(offsetX + 100) * 4}deg`;
+    const driftY = 20; // visual gravity over time
 
-  return (
-    <Animated.View
-      style={[
-        styles.confettiPiece,
-        {
-          backgroundColor: color,
-          opacity: anim.interpolate({
-            inputRange: [0, 0.05, 0.6, 1],
-            outputRange: [0, 1, 0.8, 0],
-          }),
-          transform: [
-            {
-              translateX: anim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0, offsetX + driftX],
-              }),
-            },
-            { translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [0, endY] }) },
-            {
-              scale: anim.interpolate({
-                inputRange: [0, 0.05, 0.7, 1],
-                outputRange: [0, 1, 0.8, 0],
-              }),
-            },
-            { rotate: anim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', rotateDeg] }) },
-          ],
-        },
-      ]}
-    />
-  );
-});
+    return (
+      <Animated.View
+        style={[
+          styles.confettiPiece,
+          {
+            backgroundColor: color,
+            opacity: anim.interpolate({
+              inputRange: [0, 0.1, 0.7, 1],
+              outputRange: [0, 1, 0.9, 0],
+            }),
+            transform: [
+              { translateX: anim.interpolate({ inputRange: [0, 1], outputRange: [0, endX] }) },
+              { translateY: anim.interpolate({ inputRange: [0, 0.7, 1], outputRange: [0, endY, endY + driftY] }) },
+              { scale: anim.interpolate({ inputRange: [0, 0.1, 0.7, 1], outputRange: [0, 1, 1, 0.2] }) },
+              { rotate: anim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', rotateDeg] }) },
+            ],
+          },
+        ]}
+      />
+    );
+  }
+);
 
-const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
-  item,
-  onLike,
-  onComment,
-  onReview,
-  isCurrentUser = false,
-}) => {
+const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({ item, onLike, onComment, onReview, isCurrentUser = false }) => {
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { language } = useLanguage();
   const { t } = useTranslation();
@@ -129,253 +103,303 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
   const { typography, fontWeight } = useTypography();
 
   const scorePercent = Math.round((item.quizData.score / item.quizData.totalQuestions) * 100);
-  const color = getScoreColor(scorePercent);
-  const xpEarned = Math.round(scorePercent * 1.2);
-  const isPerfect = scorePercent >= 95;
+  const isPerfect = scorePercent >= 95 || item.quizData.score === item.quizData.totalQuestions;
+  
+  // Theme colors based on perfect score or regular
+  const primaryColor = isPerfect ? theme.colors.success : theme.colors.primary;
+  const primaryBg = isPerfect ? `${theme.colors.success}10` : `${theme.colors.primary}10`;
+  const primaryBorder = isPerfect ? `${theme.colors.success}20` : `${theme.colors.border}`;
 
-  const getInitials = (name: string) =>
-    name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
-  const currentStyles = createStyles(
-    theme,
-    common,
-    fontSizes,
-    spacing,
-    borderRadius,
-    typography,
-    fontWeight,
-  );
+  const getInitials = (name: string) => name.split(' ').map((n) => n[0]).join('').toUpperCase().substring(0, 2);
+
+  const currentStyles = createStyles(theme, common, spacing, borderRadius, typography, fontWeight, primaryColor, primaryBg, primaryBorder);
 
   return (
-    <View
-      style={[
-        common.card,
-        isPerfect && currentStyles.cardPerfect,
-        { marginBottom: spacing.sectionGap },
-      ]}
-    >
+    <View style={[currentStyles.cardContainer, isPerfect && currentStyles.perfectCardContainer]}>
+      {/* Decorative Sparkles Effect */}
       {isPerfect && (
-        <View style={currentStyles.confettiContainer}>
-          {CONFETTI_PIECES.map((p) => (
-            <ConfettiPiece
-              key={p.key}
-              delay={p.delay}
-              color={p.color}
-              offsetX={p.offsetX}
-              endY={p.endY}
-            />
-          ))}
+        <View style={currentStyles.sparklesIcon} pointerEvents="none">
+          <MaterialIcons name="auto-awesome" size={32} color={theme.colors.border} />
         </View>
       )}
 
-      <View style={currentStyles.contentRow}>
-        <View style={currentStyles.progressContainer}>
-          <CircularProgress size={80} strokeWidth={8} percentage={scorePercent} color={color} />
+      {/* Top Header: Avatar + User Info + Score Progress */}
+      <View style={currentStyles.headerRow}>
+        <View style={currentStyles.headerLeft}>
+          <View style={[currentStyles.avatar, { borderColor: primaryBorder, backgroundColor: primaryBg }]}>
+            <Text style={[currentStyles.avatarText, { color: primaryColor }]}>{getInitials(item.user.name)}</Text>
+          </View>
+          <View style={currentStyles.userInfo}>
+            <Text style={[currentStyles.userName, { textAlign: common.textAlign }]}>{item.user.name}</Text>
+            <Text style={[currentStyles.userSubtitle, { textAlign: common.textAlign }]}>
+              {item.user.grade.name} • {getTimeAgo(item.createdAt, t, language)}
+            </Text>
+          </View>
         </View>
-        <View style={currentStyles.mainContent}>
-          <View style={currentStyles.header}>
-            <View style={currentStyles.headerLeft}>
-              <View style={currentStyles.avatar}>
-                <Text style={currentStyles.avatarText}> {getInitials(item.user.name)} </Text>
+        
+        <View style={currentStyles.progressContainer}>
+          <CircularProgress size={56} strokeWidth={4} percentage={scorePercent} color={primaryColor} />
+          {isPerfect && (
+            <>
+              <View style={currentStyles.confettiWrapper} pointerEvents="none">
+                {CONFETTI_PIECES.map((p) => (
+                  <ConfettiPiece key={p.key} delay={p.delay} color={p.color} endX={p.endX} endY={p.endY} rotateDeg={p.rotateDeg} />
+                ))}
               </View>
-              <View style={currentStyles.userInfo}>
-                <View style={currentStyles.nameRow}>
-                  <Text style={currentStyles.userName}> {item.user.name} </Text>
-                  {isPerfect && <Text style={currentStyles.fireEmoji}>🔥</Text>}
-                </View>
-                <Text style={currentStyles.timeAgo}>
-                  {' '}
-                  {getTimeAgo(item.createdAt, t, language)}{' '}
-                </Text>
+              <View style={currentStyles.starBadge}>
+                <MaterialIcons name="grade" size={14} color="#fff" />
               </View>
-            </View>
-            <View style={currentStyles.xpBadge}>
-              <Text style={currentStyles.xpValue}> +{xpEarned} </Text>
-              <Text style={currentStyles.xpLabel}> XP </Text>
-            </View>
-          </View>
-
-          <Text style={[currentStyles.title, { textAlign: common.textAlign }]}>
-            {t('social_screen.aced_quiz', { subject: item.quizData.quiz.subject.name })}
-          </Text>
-          <Text style={[currentStyles.description, { textAlign: common.textAlign }]}>
-            {t('social_screen.quiz_description', {
-              user: item.user.name,
-              subject: item.quizData.quiz.subject.name,
-              percent: scorePercent,
-            })}
-          </Text>
-
-          <View style={currentStyles.actionsRow}>
-            <View style={currentStyles.actionsLeft}>
-              <TouchableOpacity style={currentStyles.actionButton} onPress={onLike}>
-                <Ionicons
-                  name={item.isLiked ? 'heart' : 'heart-outline'}
-                  size={20}
-                  color={item.isLiked ? '#FF6B6B' : theme.colors.textSecondary}
-                />
-                <Text
-                  style={[currentStyles.actionText, item.isLiked && currentStyles.actionTextLiked]}
-                >
-                  {item.likes}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={currentStyles.actionButton} onPress={onComment}>
-                <Ionicons name="chatbubble-outline" size={18} color={theme.colors.textSecondary} />
-                <Text style={currentStyles.actionText}> {item.comments} </Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={currentStyles.actionButton}>
-                <Ionicons name="share-outline" size={18} color={theme.colors.textSecondary} />
-              </TouchableOpacity>
-            </View>
-            {isCurrentUser && onReview && (
-              <TouchableOpacity style={currentStyles.reviewButton} onPress={onReview}>
-                <Text style={currentStyles.reviewButtonText}> {t('home_screen.review')} </Text>
-              </TouchableOpacity>
-            )}
-          </View>
+            </>
+          )}
         </View>
       </View>
-      {isPerfect && (
-        <View style={currentStyles.celebrationRow}>
-          <Text style={currentStyles.celebrationEmoji}>🎉</Text>
+
+      {/* Content Area */}
+      <View style={currentStyles.contentArea}>
+        {isPerfect ? (
+          <>
+            <Text style={[currentStyles.perfectTitle, { textAlign: common.textAlign }]}>
+              {`${item.user.name.split(' ')[0]} ${t('social_screen.aced_quiz', { subject: item.quizData.quiz.subject.name, defaultValue: 'Aced the quiz!' })} ✨`}
+            </Text>
+            <View style={currentStyles.perfectInnerCard}>
+              <MaterialIcons name="military-tech" size={24} color={theme.colors.success} style={currentStyles.perfectIcon} />
+              <View style={currentStyles.perfectInnerContent}>
+                <Text style={currentStyles.perfectInnerTitle}>{t('social_screen.perfect_score', 'Perfect Score! 🎯')}</Text>
+                <Text style={currentStyles.perfectInnerSubtitle}>
+                  {item.quizData.score}/{item.quizData.totalQuestions} {t('social_screen.questions_correct_in', 'Questions Correct in')} {item.quizData.quiz.subject.name}
+                </Text>
+              </View>
+            </View>
+          </>
+        ) : (
+          <Text style={[currentStyles.regularText, { textAlign: common.textAlign }]}>
+            {t('social_screen.scored_prefix', 'Scored ')} 
+            <Text style={[currentStyles.highlightText, { color: theme.colors.primary }]}>{scorePercent}%</Text> 
+            {t('social_screen.on_quiz_prefix', ' on a ')} 
+            <Text style={[currentStyles.highlightText, { color: theme.colors.primary, textDecorationLine: 'underline' }]}>
+              {item.quizData.quiz.subject.name}{t('social_screen.quiz_suffix', ' Quiz')}
+            </Text>
+            {'. '}
+            {t('social_screen.great_accuracy', 'Great accuracy! 🎯')}
+          </Text>
+        )}
+      </View>
+
+      {/* Footer Actions */}
+      <View style={currentStyles.footerActions}>
+        <View style={currentStyles.statsRow}>
+          <View style={currentStyles.statItem}>
+            <MaterialIcons name="thumb-up" size={14} color="#3B82F6" />
+            <Text style={currentStyles.statText}>{item.likes}</Text>
+          </View>
         </View>
-      )}
+
+        <View style={currentStyles.actionButtons}>
+          <TouchableOpacity style={currentStyles.likeBtn} onPress={onLike}>
+            <MaterialIcons name="thumb-up" size={14} color={item.isLiked ? theme.colors.primary : theme.colors.textSecondary} />
+            <Text style={[currentStyles.likeBtnText, item.isLiked && { color: theme.colors.primary }]}>{t('common.like', 'Like')}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </View>
   );
 };
 
-const createStyles = (
-  theme: any,
-  common: any,
-  fontSizes: any,
-  spacing: any,
-  borderRadius: any,
-  typography: any,
-  fontWeight: any,
-) =>
+const createStyles = (theme: any, common: any, spacing: any, borderRadius: any, typography: any, fontWeight: any, primaryColor: string, primaryBg: string, primaryBorder: string) =>
   StyleSheet.create({
-    cardPerfect: { borderStyle: 'dashed', borderColor: theme.colors.primary, borderWidth: 2 },
-    confettiContainer: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      alignItems: 'center',
-      justifyContent: 'flex-end',
-      paddingBottom: 40,
+    cardContainer: {
+      backgroundColor: theme.mode === 'light' ? theme.colors.surface : theme.colors.card,
+      padding: spacing.lg,
+      borderRadius: borderRadius.xl,
+      marginBottom: spacing.sectionGap,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      ...layout.shadow,
+      overflow: 'hidden',
     },
-    contentRow: { flexDirection: common.rowDirection, gap: 16 },
-    progressContainer: { alignItems: 'center', justifyContent: 'center' },
-    mainContent: { flex: 1 },
-    header: {
+    perfectCardContainer: {
+      borderWidth: 2,
+      borderColor: `${theme.colors.success}30`,
+      overflow: 'visible',
+      zIndex: 1,
+    },
+    sparklesIcon: {
+      position: 'absolute',
+      top: 8,
+      right: 8,
+      opacity: 0.15,
+    },
+    headerRow: {
       flexDirection: common.rowDirection,
       justifyContent: 'space-between',
       alignItems: 'flex-start',
-      marginBottom: spacing.md,
     },
-    headerLeft: { flexDirection: common.rowDirection, alignItems: 'center', gap: 12, flex: 1 },
+    headerLeft: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      gap: 12,
+      flex: 1,
+    },
     avatar: {
-      width: 48,
-      height: 48,
-      borderRadius: borderRadius.md,
-      backgroundColor: theme.colors.background,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1,
-      borderColor: theme.colors.border,
     },
     avatarText: {
-      ...typography('caption'),
-      ...fontWeight('900'),
-      color: theme.colors.textSecondary,
+      ...typography('body'),
+      ...fontWeight('bold'),
     },
-    userInfo: { gap: 2, alignItems: common.alignStart, flex: 1 },
-    nameRow: { flexDirection: common.rowDirection, alignItems: 'center', gap: 6 },
-    userName: { ...typography('label'), ...fontWeight('900'), color: theme.colors.text },
-    fireEmoji: { fontSize: 16 },
-    timeAgo: {
+    userInfo: {
+      flex: 1,
+      alignItems: common.alignStart,
+    },
+    userName: {
+      ...typography('body'),
+      ...fontWeight('bold'),
+      color: theme.colors.text,
+    },
+    userSubtitle: {
       ...typography('caption'),
       fontSize: 10,
-      ...fontWeight('700'),
-      color: theme.colors.textTertiary,
+      ...fontWeight('bold'),
+      color: theme.colors.textSecondary,
       textTransform: 'uppercase',
       letterSpacing: 0.5,
+      marginTop: 2,
     },
-    xpBadge: {
-      backgroundColor: theme.colors.background,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      borderRadius: borderRadius.md,
-      paddingHorizontal: 12,
-      paddingVertical: 8,
+    progressContainer: {
+      width: 64,
+      height: 64,
       alignItems: 'center',
-      minWidth: 60,
-      ...common.marginStart(8),
+      justifyContent: 'center',
+      zIndex: 10,
     },
-    xpValue: { ...typography('body'), ...fontWeight('900'), color: theme.colors.primary },
-    xpLabel: {
-      ...typography('caption'),
-      fontSize: 8,
+    confettiWrapper: {
+      position: 'absolute',
+      width: 1,
+      height: 1,
+      top: '50%',
+      left: '50%',
+      overflow: 'visible',
+      zIndex: 10,
+      elevation: 10,
+    },
+    starBadge: {
+      position: 'absolute',
+      bottom: 0,
+      right: 0,
+      backgroundColor: '#F59E0B',
+      padding: 2,
+      borderRadius: 12,
+      ...layout.shadow,
+    },
+    contentArea: {
+      marginTop: spacing.md,
+      marginBottom: spacing.md,
+    },
+    perfectTitle: {
+      ...typography('body'),
       ...fontWeight('900'),
-      color: theme.colors.textTertiary,
-      textTransform: 'uppercase',
-      letterSpacing: 1,
-    },
-    title: {
-      ...typography('h3'),
-      ...fontWeight('600'),
       color: theme.colors.text,
-      marginBottom: spacing.sm,
-      lineHeight: 24,
+      marginBottom: 8,
     },
-    description: {
+    perfectInnerCard: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      gap: 12,
+      backgroundColor: `${theme.colors.success}10`,
+      borderWidth: 1,
+      borderColor: `${theme.colors.success}20`,
+      borderRadius: borderRadius.lg,
+      padding: spacing.md,
+    },
+    perfectIcon: {
+      opacity: 0.9,
+    },
+    perfectInnerContent: {
+      flex: 1,
+      alignItems: common.alignStart,
+    },
+    perfectInnerTitle: {
+      ...typography('bodySmall'),
+      ...fontWeight('bold'),
+      color: theme.colors.success,
+      textAlign: common.textAlign,
+    },
+    perfectInnerSubtitle: {
       ...typography('caption'),
-      ...fontWeight('500'),
+      fontSize: 11,
       color: theme.colors.textSecondary,
-      marginBottom: spacing.lg,
+      marginTop: 2,
+      textAlign: common.textAlign,
+    },
+    regularText: {
+      ...typography('bodySmall'),
+      color: theme.colors.text,
       lineHeight: 20,
     },
-    actionsRow: {
+    highlightText: {
+      ...fontWeight('bold'),
+    },
+    footerActions: {
       flexDirection: common.rowDirection,
       justifyContent: 'space-between',
       alignItems: 'center',
+      paddingTop: spacing.md,
       borderTopWidth: 1,
       borderTopColor: theme.colors.border,
-      paddingTop: spacing.md,
     },
-    actionsLeft: { flexDirection: common.rowDirection, gap: 16 },
-    actionButton: { flexDirection: common.rowDirection, alignItems: 'center', gap: 6 },
-    actionText: {
+    statsRow: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      gap: 12,
+    },
+    statItem: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      gap: 4,
+    },
+    statText: {
       ...typography('caption'),
-      fontSize: 12,
-      ...fontWeight('900'),
+      ...fontWeight('bold'),
       color: theme.colors.textSecondary,
     },
-    actionTextLiked: { color: '#FF6B6B' },
-    reviewButton: {
-      backgroundColor: `${theme.colors.primary}15`,
-      paddingHorizontal: 16,
-      paddingVertical: 8,
+    actionButtons: {
+      flexDirection: common.rowDirection,
+      gap: 8,
+    },
+    likeBtn: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
       borderRadius: borderRadius.md,
       borderWidth: 1,
-      borderColor: `${theme.colors.primary}30`,
+      borderColor: theme.colors.border,
     },
-    reviewButtonText: {
+    likeBtnText: {
       ...typography('caption'),
-      fontSize: 10,
-      ...fontWeight('900'),
-      color: theme.colors.primary,
-      textTransform: 'uppercase',
-      letterSpacing: 1,
+      ...fontWeight('bold'),
+      color: theme.colors.textSecondary,
     },
-    celebrationRow: { alignItems: 'center', marginTop: spacing.md },
-    celebrationEmoji: { fontSize: 32 },
+    cheerBtn: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 16,
+      paddingVertical: 6,
+      borderRadius: borderRadius.md,
+      ...layout.shadow,
+    },
+    cheerBtnText: {
+      ...typography('caption'),
+      ...fontWeight('bold'),
+      color: '#fff',
+    },
   });
 
 const styles = StyleSheet.create({
@@ -383,3 +407,4 @@ const styles = StyleSheet.create({
 });
 
 export default React.memo(QuizCompletionCard);
+

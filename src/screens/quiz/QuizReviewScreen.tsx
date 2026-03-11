@@ -11,6 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -21,6 +22,8 @@ import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
 import AppButton from '../../components/AppButton';
 import { textAlign } from '../../lib/rtl';
+import { QuizScreenSkeleton } from '../../components/SkeletonLoader';
+import RetryView from '../../components/RetryView';
 
 const QuizReviewScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -42,7 +45,7 @@ const QuizReviewScreen: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
 
       const query = `
@@ -129,31 +132,18 @@ const QuizReviewScreen: React.FC = () => {
 
   if (loading) {
     return (
-      <View style={[common.container, currentStyles.center]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
+      <View style={{ paddingTop: 16 }}>
+        <QuizScreenSkeleton />
       </View>
     );
   }
 
   if (error || !result) {
     return (
-      <View style={[common.container, currentStyles.center, { padding: 20 }]}>
-        <Ionicons
-          name="alert-circle-outline"
-          size={48}
-          color={theme.colors.error}
-          style={{ marginBottom: 16 }}
-        />
-        <Text style={{ ...common.text, textAlign: 'center', marginBottom: 20 }}>
-          {error || t('common.error')}
-        </Text>
-        <AppButton
-          title={t('home_screen.try_again')}
-          onPress={fetchResults}
-          size="sm"
-          fullWidth={false}
-        />
-      </View>
+      <RetryView 
+        message={error || t('common.error')}
+        onRetry={fetchResults}
+      />
     );
   }
 
@@ -659,14 +649,18 @@ const QuizReviewScreen: React.FC = () => {
                     let letterCircleStyle = currentStyles.optionLetterCircleDefault;
                     let letterTextStyle = currentStyles.optionLetterDefault;
 
+                    let textStyle: any = null;
+
                     if (isAnswerCorrect) {
                       optStyle = currentStyles.optionCorrect;
                       letterCircleStyle = currentStyles.optionLetterCircleCorrect;
                       letterTextStyle = currentStyles.optionLetterCorrect;
+                      textStyle = currentStyles.optionTextCorrect;
                     } else if (isSelected && !ua.is_correct) {
                       optStyle = currentStyles.optionIncorrect;
                       letterCircleStyle = currentStyles.optionLetterCircleIncorrect;
                       letterTextStyle = currentStyles.optionLetterIncorrect;
+                      textStyle = currentStyles.optionTextIncorrect;
                     }
 
                     return (
@@ -676,7 +670,14 @@ const QuizReviewScreen: React.FC = () => {
                             {String.fromCharCode(65 + optIndex)}
                           </Text>
                         </View>
-                        <Text style={currentStyles.optionText}> {opt} </Text>
+                        <Text style={[currentStyles.optionText, textStyle]}>
+                          {' '}
+                          {opt.toLowerCase() === 'true'
+                            ? t('common.true')
+                            : opt.toLowerCase() === 'false'
+                              ? t('common.false')
+                              : opt}{' '}
+                        </Text>
                         <View style={currentStyles.dotIconContainer}>
                           {isAnswerCorrect ? (
                             <Ionicons name="checkmark-circle" size={24} color="#10B981" />
@@ -910,6 +911,12 @@ const styles = (
       color: theme.colors.text,
       textAlign: common.textAlign,
       marginStart: 4,
+    },
+    optionTextCorrect: {
+      color: '#065F46', // Dark green that pairs well with #F0FDF4
+    },
+    optionTextIncorrect: {
+      color: '#991B1B', // Dark red that pairs well with #FEF2F2
     },
     dotIconContainer: {
       width: 28,

@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -19,6 +20,8 @@ import { useTypography } from '../../hooks/useTypography';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import AppButton from '../../components/AppButton';
+import { GenericListSkeleton } from '../../components/SkeletonLoader';
+import RetryView from '../../components/RetryView';
 
 interface Subject {
   id: string;
@@ -76,7 +79,7 @@ const StudyChaptersScreen: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       if (!token) {
         setError(t('common.error'));
         return;
@@ -130,7 +133,7 @@ const StudyChaptersScreen: React.FC = () => {
 
   const handleLessonPress = (lesson: Lesson) => {
     const allLessons = chapters.flatMap((ch) => ch.lessons);
-    navigation.navigate('StudyLesson', { lesson, allLessons });
+    navigation.navigate('StudyLesson', { lesson, allLessons, subject });
   };
 
   const currentStyles = styles(theme, fontSizes, spacing, borderRadius, common, typography);
@@ -139,9 +142,8 @@ const StudyChaptersScreen: React.FC = () => {
     return (
       <View style={common.container}>
         <UnifiedHeader showBackButton title={subject.name} />
-        <View style={currentStyles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={currentStyles.loadingText}> {t('study_chapters.loading')} </Text>
+        <View style={{ paddingTop: 16 }}>
+          <GenericListSkeleton numItems={5} />
         </View>
       </View>
     );
@@ -151,17 +153,10 @@ const StudyChaptersScreen: React.FC = () => {
     return (
       <View style={common.container}>
         <UnifiedHeader showBackButton title={subject.name} />
-        <View style={currentStyles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={spacing.icon.xl} color={theme.colors.error} />
-          <Text style={currentStyles.errorTitle}> {t('study_chapters.error_loading')} </Text>
-          <Text style={currentStyles.errorText}> {error} </Text>
-          <AppButton
-            title={t('home_screen.try_again')}
-            onPress={fetchLessons}
-            size="sm"
-            fullWidth={false}
-          />
-        </View>
+        <RetryView 
+          message={error}
+          onRetry={fetchLessons}
+        />
       </View>
     );
   }

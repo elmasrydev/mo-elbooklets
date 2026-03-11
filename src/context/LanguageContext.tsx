@@ -1,8 +1,10 @@
-import React, { createContext, useContext, useState, ReactNode, useMemo, useCallback } from 'react';
-import { I18nManager, Alert, NativeModules } from 'react-native';
+import React, { createContext, useContext, useState, ReactNode, useMemo, useCallback, useEffect } from 'react';
+import { I18nManager, NativeModules } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import i18n, { LANGUAGE_KEY } from '../i18n';
 import * as Updates from 'expo-updates';
+import { useTranslation } from 'react-i18next'; // Assuming this import is needed for 't'
+import { useModal } from './ModalContext'; // Assuming this path for ModalContext
 
 type Language = 'en' | 'ar';
 
@@ -11,40 +13,11 @@ const RTL_SYNC_ATTEMPTED_KEY = 'rtl_sync_attempted';
 
 interface LanguageContextType {
   language: Language;
-  setLanguage: (lang: Language) => Promise<void>;
+  setLanguage: (lang: Language, bypassConfirmation?: boolean) => Promise<void>;
   isRTL: boolean;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
-
-/**
- * Reload the app with RTL sync tracking.
- * Sets a flag before reload so the bootstrap in App.tsx knows
- * we've already attempted the sync (prevents infinite loops in dev).
- */
-const reloadApp = async (lang: Language): Promise<void> => {
-  // Mark that we're attempting an RTL sync for this language
-  await AsyncStorage.setItem(RTL_SYNC_ATTEMPTED_KEY, lang);
-
-  if (__DEV__) {
-    const DevSettings = NativeModules.DevSettings;
-    if (DevSettings?.reload) {
-      DevSettings.reload();
-    } else {
-      Alert.alert(
-        'Reload Required',
-        'Please reload the app manually to apply layout changes. (Shake device → Reload)',
-      );
-    }
-  } else {
-    try {
-      await Updates.reloadAsync();
-    } catch (e) {
-      console.warn('Updates.reloadAsync failed:', e);
-      Alert.alert('Please restart the app to apply changes.');
-    }
-  }
-};
 
 interface LanguageProviderProps {
   children: ReactNode;
@@ -56,9 +29,51 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({
   initialLanguage,
 }) => {
   const [language, setLanguageState] = useState<Language>(initialLanguage);
+  const { t } = useTranslation();
+  const { showConfirm } = useModal();
+
+  /**
+   * Reload the app with RTL sync tracking.
+   */
+  const reloadApp = useCallback(
+    async (lang: Language): Promise<void> => {
+      // Mark that we're attempting an RTL sync for this language
+      await AsyncStorage.setItem(RTL_SYNC_ATTEMPTED_KEY, lang);
+
+      if (__DEV__) {
+        const DevSettings = NativeModules.DevSettings;
+        if (DevSettings?.reload) {
+          DevSettings.reload();
+        } else {
+          showConfirm({
+            title: t('common.reload_required', 'Reload Required'),
+            message: t(
+              'common.reload_manual_message',
+              'Please reload the app manually to apply layout changes. (Shake device → Reload)',
+            ),
+            showCancel: false,
+            onConfirm: () => {},
+          });
+        }
+      } else {
+        try {
+          await Updates.reloadAsync();
+        } catch (e) {
+          console.warn('Updates.reloadAsync failed:', e);
+          showConfirm({
+            title: t('common.information', 'Information'),
+            message: t('common.restart_app_message', 'Please restart the app to apply changes.'),
+            showCancel: false,
+            onConfirm: () => {},
+          });
+        }
+      }
+    },
+    [showConfirm, t],
+  );
 
   const setLanguage = useCallback(
-    async (lang: Language) => {
+    async (lang: Language, bypassConfirmation = false) => {
       try {
         if (lang === language) return;
 
@@ -76,34 +91,28 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({
           I18nManager.forceRTL(shouldBeRTL);
 
           // 4. Reload to apply native RTL change
-          //    The Yoga layout engine only reads I18nManager.isRTL at startup.
-          //    Small delay to ensure AsyncStorage write is flushed.
           setTimeout(() => reloadApp(lang), 300);
         };
 
+        if (bypassConfirmation) {
+          await performChange();
+          return;
+        }
+
         // Show confirmation alert
-        Alert.alert(
-          lang === 'ar' ? 'تغيير اللغة' : 'Change Language',
-          lang === 'ar'
-            ? 'هل تريد تغيير اللغة إلى العربية؟ سيتم إعادة تشغيل التطبيق لتطبيق التغييرات.'
-            : 'Do you want to change the language to English? The app will restart to apply changes.',
-          [
-            {
-              text: lang === 'ar' ? 'إلغاء' : 'Cancel',
-              style: 'cancel',
-            },
-            {
-              text: lang === 'ar' ? 'موافق' : 'OK',
-              onPress: performChange,
-            },
-          ],
-          { cancelable: true },
-        );
+        showConfirm({
+          title: t('common.confirm_change', 'Confirm Change'),
+          message: t(
+            'common.confirm_language_change_message',
+            'Are you sure you want to change language?',
+          ),
+          onConfirm: performChange,
+        });
       } catch (error) {
         console.error('Error setting language:', error);
       }
     },
-    [language],
+    [language, t, showConfirm, reloadApp],
   );
 
   const value = useMemo(

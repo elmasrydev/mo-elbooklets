@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "747783678458",
+    "project_id": "el-booklets",
+    "storage_bucket": "el-booklets.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:747783678458:android:4247cf9017d30299e39c43",
+        "android_client_info": {
+          "package_name": "com.elbooklets.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAUqdplfN_w2IxZ34MTntin2LbCSnZILnk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

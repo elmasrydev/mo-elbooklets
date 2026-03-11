@@ -7,10 +7,11 @@ import {
   TouchableOpacity,
   Image,
   Switch,
-  Alert,
   Platform,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
+import { useModal } from '../context/ModalContext';
 import { useTheme } from '../context/ThemeContext';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useLanguage } from '../context/LanguageContext';
@@ -19,11 +20,14 @@ import { layout } from '../config/layout';
 import UnifiedHeader from '../components/UnifiedHeader';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-// #TODO: set the correct version
-const APP_VERSION = 'EL-Booklets v1.0.0';
+import DeviceInfo from 'react-native-device-info';
+
+const APP_VERSION = `EL-Booklets v${DeviceInfo.getVersion()}`;
 
 const ProfileScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
   const { user, logout } = useAuth();
+  const { showConfirm } = useModal();
   const { theme, spacing, fontSizes, borderRadius, isDark, toggleTheme } = useTheme();
   const common = useCommonStyles();
   const { isRTL, setLanguage, language } = useLanguage();
@@ -31,19 +35,24 @@ const ProfileScreen: React.FC = () => {
   const { t } = useTranslation();
 
   const handleLogout = () => {
-    Alert.alert(t('profile_screen.log_out'), t('more_screen.logout_confirm'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('profile_screen.log_out'), style: 'destructive', onPress: logout },
-    ]);
+    showConfirm({
+      title: t('profile_screen.log_out'),
+      message: t('more_screen.logout_confirm'),
+      confirmLabel: t('profile_screen.log_out'),
+      cancelLabel: t('common.cancel'),
+      confirmVariant: 'danger',
+      onConfirm: logout,
+    });
   };
 
   const handleLanguagePress = () => {
-    Alert.alert(t('profile_screen.choose_language'), t('profile_screen.select_language_msg'), [
-      language === 'ar'
-        ? { text: 'English (US)', onPress: () => setLanguage('en') }
-        : { text: 'العربية', onPress: () => setLanguage('ar') },
-      { text: t('common.cancel') || 'Cancel', style: 'destructive' },
-    ]);
+    showConfirm({
+      title: t('profile_screen.choose_language'),
+      message: t('profile_screen.select_language_msg'),
+      confirmLabel: language === 'ar' ? 'English (US)' : 'العربية',
+      cancelLabel: t('common.cancel') || 'Cancel',
+      onConfirm: () => setLanguage(language === 'ar' ? 'en' : 'ar', true),
+    });
   };
 
   const currentStyles = useMemo(
@@ -87,9 +96,10 @@ const ProfileScreen: React.FC = () => {
                 </Text>
               </View>
             </View>
-            <TouchableOpacity style={currentStyles.editAvatarButton}>
+            {/* Hide edit avatar button for now */}
+            {/* <TouchableOpacity style={currentStyles.editAvatarButton}>
               <Ionicons name="pencil" size={14} color="#ffffff" />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
 
           <View style={currentStyles.userInfoTextContainer}>
@@ -98,12 +108,18 @@ const ProfileScreen: React.FC = () => {
               {user?.grade?.name || t('profile_screen.not_specified')}{' '}
               {user?.educational_system?.name ? `• ${user.educational_system.name}` : ''}
             </Text>
+            {user?.mobile ? (
+              <Text style={[currentStyles.userSubtitle, { marginTop: 4, fontWeight: 'normal', opacity: 0.8 }]}>
+                {user?.country_code ? `${user.country_code} ` : ''}{user.mobile}
+              </Text>
+            ) : null}
           </View>
         </View>
 
         {/* Menu Section */}
         <View style={currentStyles.menuSection}>
-          {/* Edit Profile */}
+          {/* Hide Edit Profile and Badges for now */}
+          {/*
           <TouchableOpacity style={currentStyles.settingItem}>
             <View style={currentStyles.settingIconBox}>
               <Image
@@ -120,6 +136,24 @@ const ProfileScreen: React.FC = () => {
               color={theme.colors.textTertiary}
             />
           </TouchableOpacity>
+
+          <TouchableOpacity style={currentStyles.settingItem}>
+            <View style={currentStyles.settingIconBox}>
+              <Image
+                source={require('../../assets/images/Badges.png')}
+                style={currentStyles.menuImage}
+              />
+            </View>
+            <View style={currentStyles.settingContent}>
+              <Text style={currentStyles.settingTitle}>{t('profile_screen.badges')}</Text>
+            </View>
+            <Ionicons
+              name={isRTL ? 'chevron-back' : 'chevron-forward'}
+              size={20}
+              color={theme.colors.textTertiary}
+            />
+          </TouchableOpacity>
+          */}
 
           {/* Change Language */}
           <TouchableOpacity style={currentStyles.settingItem} onPress={handleLanguagePress}>
@@ -142,7 +176,44 @@ const ProfileScreen: React.FC = () => {
             />
           </TouchableOpacity>
 
-          {/* Badges */}
+          {/* FAQ */}
+          <TouchableOpacity 
+            style={currentStyles.settingItem} 
+            onPress={() => navigation.navigate('FAQs')}
+          >
+            <View style={[currentStyles.settingIconBox, { backgroundColor: theme.colors.info + '20' }]}>
+              <Ionicons name="help-circle-outline" size={22} color={theme.colors.info} />
+            </View>
+            <View style={currentStyles.settingContent}>
+              <Text style={currentStyles.settingTitle}>{t('profile_screen.faqs')}</Text>
+            </View>
+            <Ionicons
+              name={isRTL ? 'chevron-back' : 'chevron-forward'}
+              size={20}
+              color={theme.colors.textTertiary}
+            />
+          </TouchableOpacity>
+
+          {/* Contact Us */}
+          <TouchableOpacity 
+            style={currentStyles.settingItem} 
+            onPress={() => navigation.navigate('ContactUs')}
+          >
+            <View style={[currentStyles.settingIconBox, { backgroundColor: theme.colors.warning + '20' }]}>
+              <Ionicons name="mail-outline" size={22} color={theme.colors.warning} />
+            </View>
+            <View style={currentStyles.settingContent}>
+              <Text style={currentStyles.settingTitle}>{t('profile_screen.contact_us')}</Text>
+            </View>
+            <Ionicons
+              name={isRTL ? 'chevron-back' : 'chevron-forward'}
+              size={20}
+              color={theme.colors.textTertiary}
+            />
+          </TouchableOpacity>
+
+          {/* Badges - Hidden */}
+          {/*
           <TouchableOpacity style={currentStyles.settingItem}>
             <View style={currentStyles.settingIconBox}>
               <Image
@@ -159,8 +230,10 @@ const ProfileScreen: React.FC = () => {
               color={theme.colors.textTertiary}
             />
           </TouchableOpacity>
+          */}
 
-          {/* Help and Support */}
+          {/* Help and Support - Hidden for now */}
+          {/*
           <TouchableOpacity style={currentStyles.settingItem}>
             <View style={currentStyles.settingIconBox}>
               <Image
@@ -177,6 +250,7 @@ const ProfileScreen: React.FC = () => {
               color={theme.colors.textTertiary}
             />
           </TouchableOpacity>
+          */}
 
           {/* Dark Mode Toggle */}
           <View style={currentStyles.settingItem}>
