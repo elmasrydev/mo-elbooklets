@@ -40,6 +40,9 @@ const RankChangeCard: React.FC<RankChangeCardProps> = ({ item, onLike, onComment
     2: '#94A3B8', // Silver
     3: '#EA580C', // Bronze
   };
+
+  if (!item.rankData) return null;
+
   const rankColor = rankColors[item.rankData.newRank] || '#F59E0B';
   const rankBg = `${rankColor}10`;
   const rankBorder = `${rankColor}20`;

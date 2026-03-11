@@ -252,6 +252,8 @@ const HomeScreen: React.FC = () => {
                   quiz { name subject { name } }
                   score totalQuestions isPassed
                 }
+                connectedUser { id name grade { id name } }
+                rankData { previousRank newRank subject { id name } isOverall }
                 likes comments
               }
             }`,
