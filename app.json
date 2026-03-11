@@ -1,16 +1,20 @@
 {
   "expo": {
     "name": "El Booklets",
+    "locales": {
+      "en": "./locales/en.json",
+      "ar": "./locales/ar.json"
+    },
     "slug": "mobile-elbooklets",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/logo.png",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/logo.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#10b981"
+      "image": "./assets/splash.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#ffffff"
     },
     "ios": {
       "supportsTablet": true,
@@ -19,10 +23,12 @@
         "ITSAppUsesNonExemptEncryption": false
       },
       "bundleIdentifier": "com.agmryde.app",
-      "buildNumber": "27"
+      "buildNumber": "42",
+      "appleTeamId": "LVA2A6A56C",
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
-      "package": "com.elmasrydev.elbooklets",
+      "package": "com.elbooklets.app",
       "versionCode": 3,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
@@ -31,10 +37,11 @@
       "supportsRtl": true,
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "permissions": ["INTERNET", "ACCESS_NETWORK_STATE"]
+      "permissions": ["INTERNET", "ACCESS_NETWORK_STATE"],
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/adaptive-icon.png"
     },
     "updates": {
       "url": "https://u.expo.dev/d4dcdf3d-7581-496d-96a9-c5acca79629d",
@@ -43,7 +50,15 @@
       "fallbackToCacheTimeout": 0
     },
     "runtimeVersion": "1.0.0",
-    "plugins": ["expo-font"],
+    "plugins": [
+      "expo-font",
+      "./plugins/withAndroidSigning.js",
+      "./plugins/withIosModularHeaders.js",
+      "./plugins/withAndroidExtraStrings.js",
+      "expo-secure-store",
+      "@react-native-firebase/app",
+      "@react-native-firebase/crashlytics"
+    ],
     "extra": {
       "eas": {
         "projectId": "d4dcdf3d-7581-496d-96a9-c5acca79629d"

@@ -1,7 +1,12 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Image } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Image, Dimensions } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const LOGO_WIDTH = SCREEN_WIDTH * 0.8;
+const LOGO_ASPECT_RATIO = 768 / 1376; // splash-logo.png native ratio
+const LOGO_HEIGHT = LOGO_WIDTH / LOGO_ASPECT_RATIO;
 
 interface SplashScreenProps {
   onFinish: (isAuthenticated: boolean) => void;
@@ -13,90 +18,55 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
 
   useEffect(() => {
     if (!isLoading) {
-      // Add a small delay for better UX
       const timer = setTimeout(() => {
         onFinish(isAuthenticated);
-      }, 800);
+      }, 2500);
 
       return () => clearTimeout(timer);
     }
   }, [isLoading, isAuthenticated, onFinish]);
 
-  const currentStyles = styles(theme);
-
   return (
-    <View style={currentStyles.container}>
-      <View style={currentStyles.content}>
-        {/* App Logo/Icon */}
-        <View style={currentStyles.logoContainer}>
-          <Image
-            source={require('../../assets/logo.png')}
-            style={currentStyles.logo}
-            resizeMode="contain"
-          />
-          <Text style={currentStyles.appName}>ElBooklets</Text>
-        </View>
+    <View style={styles.container}>
+      {/* Full-screen background */}
+      <Image
+        source={require('../../assets/new-splash-bg.png')}
+        style={styles.background}
+        resizeMode="cover"
+      />
 
-        {/* Loading indicator */}
-        <ActivityIndicator size="large" color={theme.colors.primary} style={currentStyles.loader} />
+      {/* Centered splash logo */}
+      <Image
+        source={require('../../assets/splash-logo.png')}
+        style={styles.logo}
+        resizeMode="contain"
+      />
 
-        <Text style={currentStyles.loadingText}>Loading...</Text>
-      </View>
-
-      {/* Footer */}
-      <View style={currentStyles.footer}>
-        <Text style={currentStyles.footerText}>Welcome to ElBooklets Hub</Text>
-      </View>
+      {/* Loading indicator at the bottom */}
+      <ActivityIndicator size="large" color={theme.colors.primary} style={styles.loader} />
     </View>
   );
 };
 
-const styles = (theme: any) =>
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: theme.colors.primary100, // Dynamic light theme color
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    content: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    logoContainer: {
-      alignItems: 'center',
-      marginBottom: 50,
-    },
-    logo: {
-      width: 150,
-      height: 150,
-      marginBottom: 20,
-    },
-    appName: {
-      fontSize: 36,
-      fontWeight: 'bold',
-      color: theme.colors.primary,
-      letterSpacing: 1,
-    },
-    loader: {
-      marginVertical: 20,
-    },
-    loadingText: {
-      fontSize: 16,
-      color: theme.colors.textSecondary,
-      marginTop: 10,
-      fontWeight: '500',
-    },
-    footer: {
-      paddingBottom: 50,
-    },
-    footerText: {
-      fontSize: 14,
-      color: theme.colors.textTertiary,
-      textAlign: 'center',
-      fontWeight: '500',
-    },
-  });
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  background: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
+  },
+  logo: {
+    width: LOGO_WIDTH,
+    height: LOGO_HEIGHT,
+  },
+  loader: {
+    position: 'absolute',
+    bottom: 80,
+  },
+});
 
 export default SplashScreen;

@@ -9,26 +9,34 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import { useLanguage } from '../../context/LanguageContext';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
+import { useTypography } from '../../hooks/useTypography';
 import { layout } from '../../config/layout';
+import { useNavigation } from '@react-navigation/native';
 import { tryFetchWithFallback } from '../../config/api';
+import UnifiedHeader from '../../components/UnifiedHeader';
+import AppButton from '../../components/AppButton';
+import SubjectIcon from '../../components/SubjectIcon';
+import { GenericListSkeleton } from '../../components/SkeletonLoader';
+import RetryView from '../../components/RetryView';
 
 interface Subject {
   id: string;
   name: string;
   description?: string;
 }
-interface QuizSubjectsScreenProps {
-  onSubjectSelect: (subject: Subject) => void;
-  onBack: () => void;
-}
 
-const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect, onBack }) => {
+const QuizSubjectsScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
+  const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
+  const { typography, fontWeight } = useTypography();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +49,7 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
     try {
       setLoading(true);
       setError(null);
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
       const result = await tryFetchWithFallback(
         `query SubjectsForUserGrade { subjectsForUserGrade { id name description } }`,
@@ -57,31 +65,26 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
     }
   };
 
-  const getSubjectIcon = (subjectName: string): string => {
-    const name = subjectName.toLowerCase();
-    if (name.includes('math') || name.includes('رياضيات')) return '🔢';
-    if (name.includes('english') || name.includes('language') || name.includes('لغة')) return '📝';
-    if (name.includes('science') || name.includes('علوم')) return '🔬';
-    if (name.includes('history') || name.includes('social') || name.includes('تاريخ')) return '📜';
-    if (name.includes('art') || name.includes('فن')) return '🎨';
-    if (name.includes('physical') || name.includes('sport') || name.includes('رياضة')) return '⚽';
-    return '📖';
-  };
-
-  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius);
+  const currentStyles = styles(
+    theme,
+    common,
+    typography,
+    fontWeight,
+    fontSizes,
+    spacing,
+    borderRadius,
+  );
 
   if (loading)
     return (
       <View style={currentStyles.container}>
-        <View style={common.header}>
-          <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
-            <Ionicons name={common.arrowBack as any} size={24} color={theme.colors.headerText} />
-          </TouchableOpacity>
-          <Text style={common.headerTitle}>{t('quiz_subjects.header_title')}</Text>
-        </View>
-        <View style={currentStyles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={currentStyles.loadingText}>{t('quiz_subjects.loading_subjects')}</Text>
+        <UnifiedHeader
+          showBackButton
+          onBackPress={() => navigation.goBack()}
+          title={t('quiz_subjects.header_title')}
+        />
+        <View style={{ paddingTop: 16 }}>
+          <GenericListSkeleton numItems={5} />
         </View>
       </View>
     );
@@ -89,68 +92,85 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
   if (error)
     return (
       <View style={currentStyles.container}>
-        <View style={common.header}>
-          <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
-            <Ionicons name={common.arrowBack as any} size={24} color={theme.colors.headerText} />
-          </TouchableOpacity>
-          <Text style={common.headerTitle}>{t('quiz_subjects.header_title')}</Text>
-        </View>
-        <View style={currentStyles.errorContainer}>
-          <Text style={currentStyles.errorIcon}>⚠️</Text>
-          <Text style={currentStyles.errorTitle}>{t('quiz_subjects.error_loading_subjects')}</Text>
-          <TouchableOpacity style={currentStyles.retryButton} onPress={fetchSubjects}>
-            <Text style={currentStyles.retryButtonText}>{t('home_screen.try_again')}</Text>
-          </TouchableOpacity>
-        </View>
+        <UnifiedHeader
+          showBackButton
+          onBackPress={() => navigation.goBack()}
+          title={t('quiz_subjects.header_title')}
+        />
+        <RetryView 
+          message={t('quiz_subjects.error_loading_subjects')}
+          onRetry={fetchSubjects}
+        />
       </View>
     );
 
   return (
     <View style={currentStyles.container}>
-      <View style={common.header}>
-        <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
-          <Ionicons name={common.arrowBack as any} size={24} color={theme.colors.headerText} />
-        </TouchableOpacity>
-        <View style={common.headerTextWrapper}>
-          <Text style={common.headerTitle}>{t('quiz_subjects.header_title')}</Text>
-          <Text style={common.headerSubtitle}>{t('quiz_subjects.header_subtitle')}</Text>
-        </View>
-      </View>
+      <UnifiedHeader
+        showBackButton
+        onBackPress={() => navigation.goBack()}
+        title={t('quiz_subjects.header_title')}
+        subtitle={t('quiz_subjects.header_subtitle')}
+      />
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: layout.screenPadding, paddingBottom: 100 }}
+        contentContainerStyle={{
+          padding: layout.screenPadding,
+          paddingBottom: Math.max(common.insets.bottom, spacing.xl),
+        }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={currentStyles.subjectsGrid}>
+        <View style={currentStyles.pageHeader}>
+          <Text style={currentStyles.pageTitle}>{t('quiz_subjects.page_title')}</Text>
+          <Text style={currentStyles.pageSubtitle}>{t('quiz_subjects.page_subtitle')}</Text>
+        </View>
+
+        <View style={currentStyles.subjectsContainer}>
           {subjects.map((subject: Subject) => (
             <TouchableOpacity
               key={subject.id}
               style={currentStyles.subjectCard}
-              onPress={() => onSubjectSelect(subject)}
+              onPress={() => navigation.navigate('QuizFlowLessons', { subject })}
+              activeOpacity={0.7}
             >
-              <View style={currentStyles.subjectIcon}>
-                <Text style={currentStyles.subjectIconText}>{getSubjectIcon(subject.name)}</Text>
+              <View style={currentStyles.subjectMain}>
+                <SubjectIcon
+                  subjectName={subject.name}
+                  size={48}
+                  style={currentStyles.iconBoxOverride}
+                />
+                <View style={currentStyles.subjectInfo}>
+                  <Text style={currentStyles.subjectName} numberOfLines={1}>
+                    {subject.name}
+                  </Text>
+                  <Text style={currentStyles.subjectStatsText}>
+                    {t('quiz_subjects.tap_to_start')}
+                  </Text>
+                </View>
               </View>
-              <Text style={currentStyles.subjectName}>{subject.name}</Text>
-              <Text style={currentStyles.subjectDescription}>
-                {subject.description || t('quiz_subjects.test_knowledge')}
-              </Text>
-              <View style={currentStyles.subjectStats}>
-                <Text style={currentStyles.subjectStatsText}>
-                  {t('quiz_subjects.tap_to_start')}
-                </Text>
-              </View>
+
+              <Ionicons
+                name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                size={24}
+                color={theme.colors.textTertiary || '#E2E8F0'}
+              />
             </TouchableOpacity>
           ))}
         </View>
         {subjects.length === 0 && (
           <View style={currentStyles.emptyState}>
-            <Text style={currentStyles.emptyStateIcon}>📚</Text>
+            <Ionicons
+              name="library-outline"
+              size={spacing.icon.xl}
+              color={theme.colors.textTertiary}
+            />
             <Text style={currentStyles.emptyStateTitle}>
-              {t('quiz_subjects.no_subjects_available')}
+              {' '}
+              {t('quiz_subjects.no_subjects_available')}{' '}
             </Text>
             <Text style={currentStyles.emptyStateSubtitle}>
-              {t('quiz_subjects.no_subjects_for_grade')}
+              {' '}
+              {t('quiz_subjects.no_subjects_for_grade')}{' '}
             </Text>
           </View>
         )}
@@ -159,80 +179,110 @@ const QuizSubjectsScreen: React.FC<QuizSubjectsScreenProps> = ({ onSubjectSelect
   );
 };
 
-const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRadius: any) =>
+const styles = (
+  theme: any,
+  common: any,
+  typography: any,
+  fontWeight: any,
+  fontSizes: any,
+  spacing: any,
+  borderRadius: any,
+) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.background },
-    backButton: { marginRight: common.isRTL ? 0 : 16, marginLeft: common.isRTL ? 16 : 0 },
-    backButtonText: { fontSize: fontSizes.base, fontWeight: '500', color: theme.colors.headerText },
-    content: { flex: 1 },
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    loadingText: { marginTop: 16, fontSize: fontSizes.base, color: theme.colors.textSecondary },
-    errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-    errorIcon: { fontSize: 48, marginBottom: 16 },
-    errorTitle: {
-      fontSize: fontSizes.lg,
-      fontWeight: 'bold',
-      marginBottom: 8,
-      color: theme.colors.text,
-    },
-    retryButton: {
-      paddingHorizontal: 24,
-      paddingVertical: 12,
-      borderRadius: borderRadius.md,
-      backgroundColor: theme.colors.primary,
-    },
-    retryButtonText: { color: '#fff', fontSize: fontSizes.base, fontWeight: '600' },
-    subjectsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-    subjectCard: {
-      width: '48%',
-      padding: spacing.lg,
-      borderRadius: layout.borderRadius.xl,
-      alignItems: 'center',
-      backgroundColor: theme.colors.card,
-      marginBottom: 16,
-      ...layout.shadow,
-    },
-    subjectIcon: {
-      width: 60,
-      height: 60,
-      borderRadius: 30,
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginBottom: 12,
-      backgroundColor: theme.colors.primaryLight || 'rgba(147, 51, 234, 0.05)',
-    },
-    subjectIconText: { fontSize: 28 },
-    subjectName: {
-      fontSize: fontSizes.base,
-      fontWeight: 'bold',
-      textAlign: 'center',
-      marginBottom: 8,
-      color: theme.colors.text,
-    },
-    subjectDescription: {
-      fontSize: fontSizes.xs,
-      textAlign: 'center',
-      marginBottom: 12,
+    loadingText: {
+      marginTop: spacing.md,
+      ...typography('body'),
       color: theme.colors.textSecondary,
     },
-    subjectStats: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12 },
-    subjectStatsText: { fontSize: fontSizes.xs, fontWeight: '500', color: theme.colors.primary },
-    emptyState: {
-      padding: 40,
-      borderRadius: layout.borderRadius.xl,
+    errorContainer: {
+      flex: 1,
+      justifyContent: 'center',
       alignItems: 'center',
-      marginTop: 40,
-      backgroundColor: theme.colors.card,
+      padding: spacing.xl,
     },
-    emptyStateIcon: { fontSize: 48, marginBottom: 16 },
+    errorTitle: {
+      ...typography('h3'),
+      ...fontWeight('bold'),
+      marginTop: spacing.md,
+      marginBottom: spacing.md,
+      color: theme.colors.text,
+    },
+    pageHeader: {
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.xl,
+    },
+    pageTitle: {
+      fontSize: Math.max(24, fontSizes.xl),
+      ...fontWeight('700'),
+      color: theme.colors.text,
+      marginBottom: spacing.xs,
+      textAlign: common.textAlign,
+    },
+    pageSubtitle: {
+      ...typography('body'),
+      color: theme.colors.textSecondary,
+      textAlign: common.textAlign,
+    },
+    subjectsContainer: {
+      flexDirection: 'column',
+      gap: spacing.sm,
+    },
+    subjectCard: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: spacing.lg,
+      marginBottom: spacing.sm,
+      backgroundColor: theme.colors.card,
+      borderRadius: borderRadius.xl || 16,
+      borderWidth: 0,
+      ...layout.shadow,
+    },
+    subjectMain: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      flex: 1,
+    },
+    iconBoxOverride: {
+      ...common.marginEnd(spacing.md),
+    },
+    subjectInfo: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: common.alignStart,
+    },
+    subjectName: {
+      fontSize: Math.max(18, fontSizes.lg),
+      ...fontWeight('700'),
+      color: theme.colors.text,
+      marginBottom: 2,
+      textAlign: common.textAlign,
+    },
+    subjectStatsText: {
+      ...typography('caption'),
+      color: theme.colors.textSecondary,
+      textAlign: common.textAlign,
+    },
+    emptyState: {
+      padding: spacing.xl,
+      borderRadius: borderRadius.xl,
+      alignItems: 'center',
+      marginTop: spacing.xl,
+      backgroundColor: theme.colors.card,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
     emptyStateTitle: {
-      fontSize: fontSizes.lg,
-      fontWeight: 'bold',
-      marginBottom: 8,
+      ...typography('h3'),
+      ...fontWeight('bold'),
+      marginTop: spacing.md,
+      marginBottom: spacing.xs,
       color: theme.colors.text,
     },
     emptyStateSubtitle: {
-      fontSize: fontSizes.sm,
+      ...typography('caption'),
       textAlign: 'center',
       color: theme.colors.textSecondary,
     },

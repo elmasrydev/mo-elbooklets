@@ -18,6 +18,7 @@ const PRODUCTION_URLS = [
 const DEVELOPMENT_URLS = [
   // 'http://192.168.1.188:8001/graphql',  // Current WiFi network
   // 'http://169.254.105.59:8001/graphql', // Link-local address
+  //'http://10.0.2.2:8000/graphql', // Localhost
   'https://elbooklets.com/graphql', // Android emulator
   'https://elbooklets.com/graphql', // iOS simulator
 ];
@@ -41,6 +42,7 @@ export const GRAPHQL_ENDPOINT = '/graphql';
 
 declare var __DEV__: boolean;
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 
 // Logout handler to be set by AuthContext
 let authErrorHandler: (() => void) | null = null;
@@ -69,8 +71,8 @@ const checkForAuthError = (data: any): boolean => {
  * Handle authentication error - clear storage and trigger logout
  */
 const handleAuthError = async () => {
-  console.log('Auth error detected in API - logging out...');
-  await AsyncStorage.removeItem('auth_token');
+  if (__DEV__) console.log('Auth error detected in API - logging out...');
+  await SecureStore.deleteItemAsync('auth_token');
   await AsyncStorage.removeItem('user_data');
   if (authErrorHandler) {
     authErrorHandler();
@@ -91,12 +93,12 @@ export const tryFetchWithFallback = async (
   // Try to get token from AsyncStorage if not provided
   let authToken = token;
   if (!authToken) {
-    authToken = (await AsyncStorage.getItem('auth_token')) || undefined;
+    authToken = (await SecureStore.getItemAsync('auth_token')) || undefined;
   }
 
   for (const url of POSSIBLE_URLS) {
     try {
-      console.log(`Trying to connect to: ${url}`);
+      if (__DEV__) console.log(`Trying to connect to: ${url}`);
 
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -117,7 +119,7 @@ export const tryFetchWithFallback = async (
       });
 
       if (response.ok) {
-        console.log(`Successfully connected to: ${url}`);
+        if (__DEV__) console.log(`Successfully connected to: ${url}`);
         const data = await response.json();
 
         // Check for authentication errors in GraphQL response
@@ -134,7 +136,7 @@ export const tryFetchWithFallback = async (
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
     } catch (error: any) {
-      console.log(`Failed to connect to ${url}:`, error.message);
+      if (__DEV__) console.log(`Failed to connect to ${url}:`, error.message);
       lastError = error;
       continue;
     }

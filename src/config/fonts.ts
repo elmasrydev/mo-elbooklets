@@ -1,173 +1,128 @@
+import { Platform } from 'react-native';
+import { COLORS } from './colors';
+
 /**
- * Font and Typography Configuration for ElBooklets Mobile
+ * Font and Typography Configuration for El-Booklets
  *
- * Defines font families, sizes, and spacing matching the web frontend design.
- * Uses Inter (Latin) and Cairo (Arabic) variable fonts from Google Fonts.
+ * Defines font families, sizes, and styles matching the UI guide.
+ * Uses Lexend (Latin) and Cairo (Arabic) variable fonts.
  */
 
-// Font family names (must match the loaded font names in useFonts)
+// Font family names
 export const fontFamilies = {
-  // Latin fonts (Inter) - using variable font
-  regular: 'Inter',
-  medium: 'Inter',
-  semiBold: 'Inter',
-  bold: 'Inter',
+  regular: 'Lexend',
+  medium: 'Lexend',
+  semiBold: 'Lexend',
+  bold: 'Lexend',
 
-  // Arabic fonts (Cairo) - using variable font
   arabicRegular: 'Cairo',
   arabicMedium: 'Cairo',
   arabicSemiBold: 'Cairo',
   arabicBold: 'Cairo',
 };
 
-// Font weights to use with variable fonts
+// Font weights matching the guide reference
 export const fontWeights = {
-  regular: '400' as const,
+  regular: 'normal' as const,
   medium: '500' as const,
   semiBold: '600' as const,
   bold: '700' as const,
 };
 
-// Get appropriate font family based on language
-export const getFontFamily = (
-  weight: 'regular' | 'medium' | 'semiBold' | 'bold',
-  isArabic: boolean = false,
-): string => {
-  if (isArabic) {
-    return fontFamilies.arabicRegular; // All weights use the same variable font
-  }
-  return fontFamilies.regular; // All weights use the same variable font
-};
-
-// Get appropriate font weight
-export const getFontWeight = (weight: 'regular' | 'medium' | 'semiBold' | 'bold'): string => {
-  return fontWeights[weight];
-};
-
-// Typography scale - reasonable mobile sizes
+// Typography scale (English)
 export const fontSizes = {
-  /** 12px - Captions, metadata, timestamps */
-  xs: 12,
-  /** 14px - Secondary text, labels, subtitles */
-  sm: 14,
-  /** 16px - Body text, default size */
-  base: 16,
-  /** 18px - Emphasized body, important text */
-  lg: 18,
-  /** 20px - Section titles, card headers */
-  xl: 20,
-  /** 24px - Screen titles, main headers */
-  '2xl': 24,
-  /** 28px - Large headers, hero subtext */
-  '3xl': 28,
-  /** 32px - Hero text, splash screen */
-  '4xl': 32,
-  /** 40px - Extra large display text */
-  '5xl': 40,
+  xs: 12, // Label
+  sm: 14, // Caption
+  base: 16, // Body Small
+  md: 18, // Body Regular, Button, Link
+  lg: 20, // H3 Card Title, Body Large
+  xl: 22, // H2 Section Header
+  '2xl': 24, // H1 Screen Title, Number Medium
+  '3xl': 40, // Number Large
 } as const;
 
-// Line heights matching font sizes
-export const lineHeights = {
-  xs: 16,
-  sm: 20,
-  base: 24,
-  lg: 28,
-  xl: 28,
-  '2xl': 32,
-  '3xl': 36,
-  '4xl': 40,
-  '5xl': 48,
-} as const;
-
-// Spacing scale for consistent padding/margins
-export const spacing = {
-  /** 4px */
-  xs: 4,
-  /** 8px */
-  sm: 8,
-  /** 12px */
-  md: 12,
-  /** 16px */
-  lg: 16,
-  /** 20px */
-  xl: 20,
-  /** 24px */
-  '2xl': 24,
-  /** 32px */
-  '3xl': 32,
-  /** 40px */
-  '4xl': 40,
-  /** 48px */
-  '5xl': 48,
-  /** 64px */
-  '6xl': 64,
-} as const;
-
-// Border radius scale
-export const borderRadius = {
-  /** 4px */
-  sm: 4,
-  /** 8px */
-  md: 8,
-  /** 12px */
-  lg: 12,
-  /** 16px */
-  xl: 16,
-  /** 20px */
-  '2xl': 20,
-  /** 24px */
-  '3xl': 24,
-  /** Full circle */
-  full: 9999,
-} as const;
-
-// Pre-defined text styles for common use cases
+// Text styles mapping based on English scale
 export const textStyles = {
-  // Headers
-  h1: {
-    fontSize: fontSizes['3xl'],
-    lineHeight: lineHeights['3xl'],
-  },
-  h2: {
-    fontSize: fontSizes['2xl'],
-    lineHeight: lineHeights['2xl'],
-  },
-  h3: {
-    fontSize: fontSizes.xl,
-    lineHeight: lineHeights.xl,
-  },
-
-  // Body
-  body: {
-    fontSize: fontSizes.base,
-    lineHeight: lineHeights.base,
-  },
+  h1: { fontSize: fontSizes['2xl'], fontWeight: fontWeights.bold, color: COLORS.textPrimary },
+  h2: { fontSize: fontSizes.xl, fontWeight: fontWeights.semiBold, color: COLORS.textPrimary },
+  h3: { fontSize: fontSizes.lg, fontWeight: fontWeights.semiBold, color: COLORS.textPrimary },
+  bodyLarge: { fontSize: fontSizes.lg, fontWeight: fontWeights.regular, color: COLORS.textPrimary },
+  body: { fontSize: fontSizes.md, fontWeight: fontWeights.regular, color: COLORS.textPrimary },
   bodySmall: {
-    fontSize: fontSizes.sm,
-    lineHeight: lineHeights.sm,
-  },
-
-  // Labels
-  label: {
-    fontSize: fontSizes.sm,
-    lineHeight: lineHeights.sm,
-  },
-  caption: {
-    fontSize: fontSizes.xs,
-    lineHeight: lineHeights.xs,
-  },
-
-  // Buttons
-  button: {
     fontSize: fontSizes.base,
-    lineHeight: lineHeights.base,
+    fontWeight: fontWeights.regular,
+    color: COLORS.textSecondary,
   },
+  caption: { fontSize: fontSizes.sm, fontWeight: fontWeights.regular, color: COLORS.textSecondary },
+  label: { fontSize: fontSizes.xs, fontWeight: fontWeights.medium, color: COLORS.textSecondary },
+  button: { fontSize: fontSizes.md, fontWeight: fontWeights.semiBold, color: COLORS.textOnDark },
+  link: { fontSize: fontSizes.md, fontWeight: fontWeights.medium, color: COLORS.textLink },
+  numberLarge: {
+    fontSize: fontSizes['3xl'],
+    fontWeight: fontWeights.bold,
+    color: COLORS.textPrimary,
+  },
+  numberMedium: {
+    fontSize: fontSizes['2xl'],
+    fontWeight: fontWeights.bold,
+    color: COLORS.primaryBlue,
+  },
+  display: { fontSize: fontSizes['3xl'], fontWeight: fontWeights.bold, color: COLORS.textPrimary },
   buttonSmall: {
-    fontSize: fontSizes.sm,
-    lineHeight: lineHeights.sm,
+    fontSize: fontSizes.base,
+    fontWeight: fontWeights.semiBold,
+    color: COLORS.textOnDark,
   },
 } as const;
 
-export type FontSize = keyof typeof fontSizes;
-export type Spacing = keyof typeof spacing;
-export type BorderRadius = keyof typeof borderRadius;
+/**
+ * Returns a complete text style object including font family and
+ * Arabic adjustments (+2px as per guide).
+ */
+export const getTextStyle = (style: keyof typeof textStyles, isArabic: boolean = false) => {
+  const baseStyle = textStyles[style] || textStyles.body;
+  const weight = (baseStyle as any).fontWeight || fontWeights.regular;
+
+  // Resolve precise font-family for Android static fonts
+  let resolvedFontFamily = isArabic ? 'Cairo' : 'Lexend';
+  if (Platform.OS === 'android') {
+    if (isArabic) {
+      if (weight === '700' || weight === 'bold') resolvedFontFamily = 'Cairo-Bold';
+      else if (weight === '600') resolvedFontFamily = 'Cairo-SemiBold';
+      else if (weight === '500') resolvedFontFamily = 'Cairo-Medium';
+      else resolvedFontFamily = 'Cairo-Regular';
+    } else {
+      if (weight === '700' || weight === 'bold') resolvedFontFamily = 'Lexend-Bold';
+      else if (weight === '600') resolvedFontFamily = 'Lexend-SemiBold';
+      else if (weight === '500') resolvedFontFamily = 'Lexend-Medium';
+      else resolvedFontFamily = 'Lexend-Regular';
+    }
+  }
+
+  // Keep the fontWeight value on Android alongside the weight-specific fontFamily.
+  // Setting undefined strips the weight and causes bold fonts to render as normal.
+  const resolvedWeight = weight;
+
+  if (isArabic) {
+    return {
+      ...baseStyle,
+      fontFamily: resolvedFontFamily,
+      fontWeight: resolvedWeight,
+      // Decrease size by 2px as requested
+      fontSize: baseStyle.fontSize - 1.6,
+      // Adjust line height
+      lineHeight: (baseStyle as any).lineHeight
+        ? Math.round((baseStyle as any).lineHeight * 1.15)
+        : undefined,
+    };
+  }
+
+  return {
+    ...baseStyle,
+    fontFamily: resolvedFontFamily,
+    fontWeight: resolvedWeight,
+    lineHeight: Math.round(baseStyle.fontSize * 1.5),
+  };
+};
+
+export type TextStyleType = keyof typeof textStyles;

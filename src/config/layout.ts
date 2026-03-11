@@ -1,46 +1,40 @@
-import { Dimensions, Platform, StatusBar } from 'react-native';
+import { Dimensions, Platform } from 'react-native';
+import { spacing, borderRadius } from './spacing';
 
 const { width, height } = Dimensions.get('window');
 
 /**
- * Global Layout Constants for ElBooklets Mobile
- * Standardizes spacing and dimensions across all screens.
+ * Global Layout Constants for El-Booklets Mobile
  */
 export const layout = {
   // Screen dimensions
   screenWidth: width,
   screenHeight: height,
 
-  // Safe area (header)
-  headerPaddingTop: Platform.OS === 'ios' ? 50 : StatusBar.currentHeight || 50,
-  headerPaddingBottom: 24,
+  // Tab bar content height
+  tabBarContentHeight: 54,
 
-  // Screen padding (unified 20px)
-  screenPadding: 20,
+  // Screen padding (unified 12px)
+  screenPadding: spacing.ssm,
 
   // Card styles
-  cardPadding: 16,
-  cardGap: 12,
+  cardPadding: spacing.md,
+  cardGap: spacing.ssm,
 
-  // Design tokens (fallbacks for when theme isn't available)
-  borderRadius: {
-    sm: 8,
-    md: 12,
-    lg: 16,
-    xl: 20,
-    full: 9999,
-  },
+  // Design tokens
+  spacing,
+  borderRadius,
 
   // Shadow style
   shadow: Platform.select({
     ios: {
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.07,
+      shadowRadius: 3,
     },
     android: {
-      elevation: 3,
+      elevation: 2,
     },
   }),
 } as const;

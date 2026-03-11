@@ -6,19 +6,22 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useModal } from '../context/ModalContext';
 import { useCommonStyles } from '../hooks/useCommonStyles';
+import { useTypography } from '../hooks/useTypography';
 import { layout } from '../config/layout';
 
 import { useTranslation } from 'react-i18next';
 import { gql } from '@apollo/client';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { Ionicons } from '@expo/vector-icons';
+import UnifiedHeader from '../components/UnifiedHeader';
+import { GenericListSkeleton } from '../components/SkeletonLoader';
 
 const STUDY_SCHEDULE_QUERY = gql`
   query StudySchedule {
@@ -75,7 +78,9 @@ const StudyCalendarScreen: React.FC = () => {
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
+  const { showConfirm } = useModal();
   const common = useCommonStyles();
+  const { typography, fontWeight } = useTypography();
 
   const [selectedDay, setSelectedDay] = useState(0);
   const [scheduleData, setScheduleData] = useState<{ [key: number]: ScheduleEntry[] }>({});
@@ -92,11 +97,21 @@ const StudyCalendarScreen: React.FC = () => {
 
   const [saveSchedule, { loading: saving }] = useMutation(SAVE_SCHEDULE_MUTATION, {
     onCompleted: () => {
-      Alert.alert(t('study_calendar.schedule_saved'));
+      showConfirm({
+        title: t('common.success', 'Success'),
+        message: t('study_calendar.schedule_saved'),
+        showCancel: false,
+        onConfirm: () => {},
+      });
       refetch();
     },
     onError: (error: any) => {
-      Alert.alert(t('common.error'), error.message);
+      showConfirm({
+        title: t('common.error'),
+        message: error.message,
+        showCancel: false,
+        onConfirm: () => {},
+      });
     },
   });
 
@@ -172,13 +187,19 @@ const StudyCalendarScreen: React.FC = () => {
     saveSchedule({ variables: { entries: allEntries } });
   };
 
-  const currentStyles = styles(theme, isRTL, fontSizes, spacing, borderRadius);
+  const currentStyles = styles(theme, isRTL, typography, fontWeight, spacing, borderRadius);
 
   if (loadingSchedule || loadingSubjects) {
     return (
-      <View style={currentStyles.loadingContainer}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={currentStyles.loadingText}>{t('study_calendar.loading_schedule')}</Text>
+      <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+        <UnifiedHeader
+          showBackButton
+          title={t('study_calendar.header_title')}
+          subtitle={t('study_calendar.header_subtitle')}
+        />
+        <View style={{ paddingTop: 16, paddingHorizontal: layout.screenPadding }}>
+          <GenericListSkeleton numItems={6} />
+        </View>
       </View>
     );
   }
@@ -188,29 +209,21 @@ const StudyCalendarScreen: React.FC = () => {
   return (
     <View style={currentStyles.container}>
       {/* Header with Back Button */}
-      <View style={common.header}>
-        <TouchableOpacity
-          style={[currentStyles.backButton, common.marginEnd(spacing.md)]}
-          onPress={() => navigation.goBack()}
-        >
-          <Ionicons
-            name={isRTL ? 'arrow-forward' : 'arrow-back'}
-            size={24}
-            color={theme.colors.headerText || '#fff'}
-          />
-        </TouchableOpacity>
-        <View style={common.headerTextWrapper}>
-          <Text style={common.headerTitle}>{t('study_calendar.header_title')}</Text>
-          <Text style={common.headerSubtitle}>{t('study_calendar.header_subtitle')}</Text>
-        </View>
-      </View>
+      <UnifiedHeader
+        showBackButton
+        title={t('study_calendar.header_title')}
+        subtitle={t('study_calendar.header_subtitle')}
+      />
 
       {/* Day Tabs */}
       <View style={currentStyles.dayTabsContainer}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={currentStyles.dayTabsContent}
+          contentContainerStyle={[
+            currentStyles.dayTabsContent,
+            { paddingBottom: Math.max(common.insets.bottom, 20) },
+          ]}
         >
           {DAY_KEYS.map((dayKey, index) => (
             <TouchableOpacity
@@ -246,18 +259,21 @@ const StudyCalendarScreen: React.FC = () => {
       {/* Day Content */}
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: layout.screenPadding, paddingBottom: 100 }}
+        contentContainerStyle={{
+          padding: layout.screenPadding,
+          paddingBottom: common.insets.bottom + 50,
+        }}
         showsVerticalScrollIndicator={false}
       >
         <Text style={currentStyles.dayTitle}>
-          {t(`study_calendar.${DAY_KEYS[selectedDay]}`)} {t('common.schedule') || 'Schedule'}
+          {t(`study_calendar.${DAY_KEYS[selectedDay]} `)} {t('common.schedule') || 'Schedule'}
         </Text>
 
         {currentDayEntries.map((entry, index) => (
           <View key={index} style={currentStyles.entryCard}>
             {/* Subject Picker */}
             <View style={currentStyles.entryRow}>
-              <Text style={currentStyles.entryLabel}>{t('study_calendar.lessons_goal')}</Text>
+              <Text style={currentStyles.entryLabel}>{t('common.subject')}</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {subjects.map((subject) => (
                   <TouchableOpacity
@@ -350,7 +366,14 @@ const StudyCalendarScreen: React.FC = () => {
   );
 };
 
-const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, borderRadius: any) =>
+const styles = (
+  theme: any,
+  isRTL: boolean,
+  typography: any,
+  fontWeight: any,
+  spacing: any,
+  borderRadius: any,
+) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -364,16 +387,8 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
     },
     loadingText: {
       marginTop: spacing.md,
-      fontSize: fontSizes.base,
+      ...typography('body'),
       color: theme.colors.textSecondary,
-    },
-    backButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      backgroundColor: 'rgba(255,255,255,0.15)',
-      justifyContent: 'center',
-      alignItems: 'center',
     },
     dayTabsContainer: {
       maxHeight: 60,
@@ -383,7 +398,7 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
     },
     dayTabsContent: {
       paddingVertical: spacing.sm,
-      paddingHorizontal: spacing.xs,
+      paddingHorizontal: layout.screenPadding,
       flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
     },
@@ -400,8 +415,8 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
       backgroundColor: theme.colors.primary,
     },
     dayTabText: {
-      fontSize: fontSizes.sm,
-      fontWeight: '600',
+      ...typography('label'),
+      ...fontWeight('600'),
       color: theme.colors.text,
     },
     dayTabTextActive: {
@@ -419,22 +434,23 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
       backgroundColor: 'rgba(255,255,255,0.3)',
     },
     dayBadgeText: {
+      ...typography('caption'),
       fontSize: 10,
-      fontWeight: 'bold',
+      ...fontWeight('bold'),
       color: theme.colors.primary,
     },
     dayTitle: {
-      fontSize: fontSizes.xl,
-      fontWeight: 'bold',
+      ...typography('h2'),
+      ...fontWeight('bold'),
       color: theme.colors.text,
-      marginBottom: spacing.lg,
+      marginBottom: spacing.sectionGap,
       textAlign: isRTL ? 'right' : 'left',
     },
     entryCard: {
       backgroundColor: theme.colors.card,
       borderRadius: borderRadius.xl,
       padding: spacing.lg,
-      marginBottom: spacing.md,
+      marginBottom: spacing.sectionGap,
       borderWidth: 1,
       borderColor: theme.colors.border,
     },
@@ -442,8 +458,8 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
       marginBottom: spacing.md,
     },
     entryLabel: {
-      fontSize: fontSizes.sm,
-      fontWeight: '600',
+      ...typography('label'),
+      ...fontWeight('600'),
       color: theme.colors.textSecondary,
       marginBottom: spacing.sm,
       textAlign: isRTL ? 'right' : 'left',
@@ -463,7 +479,7 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
       borderColor: theme.colors.primary,
     },
     subjectPillText: {
-      fontSize: fontSizes.sm,
+      ...typography('bodySmall'),
       color: theme.colors.text,
     },
     subjectPillTextActive: {
@@ -478,8 +494,8 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
       flex: 1,
     },
     goalLabel: {
-      fontSize: fontSizes.xs,
-      fontWeight: '600',
+      ...typography('caption'),
+      ...fontWeight('600'),
       color: theme.colors.textSecondary,
       marginBottom: spacing.xs,
       textAlign: isRTL ? 'right' : 'left',
@@ -488,8 +504,8 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
       backgroundColor: theme.colors.background,
       borderRadius: borderRadius.md,
       padding: spacing.sm,
-      fontSize: fontSizes.lg,
-      fontWeight: 'bold',
+      ...typography('h3'),
+      ...fontWeight('bold'),
       color: theme.colors.text,
       textAlign: 'center',
       borderWidth: 1,
@@ -499,7 +515,7 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
       backgroundColor: theme.colors.background,
       borderRadius: borderRadius.md,
       padding: spacing.md,
-      fontSize: fontSizes.sm,
+      ...typography('bodySmall'),
       color: theme.colors.text,
       textAlign: isRTL ? 'right' : 'left',
       borderWidth: 1,
@@ -512,9 +528,9 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
       paddingHorizontal: spacing.md,
     },
     removeButtonText: {
-      fontSize: fontSizes.sm,
-      color: theme.colors.error || '#EF4444',
-      fontWeight: '600',
+      ...typography('label'),
+      color: theme.colors.error || '#FF6B6B',
+      ...fontWeight('600'),
     },
     addButton: {
       padding: spacing.lg,
@@ -523,11 +539,11 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
       borderStyle: 'dashed',
       borderColor: theme.colors.border,
       alignItems: 'center',
-      marginBottom: spacing.lg,
+      marginBottom: spacing.sectionGap,
     },
     addButtonText: {
-      fontSize: fontSizes.base,
-      fontWeight: '600',
+      ...typography('button'),
+      ...fontWeight('600'),
       color: theme.colors.textSecondary,
     },
     saveButton: {
@@ -538,8 +554,8 @@ const styles = (theme: any, isRTL: boolean, fontSizes: any, spacing: any, border
       marginBottom: spacing['3xl'],
     },
     saveButtonText: {
-      fontSize: fontSizes.base,
-      fontWeight: 'bold',
+      ...typography('button'),
+      ...fontWeight('bold'),
       color: '#fff',
     },
   });

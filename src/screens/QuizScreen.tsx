@@ -1,34 +1,29 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
+  FlatList,
   ActivityIndicator,
-  Modal,
+  TouchableOpacity,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
-import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useCommonStyles } from '../hooks/useCommonStyles';
+import { useTypography } from '../hooks/useTypography';
+import { useLanguage } from '../context/LanguageContext';
 import { layout } from '../config/layout';
 import { tryFetchWithFallback } from '../config/api';
 import { useTranslation } from 'react-i18next';
-import QuizSubjectsScreen from './quiz/QuizSubjectsScreen';
-import QuizLessonsScreen from './quiz/QuizLessonsScreen';
-import QuizResultsScreen from './quiz/QuizResultsScreen';
-import QuizStartScreen from './quiz/QuizStartScreen';
 import RecentActivityCard from '../components/RecentActivityCard';
-
-interface Subject {
-  id: string;
-  name: string;
-  description?: string;
-}
+import UnifiedHeader from '../components/UnifiedHeader';
+import AppButton from '../components/AppButton';
+import { GenericListSkeleton } from '../components/SkeletonLoader';
+import RetryView from '../components/RetryView';
 
 interface QuizHistory {
   id: string;
@@ -40,30 +35,18 @@ interface QuizHistory {
   isPassed: boolean;
 }
 
-type QuizFlowStep = 'history' | 'ready';
-
 const QuizScreen: React.FC = () => {
-  const { user } = useAuth();
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { t } = useTranslation();
   const common = useCommonStyles();
+  const { typography, fontWeight } = useTypography();
+  const { isRTL } = useLanguage();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
 
   const [quizHistory, setQuizHistory] = useState<QuizHistory[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState<string | null>(null);
-  const [currentStep, setCurrentStep] = useState<QuizFlowStep>('history');
-  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
-  const [selectedLessons, setSelectedLessons] = useState<string[]>([]);
-  const [selectedQuizTypeId, setSelectedQuizTypeId] = useState<string | undefined>(undefined);
-  const [selectedQuizTypeName, setSelectedQuizTypeName] = useState<string | undefined>(undefined);
-  const [currentQuizId, setCurrentQuizId] = useState<string | null>(null);
-
-  // Modal visibility
-  const [subjectModalVisible, setSubjectModalVisible] = useState(false);
-  const [lessonsModalVisible, setLessonsModalVisible] = useState(false);
-  const [resultsModalVisible, setResultsModalVisible] = useState(false);
 
   useEffect(() => {
     fetchQuizHistory();
@@ -71,32 +54,23 @@ const QuizScreen: React.FC = () => {
 
   useFocusEffect(
     useCallback(() => {
-      // Check if we returned from a completed quiz
       if (route.params?.completedQuizId) {
         const completedId = route.params.completedQuizId;
-        // Clear param to avoid loops
-        navigation.setParams({ completedQuizId: undefined });
-
-        // Handle completion
-        setCurrentStep('history');
-        setCurrentQuizId(completedId);
-        fetchQuizHistory(); // Refresh history
-
-        // Show results after standard delay
-        setTimeout(() => {
-          setResultsModalVisible(true);
-        }, 900);
+        const passedTimeTaken = route.params.timeTaken;
+        navigation.setParams({ completedQuizId: undefined, timeTaken: undefined });
+        fetchQuizHistory();
+        navigation.navigate('QuizResults', { quizId: completedId, timeTaken: passedTimeTaken });
       } else {
-        if (currentStep === 'history') fetchQuizHistory();
+        fetchQuizHistory();
       }
-    }, [route.params?.completedQuizId, currentStep]),
+    }, [route.params?.completedQuizId]),
   );
 
   const fetchQuizHistory = async () => {
     try {
       setHistoryLoading(true);
       setHistoryError(null);
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
       const result = await tryFetchWithFallback(
         `query UserQuizHistory { userQuizHistory { id name subject { id name } score totalQuestions completedAt isPassed } }`,
@@ -112,355 +86,254 @@ const QuizScreen: React.FC = () => {
     }
   };
 
-  const handleLessonsSelect = async (lessonIds: string[], quizTypeId?: string) => {
-    setLessonsModalVisible(false);
-    setSelectedLessons(lessonIds);
-    setSelectedQuizTypeId(quizTypeId);
-    // Wait for lessons modal close animation before showing start screen
-    setTimeout(() => {
-      setCurrentStep('ready');
-    }, 500);
-  };
+  const currentStyles = useMemo(
+    () => styles(theme, common, fontSizes, spacing, borderRadius, typography, fontWeight, isRTL),
+    [theme, common, fontSizes, spacing, borderRadius, typography, fontWeight, isRTL],
+  );
 
-  const startQuiz = async (
-    subjectId: string,
-    lessonIds: string[],
-    quizTypeId?: string,
-  ): Promise<{ success: boolean; quizId?: string; error?: string }> => {
-    try {
-      const token = await AsyncStorage.getItem('auth_token');
-      if (!token) return { success: false, error: t('common.error') };
-      const result = await tryFetchWithFallback(
-        `mutation StartQuiz($subjectId: ID!, $lessonIds: [ID!]!, $quizTypeId: ID) { startQuiz(subjectId: $subjectId, lessonIds: $lessonIds, quizTypeId: $quizTypeId) { id } }`,
-        { subjectId, lessonIds, quizTypeId },
-        token,
-      );
-      return result.data?.startQuiz
-        ? { success: true, quizId: result.data.startQuiz.id }
-        : { success: false, error: t('quiz_screen.error_loading_history') };
-    } catch (error: any) {
-      return { success: false, error: error.message };
-    }
-  };
+  const [refreshing, setRefreshing] = useState(false);
 
-  const handleStartQuiz = async () => {
-    if (!selectedSubject) return;
-    try {
-      const result = await startQuiz(selectedSubject.id, selectedLessons, selectedQuizTypeId);
-      if (result.success && result.quizId) {
-        setCurrentQuizId(result.quizId);
-        // Navigate to QuizTaking
-        navigation.navigate('QuizTaking', {
-          quizId: result.quizId,
-        });
-      } else {
-        Alert.alert(t('common.error'), result.error || t('quiz_screen.error_loading_history'));
-      }
-    } catch (error) {
-      Alert.alert(t('common.error'), t('quiz_screen.error_loading_history'));
-    }
-  };
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchQuizHistory();
+    setRefreshing(false);
+  }, []);
 
-  const resetFlow = () => {
-    setSelectedSubject(null);
-    setSelectedLessons([]);
-    setSelectedQuizTypeId(undefined);
-    setSelectedQuizTypeName(undefined);
-    setCurrentQuizId(null);
-    setCurrentStep('history');
-  };
-
-  // Quiz Start / Ready screen
-  if (currentStep === 'ready' && selectedSubject)
-    return (
-      <>
-        <QuizStartScreen
-          subjectName={selectedSubject.name}
-          lessonsCount={selectedLessons.length}
-          quizTypeName={selectedQuizTypeName}
-          onStart={handleStartQuiz}
-          onBack={() => {
-            setCurrentStep('history');
-            setLessonsModalVisible(true);
-          }}
+  const renderHistoryItem = useCallback(
+    ({ item: quiz }: { item: QuizHistory }) => (
+      <View style={currentStyles.historyItemWrapper}>
+        <RecentActivityCard
+          activity={quiz}
+          onPress={() => navigation.navigate('QuizResults', { quizId: quiz.id })}
         />
+      </View>
+    ),
+    [currentStyles, navigation],
+  );
 
-        {/* Results Modal */}
-        <Modal
-          visible={resultsModalVisible}
-          animationType="slide"
-          presentationStyle="pageSheet"
-          onRequestClose={() => {
-            setResultsModalVisible(false);
-            resetFlow();
-          }}
-        >
-          {currentQuizId && (
-            <QuizResultsScreen
-              quizId={currentQuizId}
-              onBack={() => {
-                setResultsModalVisible(false);
-                resetFlow();
-              }}
-              onRetakeQuiz={() => {
-                setResultsModalVisible(false);
-                if (selectedSubject) {
-                  setTimeout(() => {
-                    setLessonsModalVisible(true);
-                  }, 300);
-                } else {
-                  resetFlow();
-                }
-              }}
-            />
-          )}
-        </Modal>
-      </>
+  const historyKeyExtractor = useCallback((item: QuizHistory) => item.id, []);
+
+  const ListHeader = useMemo(
+    () => (
+      <View style={currentStyles.historySectionHeader}>
+        <Text style={[common.sectionTitle, { textAlign: 'left' }]}>
+          {t('quiz_screen.quiz_history')}
+        </Text>
+      </View>
+    ),
+    [currentStyles, common, t, isRTL],
+  );
+
+  const ListEmptyComponent = useMemo(() => {
+    if (historyLoading && !refreshing)
+      return (
+        <View style={{ paddingTop: 16, paddingHorizontal: layout.screenPadding }}>
+          <GenericListSkeleton numItems={5} />
+        </View>
+      );
+    if (historyError)
+      return (
+        <RetryView 
+          message={historyError || t('quiz_screen.error_loading_history')} 
+          onRetry={fetchQuizHistory} 
+        />
+      );
+    return (
+      <View style={currentStyles.emptyState}>
+        <Ionicons
+          name="document-text-outline"
+          size={spacing.icon.xl}
+          color={theme.colors.textTertiary}
+        />
+        <Text style={currentStyles.emptyStateTitle}> {t('quiz_screen.no_quizzes_yet')} </Text>
+        <Text style={currentStyles.emptyStateSubtitle}>{t('quiz_screen.take_first_quiz')}</Text>
+      </View>
     );
-
-  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius);
+  }, [
+    historyLoading,
+    historyError,
+    refreshing,
+    currentStyles,
+    theme,
+    spacing,
+    t,
+    fetchQuizHistory,
+  ]);
 
   return (
-    <View style={common.container}>
-      <View style={common.header}>
-        <View style={common.headerTextWrapper}>
-          <Text style={common.headerTitle}> {t('quiz_screen.header_title')} </Text>
-          <Text style={common.headerSubtitle}> {t('quiz_screen.header_subtitle')} </Text>
+    <View style={[common.container, { alignItems: 'stretch' }]}>
+      <UnifiedHeader title={t('quiz_screen.header_title')} />
+
+      <View style={currentStyles.actionSection}>
+        <View style={currentStyles.quizCTACard}>
+          <View style={currentStyles.quizCTAContent}>
+            <Text style={currentStyles.quizCTATitle}>{t('quiz_screen.take_new_quiz')}</Text>
+            <Text style={currentStyles.quizCTASubtitle}>
+              {t('quiz_screen.start_new_challenge')}
+            </Text>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('QuizFlowSubjects')}
+              style={currentStyles.quizCTAButton}
+            >
+              <Ionicons name="play" size={14} color={theme.colors.primary} />
+              <Text style={currentStyles.quizCTAButtonText}>{t('home_screen.play_now')}</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={currentStyles.quizCTAIconBg}>
+            <Image
+              source={require('../../assets/images/quiz-illustration.png')}
+              style={[
+                currentStyles.quizCTAIllustration,
+                { transform: [{ scaleX: isRTL ? -1 : 1 }] },
+              ]}
+            />
+          </View>
         </View>
       </View>
 
-      <View style={currentStyles.actionSection}>
-        <TouchableOpacity
-          style={currentStyles.takeQuizButton}
-          onPress={() => setSubjectModalVisible(true)}
-          activeOpacity={0.9}
-        >
-          <View style={currentStyles.takeQuizContent}>
-            <Text style={currentStyles.takeQuizText}> {t('quiz_screen.take_new_quiz')} </Text>
-            <Text style={currentStyles.takeQuizSubtext}>
-              {t('quiz_screen.start_new_challenge')}
-            </Text>
-          </View>
-          <View style={currentStyles.takeQuizIconContainer}>
-            <Ionicons name="flash" size={28} color="#FFFFFF" />
-          </View>
-        </TouchableOpacity>
-      </View>
-
-      <View style={currentStyles.historySection}>
-        <Text style={common.sectionTitle}> {t('quiz_screen.quiz_history')} </Text>
-        {historyLoading ? (
-          <View style={currentStyles.loadingState}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text style={currentStyles.loadingText}> {t('quiz_screen.loading_quiz_history')} </Text>
-          </View>
-        ) : historyError ? (
-          <View style={currentStyles.errorState}>
-            <Text style={currentStyles.errorStateIcon}>⚠️</Text>
-            <Text style={currentStyles.errorStateTitle}>
-              {t('quiz_screen.error_loading_history')}
-            </Text>
-            <TouchableOpacity style={currentStyles.retryButton} onPress={fetchQuizHistory}>
-              <Text style={currentStyles.retryButtonText}> {t('home_screen.try_again')} </Text>
-            </TouchableOpacity>
-          </View>
-        ) : quizHistory.length === 0 ? (
-          <View style={currentStyles.emptyState}>
-            <Text style={currentStyles.emptyStateIcon}>📝</Text>
-            <Text style={currentStyles.emptyStateTitle}> {t('quiz_screen.no_quizzes_yet')} </Text>
-            <Text style={currentStyles.emptyStateSubtitle}>{t('quiz_screen.take_first_quiz')}</Text>
-          </View>
-        ) : (
-          <ScrollView
-            style={currentStyles.historyList}
-            contentContainerStyle={{ paddingBottom: 100 }}
-            showsVerticalScrollIndicator={false}
-          >
-            {quizHistory.map((quiz) => (
-              <View key={quiz.id} style={currentStyles.historyItemWrapper}>
-                <RecentActivityCard
-                  activity={quiz}
-                  onPress={() => {
-                    setCurrentQuizId(quiz.id);
-                    setResultsModalVisible(true);
-                  }}
-                />
-              </View>
-            ))}
-          </ScrollView>
-        )}
-      </View>
-
-      {/* Subject Selection Modal */}
-      <Modal
-        visible={subjectModalVisible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setSubjectModalVisible(false)}
-      >
-        <QuizSubjectsScreen
-          onSubjectSelect={(s) => {
-            setSubjectModalVisible(false);
-            setTimeout(() => {
-              setSelectedSubject(s);
-              setLessonsModalVisible(true);
-            }, 300);
-          }}
-          onBack={() => setSubjectModalVisible(false)}
-        />
-      </Modal>
-
-      {/* Lessons Selection Modal */}
-      <Modal
-        visible={lessonsModalVisible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setLessonsModalVisible(false)}
-      >
-        {selectedSubject && (
-          <QuizLessonsScreen
-            subject={selectedSubject}
-            onLessonsSelect={handleLessonsSelect}
-            onBack={() => setLessonsModalVisible(false)}
-          />
-        )}
-      </Modal>
-
-      {/* Results Modal (from history tap) */}
-      <Modal
-        visible={resultsModalVisible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => {
-          setResultsModalVisible(false);
-          resetFlow();
-        }}
-      >
-        {currentQuizId && (
-          <QuizResultsScreen
-            quizId={currentQuizId}
-            onBack={() => {
-              setResultsModalVisible(false);
-              resetFlow();
-            }}
-            onRetakeQuiz={() => {
-              setResultsModalVisible(false);
-              if (selectedSubject) {
-                setTimeout(() => {
-                  setLessonsModalVisible(true);
-                }, 300);
-              } else {
-                resetFlow();
-              }
-            }}
-          />
-        )}
-      </Modal>
+      <FlatList
+        data={quizHistory}
+        renderItem={renderHistoryItem}
+        keyExtractor={historyKeyExtractor}
+        style={{ flex: 1 }}
+        contentContainerStyle={[
+          currentStyles.historyContentContainer,
+          {
+            paddingBottom: Math.max(common.insets.bottom, spacing.xl),
+            flexGrow: 1,
+          },
+        ]}
+        showsVerticalScrollIndicator={false}
+        ListHeaderComponent={ListHeader}
+        ListEmptyComponent={ListEmptyComponent}
+        onRefresh={onRefresh}
+        refreshing={refreshing}
+      />
     </View>
   );
 };
 
-const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRadius: any) =>
+const styles = (
+  theme: any,
+  common: any,
+  fontSizes: any,
+  spacing: any,
+  borderRadius: any,
+  typography: any,
+  fontWeight: any,
+  isRTL: boolean,
+) =>
   StyleSheet.create({
     actionSection: {
-      padding: spacing.xl,
-      marginTop: -30,
+      paddingHorizontal: layout.screenPadding,
+      paddingVertical: spacing.md,
     },
-    takeQuizButton: {
-      padding: 24,
-      borderRadius: layout.borderRadius.xl,
+    quizCTACard: {
+      backgroundColor: theme.colors.primary,
+      borderRadius: borderRadius.xl,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.lg,
+      flexDirection: 'row', // Let RN handle the flip automatically
+      overflow: 'hidden',
+      position: 'relative',
+      ...layout.shadow,
+    },
+    quizCTAContent: {
+      zIndex: 1,
+      flex: 1,
+      alignItems: 'flex-start', // Essential for RTL button positioning
+    },
+    quizCTATitle: {
+      ...typography('h1'),
+      color: theme.colors.textOnDark,
+      marginBottom: spacing.xxs,
+      textAlign: 'left',
+    },
+    quizCTASubtitle: {
+      ...typography('caption'),
+      color: 'rgba(255,255,255,0.8)',
+      marginBottom: spacing.md,
+      textAlign: 'left',
+    },
+    quizCTAButton: {
+      flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: '#6366F1',
-      shadowColor: '#6366F1',
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.35,
-      shadowRadius: 14,
-      elevation: 8,
-      flexDirection: common.rowDirection,
-      justifyContent: 'space-between',
+      backgroundColor: '#ffffff',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+      borderRadius: borderRadius.lg,
+      gap: 6,
     },
-    takeQuizContent: {
-      flex: 1,
-      alignItems: common.alignStart,
+    quizCTAButtonText: {
+      ...typography('bodySmall'),
+      ...fontWeight('bold'),
+      color: theme.colors.primary,
     },
-    takeQuizIconContainer: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: 'rgba(255, 255, 255, 0.2)',
-      justifyContent: 'center',
-      alignItems: 'center',
-      ...common.marginStart(spacing.lg),
+    quizCTAIconBg: {
+      position: 'absolute',
+      right: -8,
+      bottom: -8,
     },
-    takeQuizText: {
-      fontSize: fontSizes.xl,
-      fontWeight: 'bold',
-      marginBottom: 4,
-      color: '#FFFFFF',
-      textAlign: common.textAlign,
+    quizCTAIllustration: {
+      width: 120,
+      height: 120,
+      resizeMode: 'contain',
     },
-    takeQuizSubtext: {
-      fontSize: fontSizes.xs,
-      color: 'rgba(255, 255, 255, 0.9)',
-      textAlign: common.textAlign,
-    },
-    historySection: {
-      flex: 1,
-      paddingHorizontal: spacing.xl,
-    },
-    historyList: {
-      flex: 1,
-      marginTop: spacing.md,
+    historySectionHeader: {
+      paddingHorizontal: layout.screenPadding,
+      marginTop: spacing.sm,
+      marginBottom: spacing.sm,
     },
     historyItemWrapper: {
-      marginBottom: spacing.md,
-      borderRadius: layout.borderRadius.xl,
-      overflow: 'hidden',
+      paddingHorizontal: layout.screenPadding,
+      marginBottom: spacing.sm,
+    },
+    historyContentContainer: {
+      width: '100%',
     },
     loadingState: {
+      flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
-      padding: 40,
-      marginTop: 20,
+      padding: spacing.xl,
     },
-    loadingText: { marginTop: 16, fontSize: fontSizes.base, color: theme.colors.textSecondary },
+    loadingText: {
+      marginTop: spacing.md,
+      ...typography('body'),
+      color: theme.colors.textSecondary,
+    },
     errorState: {
+      marginHorizontal: layout.screenPadding,
       alignItems: 'center',
       justifyContent: 'center',
-      padding: 40,
+      padding: spacing.xl,
       borderRadius: borderRadius.xl,
       backgroundColor: theme.colors.card,
       ...layout.shadow,
     },
-    errorStateIcon: { fontSize: 48, marginBottom: 16 },
     errorStateTitle: {
-      fontSize: fontSizes.lg,
-      fontWeight: 'bold',
-      marginBottom: 8,
+      ...typography('h3'),
+      marginTop: spacing.md,
+      marginBottom: spacing.xs,
       color: theme.colors.text,
+      textAlign: 'center',
     },
-    retryButton: {
-      marginTop: 20,
-      paddingHorizontal: 24,
-      paddingVertical: 12,
-      borderRadius: borderRadius.lg,
-      backgroundColor: theme.colors.primary,
-    },
-    retryButtonText: { color: '#fff', fontSize: fontSizes.base, fontWeight: '600' },
     emptyState: {
-      padding: 40,
-      marginTop: 20,
+      flex: 1,
       alignItems: 'center',
+      justifyContent: 'center',
+      padding: spacing.xl,
     },
-    emptyStateIcon: { fontSize: 48, marginBottom: 16 },
     emptyStateTitle: {
-      fontSize: fontSizes.lg,
-      fontWeight: '600',
-      marginBottom: 8,
+      ...typography('h3'),
+      marginTop: spacing.md,
+      marginBottom: spacing.xs,
       color: theme.colors.text,
+      textAlign: 'center',
     },
     emptyStateSubtitle: {
-      fontSize: fontSizes.sm,
+      ...typography('caption'),
       textAlign: 'center',
       color: theme.colors.textSecondary,
     },

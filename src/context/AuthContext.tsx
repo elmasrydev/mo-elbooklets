@@ -1,7 +1,16 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  ReactNode,
+} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { tryFetchWithFallback, setAuthErrorHandler } from '../config/api';
 import { setLogoutHandler } from '../lib/apollo';
+import { configureCrashlyticsUser } from '../utils/crashlyticsHelper';
 
 // Temporary types for testing
 interface User {
@@ -9,6 +18,7 @@ interface User {
   name: string;
   email: string;
   mobile: string;
+  country_code: string;
   grade_id?: string;
   grade?: { id: string; name: string };
   educational_system_id?: string;
@@ -24,9 +34,17 @@ interface RegisterInput {
   name: string;
   email: string;
   mobile: string;
+  country_code: string;
+  gender: string;
+  school_name?: string;
+  parent_mobile?: string;
+  parent_country_code?: string;
+  parent_mobile_2?: string;
+  parent_country_code_2?: string;
   password: string;
   grade_id: string;
   educational_system_id: string;
+  promo_code?: string;
 }
 
 interface AuthContextType {
@@ -55,7 +73,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     // Create logout function to share between handlers
     const handleSessionExpired = () => {
-      console.log('Session expired - logging out');
+      if (__DEV__) console.log('Session expired - logging out');
       setUser(null);
     };
 
@@ -68,23 +86,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       const userData = await AsyncStorage.getItem('user_data');
 
       if (token && userData) {
-        setUser(JSON.parse(userData));
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+        configureCrashlyticsUser(parsedUser);
+      } else {
+        configureCrashlyticsUser(null);
       }
     } catch (error) {
       console.error('Error checking auth status:', error);
+      configureCrashlyticsUser(null);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const login = async (input: LoginInput): Promise<{ success: boolean; error?: string }> => {
-    try {
-      const result = await tryFetchWithFallback(
-        `
+  const login = useCallback(
+    async (input: LoginInput): Promise<{ success: boolean; error?: string }> => {
+      try {
+        const result = await tryFetchWithFallback(
+          `
         mutation Login($input: LoginInput!) {
           login(input: $input) {
             access_token
@@ -93,6 +117,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               name
               email
               mobile
+              country_code
               grade_id
               grade {
                 id
@@ -107,31 +132,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }
         }
       `,
-        { input },
-      );
+          { input },
+        );
 
-      if (result.data?.login) {
-        const authPayload = result.data.login;
-        await AsyncStorage.setItem('auth_token', authPayload.access_token);
-        await AsyncStorage.setItem('user_data', JSON.stringify(authPayload.user));
-        setUser(authPayload.user);
-        return { success: true };
+        if (result.data?.login) {
+          const authPayload = result.data.login;
+          await SecureStore.setItemAsync('auth_token', authPayload.access_token);
+          await AsyncStorage.setItem('user_data', JSON.stringify(authPayload.user));
+          setUser(authPayload.user);
+          configureCrashlyticsUser(authPayload.user);
+          return { success: true };
+        }
+
+        return { success: false, error: result.errors?.[0]?.message || 'Login failed' };
+      } catch (error: any) {
+        console.error('Login error:', error);
+        return {
+          success: false,
+          error: error.message || 'An error occurred during login',
+        };
       }
+    },
+    [],
+  );
 
-      return { success: false, error: result.errors?.[0]?.message || 'Login failed' };
-    } catch (error: any) {
-      console.error('Login error:', error);
-      return {
-        success: false,
-        error: error.message || 'An error occurred during login',
-      };
-    }
-  };
-
-  const register = async (input: RegisterInput): Promise<{ success: boolean; error?: string }> => {
-    try {
-      const result = await tryFetchWithFallback(
-        `
+  const register = useCallback(
+    async (input: RegisterInput): Promise<{ success: boolean; error?: string }> => {
+      try {
+        const result = await tryFetchWithFallback(
+          `
         mutation Register($input: RegisterInput!) {
           register(input: $input) {
             access_token
@@ -140,6 +169,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               name
               email
               mobile
+              country_code
               grade_id
               grade {
                 id
@@ -154,36 +184,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }
         }
       `,
-        { input },
-      );
+          { input },
+        );
 
-      if (result.data?.register) {
-        const authPayload = result.data.register;
-        await AsyncStorage.setItem('auth_token', authPayload.access_token);
-        await AsyncStorage.setItem('user_data', JSON.stringify(authPayload.user));
-        setUser(authPayload.user);
-        return { success: true };
+        if (result.data?.register) {
+          const authPayload = result.data.register;
+          await SecureStore.setItemAsync('auth_token', authPayload.access_token);
+          await AsyncStorage.setItem('user_data', JSON.stringify(authPayload.user));
+          setUser(authPayload.user);
+          configureCrashlyticsUser(authPayload.user);
+          return { success: true };
+        }
+
+        return { success: false, error: result.errors?.[0]?.message || 'Registration failed' };
+      } catch (error: any) {
+        console.error('Registration error:', error);
+        return {
+          success: false,
+          error: error.message || 'An error occurred during registration',
+        };
       }
+    },
+    [],
+  );
 
-      return { success: false, error: result.errors?.[0]?.message || 'Registration failed' };
-    } catch (error: any) {
-      console.error('Registration error:', error);
-      return {
-        success: false,
-        error: error.message || 'An error occurred during registration',
-      };
-    }
-  };
-
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
-      await AsyncStorage.removeItem('auth_token');
+      await SecureStore.deleteItemAsync('auth_token');
       await AsyncStorage.removeItem('user_data');
       setUser(null);
+      configureCrashlyticsUser(null);
     } catch (error) {
       console.error('Logout error:', error);
     }
-  };
+  }, []);
 
   const value: AuthContextType = React.useMemo(
     () => ({

@@ -3,12 +3,13 @@ import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'rea
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
-import { useLanguage } from '../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
+import { useTypography } from '../hooks/useTypography';
 import { layout } from '../config/layout';
 import { gql } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
+import { GenericListSkeleton } from './SkeletonLoader';
 
 const TODAY_SCHEDULE_QUERY = gql`
   query TodaySchedule {
@@ -38,29 +39,48 @@ const TodaysPlanWidget: React.FC = () => {
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { t } = useTranslation();
   const common = useCommonStyles();
+  const { typography, fontWeight } = useTypography();
 
-  const { data, loading, error } = useQuery(TODAY_SCHEDULE_QUERY, {
+  interface TodayScheduleData {
+    todaySchedule: {
+      date: string;
+      dayName: string;
+      dayOfWeek: number;
+      schedule: any[];
+    };
+  }
+
+  const { data, loading, error } = useQuery<TodayScheduleData>(TODAY_SCHEDULE_QUERY, {
     fetchPolicy: 'cache-and-network',
     pollInterval: 60000,
   });
-  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius);
+
+  const currentStyles = styles(
+    theme,
+    common,
+    typography,
+    fontWeight,
+    fontSizes,
+    spacing,
+    borderRadius,
+  );
 
   if (loading && !data)
     return (
-      <View style={common.card}>
+      <View style={[common.card, { marginBottom: spacing.sectionGap }]}>
         <View style={currentStyles.header}>
           <View style={{ flexDirection: common.rowDirection, alignItems: 'center' }}>
             <Ionicons
               name="calendar-outline"
-              size={24}
+              size={spacing.icon.md}
               color={theme.colors.text}
-              style={{ marginRight: 8 }}
+              style={common.marginEnd(spacing.xs)}
             />
             <Text style={currentStyles.title}> {t('study_calendar.today_plan')} </Text>
           </View>
         </View>
-        <View style={currentStyles.loadingContainer}>
-          <ActivityIndicator size="small" color={theme.colors.primary} />
+        <View style={{ paddingTop: spacing.md, paddingHorizontal: spacing.sm }}>
+          <GenericListSkeleton numItems={3} />
         </View>
       </View>
     );
@@ -71,14 +91,14 @@ const TodaysPlanWidget: React.FC = () => {
 
   if (schedule.length === 0)
     return (
-      <View style={common.card}>
+      <View style={[common.card, { marginBottom: spacing.sectionGap }]}>
         <View style={currentStyles.header}>
           <View style={{ flexDirection: common.rowDirection, alignItems: 'center' }}>
             <Ionicons
               name="calendar-outline"
-              size={24}
+              size={spacing.icon.md}
               color={theme.colors.text}
-              style={{ marginRight: 8 }}
+              style={common.marginEnd(spacing.xs)}
             />
             <Text style={currentStyles.title}> {t('study_calendar.today_plan')} </Text>
           </View>
@@ -89,8 +109,8 @@ const TodaysPlanWidget: React.FC = () => {
         <View style={currentStyles.emptyContainer}>
           <Ionicons
             name="clipboard-outline"
-            size={32}
-            color={theme.colors.textSecondary}
+            size={spacing.icon.lg}
+            color={theme.colors.textTertiary}
             style={{ marginBottom: spacing.sm }}
           />
           <Text style={currentStyles.emptyText}> {t('study_calendar.no_schedule')} </Text>
@@ -100,17 +120,21 @@ const TodaysPlanWidget: React.FC = () => {
     );
 
   return (
-    <View style={common.card}>
+    <View style={[common.card, { marginBottom: spacing.sectionGap }]}>
       <View style={currentStyles.header}>
         <View style={currentStyles.titleSection}>
           <View
-            style={{ flexDirection: common.rowDirection, alignItems: 'center', marginBottom: 4 }}
+            style={{
+              flexDirection: common.rowDirection,
+              alignItems: 'center',
+              marginBottom: spacing.xxs,
+            }}
           >
             <Ionicons
               name="calendar-outline"
-              size={20}
+              size={spacing.icon.sm}
               color={theme.colors.primary}
-              style={{ marginRight: 8 }}
+              style={common.marginEnd(spacing.xs)}
             />
             <Text style={currentStyles.title}> {t('study_calendar.today_plan')} </Text>
           </View>
@@ -129,9 +153,17 @@ const TodaysPlanWidget: React.FC = () => {
           return (
             <View key={item.id} style={currentStyles.scheduleItem}>
               <View
-                style={[currentStyles.subjectIcon, isComplete && currentStyles.subjectIconComplete]}
+                style={[
+                  currentStyles.subjectIcon,
+                  isComplete && { backgroundColor: theme.colors.success + '1A' },
+                ]}
               >
-                <Text style={currentStyles.subjectIconText}>
+                <Text
+                  style={[
+                    currentStyles.subjectIconText,
+                    isComplete && { color: theme.colors.success },
+                  ]}
+                >
                   {item.subject?.name?.charAt(0) || 'S'}
                 </Text>
               </View>
@@ -163,7 +195,7 @@ const TodaysPlanWidget: React.FC = () => {
                 <Text
                   style={[
                     currentStyles.progressText,
-                    isComplete && currentStyles.progressTextComplete,
+                    isComplete && { color: theme.colors.success },
                   ]}
                 >
                   {Math.round(percent)}%
@@ -177,7 +209,15 @@ const TodaysPlanWidget: React.FC = () => {
   );
 };
 
-const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRadius: any) =>
+const styles = (
+  theme: any,
+  common: any,
+  typography: any,
+  fontWeight: any,
+  fontSizes: any,
+  spacing: any,
+  borderRadius: any,
+) =>
   StyleSheet.create({
     header: {
       flexDirection: common.rowDirection,
@@ -185,24 +225,29 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       alignItems: 'flex-start',
       marginBottom: spacing.md,
     },
-    titleSection: { alignItems: common.alignStart },
-    title: { fontSize: fontSizes.lg, fontWeight: 'bold', color: theme.colors.text },
+    titleSection: { flex: 1, alignItems: common.alignStart },
+    title: { ...typography('h3'), color: theme.colors.text },
     subtitle: {
-      fontSize: fontSizes.xs,
+      ...typography('caption'),
       color: theme.colors.textSecondary,
-      marginTop: 2,
-      ...common.marginStart(28),
+      marginTop: spacing.xxs,
+      ...common.marginStart(spacing.xl),
     },
-    linkText: { fontSize: fontSizes.sm, color: theme.colors.primary, fontWeight: '600' },
+    linkText: {
+      ...typography('bodySmall'),
+      color: theme.colors.primary,
+      ...fontWeight('600'),
+      flexShrink: 0,
+    },
     loadingContainer: { padding: spacing.xl, alignItems: 'center' },
     emptyContainer: { alignItems: 'center', padding: spacing.lg },
     emptyText: {
-      fontSize: fontSizes.base,
-      fontWeight: '600',
+      ...typography('body'),
+      ...fontWeight('600'),
       color: theme.colors.text,
       marginBottom: spacing.xs,
     },
-    emptyHint: { fontSize: fontSizes.sm, color: theme.colors.textSecondary, textAlign: 'center' },
+    emptyHint: { ...typography('caption'), color: theme.colors.textSecondary, textAlign: 'center' },
     scheduleList: { gap: spacing.sm },
     scheduleItem: {
       flexDirection: common.rowDirection,
@@ -215,30 +260,29 @@ const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRad
       width: 40,
       height: 40,
       borderRadius: borderRadius.md,
-      backgroundColor: theme.colors.primaryLight || 'rgba(147, 51, 234, 0.05)',
+      backgroundColor: theme.colors.primary + '1A',
       justifyContent: 'center',
       alignItems: 'center',
       ...common.marginEnd(spacing.md),
     },
-    subjectIconComplete: { backgroundColor: '#10B98120' },
-    subjectIconText: { fontSize: fontSizes.lg, fontWeight: 'bold', color: theme.colors.primary },
+    subjectIconText: { ...typography('h3'), color: theme.colors.primary },
     itemInfo: { flex: 1, alignItems: common.alignStart },
     itemHeader: { flexDirection: common.rowDirection, alignItems: 'center', gap: spacing.sm },
-    subjectName: { fontSize: fontSizes.base, fontWeight: '600', color: theme.colors.text },
+    subjectName: { ...typography('body'), ...fontWeight('600'), color: theme.colors.text },
     completeBadge: {
+      ...typography('caption'),
       fontSize: 10,
-      fontWeight: 'bold',
-      color: '#10B981',
-      backgroundColor: '#10B98120',
-      paddingHorizontal: 6,
+      ...fontWeight('bold'),
+      color: theme.colors.success,
+      backgroundColor: theme.colors.success + '1A',
+      paddingHorizontal: spacing.xs,
       paddingVertical: 2,
-      borderRadius: 8,
+      borderRadius: borderRadius.sm,
     },
     goalsRow: { flexDirection: common.rowDirection, gap: spacing.md, marginTop: 2 },
-    goalText: { fontSize: fontSizes.xs, color: theme.colors.textSecondary },
+    goalText: { ...typography('caption'), fontSize: 12, color: theme.colors.textSecondary },
     progressContainer: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
-    progressText: { fontSize: fontSizes.sm, fontWeight: 'bold', color: theme.colors.text },
-    progressTextComplete: { color: '#10B981' },
+    progressText: { ...typography('bodySmall'), ...fontWeight('bold'), color: theme.colors.text },
   });
 
-export default TodaysPlanWidget;
+export default React.memo(TodaysPlanWidget);

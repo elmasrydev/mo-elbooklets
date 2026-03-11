@@ -1,19 +1,47 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
+import { useTypography } from '../hooks/useTypography';
+
+import { layout } from '../config/layout';
 
 const ProgressScreen: React.FC = () => {
+  const { theme, spacing } = useTheme();
+  const { typography, fontWeight } = useTypography();
+  const styles = createProgressStyles(fontWeight);
+
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>My Progress</Text>
-        <Text style={styles.subtitle}>Track your learning journey</Text>
+    <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: theme.colors.card, borderBottomColor: theme.colors.border },
+        ]}
+      >
+        <Text style={[typography('h1'), styles.title, { color: theme.colors.text }]}>
+          {' '}
+          My Progress{' '}
+        </Text>
+        <Text style={[typography('body'), styles.subtitle, { color: theme.colors.textSecondary }]}>
+          {' '}
+          Track your learning journey{' '}
+        </Text>
       </View>
 
       <View style={styles.content}>
-        <View style={styles.emptyState}>
+        <View style={[styles.emptyState, { backgroundColor: theme.colors.card }]}>
           <Text style={styles.emptyStateIcon}>📊</Text>
-          <Text style={styles.emptyStateTitle}>No progress data</Text>
-          <Text style={styles.emptyStateSubtitle}>
+          <Text style={[typography('h3'), styles.emptyStateTitle, { color: theme.colors.text }]}>
+            {' '}
+            No progress data{' '}
+          </Text>
+          <Text
+            style={[
+              typography('body'),
+              styles.emptyStateSubtitle,
+              { color: theme.colors.textSecondary },
+            ]}
+          >
             Start learning to see your progress and achievements here
           </Text>
         </View>
@@ -22,59 +50,48 @@ const ProgressScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    backgroundColor: '#ffffff',
-    padding: 20,
-    paddingTop: 50,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333333',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666666',
-    marginTop: 4,
-  },
-  content: {
-    flex: 1,
-    padding: 20,
-  },
-  emptyState: {
-    backgroundColor: '#ffffff',
-    padding: 40,
-    borderRadius: 12,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  emptyStateIcon: {
-    fontSize: 64,
-    marginBottom: 20,
-  },
-  emptyStateTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#333333',
-    marginBottom: 8,
-  },
-  emptyStateSubtitle: {
-    fontSize: 16,
-    color: '#666666',
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-});
+const createProgressStyles = (fontWeight: any) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: '#f5f5f5',
+    },
+    header: {
+      padding: layout.screenPadding,
+      paddingTop: 50,
+      borderBottomWidth: 1,
+    },
+    title: {
+      ...fontWeight('bold'),
+    },
+    subtitle: {
+      marginTop: 4,
+    },
+    content: {
+      flex: 1,
+      padding: layout.screenPadding,
+    },
+    emptyState: {
+      padding: 40,
+      borderRadius: 12,
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    emptyStateIcon: {
+      fontSize: 64,
+      marginBottom: 20,
+    },
+    emptyStateTitle: {
+      ...fontWeight('600'),
+      marginBottom: 8,
+    },
+    emptyStateSubtitle: {
+      textAlign: 'center',
+    },
+  });
 
 export default ProgressScreen;

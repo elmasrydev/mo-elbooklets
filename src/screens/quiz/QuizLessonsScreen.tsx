@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,13 +9,19 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
-import { useCommonStyles } from '../../hooks/useCommonStyles';
-import { layout } from '../../config/layout';
 import { tryFetchWithFallback } from '../../config/api';
 import { Ionicons } from '@expo/vector-icons';
-import QuizSettingsModal from '../../components/QuizSettingsModal';
+import { useCommonStyles } from '../../hooks/useCommonStyles';
+import { layout } from '../../config/layout';
+import { useTypography } from '../../hooks/useTypography';
+import UnifiedHeader from '../../components/UnifiedHeader';
+import AppButton from '../../components/AppButton';
+import { GenericListSkeleton } from '../../components/SkeletonLoader';
 
 interface Subject {
   id: string;
@@ -39,37 +45,32 @@ interface QuizType {
   questionCount: number;
   isDefault: boolean;
 }
-interface QuizLessonsScreenProps {
-  subject: Subject;
-  onLessonsSelect: (lessonIds: string[], quizTypeId?: string) => void;
-  onBack: () => void;
-}
 
-const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
-  subject,
-  onLessonsSelect,
-  onBack,
-}) => {
+const QuizLessonsScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const subject = route.params?.subject;
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
+  const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
+  const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
   const [selectedLessons, setSelectedLessons] = useState<Set<string>>(new Set());
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [quizTypes, setQuizTypes] = useState<QuizType[]>([]);
-  const [settingsModalVisible, setSettingsModalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
-  }, [subject.id]);
+  }, [subject?.id]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
       const [lessonsResult, quizTypesResult] = await Promise.all([
         tryFetchWithFallback(
@@ -112,50 +113,61 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
     setSelectedLessons(newSelected);
   };
 
-  const handleStartQuiz = (quizTypeId: string) => {
-    setSettingsModalVisible(false);
-    // Wait for settings modal close animation before triggering parent
-    setTimeout(() => {
-      onLessonsSelect(Array.from(selectedLessons), quizTypeId);
-    }, 500);
+  const handlePrepareQuiz = () => {
+    navigation.navigate('QuizFlowSettings', {
+      subject,
+      quizTypes,
+      selectedUnits,
+      selectedLessonIds: Array.from(selectedLessons),
+    });
   };
 
-  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius);
+  const selectedUnits = useMemo(() => {
+    return chapters
+      .map((chapter) => ({
+        id: chapter.id,
+        name: chapter.name,
+        lessons: chapter.lessons.filter((lesson) => selectedLessons.has(lesson.id)),
+      }))
+      .filter((chapter) => chapter.lessons.length > 0);
+  }, [chapters, selectedLessons]);
+
+  const currentStyles = styles(
+    theme,
+    common,
+    typography,
+    fontWeight,
+    fontSizes,
+    spacing,
+    borderRadius,
+    insets,
+  );
 
   if (loading)
     return (
       <View style={common.container}>
-        <View style={[currentStyles.header, { paddingTop: insets.top + spacing.sm }]}>
-          <View style={common.headerTextWrapper}>
-            <Text style={currentStyles.headerTitle}> {t('quiz_lessons.header_title')} </Text>
-          </View>
-        </View>
-        <View style={currentStyles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={currentStyles.loadingText}> {t('quiz_lessons.loading_lessons')} </Text>
+        <UnifiedHeader title={t('quiz_lessons.header_title')} />
+        <View style={{ paddingTop: 16 }}>
+          <GenericListSkeleton numItems={6} />
         </View>
       </View>
     );
 
   return (
     <View style={common.container}>
-      <View style={[currentStyles.header, { paddingTop: insets.top + spacing.sm }]}>
-        <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
-          <Ionicons
-            name={common.isRTL ? 'arrow-forward' : 'arrow-back'}
-            size={24}
-            color={theme.colors.headerText}
-          />
-        </TouchableOpacity>
-        <View style={common.headerTextWrapper}>
-          <Text style={currentStyles.headerTitle}> {t('quiz_lessons.header_title')} </Text>
-          <Text style={currentStyles.headerSubtitle}> {subject.name} </Text>
-        </View>
-      </View>
+      <UnifiedHeader
+        showBackButton
+        onBackPress={() => navigation.goBack()}
+        title={t('quiz_lessons.header_title')}
+        subtitle={subject?.name}
+      />
 
       <ScrollView
         style={currentStyles.content}
-        contentContainerStyle={{ padding: layout.screenPadding, paddingBottom: 100 }}
+        contentContainerStyle={{
+          padding: layout.screenPadding,
+          paddingBottom: Math.max(insets.bottom + 100, spacing.xl),
+        }}
         showsVerticalScrollIndicator={false}
       >
         {chapters.map((chapter: Chapter) => {
@@ -164,43 +176,51 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
           const allSelected =
             selectedInChapter === chapterLessonIds.length && chapterLessonIds.length > 0;
           const someSelected = selectedInChapter > 0;
+          const progressPercentage =
+            chapterLessonIds.length > 0 ? (selectedInChapter / chapterLessonIds.length) * 100 : 0;
 
           return (
-            <View key={chapter.id} style={currentStyles.chapterCard}>
+            <View key={chapter.id} style={currentStyles.chapterGroup}>
+              {/* Unit Card */}
               <TouchableOpacity
-                style={currentStyles.chapterHeader}
+                style={currentStyles.unitCard}
                 onPress={() => handleChapterToggle(chapter)}
                 activeOpacity={0.7}
               >
-                <View style={currentStyles.chapterCheckbox}>
-                  <Ionicons
-                    name={
-                      allSelected ? 'checkbox' : someSelected ? 'remove-circle' : 'square-outline'
-                    }
-                    size={24}
-                    color={
-                      allSelected || someSelected ? theme.colors.primary : theme.colors.textTertiary
-                    }
-                  />
+                <View style={currentStyles.unitContent}>
+                  <Text style={currentStyles.unitName}>{chapter.name}</Text>
+                  <View style={currentStyles.unitStatsRow}>
+                    <Text style={currentStyles.unitStatsText}>
+                      {selectedInChapter}/{chapterLessonIds.length}{' '}
+                      {t('quiz_lessons.lessons_selected', 'lessons selected')}
+                    </Text>
+                    <View style={currentStyles.progressBarBackground}>
+                      <View
+                        style={[currentStyles.progressBarFill, { width: `${progressPercentage}%` }]}
+                      />
+                    </View>
+                  </View>
                 </View>
-                <View style={currentStyles.chapterHeaderContent}>
-                  <Text style={currentStyles.chapterName}> {chapter.name} </Text>
-                  <Text style={currentStyles.chapterStats}>
-                    {selectedInChapter} / {chapterLessonIds.length}
-                  </Text>
+                <View
+                  style={[
+                    currentStyles.checkboxBase,
+                    someSelected || allSelected ? currentStyles.checkboxSelected : null,
+                  ]}
+                >
+                  {(someSelected || allSelected) && (
+                    <Ionicons name={allSelected ? 'checkmark' : 'remove'} size={16} color="#fff" />
+                  )}
                 </View>
               </TouchableOpacity>
 
-              <View style={currentStyles.lessonsContainer}>
+              {/* Lesson Cards */}
+              <View style={currentStyles.lessonsList}>
                 {chapter.lessons.map((lesson: Lesson) => {
                   const isSelected = selectedLessons.has(lesson.id);
                   return (
                     <TouchableOpacity
                       key={lesson.id}
-                      style={[
-                        currentStyles.lessonItem,
-                        isSelected && currentStyles.lessonItemSelected,
-                      ]}
+                      style={currentStyles.lessonCard}
                       onPress={() => {
                         const newSelected = new Set(selectedLessons);
                         isSelected ? newSelected.delete(lesson.id) : newSelected.add(lesson.id);
@@ -208,25 +228,24 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
                       }}
                       activeOpacity={0.7}
                     >
-                      <View style={currentStyles.lessonCheckbox}>
-                        <Ionicons
-                          name={isSelected ? 'checkbox' : 'square-outline'}
-                          size={20}
-                          color={isSelected ? theme.colors.primary : theme.colors.textTertiary}
-                        />
+                      <View style={currentStyles.lessonContent}>
+                        <Text style={currentStyles.lessonName}>{lesson.name}</Text>
                       </View>
-                      <Text
+                      <View
                         style={[
-                          currentStyles.lessonName,
-                          isSelected && currentStyles.lessonNameSelected,
+                          currentStyles.checkboxBase,
+                          isSelected ? currentStyles.checkboxSelected : null,
                         ]}
                       >
-                        {lesson.name}
-                      </Text>
+                        {isSelected && <Ionicons name="checkmark" size={16} color="#fff" />}
+                      </View>
                     </TouchableOpacity>
                   );
                 })}
               </View>
+
+              {/* Divider between Units */}
+              <View style={currentStyles.unitDivider} />
             </View>
           );
         })}
@@ -235,15 +254,16 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
           <View style={currentStyles.emptyState}>
             <Ionicons
               name="book-outline"
-              size={48}
-              color={theme.colors.textSecondary}
-              style={{ marginBottom: 16 }}
+              size={spacing.icon.xl}
+              color={theme.colors.textTertiary}
             />
             <Text style={currentStyles.emptyStateTitle}>
-              {t('quiz_lessons.no_lessons_available')}
+              {' '}
+              {t('quiz_lessons.no_lessons_available')}{' '}
             </Text>
             <Text style={currentStyles.emptyStateSubtitle}>
-              {t('quiz_lessons.no_lessons_for_subject')}
+              {' '}
+              {t('quiz_lessons.no_lessons_for_subject')}{' '}
             </Text>
           </View>
         )}
@@ -251,190 +271,162 @@ const QuizLessonsScreen: React.FC<QuizLessonsScreenProps> = ({
 
       {selectedLessons.size > 0 && (
         <View style={currentStyles.footer}>
-          <TouchableOpacity
-            style={currentStyles.prepareButton}
-            onPress={() => setSettingsModalVisible(true)}
-          >
-            <Text style={currentStyles.prepareButtonText}>
-              {t('quiz_lessons.prepare_quiz')}({selectedLessons.size})
-            </Text>
-            <Ionicons
-              name={common.isRTL ? 'arrow-back' : 'arrow-forward'}
-              size={20}
-              color="#fff"
-              style={{ marginLeft: 8 }}
-            />
-          </TouchableOpacity>
+          <AppButton
+            title={`${t('quiz_lessons.prepare_quiz')} (${selectedLessons.size})`}
+            onPress={() => handlePrepareQuiz()}
+            icon={
+              <Ionicons
+                name={isRTL ? 'arrow-back' : 'arrow-forward'}
+                size={spacing.icon.sm}
+                color={theme.colors.textOnDark}
+              />
+            }
+            iconPosition="right"
+          />
         </View>
       )}
-
-      <QuizSettingsModal
-        visible={settingsModalVisible}
-        onClose={() => setSettingsModalVisible(false)}
-        onStart={handleStartQuiz}
-        quizTypes={quizTypes}
-      />
     </View>
   );
 };
 
-const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRadius: any) =>
+const styles = (
+  theme: any,
+  common: any,
+  typography: any,
+  fontWeight: any,
+  fontSizes: any,
+  spacing: any,
+  borderRadius: any,
+  insets: any,
+) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.background },
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    loadingText: { marginTop: 16, fontSize: fontSizes.base, color: theme.colors.textSecondary },
-
-    // Header
-    backButton: {
-      padding: 8,
-      marginRight: common.isRTL ? 0 : 16,
-      marginLeft: common.isRTL ? 16 : 0,
+    loadingText: {
+      marginTop: spacing.md,
+      ...typography('body'),
+      color: theme.colors.textSecondary,
     },
-
-    // Custom Header
-    header: {
+    content: { flex: 1 },
+    chapterGroup: {
+      marginBottom: spacing.xs,
+    },
+    unitCard: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      paddingHorizontal: layout.screenPadding,
-      paddingBottom: spacing.md,
-      backgroundColor: theme.colors.headerBackground,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
-    },
-    headerTitle: {
-      fontSize: fontSizes.lg,
-      fontWeight: 'bold',
-      color: theme.colors.headerText,
-      textAlign: common.textAlign,
-    },
-    headerSubtitle: {
-      fontSize: fontSizes.sm,
-      color: theme.colors.headerSubtitle,
-      marginTop: 2,
-      opacity: 0.9,
-      textAlign: common.textAlign,
-    },
-
-    // Content
-    content: {
-      flex: 1,
-    },
-    chapterCard: {
-      borderRadius: layout.borderRadius.xl,
-      marginBottom: spacing.lg,
-      backgroundColor: '#F9FAFB',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 3 },
-      shadowOpacity: 0.08,
-      shadowRadius: 10,
-      elevation: 3,
-      overflow: 'hidden',
+      justifyContent: 'space-between',
+      padding: spacing.md,
+      marginBottom: spacing.sm,
+      backgroundColor: theme.colors.card,
+      borderRadius: borderRadius.xl || 16,
       borderWidth: 1,
-      borderColor: '#E5E7EB',
+      borderColor: theme.colors.border,
+      ...layout.shadow,
     },
-    chapterHeader: {
-      flexDirection: common.rowDirection,
-      alignItems: 'center',
-      // justifyContent: 'flex-start', // Default
-      padding: spacing.lg,
-      backgroundColor: '#FFFFFF',
-      borderBottomWidth: 1,
-      borderBottomColor: '#E5E7EB',
-    },
-    chapterHeaderContent: {
+    unitContent: {
       flex: 1,
+      ...common.marginEnd(spacing.md),
       alignItems: common.alignStart,
     },
-    chapterCheckbox: {
-      padding: 4,
-      ...common.marginEnd(12),
-    },
-    chapterName: {
-      fontSize: fontSizes.base,
-      fontWeight: 'bold',
+    unitName: {
+      ...typography('h3'),
+      ...fontWeight('bold'),
       color: theme.colors.text,
+      marginBottom: spacing.xs,
       textAlign: common.textAlign,
     },
-    chapterStats: {
-      fontSize: fontSizes.xs,
-      color: theme.colors.textSecondary,
-      marginTop: 2,
-      textAlign: common.textAlign,
-    },
-
-    // Lessons
-    lessonsContainer: {
-      paddingVertical: spacing.sm,
-    },
-    lessonItem: {
+    unitStatsRow: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      paddingVertical: 12,
-      paddingHorizontal: spacing.md,
     },
-    lessonItemSelected: {
-      backgroundColor: theme.colors.primaryLight || 'rgba(59, 130, 246, 0.05)',
+    unitStatsText: {
+      ...typography('caption'),
+      color: theme.colors.primary,
+      opacity: 0.8,
+      ...common.marginEnd(spacing.sm),
+      fontSize: 12,
     },
-    lessonCheckbox: {
-      ...common.marginEnd(12),
+    progressBarBackground: {
+      height: 6,
+      width: 96,
+      backgroundColor: theme.colors.border,
+      borderRadius: borderRadius.full,
+      overflow: 'hidden',
+    },
+    progressBarFill: {
+      height: '100%',
+      backgroundColor: theme.colors.primary,
+    },
+    lessonsList: {
+      flexDirection: 'column',
+      gap: spacing.sm,
+      marginBottom: spacing.md,
+    },
+    lessonCard: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: spacing.md,
+      backgroundColor: theme.colors.card,
+      borderRadius: borderRadius.xl || 16,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      ...layout.shadow,
+    },
+    lessonContent: {
+      flex: 1,
+      ...common.marginEnd(spacing.md),
+      alignItems: common.alignStart,
     },
     lessonName: {
-      fontSize: fontSizes.sm,
-      flex: 1,
+      ...typography('button'),
+      ...fontWeight('500'),
       color: theme.colors.text,
       textAlign: common.textAlign,
     },
-    lessonNameSelected: {
-      color: theme.colors.primary,
-      fontWeight: '600',
-    },
-
-    // Empty State
-    emptyState: {
-      padding: 40,
+    checkboxBase: {
+      height: 24,
+      width: 24,
+      borderRadius: borderRadius.md || 8,
+      borderWidth: 1.5,
+      borderColor: theme.colors.border,
       alignItems: 'center',
-      marginTop: 60,
+      justifyContent: 'center',
+      backgroundColor: theme.colors.background,
     },
+    checkboxSelected: {
+      backgroundColor: theme.colors.primary,
+      borderColor: theme.colors.primary,
+    },
+    unitDivider: {
+      height: 8,
+      backgroundColor: theme.colors.background,
+      marginVertical: spacing.xs,
+    },
+    emptyState: { padding: spacing.xl, alignItems: 'center', marginTop: spacing.xl },
     emptyStateTitle: {
-      fontSize: fontSizes.lg,
-      fontWeight: 'bold',
-      marginBottom: 8,
+      ...typography('h3'),
+      ...fontWeight('bold'),
+      marginTop: spacing.md,
+      marginBottom: spacing.xs,
       color: theme.colors.text,
     },
     emptyStateSubtitle: {
-      fontSize: fontSizes.sm,
+      ...typography('caption'),
       textAlign: 'center',
       color: theme.colors.textSecondary,
     },
-
-    // Footer
     footer: {
-      padding: spacing.xl,
-      backgroundColor: theme.colors.background,
+      paddingHorizontal: layout.screenPadding,
+      paddingVertical: spacing.lg,
+      paddingBottom: Math.max(insets.bottom, spacing.lg),
+      backgroundColor: theme.colors.card,
       borderTopWidth: 1,
       borderTopColor: theme.colors.border,
       position: 'absolute',
       bottom: 0,
       left: 0,
       right: 0,
-    },
-    prepareButton: {
-      flexDirection: common.rowDirection,
-      backgroundColor: theme.colors.primary,
-      paddingVertical: 12, // Reduced from 16
-      borderRadius: borderRadius.md, // changed from xl to md
-      justifyContent: 'center',
-      alignItems: 'center',
-      shadowColor: theme.colors.primary,
-      shadowOffset: { width: 0, height: 2 }, // Reduced shadow
-      shadowOpacity: 0.2, // Reduced opacity
-      shadowRadius: 4, // Reduced radius
-      elevation: 2, // Reduced elevation
-    },
-    prepareButtonText: {
-      color: '#fff',
-      fontSize: fontSizes.sm, // Changed from base to sm
-      fontWeight: '600', // Changed from bold to 600
     },
   });
 

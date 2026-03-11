@@ -6,10 +6,13 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  Alert,
+  RefreshControl,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -17,6 +20,12 @@ import { useTranslation } from 'react-i18next';
 import { tryFetchWithFallback } from '../../config/api';
 import { layout } from '../../config/layout';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
+import { useTypography } from '../../hooks/useTypography';
+import UnifiedHeader from '../../components/UnifiedHeader';
+import AppButton from '../../components/AppButton';
+import RetryView from '../../components/RetryView';
+import { GenericListSkeleton } from '../../components/SkeletonLoader';
+import { textAlign } from '../../lib/rtl';
 
 interface UserQuizAnswer {
   question: {
@@ -27,7 +36,12 @@ interface UserQuizAnswer {
   };
   selected_answer: string;
   is_correct: boolean;
+  score?: number;
   explanation?: string;
+  descriptive_feedback?: {
+    coverage_percentage: number;
+    score_out_of_10: number;
+  };
 }
 
 interface QuizResult {
@@ -53,15 +67,38 @@ interface QuizResult {
 
 interface QuizResultsScreenProps {
   quizId: string;
-  onBack: () => void;
-  onRetakeQuiz: () => void;
+  timeTaken?: number;
+  onBack?: () => void;
+  onGoHome?: () => void;
 }
 
-const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({ quizId, onBack, onRetakeQuiz }) => {
+const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
+  const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+
+  // Use either props (if used in Modal) or route params (if navigated to as a screen)
+  const quizId = props.quizId || route.params?.quizId;
+  const onBack =
+    props.onBack ||
+    (() => {
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      } else {
+        navigation.navigate('MainTabs', { screen: 'Quiz' });
+      }
+    });
+
+  const onGoHome =
+    props.onGoHome ||
+    (() => {
+      navigation.navigate('MainTabs', { screen: 'Home' });
+    });
+
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
+  const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
   const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
   const [loading, setLoading] = useState(true);
@@ -76,7 +113,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({ quizId, onBack, o
       setLoading(true);
       setError(null);
 
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       if (!token) {
         setError(t('common.error'));
         return;
@@ -90,6 +127,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({ quizId, onBack, o
               id
               name
               subject {
+                id
                 name
               }
               lessons {
@@ -106,12 +144,18 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({ quizId, onBack, o
               question {
                 id
                 question
+                type
                 answer_1
                 explanation
               }
               selected_answer
               is_correct
+              score
               explanation
+              descriptive_feedback {
+                coverage_percentage
+                score_out_of_10
+              }
             }
             isPassed
           }
@@ -134,10 +178,10 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({ quizId, onBack, o
     }
   };
 
-  const getBreadcrumbs = () => {
+  const getBreadcrumbs = (): { title: string; lessons?: string[]; type: 'chapter' | 'quiz' }[] => {
     if (!quizResult?.quiz?.lessons || quizResult.quiz.lessons.length === 0) {
       // Fallback for old quizzes or if lessons not available
-      return [{ title: quizResult?.quiz?.name || '', type: 'quiz' }];
+      return [{ title: quizResult?.quiz?.name || '', type: 'quiz' as const }];
     }
 
     const chapters = new Map<string, string[]>();
@@ -149,31 +193,35 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({ quizId, onBack, o
       chapters.get(chapterName)?.push(lesson.name);
     });
 
-    const crumbs: { title: string; subtitle?: string; type: 'chapter' | 'quiz' }[] = [];
+    const crumbs: { title: string; lessons?: string[]; type: 'chapter' | 'quiz' }[] = [];
     chapters.forEach((lessons, chapterName) => {
       crumbs.push({
         title: chapterName,
-        subtitle: lessons.join(' + '),
+        lessons: lessons,
         type: 'chapter',
       });
     });
     return crumbs;
   };
 
-  const currentStyles = styles(theme, fontSizes, spacing, borderRadius, common, insets);
+  const currentStyles = styles(
+    theme,
+    fontSizes,
+    typography,
+    fontWeight,
+    spacing,
+    borderRadius,
+    common,
+    insets,
+  );
   const breadcrumbs = quizResult ? getBreadcrumbs() : [];
 
   if (loading) {
     return (
       <View style={common.container}>
-        <View style={common.header}>
-          <View style={common.headerTextWrapper}>
-            <Text style={common.headerTitle}> {t('quiz_results.loading_results')} </Text>
-          </View>
-        </View>
-        <View style={currentStyles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={currentStyles.loadingText}> {t('quiz_results.loading_quiz_results')} </Text>
+        <UnifiedHeader title={t('quiz_results.loading_results')} />
+        <View style={{ paddingTop: 16 }}>
+          <GenericListSkeleton numItems={5} />
         </View>
       </View>
     );
@@ -182,31 +230,15 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({ quizId, onBack, o
   if (error) {
     return (
       <View style={common.container}>
-        <View style={common.header}>
-          <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
-            <Ionicons
-              name={isRTL ? 'arrow-forward' : 'arrow-back'}
-              size={24}
-              color={theme.colors.headerText}
-            />
-          </TouchableOpacity>
-          <View style={common.headerTextWrapper}>
-            <Text style={common.headerTitle}> {t('quiz_results.results_error')} </Text>
-          </View>
-        </View>
-        <View style={currentStyles.errorContainer}>
-          <Ionicons
-            name="alert-circle"
-            size={48}
-            color={theme.colors.error}
-            style={{ marginBottom: spacing.lg }}
-          />
-          <Text style={currentStyles.errorTitle}> {t('quiz_results.error_loading_results')} </Text>
-          <Text style={currentStyles.errorText}> {error} </Text>
-          <TouchableOpacity style={currentStyles.retryButton} onPress={fetchQuizResults}>
-            <Text style={currentStyles.retryButtonText}> {t('home_screen.try_again')} </Text>
-          </TouchableOpacity>
-        </View>
+        <UnifiedHeader
+          showBackButton
+          onBackPress={onBack}
+          title={t('quiz_results.results_error')}
+        />
+        <RetryView 
+          message={error}
+          onRetry={fetchQuizResults}
+        />
       </View>
     );
   }
@@ -214,18 +246,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({ quizId, onBack, o
   if (!quizResult) {
     return (
       <View style={common.container}>
-        <View style={common.header}>
-          <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
-            <Ionicons
-              name={isRTL ? 'arrow-forward' : 'arrow-back'}
-              size={24}
-              color={theme.colors.headerText}
-            />
-          </TouchableOpacity>
-          <View style={common.headerTextWrapper}>
-            <Text style={common.headerTitle}> {t('quiz_results.no_results')} </Text>
-          </View>
-        </View>
+        <UnifiedHeader showBackButton onBackPress={onBack} title={t('quiz_results.no_results')} />
         <View style={currentStyles.errorContainer}>
           <Ionicons
             name="stats-chart"
@@ -243,222 +264,201 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({ quizId, onBack, o
   const percentage = Math.round((quizResult.score / quizResult.totalQuestions) * 100);
   const correctAnswers = quizResult.userAnswers.filter((answer) => answer.is_correct).length;
 
+  const timeTaken = props.timeTaken ?? route.params?.timeTaken;
+
+  const formatTime = (seconds?: number) => {
+    if (seconds === undefined || seconds === null) return null;
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const formattedTime = formatTime(timeTaken);
+
+  // Determine state based on percentage and determine icon asset
+  const celebrationIcon = percentage < 60
+    ? require('../../../assets/images/quizzLowIcon.png')
+    : percentage < 80
+      ? require('../../../assets/images/quizzNormalIcon.png')
+      : require('../../../assets/images/quizzSucessIcon.png');
+
+  let stateTheme = {
+    color: '#10B981', // green
+    bg: '#D1FAE5',
+    title: t('quiz_results.outstanding', 'Outstanding!'),
+    subtitle: t('quiz_results.mastered_perfectly', "You've mastered this topic perfectly."),
+  };
+
+  if (percentage < 60) {
+    stateTheme = {
+      color: '#FF6B6B', // red
+      bg: '#FEE2E2',
+      title: t('quiz_results.keep_trying', 'Keep Trying!'),
+      subtitle: t('quiz_results.dont_give_up', "Don't give up, review the material."),
+    };
+  } else if (percentage < 80) {
+    stateTheme = {
+      color: '#F59E0B', // amber
+      bg: '#FEF3C7',
+      title: t('quiz_results.good_job', 'Good job!'),
+      subtitle: t('quiz_results.can_do_better', "You're getting there! Keep practicing."),
+    };
+  }
+
   return (
     <View style={common.container}>
       {/* Navbar Area */}
-      <View style={[currentStyles.header, { paddingTop: insets.top + spacing.sm }]}>
-        <TouchableOpacity style={currentStyles.backButton} onPress={onBack}>
-          <Ionicons
-            name={isRTL ? 'arrow-forward' : 'arrow-back'}
-            size={24}
-            color={theme.colors.headerText}
-          />
-        </TouchableOpacity>
-        <View style={common.headerTextWrapper}>
-          <Text style={currentStyles.headerTitle}> {t('quiz_results.header_title')} </Text>
-        </View>
-      </View>
+      <UnifiedHeader
+        showBackButton
+        onBackPress={onBack}
+        title={t('quiz_results.header_title', 'Quiz Results')}
+      />
 
       <ScrollView
         style={currentStyles.content}
         contentContainerStyle={currentStyles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        {/* Refined Breadcrumb: Vertical Stack */}
-        <View style={currentStyles.breadcrumbContainer}>
-          {/* Always show Subject first */}
-          <View style={currentStyles.breadcrumbRow}>
-            <View style={currentStyles.iconContainer}>
-              <Ionicons name="library" size={16} color={theme.colors.primary} />
-            </View>
-            <Text style={currentStyles.breadcrumbSubjectText}>
-              {quizResult?.quiz?.subject?.name}
-            </Text>
-          </View>
-
-          {/* Show Chapters and Lessons */}
-          {breadcrumbs.map((crumb, index) => (
-            <View key={index} style={currentStyles.breadcrumbRow}>
-              <View style={currentStyles.iconContainer}>
-                <Ionicons name="folder-open" size={16} color={theme.colors.textSecondary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={[
-                    currentStyles.breadcrumbQuizText,
-                    { color: theme.colors.textSecondary, fontSize: fontSizes.xs, marginBottom: 2 },
-                  ]}
-                >
-                  {crumb.title}
-                </Text>
-                <Text style={currentStyles.breadcrumbQuizText}>
-                  {
-                    crumb.subtitle ||
-                      crumb.title /* Handle fallback case, usually subtitle has content */
-                  }
-                </Text>
-              </View>
-            </View>
-          ))}
-        </View>
-
         {/* Score Summary */}
-        <View style={currentStyles.scoreContainer}>
-          <View
-            style={[
-              currentStyles.scoreCircle,
-              quizResult.isPassed
-                ? currentStyles.scoreCirclePassed
-                : currentStyles.scoreCircleFailed,
-            ]}
-          >
-            <Text
-              style={[
-                currentStyles.scorePercentage,
-                quizResult.isPassed
-                  ? currentStyles.scorePercentagePassed
-                  : currentStyles.scorePercentageFailed,
-              ]}
-            >
-              {percentage} %
-            </Text>
-            <Text style={currentStyles.scoreLabel}> {t('home_screen.score')} </Text>
-          </View>
+        <View style={currentStyles.celebrationContainer}>
+          <Image
+            source={celebrationIcon}
+            style={currentStyles.celebrationIcon}
+            resizeMode="contain"
+          />
+          <Text style={currentStyles.celebrationTitle}>{stateTheme.title}</Text>
+          <Text style={currentStyles.celebrationSubtitle}>{stateTheme.subtitle}</Text>
+        </View>
 
-          <View style={currentStyles.scoreStats}>
-            <View style={currentStyles.scoreItem}>
-              <Text style={currentStyles.scoreNumber}> {quizResult.totalQuestions} </Text>
-              <Text style={currentStyles.scoreText}> {t('common.total')} </Text>
-            </View>
-            <View style={currentStyles.scoreItem}>
-              <Text style={currentStyles.scoreNumber}>
-                {quizResult.totalQuestions - correctAnswers}
+        <View style={currentStyles.progressCardContainer}>
+          <View style={currentStyles.progressCardHeader}>
+            <View style={currentStyles.progressCardLeft}>
+              <Text style={currentStyles.yourScoreLabel}>
+                {t('quiz_results.your_score', 'YOUR SCORE')}
               </Text>
-              <Text style={currentStyles.scoreText}> {t('common.incorrect')} </Text>
+              <Text style={[currentStyles.yourScoreValue, { color: stateTheme.color }]}>
+                {percentage}%
+              </Text>
             </View>
-            <View style={currentStyles.scoreItem}>
-              <Text style={currentStyles.scoreNumber}> {correctAnswers} </Text>
-              <Text style={currentStyles.scoreText}> {t('common.correct')} </Text>
+            <View style={currentStyles.progressCardRight}>
+              <View style={[currentStyles.passStatusBadge, { backgroundColor: stateTheme.bg }]}>
+                <Text style={[currentStyles.passStatusBadgeText, { color: stateTheme.color }]}>
+                  {t('quiz_results.pass_status', 'Pass Status')}
+                </Text>
+              </View>
+              <Text style={currentStyles.passStatusValue}>
+                {percentage >= 60
+                  ? t('home_screen.passed', 'Passed')
+                  : t('home_screen.failed', 'Failed')}
+              </Text>
             </View>
           </View>
-        </View>
 
-        {/* Pass/Fail Status Banner */}
-        <View
-          style={[
-            currentStyles.statusBanner,
-            quizResult.isPassed
-              ? currentStyles.statusBannerPassed
-              : currentStyles.statusBannerFailed,
-          ]}
-        >
-          <View style={currentStyles.statusContent}>
-            <Ionicons
-              name={quizResult.isPassed ? 'checkmark-circle' : 'close-circle'}
-              size={24}
-              color={quizResult.isPassed ? theme.colors.success : theme.colors.error}
-              style={currentStyles.statusIcon}
-            />
-            <Text
+          <View style={currentStyles.progressBarBackground}>
+            <View
               style={[
-                currentStyles.statusText,
-                quizResult.isPassed
-                  ? currentStyles.statusTextPassed
-                  : currentStyles.statusTextFailed,
+                currentStyles.progressBarFill,
+                { width: `${percentage}%`, backgroundColor: stateTheme.color },
               ]}
-            >
-              {quizResult.isPassed
-                ? t('quiz_results.congratulations_passed')
-                : t('quiz_results.need_practice')}
-            </Text>
+            />
           </View>
         </View>
 
-        {/* Question Review Section */}
-        <View style={currentStyles.reviewSection}>
-          <Text style={currentStyles.reviewTitle}> {t('quiz_results.questions_to_review')} </Text>
+        <View style={currentStyles.statsGrid}>
+          <View style={currentStyles.statCard}>
+            <View style={currentStyles.statHeader}>
+              <Ionicons name="checkmark-circle" size={20} color={theme.colors.primary} />
+              <Text style={currentStyles.statLabelText}>{t('common.correct', 'Correct')}</Text>
+            </View>
+            <Text style={currentStyles.statValueText}>{correctAnswers}</Text>
+          </View>
 
-          {(() => {
-            const wrongAnswers = quizResult.userAnswers.filter((answer) => !answer.is_correct);
+          <View style={currentStyles.statCard}>
+            <View style={currentStyles.statHeader}>
+              <Ionicons name="locate" size={20} color={theme.colors.primary} />
+              <Text style={currentStyles.statLabelText}>
+                {t('quiz_results.accuracy_label', 'Accuracy')}
+              </Text>
+            </View>
+            <Text style={currentStyles.statValueText}>{percentage}%</Text>
+          </View>
 
-            if (wrongAnswers.length === 0) {
-              return (
-                <View style={currentStyles.perfectScoreCard}>
-                  <Ionicons
-                    name="trophy"
-                    size={60}
-                    color="#F59E0B"
-                    style={{ marginBottom: spacing.xl }}
-                  />
-                  <Text style={currentStyles.perfectScoreTitle}>
-                    {t('quiz_results.perfect_score')}
-                  </Text>
-                  <Text style={currentStyles.perfectScoreText}>
-                    {' '}
-                    {t('quiz_results.all_correct')}{' '}
-                  </Text>
+          {formattedTime && (
+            <View style={[currentStyles.statCard, currentStyles.statCardFullWidth]}>
+              <View style={currentStyles.statHeader}>
+                <Ionicons name="timer-outline" size={20} color="#3B82F6" />
+                <Text style={currentStyles.statLabelText}>
+                  {t('quiz_results.time_taken_label', 'Time Taken')}
+                </Text>
+              </View>
+              <Text style={currentStyles.statValueText}>{formattedTime}</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Action Buttons */}
+        <View style={currentStyles.actionsContainer}>
+          <AppButton
+            title={t('home_screen.review')}
+            onPress={() => navigation.navigate('QuizReview', { quizId, quizResult })}
+            icon={<Ionicons name="eye-outline" size={20} color="#fff" />}
+            size="lg"
+          />
+
+          <AppButton
+            title={t('home_screen.home', 'Home')}
+            onPress={onGoHome}
+            variant="outline"
+            icon={<Ionicons name="home" size={20} color={theme.colors.textSecondary} />}
+            textStyle={{ color: theme.colors.textSecondary }}
+            style={{ borderColor: theme.colors.border }}
+            size="lg"
+          />
+        </View>
+
+        {/* Breadcrumb matching settings design */}
+        {quizResult?.quiz?.subject?.name ? (
+          <View style={currentStyles.subjectBadgeCard}>
+            <View style={currentStyles.subjectBadgeIconContainer}>
+              <Ionicons name="book" size={24} color="#FFFFFF" />
+            </View>
+            <View style={currentStyles.subjectBadgeInfo}>
+              <Text style={currentStyles.subjectBadgeLabel}>
+                {t('quiz_lessons.current_topic', 'Current Topic')}
+              </Text>
+              <Text style={currentStyles.subjectBadgeTitle}>{quizResult.quiz.subject.name}</Text>
+            </View>
+          </View>
+        ) : null}
+
+        {breadcrumbs && breadcrumbs.length > 0 && (
+          <View style={currentStyles.breadcrumbsCard}>
+            <Text style={currentStyles.breadcrumbsCardTitle}>
+              {t('quiz_results.covered_topics', 'Covered Topics')}
+            </Text>
+            {breadcrumbs.map((crumb, index) => (
+              <View key={index} style={currentStyles.unitBreadcrumb}>
+                <View style={currentStyles.unitBreadcrumbHeader}>
+                  <View style={currentStyles.breadcrumbDot} />
+                  <Text style={currentStyles.unitBreadcrumbName}>{crumb.title}</Text>
                 </View>
-              );
-            }
-
-            return wrongAnswers.map((answer, index) => (
-              <View key={answer.question.id} style={currentStyles.questionCard}>
-                <View style={currentStyles.questionHeader}>
-                  <Text style={currentStyles.questionNumber}>
-                    {t('quiz_taking.question_number', { number: index + 1 })}
-                  </Text>
-                  <View style={currentStyles.badgeError}>
-                    <Text style={currentStyles.badgeErrorText}> {t('common.incorrect')} </Text>
-                  </View>
-                </View>
-
-                <Text style={currentStyles.questionText}> {answer.question.question} </Text>
-
-                <View style={currentStyles.answerBoxWrong}>
-                  <Text style={currentStyles.answerLabel}>
-                    <Ionicons name="close" size={12} color={theme.colors.error} />{' '}
-                    {t('quiz_results.your_answer')}
-                  </Text>
-                  <Text style={currentStyles.answerText}> {answer.selected_answer} </Text>
-                </View>
-
-                <View style={currentStyles.answerBoxCorrect}>
-                  <Text style={currentStyles.answerLabel}>
-                    <Ionicons name="checkmark" size={12} color={theme.colors.success} />{' '}
-                    {t('quiz_results.correct_answer')}
-                  </Text>
-                  <Text style={currentStyles.answerText}> {answer.question.answer_1} </Text>
-                </View>
-
-                {answer.question.explanation && (
-                  <View style={currentStyles.explanationBox}>
-                    <Text style={currentStyles.explanationLabel}>
-                      <Ionicons name="bulb-outline" size={14} color={theme.colors.primary} />{' '}
-                      {t('quiz_results.explanation')}
-                    </Text>
-                    <Text style={currentStyles.explanationText}>
-                      {' '}
-                      {answer.question.explanation}{' '}
-                    </Text>
+                {crumb.lessons && (
+                  <View style={currentStyles.lessonBreadcrumbsList}>
+                    {crumb.lessons.map((lesson, lessonIdx) => (
+                      <View key={lessonIdx} style={currentStyles.lessonBreadcrumbItem}>
+                        <View style={currentStyles.lessonBreadcrumbDot} />
+                        <Text style={currentStyles.lessonBreadcrumbName}>{lesson}</Text>
+                      </View>
+                    ))}
                   </View>
                 )}
               </View>
-            ));
-          })()}
-        </View>
+            ))}
+          </View>
+        )}
 
-        <View style={{ height: 100 }} />
+        <View style={{ height: 40 }} />
       </ScrollView>
-
-      {/* Footer Actions */}
-      <View style={currentStyles.footer}>
-        <TouchableOpacity style={currentStyles.retakeButton} onPress={onRetakeQuiz}>
-          <Text style={currentStyles.retakeButtonText}> {t('quiz_results.retake_quiz')} </Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={currentStyles.doneButton} onPress={onBack}>
-          <Text style={currentStyles.doneButtonText}> {t('common.done')} </Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 };
@@ -466,6 +466,8 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({ quizId, onBack, o
 const styles = (
   theme: any,
   fontSizes: any,
+  typography: any,
+  fontWeight: any,
   spacing: any,
   borderRadius: any,
   common: any,
@@ -484,45 +486,110 @@ const styles = (
       padding: layout.screenPadding,
       alignItems: 'stretch',
     },
-    breadcrumbContainer: {
-      flexDirection: 'column',
+    subjectBadgeCard: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      backgroundColor: theme.colors.primary + '0D',
+      borderWidth: 1,
+      borderColor: theme.colors.primary + '1A',
+      borderRadius: borderRadius.xl || 16,
+      padding: spacing.md,
+      marginBottom: spacing.xl,
+    },
+    subjectBadgeIconContainer: {
+      width: 48,
+      height: 48,
+      borderRadius: borderRadius.lg || 12,
+      backgroundColor: theme.colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    subjectBadgeInfo: {
+      flex: 1,
+      paddingLeft: spacing.md,
+      paddingRight: spacing.md,
+      alignItems: 'flex-start',
+    },
+    subjectBadgeLabel: {
+      ...typography('caption'),
+      ...fontWeight('600'),
+      color: theme.colors.primary,
+      textTransform: 'uppercase',
+      textAlign: common.textAlign,
+    },
+    subjectBadgeTitle: {
+      fontSize: Math.max(16, fontSizes.lg),
+      ...fontWeight('700'),
+      color: theme.colors.text,
+      textAlign: common.textAlign,
+    },
+    breadcrumbsCard: {
       backgroundColor: theme.colors.card,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.md,
-      borderRadius: borderRadius.lg,
-      marginBottom: spacing.lg,
+      borderRadius: borderRadius.xl || 16,
+      padding: spacing.lg,
+      marginBottom: spacing.xl,
       borderWidth: 1,
       borderColor: theme.colors.border,
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
+      shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.05,
-      shadowRadius: 2,
-      elevation: 1,
-      width: '100%',
+      shadowRadius: 3,
+      elevation: 2,
     },
-    breadcrumbRow: {
-      flexDirection: common.rowDirection,
-      alignItems: 'flex-start', // Top align icon with multiline text
-      marginBottom: 8,
-    },
-    iconContainer: {
-      marginTop: 2, // Fine tune alignment with text
-      marginRight: common.isRTL ? 0 : 8,
-      marginLeft: common.isRTL ? 8 : 0,
-    },
-    breadcrumbSubjectText: {
-      fontSize: fontSizes.xs,
-      fontWeight: '600',
-      color: theme.colors.primary,
-      flex: 1,
+    breadcrumbsCardTitle: {
+      ...typography('caption'),
+      ...fontWeight('bold'),
+      color: theme.colors.textSecondary,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+      marginBottom: spacing.md,
       textAlign: common.textAlign,
     },
-    breadcrumbQuizText: {
-      fontSize: fontSizes.sm, // Slightly larger for emphasis
-      fontWeight: 'bold',
+    unitBreadcrumb: {
+      marginBottom: spacing.sm,
+    },
+    unitBreadcrumbHeader: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      marginBottom: spacing.sm,
+      flexShrink: 1,
+    },
+    breadcrumbDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: theme.colors.primary,
+      marginEnd: spacing.sm,
+    },
+    unitBreadcrumbName: {
+      ...typography('subtitle2'),
+      ...fontWeight('700'),
       color: theme.colors.text,
-      flex: 1,
-      lineHeight: 20,
+      flexShrink: 1,
+      textAlign: common.textAlign,
+    },
+    lessonBreadcrumbsList: {
+      paddingStart: 20,
+      paddingVertical: spacing.xs,
+    },
+    lessonBreadcrumbItem: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      marginBottom: spacing.xs,
+      flexShrink: 1,
+    },
+    lessonBreadcrumbDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: theme.colors.textTertiary || '#9CA3AF',
+      marginEnd: spacing.sm,
+    },
+    lessonBreadcrumbName: {
+      ...typography('caption'),
+      fontSize: 13,
+      color: theme.colors.textSecondary,
+      flexShrink: 1,
       textAlign: common.textAlign,
     },
     loadingContainer: {
@@ -532,7 +599,7 @@ const styles = (
     },
     loadingText: {
       marginTop: spacing.lg,
-      fontSize: fontSizes.base,
+      ...typography('body'),
       color: theme.colors.textSecondary,
     },
     errorContainer: {
@@ -542,272 +609,154 @@ const styles = (
       padding: 40,
     },
     errorTitle: {
-      fontSize: fontSizes.xl,
-      fontWeight: 'bold',
+      ...typography('h2'),
+      ...fontWeight('bold'),
       marginBottom: spacing.sm,
       color: theme.colors.text,
     },
     errorText: {
-      fontSize: fontSizes.sm,
+      ...typography('caption'),
       textAlign: 'center',
       marginBottom: spacing.xl,
       color: theme.colors.textSecondary,
     },
-    retryButton: {
-      paddingHorizontal: 24,
-      paddingVertical: 12,
-      borderRadius: borderRadius.md,
-      backgroundColor: theme.colors.primary,
-    },
-    retryButtonText: {
-      color: '#FFFFFF',
-      fontSize: fontSizes.base,
-      fontWeight: '600',
-    },
-    scoreContainer: {
-      padding: spacing['2xl'],
-      borderRadius: borderRadius.xl,
-      marginBottom: spacing.xl,
+    celebrationContainer: {
       alignItems: 'center',
-      backgroundColor: theme.colors.card,
-      ...layout.shadow,
-    },
-    scoreCircle: {
-      width: 140,
-      height: 140,
-      borderRadius: 70,
-      borderWidth: 10,
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginBottom: spacing.xl,
-      backgroundColor: theme.colors.background,
-    },
-    scoreCirclePassed: {
-      borderColor: theme.colors.success,
-    },
-    scoreCircleFailed: {
-      borderColor: theme.colors.error,
-    },
-    scorePercentage: {
-      fontSize: 36,
-      fontWeight: 'bold',
-    },
-    scorePercentagePassed: {
-      color: theme.colors.success,
-    },
-    scorePercentageFailed: {
-      color: theme.colors.error,
-    },
-    scoreLabel: {
-      fontSize: fontSizes.sm,
-      color: theme.colors.textSecondary,
-    },
-    scoreStats: {
-      flexDirection: common.rowDirection,
-      justifyContent: 'space-around',
-      width: '100%',
-    },
-    scoreItem: {
-      alignItems: 'center',
-    },
-    scoreNumber: {
-      fontSize: fontSizes.xl,
-      fontWeight: 'bold',
-      color: theme.colors.text,
-    },
-    scoreText: {
-      fontSize: fontSizes.xs,
-      marginTop: spacing.xs,
-      color: theme.colors.textSecondary,
-    },
-    statusBanner: {
-      padding: spacing.lg,
-      borderRadius: borderRadius.lg,
+      marginTop: spacing.sm,
       marginBottom: spacing.xl,
     },
-    statusBannerPassed: {
-      backgroundColor: theme.colors.successBackground || 'rgba(16, 185, 129, 0.1)',
-    },
-    statusBannerFailed: {
-      backgroundColor: theme.colors.errorBackground || 'rgba(239, 68, 68, 0.1)',
-    },
-    statusContent: {
-      flexDirection: common.rowDirection,
-      alignItems: 'center',
-    },
-    statusIcon: {
-      ...common.marginEnd(spacing.md),
-    },
-    statusText: {
-      fontSize: fontSizes.base,
-      fontWeight: '600',
-      flex: 1,
-      textAlign: common.textAlign,
-    },
-    statusTextPassed: {
-      color: theme.colors.success,
-    },
-    statusTextFailed: {
-      color: theme.colors.error,
-    },
-    reviewSection: {
-      marginBottom: spacing.xl,
-    },
-    reviewTitle: {
-      fontSize: fontSizes.xl,
-      fontWeight: 'bold',
+    celebrationIcon: {
+      width: 100,
+      height: 100,
       marginBottom: spacing.lg,
+    },
+    celebrationTitle: {
+      ...typography('h2'),
+      ...fontWeight('bold'),
       color: theme.colors.text,
-      textAlign: common.textAlign,
+      marginBottom: spacing.xs,
+      textAlign: 'center',
     },
-    questionCard: {
-      padding: spacing.xl,
-      borderRadius: borderRadius.lg,
-      marginBottom: spacing.md,
+    celebrationSubtitle: {
+      ...typography('body'),
+      color: theme.colors.textSecondary,
+      textAlign: 'center',
+    },
+    progressCardContainer: {
       backgroundColor: theme.colors.card,
-      ...layout.shadow,
+      borderRadius: borderRadius.xl,
+      padding: spacing.lg,
+      marginBottom: spacing.xl,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 3,
+      elevation: 2,
     },
-    questionHeader: {
+    progressCardHeader: {
       flexDirection: common.rowDirection,
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: spacing.md,
-    },
-    questionNumber: {
-      fontSize: fontSizes.sm,
-      fontWeight: 'bold',
-      color: theme.colors.primary,
-    },
-    badgeError: {
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      borderRadius: 4,
-      backgroundColor: theme.colors.errorBackground,
-    },
-    badgeErrorText: {
-      fontSize: 10,
-      fontWeight: 'bold',
-      color: theme.colors.error,
-    },
-    questionText: {
-      fontSize: fontSizes.base,
       marginBottom: spacing.lg,
-      lineHeight: 24,
-      color: theme.colors.text,
     },
-    answerBoxWrong: {
-      padding: spacing.md,
-      borderRadius: borderRadius.md,
-      backgroundColor: theme.colors.errorBackground,
-      marginBottom: spacing.md,
-      borderWidth: 1,
-      borderColor: theme.colors.error,
-    },
-    answerBoxCorrect: {
-      padding: spacing.md,
-      borderRadius: borderRadius.md,
-      backgroundColor: theme.colors.successBackground,
-      marginBottom: spacing.md,
-      borderWidth: 1,
-      borderColor: theme.colors.success,
-    },
-    answerLabel: {
-      fontSize: fontSizes.xs,
-      fontWeight: 'bold',
-      marginBottom: 4,
-      color: theme.colors.textSecondary,
-    },
-    answerText: {
-      fontSize: fontSizes.base,
-      fontWeight: '600',
-      color: theme.colors.text,
-    },
-    explanationBox: {
-      marginTop: spacing.md,
-      padding: spacing.md,
-      backgroundColor: theme.colors.background,
-      borderRadius: borderRadius.md,
-    },
-    explanationLabel: {
-      fontSize: fontSizes.xs,
-      fontWeight: 'bold',
-      marginBottom: 4,
-      color: theme.colors.primary,
-    },
-    explanationText: {
-      fontSize: fontSizes.sm,
-      color: theme.colors.textSecondary,
-      lineHeight: 20,
-    },
-    perfectScoreCard: {
-      alignItems: 'center',
-      padding: spacing['2xl'],
-      backgroundColor: theme.colors.card,
-      borderRadius: borderRadius.lg,
-      ...layout.shadow,
-    },
-    perfectScoreTitle: {
-      fontSize: fontSizes.xl,
-      fontWeight: 'bold',
-      color: theme.colors.text,
-      marginBottom: spacing.sm,
-    },
-    perfectScoreText: {
-      fontSize: fontSizes.base,
-      color: theme.colors.textSecondary,
-      textAlign: 'center',
-    },
-    footer: {
-      padding: spacing.md,
-      // Ensure we always have at least some padding, plus safe area
-      paddingBottom: Math.max(spacing.md, insets.bottom + spacing.xs),
-      backgroundColor: theme.colors.background,
-      borderTopWidth: 1,
-      borderTopColor: theme.colors.border,
-      flexDirection: common.rowDirection,
-      gap: spacing.md,
-    },
-    retakeButton: {
+    progressCardLeft: {
+      alignItems: 'flex-start',
+      justifyContent: 'center',
       flex: 1,
-      paddingVertical: 12,
+    },
+    progressCardRight: {
+      alignItems: 'flex-end',
+      justifyContent: 'center',
+      flex: 1,
+    },
+    yourScoreLabel: {
+      ...typography('caption'),
+      ...fontWeight('bold'),
+      color: theme.colors.textSecondary,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+      marginBottom: 2,
+      textAlign: common.textAlign,
+    },
+    yourScoreValue: {
+      ...typography('h1'),
+      fontSize: 40,
+      lineHeight: 48,
+      paddingTop: 4,
+      ...fontWeight('bold'),
+      textAlign: common.textAlign,
+    },
+    passStatusBadge: {
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
       borderRadius: borderRadius.md,
+      marginBottom: spacing.xs,
+    },
+    passStatusBadgeText: {
+      ...typography('caption'),
+      ...fontWeight('600'),
+    },
+    passStatusValue: {
+      ...typography('subtitle1'),
+      ...fontWeight('bold'),
+      color: theme.colors.text,
+      textAlign: common.textAlign,
+    },
+    progressBarBackground: {
+      height: 12,
+      backgroundColor: theme.colors.border,
+      borderRadius: 6,
+      overflow: 'hidden',
+      flexDirection: common.rowDirection,
+    },
+    progressBarFill: {
+      height: '100%',
+      borderRadius: 6,
+    },
+    statsGrid: {
+      flexDirection: common.rowDirection,
+      flexWrap: 'wrap',
+      gap: spacing.md,
+      marginBottom: spacing.xl,
+    },
+    statCard: {
+      flex: 1,
+      minWidth: '45%',
       backgroundColor: theme.colors.card,
+      borderRadius: borderRadius.xl,
+      padding: spacing.md,
       borderWidth: 1,
       borderColor: theme.colors.border,
-      alignItems: 'center',
     },
-    retakeButtonText: {
-      fontSize: fontSizes.sm,
-      fontWeight: '600',
-      color: theme.colors.text,
+    statCardFullWidth: {
+      minWidth: '100%',
     },
-    doneButton: {
-      flex: 1,
-      paddingVertical: 12,
-      borderRadius: borderRadius.md,
-      backgroundColor: theme.colors.primary,
-      alignItems: 'center',
-    },
-    doneButtonText: {
-      fontSize: fontSizes.sm,
-      fontWeight: '600',
-      color: '#FFFFFF',
-    },
-    // Custom Header
-    header: {
+    statHeader: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      paddingHorizontal: layout.screenPadding,
-      paddingBottom: spacing.md,
-      backgroundColor: theme.colors.headerBackground,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border, // subtle separator for sleekness
+      marginBottom: spacing.sm,
+      gap: spacing.sm,
     },
-    headerTitle: {
-      fontSize: fontSizes.lg, // Smaller than 2xl
-      fontWeight: 'bold',
-      color: theme.colors.headerText,
+    statValueText: {
+      ...typography('h2'),
+      ...fontWeight('bold'),
+      color: theme.colors.text,
       textAlign: common.textAlign,
+    },
+    statLabelText: {
+      ...typography('caption'),
+      ...fontWeight('600'),
+      color: theme.colors.textSecondary,
+      marginLeft: common.isRTL ? 0 : 8,
+      marginRight: common.isRTL ? 8 : 0,
+      textAlign: common.textAlign,
+    },
+    actionsContainer: {
+      width: '100%',
+      gap: 12,
+      marginBottom: spacing.sectionGap,
     },
   });
 

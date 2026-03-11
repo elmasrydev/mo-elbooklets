@@ -1,20 +1,18 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
+import { useTypography } from '../hooks/useTypography';
 import { layout } from '../config/layout';
-import CircularProgress from './CircularProgress';
 import { getTimeAgo } from '../lib/dateUtils';
-import { getScoreColor } from '../lib/scoreUtils';
-
-import { getSubjectConfig } from '../utils/subjectTheme';
+import SubjectIcon from './SubjectIcon';
 
 interface ActivityCardProps {
   activity: {
     id: string;
+    name?: string;
     subject: { name: string };
     score: number;
     totalQuestions: number;
@@ -29,62 +27,82 @@ const RecentActivityCard: React.FC<ActivityCardProps> = ({ activity, onPress }) 
   const { language } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
+  const { typography, fontWeight } = useTypography();
 
+  const { isRTL } = useLanguage();
   const scorePercent = Math.round((activity.score / activity.totalQuestions) * 100);
-  const scoreColor = getScoreColor(scorePercent);
-  const subjectConfig = getSubjectConfig(activity.subject?.name, theme);
-  const currentStyles = styles(theme, common, fontSizes, spacing, borderRadius);
+  const s = styles(theme, common, fontSizes, spacing, borderRadius, typography, fontWeight, isRTL);
 
   return (
-    <TouchableOpacity
-      style={currentStyles.card}
-      onPress={onPress}
-      activeOpacity={onPress ? 0.7 : 1}
-    >
-      <View style={[currentStyles.iconContainer, { backgroundColor: subjectConfig.bg }]}>
-        <Ionicons name={subjectConfig.icon} size={24} color={subjectConfig.color} />
-      </View>
-      <View style={currentStyles.infoContainer}>
-        <Text style={currentStyles.subjectName}> {activity.subject.name} </Text>
-        <Text style={currentStyles.timeText}>
-          {' '}
-          {getTimeAgo(activity.completedAt, t, language)}{' '}
+    <TouchableOpacity style={s.card} onPress={onPress} activeOpacity={onPress ? 0.7 : 1}>
+      {/* Colored icon box */}
+      <SubjectIcon subjectName={activity.subject?.name} size={48} />
+
+      {/* Title + subtitle */}
+      <View style={s.info}>
+        <Text style={s.title} numberOfLines={1}>
+          {activity.name || activity.subject?.name || 'Quiz'}
+        </Text>
+        <Text style={s.subtitle}>
+          {activity.isPassed ? t('home_screen.completed') : t('common.completed')} •{' '}
+          {activity.subject?.name}
         </Text>
       </View>
-      <View style={currentStyles.rightContainer}>
-        <CircularProgress size={50} strokeWidth={5} percentage={scorePercent} color={scoreColor} />
-      </View>
+
+      {/* Time ago */}
+      <Text style={s.time}>{getTimeAgo(activity.completedAt, t, language)}</Text>
     </TouchableOpacity>
   );
 };
 
-const styles = (theme: any, common: any, fontSizes: any, spacing: any, borderRadius: any) =>
+const styles = (
+  theme: any,
+  common: any,
+  fontSizes: any,
+  spacing: any,
+  borderRadius: any,
+  typography: any,
+  fontWeight: any,
+  isRTL: boolean,
+) =>
   StyleSheet.create({
     card: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      backgroundColor: theme.colors.card,
-      padding: spacing.lg,
-      borderRadius: layout.borderRadius.xl,
-      marginBottom: spacing.md,
+      backgroundColor: theme.colors.surface,
+      padding: spacing.md,
+      paddingHorizontal: spacing.md,
+      borderRadius: borderRadius.xl,
+      marginBottom: spacing.sm,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
       ...layout.shadow,
+      gap: spacing.md,
     },
-    iconContainer: {
-      width: 48,
-      height: 48,
-      borderRadius: 14,
-      justifyContent: 'center',
-      alignItems: 'center',
+    info: {
+      flex: 1,
+      alignItems: common.alignStart,
     },
-    infoContainer: { flex: 1, ...common.marginStart(12), alignItems: common.alignStart },
-    subjectName: { fontSize: fontSizes.base, fontWeight: 'bold', color: theme.colors.text },
-    timeText: {
-      fontSize: fontSizes.xs,
+    title: {
+      ...typography('bodySmall'),
+      ...fontWeight('bold'),
+      color: theme.colors.text,
+      textAlign: 'left',
+    },
+    subtitle: {
+      ...typography('caption'),
+      fontSize: 11,
       color: theme.colors.textSecondary,
-      marginTop: 4,
-      fontWeight: '500',
+      marginTop: 2,
+      textAlign: 'left',
     },
-    rightContainer: { ...common.marginStart(12), alignItems: 'center', justifyContent: 'center' },
+    time: {
+      ...typography('caption'),
+      fontSize: 11,
+      color: theme.colors.textTertiary,
+      ...fontWeight('500'),
+      whiteSpace: 'nowrap',
+    },
   });
 
-export default RecentActivityCard;
+export default React.memo(RecentActivityCard);

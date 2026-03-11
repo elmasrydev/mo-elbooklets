@@ -6,6 +6,7 @@ export interface User {
   name: string;
   email: string;
   mobile: string;
+  country_code: string;
   grade_id?: string;
   grade?: Grade;
 }
@@ -203,6 +204,7 @@ export const REGISTER_MUTATION = gql`
         name
         email
         mobile
+        country_code
         grade_id
         grade {
           id
@@ -223,6 +225,7 @@ export const LOGIN_MUTATION = gql`
         name
         email
         mobile
+        country_code
         grade_id
         grade {
           id
