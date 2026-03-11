@@ -649,14 +649,18 @@ const QuizReviewScreen: React.FC = () => {
                     let letterCircleStyle = currentStyles.optionLetterCircleDefault;
                     let letterTextStyle = currentStyles.optionLetterDefault;
 
+                    let textStyle: any = null;
+
                     if (isAnswerCorrect) {
                       optStyle = currentStyles.optionCorrect;
                       letterCircleStyle = currentStyles.optionLetterCircleCorrect;
                       letterTextStyle = currentStyles.optionLetterCorrect;
+                      textStyle = currentStyles.optionTextCorrect;
                     } else if (isSelected && !ua.is_correct) {
                       optStyle = currentStyles.optionIncorrect;
                       letterCircleStyle = currentStyles.optionLetterCircleIncorrect;
                       letterTextStyle = currentStyles.optionLetterIncorrect;
+                      textStyle = currentStyles.optionTextIncorrect;
                     }
 
                     return (
@@ -666,7 +670,7 @@ const QuizReviewScreen: React.FC = () => {
                             {String.fromCharCode(65 + optIndex)}
                           </Text>
                         </View>
-                        <Text style={currentStyles.optionText}>
+                        <Text style={[currentStyles.optionText, textStyle]}>
                           {' '}
                           {opt.toLowerCase() === 'true'
                             ? t('common.true')
@@ -907,6 +911,12 @@ const styles = (
       color: theme.colors.text,
       textAlign: common.textAlign,
       marginStart: 4,
+    },
+    optionTextCorrect: {
+      color: '#065F46', // Dark green that pairs well with #F0FDF4
+    },
+    optionTextIncorrect: {
+      color: '#991B1B', // Dark red that pairs well with #FEF2F2
     },
     dotIconContainer: {
       width: 28,

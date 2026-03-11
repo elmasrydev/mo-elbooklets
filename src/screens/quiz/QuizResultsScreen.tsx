@@ -432,7 +432,10 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
         ) : null}
 
         {breadcrumbs && breadcrumbs.length > 0 && (
-          <View style={currentStyles.breadcrumbsContainer}>
+          <View style={currentStyles.breadcrumbsCard}>
+            <Text style={currentStyles.breadcrumbsCardTitle}>
+              {t('quiz_results.covered_topics', 'Covered Topics')}
+            </Text>
             {breadcrumbs.map((crumb, index) => (
               <View key={index} style={currentStyles.unitBreadcrumb}>
                 <View style={currentStyles.unitBreadcrumbHeader}>
@@ -520,8 +523,27 @@ const styles = (
       color: theme.colors.text,
       textAlign: common.textAlign,
     },
-    breadcrumbsContainer: {
-      marginBottom: spacing.lg,
+    breadcrumbsCard: {
+      backgroundColor: theme.colors.card,
+      borderRadius: borderRadius.xl || 16,
+      padding: spacing.lg,
+      marginBottom: spacing.xl,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 3,
+      elevation: 2,
+    },
+    breadcrumbsCardTitle: {
+      ...typography('caption'),
+      ...fontWeight('bold'),
+      color: theme.colors.textSecondary,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+      marginBottom: spacing.md,
+      textAlign: common.textAlign,
     },
     unitBreadcrumb: {
       marginBottom: spacing.sm,
@@ -537,8 +559,7 @@ const styles = (
       height: 8,
       borderRadius: 4,
       backgroundColor: theme.colors.primary,
-      marginLeft: spacing.sm,
-      marginRight: spacing.sm,
+      marginEnd: spacing.sm,
     },
     unitBreadcrumbName: {
       ...typography('subtitle2'),
@@ -548,8 +569,7 @@ const styles = (
       textAlign: common.textAlign,
     },
     lessonBreadcrumbsList: {
-      paddingLeft: spacing.md,
-      paddingRight: spacing.md,
+      paddingStart: 20,
       paddingVertical: spacing.xs,
     },
     lessonBreadcrumbItem: {
@@ -563,8 +583,7 @@ const styles = (
       height: 6,
       borderRadius: 3,
       backgroundColor: theme.colors.textTertiary || '#9CA3AF',
-      marginLeft: spacing.sm,
-      marginRight: spacing.sm,
+      marginEnd: spacing.sm,
     },
     lessonBreadcrumbName: {
       ...typography('caption'),
