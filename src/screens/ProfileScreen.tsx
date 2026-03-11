@@ -20,8 +20,9 @@ import { layout } from '../config/layout';
 import UnifiedHeader from '../components/UnifiedHeader';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-// #TODO: set the correct version
-const APP_VERSION = 'EL-Booklets v1.0.0';
+import DeviceInfo from 'react-native-device-info';
+
+const APP_VERSION = `EL-Booklets v${DeviceInfo.getVersion()}`;
 
 const ProfileScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -107,6 +108,11 @@ const ProfileScreen: React.FC = () => {
               {user?.grade?.name || t('profile_screen.not_specified')}{' '}
               {user?.educational_system?.name ? `• ${user.educational_system.name}` : ''}
             </Text>
+            {user?.mobile ? (
+              <Text style={[currentStyles.userSubtitle, { marginTop: 4, fontWeight: 'normal', opacity: 0.8 }]}>
+                {user?.country_code ? `${user.country_code} ` : ''}{user.mobile}
+              </Text>
+            ) : null}
           </View>
         </View>
 
