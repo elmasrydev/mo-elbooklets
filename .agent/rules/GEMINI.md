@@ -41,8 +41,10 @@ trigger: always_on
 
 ### 🌐 i18n & RTL Logic
 
-- **Dual Support**: Every text change MUST include both `ar` and `en` translations.
+- **MANDATORY**: Every UI change or new text MUST be translated into both **Arabic (`ar`)** and **English (`en`)**.
+- **Location**: Update [ar.json](file:///Users/ebrahim3bmo3ty/Documents/ReactNative/mo-elbooklets/src/i18n/locales/ar.json) and [en.json](file:///Users/ebrahim3bmo3ty/Documents/ReactNative/mo-elbooklets/src/i18n/locales/en.json) immediately.
 - **Automatic Extraction**: Whenever static text is added or modified in components natively, you MUST extract and add it automatically to `src/i18n/locales/ar.json` and `src/i18n/locales/en.json` during the same command/task.
+- **Usage Protocol**: Always use the translation keys in the UI (e.g., via `t('key')`). NEVER hardcode strings in components.
 - **Native Alignment**: Use `textAlign: 'left'` and `flexDirection: 'row'`. Native RTL flips these automatically.
 
 ### 🏗️ Architecture & UI
@@ -94,4 +96,4 @@ Trigger on "final checks" or "checklist". A task is NOT finished until `checklis
 
 ## 🔊 PREFERENCES
 
-- **Completion Sound**: Always run `bash .agent/scripts/play_completion_sound.sh` before `notify_user`.
+- **Completion Sound**: Always run `bash .agent/scripts/play_completion_sound.sh` before `notify_user`..
