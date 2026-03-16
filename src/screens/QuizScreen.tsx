@@ -4,12 +4,10 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  ActivityIndicator,
   TouchableOpacity,
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
@@ -21,9 +19,9 @@ import { tryFetchWithFallback } from '../config/api';
 import { useTranslation } from 'react-i18next';
 import RecentActivityCard from '../components/RecentActivityCard';
 import UnifiedHeader from '../components/UnifiedHeader';
-import AppButton from '../components/AppButton';
 import { GenericListSkeleton } from '../components/SkeletonLoader';
 import RetryView from '../components/RetryView';
+import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
 
 interface QuizHistory {
   id: string;
@@ -80,6 +78,7 @@ const QuizScreen: React.FC = () => {
       if (result.data?.userQuizHistory) setQuizHistory(result.data.userQuizHistory);
       else setHistoryError(t('quiz_screen.error_loading_history'));
     } catch (err: any) {
+      // Error is handled by ListEmptyComponent showing RetryView
       setHistoryError(t('quiz_screen.error_loading_history'));
     } finally {
       setHistoryLoading(false);
@@ -210,6 +209,7 @@ const QuizScreen: React.FC = () => {
         onRefresh={onRefresh}
         refreshing={refreshing}
       />
+      <ProfileCompletionPrompt context="quiz" />
     </View>
   );
 };

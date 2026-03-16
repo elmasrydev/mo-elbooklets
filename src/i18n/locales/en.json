@@ -426,7 +426,8 @@
     "invalid_email": "Please enter a valid email address",
     "parent_mobile_required": "Parent mobile number is required",
     "invalid_mobile_format": "The mobile number must be 11 digits starting with 010, 011, 012 or 015.",
-    "name_too_short": "Name is too short (min 3 characters)"
+    "name_too_short": "Name is too short (min 3 characters)",
+    "mobile_taken": "This mobile number is already registered"
   },
   "time": {
     "just_now": "Just now",

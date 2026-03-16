@@ -4,19 +4,16 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  RefreshControl,
   TextInput,
   TouchableOpacity,
-  ActivityIndicator,
   Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { useFocusEffect } from '@react-navigation/native';
+import { useFollowToggle } from '../hooks/useFollowToggle';
 import { useTheme } from '../context/ThemeContext';
-import { useLanguage } from '../context/LanguageContext';
 import { useModal } from '../context/ModalContext';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
@@ -28,6 +25,7 @@ import { QuizCompletionCard, ConnectionCard, RankChangeCard } from '../component
 import AppButton from '../components/AppButton';
 import { CardListSkeleton, GenericListSkeleton } from '../components/SkeletonLoader';
 import RetryView from '../components/RetryView';
+import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
 
 interface Student {
   id: string;
@@ -78,8 +76,7 @@ interface NewsFeedItem {
 }
 
 const SocialScreen: React.FC = () => {
-  const { theme, fontSizes, spacing, borderRadius } = useTheme();
-  const { isRTL } = useLanguage();
+  const { theme, spacing } = useTheme();
   const { t } = useTranslation();
   const { showConfirm } = useModal();
   const common = useCommonStyles();
@@ -190,32 +187,17 @@ const SocialScreen: React.FC = () => {
     }
   };
 
+  const { toggleFollow } = useFollowToggle();
+
   const handleFollowToggle = async (student: Student) => {
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
-
-      const result = await tryFetchWithFallback(
-        `
-        mutation FollowUser($userId: ID!) {
-          followUser(userId: $userId) { success isFollowing message }
-        }
-      `,
-        { userId: student.id },
-        token,
+    const result = await toggleFollow(student.id);
+    if (result?.success) {
+      setSearchResults((prev) =>
+        prev.map((s) =>
+          s.id === student.id ? { ...s, isFollowing: result.isFollowing } : s,
+        ),
       );
-
-      if (result.data?.followUser?.success) {
-        setSearchResults((prev) =>
-          prev.map((s) =>
-            s.id === student.id ? { ...s, isFollowing: result.data.followUser.isFollowing } : s,
-          ),
-        );
-        if (searchQuery.length === 0) fetchTimeline();
-      }
-    } catch (err: any) {
-      console.error('Follow toggle error:', err);
+      if (searchQuery.length === 0) fetchTimeline();
     }
   };
 
@@ -475,6 +457,7 @@ const SocialScreen: React.FC = () => {
           refreshing={refreshing}
         />
       )}
+      <ProfileCompletionPrompt context="community" />
     </View>
   );
 };

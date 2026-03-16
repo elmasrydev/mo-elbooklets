@@ -16,9 +16,12 @@ import { configureCrashlyticsUser } from '../utils/crashlyticsHelper';
 interface User {
   id: string;
   name: string;
-  email: string;
+  email?: string;
   mobile: string;
-  country_code: string;
+  country_code?: string;
+  gender?: string;
+  school_name?: string;
+  parent_mobile?: string;
   grade_id?: string;
   grade?: { id: string; name: string };
   educational_system_id?: string;
@@ -32,10 +35,10 @@ interface LoginInput {
 
 interface RegisterInput {
   name: string;
-  email: string;
+  email?: string;
   mobile: string;
-  country_code: string;
-  gender: string;
+  country_code?: string;
+  gender?: string;
   school_name?: string;
   parent_mobile?: string;
   parent_country_code?: string;
@@ -43,7 +46,7 @@ interface RegisterInput {
   parent_country_code_2?: string;
   password: string;
   grade_id: string;
-  educational_system_id: string;
+  educational_system_id?: string;
   promo_code?: string;
 }
 
@@ -54,6 +57,7 @@ interface AuthContextType {
   login: (input: LoginInput) => Promise<{ success: boolean; error?: string }>;
   register: (input: RegisterInput) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
   onAuthStateChange?: (isAuthenticated: boolean) => void;
 }
 
@@ -144,12 +148,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return { success: true };
         }
 
-        return { success: false, error: result.errors?.[0]?.message || 'Login failed' };
+        let errorMessage = result.errors?.[0]?.message || 'Login failed';
+        if (errorMessage === 'These credentials do not match our records.') {
+          errorMessage = 'auth.invalid_credentials';
+        } else if (errorMessage === 'The mobile has already been taken.') {
+          errorMessage = 'auth.mobile_taken';
+        }
+
+        return { success: false, error: errorMessage };
       } catch (error: any) {
         console.error('Login error:', error);
+        let errorMessage = error.message || 'An error occurred during login';
+        if (errorMessage === 'These credentials do not match our records.') {
+          errorMessage = 'auth.invalid_credentials';
+        }
         return {
           success: false,
-          error: error.message || 'An error occurred during login',
+          error: errorMessage,
         };
       }
     },
@@ -196,12 +211,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return { success: true };
         }
 
-        return { success: false, error: result.errors?.[0]?.message || 'Registration failed' };
+        let errorMessage = result.errors?.[0]?.message || 'Registration failed';
+        if (errorMessage === 'These credentials do not match our records.') {
+          errorMessage = 'auth.invalid_credentials';
+        } else if (errorMessage === 'The mobile has already been taken.') {
+          errorMessage = 'auth.mobile_taken';
+        }
+
+        return { success: false, error: errorMessage };
       } catch (error: any) {
         console.error('Registration error:', error);
+        let errorMessage = error.message || 'An error occurred during registration';
+        if (errorMessage === 'These credentials do not match our records.') {
+          errorMessage = 'auth.invalid_credentials';
+        }
         return {
           success: false,
-          error: error.message || 'An error occurred during registration',
+          error: errorMessage,
         };
       }
     },
@@ -219,6 +245,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const token = await SecureStore.getItemAsync('auth_token');
+      if (!token) return;
+
+      const result = await tryFetchWithFallback(
+        `query Me { 
+          me { 
+            id name email mobile country_code gender school_id 
+            grade_id grade { id name } educational_system_id educational_system { id name } 
+          } 
+        }`,
+        undefined,
+        token
+      );
+
+      if (result.data?.me) {
+        await AsyncStorage.setItem('user_data', JSON.stringify(result.data.me));
+        setUser(result.data.me);
+        configureCrashlyticsUser(result.data.me);
+      }
+    } catch (error) {
+      console.error('Refresh user error:', error);
+    }
+  }, []);
+
   const value: AuthContextType = React.useMemo(
     () => ({
       user,
@@ -227,8 +279,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       login,
       register,
       logout,
+      refreshUser,
     }),
-    [user, isLoading, login, register, logout],
+    [user, isLoading, login, register, logout, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -21,6 +21,7 @@ import UnifiedHeader from '../components/UnifiedHeader';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import DeviceInfo from 'react-native-device-info';
+import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
 
 const APP_VERSION = `EL-Booklets v${DeviceInfo.getVersion()}`;
 
@@ -33,6 +34,8 @@ const ProfileScreen: React.FC = () => {
   const { isRTL, setLanguage, language } = useLanguage();
   const { typography, fontWeight } = useTypography();
   const { t } = useTranslation();
+
+  const [showParentalPrompt, setShowParentalPrompt] = useState(false);
 
   const handleLogout = () => {
     showConfirm({
@@ -212,6 +215,27 @@ const ProfileScreen: React.FC = () => {
             />
           </TouchableOpacity>
 
+          {/* Parental Linking */}
+          <TouchableOpacity 
+            style={currentStyles.settingItem} 
+            onPress={() => setShowParentalPrompt(true)}
+          >
+            <View style={[currentStyles.settingIconBox, { backgroundColor: theme.colors.primary + '20' }]}>
+              <Ionicons name="people-outline" size={22} color={theme.colors.primary} />
+            </View>
+            <View style={currentStyles.settingContent}>
+              <Text style={currentStyles.settingTitle}>{t('profile_screen.parental_linking', 'Parental Linking')}</Text>
+              <Text style={currentStyles.settingSubtitle}>
+                {user?.parent_mobile ? user.parent_mobile : t('profile_screen.parental_linking_desc', 'Connect with your parents')}
+              </Text>
+            </View>
+            <Ionicons
+              name={isRTL ? 'chevron-back' : 'chevron-forward'}
+              size={20}
+              color={theme.colors.textTertiary}
+            />
+          </TouchableOpacity>
+
           {/* Badges - Hidden */}
           {/*
           <TouchableOpacity style={currentStyles.settingItem}>
@@ -291,6 +315,13 @@ const ProfileScreen: React.FC = () => {
         {/* Version Info */}
         <Text style={currentStyles.versionText}>{APP_VERSION}</Text>
       </ScrollView>
+
+      <ProfileCompletionPrompt context="more" />
+      <ProfileCompletionPrompt 
+        context="parental" 
+        isVisible={showParentalPrompt} 
+        onClose={() => setShowParentalPrompt(false)} 
+      />
     </View>
   );
 };

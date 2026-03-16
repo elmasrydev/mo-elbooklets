@@ -1,15 +1,12 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  ActivityIndicator,
   RefreshControl,
-  Image,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,10 +19,10 @@ import { useTranslation } from 'react-i18next';
 import { layout } from '../config/layout';
 import { tryFetchWithFallback } from '../config/api';
 import UnifiedHeader from '../components/UnifiedHeader';
-import AppButton from '../components/AppButton';
 import SubjectIcon from '../components/SubjectIcon';
 import { GenericListSkeleton } from '../components/SkeletonLoader';
 import RetryView from '../components/RetryView';
+import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
 
 interface Subject {
   id: string;
@@ -125,85 +122,94 @@ const StudyScreen: React.FC = () => {
     [theme, fontSizes, spacing, borderRadius, common, isRTL, typography, fontWeight],
   );
 
+  let content;
+  if (loading && subjectsToRender.length === 0 && !USE_DUMMY_DATA) {
+    content = (
+      <View style={{ paddingTop: 16, paddingHorizontal: layout.screenPadding }}>
+        <GenericListSkeleton numItems={6} />
+      </View>
+    );
+  } else if (error && !USE_DUMMY_DATA) {
+    content = (
+      <RetryView 
+        message={error || t('study_screen.error_loading_subjects')} 
+        onRetry={() => fetchSubjects()} 
+      />
+    );
+  } else if (subjectsToRender.length === 0) {
+    content = (
+      <View style={currentStyles.emptyState}>
+        <Ionicons name="book-outline" size={spacing.icon.xl} color={theme.colors.textSecondary} />
+        <Text style={currentStyles.emptyStateTitle}>
+          {t('study_screen.no_subjects_available')}
+        </Text>
+        <Text style={currentStyles.emptyStateSubtitle}>
+          {t('study_screen.no_subjects_for_grade')}
+        </Text>
+      </View>
+    );
+  } else {
+    content = (
+      <ScrollView
+        style={currentStyles.content}
+        contentContainerStyle={[
+          currentStyles.scrollContentContainer,
+          { paddingBottom: Math.max(common.insets.bottom, spacing.xl) },
+        ]}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[theme.colors.primary]}
+            tintColor={theme.colors.primary}
+          />
+        }
+      >
+        <View style={currentStyles.pageHeader}>
+          <Text style={currentStyles.pageTitle}>{t('study_screen.page_title')}</Text>
+          <Text style={currentStyles.pageSubtitle}>{t('study_screen.page_subtitle')}</Text>
+        </View>
+
+        {subjectsToRender.map((subject) => {
+          return (
+            <TouchableOpacity
+              key={subject.id}
+              style={currentStyles.subjectCard}
+              onPress={() => handleSubjectSelect(subject)}
+            >
+              <SubjectIcon
+                subjectName={subject.name}
+                size={56}
+                style={currentStyles.iconBoxOverride}
+              />
+
+              <View style={currentStyles.subjectInfo}>
+                <Text style={currentStyles.subjectName}>{subject.name}</Text>
+                <Text style={currentStyles.subjectChapters}>
+                  {subject.chapters?.length || 0} {t('study_screen.available_booklets')}
+                  {subject.description ? ` • ${subject.description}` : ''}
+                </Text>
+              </View>
+
+              <Ionicons
+                name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                size={20}
+                color={theme.colors.textTertiary}
+                style={currentStyles.chevronIcon}
+              />
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+    );
+  }
+
   return (
     <View style={currentStyles.container}>
       <UnifiedHeader title={t('study_screen.header_title')} />
-
-      {loading && subjectsToRender.length === 0 && !USE_DUMMY_DATA ? (
-        <View style={{ paddingTop: 16, paddingHorizontal: layout.screenPadding }}>
-          <GenericListSkeleton numItems={6} />
-        </View>
-      ) : error && !USE_DUMMY_DATA ? (
-        <RetryView 
-          message={error || t('study_screen.error_loading_subjects')} 
-          onRetry={() => fetchSubjects()} 
-        />
-      ) : subjectsToRender.length === 0 ? (
-        <View style={currentStyles.emptyState}>
-          <Ionicons name="book-outline" size={spacing.icon.xl} color={theme.colors.textSecondary} />
-          <Text style={currentStyles.emptyStateTitle}>
-            {t('study_screen.no_subjects_available')}
-          </Text>
-          <Text style={currentStyles.emptyStateSubtitle}>
-            {t('study_screen.no_subjects_for_grade')}
-          </Text>
-        </View>
-      ) : (
-        <ScrollView
-          style={currentStyles.content}
-          contentContainerStyle={[
-            currentStyles.scrollContentContainer,
-            { paddingBottom: Math.max(common.insets.bottom, spacing.xl) },
-          ]}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={[theme.colors.primary]}
-              tintColor={theme.colors.primary}
-            />
-          }
-        >
-          <View style={currentStyles.pageHeader}>
-            <Text style={currentStyles.pageTitle}>{t('study_screen.page_title')}</Text>
-            <Text style={currentStyles.pageSubtitle}>{t('study_screen.page_subtitle')}</Text>
-          </View>
-
-          {subjectsToRender.map((subject) => {
-            const config = getSubjectConfig(subject.name, theme);
-            return (
-              <TouchableOpacity
-                key={subject.id}
-                style={currentStyles.subjectCard}
-                onPress={() => handleSubjectSelect(subject)}
-              >
-                <SubjectIcon
-                  subjectName={subject.name}
-                  size={56}
-                  style={currentStyles.iconBoxOverride}
-                />
-
-                <View style={currentStyles.subjectInfo}>
-                  <Text style={currentStyles.subjectName}>{subject.name}</Text>
-                  <Text style={currentStyles.subjectChapters}>
-                    {subject.chapters?.length || 0} {t('study_screen.available_booklets')}
-                    {subject.description ? ` • ${subject.description}` : ''}
-                  </Text>
-                </View>
-
-                {/* Right Chevron Icon */}
-                <Ionicons
-                  name={isRTL ? 'chevron-back' : 'chevron-forward'}
-                  size={20}
-                  color={theme.colors.textTertiary}
-                  style={currentStyles.chevronIcon}
-                />
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      )}
+      {content}
+      <ProfileCompletionPrompt context="study" />
     </View>
   );
 };

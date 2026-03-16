@@ -31,6 +31,7 @@ import QuizCompletionCard from '../components/feed/QuizCompletionCard';
 import RankChangeCard from '../components/feed/RankChangeCard';
 import ConnectionCard from '../components/feed/ConnectionCard';
 import { CardListSkeleton } from '../components/SkeletonLoader';
+import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
 
 const { width } = Dimensions.get('window');
 
@@ -58,6 +59,7 @@ interface ActivitiesData {
   avg_score: number;
   performance_status: string;
   performance_trend: string;
+  streak: number;
   activities: any[];
   weekly_performance: WeeklyPerformance[];
 }
@@ -213,7 +215,7 @@ const HomeScreen: React.FC = () => {
           tryFetchWithFallback(
             `query HomeData {
               activities {
-                total_quizzes avg_score performance_status performance_trend
+                total_quizzes avg_score performance_status performance_trend streak
                 activities { id name subject { id name } score totalQuestions completedAt isPassed }
                 weekly_performance { week score }
               }
@@ -357,6 +359,24 @@ const HomeScreen: React.FC = () => {
             />
           </View>
         </View>
+        
+        {/* ─── 2b. Streak Card ───────────────────────────────────── */}
+        {activitiesData && activitiesData.streak > 0 && (
+          <TouchableOpacity 
+            style={s.streakCard}
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate('Leaderboard')}
+          >
+            <View style={s.streakIconContainer}>
+              <Text style={s.streakEmoji}>🔥</Text>
+            </View>
+            <View style={s.streakContent}>
+              <Text style={s.streakCount}>{activitiesData.streak} {t('home_screen.days', 'Days')}</Text>
+              <Text style={s.streakLabel}>{t('home_screen.current_streak', 'Current Streak')}</Text>
+            </View>
+            <Ionicons name={isRTL ? "chevron-back" : "chevron-forward"} size={20} color={theme.colors.textTertiary} />
+          </TouchableOpacity>
+        )}
 
         {/* ─── 3. Stats Row ──────────────────────────────────────── */}
         <View style={s.statsRow}>
@@ -686,6 +706,7 @@ const HomeScreen: React.FC = () => {
           </View>
         )}
       </ScrollView>
+      <ProfileCompletionPrompt context="study" />
     </View>
   );
 };
@@ -831,6 +852,45 @@ const getStyles = (
       textTransform: 'uppercase',
       letterSpacing: 0.5,
       ...fontWeight('bold'),
+      textAlign: 'left',
+    },
+
+    // Streak Card
+    streakCard: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      backgroundColor: theme.colors.surface,
+      borderRadius: borderRadius.xl,
+      padding: spacing.md,
+      marginBottom: spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      ...layout.shadow,
+    },
+    streakIconContainer: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: (theme.colors.orange || '#F59E0B') + '1A',
+      justifyContent: 'center',
+      alignItems: 'center',
+      ...common.marginEnd(spacing.md),
+    },
+    streakEmoji: {
+      fontSize: 24,
+    },
+    streakContent: {
+      flex: 1,
+    },
+    streakCount: {
+      ...typography('h2'),
+      ...fontWeight('bold'),
+      color: theme.colors.text,
+      textAlign: 'left',
+    },
+    streakLabel: {
+      ...typography('caption'),
+      color: theme.colors.textSecondary,
       textAlign: 'left',
     },
 
