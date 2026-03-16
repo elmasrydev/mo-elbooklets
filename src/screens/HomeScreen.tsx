@@ -69,6 +69,8 @@ interface Subject {
   name: string;
   description?: string;
   chapters: { id: string }[];
+  study_progress: number;
+  quiz_progress: number;
 }
 
 interface LeaderboardEntry {
@@ -248,7 +250,10 @@ const HomeScreen: React.FC = () => {
           ),
           tryFetchWithFallback(
             `query SubjectsForUserGrade {
-              subjectsForUserGrade { id name description chapters { id } }
+              subjectsForUserGrade { 
+                id name description study_progress quiz_progress 
+                chapters { id } 
+              }
             }`,
             undefined,
             token,
@@ -341,7 +346,18 @@ const HomeScreen: React.FC = () => {
   if (loading && !activitiesData) {
     return (
       <View style={common.container}>
-        <UnifiedHeader leftContent={<AnimatedNavbarLogo isRTL={isRTL} />} />
+        <UnifiedHeader 
+          leftContent={<AnimatedNavbarLogo isRTL={isRTL} />} 
+          rightContent={
+            <TouchableOpacity 
+              style={s.headerStreak}
+              onPress={() => navigation.navigate('Leaderboard')}
+            >
+              <Ionicons name="flame" size={20} color={theme.colors.orange || '#F59E0B'} />
+              <Text style={s.headerStreakText}>0</Text>
+            </TouchableOpacity>
+          }
+        />
         <View style={{ flex: 1, paddingTop: 16 }}>
           <CardListSkeleton numItems={4} />
         </View>
@@ -351,7 +367,18 @@ const HomeScreen: React.FC = () => {
 
   return (
     <View style={common.container}>
-      <UnifiedHeader leftContent={<AnimatedNavbarLogo isRTL={isRTL} />} />
+      <UnifiedHeader 
+        leftContent={<AnimatedNavbarLogo isRTL={isRTL} />} 
+        rightContent={
+          <TouchableOpacity 
+            style={s.headerStreak}
+            onPress={() => navigation.navigate('Leaderboard')}
+          >
+            <Ionicons name="flame" size={20} color={theme.colors.orange || '#F59E0B'} />
+            <Text style={s.headerStreakText}>{activitiesData?.streak || 0}</Text>
+          </TouchableOpacity>
+        }
+      />
 
       <ScrollView
         style={s.scrollFlex}
@@ -442,7 +469,7 @@ const HomeScreen: React.FC = () => {
         </View>
         
         {/* ─── 2b. Streak Card ───────────────────────────────────── */}
-        {activitiesData && activitiesData.streak > 0 && (
+        {activitiesData && (
           <TouchableOpacity 
             style={s.streakCard}
             activeOpacity={0.8}
@@ -567,16 +594,38 @@ const HomeScreen: React.FC = () => {
                       <Text style={s.subjectChapterCount}>{chaptersCount}</Text>
                     </View>
                     <Text style={s.subjectName}>{subject.name}</Text>
-                    <View style={s.subjectProgressBar}>
-                      <View
-                        style={[
-                          s.subjectProgressFill,
-                          {
-                            width: `${Math.min(100, chaptersCount * 15)}%`,
-                            backgroundColor: config.color,
-                          },
-                        ]}
-                      />
+                    <View style={s.subjectProgressContainer}>
+                      <View style={[s.subjectProgressRow, { flexDirection: common.rowDirection }]}>
+                        <Text style={[s.subjectProgressLabel, { textAlign: common.textAlign }]}>{t('study_calendar.lessons', 'Study')}</Text>
+                        <View style={s.subjectProgressBar}>
+                          <View
+                            style={[
+                              s.subjectProgressFill,
+                              {
+                                width: `${Math.min(100, subject.study_progress || 0)}%`,
+                                backgroundColor: theme.colors.primary,
+                              },
+                            ]}
+                          />
+                        </View>
+                        <Text style={[s.subjectProgressPercent, { textAlign: common.isRTL ? 'left' : 'right' }]}>{Math.round(subject.study_progress || 0)}%</Text>
+                      </View>
+
+                      <View style={[s.subjectProgressRow, { flexDirection: common.rowDirection }]}>
+                        <Text style={[s.subjectProgressLabel, { textAlign: common.textAlign }]}>{t('common.quiz', 'Quiz')}</Text>
+                        <View style={s.subjectProgressBar}>
+                          <View
+                            style={[
+                              s.subjectProgressFill,
+                              {
+                                width: `${Math.min(100, subject.quiz_progress || 0)}%`,
+                                backgroundColor: theme.colors.orange || '#F59E0B',
+                              },
+                            ]}
+                          />
+                        </View>
+                        <Text style={[s.subjectProgressPercent, { textAlign: common.isRTL ? 'left' : 'right' }]}>{Math.round(subject.quiz_progress || 0)}%</Text>
+                      </View>
                     </View>
                     <TouchableOpacity
                       style={[
@@ -1143,6 +1192,7 @@ const getStyles = (
       borderWidth: 1,
       borderColor: theme.colors.border,
       ...layout.shadow,
+      overflow: 'hidden',
     },
     subjectCardHeader: {
       justifyContent: 'space-between',
@@ -1164,16 +1214,53 @@ const getStyles = (
       textAlign: common.textAlign,
     },
     subjectProgressBar: {
-      width: '100%',
-      height: 5,
+      flex: 1,
+      height: 4,
       backgroundColor: theme.colors.border,
-      borderRadius: 3,
-      marginBottom: spacing.md,
+      borderRadius: 2,
       overflow: 'hidden',
     },
     subjectProgressFill: {
       height: '100%',
-      borderRadius: 3,
+      borderRadius: 2,
+    },
+    headerStreak: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: (theme.colors.orange || '#F59E0B') + '1A',
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 20,
+      gap: 4,
+    },
+    headerStreakText: {
+      ...typography('bodySmall'),
+      ...fontWeight('bold'),
+      color: theme.colors.orange || '#F59E0B',
+    },
+    subjectProgressContainer: {
+      width: '100%',
+      gap: 8,
+      marginBottom: spacing.md,
+    },
+    subjectProgressRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    subjectProgressLabel: {
+      ...typography('tiny'),
+      fontSize: 8,
+      width: 30,
+      color: theme.colors.textSecondary,
+      textAlign: 'left',
+    },
+    subjectProgressPercent: {
+      ...typography('tiny'),
+      fontSize: 8,
+      width: 25,
+      color: theme.colors.textTertiary,
+      textAlign: 'right',
     },
     subjectButton: {
       width: '100%',

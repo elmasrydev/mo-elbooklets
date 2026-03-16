@@ -14,7 +14,6 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
-import { getSubjectConfig } from '../utils/subjectTheme';
 import { useTranslation } from 'react-i18next';
 import { layout } from '../config/layout';
 import { tryFetchWithFallback } from '../config/api';
@@ -29,16 +28,18 @@ interface Subject {
   name: string;
   description?: string;
   chapters: { id: string }[];
+  study_progress: number;
+  quiz_progress: number;
 }
 
 const USE_DUMMY_DATA = false; // Flag for testing UI without real API data
 const DUMMY_SUBJECTS: Subject[] = [
-  { id: '1', name: 'Arabic / عربي', description: 'Secondary 1', chapters: [] },
-  { id: '2', name: 'English', description: 'Secondary 1', chapters: [] },
-  { id: '3', name: 'Math / رياضيات', description: 'Secondary 1', chapters: [] },
-  { id: '4', name: 'Science / علوم', description: 'Secondary 1', chapters: [] },
-  { id: '5', name: 'History / تاريخ', description: 'Secondary 1', chapters: [] },
-  { id: '6', name: 'Geography / جغرافيا', description: 'Secondary 1', chapters: [] },
+  { id: '1', name: 'Arabic / عربي', description: 'Secondary 1', chapters: [], study_progress: 0, quiz_progress: 0 },
+  { id: '2', name: 'English', description: 'Secondary 1', chapters: [], study_progress: 0, quiz_progress: 0 },
+  { id: '3', name: 'Math / رياضيات', description: 'Secondary 1', chapters: [], study_progress: 0, quiz_progress: 0 },
+  { id: '4', name: 'Science / علوم', description: 'Secondary 1', chapters: [], study_progress: 0, quiz_progress: 0 },
+  { id: '5', name: 'History / تاريخ', description: 'Secondary 1', chapters: [], study_progress: 0, quiz_progress: 0 },
+  { id: '6', name: 'Geography / جغرافيا', description: 'Secondary 1', chapters: [], study_progress: 0, quiz_progress: 0 },
 ];
 
 const StudyScreen: React.FC = () => {
@@ -83,6 +84,8 @@ const StudyScreen: React.FC = () => {
             id
             name
             description
+            study_progress
+            quiz_progress
             chapters {
               id
             }
@@ -186,10 +189,34 @@ const StudyScreen: React.FC = () => {
 
               <View style={currentStyles.subjectInfo}>
                 <Text style={currentStyles.subjectName}>{subject.name}</Text>
-                <Text style={currentStyles.subjectChapters}>
-                  {subject.chapters?.length || 0} {t('study_screen.available_booklets')}
-                  {subject.description ? ` • ${subject.description}` : ''}
-                </Text>
+                
+                <View style={currentStyles.progressContainer}>
+                  <View style={[currentStyles.progressRow, { flexDirection: common.rowDirection }]}>
+                    <Text style={[currentStyles.progressLabel, { textAlign: common.textAlign }]}>{t('study_calendar.lessons', 'Study')}</Text>
+                    <View style={currentStyles.progressBar}>
+                      <View 
+                        style={[
+                          currentStyles.progressFill, 
+                          { width: `${Math.min(100, subject.study_progress || 0)}%`, backgroundColor: theme.colors.primary }
+                        ]} 
+                      />
+                    </View>
+                    <Text style={[currentStyles.progressPercent, { textAlign: common.isRTL ? 'left' : 'right' }]}>{Math.round(subject.study_progress || 0)}%</Text>
+                  </View>
+
+                  <View style={[currentStyles.progressRow, { flexDirection: common.rowDirection }]}>
+                    <Text style={[currentStyles.progressLabel, { textAlign: common.textAlign }]}>{t('common.quiz', 'Quiz')}</Text>
+                    <View style={currentStyles.progressBar}>
+                      <View 
+                        style={[
+                          currentStyles.progressFill, 
+                          { width: `${Math.min(100, subject.quiz_progress || 0)}%`, backgroundColor: theme.colors.orange || '#F59E0B' }
+                        ]} 
+                      />
+                    </View>
+                    <Text style={[currentStyles.progressPercent, { textAlign: common.isRTL ? 'left' : 'right' }]}>{Math.round(subject.quiz_progress || 0)}%</Text>
+                  </View>
+                </View>
               </View>
 
               <Ionicons
@@ -333,6 +360,41 @@ const styles = (
     scrollContentContainer: {
       paddingHorizontal: layout.screenPadding,
       paddingTop: spacing.md,
+    },
+    progressContainer: {
+      marginTop: spacing.xs,
+      width: '100%',
+      gap: 4,
+    },
+    progressRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    progressLabel: {
+      ...typography('tiny'),
+      fontSize: 8,
+      width: 30,
+      color: theme.colors.textSecondary,
+      textAlign: 'left',
+    },
+    progressPercent: {
+      ...typography('tiny'),
+      fontSize: 8,
+      width: 25,
+      color: theme.colors.textTertiary,
+      textAlign: 'right',
+    },
+    progressBar: {
+      flex: 1,
+      height: 3,
+      backgroundColor: theme.colors.border + '40',
+      borderRadius: 2,
+      overflow: 'hidden',
+    },
+    progressFill: {
+      height: '100%',
+      borderRadius: 2,
     },
   });
 

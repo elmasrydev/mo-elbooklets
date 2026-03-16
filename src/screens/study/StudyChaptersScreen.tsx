@@ -102,6 +102,7 @@ const StudyChaptersScreen: React.FC = () => {
                 title
                 explanation
                 order
+                is_viewed
               }
               isLocked
             }

@@ -17,7 +17,9 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { Video, ResizeMode } from 'expo-av';
 import { layout } from '../../config/layout';
+import * as SecureStore from 'expo-secure-store';
 import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
+import { tryFetchWithFallback } from '../../config/api';
 import CloseButton from '../../components/navigation/CloseButton';
 import LessonNavBar from '../../components/navigation/LessonNavBar';
 import UnifiedHeader from '../../components/UnifiedHeader';
@@ -34,6 +36,7 @@ interface LessonPoint {
   title: string;
   explanation?: string;
   order: number;
+  is_viewed?: boolean;
 }
 
 interface Lesson {
@@ -57,6 +60,7 @@ interface LessonDODProgress {
   keyPointsTotal: number;
   quizzesPassed: number;
   quizzesRequired: number;
+  totalProgress: number;
   isComplete: boolean;
 }
 
@@ -180,7 +184,9 @@ const StudyLessonScreen: React.FC = () => {
   const [expandedPoints, setExpandedPoints] = useState<Set<string>>(new Set());
   const [dodProgress, setDodProgress] = useState<LessonDODProgress | null>(null);
   const [loadingDod, setLoadingDod] = useState(false);
-  const [viewedPoints, setViewedPoints] = useState<Set<string>>(new Set());
+  const [viewedPoints, setViewedPoints] = useState<Set<string>>(new Set(
+    currentLesson.lessonPoints?.filter(p => p.is_viewed).map(p => p.id) || []
+  ));
   const scrollViewRef = useRef<ScrollView>(null);
 
   const currentIndex = allLessons.findIndex((l) => l.id === currentLesson.id);
@@ -217,7 +223,7 @@ const StudyLessonScreen: React.FC = () => {
       const result = await tryFetchWithFallback(
         `query LessonDOD($lessonId: ID!) { 
           lessonDODProgress(lessonId: $lessonId) { 
-            lessonId keyPointsViewed keyPointsTotal quizzesPassed quizzesRequired isComplete 
+            lessonId keyPointsViewed keyPointsTotal quizzesPassed quizzesRequired totalProgress isComplete 
           } 
         }`,
         { lessonId },
@@ -262,6 +268,7 @@ const StudyLessonScreen: React.FC = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setCurrentLesson(lesson);
     setExpandedPoints(new Set());
+    setViewedPoints(new Set(lesson.lessonPoints?.filter(p => p.is_viewed).map(p => p.id) || []));
     scrollViewRef.current?.scrollTo({ y: 0, animated: false });
   };
 
@@ -379,7 +386,11 @@ const StudyLessonScreen: React.FC = () => {
                   >
                     <View style={currentStyles.pointHeader}>
                       <View>
-                        <Ionicons name="checkmark-circle" size={26} color={theme.colors.success} />
+                        <Ionicons 
+                          name={viewedPoints.has(point.id) ? "checkmark-circle" : "ellipse-outline"} 
+                          size={26} 
+                          color={viewedPoints.has(point.id) ? theme.colors.success : theme.colors.textTertiary} 
+                        />
                       </View>
                       <Text style={currentStyles.pointText}> {point.title} </Text>
                       {point.explanation && (
@@ -471,14 +482,14 @@ const StudyLessonScreen: React.FC = () => {
                     style={[
                       currentStyles.dodProgressFill, 
                       { 
-                        width: `${((dodProgress.keyPointsViewed + dodProgress.quizzesPassed) / (dodProgress.keyPointsTotal + dodProgress.quizzesRequired)) * 100}%`,
+                        width: `${dodProgress.totalProgress}%`,
                         backgroundColor: dodProgress.isComplete ? theme.colors.success : theme.colors.primary
                       }
                     ]} 
                   />
                 </View>
                 <Text style={currentStyles.dodPercentText}>
-                  {Math.round(((dodProgress.keyPointsViewed + dodProgress.quizzesPassed) / (dodProgress.keyPointsTotal + dodProgress.quizzesRequired)) * 100)}%
+                  {Math.round(dodProgress.totalProgress)}%
                 </Text>
               </View>
             </View>
