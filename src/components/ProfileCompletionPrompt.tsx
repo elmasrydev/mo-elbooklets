@@ -36,6 +36,12 @@ interface EducationalSystem {
   name: string;
 }
 
+interface School {
+  id: string;
+  name: string;
+  name_en?: string;
+}
+
 interface ProfileCompletionPromptProps {
   context?: 'study' | 'quiz' | 'more' | 'community' | 'parental';
   isVisible?: boolean;
@@ -75,6 +81,10 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
   const [schoolName, setSchoolName] = useState('');
   const [parentMobile, setParentMobile] = useState('');
   const [selectedEduSystem, setSelectedEduSystem] = useState<string>('');
+  
+  const [schoolSuggestions, setSchoolSuggestions] = useState<School[]>([]);
+  const [loadingSchools, setLoadingSchools] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const [currentField, setCurrentField] = useState<string | null>(null);
 
@@ -173,6 +183,35 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
       console.error('Fetch edu systems error:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSchoolSuggestions = async (search: string) => {
+    if (!search || search.length < 2) {
+      setSchoolSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    try {
+      setLoadingSchools(true);
+      const token = await SecureStore.getItemAsync('auth_token');
+      const result = await tryFetchWithFallback(
+        `query SearchSchools($search: String!) { 
+          searchSchools(search: $search) { id name name_en } 
+        }`,
+        { search },
+        token || undefined
+      );
+
+      if (result.data?.searchSchools) {
+        setSchoolSuggestions(result.data.searchSchools);
+        setShowSuggestions(result.data.searchSchools.length > 0);
+      }
+    } catch (err) {
+      console.error('Search schools error:', err);
+    } finally {
+      setLoadingSchools(false);
     }
   };
 
@@ -350,10 +389,41 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
                    <TextInput
                       style={[styles.input, { color: theme.colors.text, textAlign: isRTL ? 'right' : 'left' }]}
                       value={schoolName}
-                      onChangeText={setSchoolName}
+                      onChangeText={(val) => {
+                        setSchoolName(val);
+                        fetchSchoolSuggestions(val);
+                      }}
+                      onFocus={() => schoolName.length >= 2 && setShowSuggestions(true)}
                       placeholder={t('profile.school_placeholder', 'Your school name')}
                    />
+                   {loadingSchools && <ActivityIndicator size="small" color={theme.colors.primary} />}
                  </View>
+                 
+                 {showSuggestions && schoolSuggestions.length > 0 && (
+                   <View style={[styles.suggestionsContainer, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+                     <ScrollView style={{ maxHeight: 200 }} keyboardShouldPersistTaps="handled">
+                       {schoolSuggestions.map((school) => (
+                         <TouchableOpacity
+                           key={school.id}
+                           style={[styles.suggestionItem, { borderBottomColor: theme.colors.border }]}
+                           onPress={() => {
+                             setSchoolName(isRTL ? school.name : (school.name_en || school.name));
+                             setShowSuggestions(false);
+                           }}
+                         >
+                           <Text style={[styles.suggestionText, { color: theme.colors.text }]}>
+                             {school.name}
+                           </Text>
+                           {school.name_en && (
+                             <Text style={[styles.suggestionTextEn, { color: theme.colors.textTertiary }]}>
+                               {school.name_en}
+                             </Text>
+                           )}
+                         </TouchableOpacity>
+                       ))}
+                     </ScrollView>
+                   </View>
+                 )}
                </View>
             )}
 
@@ -524,6 +594,32 @@ const styles = StyleSheet.create({
   },
   skipText: {
     textDecorationLine: 'underline',
+  },
+  suggestionsContainer: {
+    position: 'absolute',
+    top: 85,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    borderWidth: 1,
+    borderRadius: 12,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  suggestionItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+  },
+  suggestionText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  suggestionTextEn: {
+    fontSize: 12,
+    marginTop: 2,
   },
 });
 
