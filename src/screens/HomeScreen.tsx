@@ -93,6 +93,24 @@ interface SocialFeedItem {
   comments: number;
 }
 
+interface TodayScheduleEntry {
+  id: string;
+  subject: { name: string };
+  lessonGoal: number;
+  quizGoal: number;
+  lessonsCompleted: number;
+  quizzesCompleted: number;
+  completionPercentage: number;
+  isComplete: boolean;
+}
+
+interface TodayScheduleData {
+  date: string;
+  dayName: string;
+  isDayOff?: boolean;
+  schedule: TodayScheduleEntry[];
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const getInitials = (name: string) => {
   if (!name) return '??';
@@ -201,6 +219,7 @@ const HomeScreen: React.FC = () => {
   const [leaderboardEntries, setLeaderboardEntries] = useState<LeaderboardEntry[]>([]);
   const [leaderboardUser, setLeaderboardUser] = useState<LeaderboardEntry | null>(null);
   const [socialFeed, setSocialFeed] = useState<SocialFeedItem[]>([]);
+  const [todaySchedule, setTodaySchedule] = useState<TodayScheduleData | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchHomeData = useCallback(async () => {
@@ -210,8 +229,8 @@ const HomeScreen: React.FC = () => {
       if (!token) return;
 
       // Fetch all data in parallel
-      const [activitiesResult, subjectsResult, leaderboardResult, socialResult] = await Promise.all(
-        [
+      const [activitiesResult, subjectsResult, leaderboardResult, socialResult, todayResult] =
+        await Promise.all([
           tryFetchWithFallback(
             `query HomeData {
               activities {
@@ -262,19 +281,39 @@ const HomeScreen: React.FC = () => {
             undefined,
             token,
           ),
-        ],
-      );
+          tryFetchWithFallback(
+            `query TodaySchedule {
+              todaySchedule {
+                date dayName dayOfWeek
+                schedule {
+                  id subject { name } lessonGoal quizGoal lessonsCompleted quizzesCompleted completionPercentage isComplete
+                }
+              }
+            }`,
+            undefined,
+            token,
+          ),
+        ]);
 
-      if (activitiesResult.data?.activities) setActivitiesData(activitiesResult.data.activities);
-      if (activitiesResult.data?.wheelOfSuccess) setWheelData(activitiesResult.data.wheelOfSuccess);
-      if (subjectsResult.data?.subjectsForUserGrade)
+      if (activitiesResult.data?.activities) {
+        setActivitiesData(activitiesResult.data.activities);
+      }
+      if (activitiesResult.data?.wheelOfSuccess) {
+        setWheelData(activitiesResult.data.wheelOfSuccess);
+      }
+      if (subjectsResult.data?.subjectsForUserGrade) {
         setSubjects(subjectsResult.data.subjectsForUserGrade);
+      }
       if (leaderboardResult.data?.leaderboard) {
         setLeaderboardEntries(leaderboardResult.data.leaderboard.entries || []);
         setLeaderboardUser(leaderboardResult.data.leaderboard.userEntry || null);
       }
-      if (socialResult.data?.socialTimeline)
+      if (socialResult.data?.socialTimeline) {
         setSocialFeed(socialResult.data.socialTimeline.slice(0, 2));
+      }
+      if (todayResult.data?.todaySchedule) {
+        setTodaySchedule(todayResult.data.todaySchedule);
+      }
     } catch (err: any) {
       console.error('Fetch home data error:', err);
     } finally {
@@ -322,6 +361,48 @@ const HomeScreen: React.FC = () => {
           paddingHorizontal: layout.screenPadding,
         }}
       >
+        {/* ─── 0b. Today's Plan Card ──────────────────────────────── */}
+        {todaySchedule && todaySchedule.schedule.length > 0 && (
+          <TouchableOpacity
+            style={s.planCard}
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate('StudyCalendar')}
+          >
+            <View style={s.planHeader}>
+              <View>
+                <Text style={s.planTitle}>{t('study_calendar.header_title')}</Text>
+                <Text style={s.planSubtitle}>{todaySchedule.dayName}, {todaySchedule.date}</Text>
+              </View>
+              <View style={s.planBadge}>
+                 <Text style={s.planBadgeText}>
+                   {todaySchedule.schedule.filter(e => e.isComplete).length}/{todaySchedule.schedule.length}
+                 </Text>
+              </View>
+            </View>
+
+            <View style={s.planItemsOverview}>
+               {todaySchedule.schedule.map((entry, idx) => (
+                 <View key={entry.id} style={[s.planItem, idx > 0 && s.planItemBorder]}>
+                    <View style={s.planItemInfo}>
+                       <Text style={s.planItemName} numberOfLines={1}>{entry.subject.name}</Text>
+                       <View style={s.planProgressRow}>
+                          <View style={s.planMiniBar}>
+                             <View style={[s.planMiniFill, { width: `${entry.completionPercentage}%`, backgroundColor: entry.isComplete ? theme.colors.success : theme.colors.primary }]} />
+                          </View>
+                          <Text style={s.planPercent}>{Math.round(entry.completionPercentage)}%</Text>
+                       </View>
+                    </View>
+                    <Ionicons 
+                      name={entry.isComplete ? "checkmark-circle" : "ellipse-outline"} 
+                      size={20} 
+                      color={entry.isComplete ? theme.colors.success : theme.colors.border} 
+                    />
+                 </View>
+               ))}
+            </View>
+          </TouchableOpacity>
+        )}
+
         {/* ─── 1. Greeting Card ──────────────────────────────────── */}
         <View style={s.greetingCard}>
           <View style={s.flex1}>
@@ -762,6 +843,91 @@ const getStyles = (
       ...typography('h3'),
       color: theme.colors.primary,
       ...fontWeight('bold'),
+    },
+
+    planCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: borderRadius.xl,
+      padding: spacing.lg,
+      marginBottom: spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      ...layout.shadow,
+    },
+    planHeader: {
+      flexDirection: common.rowDirection,
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing.md,
+    },
+    planTitle: {
+      ...typography('body'),
+      ...fontWeight('bold'),
+      color: theme.colors.text,
+    },
+    planSubtitle: {
+      ...typography('tiny'),
+      color: theme.colors.textSecondary,
+      marginTop: 2,
+    },
+    planBadge: {
+      backgroundColor: theme.colors.primary + '1A',
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 12,
+    },
+    planBadgeText: {
+      ...typography('tiny'),
+      ...fontWeight('bold'),
+      color: theme.colors.primary,
+    },
+    planItemsOverview: {
+      gap: spacing.sm,
+    },
+    planItem: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: spacing.xs,
+    },
+    planItemBorder: {
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.border + '33',
+      paddingTop: spacing.sm,
+    },
+    planItemInfo: {
+      flex: 1,
+      ...common.marginEnd(spacing.md),
+    },
+    planItemName: {
+      ...typography('caption'),
+      ...fontWeight('600'),
+      color: theme.colors.text,
+      marginBottom: 4,
+      textAlign: 'left',
+    },
+    planProgressRow: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      gap: 8,
+    },
+    planMiniBar: {
+      flex: 1,
+      height: 4,
+      backgroundColor: theme.colors.border,
+      borderRadius: 2,
+      overflow: 'hidden',
+    },
+    planMiniFill: {
+      height: '100%',
+      borderRadius: 2,
+    },
+    planPercent: {
+      ...typography('tiny'),
+      fontSize: 9,
+      color: theme.colors.textTertiary,
+      width: 25,
+      textAlign: 'right',
     },
 
     // Quiz CTA Card

@@ -121,9 +121,11 @@ const ProfileScreen: React.FC = () => {
 
         {/* Menu Section */}
         <View style={currentStyles.menuSection}>
-          {/* Hide Edit Profile and Badges for now */}
-          {/*
-          <TouchableOpacity style={currentStyles.settingItem}>
+          {/* Menu Items */}
+          <TouchableOpacity 
+            style={currentStyles.settingItem}
+            onPress={() => navigation.navigate('EditProfile')}
+          >
             <View style={currentStyles.settingIconBox}>
               <Image
                 source={require('../../assets/images/editProfile.png')}
@@ -139,24 +141,6 @@ const ProfileScreen: React.FC = () => {
               color={theme.colors.textTertiary}
             />
           </TouchableOpacity>
-
-          <TouchableOpacity style={currentStyles.settingItem}>
-            <View style={currentStyles.settingIconBox}>
-              <Image
-                source={require('../../assets/images/Badges.png')}
-                style={currentStyles.menuImage}
-              />
-            </View>
-            <View style={currentStyles.settingContent}>
-              <Text style={currentStyles.settingTitle}>{t('profile_screen.badges')}</Text>
-            </View>
-            <Ionicons
-              name={isRTL ? 'chevron-back' : 'chevron-forward'}
-              size={20}
-              color={theme.colors.textTertiary}
-            />
-          </TouchableOpacity>
-          */}
 
           {/* Change Language */}
           <TouchableOpacity style={currentStyles.settingItem} onPress={handleLanguagePress}>
