@@ -46,6 +46,7 @@
     "switch_language": "Switch Language",
     "error": "Error",
     "unexpected_error": "An unexpected error occurred",
+    "server_error": "Unknown error, try again later",
     "all": "All",
     "all_subjects": "All Subjects",
     "follow": "Follow",
@@ -69,7 +70,10 @@
     "true": "True",
     "false": "False",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "go_back": "Go Back",
+    "save_and_continue": "Save & Continue",
+    "skip_for_now": "Skip for now"
   },
   "study_screen": {
     "header_title": "Study",
@@ -427,7 +431,15 @@
     "parent_mobile_required": "Parent mobile number is required",
     "invalid_mobile_format": "The mobile number must be 11 digits starting with 010, 011, 012 or 015.",
     "name_too_short": "Name is too short (min 3 characters)",
-    "mobile_taken": "This mobile number is already registered"
+    "mobile_taken": "This mobile number is already registered",
+    "account_details": "Account Details",
+    "school_info": "School Info",
+    "disclaimer_title": "Registration Disclaimer",
+    "continue_registration": "Continue Registration",
+    "select_edu_system": "Select Educational System",
+    "free_campaign_active": "A free access campaign is currently active! You will get full access automatically.",
+    "referral_disclaimer": "If you don't have a code, you will start with Trial Limited Access.",
+    "no_referral_disclaimer": "You are now going to sign up without referral code and will have Trial Limited Access only"
   },
   "time": {
     "just_now": "Just now",
@@ -511,5 +523,16 @@
     "header_subtitle": "Explore available learning materials",
     "no_booklets": "No booklets available",
     "no_booklets_subtitle": "Booklets will appear here once they are added to the system"
+  },
+  "profile": {
+    "complete_your_profile": "Complete Your Profile",
+    "completeness_incentive": "Help us personalize your learning experience",
+    "select_gender": "Select Gender",
+    "male": "Male",
+    "female": "Female",
+    "enter_email": "Enter Email Address",
+    "enter_school": "Enter School Name",
+    "school_placeholder": "Your school name",
+    "enter_parent_mobile": "Enter Parent's Mobile"
   }
 }

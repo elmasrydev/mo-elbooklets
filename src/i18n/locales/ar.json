@@ -46,6 +46,7 @@
     "switch_language": "تغيير اللغة",
     "error": "خطأ",
     "unexpected_error": "حدث خطأ غير متوقع",
+    "server_error": "خطأ غير معروف، حاول مرة أخرى لاحقاً",
     "all": "الكل",
     "all_subjects": "جميع المواد",
     "follow": "متابعة",
@@ -69,7 +70,10 @@
     "true": "صح",
     "false": "خطأ",
     "yes": "نعم",
-    "no": "لا"
+    "no": "لا",
+    "go_back": "رجوع",
+    "save_and_continue": "حفظ ومتابعة",
+    "skip_for_now": "تخطي الآن"
   },
   "study_screen": {
     "header_title": "المذاكرة",
@@ -419,7 +423,15 @@
     "parent_mobile_required": "رقم هاتف ولي الأمر مطلوب",
     "invalid_mobile_format": "يجب أن يكون رقم الهاتف 11 رقمًا يبدأ بـ 010 أو 011 أو 012 أو 015.",
     "name_too_short": "الاسم قصير جداً (3 أحرف على الأقل)",
-    "mobile_taken": "رقم الهاتف هذا مسجل بالفعل"
+    "mobile_taken": "رقم الهاتف هذا مسجل بالفعل",
+    "account_details": "تفاصيل الحساب",
+    "school_info": "معلومات المدرسة",
+    "disclaimer_title": "تنبيه التسجيل",
+    "continue_registration": "مواصلة التسجيل",
+    "select_edu_system": "اختر نظامك التعليمي",
+    "free_campaign_active": "حملة الوصول المجاني نشطة حالياً! ستحصل على وصول كامل تلقائياً.",
+    "referral_disclaimer": "إذا لم يكن لديك كود، ستبدأ بفترة تجريبية محدودة.",
+    "no_referral_disclaimer": "أنت الآن بصدد التسجيل بدون كود دعوة وستحصل على وصول تجريبي محدود فقط"
   },
   "time": {
     "just_now": "الآن",
@@ -510,5 +522,16 @@
     "final_revision": "مراجعة نهائية",
     "final-revision": "مراجعة نهائية",
     "practice": "تدريب"
+  },
+  "profile": {
+    "complete_your_profile": "أكمل ملفك الشخصي",
+    "completeness_incentive": "ساعدنا في تخصيص تجربة التعلم الخاصة بك",
+    "select_gender": "اختر الجنس",
+    "male": "ذكر",
+    "female": "أنثى",
+    "enter_email": "أدخل البريد الإلكتروني",
+    "enter_school": "أدخل اسم المدرسة",
+    "school_placeholder": "اسم مدرستك",
+    "enter_parent_mobile": "أدخل رقم هاتف ولي الأمر"
   }
 }

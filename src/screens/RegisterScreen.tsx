@@ -663,7 +663,10 @@ const StepTwo = ({
         <View style={currentStyles.campaignBanner}>
           <Ionicons name="sparkles-outline" size={20} color="#059669" />
           <Text style={currentStyles.campaignText}>
-            {t('auth.free_campaign_active', 'A free access campaign is currently active! You will get full access automatically.')}
+            {t(
+              'auth.free_campaign_active',
+              'A free access campaign is currently active! You will get full access automatically.',
+            )}
           </Text>
         </View>
       ) : (
@@ -691,9 +694,16 @@ const StepTwo = ({
             />
           </View>
           <View style={currentStyles.referralDisclaimer}>
-            <Ionicons name="information-circle-outline" size={16} color={theme.colors.textSecondary} />
+            <Ionicons
+              name="information-circle-outline"
+              size={16}
+              color={theme.colors.textSecondary}
+            />
             <Text style={currentStyles.disclaimerText}>
-              {t('auth.referral_disclaimer', 'If you don\'t have a code, you will start with Trial Limited Access.')}
+              {t(
+                'auth.referral_disclaimer',
+                "If you don't have a code, you will start with Trial Limited Access.",
+              )}
             </Text>
           </View>
         </>
@@ -838,6 +848,7 @@ const styles = (config: any) => {
       paddingHorizontal: spacing.md,
       marginBottom: spacing.md,
       height: 56,
+      gap: 8,
     },
     inputIcon: {
       marginRight: isRTL ? 0 : spacing.sm,
@@ -969,13 +980,13 @@ const styles = (config: any) => {
       justifyContent: 'center',
     },
     gridItem: {
-      width: '31%',
+      minWidth: '31%',
       backgroundColor: theme.colors.background,
       borderWidth: 1.5,
       borderColor: theme.colors.border,
       borderRadius: borderRadius.lg || 16,
       height: 50,
-      paddingHorizontal: spacing.xs,
+      paddingHorizontal: spacing.sm,
       alignItems: 'center',
       justifyContent: 'center',
       ...Platform.select({
