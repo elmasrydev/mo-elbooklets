@@ -21,7 +21,9 @@ import { gql } from '@apollo/client';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { Ionicons } from '@expo/vector-icons';
 import UnifiedHeader from '../components/UnifiedHeader';
+import AppButton from '../components/AppButton';
 import { GenericListSkeleton } from '../components/SkeletonLoader';
+import { textAlign } from '../lib/rtl';
 
 const STUDY_SCHEDULE_QUERY = gql`
   query StudySchedule {
@@ -220,10 +222,7 @@ const StudyCalendarScreen: React.FC = () => {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={[
-            currentStyles.dayTabsContent,
-            { paddingBottom: Math.max(common.insets.bottom, 20) },
-          ]}
+          contentContainerStyle={[currentStyles.dayTabsContent]}
         >
           {DAY_KEYS.map((dayKey, index) => (
             <TouchableOpacity
@@ -266,7 +265,9 @@ const StudyCalendarScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         <Text style={currentStyles.dayTitle}>
-          {t(`study_calendar.${DAY_KEYS[selectedDay]} `)} {t('common.schedule') || 'Schedule'}
+          {isRTL
+            ? t('common.schedule') + ' ' + t(`study_calendar.${DAY_KEYS[selectedDay]}`)
+            : t(`study_calendar.${DAY_KEYS[selectedDay]}`) + ' ' + t('common.schedule')}
         </Text>
 
         {currentDayEntries.map((entry, index) => (
@@ -300,7 +301,12 @@ const StudyCalendarScreen: React.FC = () => {
             {/* Goals Row */}
             <View style={currentStyles.goalsRow}>
               <View style={currentStyles.goalInput}>
-                <Text style={currentStyles.goalLabel}>📚 {t('study_calendar.lessons_goal')}</Text>
+                <View style={currentStyles.goalHeader}>
+                  <View style={currentStyles.goalIconBox}>
+                    <Ionicons name="newspaper-outline" size={16} color={theme.colors.primary} />
+                  </View>
+                  <Text style={currentStyles.goalLabel}>{t('study_calendar.lessons_goal')}</Text>
+                </View>
                 <TextInput
                   style={currentStyles.goalValue}
                   keyboardType="numeric"
@@ -311,7 +317,21 @@ const StudyCalendarScreen: React.FC = () => {
                 />
               </View>
               <View style={currentStyles.goalInput}>
-                <Text style={currentStyles.goalLabel}>❓ {t('study_calendar.quizzes_goal')}</Text>
+                <View style={currentStyles.goalHeader}>
+                  <View
+                    style={[
+                      currentStyles.goalIconBox,
+                      { backgroundColor: (theme.colors.orange || '#F59E0B') + '1A' },
+                    ]}
+                  >
+                    <Ionicons
+                      name="bulb-outline"
+                      size={16}
+                      color={theme.colors.orange || '#F59E0B'}
+                    />
+                  </View>
+                  <Text style={currentStyles.goalLabel}>{t('study_calendar.quizzes_goal')}</Text>
+                </View>
                 <TextInput
                   style={currentStyles.goalValue}
                   keyboardType="numeric"
@@ -324,43 +344,68 @@ const StudyCalendarScreen: React.FC = () => {
             </View>
 
             {/* Notes */}
-            <TextInput
-              style={currentStyles.notesInput}
-              placeholder={t('study_calendar.notes_placeholder')}
-              placeholderTextColor={theme.colors.textTertiary}
-              value={entry.notes}
-              onChangeText={(text) => updateEntry(selectedDay, index, 'notes', text)}
-            />
+            <View style={currentStyles.notesWrapper}>
+              <TextInput
+                style={currentStyles.notesInput}
+                placeholder={t('study_calendar.notes_placeholder')}
+                placeholderTextColor={theme.colors.textTertiary}
+                value={entry.notes}
+                onChangeText={(text) => updateEntry(selectedDay, index, 'notes', text)}
+                multiline
+                numberOfLines={4}
+              />
+            </View>
 
             {/* Remove Button */}
-            <TouchableOpacity
-              style={currentStyles.removeButton}
-              onPress={() => removeEntry(selectedDay, index)}
-            >
-              <Text style={currentStyles.removeButtonText}>
-                {t('study_calendar.remove_subject')}
-              </Text>
-            </TouchableOpacity>
+            <View style={currentStyles.removeContainer}>
+              <AppButton
+                title={t('study_calendar.remove_subject')}
+                onPress={() => {
+                  showConfirm({
+                    title: t('common.confirm', 'Confirm'),
+                    message: t(
+                      'study_calendar.confirm_remove',
+                      'Are you sure you want to remove this subject from the schedule?',
+                    ),
+                    onConfirm: () => removeEntry(selectedDay, index),
+                  });
+                }}
+                variant="outline"
+                textStyle={{ color: theme.colors.error || '#EF4444' }}
+                style={{
+                  borderColor: theme.colors.error || '#EF4444',
+                  height: 44,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                }}
+              />
+            </View>
           </View>
         ))}
 
         {/* Add Button */}
-        <TouchableOpacity
-          style={currentStyles.addButton}
+        <AppButton
+          title={'+ ' + t('study_calendar.add_subject')}
           onPress={() => addEntry(selectedDay)}
           disabled={subjects.length === 0}
-        >
-          <Text style={currentStyles.addButtonText}>+ {t('study_calendar.add_subject')}</Text>
-        </TouchableOpacity>
+          variant="outline"
+          style={{
+            borderStyle: 'dashed',
+            //borderRadius: 16,
+            marginTop: spacing.mdd,
+            marginBottom: spacing.md,
+            height: 50,
+          }}
+        />
 
         {/* Save Button */}
-        <TouchableOpacity style={currentStyles.saveButton} onPress={handleSave} disabled={saving}>
-          {saving ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={currentStyles.saveButtonText}>{t('study_calendar.save_schedule')}</Text>
-          )}
-        </TouchableOpacity>
+        <AppButton
+          title={t('study_calendar.save_schedule')}
+          onPress={handleSave}
+          loading={saving}
+          variant="primary"
+          style={{ marginBottom: 40, borderRadius: 16, height: 48 }}
+        />
       </ScrollView>
     </View>
   );
@@ -391,7 +436,6 @@ const styles = (
       color: theme.colors.textSecondary,
     },
     dayTabsContainer: {
-      maxHeight: 60,
       backgroundColor: theme.colors.card,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.border,
@@ -399,7 +443,7 @@ const styles = (
     dayTabsContent: {
       paddingVertical: spacing.sm,
       paddingHorizontal: layout.screenPadding,
-      flexDirection: isRTL ? 'row-reverse' : 'row',
+      flexDirection: 'row',
       alignItems: 'center',
     },
     dayTab: {
@@ -423,11 +467,12 @@ const styles = (
       color: '#fff',
     },
     dayBadge: {
-      marginLeft: isRTL ? 0 : spacing.xs,
-      marginRight: isRTL ? spacing.xs : 0,
+      minWidth: 25,
+      minHeight: 25,
+      marginLeft: spacing.xs,
       paddingHorizontal: spacing.xs,
       paddingVertical: 2,
-      borderRadius: 10,
+      borderRadius: 12.5,
       backgroundColor: theme.colors.primary + '30',
     },
     dayBadgeActive: {
@@ -435,42 +480,46 @@ const styles = (
     },
     dayBadgeText: {
       ...typography('caption'),
-      fontSize: 10,
       ...fontWeight('bold'),
-      color: theme.colors.primary,
+      color: theme.colors.buttonPrimaryText,
+      textAlign: 'center',
     },
     dayTitle: {
       ...typography('h2'),
       ...fontWeight('bold'),
       color: theme.colors.text,
       marginBottom: spacing.sectionGap,
-      textAlign: isRTL ? 'right' : 'left',
+      textAlign: 'left',
     },
     entryCard: {
-      backgroundColor: theme.colors.card,
-      borderRadius: borderRadius.xl,
-      padding: spacing.lg,
+      backgroundColor: theme.colors.card || theme.colors.surface,
+      borderRadius: borderRadius.xl || 24,
       marginBottom: spacing.sectionGap,
       borderWidth: 1,
       borderColor: theme.colors.border,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.05,
+      shadowRadius: 10,
+      elevation: 3,
+      padding: layout.screenPadding,
     },
     entryRow: {
-      marginBottom: spacing.md,
+      marginBottom: spacing.mdd,
     },
     entryLabel: {
-      ...typography('label'),
+      ...typography('body'),
       ...fontWeight('600'),
       color: theme.colors.textSecondary,
       marginBottom: spacing.sm,
-      textAlign: isRTL ? 'right' : 'left',
+      textAlign: 'left',
     },
     subjectPill: {
       paddingVertical: spacing.sm,
       paddingHorizontal: spacing.md,
-      borderRadius: borderRadius.lg,
-      backgroundColor: theme.colors.background,
-      marginRight: isRTL ? 0 : spacing.sm,
-      marginLeft: isRTL ? spacing.sm : 0,
+      borderRadius: borderRadius.xl || 24,
+      backgroundColor: 'transparent',
+      marginRight: spacing.sm,
       borderWidth: 1,
       borderColor: theme.colors.border,
     },
@@ -479,31 +528,47 @@ const styles = (
       borderColor: theme.colors.primary,
     },
     subjectPillText: {
-      ...typography('bodySmall'),
+      ...typography('label'),
       color: theme.colors.text,
     },
     subjectPillTextActive: {
       color: '#fff',
+      ...fontWeight('600'),
     },
     goalsRow: {
-      flexDirection: isRTL ? 'row-reverse' : 'row',
+      flexDirection: 'row',
       gap: spacing.md,
       marginBottom: spacing.md,
     },
     goalInput: {
       flex: 1,
     },
+    goalHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: spacing.xs,
+      gap: spacing.sm,
+    },
+    goalIconBox: {
+      width: 26,
+      height: 26,
+      borderRadius: borderRadius.sm,
+      backgroundColor: theme.colors.primary + '1A',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: isRTL ? 0 : spacing.xs,
+      marginLeft: isRTL ? spacing.xs : 0,
+    },
     goalLabel: {
-      ...typography('caption'),
+      ...typography('label'),
       ...fontWeight('600'),
       color: theme.colors.textSecondary,
-      marginBottom: spacing.xs,
-      textAlign: isRTL ? 'right' : 'left',
     },
     goalValue: {
       backgroundColor: theme.colors.background,
-      borderRadius: borderRadius.md,
-      padding: spacing.sm,
+      borderRadius: 12,
+      height: 48,
+      paddingHorizontal: spacing.sm,
       ...typography('h3'),
       ...fontWeight('bold'),
       color: theme.colors.text,
@@ -511,52 +576,25 @@ const styles = (
       borderWidth: 1,
       borderColor: theme.colors.border,
     },
+    notesWrapper: {
+      marginBottom: spacing.md,
+    },
     notesInput: {
       backgroundColor: theme.colors.background,
-      borderRadius: borderRadius.md,
+      borderRadius: 16,
+      minHeight: 100,
       padding: spacing.md,
-      ...typography('bodySmall'),
+      paddingTop: spacing.md,
+      ...typography('body'),
       color: theme.colors.text,
       textAlign: isRTL ? 'right' : 'left',
+      textAlignVertical: 'top',
       borderWidth: 1,
       borderColor: theme.colors.border,
-      marginBottom: spacing.sm,
     },
-    removeButton: {
-      alignSelf: isRTL ? 'flex-start' : 'flex-end',
-      paddingVertical: spacing.xs,
-      paddingHorizontal: spacing.md,
-    },
-    removeButtonText: {
-      ...typography('label'),
-      color: theme.colors.error || '#FF6B6B',
-      ...fontWeight('600'),
-    },
-    addButton: {
-      padding: spacing.lg,
-      borderRadius: borderRadius.xl,
-      borderWidth: 2,
-      borderStyle: 'dashed',
-      borderColor: theme.colors.border,
-      alignItems: 'center',
-      marginBottom: spacing.sectionGap,
-    },
-    addButtonText: {
-      ...typography('button'),
-      ...fontWeight('600'),
-      color: theme.colors.textSecondary,
-    },
-    saveButton: {
-      backgroundColor: theme.colors.primary,
-      padding: spacing.lg,
-      borderRadius: borderRadius.xl,
-      alignItems: 'center',
-      marginBottom: spacing['3xl'],
-    },
-    saveButtonText: {
-      ...typography('button'),
-      ...fontWeight('bold'),
-      color: '#fff',
+    removeContainer: {
+      marginTop: spacing.xs,
+      width: '100%',
     },
   });
 
