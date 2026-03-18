@@ -193,9 +193,7 @@ const SocialScreen: React.FC = () => {
     const result = await toggleFollow(student.id);
     if (result?.success) {
       setSearchResults((prev) =>
-        prev.map((s) =>
-          s.id === student.id ? { ...s, isFollowing: result.isFollowing } : s,
-        ),
+        prev.map((s) => (s.id === student.id ? { ...s, isFollowing: result.isFollowing } : s)),
       );
       if (searchQuery.length === 0) fetchTimeline();
     }
@@ -249,22 +247,12 @@ const SocialScreen: React.FC = () => {
 
   const renderFeedItem = useCallback(
     ({ item }: { item: NewsFeedItem }) => {
-
       if (item.type === 'quiz_completion' && item.quizData)
-        return (
-          <QuizCompletionCard
-            item={item as any}
-            onLike={() => handleLike(item)}
-          />
-        );
+        return <QuizCompletionCard item={item as any} onLike={() => handleLike(item)} />;
       if (item.type === 'new_connection' && item.connectedUser)
-        return (
-          <ConnectionCard item={item as any} onLike={() => {}} />
-        );
+        return <ConnectionCard item={item as any} onLike={() => {}} />;
       if (item.type === 'rank_change' && item.rankData)
-        return (
-          <RankChangeCard item={item as any} onLike={() => {}} />
-        );
+        return <RankChangeCard item={item as any} onLike={() => {}} />;
       return null;
     },
     [t, handleLike, showConfirm],
@@ -564,7 +552,7 @@ const styles = (theme: any, common: any, spacing: any, typography: any, fontWeig
       borderRadius: 8,
     },
     studentStat: {
-      ...typography('tiny'),
+      ...typography('label'),
       ...fontWeight('bold'),
       color: theme.colors.primary,
     },

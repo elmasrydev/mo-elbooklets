@@ -337,10 +337,7 @@ const QuizTakingScreen: React.FC = () => {
     return (
       <View style={common.container}>
         <UnifiedHeader showBackButton title={t('quiz_taking.quiz_error')} />
-        <RetryView 
-          message={error}
-          onRetry={fetchQuiz}
-        />
+        <RetryView message={error} onRetry={fetchQuiz} />
       </View>
     );
   }
@@ -551,7 +548,7 @@ const QuizTakingScreen: React.FC = () => {
                 currentStyles.navButton,
                 currentStyles.nextButton,
                 submitting && currentStyles.navButtonDisabled,
-                { marginBottom: 8 }
+                { marginBottom: 8 },
               ]}
               onPress={handleSubmitQuiz}
               disabled={submitting}
@@ -567,9 +564,11 @@ const QuizTakingScreen: React.FC = () => {
                 </>
               )}
             </TouchableOpacity>
-            
+
             <View style={currentStyles.postToFeedRow}>
-              <Text style={currentStyles.postToFeedText}>{t('home_screen.community_feed', 'Social Feed')}</Text>
+              <Text style={currentStyles.postToFeedText}>
+                {t('home_screen.community_feed', 'Social Feed')}
+              </Text>
               <Switch
                 value={postToFeed}
                 onValueChange={setPostToFeed}
@@ -837,7 +836,7 @@ const styles = (
       gap: 12,
     },
     postToFeedText: {
-      ...typography('tiny'),
+      ...typography('label'),
       ...fontWeight('600'),
       color: '#6B7280',
     },
