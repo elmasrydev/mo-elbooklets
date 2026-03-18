@@ -8,6 +8,7 @@ import {
   LayoutAnimation,
   Platform,
   UIManager,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,7 +17,9 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { Video, ResizeMode } from 'expo-av';
 import { layout } from '../../config/layout';
+import * as SecureStore from 'expo-secure-store';
 import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
+import { tryFetchWithFallback } from '../../config/api';
 import CloseButton from '../../components/navigation/CloseButton';
 import LessonNavBar from '../../components/navigation/LessonNavBar';
 import UnifiedHeader from '../../components/UnifiedHeader';
@@ -33,6 +36,7 @@ interface LessonPoint {
   title: string;
   explanation?: string;
   order: number;
+  is_viewed?: boolean;
 }
 
 interface Lesson {
@@ -47,6 +51,17 @@ interface Lesson {
     name: string;
     order: number;
   };
+  isLocked?: boolean;
+}
+
+interface LessonDODProgress {
+  lessonId: string;
+  keyPointsViewed: number;
+  keyPointsTotal: number;
+  quizzesPassed: number;
+  quizzesRequired: number;
+  totalProgress: number;
+  isComplete: boolean;
 }
 
 const LessonVideoPlayer: React.FC<{ url: string; theme: any; spacing: any; borderRadius: any }> = ({
@@ -167,6 +182,11 @@ const StudyLessonScreen: React.FC = () => {
   const allLessons: Lesson[] = route.params?.allLessons || [];
   const subject = route.params?.subject;
   const [expandedPoints, setExpandedPoints] = useState<Set<string>>(new Set());
+  const [dodProgress, setDodProgress] = useState<LessonDODProgress | null>(null);
+  const [loadingDod, setLoadingDod] = useState(false);
+  const [viewedPoints, setViewedPoints] = useState<Set<string>>(
+    new Set(currentLesson.lessonPoints?.filter((p) => p.is_viewed).map((p) => p.id) || []),
+  );
   const scrollViewRef = useRef<ScrollView>(null);
 
   const currentIndex = allLessons.findIndex((l) => l.id === currentLesson.id);
@@ -175,8 +195,10 @@ const StudyLessonScreen: React.FC = () => {
 
   const currentStyles = styles(theme, isRTL, typography, fontWeight, insets, spacing, borderRadius);
 
-  const togglePoint = (pointId: string) => {
+  const togglePoint = async (pointId: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    const isExpanding = !expandedPoints.has(pointId);
+
     setExpandedPoints((prev) => {
       const next = new Set(prev);
       if (next.has(pointId)) {
@@ -186,21 +208,80 @@ const StudyLessonScreen: React.FC = () => {
       }
       return next;
     });
+
+    if (isExpanding && !viewedPoints.has(pointId)) {
+      handleRecordView(pointId);
+    }
   };
+
+  const fetchDodProgress = async (lessonId: string) => {
+    try {
+      setLoadingDod(true);
+      const token = await SecureStore.getItemAsync('auth_token');
+      if (!token) return;
+
+      const result = await tryFetchWithFallback(
+        `query LessonDOD($lessonId: ID!) { 
+          lessonDODProgress(lessonId: $lessonId) { 
+            lessonId keyPointsViewed keyPointsTotal quizzesPassed quizzesRequired totalProgress isComplete 
+          } 
+        }`,
+        { lessonId },
+        token,
+      );
+
+      if (result.data?.lessonDODProgress) {
+        setDodProgress(result.data.lessonDODProgress);
+      }
+    } catch (err) {
+      console.error('Fetch DOD error:', err);
+    } finally {
+      setLoadingDod(false);
+    }
+  };
+
+  const handleRecordView = async (lessonPointId: string) => {
+    try {
+      const token = await SecureStore.getItemAsync('auth_token');
+      if (!token) return;
+
+      const result = await tryFetchWithFallback(
+        `mutation RecordView($lessonPointId: ID!) { recordKeyPointView(lessonPointId: $lessonPointId) }`,
+        { lessonPointId },
+        token,
+      );
+
+      if (result.data?.recordKeyPointView) {
+        setViewedPoints((prev) => new Set(prev).add(lessonPointId));
+        fetchDodProgress(currentLesson.id);
+      }
+    } catch (err) {
+      console.error('Record view error:', err);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchDodProgress(currentLesson.id);
+  }, [currentLesson.id]);
 
   const handleNavigateLesson = (lesson: Lesson) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setCurrentLesson(lesson);
     setExpandedPoints(new Set());
+    setViewedPoints(
+      new Set(lesson.lessonPoints?.filter((p) => p.is_viewed).map((p) => p.id) || []),
+    );
     scrollViewRef.current?.scrollTo({ y: 0, animated: false });
   };
 
   const handleTakeQuiz = () => {
-    const selectedUnits = [{
-      id: currentLesson.chapter.id,
-      name: currentLesson.chapter.name,
-      lessons: [{ id: currentLesson.id, name: currentLesson.name }],
-    }];
+    const selectedUnits = [
+      {
+        id: currentLesson.chapter.id,
+        name: currentLesson.chapter.name,
+        lessons: [{ id: currentLesson.id, name: currentLesson.name }],
+      },
+    ];
     const selectedLessonIds = [currentLesson.id];
 
     navigation.goBack();
@@ -309,7 +390,15 @@ const StudyLessonScreen: React.FC = () => {
                   >
                     <View style={currentStyles.pointHeader}>
                       <View>
-                        <Ionicons name="checkmark-circle" size={26} color={theme.colors.success} />
+                        <Ionicons
+                          name={viewedPoints.has(point.id) ? 'checkmark-circle' : 'ellipse-outline'}
+                          size={26}
+                          color={
+                            viewedPoints.has(point.id)
+                              ? theme.colors.success
+                              : theme.colors.textTertiary
+                          }
+                        />
                       </View>
                       <Text style={currentStyles.pointText}> {point.title} </Text>
                       {point.explanation && (
@@ -346,6 +435,101 @@ const StudyLessonScreen: React.FC = () => {
             </View>
           ) : (
             <Text style={currentStyles.noContentText}> {t('study_lesson.no_key_points')} </Text>
+          )}
+        </View>
+
+        {/* DOD Progress Section */}
+        <View style={currentStyles.section}>
+          <View style={currentStyles.sectionHeader}>
+            <View
+              style={[currentStyles.sectionIcon, { backgroundColor: theme.colors.success + '1A' }]}
+            >
+              <Ionicons name="shield-checkmark-outline" size={20} color={theme.colors.success} />
+            </View>
+            <Text style={[currentStyles.sectionTitle, { color: theme.colors.success }]}>
+              {t('study_lesson.definition_of_done', 'Definition of Done')}
+            </Text>
+            {dodProgress?.isComplete && (
+              <Ionicons
+                name="checkmark-circle"
+                size={24}
+                color={theme.colors.success}
+                style={{ marginLeft: 'auto' }}
+              />
+            )}
+          </View>
+
+          {loadingDod && !dodProgress ? (
+            <ActivityIndicator color={theme.colors.primary} size="small" />
+          ) : dodProgress ? (
+            <View style={currentStyles.dodContent}>
+              <View style={currentStyles.dodItem}>
+                <Ionicons
+                  name={
+                    dodProgress.keyPointsViewed >= dodProgress.keyPointsTotal
+                      ? 'checkbox'
+                      : 'square-outline'
+                  }
+                  size={20}
+                  color={
+                    dodProgress.keyPointsViewed >= dodProgress.keyPointsTotal
+                      ? theme.colors.success
+                      : theme.colors.textTertiary
+                  }
+                />
+                <Text style={currentStyles.dodText}>
+                  {t('study_lesson.key_points_progress', {
+                    current: dodProgress.keyPointsViewed,
+                    total: dodProgress.keyPointsTotal,
+                    defaultValue: `View all key points (${dodProgress.keyPointsViewed}/${dodProgress.keyPointsTotal})`,
+                  })}
+                </Text>
+              </View>
+              <View style={currentStyles.dodItem}>
+                <Ionicons
+                  name={
+                    dodProgress.quizzesPassed >= dodProgress.quizzesRequired
+                      ? 'checkbox'
+                      : 'square-outline'
+                  }
+                  size={20}
+                  color={
+                    dodProgress.quizzesPassed >= dodProgress.quizzesRequired
+                      ? theme.colors.success
+                      : theme.colors.textTertiary
+                  }
+                />
+                <Text style={currentStyles.dodText}>
+                  {t('study_lesson.quizzes_progress', {
+                    current: dodProgress.quizzesPassed,
+                    total: dodProgress.quizzesRequired,
+                    defaultValue: `Pass required quizzes (${dodProgress.quizzesPassed}/${dodProgress.quizzesRequired})`,
+                  })}
+                </Text>
+              </View>
+              <View style={currentStyles.dodProgressContainer}>
+                <View style={currentStyles.dodProgressBar}>
+                  <View
+                    style={[
+                      currentStyles.dodProgressFill,
+                      {
+                        width: `${dodProgress.totalProgress}%`,
+                        backgroundColor: dodProgress.isComplete
+                          ? theme.colors.success
+                          : theme.colors.primary,
+                      },
+                    ]}
+                  />
+                </View>
+                <Text style={currentStyles.dodPercentText}>
+                  {Math.round(dodProgress.totalProgress)}%
+                </Text>
+              </View>
+            </View>
+          ) : (
+            <Text style={currentStyles.noContentText}>
+              {t('study_lesson.no_dod_data', 'No progress data available')}
+            </Text>
           )}
         </View>
 
@@ -555,6 +739,47 @@ const styles = (
       ...typography('body'),
       color: theme.colors.textSecondary,
       textAlign: 'center',
+    },
+    // DOD Styles
+    dodContent: {
+      gap: spacing.sm,
+    },
+    dodItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-start',
+      gap: spacing.sm,
+    },
+    dodText: {
+      ...typography('caption'),
+      color: theme.colors.text,
+      flex: 1,
+      textAlign: 'left',
+    },
+    dodProgressContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      marginTop: spacing.sm,
+    },
+    dodProgressBar: {
+      flex: 1,
+      height: 8,
+      backgroundColor: theme.colors.border,
+      borderRadius: 4,
+      overflow: 'hidden',
+    },
+    dodProgressFill: {
+      height: '100%',
+      borderRadius: 4,
+    },
+    dodPercentText: {
+      ...typography('caption'),
+      ...fontWeight('bold'),
+      color: theme.colors.textSecondary,
+      width: 45,
+      textAlign: 'center',
+      marginBottom: 3,
     },
   });
 

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Switch,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -71,6 +72,7 @@ const QuizTakingScreen: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isTimerPaused, setIsTimerPaused] = useState(false);
+  const [postToFeed, setPostToFeed] = useState(true);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -268,15 +270,15 @@ const QuizTakingScreen: React.FC = () => {
 
       const result = await tryFetchWithFallback(
         `
-        mutation SubmitQuizAnswers($quizId: ID!, $answers: [QuestionAnswerInput!]!) {
-          submitQuizAnswers(quizId: $quizId, answers: $answers) {
+        mutation SubmitQuizAnswers($quizId: ID!, $answers: [QuestionAnswerInput!]!, $postToFeed: Boolean) {
+          submitQuizAnswers(quizId: $quizId, answers: $answers, postToFeed: $postToFeed) {
             score
             totalQuestions
             isPassed
           }
         }
       `,
-        { quizId: quiz.id, answers },
+        { quizId: quiz.id, answers, postToFeed },
         token,
       );
 
@@ -335,10 +337,7 @@ const QuizTakingScreen: React.FC = () => {
     return (
       <View style={common.container}>
         <UnifiedHeader showBackButton title={t('quiz_taking.quiz_error')} />
-        <RetryView 
-          message={error}
-          onRetry={fetchQuiz}
-        />
+        <RetryView message={error} onRetry={fetchQuiz} />
       </View>
     );
   }
@@ -543,26 +542,41 @@ const QuizTakingScreen: React.FC = () => {
         </TouchableOpacity>
 
         {currentQuestionIndex === quiz.questions.length - 1 ? (
-          <TouchableOpacity
-            style={[
-              currentStyles.navButton,
-              currentStyles.nextButton,
-              submitting && currentStyles.navButtonDisabled,
-            ]}
-            onPress={handleSubmitQuiz}
-            disabled={submitting}
-          >
-            {submitting ? (
-              <ActivityIndicator color="#FFFFFF" size="small" />
-            ) : (
-              <>
-                <Text style={[currentStyles.navButtonText, currentStyles.nextButtonText]}>
-                  {t('quiz_taking.submit_quiz', 'Submit')}
-                </Text>
-                <Ionicons name="checkmark-done" size={20} color="#FFFFFF" />
-              </>
-            )}
-          </TouchableOpacity>
+          <View style={{ flex: 1.5, gap: 8 }}>
+            <TouchableOpacity
+              style={[
+                currentStyles.navButton,
+                currentStyles.nextButton,
+                submitting && currentStyles.navButtonDisabled,
+                { marginBottom: 8 },
+              ]}
+              onPress={handleSubmitQuiz}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <>
+                  <Text style={[currentStyles.navButtonText, currentStyles.nextButtonText]}>
+                    {t('quiz_taking.submit_quiz', 'Submit')}
+                  </Text>
+                  <Ionicons name="checkmark-done" size={20} color="#FFFFFF" />
+                </>
+              )}
+            </TouchableOpacity>
+
+            <View style={currentStyles.postToFeedRow}>
+              <Text style={currentStyles.postToFeedText}>
+                {t('home_screen.community_feed', 'Social Feed')}
+              </Text>
+              <Switch
+                value={postToFeed}
+                onValueChange={setPostToFeed}
+                trackColor={{ false: '#D1D5DB', true: '#284196' }}
+                thumbColor="#FFFFFF"
+              />
+            </View>
+          </View>
         ) : (
           <TouchableOpacity
             style={[currentStyles.navButton, currentStyles.nextButton]}
@@ -814,6 +828,17 @@ const styles = (
     },
     navButtonTextDisabled: {
       color: '#9CA3AF',
+    },
+    postToFeedRow: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 12,
+    },
+    postToFeedText: {
+      ...typography('label'),
+      ...fontWeight('600'),
+      color: '#6B7280',
     },
 
     // Legacy placeholders to ensure no crash if common uses them

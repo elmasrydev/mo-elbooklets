@@ -1,15 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  ActivityIndicator,
-  RefreshControl,
-  Image,
-} from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,31 +7,74 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
-import { getSubjectConfig } from '../utils/subjectTheme';
 import { useTranslation } from 'react-i18next';
 import { layout } from '../config/layout';
 import { tryFetchWithFallback } from '../config/api';
 import UnifiedHeader from '../components/UnifiedHeader';
-import AppButton from '../components/AppButton';
 import SubjectIcon from '../components/SubjectIcon';
 import { GenericListSkeleton } from '../components/SkeletonLoader';
 import RetryView from '../components/RetryView';
+import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
 
 interface Subject {
   id: string;
   name: string;
   description?: string;
   chapters: { id: string }[];
+  study_progress: number;
+  quiz_progress: number;
 }
 
 const USE_DUMMY_DATA = false; // Flag for testing UI without real API data
 const DUMMY_SUBJECTS: Subject[] = [
-  { id: '1', name: 'Arabic / عربي', description: 'Secondary 1', chapters: [] },
-  { id: '2', name: 'English', description: 'Secondary 1', chapters: [] },
-  { id: '3', name: 'Math / رياضيات', description: 'Secondary 1', chapters: [] },
-  { id: '4', name: 'Science / علوم', description: 'Secondary 1', chapters: [] },
-  { id: '5', name: 'History / تاريخ', description: 'Secondary 1', chapters: [] },
-  { id: '6', name: 'Geography / جغرافيا', description: 'Secondary 1', chapters: [] },
+  {
+    id: '1',
+    name: 'Arabic / عربي',
+    description: 'Secondary 1',
+    chapters: [],
+    study_progress: 0,
+    quiz_progress: 0,
+  },
+  {
+    id: '2',
+    name: 'English',
+    description: 'Secondary 1',
+    chapters: [],
+    study_progress: 0,
+    quiz_progress: 0,
+  },
+  {
+    id: '3',
+    name: 'Math / رياضيات',
+    description: 'Secondary 1',
+    chapters: [],
+    study_progress: 0,
+    quiz_progress: 0,
+  },
+  {
+    id: '4',
+    name: 'Science / علوم',
+    description: 'Secondary 1',
+    chapters: [],
+    study_progress: 0,
+    quiz_progress: 0,
+  },
+  {
+    id: '5',
+    name: 'History / تاريخ',
+    description: 'Secondary 1',
+    chapters: [],
+    study_progress: 0,
+    quiz_progress: 0,
+  },
+  {
+    id: '6',
+    name: 'Geography / جغرافيا',
+    description: 'Secondary 1',
+    chapters: [],
+    study_progress: 0,
+    quiz_progress: 0,
+  },
 ];
 
 const StudyScreen: React.FC = () => {
@@ -86,6 +119,8 @@ const StudyScreen: React.FC = () => {
             id
             name
             description
+            study_progress
+            quiz_progress
             chapters {
               id
             }
@@ -125,85 +160,130 @@ const StudyScreen: React.FC = () => {
     [theme, fontSizes, spacing, borderRadius, common, isRTL, typography, fontWeight],
   );
 
+  let content;
+  if (loading && subjectsToRender.length === 0 && !USE_DUMMY_DATA) {
+    content = (
+      <View style={{ paddingTop: 16, paddingHorizontal: layout.screenPadding }}>
+        <GenericListSkeleton numItems={6} />
+      </View>
+    );
+  } else if (error && !USE_DUMMY_DATA) {
+    content = (
+      <RetryView
+        message={error || t('study_screen.error_loading_subjects')}
+        onRetry={() => fetchSubjects()}
+      />
+    );
+  } else if (subjectsToRender.length === 0) {
+    content = (
+      <View style={currentStyles.emptyState}>
+        <Ionicons name="book-outline" size={spacing.icon.xl} color={theme.colors.textSecondary} />
+        <Text style={currentStyles.emptyStateTitle}>{t('study_screen.no_subjects_available')}</Text>
+        <Text style={currentStyles.emptyStateSubtitle}>
+          {t('study_screen.no_subjects_for_grade')}
+        </Text>
+      </View>
+    );
+  } else {
+    content = (
+      <ScrollView
+        style={currentStyles.content}
+        contentContainerStyle={[
+          currentStyles.scrollContentContainer,
+          { paddingBottom: Math.max(common.insets.bottom, spacing.xl) },
+        ]}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[theme.colors.primary]}
+            tintColor={theme.colors.primary}
+          />
+        }
+      >
+        <View style={currentStyles.pageHeader}>
+          <Text style={currentStyles.pageTitle}>{t('study_screen.page_title')}</Text>
+          <Text style={currentStyles.pageSubtitle}>{t('study_screen.page_subtitle')}</Text>
+        </View>
+
+        {subjectsToRender.map((subject) => {
+          return (
+            <TouchableOpacity
+              key={subject.id}
+              style={currentStyles.subjectCard}
+              onPress={() => handleSubjectSelect(subject)}
+            >
+              <SubjectIcon
+                subjectName={subject.name}
+                size={56}
+                style={currentStyles.iconBoxOverride}
+              />
+
+              <View style={currentStyles.subjectInfo}>
+                <Text style={currentStyles.subjectName}>{subject.name}</Text>
+
+                <View style={currentStyles.progressContainer}>
+                  <View style={[currentStyles.progressRow, { flexDirection: common.rowDirection }]}>
+                    <Text style={[currentStyles.progressLabel, { textAlign: common.textAlign }]}>
+                      {t('study_screen.study_label', 'Study')}
+                    </Text>
+                    <View style={currentStyles.progressBar}>
+                      <View
+                        style={[
+                          currentStyles.progressFill,
+                          {
+                            width: `${Math.min(100, subject.study_progress || 0)}%`,
+                            backgroundColor: theme.colors.primary,
+                          },
+                        ]}
+                      />
+                    </View>
+                    <Text style={[currentStyles.progressPercent]}>
+                      {Math.round(subject.study_progress || 0)}%
+                    </Text>
+                  </View>
+
+                  <View style={[currentStyles.progressRow, { flexDirection: common.rowDirection }]}>
+                    <Text style={[currentStyles.progressLabel, { textAlign: common.textAlign }]}>
+                      {t('common.quiz', 'Quiz')}
+                    </Text>
+                    <View style={currentStyles.progressBar}>
+                      <View
+                        style={[
+                          currentStyles.progressFill,
+                          {
+                            width: `${Math.min(100, subject.quiz_progress || 0)}%`,
+                            backgroundColor: theme.colors.orange || '#F59E0B',
+                          },
+                        ]}
+                      />
+                    </View>
+                    <Text style={[currentStyles.progressPercent]}>
+                      {Math.round(subject.quiz_progress || 0)}%
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              <Ionicons
+                name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                size={20}
+                color={theme.colors.textTertiary}
+                style={currentStyles.chevronIcon}
+              />
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+    );
+  }
+
   return (
     <View style={currentStyles.container}>
       <UnifiedHeader title={t('study_screen.header_title')} />
-
-      {loading && subjectsToRender.length === 0 && !USE_DUMMY_DATA ? (
-        <View style={{ paddingTop: 16, paddingHorizontal: layout.screenPadding }}>
-          <GenericListSkeleton numItems={6} />
-        </View>
-      ) : error && !USE_DUMMY_DATA ? (
-        <RetryView 
-          message={error || t('study_screen.error_loading_subjects')} 
-          onRetry={() => fetchSubjects()} 
-        />
-      ) : subjectsToRender.length === 0 ? (
-        <View style={currentStyles.emptyState}>
-          <Ionicons name="book-outline" size={spacing.icon.xl} color={theme.colors.textSecondary} />
-          <Text style={currentStyles.emptyStateTitle}>
-            {t('study_screen.no_subjects_available')}
-          </Text>
-          <Text style={currentStyles.emptyStateSubtitle}>
-            {t('study_screen.no_subjects_for_grade')}
-          </Text>
-        </View>
-      ) : (
-        <ScrollView
-          style={currentStyles.content}
-          contentContainerStyle={[
-            currentStyles.scrollContentContainer,
-            { paddingBottom: Math.max(common.insets.bottom, spacing.xl) },
-          ]}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={[theme.colors.primary]}
-              tintColor={theme.colors.primary}
-            />
-          }
-        >
-          <View style={currentStyles.pageHeader}>
-            <Text style={currentStyles.pageTitle}>{t('study_screen.page_title')}</Text>
-            <Text style={currentStyles.pageSubtitle}>{t('study_screen.page_subtitle')}</Text>
-          </View>
-
-          {subjectsToRender.map((subject) => {
-            const config = getSubjectConfig(subject.name, theme);
-            return (
-              <TouchableOpacity
-                key={subject.id}
-                style={currentStyles.subjectCard}
-                onPress={() => handleSubjectSelect(subject)}
-              >
-                <SubjectIcon
-                  subjectName={subject.name}
-                  size={56}
-                  style={currentStyles.iconBoxOverride}
-                />
-
-                <View style={currentStyles.subjectInfo}>
-                  <Text style={currentStyles.subjectName}>{subject.name}</Text>
-                  <Text style={currentStyles.subjectChapters}>
-                    {subject.chapters?.length || 0} {t('study_screen.available_booklets')}
-                    {subject.description ? ` • ${subject.description}` : ''}
-                  </Text>
-                </View>
-
-                {/* Right Chevron Icon */}
-                <Ionicons
-                  name={isRTL ? 'chevron-back' : 'chevron-forward'}
-                  size={20}
-                  color={theme.colors.textTertiary}
-                  style={currentStyles.chevronIcon}
-                />
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      )}
+      {content}
+      <ProfileCompletionPrompt context="study" />
     </View>
   );
 };
@@ -327,6 +407,38 @@ const styles = (
     scrollContentContainer: {
       paddingHorizontal: layout.screenPadding,
       paddingTop: spacing.md,
+    },
+    progressContainer: {
+      marginTop: spacing.xs,
+      width: '100%',
+      gap: 4,
+    },
+    progressRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    progressLabel: {
+      ...typography('label'),
+      minWidth: 40,
+      color: theme.colors.textSecondary,
+    },
+    progressPercent: {
+      ...typography('label'),
+      minWidth: 37,
+      textAlign: 'center',
+      color: theme.colors.textTertiary,
+    },
+    progressBar: {
+      flex: 1,
+      height: 3,
+      backgroundColor: theme.colors.border + '40',
+      borderRadius: 2,
+      overflow: 'hidden',
+    },
+    progressFill: {
+      height: '100%',
+      borderRadius: 2,
     },
   });
 

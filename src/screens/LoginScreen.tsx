@@ -22,7 +22,6 @@ import { useAutoReset } from '../hooks/useAutoReset';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { layout } from '../config/layout';
 
 const LoginScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -61,12 +60,13 @@ const LoginScreen: React.FC = () => {
       if (!result.success) {
         showConfirm({
           title: t('auth.login_failed'),
-          message: result.error || t('auth.invalid_credentials'),
+          message: t(result.error || 'auth.invalid_credentials'),
           showCancel: false,
           onConfirm: () => {},
         });
       }
     } catch (error) {
+      console.error('Login screen error:', error);
       showConfirm({
         title: t('common.error'),
         message: t('common.unexpected_error'),
@@ -78,7 +78,7 @@ const LoginScreen: React.FC = () => {
     }
   };
 
-  const currentStyles = styles(
+  const currentStyles = styles({
     theme,
     common,
     fontSizes,
@@ -88,9 +88,9 @@ const LoginScreen: React.FC = () => {
     typography,
     fontWeight,
     insets,
-  );
+  });
 
-  const isMobileValid = new RegExp('^01[0125][0-9]{8}$').test(mobile.trim());
+  const isMobileValid = /^01[0125]\d{8}$/.test(mobile.trim());
   const isPasswordValid = password.length >= 8;
 
   const getMobileBorderColor = () => {
@@ -160,7 +160,7 @@ const LoginScreen: React.FC = () => {
                   <TextInput
                     style={currentStyles.input}
                     value={mobile}
-                    onChangeText={(val) => setMobile(val.replace(/[^0-9]/g, '').slice(0, 11))}
+                    onChangeText={(val) => setMobile(val.replaceAll(/\D/g, '').slice(0, 11))}
                     maxLength={11}
                     placeholder={t('auth.mobile_placeholder')}
                     placeholderTextColor={theme.colors.textTertiary}
@@ -171,7 +171,6 @@ const LoginScreen: React.FC = () => {
                     returnKeyType="next"
                     onSubmitEditing={() => passwordRef.current?.focus()}
                     onBlur={() => setTouchedMobile(true)}
-                    blurOnSubmit={false}
                   />
                 </View>
               </View>
@@ -234,7 +233,7 @@ const LoginScreen: React.FC = () => {
                   <ActivityIndicator size="small" color="#FFF" />
                 ) : (
                   <Ionicons
-                    name={isRTL ? 'log-in-outline' : 'log-in-outline'}
+                    name="log-in-outline"
                     size={20}
                     color="#FFF"
                     style={{ transform: [{ scaleX: isRTL ? -1 : 1 }] }}
@@ -282,18 +281,18 @@ const LoginScreen: React.FC = () => {
   );
 };
 
-const styles = (
-  theme: any,
-  common: any,
-  fontSizes: any,
-  spacing: any,
-  borderRadius: any,
-  isRTL: boolean,
-  typography: any,
-  fontWeight: any,
-  insets: any,
-) =>
-  StyleSheet.create({
+const styles = (config: any) => {
+  const {
+    theme,
+    fontSizes,
+    spacing,
+    borderRadius,
+    isRTL,
+    typography,
+    fontWeight,
+    insets,
+  } = config;
+  return StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: theme.colors.background,
@@ -506,5 +505,6 @@ const styles = (
       width: '100%',
     },
   });
+};
 
 export default LoginScreen;

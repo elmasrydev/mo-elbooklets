@@ -22,6 +22,7 @@ import { useTypography } from '../hooks/useTypography';
 import UnifiedHeader from '../components/UnifiedHeader';
 import AppButton from '../components/AppButton';
 import { GenericListSkeleton } from '../components/SkeletonLoader';
+import { useFollowToggle } from '../hooks/useFollowToggle';
 import RetryView from '../components/RetryView';
 import { layout } from '../config/layout';
 import { tryFetchWithFallback } from '../config/api';
@@ -154,10 +155,31 @@ const LeaderboardScreen: React.FC = () => {
       } else {
         setLeaderboardError(t('leaderboard_screen.error_loading_leaderboard'));
       }
-    } catch (err: any) {
-      setLeaderboardError(t('leaderboard_screen.error_loading_leaderboard'));
     } finally {
       setLeaderboardLoading(false);
+    }
+  };
+
+  const { toggleFollow } = useFollowToggle();
+
+  const handleFollowToggle = async (studentId: string) => {
+    const result = await toggleFollow(studentId);
+    if (result?.success) {
+      const updateList = (leaderboard: { entries: Student[]; userEntry: Student | null }) => ({
+        ...leaderboard,
+        entries: leaderboard.entries.map((s) =>
+          s.id === studentId ? { ...s, isFollowing: result.isFollowing } : s,
+        ),
+      });
+
+      setAllLeaderboard(updateList);
+      setSubjectLeaderboards((prev) => {
+        const next = { ...prev };
+        Object.keys(next).forEach((tabId) => {
+          next[tabId] = updateList(next[tabId]);
+        });
+        return next;
+      });
     }
   };
 
@@ -340,11 +362,27 @@ const LeaderboardScreen: React.FC = () => {
                 <View style={currentStyles.listItemAvatar}>
                   <Image source={{ uri: avatarUri }} style={currentStyles.avatarImage} />
                 </View>
-                <Text style={currentStyles.listItemNameText} numberOfLines={1}>
-                  {item.name}
-                </Text>
+                <View style={currentStyles.listItemNameContainer}>
+                  <Text style={currentStyles.listItemNameText} numberOfLines={1}>
+                    {item.name}
+                  </Text>
+                  <Text style={currentStyles.listItemPointsTextSub}>{item.xp.toLocaleString()} XP</Text>
+                </View>
               </View>
-              <Text style={currentStyles.listItemPointsText}>{item.xp.toLocaleString()} XP</Text>
+              <TouchableOpacity
+                style={[
+                  currentStyles.followButton,
+                  item.isFollowing && currentStyles.followButtonFollowing
+                ]}
+                onPress={() => handleFollowToggle(item.id)}
+              >
+                <Text style={[
+                  currentStyles.followButtonText,
+                  item.isFollowing && currentStyles.followButtonTextFollowing
+                ]}>
+                  {item.isFollowing ? t('common.following') : t('common.follow')}
+                </Text>
+              </TouchableOpacity>
             </View>
           );
         }}
@@ -607,6 +645,38 @@ const styles = (
     listItemPointsText: {
       ...typography('caption'),
       ...fontWeight('bold'),
+      color: theme.colors.primary,
+    },
+    listItemPointsTextSub: {
+      fontSize: 10,
+      ...fontWeight('600'),
+      color: theme.colors.textTertiary,
+      textAlign: common.textAlign,
+    },
+    listItemNameContainer: {
+      flex: 1,
+    },
+
+    // Follow Button
+    followButton: {
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 6,
+      borderRadius: borderRadius.md,
+      backgroundColor: theme.colors.primary,
+      minWidth: 70,
+      alignItems: 'center',
+    },
+    followButtonFollowing: {
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: theme.colors.primary,
+    },
+    followButtonText: {
+      fontSize: 10,
+      ...fontWeight('bold'),
+      color: theme.colors.textOnDark,
+    },
+    followButtonTextFollowing: {
       color: theme.colors.primary,
     },
 

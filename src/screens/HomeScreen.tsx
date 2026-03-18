@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -31,6 +32,8 @@ import QuizCompletionCard from '../components/feed/QuizCompletionCard';
 import RankChangeCard from '../components/feed/RankChangeCard';
 import ConnectionCard from '../components/feed/ConnectionCard';
 import { CardListSkeleton } from '../components/SkeletonLoader';
+import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
+import { isRTL, textAlign } from '../lib/rtl';
 
 const { width } = Dimensions.get('window');
 
@@ -58,6 +61,7 @@ interface ActivitiesData {
   avg_score: number;
   performance_status: string;
   performance_trend: string;
+  streak: number;
   activities: any[];
   weekly_performance: WeeklyPerformance[];
 }
@@ -67,6 +71,8 @@ interface Subject {
   name: string;
   description?: string;
   chapters: { id: string }[];
+  study_progress: number;
+  quiz_progress: number;
 }
 
 interface LeaderboardEntry {
@@ -89,6 +95,24 @@ interface SocialFeedItem {
   };
   likes: number;
   comments: number;
+}
+
+interface TodayScheduleEntry {
+  id: string;
+  subject: { name: string };
+  lessonGoal: number;
+  quizGoal: number;
+  lessonsCompleted: number;
+  quizzesCompleted: number;
+  completionPercentage: number;
+  isComplete: boolean;
+}
+
+interface TodayScheduleData {
+  date: string;
+  dayName: string;
+  isDayOff?: boolean;
+  schedule: TodayScheduleEntry[];
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -199,6 +223,7 @@ const HomeScreen: React.FC = () => {
   const [leaderboardEntries, setLeaderboardEntries] = useState<LeaderboardEntry[]>([]);
   const [leaderboardUser, setLeaderboardUser] = useState<LeaderboardEntry | null>(null);
   const [socialFeed, setSocialFeed] = useState<SocialFeedItem[]>([]);
+  const [todaySchedule, setTodaySchedule] = useState<TodayScheduleData | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchHomeData = useCallback(async () => {
@@ -208,12 +233,12 @@ const HomeScreen: React.FC = () => {
       if (!token) return;
 
       // Fetch all data in parallel
-      const [activitiesResult, subjectsResult, leaderboardResult, socialResult] = await Promise.all(
-        [
+      const [activitiesResult, subjectsResult, leaderboardResult, socialResult, todayResult] =
+        await Promise.all([
           tryFetchWithFallback(
             `query HomeData {
               activities {
-                total_quizzes avg_score performance_status performance_trend
+                total_quizzes avg_score performance_status performance_trend streak
                 activities { id name subject { id name } score totalQuestions completedAt isPassed }
                 weekly_performance { week score }
               }
@@ -227,7 +252,10 @@ const HomeScreen: React.FC = () => {
           ),
           tryFetchWithFallback(
             `query SubjectsForUserGrade {
-              subjectsForUserGrade { id name description chapters { id } }
+              subjectsForUserGrade { 
+                id name description study_progress quiz_progress 
+                chapters { id } 
+              }
             }`,
             undefined,
             token,
@@ -260,19 +288,39 @@ const HomeScreen: React.FC = () => {
             undefined,
             token,
           ),
-        ],
-      );
+          tryFetchWithFallback(
+            `query TodaySchedule {
+              todaySchedule {
+                date dayName dayOfWeek
+                schedule {
+                  id subject { name } lessonGoal quizGoal lessonsCompleted quizzesCompleted completionPercentage isComplete
+                }
+              }
+            }`,
+            undefined,
+            token,
+          ),
+        ]);
 
-      if (activitiesResult.data?.activities) setActivitiesData(activitiesResult.data.activities);
-      if (activitiesResult.data?.wheelOfSuccess) setWheelData(activitiesResult.data.wheelOfSuccess);
-      if (subjectsResult.data?.subjectsForUserGrade)
+      if (activitiesResult.data?.activities) {
+        setActivitiesData(activitiesResult.data.activities);
+      }
+      if (activitiesResult.data?.wheelOfSuccess) {
+        setWheelData(activitiesResult.data.wheelOfSuccess);
+      }
+      if (subjectsResult.data?.subjectsForUserGrade) {
         setSubjects(subjectsResult.data.subjectsForUserGrade);
+      }
       if (leaderboardResult.data?.leaderboard) {
         setLeaderboardEntries(leaderboardResult.data.leaderboard.entries || []);
         setLeaderboardUser(leaderboardResult.data.leaderboard.userEntry || null);
       }
-      if (socialResult.data?.socialTimeline)
+      if (socialResult.data?.socialTimeline) {
         setSocialFeed(socialResult.data.socialTimeline.slice(0, 2));
+      }
+      if (todayResult.data?.todaySchedule) {
+        setTodaySchedule(todayResult.data.todaySchedule);
+      }
     } catch (err: any) {
       console.error('Fetch home data error:', err);
     } finally {
@@ -336,7 +384,57 @@ const HomeScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* ─── 2. Quiz CTA Card ──────────────────────────────────── */}
+        {/* ─── 2. Streak Card ───────────────────────────────────── */}
+        {activitiesData && (
+          <LinearGradient
+            colors={isRTL ? ['#FB923C', '#F59E0B'] : ['#F59E0B', '#FB923C']}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={s.streakCard}
+          >
+            <View style={s.streakHeaderRow}>
+              <View style={s.streakTitleContainer}>
+                <Image
+                  source={require('../../assets/images/streak.png')}
+                  style={s.streakIcon}
+                  resizeMode="contain"
+                />
+                <Text style={s.streakTitleText}>
+                  {isRTL
+                    ? `${activitiesData.streak || 0} ${t('home_screen.streak_title')}`
+                    : `${t('home_screen.streak_title')} ${activitiesData.streak || 0}`}
+                </Text>
+              </View>
+              <View style={s.streakProgressBadge}>
+                <Text style={s.streakProgressBadgeText}>
+                  {t('home_screen.streak_progress', {
+                    count: Math.min(activitiesData.streak || 0, 7),
+                  })}
+                </Text>
+              </View>
+            </View>
+
+            <View style={s.streakProgressBarContainer}>
+              <View
+                style={[
+                  s.streakProgressBarFill,
+                  { width: `${Math.min(100, ((activitiesData.streak || 0) / 7) * 100)}%` },
+                ]}
+              />
+            </View>
+            <Text style={s.streakEncouragementText}>
+              {t(
+                (activitiesData.streak || 0) <= 2
+                  ? 'home_screen.streak_encouragement_0_2'
+                  : (activitiesData.streak || 0) <= 5
+                    ? 'home_screen.streak_encouragement_3_5'
+                    : 'home_screen.streak_encouragement_6_7',
+              )}
+            </Text>
+          </LinearGradient>
+        )}
+
+        {/* ─── 2c. Quiz CTA Card ─────────────────────────────────── */}
         <View style={s.quizCTACard}>
           <View style={s.quizCTAContent}>
             <Text style={s.quizCTATitle}>{t('home_screen.take_quiz')}</Text>
@@ -390,7 +488,7 @@ const HomeScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* ─── 3b. Weekly Performance ────────────────────────────── */}
+        {/* ─── 4. Weekly Performance ────────────────────────────── */}
         {activitiesData?.weekly_performance && activitiesData.weekly_performance.length > 0 && (
           <View style={s.weeklyCard}>
             <Text style={[s.sectionTitle, { marginBottom: spacing.md }]}>
@@ -441,7 +539,8 @@ const HomeScreen: React.FC = () => {
             </View>
           </View>
         )}
-        {/* ─── 4. My Subjects Grid ───────────────────────────────── */}
+
+        {/* ─── 5. My Subjects Grid ───────────────────────────────── */}
         {subjects.length > 0 && (
           <View style={s.sectionGapWrapper}>
             <View style={s.sectionHeader}>
@@ -461,50 +560,70 @@ const HomeScreen: React.FC = () => {
                     activeOpacity={0.7}
                     onPress={() => navigation.navigate('StudyChapters', { subject })}
                   >
-                    <View style={[s.subjectCardHeader, { flexDirection: common.rowDirection }]}>
-                      <SubjectIcon subjectName={subject.name} size={32} />
-                      <Text style={s.subjectChapterCount}>{chaptersCount}</Text>
-                    </View>
-                    <Text style={s.subjectName}>{subject.name}</Text>
-                    <View style={s.subjectProgressBar}>
-                      <View
-                        style={[
-                          s.subjectProgressFill,
-                          {
-                            width: `${Math.min(100, chaptersCount * 15)}%`,
-                            backgroundColor: config.color,
-                          },
-                        ]}
-                      />
-                    </View>
-                    <TouchableOpacity
-                      style={[
-                        s.subjectButton,
-                        chaptersCount >= 5
-                          ? { backgroundColor: theme.colors.primary }
-                          : {
-                              backgroundColor: theme.colors.background,
-                              borderWidth: 1,
-                              borderColor: theme.colors.primary + '1A',
-                            },
-                      ]}
-                      onPress={() => 
-                        navigation.navigate(chaptersCount >= 5 ? 'Quiz' : 'Study')
-                      }
+                    <SubjectIcon
+                      subjectName={subject.name}
+                      size={56}
+                      style={{ ...common.marginEnd(spacing.md) }}
+                    />
+
+                    <View
+                      style={{ flex: 1, justifyContent: 'center', alignItems: common.alignStart }}
                     >
-                      <Text
-                        style={[
-                          s.subjectButtonText,
-                          chaptersCount >= 5
-                            ? { color: theme.colors.textOnDark }
-                            : { color: theme.colors.primary },
-                        ]}
-                      >
-                        {chaptersCount >= 5
-                          ? t('home_screen.ready_for_quiz')
-                          : t('home_screen.continue')}
-                      </Text>
-                    </TouchableOpacity>
+                      <Text style={s.subjectName}>{subject.name}</Text>
+
+                      <View style={s.subjectProgressContainer}>
+                        <View
+                          style={[s.subjectProgressRow, { flexDirection: common.rowDirection }]}
+                        >
+                          <Text style={[s.subjectProgressLabel, { textAlign: common.textAlign }]}>
+                            {t('study_screen.study_label', 'Study')}
+                          </Text>
+                          <View style={s.subjectProgressBar}>
+                            <View
+                              style={[
+                                s.subjectProgressFill,
+                                {
+                                  width: `${Math.min(100, subject.study_progress || 0)}%`,
+                                  backgroundColor: theme.colors.primary,
+                                },
+                              ]}
+                            />
+                          </View>
+                          <Text style={[s.subjectProgressPercent]}>
+                            {Math.round(subject.study_progress || 0)}%
+                          </Text>
+                        </View>
+
+                        <View
+                          style={[s.subjectProgressRow, { flexDirection: common.rowDirection }]}
+                        >
+                          <Text style={[s.subjectProgressLabel, { textAlign: common.textAlign }]}>
+                            {t('common.quiz', 'Quiz')}
+                          </Text>
+                          <View style={s.subjectProgressBar}>
+                            <View
+                              style={[
+                                s.subjectProgressFill,
+                                {
+                                  width: `${Math.min(100, subject.quiz_progress || 0)}%`,
+                                  backgroundColor: theme.colors.orange || '#F59E0B',
+                                },
+                              ]}
+                            />
+                          </View>
+                          <Text style={[s.subjectProgressPercent]}>
+                            {Math.round(subject.quiz_progress || 0)}%
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    <Ionicons
+                      name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                      size={20}
+                      color={theme.colors.textTertiary}
+                      style={{ opacity: 0.8, ...common.marginStart(spacing.sm) }}
+                    />
                   </TouchableOpacity>
                 );
               })}
@@ -512,21 +631,67 @@ const HomeScreen: React.FC = () => {
           </View>
         )}
 
-        {/* ─── 5. Wheel of Success ─────────────────────────────────
-          
-          // <WheelOfSuccessSimple
-        //   theme={theme}
-        //   data={wheelData}
-        //   t={t}
-        //   typography={typography}
-        //   fontWeight={fontWeight}
-        //   common={common}
-        //   spacing={spacing}
-        //   borderRadius={borderRadius}
-        //   wheelStyles={s}
-        // />*/}
+        {/* ─── 6. Today's Plan Card (Study Schedule) ─────────────── */}
+        {todaySchedule && todaySchedule.schedule.length > 0 && (
+          <TouchableOpacity
+            style={s.planCard}
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate('StudyCalendar')}
+          >
+            <View style={s.planHeader}>
+              <View>
+                <Text style={s.planTitle}>{t('study_calendar.header_title')}</Text>
+                <Text style={s.planSubtitle}>
+                  {todaySchedule.dayName}, {todaySchedule.date}
+                </Text>
+              </View>
+              <View style={s.planBadge}>
+                <Text style={s.planBadgeText}>
+                  {todaySchedule.schedule.filter((e) => e.isComplete).length}/
+                  {todaySchedule.schedule.length}
+                </Text>
+              </View>
+            </View>
 
-        {/* ─── 6. Community Feed ─────────────────────────────────── */}
+            <View style={s.planItemsOverview}>
+              {todaySchedule.schedule.map((entry, idx) => (
+                <View key={entry.id} style={[s.planItem, idx > 0 && s.planItemBorder]}>
+                  <View style={s.planItemInfo}>
+                    <Text style={s.planItemName} numberOfLines={1}>
+                      {entry.subject.name}
+                    </Text>
+                    <View style={s.planProgressRow}>
+                      <View style={s.planMiniBar}>
+                        <View
+                          style={[
+                            s.planMiniFill,
+                            {
+                              width: `${entry.completionPercentage}%`,
+                              backgroundColor: entry.isComplete
+                                ? theme.colors.success
+                                : theme.colors.primary,
+                            },
+                          ]}
+                        />
+                      </View>
+                      <Text style={s.planPercent}>{Math.round(entry.completionPercentage)}%</Text>
+                    </View>
+                  </View>
+                  <Ionicons
+                    name={entry.isComplete ? 'checkmark-circle' : 'ellipse-outline'}
+                    size={20}
+                    color={entry.isComplete ? theme.colors.success : theme.colors.border}
+                  />
+                </View>
+              ))}
+            </View>
+          </TouchableOpacity>
+        )}
+
+        {/* ─── 8. Wheel of Success ───────────────────────────────── */}
+        {/* <WheelOfSuccessSimple ... /> */}
+
+        {/* ─── 9. Community Feed ─────────────────────────────────── */}
         {socialFeed.length > 0 && (
           <View style={s.sectionGapWrapper}>
             <Text style={[s.sectionTitle, { marginBottom: spacing.sectionGap }]}>
@@ -540,25 +705,13 @@ const HomeScreen: React.FC = () => {
               >
                 <View pointerEvents="none">
                   {item.type === 'quiz_completion' && item.quizData && (
-                    <QuizCompletionCard
-                      item={item as any}
-                      onLike={() => {}}
-                      onComment={() => {}}
-                    />
+                    <QuizCompletionCard item={item as any} onLike={() => {}} onComment={() => {}} />
                   )}
                   {item.type === 'new_connection' && (
-                    <ConnectionCard
-                      item={item as any}
-                      onLike={() => {}}
-                      onComment={() => {}}
-                    />
+                    <ConnectionCard item={item as any} onLike={() => {}} onComment={() => {}} />
                   )}
                   {item.type === 'rank_change' && (
-                    <RankChangeCard
-                      item={item as any}
-                      onLike={() => {}}
-                      onComment={() => {}}
-                    />
+                    <RankChangeCard item={item as any} onLike={() => {}} onComment={() => {}} />
                   )}
                 </View>
               </TouchableOpacity>
@@ -566,7 +719,7 @@ const HomeScreen: React.FC = () => {
           </View>
         )}
 
-        {/* ─── 7. Leaderboard Snippet ────────────────────────────── */}
+        {/* ─── 10. Leaderboard Snippet ────────────────────────────── */}
         {leaderboardEntries.length > 0 && (
           <View style={s.leaderboardCard}>
             <View style={[s.leaderboardHeader, { flexDirection: common.rowDirection }]}>
@@ -664,7 +817,7 @@ const HomeScreen: React.FC = () => {
           </View>
         )}
 
-        {/* ─── 8. Recent Activity ────────────────────────────────── */}
+        {/* ─── 11. Recent Activity ────────────────────────────────── */}
         {activitiesData && activitiesData.activities?.length > 0 && (
           <View style={s.sectionGapWrapper}>
             <View style={s.sectionHeader}>
@@ -686,6 +839,7 @@ const HomeScreen: React.FC = () => {
           </View>
         )}
       </ScrollView>
+      <ProfileCompletionPrompt context="study" />
     </View>
   );
 };
@@ -741,6 +895,92 @@ const getStyles = (
       ...typography('h3'),
       color: theme.colors.primary,
       ...fontWeight('bold'),
+    },
+    planCard: {
+      //marginTop: spacing.md,
+      backgroundColor: theme.colors.surface,
+      borderRadius: borderRadius.xl,
+      padding: spacing.lg,
+      marginBottom: spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      ...layout.shadow,
+    },
+    planHeader: {
+      flexDirection: common.rowDirection,
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing.md,
+    },
+    planTitle: {
+      ...typography('bodyLarge'),
+      ...fontWeight('bold'),
+      textAlign: 'left',
+      color: theme.colors.text,
+    },
+    planSubtitle: {
+      ...typography('body'),
+      color: theme.colors.textSecondary,
+      marginTop: 2,
+    },
+    planBadge: {
+      backgroundColor: theme.colors.primary + '1A',
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 12,
+    },
+    planBadgeText: {
+      ...typography('caption'),
+      ...fontWeight('bold'),
+      color: theme.colors.primary,
+    },
+    planItemsOverview: {
+      gap: spacing.sm,
+    },
+    planItem: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: spacing.xs,
+    },
+    planItemBorder: {
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.border + '33',
+      paddingTop: spacing.sm,
+    },
+    planItemInfo: {
+      flex: 1,
+      ...common.marginEnd(spacing.md),
+    },
+    planItemName: {
+      ...typography('caption'),
+      ...fontWeight('600'),
+      color: theme.colors.text,
+      marginBottom: 4,
+      textAlign: 'left',
+    },
+    planProgressRow: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      gap: 8,
+    },
+    planMiniBar: {
+      flex: 1,
+      height: 4,
+      backgroundColor: theme.colors.border,
+      borderRadius: 2,
+      overflow: 'hidden',
+    },
+    planMiniFill: {
+      height: '100%',
+      borderRadius: 2,
+    },
+    planPercent: {
+      ...typography('caption'),
+      color: theme.colors.textTertiary,
+      paddingHorizontal: 4,
+      textAlign: 'right',
+      marginBottom: 4,
     },
 
     // Quiz CTA Card
@@ -834,6 +1074,64 @@ const getStyles = (
       textAlign: 'left',
     },
 
+    // Streak Card
+    streakCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: borderRadius.xl,
+      padding: spacing.lg,
+      marginBottom: spacing.md,
+      ...layout.shadow,
+    },
+    streakHeaderRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing.md,
+    },
+    streakTitleContainer: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    streakIcon: {
+      width: 16,
+      height: 18,
+    },
+    streakTitleText: {
+      ...typography('h2'),
+      ...fontWeight('bold'),
+      color: '#FFFFFF',
+    },
+    streakProgressBadge: {
+      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+      paddingHorizontal: 12,
+      paddingVertical: 4,
+      borderRadius: 16,
+    },
+    streakProgressBadgeText: {
+      ...typography('bodySmall'),
+      ...fontWeight('bold'),
+      color: '#FFFFFF',
+    },
+    streakProgressBarContainer: {
+      height: 8,
+      backgroundColor: 'rgba(255, 255, 255, 0.3)',
+      borderRadius: 4,
+      marginBottom: spacing.md,
+      overflow: 'hidden',
+    },
+    streakProgressBarFill: {
+      height: '100%',
+      backgroundColor: '#FFFFFF',
+      borderRadius: 4,
+    },
+    streakEncouragementText: {
+      ...typography('caption'),
+      textAlign: 'left',
+      color: '#FFFFFF',
+      ...fontWeight('600'),
+    },
+
     // Weekly Performance
     weeklyCard: {
       backgroundColor: theme.colors.surface,
@@ -905,14 +1203,16 @@ const getStyles = (
 
     // Subjects Grid
     subjectsGrid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
+      flexDirection: 'column',
       gap: spacing.md,
     },
     subjectCard: {
-      width: (width - layout.screenPadding * 2 - spacing.md) / 2,
-      backgroundColor: theme.colors.surface,
+      width: '100%',
+      minHeight: 90,
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
       padding: spacing.md,
+      backgroundColor: theme.colors.surface,
       borderRadius: borderRadius.xl,
       borderWidth: 1,
       borderColor: theme.colors.border,
@@ -930,24 +1230,57 @@ const getStyles = (
       color: theme.colors.textTertiary,
     },
     subjectName: {
-      ...typography('body'),
-      ...fontWeight('bold'),
+      ...typography('h3'),
+      ...fontWeight('700'),
       color: theme.colors.text,
-      marginTop: spacing.md,
-      marginBottom: spacing.sm,
+      marginBottom: 2,
       textAlign: common.textAlign,
     },
     subjectProgressBar: {
-      width: '100%',
-      height: 5,
+      flex: 1,
+      height: 4,
       backgroundColor: theme.colors.border,
-      borderRadius: 3,
-      marginBottom: spacing.md,
+      borderRadius: 2,
       overflow: 'hidden',
     },
     subjectProgressFill: {
       height: '100%',
-      borderRadius: 3,
+      borderRadius: 2,
+    },
+    headerStreak: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: (theme.colors.orange || '#F59E0B') + '1A',
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 20,
+      gap: 4,
+    },
+    headerStreakText: {
+      ...typography('bodySmall'),
+      ...fontWeight('bold'),
+      color: theme.colors.orange || '#F59E0B',
+    },
+    subjectProgressContainer: {
+      width: '100%',
+      gap: 8,
+      marginBottom: spacing.md,
+    },
+    subjectProgressRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    subjectProgressLabel: {
+      ...typography('label'),
+      minWidth: 40,
+      color: theme.colors.textSecondary,
+    },
+    subjectProgressPercent: {
+      ...typography('label'),
+      minWidth: 37,
+      textAlign: 'center',
+      color: theme.colors.textTertiary,
     },
     subjectButton: {
       width: '100%',

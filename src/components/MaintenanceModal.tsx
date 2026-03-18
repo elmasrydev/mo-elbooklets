@@ -10,7 +10,7 @@ const MaintenanceModal: React.FC = () => {
   const { isMaintenanceMode } = useForceUpdate();
   const { theme, spacing, borderRadius } = useTheme();
   const { typography } = useTypography();
-  const { t } = useTranslation('common');
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (!isMaintenanceMode) return;
@@ -41,13 +41,10 @@ const MaintenanceModal: React.FC = () => {
 
           <View style={styles(theme, borderRadius, spacing).textContainer}>
             <Text style={[typography('h3'), styles(theme, borderRadius, spacing).title]}>
-              {t('maintenance.title', 'Under Maintenance')}
+              {t('common.maintenance.title')}
             </Text>
             <Text style={[typography('body'), styles(theme, borderRadius, spacing).description]}>
-              {t(
-                'maintenance.description',
-                'We are currently performing scheduled maintenance to improve your experience. Please check back shortly.'
-              )}
+              {t('common.maintenance.description')}
             </Text>
           </View>
         </View>
