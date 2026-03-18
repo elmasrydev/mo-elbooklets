@@ -176,6 +176,9 @@ const StudyCalendarScreen: React.FC = () => {
     const allEntries: any[] = [];
     Object.values(scheduleData).forEach((dayEntries) => {
       dayEntries.forEach((entry) => {
+        if (entry.lessonGoal === 0 && entry.quizGoal === 0) {
+          return; // omit records with 0 lessons and 0 quizzes
+        }
         allEntries.push({
           subjectId: entry.subjectId,
           dayOfWeek: entry.dayOfWeek,
@@ -307,14 +310,24 @@ const StudyCalendarScreen: React.FC = () => {
                   </View>
                   <Text style={currentStyles.goalLabel}>{t('study_calendar.lessons_goal')}</Text>
                 </View>
-                <TextInput
-                  style={currentStyles.goalValue}
-                  keyboardType="numeric"
-                  value={String(entry.lessonGoal)}
-                  onChangeText={(text) =>
-                    updateEntry(selectedDay, index, 'lessonGoal', parseInt(text) || 0)
-                  }
-                />
+                <View style={{ position: 'relative', justifyContent: 'center' }}>
+                  <TextInput
+                    style={currentStyles.goalValue}
+                    keyboardType="numeric"
+                    value={String(entry.lessonGoal)}
+                    onChangeText={(text) =>
+                      updateEntry(selectedDay, index, 'lessonGoal', parseInt(text) || 0)
+                    }
+                  />
+                  {entry.lessonGoal > 0 && (
+                    <TouchableOpacity
+                      style={currentStyles.clearButton}
+                      onPress={() => updateEntry(selectedDay, index, 'lessonGoal', 0)}
+                    >
+                      <Ionicons name="close-circle" size={18} color={theme.colors.textTertiary} />
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
               <View style={currentStyles.goalInput}>
                 <View style={currentStyles.goalHeader}>
@@ -332,14 +345,24 @@ const StudyCalendarScreen: React.FC = () => {
                   </View>
                   <Text style={currentStyles.goalLabel}>{t('study_calendar.quizzes_goal')}</Text>
                 </View>
-                <TextInput
-                  style={currentStyles.goalValue}
-                  keyboardType="numeric"
-                  value={String(entry.quizGoal)}
-                  onChangeText={(text) =>
-                    updateEntry(selectedDay, index, 'quizGoal', parseInt(text) || 0)
-                  }
-                />
+                <View style={{ position: 'relative', justifyContent: 'center' }}>
+                  <TextInput
+                    style={currentStyles.goalValue}
+                    keyboardType="numeric"
+                    value={String(entry.quizGoal)}
+                    onChangeText={(text) =>
+                      updateEntry(selectedDay, index, 'quizGoal', parseInt(text) || 0)
+                    }
+                  />
+                  {entry.quizGoal > 0 && (
+                    <TouchableOpacity
+                      style={currentStyles.clearButton}
+                      onPress={() => updateEntry(selectedDay, index, 'quizGoal', 0)}
+                    >
+                      <Ionicons name="close-circle" size={18} color={theme.colors.textTertiary} />
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
             </View>
 
@@ -556,8 +579,8 @@ const styles = (
       backgroundColor: theme.colors.primary + '1A',
       justifyContent: 'center',
       alignItems: 'center',
-      marginRight: isRTL ? 0 : spacing.xs,
-      marginLeft: isRTL ? spacing.xs : 0,
+
+      marginLeft: spacing.xs,
     },
     goalLabel: {
       ...typography('label'),
@@ -567,14 +590,24 @@ const styles = (
     goalValue: {
       backgroundColor: theme.colors.background,
       borderRadius: 12,
-      height: 48,
-      paddingHorizontal: spacing.sm,
+      height: 46,
+      verticalAlign: 'center',
+      paddingHorizontal: spacing.xl,
       ...typography('h3'),
       ...fontWeight('bold'),
       color: theme.colors.text,
       textAlign: 'center',
       borderWidth: 1,
       borderColor: theme.colors.border,
+    },
+    clearButton: {
+      position: 'absolute',
+      left: spacing.xs,
+      padding: spacing.xs,
+      justifyContent: 'center',
+      alignItems: 'center',
+      height: '100%',
+      zIndex: 1,
     },
     notesWrapper: {
       marginBottom: spacing.md,
