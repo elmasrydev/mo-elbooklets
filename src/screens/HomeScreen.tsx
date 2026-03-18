@@ -33,7 +33,7 @@ import RankChangeCard from '../components/feed/RankChangeCard';
 import ConnectionCard from '../components/feed/ConnectionCard';
 import { CardListSkeleton } from '../components/SkeletonLoader';
 import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
-import { textAlign } from '../lib/rtl';
+import { isRTL, textAlign } from '../lib/rtl';
 
 const { width } = Dimensions.get('window');
 
@@ -348,15 +348,7 @@ const HomeScreen: React.FC = () => {
   if (loading && !activitiesData) {
     return (
       <View style={common.container}>
-        <UnifiedHeader
-          leftContent={<AnimatedNavbarLogo isRTL={isRTL} />}
-          rightContent={
-            <View style={s.headerStreak}>
-              <Ionicons name="flame" size={20} color={theme.colors.orange || '#F59E0B'} />
-              <Text style={s.headerStreakText}>0</Text>
-            </View>
-          }
-        />
+        <UnifiedHeader leftContent={<AnimatedNavbarLogo isRTL={isRTL} />} />
         <View style={{ flex: 1, paddingTop: 16 }}>
           <CardListSkeleton numItems={4} />
         </View>
@@ -366,15 +358,7 @@ const HomeScreen: React.FC = () => {
 
   return (
     <View style={common.container}>
-      <UnifiedHeader
-        leftContent={<AnimatedNavbarLogo isRTL={isRTL} />}
-        rightContent={
-          <View style={s.headerStreak}>
-            <Ionicons name="flame" size={20} color={theme.colors.orange || '#F59E0B'} />
-            <Text style={s.headerStreakText}>{activitiesData?.streak || 0}</Text>
-          </View>
-        }
-      />
+      <UnifiedHeader leftContent={<AnimatedNavbarLogo isRTL={isRTL} />} />
 
       <ScrollView
         style={s.scrollFlex}
@@ -400,63 +384,57 @@ const HomeScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* ─── 1b. Today's Plan Card ──────────────────────────────── */}
-        {todaySchedule && todaySchedule.schedule.length > 0 && (
-          <TouchableOpacity
-            style={s.planCard}
-            activeOpacity={0.8}
-            onPress={() => navigation.navigate('StudyCalendar')}
+        {/* ─── 2. Streak Card ───────────────────────────────────── */}
+        {activitiesData && (
+          <LinearGradient
+            colors={isRTL ? ['#FB923C', '#F59E0B'] : ['#F59E0B', '#FB923C']}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={s.streakCard}
           >
-            <View style={s.planHeader}>
-              <View>
-                <Text style={s.planTitle}>{t('study_calendar.header_title')}</Text>
-                <Text style={s.planSubtitle}>
-                  {todaySchedule.dayName}, {todaySchedule.date}
+            <View style={s.streakHeaderRow}>
+              <View style={s.streakTitleContainer}>
+                <Image
+                  source={require('../../assets/images/streak.png')}
+                  style={s.streakIcon}
+                  resizeMode="contain"
+                />
+                <Text style={s.streakTitleText}>
+                  {isRTL
+                    ? `${activitiesData.streak || 0} ${t('home_screen.streak_title')}`
+                    : `${t('home_screen.streak_title')} ${activitiesData.streak || 0}`}
                 </Text>
               </View>
-              <View style={s.planBadge}>
-                <Text style={s.planBadgeText}>
-                  {todaySchedule.schedule.filter((e) => e.isComplete).length}/
-                  {todaySchedule.schedule.length}
+              <View style={s.streakProgressBadge}>
+                <Text style={s.streakProgressBadgeText}>
+                  {t('home_screen.streak_progress', {
+                    count: Math.min(activitiesData.streak || 0, 7),
+                  })}
                 </Text>
               </View>
             </View>
 
-            <View style={s.planItemsOverview}>
-              {todaySchedule.schedule.map((entry, idx) => (
-                <View key={entry.id} style={[s.planItem, idx > 0 && s.planItemBorder]}>
-                  <View style={s.planItemInfo}>
-                    <Text style={s.planItemName} numberOfLines={1}>
-                      {entry.subject.name}
-                    </Text>
-                    <View style={s.planProgressRow}>
-                      <View style={s.planMiniBar}>
-                        <View
-                          style={[
-                            s.planMiniFill,
-                            {
-                              width: `${entry.completionPercentage}%`,
-                              backgroundColor: entry.isComplete
-                                ? theme.colors.success
-                                : theme.colors.primary,
-                            },
-                          ]}
-                        />
-                      </View>
-                      <Text style={s.planPercent}>{Math.round(entry.completionPercentage)}%</Text>
-                    </View>
-                  </View>
-                  <Ionicons
-                    name={entry.isComplete ? 'checkmark-circle' : 'ellipse-outline'}
-                    size={20}
-                    color={entry.isComplete ? theme.colors.success : theme.colors.border}
-                  />
-                </View>
-              ))}
+            <View style={s.streakProgressBarContainer}>
+              <View
+                style={[
+                  s.streakProgressBarFill,
+                  { width: `${Math.min(100, ((activitiesData.streak || 0) / 7) * 100)}%` },
+                ]}
+              />
             </View>
-          </TouchableOpacity>
+            <Text style={s.streakEncouragementText}>
+              {t(
+                (activitiesData.streak || 0) <= 2
+                  ? 'home_screen.streak_encouragement_0_2'
+                  : (activitiesData.streak || 0) <= 5
+                    ? 'home_screen.streak_encouragement_3_5'
+                    : 'home_screen.streak_encouragement_6_7',
+              )}
+            </Text>
+          </LinearGradient>
         )}
-        {/* ─── 2. Quiz CTA Card ──────────────────────────────────── */}
+
+        {/* ─── 2c. Quiz CTA Card ─────────────────────────────────── */}
         <View style={s.quizCTACard}>
           <View style={s.quizCTAContent}>
             <Text style={s.quizCTATitle}>{t('home_screen.take_quiz')}</Text>
@@ -477,26 +455,6 @@ const HomeScreen: React.FC = () => {
             />
           </View>
         </View>
-
-        {/* ─── 2b. Streak Card ───────────────────────────────────── */}
-        {activitiesData && (
-          <LinearGradient
-            colors={isRTL ? ['#F59E0B', '#FB923C'] : ['#FB923C', '#F59E0B']}
-            start={{ x: 0, y: 0.5 }}
-            end={{ x: 1, y: 0.5 }}
-            style={s.streakCard}
-          >
-            <View style={s.streakIconContainer}>
-              <Text style={s.streakEmoji}>🔥</Text>
-            </View>
-            <View style={s.streakContent}>
-              <Text style={s.streakCount}>
-                {activitiesData.streak} {t('home_screen.days', 'Days')}
-              </Text>
-              <Text style={s.streakLabel}>{t('home_screen.current_streak', 'Current Streak')}</Text>
-            </View>
-          </LinearGradient>
-        )}
 
         {/* ─── 3. Stats Row ──────────────────────────────────────── */}
         <View style={s.statsRow}>
@@ -530,7 +488,7 @@ const HomeScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* ─── 3b. Weekly Performance ────────────────────────────── */}
+        {/* ─── 4. Weekly Performance ────────────────────────────── */}
         {activitiesData?.weekly_performance && activitiesData.weekly_performance.length > 0 && (
           <View style={s.weeklyCard}>
             <Text style={[s.sectionTitle, { marginBottom: spacing.md }]}>
@@ -581,7 +539,8 @@ const HomeScreen: React.FC = () => {
             </View>
           </View>
         )}
-        {/* ─── 4. My Subjects Grid ───────────────────────────────── */}
+
+        {/* ─── 5. My Subjects Grid ───────────────────────────────── */}
         {subjects.length > 0 && (
           <View style={s.sectionGapWrapper}>
             <View style={s.sectionHeader}>
@@ -672,21 +631,67 @@ const HomeScreen: React.FC = () => {
           </View>
         )}
 
-        {/* ─── 5. Wheel of Success ─────────────────────────────────
-          
-          // <WheelOfSuccessSimple
-        //   theme={theme}
-        //   data={wheelData}
-        //   t={t}
-        //   typography={typography}
-        //   fontWeight={fontWeight}
-        //   common={common}
-        //   spacing={spacing}
-        //   borderRadius={borderRadius}
-        //   wheelStyles={s}
-        // />*/}
+        {/* ─── 6. Today's Plan Card (Study Schedule) ─────────────── */}
+        {todaySchedule && todaySchedule.schedule.length > 0 && (
+          <TouchableOpacity
+            style={s.planCard}
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate('StudyCalendar')}
+          >
+            <View style={s.planHeader}>
+              <View>
+                <Text style={s.planTitle}>{t('study_calendar.header_title')}</Text>
+                <Text style={s.planSubtitle}>
+                  {todaySchedule.dayName}, {todaySchedule.date}
+                </Text>
+              </View>
+              <View style={s.planBadge}>
+                <Text style={s.planBadgeText}>
+                  {todaySchedule.schedule.filter((e) => e.isComplete).length}/
+                  {todaySchedule.schedule.length}
+                </Text>
+              </View>
+            </View>
 
-        {/* ─── 6. Community Feed ─────────────────────────────────── */}
+            <View style={s.planItemsOverview}>
+              {todaySchedule.schedule.map((entry, idx) => (
+                <View key={entry.id} style={[s.planItem, idx > 0 && s.planItemBorder]}>
+                  <View style={s.planItemInfo}>
+                    <Text style={s.planItemName} numberOfLines={1}>
+                      {entry.subject.name}
+                    </Text>
+                    <View style={s.planProgressRow}>
+                      <View style={s.planMiniBar}>
+                        <View
+                          style={[
+                            s.planMiniFill,
+                            {
+                              width: `${entry.completionPercentage}%`,
+                              backgroundColor: entry.isComplete
+                                ? theme.colors.success
+                                : theme.colors.primary,
+                            },
+                          ]}
+                        />
+                      </View>
+                      <Text style={s.planPercent}>{Math.round(entry.completionPercentage)}%</Text>
+                    </View>
+                  </View>
+                  <Ionicons
+                    name={entry.isComplete ? 'checkmark-circle' : 'ellipse-outline'}
+                    size={20}
+                    color={entry.isComplete ? theme.colors.success : theme.colors.border}
+                  />
+                </View>
+              ))}
+            </View>
+          </TouchableOpacity>
+        )}
+
+        {/* ─── 8. Wheel of Success ───────────────────────────────── */}
+        {/* <WheelOfSuccessSimple ... /> */}
+
+        {/* ─── 9. Community Feed ─────────────────────────────────── */}
         {socialFeed.length > 0 && (
           <View style={s.sectionGapWrapper}>
             <Text style={[s.sectionTitle, { marginBottom: spacing.sectionGap }]}>
@@ -714,7 +719,7 @@ const HomeScreen: React.FC = () => {
           </View>
         )}
 
-        {/* ─── 7. Leaderboard Snippet ────────────────────────────── */}
+        {/* ─── 10. Leaderboard Snippet ────────────────────────────── */}
         {leaderboardEntries.length > 0 && (
           <View style={s.leaderboardCard}>
             <View style={[s.leaderboardHeader, { flexDirection: common.rowDirection }]}>
@@ -812,7 +817,7 @@ const HomeScreen: React.FC = () => {
           </View>
         )}
 
-        {/* ─── 8. Recent Activity ────────────────────────────────── */}
+        {/* ─── 11. Recent Activity ────────────────────────────────── */}
         {activitiesData && activitiesData.activities?.length > 0 && (
           <View style={s.sectionGapWrapper}>
             <View style={s.sectionHeader}>
@@ -1071,41 +1076,60 @@ const getStyles = (
 
     // Streak Card
     streakCard: {
-      flexDirection: common.rowDirection,
-      alignItems: 'center',
       backgroundColor: theme.colors.surface,
       borderRadius: borderRadius.xl,
-      padding: spacing.md,
+      padding: spacing.lg,
       marginBottom: spacing.md,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
       ...layout.shadow,
     },
-    streakIconContainer: {
-      width: 48,
-      height: 48,
-      borderRadius: 24,
-      backgroundColor: (theme.colors.orange || '#F59E0B') + '1A',
-      justifyContent: 'center',
+    streakHeaderRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
       alignItems: 'center',
-      ...common.marginEnd(spacing.md),
+      marginBottom: spacing.md,
     },
-    streakEmoji: {
-      fontSize: 24,
+    streakTitleContainer: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      gap: spacing.sm,
     },
-    streakContent: {
-      flex: 1,
+    streakIcon: {
+      width: 16,
+      height: 18,
     },
-    streakCount: {
+    streakTitleText: {
       ...typography('h2'),
       ...fontWeight('bold'),
-      color: theme.colors.buttonPrimaryText,
-      textAlign: 'left',
+      color: '#FFFFFF',
     },
-    streakLabel: {
+    streakProgressBadge: {
+      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+      paddingHorizontal: 12,
+      paddingVertical: 4,
+      borderRadius: 16,
+    },
+    streakProgressBadgeText: {
+      ...typography('bodySmall'),
+      ...fontWeight('bold'),
+      color: '#FFFFFF',
+    },
+    streakProgressBarContainer: {
+      height: 8,
+      backgroundColor: 'rgba(255, 255, 255, 0.3)',
+      borderRadius: 4,
+      marginBottom: spacing.md,
+      overflow: 'hidden',
+    },
+    streakProgressBarFill: {
+      height: '100%',
+      backgroundColor: '#FFFFFF',
+      borderRadius: 4,
+    },
+    streakEncouragementText: {
       ...typography('caption'),
-      color: theme.colors.buttonPrimaryText,
       textAlign: 'left',
+      color: '#FFFFFF',
+      ...fontWeight('600'),
     },
 
     // Weekly Performance
