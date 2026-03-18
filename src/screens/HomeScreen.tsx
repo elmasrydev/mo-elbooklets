@@ -386,48 +386,6 @@ const HomeScreen: React.FC = () => {
           paddingHorizontal: layout.screenPadding,
         }}
       >
-        {/* ─── 0b. Today's Plan Card ──────────────────────────────── */}
-        {todaySchedule && todaySchedule.schedule.length > 0 && (
-          <TouchableOpacity
-            style={s.planCard}
-            activeOpacity={0.8}
-            onPress={() => navigation.navigate('StudyCalendar')}
-          >
-            <View style={s.planHeader}>
-              <View>
-                <Text style={s.planTitle}>{t('study_calendar.header_title')}</Text>
-                <Text style={s.planSubtitle}>{todaySchedule.dayName}, {todaySchedule.date}</Text>
-              </View>
-              <View style={s.planBadge}>
-                 <Text style={s.planBadgeText}>
-                   {todaySchedule.schedule.filter(e => e.isComplete).length}/{todaySchedule.schedule.length}
-                 </Text>
-              </View>
-            </View>
-
-            <View style={s.planItemsOverview}>
-               {todaySchedule.schedule.map((entry, idx) => (
-                 <View key={entry.id} style={[s.planItem, idx > 0 && s.planItemBorder]}>
-                    <View style={s.planItemInfo}>
-                       <Text style={s.planItemName} numberOfLines={1}>{entry.subject.name}</Text>
-                       <View style={s.planProgressRow}>
-                          <View style={s.planMiniBar}>
-                             <View style={[s.planMiniFill, { width: `${entry.completionPercentage}%`, backgroundColor: entry.isComplete ? theme.colors.success : theme.colors.primary }]} />
-                          </View>
-                          <Text style={s.planPercent}>{Math.round(entry.completionPercentage)}%</Text>
-                       </View>
-                    </View>
-                    <Ionicons 
-                      name={entry.isComplete ? "checkmark-circle" : "ellipse-outline"} 
-                      size={20} 
-                      color={entry.isComplete ? theme.colors.success : theme.colors.border} 
-                    />
-                 </View>
-               ))}
-            </View>
-          </TouchableOpacity>
-        )}
-
         {/* ─── 1. Greeting Card ──────────────────────────────────── */}
         <View style={s.greetingCard}>
           <View style={s.flex1}>
@@ -444,6 +402,62 @@ const HomeScreen: React.FC = () => {
           </View>
         </View>
 
+        {/* ─── 1b. Today's Plan Card ──────────────────────────────── */}
+        {todaySchedule && todaySchedule.schedule.length > 0 && (
+          <TouchableOpacity
+            style={s.planCard}
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate('StudyCalendar')}
+          >
+            <View style={s.planHeader}>
+              <View>
+                <Text style={s.planTitle}>{t('study_calendar.header_title')}</Text>
+                <Text style={s.planSubtitle}>
+                  {todaySchedule.dayName}, {todaySchedule.date}
+                </Text>
+              </View>
+              <View style={s.planBadge}>
+                <Text style={s.planBadgeText}>
+                  {todaySchedule.schedule.filter((e) => e.isComplete).length}/
+                  {todaySchedule.schedule.length}
+                </Text>
+              </View>
+            </View>
+
+            <View style={s.planItemsOverview}>
+              {todaySchedule.schedule.map((entry, idx) => (
+                <View key={entry.id} style={[s.planItem, idx > 0 && s.planItemBorder]}>
+                  <View style={s.planItemInfo}>
+                    <Text style={s.planItemName} numberOfLines={1}>
+                      {entry.subject.name}
+                    </Text>
+                    <View style={s.planProgressRow}>
+                      <View style={s.planMiniBar}>
+                        <View
+                          style={[
+                            s.planMiniFill,
+                            {
+                              width: `${entry.completionPercentage}%`,
+                              backgroundColor: entry.isComplete
+                                ? theme.colors.success
+                                : theme.colors.primary,
+                            },
+                          ]}
+                        />
+                      </View>
+                      <Text style={s.planPercent}>{Math.round(entry.completionPercentage)}%</Text>
+                    </View>
+                  </View>
+                  <Ionicons
+                    name={entry.isComplete ? 'checkmark-circle' : 'ellipse-outline'}
+                    size={20}
+                    color={entry.isComplete ? theme.colors.success : theme.colors.border}
+                  />
+                </View>
+              ))}
+            </View>
+          </TouchableOpacity>
+        )}
         {/* ─── 2. Quiz CTA Card ──────────────────────────────────── */}
         <View style={s.quizCTACard}>
           <View style={s.quizCTAContent}>
@@ -465,17 +479,17 @@ const HomeScreen: React.FC = () => {
             />
           </View>
         </View>
-        
+
         {/* ─── 2b. Streak Card ───────────────────────────────────── */}
         {activitiesData && (
-          <View 
-            style={s.streakCard}
-          >
+          <View style={s.streakCard}>
             <View style={s.streakIconContainer}>
               <Text style={s.streakEmoji}>🔥</Text>
             </View>
             <View style={s.streakContent}>
-              <Text style={s.streakCount}>{activitiesData.streak} {t('home_screen.days', 'Days')}</Text>
+              <Text style={s.streakCount}>
+                {activitiesData.streak} {t('home_screen.days', 'Days')}
+              </Text>
               <Text style={s.streakLabel}>{t('home_screen.current_streak', 'Current Streak')}</Text>
             </View>
           </View>
@@ -888,8 +902,8 @@ const getStyles = (
       color: theme.colors.primary,
       ...fontWeight('bold'),
     },
-
     planCard: {
+      //marginTop: spacing.md,
       backgroundColor: theme.colors.surface,
       borderRadius: borderRadius.xl,
       padding: spacing.lg,
