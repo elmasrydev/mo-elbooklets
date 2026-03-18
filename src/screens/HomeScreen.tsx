@@ -32,6 +32,7 @@ import RankChangeCard from '../components/feed/RankChangeCard';
 import ConnectionCard from '../components/feed/ConnectionCard';
 import { CardListSkeleton } from '../components/SkeletonLoader';
 import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
+import { textAlign } from '../lib/rtl';
 
 const { width } = Dimensions.get('window');
 
@@ -346,12 +347,10 @@ const HomeScreen: React.FC = () => {
   if (loading && !activitiesData) {
     return (
       <View style={common.container}>
-        <UnifiedHeader 
-          leftContent={<AnimatedNavbarLogo isRTL={isRTL} />} 
+        <UnifiedHeader
+          leftContent={<AnimatedNavbarLogo isRTL={isRTL} />}
           rightContent={
-            <View 
-              style={s.headerStreak}
-            >
+            <View style={s.headerStreak}>
               <Ionicons name="flame" size={20} color={theme.colors.orange || '#F59E0B'} />
               <Text style={s.headerStreakText}>0</Text>
             </View>
@@ -366,12 +365,10 @@ const HomeScreen: React.FC = () => {
 
   return (
     <View style={common.container}>
-      <UnifiedHeader 
-        leftContent={<AnimatedNavbarLogo isRTL={isRTL} />} 
+      <UnifiedHeader
+        leftContent={<AnimatedNavbarLogo isRTL={isRTL} />}
         rightContent={
-          <View 
-            style={s.headerStreak}
-          >
+          <View style={s.headerStreak}>
             <Ionicons name="flame" size={20} color={theme.colors.orange || '#F59E0B'} />
             <Text style={s.headerStreakText}>{activitiesData?.streak || 0}</Text>
           </View>
@@ -605,7 +602,9 @@ const HomeScreen: React.FC = () => {
                     <Text style={s.subjectName}>{subject.name}</Text>
                     <View style={s.subjectProgressContainer}>
                       <View style={[s.subjectProgressRow, { flexDirection: common.rowDirection }]}>
-                        <Text style={[s.subjectProgressLabel, { textAlign: common.textAlign }]}>{t('study_calendar.lessons', 'Study')}</Text>
+                        <Text style={[s.subjectProgressLabel, { textAlign: common.textAlign }]}>
+                          {t('study_calendar.lessons', 'Study')}
+                        </Text>
                         <View style={s.subjectProgressBar}>
                           <View
                             style={[
@@ -617,11 +616,20 @@ const HomeScreen: React.FC = () => {
                             ]}
                           />
                         </View>
-                        <Text style={[s.subjectProgressPercent, { textAlign: common.isRTL ? 'left' : 'right' }]}>{Math.round(subject.study_progress || 0)}%</Text>
+                        <Text
+                          style={[
+                            s.subjectProgressPercent,
+                            { textAlign: common.isRTL ? 'left' : 'right' },
+                          ]}
+                        >
+                          {Math.round(subject.study_progress || 0)}%
+                        </Text>
                       </View>
 
                       <View style={[s.subjectProgressRow, { flexDirection: common.rowDirection }]}>
-                        <Text style={[s.subjectProgressLabel, { textAlign: common.textAlign }]}>{t('common.quiz', 'Quiz')}</Text>
+                        <Text style={[s.subjectProgressLabel, { textAlign: common.textAlign }]}>
+                          {t('common.quiz', 'Quiz')}
+                        </Text>
                         <View style={s.subjectProgressBar}>
                           <View
                             style={[
@@ -633,7 +641,14 @@ const HomeScreen: React.FC = () => {
                             ]}
                           />
                         </View>
-                        <Text style={[s.subjectProgressPercent, { textAlign: common.isRTL ? 'left' : 'right' }]}>{Math.round(subject.quiz_progress || 0)}%</Text>
+                        <Text
+                          style={[
+                            s.subjectProgressPercent,
+                            { textAlign: common.isRTL ? 'left' : 'right' },
+                          ]}
+                        >
+                          {Math.round(subject.quiz_progress || 0)}%
+                        </Text>
                       </View>
                     </View>
                     <TouchableOpacity
@@ -647,9 +662,7 @@ const HomeScreen: React.FC = () => {
                               borderColor: theme.colors.primary + '1A',
                             },
                       ]}
-                      onPress={() => 
-                        navigation.navigate(chaptersCount >= 5 ? 'Quiz' : 'Study')
-                      }
+                      onPress={() => navigation.navigate(chaptersCount >= 5 ? 'Quiz' : 'Study')}
                     >
                       <Text
                         style={[
@@ -699,25 +712,13 @@ const HomeScreen: React.FC = () => {
               >
                 <View pointerEvents="none">
                   {item.type === 'quiz_completion' && item.quizData && (
-                    <QuizCompletionCard
-                      item={item as any}
-                      onLike={() => {}}
-                      onComment={() => {}}
-                    />
+                    <QuizCompletionCard item={item as any} onLike={() => {}} onComment={() => {}} />
                   )}
                   {item.type === 'new_connection' && (
-                    <ConnectionCard
-                      item={item as any}
-                      onLike={() => {}}
-                      onComment={() => {}}
-                    />
+                    <ConnectionCard item={item as any} onLike={() => {}} onComment={() => {}} />
                   )}
                   {item.type === 'rank_change' && (
-                    <RankChangeCard
-                      item={item as any}
-                      onLike={() => {}}
-                      onComment={() => {}}
-                    />
+                    <RankChangeCard item={item as any} onLike={() => {}} onComment={() => {}} />
                   )}
                 </View>
               </TouchableOpacity>
@@ -919,12 +920,13 @@ const getStyles = (
       marginBottom: spacing.md,
     },
     planTitle: {
-      ...typography('body'),
+      ...typography('bodyLarge'),
       ...fontWeight('bold'),
+      textAlign: 'left',
       color: theme.colors.text,
     },
     planSubtitle: {
-      ...typography('tiny'),
+      ...typography('body'),
       color: theme.colors.textSecondary,
       marginTop: 2,
     },
@@ -935,7 +937,7 @@ const getStyles = (
       borderRadius: 12,
     },
     planBadgeText: {
-      ...typography('tiny'),
+      ...typography('caption'),
       ...fontWeight('bold'),
       color: theme.colors.primary,
     },
@@ -981,11 +983,11 @@ const getStyles = (
       borderRadius: 2,
     },
     planPercent: {
-      ...typography('tiny'),
-      fontSize: 9,
+      ...typography('caption'),
       color: theme.colors.textTertiary,
-      width: 25,
+      paddingHorizontal: 4,
       textAlign: 'right',
+      marginBottom: 4,
     },
 
     // Quiz CTA Card
@@ -1258,14 +1260,14 @@ const getStyles = (
       gap: 6,
     },
     subjectProgressLabel: {
-      ...typography('tiny'),
+      ...typography('caption'),
       fontSize: 8,
       width: 30,
       color: theme.colors.textSecondary,
       textAlign: 'left',
     },
     subjectProgressPercent: {
-      ...typography('tiny'),
+      ...typography('caption'),
       fontSize: 8,
       width: 25,
       color: theme.colors.textTertiary,
