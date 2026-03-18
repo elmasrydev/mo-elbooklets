@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -479,7 +480,12 @@ const HomeScreen: React.FC = () => {
 
         {/* ─── 2b. Streak Card ───────────────────────────────────── */}
         {activitiesData && (
-          <View style={s.streakCard}>
+          <LinearGradient
+            colors={isRTL ? ['#F59E0B', '#FB923C'] : ['#FB923C', '#F59E0B']}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={s.streakCard}
+          >
             <View style={s.streakIconContainer}>
               <Text style={s.streakEmoji}>🔥</Text>
             </View>
@@ -489,7 +495,7 @@ const HomeScreen: React.FC = () => {
               </Text>
               <Text style={s.streakLabel}>{t('home_screen.current_streak', 'Current Streak')}</Text>
             </View>
-          </View>
+          </LinearGradient>
         )}
 
         {/* ─── 3. Stats Row ──────────────────────────────────────── */}
@@ -601,11 +607,15 @@ const HomeScreen: React.FC = () => {
                       style={{ ...common.marginEnd(spacing.md) }}
                     />
 
-                    <View style={{ flex: 1, justifyContent: 'center', alignItems: common.alignStart }}>
+                    <View
+                      style={{ flex: 1, justifyContent: 'center', alignItems: common.alignStart }}
+                    >
                       <Text style={s.subjectName}>{subject.name}</Text>
 
                       <View style={s.subjectProgressContainer}>
-                        <View style={[s.subjectProgressRow, { flexDirection: common.rowDirection }]}>
+                        <View
+                          style={[s.subjectProgressRow, { flexDirection: common.rowDirection }]}
+                        >
                           <Text style={[s.subjectProgressLabel, { textAlign: common.textAlign }]}>
                             {t('study_screen.study_label', 'Study')}
                           </Text>
@@ -620,16 +630,14 @@ const HomeScreen: React.FC = () => {
                               ]}
                             />
                           </View>
-                          <Text
-                            style={[
-                              s.subjectProgressPercent,
-                            ]}
-                          >
+                          <Text style={[s.subjectProgressPercent]}>
                             {Math.round(subject.study_progress || 0)}%
                           </Text>
                         </View>
 
-                        <View style={[s.subjectProgressRow, { flexDirection: common.rowDirection }]}>
+                        <View
+                          style={[s.subjectProgressRow, { flexDirection: common.rowDirection }]}
+                        >
                           <Text style={[s.subjectProgressLabel, { textAlign: common.textAlign }]}>
                             {t('common.quiz', 'Quiz')}
                           </Text>
@@ -644,11 +652,7 @@ const HomeScreen: React.FC = () => {
                               ]}
                             />
                           </View>
-                          <Text
-                            style={[
-                              s.subjectProgressPercent,
-                            ]}
-                          >
+                          <Text style={[s.subjectProgressPercent]}>
                             {Math.round(subject.quiz_progress || 0)}%
                           </Text>
                         </View>
@@ -1095,12 +1099,12 @@ const getStyles = (
     streakCount: {
       ...typography('h2'),
       ...fontWeight('bold'),
-      color: theme.colors.text,
+      color: theme.colors.buttonPrimaryText,
       textAlign: 'left',
     },
     streakLabel: {
       ...typography('caption'),
-      color: theme.colors.textSecondary,
+      color: theme.colors.buttonPrimaryText,
       textAlign: 'left',
     },
 
