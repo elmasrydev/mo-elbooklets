@@ -26,6 +26,7 @@ import AppButton from '../components/AppButton';
 import { CardListSkeleton, GenericListSkeleton } from '../components/SkeletonLoader';
 import RetryView from '../components/RetryView';
 import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
+import { isRTL } from '../lib/rtl';
 
 interface Student {
   id: string;
@@ -400,7 +401,7 @@ const SocialScreen: React.FC = () => {
             placeholderTextColor={theme.colors.textTertiary}
             value={searchQuery}
             onChangeText={setSearchQuery}
-            textAlign={common.textAlign}
+            textAlign={isRTL() ? 'right' : 'left'}
             returnKeyType="search"
             clearButtonMode="while-editing"
           />
