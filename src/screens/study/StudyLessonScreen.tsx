@@ -184,9 +184,9 @@ const StudyLessonScreen: React.FC = () => {
   const [expandedPoints, setExpandedPoints] = useState<Set<string>>(new Set());
   const [dodProgress, setDodProgress] = useState<LessonDODProgress | null>(null);
   const [loadingDod, setLoadingDod] = useState(false);
-  const [viewedPoints, setViewedPoints] = useState<Set<string>>(new Set(
-    currentLesson.lessonPoints?.filter(p => p.is_viewed).map(p => p.id) || []
-  ));
+  const [viewedPoints, setViewedPoints] = useState<Set<string>>(
+    new Set(currentLesson.lessonPoints?.filter((p) => p.is_viewed).map((p) => p.id) || []),
+  );
   const scrollViewRef = useRef<ScrollView>(null);
 
   const currentIndex = allLessons.findIndex((l) => l.id === currentLesson.id);
@@ -198,7 +198,7 @@ const StudyLessonScreen: React.FC = () => {
   const togglePoint = async (pointId: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     const isExpanding = !expandedPoints.has(pointId);
-    
+
     setExpandedPoints((prev) => {
       const next = new Set(prev);
       if (next.has(pointId)) {
@@ -227,7 +227,7 @@ const StudyLessonScreen: React.FC = () => {
           } 
         }`,
         { lessonId },
-        token
+        token,
       );
 
       if (result.data?.lessonDODProgress) {
@@ -248,11 +248,11 @@ const StudyLessonScreen: React.FC = () => {
       const result = await tryFetchWithFallback(
         `mutation RecordView($lessonPointId: ID!) { recordKeyPointView(lessonPointId: $lessonPointId) }`,
         { lessonPointId },
-        token
+        token,
       );
 
       if (result.data?.recordKeyPointView) {
-        setViewedPoints(prev => new Set(prev).add(lessonPointId));
+        setViewedPoints((prev) => new Set(prev).add(lessonPointId));
         fetchDodProgress(currentLesson.id);
       }
     } catch (err) {
@@ -268,16 +268,20 @@ const StudyLessonScreen: React.FC = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setCurrentLesson(lesson);
     setExpandedPoints(new Set());
-    setViewedPoints(new Set(lesson.lessonPoints?.filter(p => p.is_viewed).map(p => p.id) || []));
+    setViewedPoints(
+      new Set(lesson.lessonPoints?.filter((p) => p.is_viewed).map((p) => p.id) || []),
+    );
     scrollViewRef.current?.scrollTo({ y: 0, animated: false });
   };
 
   const handleTakeQuiz = () => {
-    const selectedUnits = [{
-      id: currentLesson.chapter.id,
-      name: currentLesson.chapter.name,
-      lessons: [{ id: currentLesson.id, name: currentLesson.name }],
-    }];
+    const selectedUnits = [
+      {
+        id: currentLesson.chapter.id,
+        name: currentLesson.chapter.name,
+        lessons: [{ id: currentLesson.id, name: currentLesson.name }],
+      },
+    ];
     const selectedLessonIds = [currentLesson.id];
 
     navigation.goBack();
@@ -386,10 +390,14 @@ const StudyLessonScreen: React.FC = () => {
                   >
                     <View style={currentStyles.pointHeader}>
                       <View>
-                        <Ionicons 
-                          name={viewedPoints.has(point.id) ? "checkmark-circle" : "ellipse-outline"} 
-                          size={26} 
-                          color={viewedPoints.has(point.id) ? theme.colors.success : theme.colors.textTertiary} 
+                        <Ionicons
+                          name={viewedPoints.has(point.id) ? 'checkmark-circle' : 'ellipse-outline'}
+                          size={26}
+                          color={
+                            viewedPoints.has(point.id)
+                              ? theme.colors.success
+                              : theme.colors.textTertiary
+                          }
                         />
                       </View>
                       <Text style={currentStyles.pointText}> {point.title} </Text>
@@ -433,59 +441,84 @@ const StudyLessonScreen: React.FC = () => {
         {/* DOD Progress Section */}
         <View style={currentStyles.section}>
           <View style={currentStyles.sectionHeader}>
-            <View style={[currentStyles.sectionIcon, { backgroundColor: theme.colors.success + '1A' }]}>
+            <View
+              style={[currentStyles.sectionIcon, { backgroundColor: theme.colors.success + '1A' }]}
+            >
               <Ionicons name="shield-checkmark-outline" size={20} color={theme.colors.success} />
             </View>
             <Text style={[currentStyles.sectionTitle, { color: theme.colors.success }]}>
               {t('study_lesson.definition_of_done', 'Definition of Done')}
             </Text>
             {dodProgress?.isComplete && (
-              <Ionicons name="checkmark-circle" size={24} color={theme.colors.success} style={{ marginLeft: 'auto' }} />
+              <Ionicons
+                name="checkmark-circle"
+                size={24}
+                color={theme.colors.success}
+                style={{ marginLeft: 'auto' }}
+              />
             )}
           </View>
-          
+
           {loadingDod && !dodProgress ? (
             <ActivityIndicator color={theme.colors.primary} size="small" />
           ) : dodProgress ? (
             <View style={currentStyles.dodContent}>
               <View style={currentStyles.dodItem}>
-                <Ionicons 
-                  name={dodProgress.keyPointsViewed >= dodProgress.keyPointsTotal ? "checkbox" : "square-outline"} 
-                  size={20} 
-                  color={dodProgress.keyPointsViewed >= dodProgress.keyPointsTotal ? theme.colors.success : theme.colors.textTertiary} 
-                />
                 <Text style={currentStyles.dodText}>
-                  {t('study_lesson.key_points_progress', { 
-                    current: dodProgress.keyPointsViewed, 
+                  {t('study_lesson.key_points_progress', {
+                    current: dodProgress.keyPointsViewed,
                     total: dodProgress.keyPointsTotal,
-                    defaultValue: `View all key points (${dodProgress.keyPointsViewed}/${dodProgress.keyPointsTotal})`
+                    defaultValue: `View all key points (${dodProgress.keyPointsViewed}/${dodProgress.keyPointsTotal})`,
                   })}
                 </Text>
+                <Ionicons
+                  name={
+                    dodProgress.keyPointsViewed >= dodProgress.keyPointsTotal
+                      ? 'checkbox'
+                      : 'square-outline'
+                  }
+                  size={20}
+                  color={
+                    dodProgress.keyPointsViewed >= dodProgress.keyPointsTotal
+                      ? theme.colors.success
+                      : theme.colors.textTertiary
+                  }
+                />
               </View>
               <View style={currentStyles.dodItem}>
-                <Ionicons 
-                  name={dodProgress.quizzesPassed >= dodProgress.quizzesRequired ? "checkbox" : "square-outline"} 
-                  size={20} 
-                  color={dodProgress.quizzesPassed >= dodProgress.quizzesRequired ? theme.colors.success : theme.colors.textTertiary} 
-                />
                 <Text style={currentStyles.dodText}>
-                  {t('study_lesson.quizzes_progress', { 
-                    current: dodProgress.quizzesPassed, 
+                  {t('study_lesson.quizzes_progress', {
+                    current: dodProgress.quizzesPassed,
                     total: dodProgress.quizzesRequired,
-                    defaultValue: `Pass required quizzes (${dodProgress.quizzesPassed}/${dodProgress.quizzesRequired})`
+                    defaultValue: `Pass required quizzes (${dodProgress.quizzesPassed}/${dodProgress.quizzesRequired})`,
                   })}
                 </Text>
+                <Ionicons
+                  name={
+                    dodProgress.quizzesPassed >= dodProgress.quizzesRequired
+                      ? 'checkbox'
+                      : 'square-outline'
+                  }
+                  size={20}
+                  color={
+                    dodProgress.quizzesPassed >= dodProgress.quizzesRequired
+                      ? theme.colors.success
+                      : theme.colors.textTertiary
+                  }
+                />
               </View>
               <View style={currentStyles.dodProgressContainer}>
                 <View style={currentStyles.dodProgressBar}>
-                  <View 
+                  <View
                     style={[
-                      currentStyles.dodProgressFill, 
-                      { 
+                      currentStyles.dodProgressFill,
+                      {
                         width: `${dodProgress.totalProgress}%`,
-                        backgroundColor: dodProgress.isComplete ? theme.colors.success : theme.colors.primary
-                      }
-                    ]} 
+                        backgroundColor: dodProgress.isComplete
+                          ? theme.colors.success
+                          : theme.colors.primary,
+                      },
+                    ]}
                   />
                 </View>
                 <Text style={currentStyles.dodPercentText}>
@@ -494,7 +527,9 @@ const StudyLessonScreen: React.FC = () => {
               </View>
             </View>
           ) : (
-            <Text style={currentStyles.noContentText}>{t('study_lesson.no_dod_data', 'No progress data available')}</Text>
+            <Text style={currentStyles.noContentText}>
+              {t('study_lesson.no_dod_data', 'No progress data available')}
+            </Text>
           )}
         </View>
 
@@ -712,12 +747,12 @@ const styles = (
     dodItem: {
       flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'space-between',
       gap: spacing.sm,
     },
     dodText: {
       ...typography('caption'),
       color: theme.colors.text,
-      flex: 1,
     },
     dodProgressContainer: {
       flexDirection: 'row',
