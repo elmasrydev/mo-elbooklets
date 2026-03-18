@@ -144,7 +144,7 @@ const QuizScreen: React.FC = () => {
           size={spacing.icon.xl}
           color={theme.colors.textTertiary}
         />
-        <Text style={currentStyles.emptyStateTitle}> {t('quiz_screen.no_quizzes_yet')} </Text>
+        <Text style={currentStyles.emptyStateTitle}>{t('quiz_screen.no_quizzes_yet')}</Text>
         <Text style={currentStyles.emptyStateSubtitle}>{t('quiz_screen.take_first_quiz')}</Text>
       </View>
     );

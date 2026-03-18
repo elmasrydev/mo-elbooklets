@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { tryFetchWithFallback } from '../../config/api';
 import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
@@ -63,7 +62,7 @@ const QuizSettingsScreen: React.FC = () => {
   const fetchQuizTypes = useCallback(async () => {
     try {
       setLoadingTypes(true);
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
       const result = await tryFetchWithFallback(
         `query QuizTypes { quizTypes { id name slug question_count is_default } }`,
@@ -105,7 +104,7 @@ const QuizSettingsScreen: React.FC = () => {
     if (!selectedTypeId || !subject) return;
     try {
       setStarting(true);
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
       const result = await tryFetchWithFallback(
         `mutation StartQuiz($subjectId: ID!, $lessonIds: [ID!]!, $quizTypeId: ID) { startQuiz(subjectId: $subjectId, lessonIds: $lessonIds, quizTypeId: $quizTypeId) { id } }`,

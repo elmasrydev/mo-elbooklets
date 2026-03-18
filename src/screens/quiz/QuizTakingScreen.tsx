@@ -12,7 +12,6 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useModal } from '../../context/ModalContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
@@ -353,8 +352,8 @@ const QuizTakingScreen: React.FC = () => {
             color={theme.colors.textSecondary}
             style={{ marginBottom: spacing.lg }}
           />
-          <Text style={currentStyles.errorTitle}> {t('quiz_taking.no_questions_available')} </Text>
-          <Text style={currentStyles.errorText}> {t('quiz_taking.no_questions_yet')} </Text>
+          <Text style={currentStyles.errorTitle}>{t('quiz_taking.no_questions_available')}</Text>
+          <Text style={currentStyles.errorText}>{t('quiz_taking.no_questions_yet')}</Text>
         </View>
       </View>
     );
