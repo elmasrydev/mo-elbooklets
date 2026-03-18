@@ -595,88 +595,72 @@ const HomeScreen: React.FC = () => {
                     activeOpacity={0.7}
                     onPress={() => navigation.navigate('StudyChapters', { subject })}
                   >
-                    <View style={[s.subjectCardHeader, { flexDirection: common.rowDirection }]}>
-                      <SubjectIcon subjectName={subject.name} size={32} />
-                      <Text style={s.subjectChapterCount}>{chaptersCount}</Text>
-                    </View>
-                    <Text style={s.subjectName}>{subject.name}</Text>
-                    <View style={s.subjectProgressContainer}>
-                      <View style={[s.subjectProgressRow, { flexDirection: common.rowDirection }]}>
-                        <Text style={[s.subjectProgressLabel, { textAlign: common.textAlign }]}>
-                          {t('study_calendar.lessons', 'Study')}
-                        </Text>
-                        <View style={s.subjectProgressBar}>
-                          <View
-                            style={[
-                              s.subjectProgressFill,
-                              {
-                                width: `${Math.min(100, subject.study_progress || 0)}%`,
-                                backgroundColor: theme.colors.primary,
-                              },
-                            ]}
-                          />
-                        </View>
-                        <Text
-                          style={[
-                            s.subjectProgressPercent,
-                            { textAlign: common.isRTL ? 'left' : 'right' },
-                          ]}
-                        >
-                          {Math.round(subject.study_progress || 0)}%
-                        </Text>
-                      </View>
+                    <SubjectIcon
+                      subjectName={subject.name}
+                      size={56}
+                      style={{ ...common.marginEnd(spacing.md) }}
+                    />
 
-                      <View style={[s.subjectProgressRow, { flexDirection: common.rowDirection }]}>
-                        <Text style={[s.subjectProgressLabel, { textAlign: common.textAlign }]}>
-                          {t('common.quiz', 'Quiz')}
-                        </Text>
-                        <View style={s.subjectProgressBar}>
-                          <View
+                    <View style={{ flex: 1, justifyContent: 'center', alignItems: common.alignStart }}>
+                      <Text style={s.subjectName}>{subject.name}</Text>
+
+                      <View style={s.subjectProgressContainer}>
+                        <View style={[s.subjectProgressRow, { flexDirection: common.rowDirection }]}>
+                          <Text style={[s.subjectProgressLabel, { textAlign: common.textAlign }]}>
+                            {t('study_screen.study_label', 'Study')}
+                          </Text>
+                          <View style={s.subjectProgressBar}>
+                            <View
+                              style={[
+                                s.subjectProgressFill,
+                                {
+                                  width: `${Math.min(100, subject.study_progress || 0)}%`,
+                                  backgroundColor: theme.colors.primary,
+                                },
+                              ]}
+                            />
+                          </View>
+                          <Text
                             style={[
-                              s.subjectProgressFill,
-                              {
-                                width: `${Math.min(100, subject.quiz_progress || 0)}%`,
-                                backgroundColor: theme.colors.orange || '#F59E0B',
-                              },
+                              s.subjectProgressPercent,
                             ]}
-                          />
+                          >
+                            {Math.round(subject.study_progress || 0)}%
+                          </Text>
                         </View>
-                        <Text
-                          style={[
-                            s.subjectProgressPercent,
-                            { textAlign: common.isRTL ? 'left' : 'right' },
-                          ]}
-                        >
-                          {Math.round(subject.quiz_progress || 0)}%
-                        </Text>
+
+                        <View style={[s.subjectProgressRow, { flexDirection: common.rowDirection }]}>
+                          <Text style={[s.subjectProgressLabel, { textAlign: common.textAlign }]}>
+                            {t('common.quiz', 'Quiz')}
+                          </Text>
+                          <View style={s.subjectProgressBar}>
+                            <View
+                              style={[
+                                s.subjectProgressFill,
+                                {
+                                  width: `${Math.min(100, subject.quiz_progress || 0)}%`,
+                                  backgroundColor: theme.colors.orange || '#F59E0B',
+                                },
+                              ]}
+                            />
+                          </View>
+                          <Text
+                            style={[
+                              s.subjectProgressPercent,
+                            ]}
+                          >
+                            {Math.round(subject.quiz_progress || 0)}%
+                          </Text>
+                        </View>
                       </View>
                     </View>
-                    <TouchableOpacity
-                      style={[
-                        s.subjectButton,
-                        chaptersCount >= 5
-                          ? { backgroundColor: theme.colors.primary }
-                          : {
-                              backgroundColor: theme.colors.background,
-                              borderWidth: 1,
-                              borderColor: theme.colors.primary + '1A',
-                            },
-                      ]}
-                      onPress={() => navigation.navigate(chaptersCount >= 5 ? 'Quiz' : 'Study')}
-                    >
-                      <Text
-                        style={[
-                          s.subjectButtonText,
-                          chaptersCount >= 5
-                            ? { color: theme.colors.textOnDark }
-                            : { color: theme.colors.primary },
-                        ]}
-                      >
-                        {chaptersCount >= 5
-                          ? t('home_screen.ready_for_quiz')
-                          : t('home_screen.continue')}
-                      </Text>
-                    </TouchableOpacity>
+
+                    <Ionicons
+                      name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                      size={20}
+                      color={theme.colors.textTertiary}
+                      style={{ opacity: 0.8, ...common.marginStart(spacing.sm) }}
+                    />
                   </TouchableOpacity>
                 );
               })}
@@ -1191,19 +1175,20 @@ const getStyles = (
 
     // Subjects Grid
     subjectsGrid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
+      flexDirection: 'column',
       gap: spacing.md,
     },
     subjectCard: {
-      width: (width - layout.screenPadding * 2 - spacing.md) / 2,
-      backgroundColor: theme.colors.surface,
+      width: '100%',
+      minHeight: 90,
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
       padding: spacing.md,
+      backgroundColor: theme.colors.surface,
       borderRadius: borderRadius.xl,
       borderWidth: 1,
       borderColor: theme.colors.border,
       ...layout.shadow,
-      overflow: 'hidden',
     },
     subjectCardHeader: {
       justifyContent: 'space-between',
@@ -1217,11 +1202,10 @@ const getStyles = (
       color: theme.colors.textTertiary,
     },
     subjectName: {
-      ...typography('body'),
-      ...fontWeight('bold'),
+      ...typography('h3'),
+      ...fontWeight('700'),
       color: theme.colors.text,
-      marginTop: spacing.md,
-      marginBottom: spacing.sm,
+      marginBottom: 2,
       textAlign: common.textAlign,
     },
     subjectProgressBar: {
@@ -1260,18 +1244,15 @@ const getStyles = (
       gap: 6,
     },
     subjectProgressLabel: {
-      ...typography('caption'),
-      fontSize: 8,
-      width: 30,
+      ...typography('label'),
+      minWidth: 40,
       color: theme.colors.textSecondary,
-      textAlign: 'left',
     },
     subjectProgressPercent: {
-      ...typography('caption'),
-      fontSize: 8,
-      width: 25,
+      ...typography('label'),
+      minWidth: 37,
+      textAlign: 'center',
       color: theme.colors.textTertiary,
-      textAlign: 'right',
     },
     subjectButton: {
       width: '100%',

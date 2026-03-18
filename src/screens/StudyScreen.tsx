@@ -226,7 +226,7 @@ const StudyScreen: React.FC = () => {
                 <View style={currentStyles.progressContainer}>
                   <View style={[currentStyles.progressRow, { flexDirection: common.rowDirection }]}>
                     <Text style={[currentStyles.progressLabel, { textAlign: common.textAlign }]}>
-                      {t('study_calendar.lessons', 'Study')}
+                      {t('study_screen.study_label', 'Study')}
                     </Text>
                     <View style={currentStyles.progressBar}>
                       <View
