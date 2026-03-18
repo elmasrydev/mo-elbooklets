@@ -43,6 +43,7 @@ export const GRAPHQL_ENDPOINT = '/graphql';
 declare var __DEV__: boolean;
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
+import i18n from '../i18n';
 
 // Logout handler to be set by AuthContext
 let authErrorHandler: (() => void) | null = null;
@@ -59,6 +60,25 @@ const checkForAuthError = (data: any): boolean => {
       if (
         err.message === 'Unauthenticated.' ||
         err.message?.toLowerCase().includes('unauthenticated')
+      ) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
+
+/**
+ * Check if response contains server-side error
+ */
+const checkForServerError = (data: any): boolean => {
+  if (data?.errors) {
+    for (const err of data.errors) {
+      const msg = err.message?.toLowerCase() || '';
+      if (
+        msg.includes('internal server error') ||
+        msg.includes('server error') ||
+        err.extensions?.code === 'INTERNAL_SERVER_ERROR'
       ) {
         return true;
       }
@@ -130,12 +150,23 @@ export const tryFetchWithFallback = async (
           await handleAuthError();
         }
 
+        // Check for server errors in GraphQL response
+        if (checkForServerError(data)) {
+          throw new Error(i18n.t('common.server_error'));
+        }
+
         return data;
       } else {
         // Handle 401 HTTP status
         if (response.status === 401) {
           await handleAuthError();
         }
+
+        // Handle Internal Server Errors (500+)
+        if (response.status >= 500) {
+          throw new Error(i18n.t('common.server_error'));
+        }
+
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
     } catch (error: any) {
