@@ -45,6 +45,7 @@
     "reload_message": "يحتاج التطبيق لإعادة تحميل لتطبيق تغييرات اللغة.",
     "switch_language": "تغيير اللغة",
     "error": "خطأ",
+    "success": "تم بنجاح",
     "unexpected_error": "حدث خطأ غير متوقع",
     "server_error": "خطأ غير معروف، حاول مرة أخرى لاحقاً",
     "all": "الكل",
@@ -72,6 +73,7 @@
     "yes": "نعم",
     "no": "لا",
     "go_back": "رجوع",
+    "save": "حفظ",
     "save_and_continue": "حفظ ومتابعة",
     "skip_for_now": "تخطي الآن"
   },
@@ -182,7 +184,9 @@
     "ready_for_quiz": "مستعد للاختبار",
     "quizzes_done": "اختبارات مكتملة",
     "avg_score_label": "متوسط الدرجات",
-    "keep_completing": "استمر في إكمال الدروس لفتح المكافآت!"
+    "keep_completing": "استمر في إكمال الدروس لفتح المكافآت!",
+    "days": "أيام",
+    "current_streak": "المتابعة الحالية"
   },
   "quiz_screen": {
     "header_title": "مركز الاختبارات",
@@ -384,6 +388,7 @@
     "password_placeholder": "أدخل كلمة المرور",
     "name_placeholder": "أدخل اسمك الكامل",
     "mobile_number": "رقم الهاتف المحمول",
+    "mobile": "رقم الهاتف المحمول",
     "mobile_placeholder": "أدخل رقم هاتفك المحمول",
     "fill_all_fields": "يرجى ملء جميع الحقول",
     "welcome_back": "مرحباً بعودتك",
@@ -490,7 +495,9 @@
     "select_language_msg": "اختر لغتك المفضلة",
     "not_specified": "غير محدد",
     "faqs": "الأسئلة الشائعة",
-    "contact_us": "تواصل معنا"
+    "contact_us": "تواصل معنا",
+    "parental_linking": "ربط ولي الأمر",
+    "parental_linking_desc": "تواصل مع والديك"
   },
   "faq": {
     "header_title": "الأسئلة الشائعة",
@@ -530,8 +537,12 @@
     "male": "ذكر",
     "female": "أنثى",
     "enter_email": "أدخل البريد الإلكتروني",
+    "school_name": "اسم المدرسة",
     "enter_school": "أدخل اسم المدرسة",
     "school_placeholder": "اسم مدرستك",
-    "enter_parent_mobile": "أدخل رقم هاتف ولي الأمر"
+    "enter_parent_mobile": "أدخل رقم هاتف ولي الأمر",
+    "name_not_editable": "لا يمكن تغيير الاسم يدوياً",
+    "gender": "الجنس",
+    "update_success": "تم تحديث الملف الشخصي بنجاح"
   }
 }

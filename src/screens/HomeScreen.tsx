@@ -349,13 +349,12 @@ const HomeScreen: React.FC = () => {
         <UnifiedHeader 
           leftContent={<AnimatedNavbarLogo isRTL={isRTL} />} 
           rightContent={
-            <TouchableOpacity 
+            <View 
               style={s.headerStreak}
-              onPress={() => navigation.navigate('Leaderboard')}
             >
               <Ionicons name="flame" size={20} color={theme.colors.orange || '#F59E0B'} />
               <Text style={s.headerStreakText}>0</Text>
-            </TouchableOpacity>
+            </View>
           }
         />
         <View style={{ flex: 1, paddingTop: 16 }}>
@@ -370,13 +369,12 @@ const HomeScreen: React.FC = () => {
       <UnifiedHeader 
         leftContent={<AnimatedNavbarLogo isRTL={isRTL} />} 
         rightContent={
-          <TouchableOpacity 
+          <View 
             style={s.headerStreak}
-            onPress={() => navigation.navigate('Leaderboard')}
           >
             <Ionicons name="flame" size={20} color={theme.colors.orange || '#F59E0B'} />
             <Text style={s.headerStreakText}>{activitiesData?.streak || 0}</Text>
-          </TouchableOpacity>
+          </View>
         }
       />
 
@@ -470,10 +468,8 @@ const HomeScreen: React.FC = () => {
         
         {/* ─── 2b. Streak Card ───────────────────────────────────── */}
         {activitiesData && (
-          <TouchableOpacity 
+          <View 
             style={s.streakCard}
-            activeOpacity={0.8}
-            onPress={() => navigation.navigate('Leaderboard')}
           >
             <View style={s.streakIconContainer}>
               <Text style={s.streakEmoji}>🔥</Text>
@@ -482,8 +478,7 @@ const HomeScreen: React.FC = () => {
               <Text style={s.streakCount}>{activitiesData.streak} {t('home_screen.days', 'Days')}</Text>
               <Text style={s.streakLabel}>{t('home_screen.current_streak', 'Current Streak')}</Text>
             </View>
-            <Ionicons name={isRTL ? "chevron-back" : "chevron-forward"} size={20} color={theme.colors.textTertiary} />
-          </TouchableOpacity>
+          </View>
         )}
 
         {/* ─── 3. Stats Row ──────────────────────────────────────── */}
