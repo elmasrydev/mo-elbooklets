@@ -108,7 +108,11 @@
     "next": "التالي",
     "back_to_chapters": "العودة للفصول",
     "take_quiz": "ابدأ اختبار",
-    "test_your_knowledge": "اختبر معرفتك في هذا الدرس"
+    "test_your_knowledge": "اختبر معرفتك في هذا الدرس",
+    "definition_of_done": "تعريف الانجاز",
+    "key_points_progress": "مشاهدة جميع النقاط الرئيسية ({{current}}/{{total}})",
+    "quizzes_progress": "اجتياز الاختبارات المطلوبة ({{current}}/{{total}})",
+    "no_dod_data": "لا توجد بيانات تقدم متاحة"
   },
   "more_screen": {
     "header_title": "المزيد",

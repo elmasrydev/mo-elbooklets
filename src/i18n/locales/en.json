@@ -108,7 +108,11 @@
     "next": "Next",
     "back_to_chapters": "Back to Chapters",
     "take_quiz": "Take Quiz",
-    "test_your_knowledge": "Test your knowledge on this lesson"
+    "test_your_knowledge": "Test your knowledge on this lesson",
+    "definition_of_done": "Definition of Done",
+    "key_points_progress": "View all key points ({{current}}/{{total}})",
+    "quizzes_progress": "Pass required quizzes ({{current}}/{{total}})",
+    "no_dod_data": "No progress data available"
   },
   "more_screen": {
     "header_title": "More",

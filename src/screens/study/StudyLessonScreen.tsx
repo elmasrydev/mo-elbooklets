@@ -464,6 +464,19 @@ const StudyLessonScreen: React.FC = () => {
           ) : dodProgress ? (
             <View style={currentStyles.dodContent}>
               <View style={currentStyles.dodItem}>
+                <Ionicons
+                  name={
+                    dodProgress.keyPointsViewed >= dodProgress.keyPointsTotal
+                      ? 'checkbox'
+                      : 'square-outline'
+                  }
+                  size={20}
+                  color={
+                    dodProgress.keyPointsViewed >= dodProgress.keyPointsTotal
+                      ? theme.colors.success
+                      : theme.colors.textTertiary
+                  }
+                />
                 <Text style={currentStyles.dodText}>
                   {t('study_lesson.key_points_progress', {
                     current: dodProgress.keyPointsViewed,
@@ -471,21 +484,21 @@ const StudyLessonScreen: React.FC = () => {
                     defaultValue: `View all key points (${dodProgress.keyPointsViewed}/${dodProgress.keyPointsTotal})`,
                   })}
                 </Text>
+              </View>
+              <View style={currentStyles.dodItem}>
                 <Ionicons
                   name={
-                    dodProgress.keyPointsViewed >= dodProgress.keyPointsTotal
+                    dodProgress.quizzesPassed >= dodProgress.quizzesRequired
                       ? 'checkbox'
                       : 'square-outline'
                   }
                   size={20}
                   color={
-                    dodProgress.keyPointsViewed >= dodProgress.keyPointsTotal
+                    dodProgress.quizzesPassed >= dodProgress.quizzesRequired
                       ? theme.colors.success
                       : theme.colors.textTertiary
                   }
                 />
-              </View>
-              <View style={currentStyles.dodItem}>
                 <Text style={currentStyles.dodText}>
                   {t('study_lesson.quizzes_progress', {
                     current: dodProgress.quizzesPassed,
@@ -493,19 +506,6 @@ const StudyLessonScreen: React.FC = () => {
                     defaultValue: `Pass required quizzes (${dodProgress.quizzesPassed}/${dodProgress.quizzesRequired})`,
                   })}
                 </Text>
-                <Ionicons
-                  name={
-                    dodProgress.quizzesPassed >= dodProgress.quizzesRequired
-                      ? 'checkbox'
-                      : 'square-outline'
-                  }
-                  size={20}
-                  color={
-                    dodProgress.quizzesPassed >= dodProgress.quizzesRequired
-                      ? theme.colors.success
-                      : theme.colors.textTertiary
-                  }
-                />
               </View>
               <View style={currentStyles.dodProgressContainer}>
                 <View style={currentStyles.dodProgressBar}>
@@ -747,12 +747,14 @@ const styles = (
     dodItem: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
+      justifyContent: 'flex-start',
       gap: spacing.sm,
     },
     dodText: {
       ...typography('caption'),
       color: theme.colors.text,
+      flex: 1,
+      textAlign: 'left',
     },
     dodProgressContainer: {
       flexDirection: 'row',
@@ -775,8 +777,9 @@ const styles = (
       ...typography('caption'),
       ...fontWeight('bold'),
       color: theme.colors.textSecondary,
-      width: 40,
-      textAlign: 'right',
+      width: 45,
+      textAlign: 'center',
+      marginBottom: 3,
     },
   });
 
