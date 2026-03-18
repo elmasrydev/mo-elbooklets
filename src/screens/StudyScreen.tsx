@@ -239,12 +239,7 @@ const StudyScreen: React.FC = () => {
                         ]}
                       />
                     </View>
-                    <Text
-                      style={[
-                        currentStyles.progressPercent,
-                        { textAlign: common.isRTL ? 'left' : 'right' },
-                      ]}
-                    >
+                    <Text style={[currentStyles.progressPercent]}>
                       {Math.round(subject.study_progress || 0)}%
                     </Text>
                   </View>
@@ -264,12 +259,7 @@ const StudyScreen: React.FC = () => {
                         ]}
                       />
                     </View>
-                    <Text
-                      style={[
-                        currentStyles.progressPercent,
-                        { textAlign: common.isRTL ? 'left' : 'right' },
-                      ]}
-                    >
+                    <Text style={[currentStyles.progressPercent]}>
                       {Math.round(subject.quiz_progress || 0)}%
                     </Text>
                   </View>
@@ -430,15 +420,14 @@ const styles = (
     },
     progressLabel: {
       ...typography('label'),
-      width: 30,
+      minWidth: 40,
       color: theme.colors.textSecondary,
-      textAlign: 'left',
     },
     progressPercent: {
       ...typography('label'),
-      width: 25,
+      minWidth: 37,
+      textAlign: 'center',
       color: theme.colors.textTertiary,
-      textAlign: 'right',
     },
     progressBar: {
       flex: 1,
