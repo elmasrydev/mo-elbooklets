@@ -97,7 +97,8 @@
     "error_loading": "Error Loading Lessons",
     "lessons": "lessons",
     "no_chapters": "No Chapters Available",
-    "no_chapters_for_subject": "No chapters available for this subject."
+    "no_chapters_for_subject": "No chapters available for this subject.",
+    "locked_lesson": "Purchase required or restricted"
   },
   "study_lesson": {
     "lesson_content": "Lesson Content",

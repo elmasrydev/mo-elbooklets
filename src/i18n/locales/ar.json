@@ -97,7 +97,8 @@
     "error_loading": "خطأ في تحميل الدروس",
     "lessons": "دروس",
     "no_chapters": "لا توجد فصول متاحة",
-    "no_chapters_for_subject": "لا توجد فصول متاحة لهذه المادة."
+    "no_chapters_for_subject": "لا توجد فصول متاحة لهذه المادة.",
+    "locked_lesson": "الاشتراك مطلوب أو محتوي مقيد"
   },
   "study_lesson": {
     "lesson_content": "محتوى الدرس",
