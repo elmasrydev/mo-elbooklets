@@ -201,7 +201,6 @@
     "days": "Days",
     "current_streak": "Current Streak",
     "streak_title": "Day Streak",
-    "streak_progress": "{{count}}/7 days",
     "streak_encouragement_0_2": "Great start! Keep going to build your streak.",
     "streak_encouragement_3_5": "You're doing great! Keep the momentum going.",
     "streak_encouragement_6_7": "Amazing! You are unstoppable. Finish the week strong!"

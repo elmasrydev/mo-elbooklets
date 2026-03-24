@@ -404,22 +404,6 @@ const HomeScreen: React.FC = () => {
                     : `${t('home_screen.streak_title')} ${activitiesData.streak || 0}`}
                 </Text>
               </View>
-              <View style={s.streakProgressBadge}>
-                <Text style={s.streakProgressBadgeText}>
-                  {t('home_screen.streak_progress', {
-                    count: Math.min(activitiesData.streak || 0, 7),
-                  })}
-                </Text>
-              </View>
-            </View>
-
-            <View style={s.streakProgressBarContainer}>
-              <View
-                style={[
-                  s.streakProgressBarFill,
-                  { width: `${Math.min(100, ((activitiesData.streak || 0) / 7) * 100)}%` },
-                ]}
-              />
             </View>
             <Text style={s.streakEncouragementText}>
               {t(
@@ -1100,29 +1084,6 @@ const getStyles = (
       ...typography('h2'),
       ...fontWeight('bold'),
       color: '#FFFFFF',
-    },
-    streakProgressBadge: {
-      backgroundColor: 'rgba(255, 255, 255, 0.2)',
-      paddingHorizontal: 12,
-      paddingVertical: 4,
-      borderRadius: 16,
-    },
-    streakProgressBadgeText: {
-      ...typography('bodySmall'),
-      ...fontWeight('bold'),
-      color: '#FFFFFF',
-    },
-    streakProgressBarContainer: {
-      height: 8,
-      backgroundColor: 'rgba(255, 255, 255, 0.3)',
-      borderRadius: 4,
-      marginBottom: spacing.md,
-      overflow: 'hidden',
-    },
-    streakProgressBarFill: {
-      height: '100%',
-      backgroundColor: '#FFFFFF',
-      borderRadius: 4,
     },
     streakEncouragementText: {
       ...typography('caption'),
