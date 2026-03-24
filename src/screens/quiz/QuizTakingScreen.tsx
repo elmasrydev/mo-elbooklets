@@ -71,7 +71,6 @@ const QuizTakingScreen: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isTimerPaused, setIsTimerPaused] = useState(false);
-  const [postToFeed, setPostToFeed] = useState(true);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -269,15 +268,15 @@ const QuizTakingScreen: React.FC = () => {
 
       const result = await tryFetchWithFallback(
         `
-        mutation SubmitQuizAnswers($quizId: ID!, $answers: [QuestionAnswerInput!]!, $postToFeed: Boolean) {
-          submitQuizAnswers(quizId: $quizId, answers: $answers, postToFeed: $postToFeed) {
+        mutation SubmitQuizAnswers($quizId: ID!, $answers: [QuestionAnswerInput!]!) {
+          submitQuizAnswers(quizId: $quizId, answers: $answers) {
             score
             totalQuestions
             isPassed
           }
         }
       `,
-        { quizId: quiz.id, answers, postToFeed },
+        { quizId: quiz.id, answers },
         token,
       );
 
@@ -541,41 +540,26 @@ const QuizTakingScreen: React.FC = () => {
         </TouchableOpacity>
 
         {currentQuestionIndex === quiz.questions.length - 1 ? (
-          <View style={{ flex: 1.5, gap: 8 }}>
-            <TouchableOpacity
-              style={[
-                currentStyles.navButton,
-                currentStyles.nextButton,
-                submitting && currentStyles.navButtonDisabled,
-                { marginBottom: 8 },
-              ]}
-              onPress={handleSubmitQuiz}
-              disabled={submitting}
-            >
-              {submitting ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : (
-                <>
-                  <Text style={[currentStyles.navButtonText, currentStyles.nextButtonText]}>
-                    {t('quiz_taking.submit_quiz', 'Submit')}
-                  </Text>
-                  <Ionicons name="checkmark-done" size={20} color="#FFFFFF" />
-                </>
-              )}
-            </TouchableOpacity>
-
-            <View style={currentStyles.postToFeedRow}>
-              <Text style={currentStyles.postToFeedText}>
-                {t('home_screen.community_feed', 'Social Feed')}
-              </Text>
-              <Switch
-                value={postToFeed}
-                onValueChange={setPostToFeed}
-                trackColor={{ false: '#D1D5DB', true: '#284196' }}
-                thumbColor="#FFFFFF"
-              />
-            </View>
-          </View>
+          <TouchableOpacity
+            style={[
+              currentStyles.navButton,
+              currentStyles.nextButton,
+              submitting && currentStyles.navButtonDisabled,
+            ]}
+            onPress={handleSubmitQuiz}
+            disabled={submitting}
+          >
+            {submitting ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <>
+                <Text style={[currentStyles.navButtonText, currentStyles.nextButtonText]}>
+                  {t('quiz_taking.finish_quiz', 'Finish Quiz')}
+                </Text>
+                <Ionicons name="checkmark-done" size={20} color="#FFFFFF" />
+              </>
+            )}
+          </TouchableOpacity>
         ) : (
           <TouchableOpacity
             style={[currentStyles.navButton, currentStyles.nextButton]}

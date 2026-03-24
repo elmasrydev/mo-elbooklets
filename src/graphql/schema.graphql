@@ -24,6 +24,12 @@ type Mutation {
     quizId: ID!
     answers: [QuestionAnswerInput!]!
   ): QuizSubmissionResult!
+  publishQuizToFeed(quizId: ID!): SocialActionResponse!
+}
+
+type SocialActionResponse {
+  success: Boolean!
+  message: String
 }
 
 type User {

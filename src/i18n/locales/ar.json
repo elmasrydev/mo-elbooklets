@@ -271,8 +271,8 @@
     "select_answer_last": "يرجى اختيار إجابة لهذا السؤال قبل إرسال الاختبار.",
     "incomplete_quiz": "اختبار غير مكتمل",
     "unanswered_questions": "لديك {{count}} سؤال/أسئلة بدون إجابة. يرجى الإجابة على جميع الأسئلة قبل الإرسال.",
-    "submitting": "جارٍ الإرسال...",
-    "submit_quiz": "إرسال الاختبار",
+    "finishing": "جارٍ الإنهاء...",
+    "finish_quiz": "إنهاء الاختبار",
     "leave_quiz_title": "مغادرة الاختبار؟",
     "leave_quiz_message": "سيتم فقدان تقدمك إذا غادرت الآن. هل أنت متأكد؟",
     "continue_quiz": "متابعة",
@@ -331,7 +331,9 @@
     "feedback": "ملاحظات",
     "all_correct": "جميع الإجابات صحيحة! 🎉",
     "overall_performance": "الأداء العام",
-    "correct": "صحيحة"
+    "correct": "صحيحة",
+    "publish_to_feed": "نشر في المجتمع",
+    "published_to_feed": "تم النشر في المجتمع"
   },
   "social_screen": {
     "header_title": "اجتماعي",

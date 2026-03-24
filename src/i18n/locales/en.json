@@ -278,8 +278,8 @@
     "select_answer_last": "Please select an answer for this question before submitting the quiz.",
     "incomplete_quiz": "Incomplete Quiz",
     "unanswered_questions": "You have {{count}} unanswered question(s). Please answer all questions before submitting.",
-    "submitting": "Submitting...",
-    "submit_quiz": "Submit Quiz",
+    "finishing": "Finishing...",
+    "finish_quiz": "Finish Quiz",
     "leave_quiz_title": "Leave Quiz?",
     "leave_quiz_message": "Your progress will be lost if you leave now. Are you sure?",
     "continue_quiz": "Continue",
@@ -339,7 +339,9 @@
     "feedback": "Feedback",
     "all_correct": "All answers are correct! 🎉",
     "overall_performance": "Overall Performance",
-    "correct": "Correct"
+    "correct": "Correct",
+    "publish_to_feed": "Share to Community Feed",
+    "published_to_feed": "Published to Feed"
   },
   "social_screen": {
     "header_title": "Social",
