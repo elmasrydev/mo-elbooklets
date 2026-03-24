@@ -22,9 +22,9 @@
         "CFBundleAllowMixedLocalizations": true,
         "ITSAppUsesNonExemptEncryption": false
       },
-      "bundleIdentifier": "com.agmryde.app",
-      "buildNumber": "42",
-      "appleTeamId": "LVA2A6A56C",
+      "bundleIdentifier": "com.elbooklets.app",
+      "buildNumber": "48",
+      "appleTeamId": "XJAN9FLEYZ",
       "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
