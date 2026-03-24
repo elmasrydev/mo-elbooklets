@@ -16,7 +16,7 @@ import { useForceUpdate } from '../context/ForceUpdateContext';
 import AppButton from './AppButton';
 import { layout } from '../config/layout';
 
-const APP_STORE_URL = 'itms-apps://apps.apple.com/app/id123456789'; // TODO: Update ID when known
+const APP_STORE_URL = 'itms-apps://apps.apple.com/app/id6761079894';
 const PLAY_STORE_URL = 'market://details?id=com.elbooklets.app';
 
 const ForceUpdateModal: React.FC = () => {
