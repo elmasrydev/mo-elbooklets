@@ -15,6 +15,8 @@ import UnifiedHeader from '../../components/UnifiedHeader';
 import AppButton from '../../components/AppButton';
 import { layout } from '../../config/layout';
 import { useModal } from '../../context/ModalContext';
+import { useSubscriptionGate } from '../../hooks/useSubscriptionGate';
+import { ConfirmModal } from '../../components/ConfirmModal';
 
 interface QuizType {
   id: string;
@@ -55,9 +57,11 @@ const QuizSettingsScreen: React.FC = () => {
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
+  const { checkSubscription } = useSubscriptionGate();
   const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null);
   const [timedMode, setTimedMode] = useState(false);
   const [starting, setStarting] = useState(false);
+  const [showSubModal, setShowSubModal] = useState(false);
 
   const fetchQuizTypes = useCallback(async () => {
     try {
@@ -101,6 +105,10 @@ const QuizSettingsScreen: React.FC = () => {
   }, [quizTypes, selectedTypeId]);
 
   const handleStartQuiz = async () => {
+    if (!checkSubscription({ skipModal: true })) {
+      setShowSubModal(true);
+      return;
+    }
     if (!selectedTypeId || !subject) return;
     try {
       setStarting(true);
@@ -291,6 +299,19 @@ const QuizSettingsScreen: React.FC = () => {
         />
         <Text style={currentStyles.disclaimerText}>{t('quiz_lessons.progress_saved')}</Text>
       </View>
+
+      <ConfirmModal
+        visible={showSubModal}
+        title={t('subscription.required_title', 'Subscription Required')}
+        message={t(
+          'subscription.required_message',
+          'You must subscribe to access all features. Please subscribe to continue.',
+        )}
+        showCancel={false}
+        confirmLabel={t('common.ok', 'OK')}
+        onConfirm={() => setShowSubModal(false)}
+        onCancel={() => setShowSubModal(false)}
+      />
     </View>
   );
 };

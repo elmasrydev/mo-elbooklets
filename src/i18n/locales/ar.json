@@ -78,6 +78,10 @@
     "save_and_continue": "حفظ ومتابعة",
     "skip_for_now": "تخطي الآن"
   },
+  "subscription": {
+    "required_title": "اشتراك مطلوب",
+    "required_message": "يجب عليك الاشتراك للوصول لجميع المميزات. يرجى الاشتراك للمتابعة."
+  },
   "study_screen": {
     "header_title": "المذاكرة",
     "header_subtitle": "تعلم ومراجعة الدروس",

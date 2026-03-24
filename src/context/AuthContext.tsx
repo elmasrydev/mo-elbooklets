@@ -26,6 +26,7 @@ interface User {
   grade?: { id: string; name: string };
   educational_system_id?: string;
   educational_system?: { id: string; name: string };
+  is_subscribed?: boolean;
 }
 
 interface LoginInput {
@@ -132,6 +133,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 id
                 name
               }
+              is_subscribed
             }
           }
         }
@@ -195,6 +197,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 id
                 name
               }
+              is_subscribed
             }
           }
         }
@@ -255,6 +258,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           me { 
             id name email mobile country_code gender school_id 
             grade_id grade { id name } educational_system_id educational_system { id name } 
+            is_subscribed
           } 
         }`,
         undefined,

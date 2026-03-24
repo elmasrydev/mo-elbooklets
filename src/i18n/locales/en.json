@@ -78,6 +78,10 @@
     "save_and_continue": "Save & Continue",
     "skip_for_now": "Skip for now"
   },
+  "subscription": {
+    "required_title": "Subscription Required",
+    "required_message": "You must subscribe to access all features. Please subscribe to continue."
+  },
   "study_screen": {
     "header_title": "Study",
     "header_subtitle": "Learn and review lessons",

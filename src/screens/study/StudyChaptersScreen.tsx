@@ -22,6 +22,7 @@ import UnifiedHeader from '../../components/UnifiedHeader';
 import AppButton from '../../components/AppButton';
 import { GenericListSkeleton } from '../../components/SkeletonLoader';
 import RetryView from '../../components/RetryView';
+import { useSubscriptionGate } from '../../hooks/useSubscriptionGate';
 
 interface Subject {
   id: string;
@@ -67,6 +68,7 @@ const StudyChaptersScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const subject: Subject = route.params?.subject;
+  const { checkSubscription } = useSubscriptionGate();
 
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [loading, setLoading] = useState(true);
@@ -135,6 +137,7 @@ const StudyChaptersScreen: React.FC = () => {
   };
 
   const handleLessonPress = (lesson: Lesson) => {
+    if (!checkSubscription()) return;
     if (lesson.isLocked) return;
     const allLessons = chapters.flatMap((ch) => ch.lessons);
     navigation.navigate('StudyLesson', { lesson, allLessons, subject });
