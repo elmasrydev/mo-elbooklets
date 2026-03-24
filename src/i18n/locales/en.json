@@ -113,7 +113,9 @@
     "definition_of_done": "Definition of Done",
     "key_points_progress": "View all key points ({{current}}/{{total}})",
     "quizzes_progress": "Pass required quizzes ({{current}}/{{total}})",
-    "no_dod_data": "No progress data available"
+    "no_dod_data": "No progress data available",
+    "leave_title": "Leave Lesson?",
+    "leave_message": "Your reading progress is saved. Are you sure you want to leave?"
   },
   "more_screen": {
     "header_title": "More",

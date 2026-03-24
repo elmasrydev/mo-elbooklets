@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -24,7 +24,9 @@ import CloseButton from '../../components/navigation/CloseButton';
 import LessonNavBar from '../../components/navigation/LessonNavBar';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import { useTypography } from '../../hooks/useTypography';
+import useAndroidBack from '../../hooks/useAndroidBack';
 import AppButton from '../../components/AppButton';
+import { ConfirmModal } from '../../components/ConfirmModal';
 import { isRTL, textAlign } from '../../lib/rtl';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -188,12 +190,24 @@ const StudyLessonScreen: React.FC = () => {
     new Set(currentLesson.lessonPoints?.filter((p) => p.is_viewed).map((p) => p.id) || []),
   );
   const scrollViewRef = useRef<ScrollView>(null);
+  // Local state for the leave-lesson confirmation — must be rendered here
+  // because GlobalModalHandler (root-level) cannot pierce iOS native fullScreenModal.
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
 
   const currentIndex = allLessons.findIndex((l) => l.id === currentLesson.id);
   const previousLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
   const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
 
   const currentStyles = styles(theme, isRTL, typography, fontWeight, insets, spacing, borderRadius);
+
+  // Open local leave-disclaimer (works inside iOS native fullScreenModal).
+  const handleLeaveLesson = useCallback(() => {
+    setShowLeaveModal(true);
+    return true; // block Android default back action
+  }, []);
+
+  // Android hardware back → leave disclaimer
+  useAndroidBack(handleLeaveLesson);
 
   const togglePoint = async (pointId: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -310,7 +324,7 @@ const StudyLessonScreen: React.FC = () => {
 
   return (
     <View style={currentStyles.container}>
-      <UnifiedHeader leftContent={<CloseButton />} title={t('study_lesson.lesson_content')} />
+      <UnifiedHeader leftContent={<CloseButton onPress={handleLeaveLesson} />} title={t('study_lesson.lesson_content')} />
 
       <ScrollView
         ref={scrollViewRef}
@@ -560,6 +574,17 @@ const StudyLessonScreen: React.FC = () => {
         onPrevious={previousLesson ? () => handleNavigateLesson(previousLesson as Lesson) : null}
         onNext={nextLesson ? () => handleNavigateLesson(nextLesson as Lesson) : null}
         onFinish={() => navigation.goBack()}
+      />
+
+      {/* Leave-lesson confirmation — rendered locally so it works inside iOS fullScreenModal */}
+      <ConfirmModal
+        visible={showLeaveModal}
+        title={t('study_lesson.leave_title')}
+        message={t('study_lesson.leave_message')}
+        confirmLabel={t('common.yes')}
+        cancelLabel={t('common.no')}
+        onConfirm={() => { setShowLeaveModal(false); navigation.goBack(); }}
+        onCancel={() => setShowLeaveModal(false)}
       />
     </View>
   );

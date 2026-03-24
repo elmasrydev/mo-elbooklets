@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { tryFetchWithFallback } from '../../config/api';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
+import useAndroidBack from '../../hooks/useAndroidBack';
 import { useTypography } from '../../hooks/useTypography';
 import { layout } from '../../config/layout';
 import UnifiedHeader from '../../components/UnifiedHeader';
@@ -92,7 +93,7 @@ const QuizTakingScreen: React.FC = () => {
     return `${m}:${s}`;
   };
 
-  const handleBackPress = () => {
+  const handleBackPress = useCallback(() => {
     showConfirm({
       title: t('quiz_taking.leave_quiz_title'),
       message: t('quiz_taking.leave_quiz_message'),
@@ -101,7 +102,12 @@ const QuizTakingScreen: React.FC = () => {
       confirmVariant: 'danger',
       onConfirm: () => navigation.goBack(),
     });
-  };
+    // Return true so Android doesn't run its default back action
+    return true;
+  }, [showConfirm, t, navigation]);
+
+  // Android hardware back → same leave-quiz popup
+  useAndroidBack(handleBackPress);
 
   useEffect(() => {
     if (quizId) {

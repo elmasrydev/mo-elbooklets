@@ -113,7 +113,9 @@
     "definition_of_done": "تعريف الانجاز",
     "key_points_progress": "مشاهدة جميع النقاط الرئيسية ({{current}}/{{total}})",
     "quizzes_progress": "اجتياز الاختبارات المطلوبة ({{current}}/{{total}})",
-    "no_dod_data": "لا توجد بيانات تقدم متاحة"
+    "no_dod_data": "لا توجد بيانات تقدم متاحة",
+    "leave_title": "مغادرة الدرس؟",
+    "leave_message": "تقدمك في القراءة محفوظ. هل أنت متأكد من أنك تريد المغادرة؟"
   },
   "more_screen": {
     "header_title": "المزيد",
