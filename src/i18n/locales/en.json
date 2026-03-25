@@ -23,6 +23,7 @@
     "more": "More",
     "home": "Home",
     "brand_name": "El-Booklets",
+    "schedule": "Schedule",
     "quiz": "Quiz",
     "study": "Study",
     "booklets": "Booklets",
@@ -45,7 +46,9 @@
     "reload_message": "The app needs to reload to apply language changes.",
     "switch_language": "Switch Language",
     "error": "Error",
+    "success": "Success",
     "unexpected_error": "An unexpected error occurred",
+    "server_error": "Unknown error, try again later",
     "all": "All",
     "all_subjects": "All Subjects",
     "follow": "Follow",
@@ -69,13 +72,22 @@
     "true": "True",
     "false": "False",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "go_back": "Go Back",
+    "save": "Save",
+    "save_and_continue": "Save & Continue",
+    "skip_for_now": "Skip for now"
+  },
+  "subscription": {
+    "required_title": "Subscription Required",
+    "required_message": "You must subscribe to access all features. Please subscribe to continue."
   },
   "study_screen": {
     "header_title": "Study",
     "header_subtitle": "Learn and review lessons",
     "page_title": "Select Subject",
     "page_subtitle": "What are you studying today?",
+    "study_label": "Study",
     "available_booklets": "Booklets available",
     "loading_subjects": "Loading subjects...",
     "error_loading_subjects": "Error Loading Subjects",
@@ -89,7 +101,8 @@
     "error_loading": "Error Loading Lessons",
     "lessons": "lessons",
     "no_chapters": "No Chapters Available",
-    "no_chapters_for_subject": "No chapters available for this subject."
+    "no_chapters_for_subject": "No chapters available for this subject.",
+    "locked_lesson": "Purchase required or restricted"
   },
   "study_lesson": {
     "lesson_content": "Lesson Content",
@@ -101,7 +114,13 @@
     "next": "Next",
     "back_to_chapters": "Back to Chapters",
     "take_quiz": "Take Quiz",
-    "test_your_knowledge": "Test your knowledge on this lesson"
+    "test_your_knowledge": "Test your knowledge on this lesson",
+    "definition_of_done": "Definition of Done",
+    "key_points_progress": "View all key points ({{current}}/{{total}})",
+    "quizzes_progress": "Pass required quizzes ({{current}}/{{total}})",
+    "no_dod_data": "No progress data available",
+    "leave_title": "Leave Lesson?",
+    "leave_message": "Your reading progress is saved. Are you sure you want to leave?"
   },
   "more_screen": {
     "header_title": "More",
@@ -185,7 +204,13 @@
     "ready_for_quiz": "Ready for Quiz",
     "quizzes_done": "Quizzes Done",
     "avg_score_label": "AVG Score",
-    "keep_completing": "Keep completing lessons to unlock rewards!"
+    "keep_completing": "Keep completing lessons to unlock rewards!",
+    "days": "Days",
+    "current_streak": "Current Streak",
+    "streak_title": "Day Streak",
+    "streak_encouragement_0_2": "Great start! Keep going to build your streak.",
+    "streak_encouragement_3_5": "You're doing great! Keep the momentum going.",
+    "streak_encouragement_6_7": "Amazing! You are unstoppable. Finish the week strong!"
   },
   "quiz_screen": {
     "header_title": "Quiz Center",
@@ -260,8 +285,8 @@
     "select_answer_last": "Please select an answer for this question before submitting the quiz.",
     "incomplete_quiz": "Incomplete Quiz",
     "unanswered_questions": "You have {{count}} unanswered question(s). Please answer all questions before submitting.",
-    "submitting": "Submitting...",
-    "submit_quiz": "Submit Quiz",
+    "finishing": "Finishing...",
+    "finish_quiz": "Finish Quiz",
     "leave_quiz_title": "Leave Quiz?",
     "leave_quiz_message": "Your progress will be lost if you leave now. Are you sure?",
     "continue_quiz": "Continue",
@@ -321,7 +346,9 @@
     "feedback": "Feedback",
     "all_correct": "All answers are correct! 🎉",
     "overall_performance": "Overall Performance",
-    "correct": "Correct"
+    "correct": "Correct",
+    "publish_to_feed": "Share to Community Feed",
+    "published_to_feed": "Published to Feed"
   },
   "social_screen": {
     "header_title": "Social",
@@ -388,6 +415,7 @@
     "password_placeholder": "Enter your password",
     "name_placeholder": "Enter your full name",
     "mobile_number": "Mobile Number",
+    "mobile": "Mobile Number",
     "mobile_placeholder": "Enter your mobile number",
     "fill_all_fields": "Please fill in all fields",
     "welcome_back": "Welcome Back",
@@ -426,7 +454,16 @@
     "invalid_email": "Please enter a valid email address",
     "parent_mobile_required": "Parent mobile number is required",
     "invalid_mobile_format": "The mobile number must be 11 digits starting with 010, 011, 012 or 015.",
-    "name_too_short": "Name is too short (min 3 characters)"
+    "name_too_short": "Name is too short (min 3 characters)",
+    "mobile_taken": "This mobile number is already registered",
+    "account_details": "Account Details",
+    "school_info": "School Info",
+    "disclaimer_title": "Registration Disclaimer",
+    "continue_registration": "Continue Registration",
+    "select_edu_system": "Select Educational System",
+    "free_campaign_active": "A free access campaign is currently active! You will get full access automatically.",
+    "referral_disclaimer": "If you don't have a code, you will start with Trial Limited Access.",
+    "no_referral_disclaimer": "You are now going to sign up without referral code and will have Trial Limited Access only"
   },
   "time": {
     "just_now": "Just now",
@@ -447,6 +484,7 @@
     "schedule_saved": "Schedule saved successfully!",
     "add_subject": "Add Subject",
     "remove_subject": "Remove",
+    "confirm_remove": "Are you sure you want to remove this subject from the schedule?",
     "lessons_goal": "Lessons",
     "quizzes_goal": "Quizzes",
     "notes": "Notes",
@@ -479,7 +517,10 @@
     "select_language_msg": "Select your preferred language",
     "cancel": "Cancel",
     "faqs": "FAQs",
-    "contact_us": "Contact Us"
+    "contact_us": "Contact Us",
+    "parental_linking": "Parental Linking",
+    "parental_linking_desc": "Connect with your parents",
+    "not_specified": "Not specified"
   },
   "faq": {
     "header_title": "FAQs",
@@ -510,5 +551,20 @@
     "header_subtitle": "Explore available learning materials",
     "no_booklets": "No booklets available",
     "no_booklets_subtitle": "Booklets will appear here once they are added to the system"
+  },
+  "profile": {
+    "complete_your_profile": "Complete Your Profile",
+    "completeness_incentive": "Help us personalize your learning experience",
+    "select_gender": "Select Gender",
+    "male": "Male",
+    "female": "Female",
+    "enter_email": "Enter Email Address",
+    "school_name": "School Name",
+    "enter_school": "Enter School Name",
+    "school_placeholder": "Your school name",
+    "enter_parent_mobile": "Enter Parent's Mobile",
+    "name_not_editable": "Name cannot be changed manually",
+    "gender": "Gender",
+    "update_success": "Profile updated successfully"
   }
 }

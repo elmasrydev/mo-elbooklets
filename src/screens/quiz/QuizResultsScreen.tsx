@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
@@ -103,6 +103,8 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
   const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [published, setPublished] = useState(false);
 
   useEffect(() => {
     fetchQuizResults();
@@ -175,6 +177,38 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
       setError(err.message || t('quiz_results.error_loading_results'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const publishToFeed = async () => {
+    if (isPublishing || published) return;
+
+    try {
+      setIsPublishing(true);
+      const token = await SecureStore.getItemAsync('auth_token');
+      if (!token) return;
+
+      const mutation = `
+        mutation PublishQuizToFeed($quizId: ID!) {
+          publishQuizToFeed(quizId: $quizId) {
+            success
+            message
+          }
+        }
+      `;
+
+      const response = await tryFetchWithFallback(mutation, { quizId }, token);
+      
+      if (response.data?.publishQuizToFeed?.success) {
+        setPublished(true);
+      } else {
+        const errMsg = response.data?.publishQuizToFeed?.message || response.errors?.[0]?.message || t('common.error');
+        setError(errMsg);
+      }
+    } catch (err: any) {
+      setError(err.message || t('common.error'));
+    } finally {
+      setIsPublishing(false);
     }
   };
 
@@ -402,6 +436,16 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
             title={t('home_screen.review')}
             onPress={() => navigation.navigate('QuizReview', { quizId, quizResult })}
             icon={<Ionicons name="eye-outline" size={20} color="#fff" />}
+            size="lg"
+          />
+
+          <AppButton
+            title={published ? t('quiz_review.published_to_feed') : t('quiz_review.publish_to_feed')}
+            onPress={publishToFeed}
+            loading={isPublishing}
+            disabled={published}
+            variant={published ? 'success' : 'primary'}
+            icon={<Ionicons name={published ? 'checkmark-circle' : 'share-social'} size={20} color="#fff" />}
             size="lg"
           />
 

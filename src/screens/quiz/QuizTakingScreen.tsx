@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,11 +7,11 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Switch,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useModal } from '../../context/ModalContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
@@ -19,6 +19,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { tryFetchWithFallback } from '../../config/api';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
+import useAndroidBack from '../../hooks/useAndroidBack';
 import { useTypography } from '../../hooks/useTypography';
 import { layout } from '../../config/layout';
 import UnifiedHeader from '../../components/UnifiedHeader';
@@ -92,7 +93,7 @@ const QuizTakingScreen: React.FC = () => {
     return `${m}:${s}`;
   };
 
-  const handleBackPress = () => {
+  const handleBackPress = useCallback(() => {
     showConfirm({
       title: t('quiz_taking.leave_quiz_title'),
       message: t('quiz_taking.leave_quiz_message'),
@@ -101,7 +102,12 @@ const QuizTakingScreen: React.FC = () => {
       confirmVariant: 'danger',
       onConfirm: () => navigation.goBack(),
     });
-  };
+    // Return true so Android doesn't run its default back action
+    return true;
+  }, [showConfirm, t, navigation]);
+
+  // Android hardware back → same leave-quiz popup
+  useAndroidBack(handleBackPress);
 
   useEffect(() => {
     if (quizId) {
@@ -335,10 +341,7 @@ const QuizTakingScreen: React.FC = () => {
     return (
       <View style={common.container}>
         <UnifiedHeader showBackButton title={t('quiz_taking.quiz_error')} />
-        <RetryView 
-          message={error}
-          onRetry={fetchQuiz}
-        />
+        <RetryView message={error} onRetry={fetchQuiz} />
       </View>
     );
   }
@@ -354,8 +357,8 @@ const QuizTakingScreen: React.FC = () => {
             color={theme.colors.textSecondary}
             style={{ marginBottom: spacing.lg }}
           />
-          <Text style={currentStyles.errorTitle}> {t('quiz_taking.no_questions_available')} </Text>
-          <Text style={currentStyles.errorText}> {t('quiz_taking.no_questions_yet')} </Text>
+          <Text style={currentStyles.errorTitle}>{t('quiz_taking.no_questions_available')}</Text>
+          <Text style={currentStyles.errorText}>{t('quiz_taking.no_questions_yet')}</Text>
         </View>
       </View>
     );
@@ -557,7 +560,7 @@ const QuizTakingScreen: React.FC = () => {
             ) : (
               <>
                 <Text style={[currentStyles.navButtonText, currentStyles.nextButtonText]}>
-                  {t('quiz_taking.submit_quiz', 'Submit')}
+                  {t('quiz_taking.finish_quiz', 'Finish Quiz')}
                 </Text>
                 <Ionicons name="checkmark-done" size={20} color="#FFFFFF" />
               </>
@@ -814,6 +817,17 @@ const styles = (
     },
     navButtonTextDisabled: {
       color: '#9CA3AF',
+    },
+    postToFeedRow: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 12,
+    },
+    postToFeedText: {
+      ...typography('label'),
+      ...fontWeight('600'),
+      color: '#6B7280',
     },
 
     // Legacy placeholders to ensure no crash if common uses them

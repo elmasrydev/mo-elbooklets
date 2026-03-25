@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { tryFetchWithFallback } from '../../config/api';
 import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
@@ -16,6 +15,8 @@ import UnifiedHeader from '../../components/UnifiedHeader';
 import AppButton from '../../components/AppButton';
 import { layout } from '../../config/layout';
 import { useModal } from '../../context/ModalContext';
+import { useSubscriptionGate } from '../../hooks/useSubscriptionGate';
+import { ConfirmModal } from '../../components/ConfirmModal';
 
 interface QuizType {
   id: string;
@@ -56,14 +57,16 @@ const QuizSettingsScreen: React.FC = () => {
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
+  const { checkSubscription } = useSubscriptionGate();
   const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null);
   const [timedMode, setTimedMode] = useState(false);
   const [starting, setStarting] = useState(false);
+  const [showSubModal, setShowSubModal] = useState(false);
 
   const fetchQuizTypes = useCallback(async () => {
     try {
       setLoadingTypes(true);
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
       const result = await tryFetchWithFallback(
         `query QuizTypes { quizTypes { id name slug question_count is_default } }`,
@@ -102,10 +105,14 @@ const QuizSettingsScreen: React.FC = () => {
   }, [quizTypes, selectedTypeId]);
 
   const handleStartQuiz = async () => {
+    if (!checkSubscription({ skipModal: true })) {
+      setShowSubModal(true);
+      return;
+    }
     if (!selectedTypeId || !subject) return;
     try {
       setStarting(true);
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
       const result = await tryFetchWithFallback(
         `mutation StartQuiz($subjectId: ID!, $lessonIds: [ID!]!, $quizTypeId: ID) { startQuiz(subjectId: $subjectId, lessonIds: $lessonIds, quizTypeId: $quizTypeId) { id } }`,
@@ -292,6 +299,19 @@ const QuizSettingsScreen: React.FC = () => {
         />
         <Text style={currentStyles.disclaimerText}>{t('quiz_lessons.progress_saved')}</Text>
       </View>
+
+      <ConfirmModal
+        visible={showSubModal}
+        title={t('subscription.required_title', 'Subscription Required')}
+        message={t(
+          'subscription.required_message',
+          'You must subscribe to access all features. Please subscribe to continue.',
+        )}
+        showCancel={false}
+        confirmLabel={t('common.ok', 'OK')}
+        onConfirm={() => setShowSubModal(false)}
+        onCancel={() => setShowSubModal(false)}
+      />
     </View>
   );
 };

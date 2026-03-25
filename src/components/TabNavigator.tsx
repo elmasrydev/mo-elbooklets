@@ -25,6 +25,7 @@ import QuizSettingsScreen from '../screens/quiz/QuizSettingsScreen';
 import { useTranslation } from 'react-i18next';
 import FAQScreen from '../screens/FAQScreen';
 import ContactUsScreen from '../screens/ContactUsScreen';
+import EditProfileScreen from '../screens/EditProfileScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -192,6 +193,7 @@ const TabNavigator: React.FC = () => {
       <Stack.Screen name="QuizReview" component={QuizReviewScreen} options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
       <Stack.Screen name="FAQs" component={FAQScreen} />
       <Stack.Screen name="ContactUs" component={ContactUsScreen} />
+      <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       <Stack.Group screenOptions={{ presentation: 'fullScreenModal' }}>
         <Stack.Screen name="QuizFlowSubjects" component={QuizSubjectsScreen} />
         <Stack.Screen name="QuizFlowLessons" component={QuizLessonsScreen} />

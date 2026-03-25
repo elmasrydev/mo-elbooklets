@@ -10,7 +10,9 @@
     "codegen": "graphql-codegen --config codegen.yml",
     "codegen:watch": "graphql-codegen --config codegen.yml --watch",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx}\"",
-    "lint": "eslint \"src/**/*.{ts,tsx,js,jsx}\""
+    "lint": "eslint \"src/**/*.{ts,tsx,js,jsx}\"",
+    "build:apk": "npx expo prebuild --platform android --clean && cd android && ./gradlew assembleRelease",
+    "build:aab": "npx expo prebuild --platform android --clean && cd android && ./gradlew bundleRelease"
   },
   "dependencies": {
     "@apollo/client": "^4.0.7",
@@ -30,6 +32,7 @@
     "expo-av": "~16.0.8",
     "expo-font": "~14.0.10",
     "expo-haptics": "~15.0.8",
+    "expo-linear-gradient": "^55.0.9",
     "expo-secure-store": "~15.0.8",
     "expo-status-bar": "~3.0.8",
     "expo-updates": "~29.0.12",

@@ -7,7 +7,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
@@ -22,6 +22,7 @@ import UnifiedHeader from '../../components/UnifiedHeader';
 import AppButton from '../../components/AppButton';
 import { GenericListSkeleton } from '../../components/SkeletonLoader';
 import RetryView from '../../components/RetryView';
+import { useSubscriptionGate } from '../../hooks/useSubscriptionGate';
 
 interface Subject {
   id: string;
@@ -48,6 +49,7 @@ interface Lesson {
     name: string;
     order: number;
   };
+  isLocked: boolean;
 }
 
 interface Chapter {
@@ -66,6 +68,7 @@ const StudyChaptersScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const subject: Subject = route.params?.subject;
+  const { checkSubscription } = useSubscriptionGate();
 
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [loading, setLoading] = useState(true);
@@ -101,7 +104,9 @@ const StudyChaptersScreen: React.FC = () => {
                 title
                 explanation
                 order
+                is_viewed
               }
+              isLocked
             }
           }
         }
@@ -132,6 +137,8 @@ const StudyChaptersScreen: React.FC = () => {
   };
 
   const handleLessonPress = (lesson: Lesson) => {
+    if (!checkSubscription()) return;
+    if (lesson.isLocked) return;
     const allLessons = chapters.flatMap((ch) => ch.lessons);
     navigation.navigate('StudyLesson', { lesson, allLessons, subject });
   };
@@ -222,17 +229,22 @@ const StudyChaptersScreen: React.FC = () => {
                       {' '}
                       {lesson.name}{' '}
                     </Text>
-                    {lesson.summary && (
+                    {lesson.summary && !lesson.isLocked && (
                       <Text style={currentStyles.lessonSummary} numberOfLines={1}>
                         {' '}
                         {lesson.summary}{' '}
                       </Text>
                     )}
+                    {lesson.isLocked && (
+                      <Text style={[currentStyles.lessonSummary, { color: theme.colors.error || '#EF4444' }]} numberOfLines={1}>
+                        {t('study_chapters.locked_lesson', 'Purchase required or restricted')}
+                      </Text>
+                    )}
                   </View>
                   <Ionicons
-                    name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                    name={lesson.isLocked ? "lock-closed" : (isRTL ? 'chevron-back' : 'chevron-forward')}
                     size={spacing.icon.xs}
-                    color={theme.colors.textTertiary}
+                    color={lesson.isLocked ? (theme.colors.error || '#EF4444') : theme.colors.textTertiary}
                   />
                 </TouchableOpacity>
               ))}

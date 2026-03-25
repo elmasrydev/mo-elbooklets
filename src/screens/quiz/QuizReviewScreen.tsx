@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
@@ -40,6 +40,8 @@ const QuizReviewScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [published, setPublished] = useState(false);
 
   const fetchResults = async () => {
     try {
@@ -107,6 +109,38 @@ const QuizReviewScreen: React.FC = () => {
       setError(err.message || t('common.error'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const publishToFeed = async () => {
+    if (isPublishing || published) return;
+
+    try {
+      setIsPublishing(true);
+      const token = await SecureStore.getItemAsync('auth_token');
+      if (!token) return;
+
+      const mutation = `
+        mutation PublishQuizToFeed($quizId: ID!) {
+          publishQuizToFeed(quizId: $quizId) {
+            success
+            message
+          }
+        }
+      `;
+
+      const response = await tryFetchWithFallback(mutation, { quizId }, token);
+      
+      if (response.data?.publishQuizToFeed?.success) {
+        setPublished(true);
+      } else {
+        const errMsg = response.data?.publishQuizToFeed?.message || response.errors?.[0]?.message || t('common.error');
+        setError(errMsg);
+      }
+    } catch (err: any) {
+      setError(err.message || t('common.error'));
+    } finally {
+      setIsPublishing(false);
     }
   };
 
@@ -715,11 +749,24 @@ const QuizReviewScreen: React.FC = () => {
           );
         })}
 
-        <AppButton
-          title={t('quiz_results.back_to_results', { defaultValue: 'Back to Results' })}
-          onPress={() => navigation.goBack()}
-          size="lg"
-        />
+        <View style={{ gap: 12, marginBottom: 12 }}>
+          <AppButton
+            title={published ? t('quiz_review.published_to_feed') : t('quiz_review.publish_to_feed')}
+            onPress={publishToFeed}
+            loading={isPublishing}
+            disabled={published}
+            variant={published ? 'success' : 'primary'}
+            icon={<Ionicons name={published ? 'checkmark-circle' : 'share-social'} size={20} color="#fff" />}
+            size="lg"
+          />
+
+          <AppButton
+            title={t('quiz_results.back_to_results', { defaultValue: 'Back to Results' })}
+            onPress={() => navigation.goBack()}
+            variant="outline"
+            size="lg"
+          />
+        </View>
         <View style={{ height: 40 }} />
       </ScrollView>
     </View>

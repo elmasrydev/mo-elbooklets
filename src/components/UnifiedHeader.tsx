@@ -185,8 +185,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
         }}
       >
         <View style={{ justifyContent: 'center', height: HEADER_CONTENT_HEIGHT, paddingBottom: 4 }}>
-          {' '}
-          {renderLeft()}{' '}
+          {renderLeft()}
         </View>
         <View
           style={[

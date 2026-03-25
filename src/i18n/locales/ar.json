@@ -22,7 +22,8 @@
     },
     "more": "المزيد",
     "home": "الرئيسية",
-    "brand_name": "البوكلتس",
+    "brand_name": "الـبوكلتس",
+    "schedule": "جدول",
     "quiz": "اختبار",
     "study": "المذاكرة",
     "booklets": "الكتيبات",
@@ -45,7 +46,9 @@
     "reload_message": "يحتاج التطبيق لإعادة تحميل لتطبيق تغييرات اللغة.",
     "switch_language": "تغيير اللغة",
     "error": "خطأ",
+    "success": "تم بنجاح",
     "unexpected_error": "حدث خطأ غير متوقع",
+    "server_error": "خطأ غير معروف، حاول مرة أخرى لاحقاً",
     "all": "الكل",
     "all_subjects": "جميع المواد",
     "follow": "متابعة",
@@ -69,13 +72,22 @@
     "true": "صح",
     "false": "خطأ",
     "yes": "نعم",
-    "no": "لا"
+    "no": "لا",
+    "go_back": "رجوع",
+    "save": "حفظ",
+    "save_and_continue": "حفظ ومتابعة",
+    "skip_for_now": "تخطي الآن"
+  },
+  "subscription": {
+    "required_title": "اشتراك مطلوب",
+    "required_message": "يجب عليك الاشتراك للوصول لجميع المميزات. يرجى الاشتراك للمتابعة."
   },
   "study_screen": {
     "header_title": "المذاكرة",
     "header_subtitle": "تعلم ومراجعة الدروس",
     "page_title": "اختر المادة",
     "page_subtitle": "ماذا ستدرس اليوم؟",
+    "study_label": "مذاكرة",
     "available_booklets": "كتيب متاح",
     "loading_subjects": "جارٍ تحميل المواد...",
     "error_loading_subjects": "خطأ في تحميل المواد",
@@ -89,7 +101,8 @@
     "error_loading": "خطأ في تحميل الدروس",
     "lessons": "دروس",
     "no_chapters": "لا توجد فصول متاحة",
-    "no_chapters_for_subject": "لا توجد فصول متاحة لهذه المادة."
+    "no_chapters_for_subject": "لا توجد فصول متاحة لهذه المادة.",
+    "locked_lesson": "الاشتراك مطلوب أو محتوي مقيد"
   },
   "study_lesson": {
     "lesson_content": "محتوى الدرس",
@@ -101,7 +114,13 @@
     "next": "التالي",
     "back_to_chapters": "العودة للفصول",
     "take_quiz": "ابدأ اختبار",
-    "test_your_knowledge": "اختبر معرفتك في هذا الدرس"
+    "test_your_knowledge": "اختبر معرفتك في هذا الدرس",
+    "definition_of_done": "تعريف الانجاز",
+    "key_points_progress": "مشاهدة جميع النقاط الرئيسية ({{current}}/{{total}})",
+    "quizzes_progress": "اجتياز الاختبارات المطلوبة ({{current}}/{{total}})",
+    "no_dod_data": "لا توجد بيانات تقدم متاحة",
+    "leave_title": "مغادرة الدرس؟",
+    "leave_message": "تقدمك في القراءة محفوظ. هل أنت متأكد من أنك تريد المغادرة؟"
   },
   "more_screen": {
     "header_title": "المزيد",
@@ -178,7 +197,13 @@
     "ready_for_quiz": "مستعد للاختبار",
     "quizzes_done": "اختبارات مكتملة",
     "avg_score_label": "متوسط الدرجات",
-    "keep_completing": "استمر في إكمال الدروس لفتح المكافآت!"
+    "keep_completing": "استمر في إكمال الدروس لفتح المكافآت!",
+    "days": "أيام",
+    "current_streak": "المتابعة الحالية",
+    "streak_title": "أيام متتالية",
+    "streak_encouragement_0_2": "بداية رائعة! استمر في بناء سلسلتك.",
+    "streak_encouragement_3_5": "أنت تقوم بعمل رائع! حافظ على هذا الزخم.",
+    "streak_encouragement_6_7": "مذهل! لا يمكن إيقافك. أنهِ الأسبوع بقوة!"
   },
   "quiz_screen": {
     "header_title": "مركز الاختبارات",
@@ -253,8 +278,8 @@
     "select_answer_last": "يرجى اختيار إجابة لهذا السؤال قبل إرسال الاختبار.",
     "incomplete_quiz": "اختبار غير مكتمل",
     "unanswered_questions": "لديك {{count}} سؤال/أسئلة بدون إجابة. يرجى الإجابة على جميع الأسئلة قبل الإرسال.",
-    "submitting": "جارٍ الإرسال...",
-    "submit_quiz": "إرسال الاختبار",
+    "finishing": "جارٍ الإنهاء...",
+    "finish_quiz": "إنهاء الاختبار",
     "leave_quiz_title": "مغادرة الاختبار؟",
     "leave_quiz_message": "سيتم فقدان تقدمك إذا غادرت الآن. هل أنت متأكد؟",
     "continue_quiz": "متابعة",
@@ -313,7 +338,9 @@
     "feedback": "ملاحظات",
     "all_correct": "جميع الإجابات صحيحة! 🎉",
     "overall_performance": "الأداء العام",
-    "correct": "صحيحة"
+    "correct": "صحيحة",
+    "publish_to_feed": "نشر في المجتمع",
+    "published_to_feed": "تم النشر في المجتمع"
   },
   "social_screen": {
     "header_title": "اجتماعي",
@@ -380,6 +407,7 @@
     "password_placeholder": "أدخل كلمة المرور",
     "name_placeholder": "أدخل اسمك الكامل",
     "mobile_number": "رقم الهاتف المحمول",
+    "mobile": "رقم الهاتف المحمول",
     "mobile_placeholder": "أدخل رقم هاتفك المحمول",
     "fill_all_fields": "يرجى ملء جميع الحقول",
     "welcome_back": "مرحباً بعودتك",
@@ -418,7 +446,16 @@
     "invalid_email": "يرجى إدخال بريد إلكتروني صحيح",
     "parent_mobile_required": "رقم هاتف ولي الأمر مطلوب",
     "invalid_mobile_format": "يجب أن يكون رقم الهاتف 11 رقمًا يبدأ بـ 010 أو 011 أو 012 أو 015.",
-    "name_too_short": "الاسم قصير جداً (3 أحرف على الأقل)"
+    "name_too_short": "الاسم قصير جداً (3 أحرف على الأقل)",
+    "mobile_taken": "رقم الهاتف هذا مسجل بالفعل",
+    "account_details": "تفاصيل الحساب",
+    "school_info": "معلومات المدرسة",
+    "disclaimer_title": "تنبيه التسجيل",
+    "continue_registration": "مواصلة التسجيل",
+    "select_edu_system": "اختر نظامك التعليمي",
+    "free_campaign_active": "حملة الوصول المجاني نشطة حالياً! ستحصل على وصول كامل تلقائياً.",
+    "referral_disclaimer": "إذا لم يكن لديك كود، ستبدأ بفترة تجريبية محدودة.",
+    "no_referral_disclaimer": "أنت الآن بصدد التسجيل بدون كود دعوة وستحصل على وصول تجريبي محدود فقط"
   },
   "time": {
     "just_now": "الآن",
@@ -439,6 +476,7 @@
     "schedule_saved": "تم حفظ الجدول بنجاح!",
     "add_subject": "إضافة مادة",
     "remove_subject": "حذف",
+    "confirm_remove": "هل أنت متأكد أنك تريد حذف هذه المادة من الجدول؟",
     "lessons_goal": "الدروس",
     "quizzes_goal": "الاختبارات",
     "notes": "ملاحظات",
@@ -477,7 +515,9 @@
     "select_language_msg": "اختر لغتك المفضلة",
     "not_specified": "غير محدد",
     "faqs": "الأسئلة الشائعة",
-    "contact_us": "تواصل معنا"
+    "contact_us": "تواصل معنا",
+    "parental_linking": "ربط ولي الأمر",
+    "parental_linking_desc": "تواصل مع والديك"
   },
   "faq": {
     "header_title": "الأسئلة الشائعة",
@@ -509,5 +549,20 @@
     "final_revision": "مراجعة نهائية",
     "final-revision": "مراجعة نهائية",
     "practice": "تدريب"
+  },
+  "profile": {
+    "complete_your_profile": "أكمل ملفك الشخصي",
+    "completeness_incentive": "ساعدنا في تخصيص تجربة التعلم الخاصة بك",
+    "select_gender": "اختر الجنس",
+    "male": "ذكر",
+    "female": "أنثى",
+    "enter_email": "أدخل البريد الإلكتروني",
+    "school_name": "اسم المدرسة",
+    "enter_school": "أدخل اسم المدرسة",
+    "school_placeholder": "اسم مدرستك",
+    "enter_parent_mobile": "أدخل رقم هاتف ولي الأمر",
+    "name_not_editable": "لا يمكن تغيير الاسم يدوياً",
+    "gender": "الجنس",
+    "update_success": "تم تحديث الملف الشخصي بنجاح"
   }
 }

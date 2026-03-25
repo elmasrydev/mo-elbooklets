@@ -4,19 +4,16 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  RefreshControl,
   TextInput,
   TouchableOpacity,
-  ActivityIndicator,
   Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { useFocusEffect } from '@react-navigation/native';
+import { useFollowToggle } from '../hooks/useFollowToggle';
 import { useTheme } from '../context/ThemeContext';
-import { useLanguage } from '../context/LanguageContext';
 import { useModal } from '../context/ModalContext';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
@@ -28,6 +25,8 @@ import { QuizCompletionCard, ConnectionCard, RankChangeCard } from '../component
 import AppButton from '../components/AppButton';
 import { CardListSkeleton, GenericListSkeleton } from '../components/SkeletonLoader';
 import RetryView from '../components/RetryView';
+import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
+import { isRTL } from '../lib/rtl';
 
 interface Student {
   id: string;
@@ -78,8 +77,7 @@ interface NewsFeedItem {
 }
 
 const SocialScreen: React.FC = () => {
-  const { theme, fontSizes, spacing, borderRadius } = useTheme();
-  const { isRTL } = useLanguage();
+  const { theme, spacing } = useTheme();
   const { t } = useTranslation();
   const { showConfirm } = useModal();
   const common = useCommonStyles();
@@ -190,32 +188,15 @@ const SocialScreen: React.FC = () => {
     }
   };
 
+  const { toggleFollow } = useFollowToggle();
+
   const handleFollowToggle = async (student: Student) => {
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
-
-      const result = await tryFetchWithFallback(
-        `
-        mutation FollowUser($userId: ID!) {
-          followUser(userId: $userId) { success isFollowing message }
-        }
-      `,
-        { userId: student.id },
-        token,
+    const result = await toggleFollow(student.id);
+    if (result?.success) {
+      setSearchResults((prev) =>
+        prev.map((s) => (s.id === student.id ? { ...s, isFollowing: result.isFollowing } : s)),
       );
-
-      if (result.data?.followUser?.success) {
-        setSearchResults((prev) =>
-          prev.map((s) =>
-            s.id === student.id ? { ...s, isFollowing: result.data.followUser.isFollowing } : s,
-          ),
-        );
-        if (searchQuery.length === 0) fetchTimeline();
-      }
-    } catch (err: any) {
-      console.error('Follow toggle error:', err);
+      if (searchQuery.length === 0) fetchTimeline();
     }
   };
 
@@ -267,22 +248,12 @@ const SocialScreen: React.FC = () => {
 
   const renderFeedItem = useCallback(
     ({ item }: { item: NewsFeedItem }) => {
-
       if (item.type === 'quiz_completion' && item.quizData)
-        return (
-          <QuizCompletionCard
-            item={item as any}
-            onLike={() => handleLike(item)}
-          />
-        );
+        return <QuizCompletionCard item={item as any} onLike={() => handleLike(item)} />;
       if (item.type === 'new_connection' && item.connectedUser)
-        return (
-          <ConnectionCard item={item as any} onLike={() => {}} />
-        );
+        return <ConnectionCard item={item as any} onLike={() => {}} />;
       if (item.type === 'rank_change' && item.rankData)
-        return (
-          <RankChangeCard item={item as any} onLike={() => {}} />
-        );
+        return <RankChangeCard item={item as any} onLike={() => {}} />;
       return null;
     },
     [t, handleLike, showConfirm],
@@ -430,7 +401,7 @@ const SocialScreen: React.FC = () => {
             placeholderTextColor={theme.colors.textTertiary}
             value={searchQuery}
             onChangeText={setSearchQuery}
-            textAlign={common.textAlign}
+            textAlign={isRTL() ? 'right' : 'left'}
             returnKeyType="search"
             clearButtonMode="while-editing"
           />
@@ -475,6 +446,7 @@ const SocialScreen: React.FC = () => {
           refreshing={refreshing}
         />
       )}
+      <ProfileCompletionPrompt context="community" />
     </View>
   );
 };
@@ -581,7 +553,7 @@ const styles = (theme: any, common: any, spacing: any, typography: any, fontWeig
       borderRadius: 8,
     },
     studentStat: {
-      ...typography('tiny'),
+      ...typography('label'),
       ...fontWeight('bold'),
       color: theme.colors.primary,
     },
