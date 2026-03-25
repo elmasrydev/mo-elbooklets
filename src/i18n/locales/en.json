@@ -76,7 +76,9 @@
     "go_back": "Go Back",
     "save": "Save",
     "save_and_continue": "Save & Continue",
-    "skip_for_now": "Skip for now"
+    "skip_for_now": "Skip for now",
+    "api_connection_title": "API Connection",
+    "api_connected_to": "app connected to {{url}}"
   },
   "subscription": {
     "required_title": "Subscription Required",

@@ -76,7 +76,9 @@
     "go_back": "رجوع",
     "save": "حفظ",
     "save_and_continue": "حفظ ومتابعة",
-    "skip_for_now": "تخطي الآن"
+    "skip_for_now": "تخطي الآن",
+    "api_connection_title": "اتصال API",
+    "api_connected_to": "التطبيق متصل بـ {{url}}"
   },
   "subscription": {
     "required_title": "اشتراك مطلوب",

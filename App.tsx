@@ -17,6 +17,7 @@ import i18n, { getInitialLanguage, initI18n, LANGUAGE_KEY } from './src/i18n';
 import { LanguageProvider } from './src/context/LanguageContext';
 import { ModalProvider } from './src/context/ModalContext';
 import { GlobalModalHandler } from './src/components/GlobalModalHandler';
+import { ApiDomainChecker } from './src/components/ApiDomainChecker';
 
 import { ForceUpdateProvider } from './src/context/ForceUpdateContext';
 import ForceUpdateModal from './src/components/ForceUpdateModal';
@@ -178,6 +179,7 @@ export default function App() {
                     <ForceUpdateModal />
                     <MaintenanceModal />
                     <GlobalModalHandler />
+                    <ApiDomainChecker />
                   </AuthProvider>
                 </I18nextProvider>
               </LanguageProvider>
