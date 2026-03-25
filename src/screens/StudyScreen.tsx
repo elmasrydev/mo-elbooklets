@@ -182,6 +182,9 @@ const StudyScreen: React.FC = () => {
         <Text style={currentStyles.emptyStateSubtitle}>
           {t('study_screen.no_subjects_for_grade')}
         </Text>
+        <Text style={[currentStyles.emptyStateSubtitle, { marginTop: spacing.sm }]}>
+          {t('study_screen.subjects_available_soon')}
+        </Text>
       </View>
     );
   } else {

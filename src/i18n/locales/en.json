@@ -93,6 +93,7 @@
     "error_loading_subjects": "Error Loading Subjects",
     "no_subjects_available": "No Subjects Available",
     "no_subjects_for_grade": "No subjects are available for your grade level.",
+    "subjects_available_soon": "Subjects will be available soon.",
     "chapters": "chapters"
   },
   "study_chapters": {
