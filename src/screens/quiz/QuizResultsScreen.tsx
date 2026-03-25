@@ -445,8 +445,16 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
             loading={isPublishing}
             disabled={published}
             variant={published ? 'success' : 'primary'}
-            icon={<Ionicons name={published ? 'checkmark-circle' : 'share-social'} size={20} color="#fff" />}
+            icon={
+              <Ionicons 
+                name={published ? 'checkmark-circle' : 'share-social'} 
+                size={20} 
+                color={published ? theme.colors.success : "#fff"} 
+              />
+            }
             size="lg"
+            style={published ? { backgroundColor: theme.colors.success + '1A', opacity: 1 } : undefined}
+            textStyle={published ? { color: theme.colors.success } : undefined}
           />
 
           <AppButton
