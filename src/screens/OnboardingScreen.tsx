@@ -1,5 +1,13 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  Platform,
+  ScrollView,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../context/LanguageContext';
@@ -26,7 +34,11 @@ const OnboardingScreen: React.FC = () => {
 
   return (
     <>
-      <View style={currentStyles.container}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        style={{ flex: 1, backgroundColor: theme.colors.background }}
+        contentContainerStyle={currentStyles.container}
+      >
         {/* 2. Top Header with Logo & Language Switcher */}
         <TouchableOpacity
           onPress={toggleLanguage}
@@ -53,9 +65,6 @@ const OnboardingScreen: React.FC = () => {
 
         {/* 3. Bottom Content */}
         <View style={currentStyles.bottomContent}>
-          <Text style={currentStyles.title}> {t('onboarding.title')} </Text>
-          <Text style={currentStyles.subtitle}> {t('onboarding.subtitle')} </Text>
-
           <AppButton
             title={t('onboarding.get_started')}
             onPress={() => navigation.navigate('Register')}
@@ -70,8 +79,10 @@ const OnboardingScreen: React.FC = () => {
               </Text>
             </Text>
           </View>
+          <Text style={currentStyles.title}> {t('onboarding.title')} </Text>
+          <Text style={currentStyles.subtitle}> {t('onboarding.subtitle')} </Text>
         </View>
-      </View>
+      </ScrollView>
     </>
   );
 };
@@ -85,7 +96,7 @@ const styles = (
 ) =>
   StyleSheet.create({
     container: {
-      flex: 1,
+      flexGrow: 1,
       backgroundColor: theme.colors.background,
       alignItems: 'center',
       paddingTop: insets.top,
@@ -131,6 +142,7 @@ const styles = (
       color: '#0F172A',
       textAlign: 'center',
       marginBottom: 10,
+      marginTop: 10,
     },
     subtitle: {
       ...typography('body'),
@@ -139,13 +151,13 @@ const styles = (
       marginBottom: 20,
     },
     footer: {
-      marginTop: 25,
-      marginBottom: 25,
+      marginTop: 8,
     },
     footerText: {
       ...typography('body'),
       fontSize: 15,
       color: '#475569',
+      marginTop: 10,
     },
     link: {
       ...typography('button'),
