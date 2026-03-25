@@ -450,7 +450,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
           />
 
           <AppButton
-            title={t('home_screen.home', 'Home')}
+            title={t('quiz_results.back_to_home', 'Home')}
             onPress={onGoHome}
             variant="outline"
             icon={<Ionicons name="home" size={20} color={theme.colors.textSecondary} />}

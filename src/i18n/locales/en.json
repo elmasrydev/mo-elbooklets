@@ -334,7 +334,8 @@
     "accuracy_label": "Accuracy",
     "time_taken_label": "Time Taken",
     "your_score": "Your Score",
-    "pass_status": "Pass Status"
+    "pass_status": "Pass Status",
+    "back_to_home": "Home"
   },
   "quiz_review": {
     "your_answer": "Your Answer",

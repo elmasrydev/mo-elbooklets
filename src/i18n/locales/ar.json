@@ -326,7 +326,8 @@
     "accuracy_label": "الدقة",
     "time_taken_label": "الوقت المستغرق",
     "your_score": "نتيجتك",
-    "pass_status": "حالة النجاح"
+    "pass_status": "حالة النجاح",
+    "back_to_home": "العودة إلي الرئيسية"
   },
   "quiz_review": {
     "your_answer": "إجابتك",
