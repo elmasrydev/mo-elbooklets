@@ -21,6 +21,8 @@ import { layout } from '../config/layout';
 import { useAutoReset } from '../hooks/useAutoReset';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useModal } from '../context/ModalContext';
+import { tryFetchWithFallback } from '../config/api';
+import * as SecureStore from 'expo-secure-store';
 
 const ContactUsScreen = ({ navigation }: any) => {
   const { t } = useTranslation();
@@ -52,7 +54,7 @@ const ContactUsScreen = ({ navigation }: any) => {
   const isSubjectValid = subject.trim().length >= 3;
   const isMessageValid = message.trim().length >= 10;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setTouchedName(true);
     setTouchedEmail(true);
     setTouchedSubject(true);
@@ -69,11 +71,45 @@ const ContactUsScreen = ({ navigation }: any) => {
     }
 
     setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const token = await SecureStore.getItemAsync('auth_token');
+      const mutation = `
+        mutation SendContactMessage($name: String!, $email: String!, $subject: String!, $message: String!) {
+          sendContactMessage(name: $name, email: $email, subject: $subject, message: $message) {
+            success
+            message
+          }
+        }
+      `;
+      
+      const response = await tryFetchWithFallback(mutation, { name, email, subject, message }, token || undefined);
+      
+      if (response.data?.sendContactMessage?.success) {
+        showConfirm({
+          title: t('common.success'),
+          message: response.data.sendContactMessage.message || t('contact_us.success_message'),
+          showCancel: false,
+          onConfirm: () => navigation.goBack(),
+        });
+      } else {
+        const errMsg = response.data?.sendContactMessage?.message || response.errors?.[0]?.message || t('common.error');
+        showConfirm({
+          title: t('common.error'),
+          message: errMsg,
+          showCancel: false,
+          onConfirm: () => {},
+        });
+      }
+    } catch (err: any) {
+      showConfirm({
+        title: t('common.error'),
+        message: err.message || t('common.error'),
+        showCancel: false,
+        onConfirm: () => {},
+      });
+    } finally {
       setLoading(false);
-      navigation.goBack();
-    }, 1500);
+    }
   };
 
   const currentStyles = useMemo(

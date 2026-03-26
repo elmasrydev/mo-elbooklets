@@ -57,6 +57,7 @@ const QuizReviewScreen: React.FC = () => {
               id
               name
             }
+            isPublished
             userAnswers {
               question {
                 id
@@ -88,6 +89,7 @@ const QuizReviewScreen: React.FC = () => {
 
       const response = await tryFetchWithFallback(query, { quizId }, token);
       if (response.data?.quizResults) {
+        setPublished(!!response.data.quizResults.isPublished);
         const processed = {
           ...response.data.quizResults,
           userAnswers: response.data.quizResults.userAnswers.map((ua: any) => {
@@ -113,7 +115,7 @@ const QuizReviewScreen: React.FC = () => {
   };
 
   const publishToFeed = async () => {
-    if (isPublishing || published) return;
+    if (isPublishing) return;
 
     try {
       setIsPublishing(true);
@@ -132,7 +134,7 @@ const QuizReviewScreen: React.FC = () => {
       const response = await tryFetchWithFallback(mutation, { quizId }, token);
       
       if (response.data?.publishQuizToFeed?.success) {
-        setPublished(true);
+        setPublished(!published);
       } else {
         const errMsg = response.data?.publishQuizToFeed?.message || response.errors?.[0]?.message || t('common.error');
         setError(errMsg);
@@ -754,7 +756,6 @@ const QuizReviewScreen: React.FC = () => {
             title={published ? t('quiz_review.published_to_feed') : t('quiz_review.publish_to_feed')}
             onPress={publishToFeed}
             loading={isPublishing}
-            disabled={published}
             variant={published ? 'success' : 'primary'}
             icon={<Ionicons name={published ? 'checkmark-circle' : 'share-social'} size={20} color="#fff" />}
             size="lg"

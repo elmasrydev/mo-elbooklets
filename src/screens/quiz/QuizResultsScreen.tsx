@@ -160,6 +160,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
               }
             }
             isPassed
+            isPublished
           }
         }
       `,
@@ -169,6 +170,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
 
       if (result.data?.quizResults) {
         setQuizResult(result.data.quizResults);
+        setPublished(!!result.data.quizResults.isPublished);
       } else {
         setError(result.errors?.[0]?.message || t('quiz_results.error_loading_results'));
       }
@@ -181,7 +183,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
   };
 
   const publishToFeed = async () => {
-    if (isPublishing || published) return;
+    if (isPublishing) return;
 
     try {
       setIsPublishing(true);
@@ -200,7 +202,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
       const response = await tryFetchWithFallback(mutation, { quizId }, token);
       
       if (response.data?.publishQuizToFeed?.success) {
-        setPublished(true);
+        setPublished(!published);
       } else {
         const errMsg = response.data?.publishQuizToFeed?.message || response.errors?.[0]?.message || t('common.error');
         setError(errMsg);
@@ -443,7 +445,6 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
             title={published ? t('quiz_review.published_to_feed') : t('quiz_review.publish_to_feed')}
             onPress={publishToFeed}
             loading={isPublishing}
-            disabled={published}
             variant={published ? 'success' : 'primary'}
             icon={
               <Ionicons 
