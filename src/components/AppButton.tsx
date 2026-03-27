@@ -132,8 +132,15 @@ const AppButton: React.FC<AppButtonProps> = ({
     vStyles.button as ViewStyle,
     sStyles.button as ViewStyle,
     fullWidth ? { width: '100%' } : {},
-    disabled ? { backgroundColor: theme.colors.buttonDisabled, opacity: 0.6 } : {},
   ];
+
+  if (disabled) {
+    if (variant === 'danger' || variant === 'success') {
+      buttonStyles.push({ opacity: 0.5 });
+    } else {
+      buttonStyles.push({ backgroundColor: theme.colors.buttonDisabled, opacity: 0.6 });
+    }
+  }
 
   if (variant === 'primary' && !disabled) {
     buttonStyles.push({
@@ -154,8 +161,11 @@ const AppButton: React.FC<AppButtonProps> = ({
   const titleStyles: TextStyle[] = [
     sStyles.text as TextStyle,
     vStyles.text as TextStyle,
-    disabled ? { color: theme.colors.buttonDisabledText } : {},
   ];
+
+  if (disabled && variant !== 'danger' && variant !== 'success') {
+    titleStyles.push({ color: theme.colors.buttonDisabledText });
+  }
 
   if (Array.isArray(textStyle)) {
     titleStyles.push(...textStyle);

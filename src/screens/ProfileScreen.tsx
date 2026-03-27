@@ -8,6 +8,7 @@ import {
   Image,
   Switch,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
@@ -22,6 +23,12 @@ import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import DeviceInfo from 'react-native-device-info';
 import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
+import { useMutation } from '@apollo/client/react';
+import {
+  DeleteAccountDocument,
+  DeleteAccountMutation,
+  DeleteAccountMutationVariables,
+} from '../generated/graphql';
 
 const APP_VERSION = `EL-Booklets v${DeviceInfo.getVersion()}`;
 
@@ -36,6 +43,10 @@ const ProfileScreen: React.FC = () => {
   const { t } = useTranslation();
 
   const [showParentalPrompt, setShowParentalPrompt] = useState(false);
+  const [deleteAccountMutation, { loading: isDeletingAccount }] = useMutation<
+    DeleteAccountMutation,
+    DeleteAccountMutationVariables
+  >(DeleteAccountDocument);
 
   const handleLogout = () => {
     showConfirm({
@@ -45,6 +56,33 @@ const ProfileScreen: React.FC = () => {
       cancelLabel: t('common.cancel'),
       confirmVariant: 'danger',
       onConfirm: logout,
+    });
+  };
+
+  const handleDeleteAccount = () => {
+    showConfirm({
+      title: t('profile_screen.delete_account'),
+      message: t('profile_screen.delete_account_confirm'),
+      confirmLabel: t('profile_screen.delete_account'),
+      cancelLabel: t('common.cancel'),
+      confirmVariant: 'danger',
+      countdown: 10,
+      onConfirm: async () => {
+        try {
+          const result = await deleteAccountMutation();
+          if (result.data?.deleteAccount?.success) {
+            logout();
+          } else {
+            // Error handling can go here quietly
+            console.error(
+              'Delete account server returned false',
+              result.data?.deleteAccount?.message,
+            );
+          }
+        } catch (error) {
+          console.error('Error deleting account:', error);
+        }
+      },
     });
   };
 
@@ -112,8 +150,14 @@ const ProfileScreen: React.FC = () => {
               {user?.educational_system?.name ? `• ${user.educational_system.name}` : ''}
             </Text>
             {user?.mobile ? (
-              <Text style={[currentStyles.userSubtitle, { marginTop: 4, fontWeight: 'normal', opacity: 0.8 }]}>
-                {user?.country_code ? `${user.country_code} ` : ''}{user.mobile}
+              <Text
+                style={[
+                  currentStyles.userSubtitle,
+                  { marginTop: 4, fontWeight: 'normal', opacity: 0.8 },
+                ]}
+              >
+                {user?.country_code ? `${user.country_code} ` : ''}
+                {user.mobile}
               </Text>
             ) : null}
           </View>
@@ -164,11 +208,13 @@ const ProfileScreen: React.FC = () => {
           </TouchableOpacity>
 
           {/* FAQ */}
-          <TouchableOpacity 
-            style={currentStyles.settingItem} 
+          <TouchableOpacity
+            style={currentStyles.settingItem}
             onPress={() => navigation.navigate('FAQs')}
           >
-            <View style={[currentStyles.settingIconBox, { backgroundColor: theme.colors.info + '20' }]}>
+            <View
+              style={[currentStyles.settingIconBox, { backgroundColor: theme.colors.info + '20' }]}
+            >
               <Ionicons name="help-circle-outline" size={22} color={theme.colors.info} />
             </View>
             <View style={currentStyles.settingContent}>
@@ -182,11 +228,16 @@ const ProfileScreen: React.FC = () => {
           </TouchableOpacity>
 
           {/* Contact Us */}
-          <TouchableOpacity 
-            style={currentStyles.settingItem} 
+          <TouchableOpacity
+            style={currentStyles.settingItem}
             onPress={() => navigation.navigate('ContactUs')}
           >
-            <View style={[currentStyles.settingIconBox, { backgroundColor: theme.colors.warning + '20' }]}>
+            <View
+              style={[
+                currentStyles.settingIconBox,
+                { backgroundColor: theme.colors.warning + '20' },
+              ]}
+            >
               <Ionicons name="mail-outline" size={22} color={theme.colors.warning} />
             </View>
             <View style={currentStyles.settingContent}>
@@ -200,17 +251,26 @@ const ProfileScreen: React.FC = () => {
           </TouchableOpacity>
 
           {/* Parental Linking */}
-          <TouchableOpacity 
-            style={currentStyles.settingItem} 
+          <TouchableOpacity
+            style={currentStyles.settingItem}
             onPress={() => setShowParentalPrompt(true)}
           >
-            <View style={[currentStyles.settingIconBox, { backgroundColor: theme.colors.primary + '20' }]}>
+            <View
+              style={[
+                currentStyles.settingIconBox,
+                { backgroundColor: theme.colors.primary + '20' },
+              ]}
+            >
               <Ionicons name="people-outline" size={22} color={theme.colors.primary} />
             </View>
             <View style={currentStyles.settingContent}>
-              <Text style={currentStyles.settingTitle}>{t('profile_screen.parental_linking', 'Parental Linking')}</Text>
+              <Text style={currentStyles.settingTitle}>
+                {t('profile_screen.parental_linking', 'Parental Linking')}
+              </Text>
               <Text style={currentStyles.settingSubtitle}>
-                {user?.parent_mobile ? user.parent_mobile : t('profile_screen.parental_linking_desc', 'Connect with your parents')}
+                {user?.parent_mobile
+                  ? user.parent_mobile
+                  : t('profile_screen.parental_linking_desc', 'Connect with your parents')}
               </Text>
             </View>
             <Ionicons
@@ -298,13 +358,29 @@ const ProfileScreen: React.FC = () => {
 
         {/* Version Info */}
         <Text style={currentStyles.versionText}>{APP_VERSION}</Text>
+
+        <TouchableOpacity
+          style={currentStyles.deleteAccountItem}
+          onPress={handleDeleteAccount}
+          disabled={isDeletingAccount}
+        >
+          <View style={currentStyles.deleteAccountIconBox}>
+            <Ionicons name="trash-outline" size={18} color={'#fff'} />
+          </View>
+          <View style={currentStyles.deleteAccountContent}>
+            <Text style={currentStyles.deleteAccountTitle}>
+              {t('profile_screen.delete_account')}
+            </Text>
+          </View>
+          {isDeletingAccount && <ActivityIndicator color={theme.colors.error} size="small" />}
+        </TouchableOpacity>
       </ScrollView>
 
       <ProfileCompletionPrompt context="more" />
-      <ProfileCompletionPrompt 
-        context="parental" 
-        isVisible={showParentalPrompt} 
-        onClose={() => setShowParentalPrompt(false)} 
+      <ProfileCompletionPrompt
+        context="parental"
+        isVisible={showParentalPrompt}
+        onClose={() => setShowParentalPrompt(false)}
       />
     </View>
   );
@@ -433,7 +509,12 @@ const styles = (
     },
     settingContent: {
       flex: 1,
-      alignItems: common.alignStart,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    deleteAccountContent: {
+      //flex: 1,
+      alignItems: 'center',
       justifyContent: 'center',
     },
     settingTitle: {
@@ -475,11 +556,41 @@ const styles = (
       color: theme.colors.error,
       textAlign: common.textAlign,
     },
+    deleteAccountItem: {
+      width: '70%',
+      alignSelf: 'center',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: spacing.xs,
+      marginTop: spacing['3xl'],
+      borderRadius: borderRadius.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.error + '40',
+      backgroundColor: 'transparent',
+      backgroundColor: 'red',
+      opacity: 0.75,
+    },
+    deleteAccountIconBox: {
+      width: 34,
+      height: 34,
+      borderRadius: borderRadius.sm,
+      backgroundColor: theme.colors.error + '1A',
+      justifyContent: 'center',
+      alignItems: 'center',
+      ...common.marginEnd(spacing.sm),
+    },
+    deleteAccountTitle: {
+      ...typography('body'),
+      ...fontWeight('bold'),
+      color: '#fff',
+      textAlign: common.textAlign,
+    },
     versionText: {
       ...typography('caption'),
       color: theme.colors.textSecondary,
       textAlign: 'center',
-      marginTop: spacing['2xl'],
+      marginTop: spacing['lg'],
     },
     scrollContentContainer: {
       padding: layout.screenPadding,

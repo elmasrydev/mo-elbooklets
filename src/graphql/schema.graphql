@@ -8,6 +8,8 @@ type Query {
   lessonsForSubject(subjectId: ID!): [Lesson!]!
   quiz(id: ID!): Quiz
   quizResults(quizId: ID!): QuizResult
+  studySchedule: [StudySchedule!]!
+  todaySchedule: DailySchedule!
 }
 
 type Mutation {
@@ -25,6 +27,8 @@ type Mutation {
     answers: [QuestionAnswerInput!]!
   ): QuizSubmissionResult!
   publishQuizToFeed(quizId: ID!): SocialActionResponse!
+  deleteAccount: SocialActionResponse!
+  saveStudySchedule(entries: [StudyScheduleInput!]!): [StudySchedule!]!
 }
 
 type SocialActionResponse {
@@ -135,4 +139,33 @@ type QuizSubmissionResult {
 input QuestionAnswerInput {
   questionId: ID!
   selectedAnswer: String
+}
+
+type StudySchedule {
+  id: ID!
+  subject: Subject!
+  dayOfWeek: Int!
+  dayName: String!
+  lessonGoal: Int!
+  quizGoal: Int!
+  notes: String
+  lessonsCompleted: Int
+  quizzesCompleted: Int
+  completionPercentage: Float
+  isComplete: Boolean
+}
+
+type DailySchedule {
+  date: String!
+  dayName: String!
+  dayOfWeek: Int!
+  schedule: [StudySchedule!]!
+}
+
+input StudyScheduleInput {
+  subjectId: ID!
+  dayOfWeek: Int!
+  lessonGoal: Int
+  quizGoal: Int
+  notes: String
 }

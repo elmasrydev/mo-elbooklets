@@ -524,7 +524,9 @@
     "contact_us": "Contact Us",
     "parental_linking": "Parental Linking",
     "parental_linking_desc": "Connect with your parents",
-    "not_specified": "Not specified"
+    "not_specified": "Not specified",
+    "delete_account": "Delete Account",
+    "delete_account_confirm": "Are you sure you want to delete your account? This action cannot be undone."
   },
   "faq": {
     "header_title": "FAQs",

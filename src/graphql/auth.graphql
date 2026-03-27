@@ -52,3 +52,10 @@ query GetGrades {
     name
   }
 }
+
+mutation DeleteAccount {
+  deleteAccount {
+    success
+    message
+  }
+}

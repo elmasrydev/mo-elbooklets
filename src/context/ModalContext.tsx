@@ -9,6 +9,7 @@ export interface ConfirmModalConfig {
   showCancel?: boolean;
   dismissible?: boolean;
   backButtonCloseDisabled?: boolean;
+  countdown?: number;
   onConfirm: () => void | Promise<void>;
   onCancel?: () => void;
 }

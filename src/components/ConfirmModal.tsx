@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   View,
@@ -33,6 +33,7 @@ export interface ConfirmModalProps {
   showCancel?: boolean;
   dismissible?: boolean;
   backButtonCloseDisabled?: boolean;
+  countdown?: number;
 }
 
 export const ConfirmModal: React.FC<ConfirmModalProps> = (props: ConfirmModalProps) => {
@@ -49,11 +50,29 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = (props: ConfirmModalPro
     showCancel = true,
     dismissible = true,
     backButtonCloseDisabled = true,
+    countdown = 0,
   } = props;
 
   const { theme, borderRadius } = useTheme();
   const { typography, fontWeight } = useTypography();
   const { t } = useTranslation();
+
+  const [timeLeft, setTimeLeft] = useState(countdown);
+
+  useEffect(() => {
+    if (visible) {
+      setTimeLeft(countdown);
+    }
+  }, [countdown, visible]);
+
+  useEffect(() => {
+    if (visible && timeLeft > 0) {
+      const timer = setInterval(() => {
+        setTimeLeft(prev => prev - 1);
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [visible, timeLeft]);
 
   const handleRequestClose = () => {
     if (!backButtonCloseDisabled) {
@@ -125,10 +144,11 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = (props: ConfirmModalPro
 
           <View style={styles.buttonContainer}>
             <AppButton
-              title={confirmLabel || t('common.ok', 'OK')}
+              title={timeLeft > 0 ? `${confirmLabel || t('common.ok', 'OK')} (${timeLeft})` : (confirmLabel || t('common.ok', 'OK'))}
               onPress={onConfirm}
               variant={confirmVariant}
               loading={isLoading}
+              disabled={timeLeft > 0}
               fullWidth={true}
             />
             {showCancel && (

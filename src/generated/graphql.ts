@@ -38,6 +38,14 @@ export type Chapter = {
   order: Scalars['Int']['output'];
 };
 
+export type DailySchedule = {
+  __typename?: 'DailySchedule';
+  date: Scalars['String']['output'];
+  dayName: Scalars['String']['output'];
+  dayOfWeek: Scalars['Int']['output'];
+  schedule: Array<StudySchedule>;
+};
+
 export type Grade = {
   __typename?: 'Grade';
   id: Scalars['ID']['output'];
@@ -49,13 +57,27 @@ export type Lesson = {
   chapter: Chapter;
   description?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
+  lessonPoints?: Maybe<Array<LessonPoint>>;
   name: Scalars['String']['output'];
+  points?: Maybe<Array<Scalars['String']['output']>>;
+  summary?: Maybe<Scalars['String']['output']>;
+};
+
+export type LessonPoint = {
+  __typename?: 'LessonPoint';
+  explanation?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  order: Scalars['Int']['output'];
+  title: Scalars['String']['output'];
 };
 
 export type Mutation = {
   __typename?: 'Mutation';
+  deleteAccount: SocialActionResponse;
   login: AuthPayload;
+  publishQuizToFeed: SocialActionResponse;
   register: AuthPayload;
+  saveStudySchedule: Array<StudySchedule>;
   startQuiz: Quiz;
   submitQuizAnswers: QuizSubmissionResult;
 };
@@ -65,12 +87,20 @@ export type MutationLoginArgs = {
   password: Scalars['String']['input'];
 };
 
+export type MutationPublishQuizToFeedArgs = {
+  quizId: Scalars['ID']['input'];
+};
+
 export type MutationRegisterArgs = {
   email: Scalars['String']['input'];
   grade_id: Scalars['ID']['input'];
   name: Scalars['String']['input'];
   password: Scalars['String']['input'];
   password_confirmation: Scalars['String']['input'];
+};
+
+export type MutationSaveStudyScheduleArgs = {
+  entries: Array<StudyScheduleInput>;
 };
 
 export type MutationStartQuizArgs = {
@@ -89,7 +119,9 @@ export type Query = {
   lessonsForSubject: Array<Lesson>;
   quiz?: Maybe<Quiz>;
   quizResults?: Maybe<QuizResult>;
+  studySchedule: Array<StudySchedule>;
   subjectsForUserGrade: Array<Subject>;
+  todaySchedule: DailySchedule;
   userQuizHistory: Array<UserQuizHistory>;
 };
 
@@ -148,6 +180,35 @@ export type QuizSubmissionResult = {
   quiz: Quiz;
   score: Scalars['Int']['output'];
   totalQuestions: Scalars['Int']['output'];
+};
+
+export type SocialActionResponse = {
+  __typename?: 'SocialActionResponse';
+  message?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
+export type StudySchedule = {
+  __typename?: 'StudySchedule';
+  completionPercentage?: Maybe<Scalars['Float']['output']>;
+  dayName: Scalars['String']['output'];
+  dayOfWeek: Scalars['Int']['output'];
+  id: Scalars['ID']['output'];
+  isComplete?: Maybe<Scalars['Boolean']['output']>;
+  lessonGoal: Scalars['Int']['output'];
+  lessonsCompleted?: Maybe<Scalars['Int']['output']>;
+  notes?: Maybe<Scalars['String']['output']>;
+  quizGoal: Scalars['Int']['output'];
+  quizzesCompleted?: Maybe<Scalars['Int']['output']>;
+  subject: Subject;
+};
+
+export type StudyScheduleInput = {
+  dayOfWeek: Scalars['Int']['input'];
+  lessonGoal?: InputMaybe<Scalars['Int']['input']>;
+  notes?: InputMaybe<Scalars['String']['input']>;
+  quizGoal?: InputMaybe<Scalars['Int']['input']>;
+  subjectId: Scalars['ID']['input'];
 };
 
 export type Subject = {
@@ -236,6 +297,72 @@ export type GetGradesQueryVariables = Exact<{ [key: string]: never }>;
 export type GetGradesQuery = {
   __typename?: 'Query';
   grades: Array<{ __typename?: 'Grade'; id: string; name: string }>;
+};
+
+export type DeleteAccountMutationVariables = Exact<{ [key: string]: never }>;
+
+export type DeleteAccountMutation = {
+  __typename?: 'Mutation';
+  deleteAccount: { __typename?: 'SocialActionResponse'; success: boolean; message?: string | null };
+};
+
+export type StudyScheduleQueryVariables = Exact<{ [key: string]: never }>;
+
+export type StudyScheduleQuery = {
+  __typename?: 'Query';
+  studySchedule: Array<{
+    __typename?: 'StudySchedule';
+    id: string;
+    dayOfWeek: number;
+    dayName: string;
+    lessonGoal: number;
+    quizGoal: number;
+    notes?: string | null;
+    subject: { __typename?: 'Subject'; id: string; name: string };
+  }>;
+};
+
+export type TodayScheduleQueryVariables = Exact<{ [key: string]: never }>;
+
+export type TodayScheduleQuery = {
+  __typename?: 'Query';
+  todaySchedule: {
+    __typename?: 'DailySchedule';
+    date: string;
+    dayName: string;
+    dayOfWeek: number;
+    schedule: Array<{
+      __typename?: 'StudySchedule';
+      id: string;
+      dayOfWeek: number;
+      lessonGoal: number;
+      quizGoal: number;
+      notes?: string | null;
+      lessonsCompleted?: number | null;
+      quizzesCompleted?: number | null;
+      completionPercentage?: number | null;
+      isComplete?: boolean | null;
+      subject: { __typename?: 'Subject'; id: string; name: string };
+    }>;
+  };
+};
+
+export type SaveStudyScheduleMutationVariables = Exact<{
+  entries: Array<StudyScheduleInput> | StudyScheduleInput;
+}>;
+
+export type SaveStudyScheduleMutation = {
+  __typename?: 'Mutation';
+  saveStudySchedule: Array<{
+    __typename?: 'StudySchedule';
+    id: string;
+    dayOfWeek: number;
+    dayName: string;
+    lessonGoal: number;
+    quizGoal: number;
+    notes?: string | null;
+    subject: { __typename?: 'Subject'; id: string; name: string };
+  }>;
 };
 
 export type UserQuizHistoryQueryVariables = Exact<{ [key: string]: never }>;
@@ -536,6 +663,252 @@ export type GetGradesQueryHookResult = ReturnType<typeof useGetGradesQuery>;
 export type GetGradesLazyQueryHookResult = ReturnType<typeof useGetGradesLazyQuery>;
 export type GetGradesSuspenseQueryHookResult = ReturnType<typeof useGetGradesSuspenseQuery>;
 export type GetGradesQueryResult = Apollo.QueryResult<GetGradesQuery, GetGradesQueryVariables>;
+export const DeleteAccountDocument = gql`
+  mutation DeleteAccount {
+    deleteAccount {
+      success
+      message
+    }
+  }
+`;
+export type DeleteAccountMutationFn = Apollo.MutationFunction<
+  DeleteAccountMutation,
+  DeleteAccountMutationVariables
+>;
+
+/**
+ * __useDeleteAccountMutation__
+ *
+ * To run a mutation, you first call `useDeleteAccountMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteAccountMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteAccountMutation, { data, loading, error }] = useDeleteAccountMutation({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useDeleteAccountMutation(
+  baseOptions?: Apollo.MutationHookOptions<DeleteAccountMutation, DeleteAccountMutationVariables>,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useMutation<DeleteAccountMutation, DeleteAccountMutationVariables>(
+    DeleteAccountDocument,
+    options,
+  );
+}
+export type DeleteAccountMutationHookResult = ReturnType<typeof useDeleteAccountMutation>;
+export type DeleteAccountMutationResult = Apollo.MutationResult<DeleteAccountMutation>;
+export type DeleteAccountMutationOptions = Apollo.BaseMutationOptions<
+  DeleteAccountMutation,
+  DeleteAccountMutationVariables
+>;
+export const StudyScheduleDocument = gql`
+  query StudySchedule {
+    studySchedule {
+      id
+      subject {
+        id
+        name
+      }
+      dayOfWeek
+      dayName
+      lessonGoal
+      quizGoal
+      notes
+    }
+  }
+`;
+
+/**
+ * __useStudyScheduleQuery__
+ *
+ * To run a query within a React component, call `useStudyScheduleQuery` and pass it any options that fit your needs.
+ * When your component renders, `useStudyScheduleQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useStudyScheduleQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useStudyScheduleQuery(
+  baseOptions?: Apollo.QueryHookOptions<StudyScheduleQuery, StudyScheduleQueryVariables>,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useQuery<StudyScheduleQuery, StudyScheduleQueryVariables>(
+    StudyScheduleDocument,
+    options,
+  );
+}
+export function useStudyScheduleLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<StudyScheduleQuery, StudyScheduleQueryVariables>,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useLazyQuery<StudyScheduleQuery, StudyScheduleQueryVariables>(
+    StudyScheduleDocument,
+    options,
+  );
+}
+export function useStudyScheduleSuspenseQuery(
+  baseOptions?:
+    | Apollo.SkipToken
+    | Apollo.SuspenseQueryHookOptions<StudyScheduleQuery, StudyScheduleQueryVariables>,
+) {
+  const options =
+    baseOptions === Apollo.skipToken ? baseOptions : { ...defaultOptions, ...baseOptions };
+  return Apollo.useSuspenseQuery<StudyScheduleQuery, StudyScheduleQueryVariables>(
+    StudyScheduleDocument,
+    options,
+  );
+}
+export type StudyScheduleQueryHookResult = ReturnType<typeof useStudyScheduleQuery>;
+export type StudyScheduleLazyQueryHookResult = ReturnType<typeof useStudyScheduleLazyQuery>;
+export type StudyScheduleSuspenseQueryHookResult = ReturnType<typeof useStudyScheduleSuspenseQuery>;
+export type StudyScheduleQueryResult = Apollo.QueryResult<
+  StudyScheduleQuery,
+  StudyScheduleQueryVariables
+>;
+export const TodayScheduleDocument = gql`
+  query TodaySchedule {
+    todaySchedule {
+      date
+      dayName
+      dayOfWeek
+      schedule {
+        id
+        subject {
+          id
+          name
+        }
+        dayOfWeek
+        lessonGoal
+        quizGoal
+        notes
+        lessonsCompleted
+        quizzesCompleted
+        completionPercentage
+        isComplete
+      }
+    }
+  }
+`;
+
+/**
+ * __useTodayScheduleQuery__
+ *
+ * To run a query within a React component, call `useTodayScheduleQuery` and pass it any options that fit your needs.
+ * When your component renders, `useTodayScheduleQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useTodayScheduleQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useTodayScheduleQuery(
+  baseOptions?: Apollo.QueryHookOptions<TodayScheduleQuery, TodayScheduleQueryVariables>,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useQuery<TodayScheduleQuery, TodayScheduleQueryVariables>(
+    TodayScheduleDocument,
+    options,
+  );
+}
+export function useTodayScheduleLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<TodayScheduleQuery, TodayScheduleQueryVariables>,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useLazyQuery<TodayScheduleQuery, TodayScheduleQueryVariables>(
+    TodayScheduleDocument,
+    options,
+  );
+}
+export function useTodayScheduleSuspenseQuery(
+  baseOptions?:
+    | Apollo.SkipToken
+    | Apollo.SuspenseQueryHookOptions<TodayScheduleQuery, TodayScheduleQueryVariables>,
+) {
+  const options =
+    baseOptions === Apollo.skipToken ? baseOptions : { ...defaultOptions, ...baseOptions };
+  return Apollo.useSuspenseQuery<TodayScheduleQuery, TodayScheduleQueryVariables>(
+    TodayScheduleDocument,
+    options,
+  );
+}
+export type TodayScheduleQueryHookResult = ReturnType<typeof useTodayScheduleQuery>;
+export type TodayScheduleLazyQueryHookResult = ReturnType<typeof useTodayScheduleLazyQuery>;
+export type TodayScheduleSuspenseQueryHookResult = ReturnType<typeof useTodayScheduleSuspenseQuery>;
+export type TodayScheduleQueryResult = Apollo.QueryResult<
+  TodayScheduleQuery,
+  TodayScheduleQueryVariables
+>;
+export const SaveStudyScheduleDocument = gql`
+  mutation SaveStudySchedule($entries: [StudyScheduleInput!]!) {
+    saveStudySchedule(entries: $entries) {
+      id
+      subject {
+        id
+        name
+      }
+      dayOfWeek
+      dayName
+      lessonGoal
+      quizGoal
+      notes
+    }
+  }
+`;
+export type SaveStudyScheduleMutationFn = Apollo.MutationFunction<
+  SaveStudyScheduleMutation,
+  SaveStudyScheduleMutationVariables
+>;
+
+/**
+ * __useSaveStudyScheduleMutation__
+ *
+ * To run a mutation, you first call `useSaveStudyScheduleMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useSaveStudyScheduleMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [saveStudyScheduleMutation, { data, loading, error }] = useSaveStudyScheduleMutation({
+ *   variables: {
+ *      entries: // value for 'entries'
+ *   },
+ * });
+ */
+export function useSaveStudyScheduleMutation(
+  baseOptions?: Apollo.MutationHookOptions<
+    SaveStudyScheduleMutation,
+    SaveStudyScheduleMutationVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useMutation<SaveStudyScheduleMutation, SaveStudyScheduleMutationVariables>(
+    SaveStudyScheduleDocument,
+    options,
+  );
+}
+export type SaveStudyScheduleMutationHookResult = ReturnType<typeof useSaveStudyScheduleMutation>;
+export type SaveStudyScheduleMutationResult = Apollo.MutationResult<SaveStudyScheduleMutation>;
+export type SaveStudyScheduleMutationOptions = Apollo.BaseMutationOptions<
+  SaveStudyScheduleMutation,
+  SaveStudyScheduleMutationVariables
+>;
 export const UserQuizHistoryDocument = gql`
   query UserQuizHistory {
     userQuizHistory {

@@ -45,6 +45,7 @@ export const GlobalModalHandler: React.FC = () => {
       showCancel={modalConfig.showCancel}
       dismissible={modalConfig.dismissible}
       backButtonCloseDisabled={modalConfig.backButtonCloseDisabled}
+      countdown={modalConfig.countdown}
     />
   );
 };
