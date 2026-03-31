@@ -26,7 +26,7 @@ import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
 interface QuizHistory {
   id: string;
   name: string;
-  subject: { id: string; name: string };
+  subject: { id: string; name: string; language?: string };
   score: number;
   totalQuestions: number;
   completedAt: string;
@@ -71,7 +71,7 @@ const QuizScreen: React.FC = () => {
       const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
       const result = await tryFetchWithFallback(
-        `query UserQuizHistory { userQuizHistory { id name subject { id name } score totalQuestions completedAt isPassed } }`,
+        `query UserQuizHistory { userQuizHistory { id name subject { id name language } score totalQuestions completedAt isPassed } }`,
         undefined,
         token,
       );

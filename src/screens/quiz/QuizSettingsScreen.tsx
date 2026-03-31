@@ -17,6 +17,7 @@ import { layout } from '../../config/layout';
 import { useModal } from '../../context/ModalContext';
 import { useSubscriptionGate } from '../../hooks/useSubscriptionGate';
 import { ConfirmModal } from '../../components/ConfirmModal';
+import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
 
 interface QuizType {
   id: string;
@@ -48,7 +49,9 @@ const QuizSettingsScreen: React.FC = () => {
   } = route.params || {};
 
   const [quizTypes, setQuizTypes] = useState<QuizType[]>(passedQuizTypes || []);
-  const [loadingTypes, setLoadingTypes] = useState(!passedQuizTypes || passedQuizTypes.length === 0);
+  const [loadingTypes, setLoadingTypes] = useState(
+    !passedQuizTypes || passedQuizTypes.length === 0,
+  );
 
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
@@ -150,6 +153,10 @@ const QuizSettingsScreen: React.FC = () => {
     }
   };
 
+  const { contentAlign, contentFlexAlign, contentRowDirection, isContentRTL } = useSubjectTextAlign(
+    subject?.language,
+  );
+
   const currentStyles = styles(
     theme,
     common,
@@ -160,6 +167,10 @@ const QuizSettingsScreen: React.FC = () => {
     borderRadius,
     insets,
     isRTL,
+    contentAlign,
+    contentFlexAlign,
+    contentRowDirection,
+    !!isContentRTL,
   );
 
   return (
@@ -294,22 +305,20 @@ const QuizSettingsScreen: React.FC = () => {
           disabled={!selectedTypeId || starting}
           loading={starting}
           size="lg"
-          icon={<Ionicons name="play" size={20} color={theme.colors.textOnDark} />}
-          iconPosition={isRTL ? 'left' : 'right'}
         />
-        <Text style={currentStyles.disclaimerText}>{t('quiz_lessons.progress_saved')}</Text>
       </View>
 
       <ConfirmModal
         visible={showSubModal}
-        title={t('subscription.required_title', 'Subscription Required')}
-        message={t(
-          'subscription.required_message',
-          'You must subscribe to access all features. Please subscribe to continue.',
-        )}
-        showCancel={false}
-        confirmLabel={t('common.ok', 'OK')}
-        onConfirm={() => setShowSubModal(false)}
+        icon={<Ionicons name="lock-closed" size={50} color={theme.colors.primary} />}
+        title={t('subscription.required_title')}
+        message={t('subscription.required_message')}
+        confirmLabel={t('common.ok')}
+        onConfirm={() => {
+          setShowSubModal(false);
+          navigation.navigate('MainTabs', { screen: 'SettingsTab' });
+        }}
+        showCancel={true}
         onCancel={() => setShowSubModal(false)}
       />
     </View>
@@ -326,51 +335,165 @@ const styles = (
   borderRadius: any,
   insets: any,
   isRTL: boolean,
+  contentAlign: 'left' | 'right',
+  contentFlexAlign: 'flex-start' | 'flex-end',
+  contentRowDirection: 'row' | 'row-reverse',
+  isContentRTL: boolean,
 ) =>
   StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: theme.colors.background,
-    },
-    content: {
-      flex: 1,
-    },
+    container: { flex: 1, backgroundColor: theme.colors.background },
+    content: { flex: 1 },
     scrollContent: {
-      paddingHorizontal: layout.screenPadding,
-      paddingTop: spacing.lg,
-      paddingBottom: spacing.xl,
-      alignItems: 'stretch',
+      padding: layout.screenPadding,
+      paddingBottom: Math.max(insets.bottom + 80, spacing.xl),
     },
     heroSection: {
       marginBottom: spacing.xl,
-      width: '100%',
+      marginTop: spacing.md,
+      alignItems: 'center',
     },
     heroTitle: {
-      ...typography('h1'),
-      ...fontWeight('700'),
+      ...typography('h2'),
+      ...fontWeight('bold'),
       color: theme.colors.text,
-      marginBottom: spacing.md,
-      textAlign: 'left',
+      textAlign: 'center',
+      marginBottom: spacing.xs,
     },
     heroSubtitle: {
       ...typography('body'),
       color: theme.colors.textSecondary,
-      textAlign: 'left',
-      lineHeight: 22,
+      textAlign: 'center',
+      paddingHorizontal: spacing.xl,
+    },
+    additionalSettingsContainer: {
+      backgroundColor: theme.colors.card,
+      borderRadius: borderRadius.xl || 16,
+      padding: spacing.md,
+      marginBottom: spacing.xl,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    settingRow: {
+      flexDirection: isRTL ? 'row-reverse' : 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    settingInfo: {
+      flexDirection: isRTL ? 'row-reverse' : 'row',
+      alignItems: 'center',
+    },
+    settingIcon: {
+      marginRight: isRTL ? 0 : spacing.sm,
+      marginLeft: isRTL ? spacing.sm : 0,
+    },
+    settingLabel: {
+      ...typography('subtitle1'),
+      ...fontWeight('600'),
+      color: theme.colors.text,
+    },
+    toggleTrack: {
+      width: 50,
+      height: 28,
+      borderRadius: 14,
+      padding: 2,
+      justifyContent: 'center',
+    },
+    toggleTrackActive: {
+      backgroundColor: theme.colors.primary,
+    },
+    toggleTrackInactive: {
+      backgroundColor: theme.colors.border,
+    },
+    toggleThumb: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: '#FFFFFF',
+      ...layout.shadow,
+    },
+    toggleThumbActive: {
+      alignSelf: isRTL ? 'flex-start' : 'flex-end',
+    },
+    toggleThumbInactive: {
+      alignSelf: isRTL ? 'flex-end' : 'flex-start',
+    },
+    sectionContainer: {
+      marginBottom: spacing.xl,
+    },
+    sectionTitle: {
+      ...typography('subtitle2'),
+      ...fontWeight('bold'),
+      color: theme.colors.textSecondary,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+      marginBottom: spacing.md,
+      textAlign: isRTL ? 'right' : 'left',
+    },
+    optionsContainer: {
+      gap: spacing.sm,
+    },
+    optionCard: {
+      flexDirection: isRTL ? 'row-reverse' : 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: spacing.md,
+      backgroundColor: theme.colors.card,
+      borderRadius: borderRadius.xl || 16,
+      borderWidth: 1.5,
+      borderColor: theme.colors.border,
+    },
+    optionCardSelected: {
+      borderColor: theme.colors.primary,
+      backgroundColor: theme.colors.primary + '0A',
+    },
+    optionInfo: {
+      flex: 1,
+      alignItems: isRTL ? 'flex-end' : 'flex-start',
+    },
+    optionTitle: {
+      ...typography('subtitle1'),
+      ...fontWeight('bold'),
+      color: theme.colors.text,
+      textAlign: isRTL ? 'right' : 'left',
+    },
+    optionSubtitle: {
+      ...typography('caption'),
+      color: theme.colors.textSecondary,
+      marginTop: 2,
+      textAlign: isRTL ? 'right' : 'left',
+    },
+    radioButton: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      borderWidth: 2,
+      borderColor: theme.colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginLeft: isRTL ? 0 : spacing.sm,
+      marginRight: isRTL ? spacing.sm : 0,
+    },
+    radioButtonSelected: {
+      borderColor: theme.colors.primary,
+    },
+    radioButtonInner: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: theme.colors.primary,
     },
     subjectBadgeCard: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: theme.colors.primary + '0D',
-      borderWidth: 1,
-      borderColor: theme.colors.primary + '1A',
+      gap: 8,
+      backgroundColor: theme.colors.primary + '1A',
       borderRadius: borderRadius.xl || 16,
       padding: spacing.md,
       marginBottom: spacing.xl,
     },
     subjectBadgeIconContainer: {
-      width: 48,
-      height: 48,
+      width: 44,
+      height: 44,
       borderRadius: borderRadius.lg || 12,
       backgroundColor: theme.colors.primary,
       justifyContent: 'center',
@@ -378,197 +501,77 @@ const styles = (
     },
     subjectBadgeInfo: {
       flex: 1,
-      paddingStart: spacing.md,
       alignItems: 'flex-start',
     },
     subjectBadgeLabel: {
-      ...typography('caption'),
-      ...fontWeight('600'),
+      ...typography('label'),
       color: theme.colors.primary,
       textTransform: 'uppercase',
-      textAlign: isRTL ? 'right' : 'left',
+      textAlign: contentAlign,
     },
     subjectBadgeTitle: {
-      fontSize: Math.max(16, fontSizes.lg),
-      ...fontWeight('700'),
+      ...typography('subtitle1'),
+      ...fontWeight('bold'),
       color: theme.colors.text,
-      textAlign: isRTL ? 'right' : 'left',
+      textAlign: contentAlign,
     },
     breadcrumbsContainer: {
-      marginBottom: spacing.lg,
+      backgroundColor: theme.colors.card,
+      borderRadius: borderRadius.xl || 16,
+      padding: spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
     },
     unitBreadcrumb: {
       marginBottom: spacing.sm,
     },
     unitBreadcrumbHeader: {
-      flexDirection: 'row',
+      flexDirection: contentRowDirection,
       alignItems: 'center',
-      marginBottom: spacing.sm,
-      flexShrink: 1,
+      marginBottom: spacing.xs,
     },
     breadcrumbDot: {
       width: 8,
       height: 8,
       borderRadius: 4,
       backgroundColor: theme.colors.primary,
-      marginEnd: spacing.sm,
+      marginRight: isContentRTL ? 0 : spacing.sm,
+      marginLeft: isContentRTL ? spacing.sm : 0,
     },
     unitBreadcrumbName: {
       ...typography('subtitle2'),
-      ...fontWeight('700'),
+      ...fontWeight('bold'),
       color: theme.colors.text,
-      flexShrink: 1,
-      textAlign: 'left',
+      textAlign: contentAlign,
     },
     lessonBreadcrumbsList: {
-      paddingStart: spacing.md,
-      paddingVertical: spacing.xs,
+      paddingLeft: isContentRTL ? 0 : spacing.md,
+      paddingRight: isContentRTL ? spacing.md : 0,
     },
     lessonBreadcrumbItem: {
-      flexDirection: 'row',
+      flexDirection: contentRowDirection,
       alignItems: 'center',
-      marginBottom: spacing.xs,
-      flexShrink: 1,
+      marginBottom: 4,
     },
     lessonBreadcrumbDot: {
-      width: 6,
-      height: 6,
-      borderRadius: 3,
+      width: 4,
+      height: 4,
+      borderRadius: 2,
       backgroundColor: theme.colors.textTertiary,
-      marginEnd: spacing.sm,
+      marginRight: isContentRTL ? 0 : spacing.sm,
+      marginLeft: isContentRTL ? spacing.sm : 0,
     },
     lessonBreadcrumbName: {
       ...typography('caption'),
-      fontSize: 13,
       color: theme.colors.textSecondary,
-      flexShrink: 1,
-      textAlign: 'left',
+      textAlign: contentAlign,
     },
-    sectionContainer: {
-      marginBottom: spacing.xl,
-    },
-    sectionTitle: {
-      ...typography('h3'),
-      ...fontWeight('700'),
-      color: theme.colors.text,
-      marginBottom: spacing.md,
-      textAlign: 'left',
-    },
-    optionsContainer: {
-      width: '100%',
-    },
-    optionCard: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      padding: spacing.lg,
-      borderRadius: borderRadius.xl || 16,
-      backgroundColor: theme.colors.card,
-      borderWidth: 2,
-      borderColor: theme.colors.border,
-      marginBottom: spacing.md,
-    },
-    optionCardSelected: {
-      borderColor: theme.colors.primary,
-      backgroundColor: theme.colors.primary + '05',
-    },
-    optionInfo: {
-      flex: 1,
-      alignItems: 'flex-start',
-    },
-    optionTitle: {
-      fontSize: Math.max(16, fontSizes.lg),
-      ...fontWeight('700'),
-      color: theme.colors.text,
-      textAlign: isRTL ? 'right' : 'left',
-    },
-    optionTitleSelected: {
-      color: theme.colors.primary,
-    },
-    optionSubtitle: {
-      ...typography('caption'),
-      fontSize: 13,
-      color: theme.colors.textSecondary,
-      textAlign: isRTL ? 'right' : 'left',
-    },
-    radioButton: {
-      width: 24,
-      height: 24,
-      borderRadius: 12,
-      borderWidth: 2,
-      borderColor: theme.colors.border,
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginStart: spacing.md,
-    },
-    radioButtonSelected: {
-      borderColor: theme.colors.primary,
-      backgroundColor: theme.colors.primary,
-    },
-    radioButtonInner: {
-      width: 8,
-      height: 8,
-      borderRadius: 4,
-      backgroundColor: '#FFF',
-    },
-    additionalSettingsContainer: {
-      paddingTop: spacing.sm,
-      marginBottom: spacing.lg,
-    },
-    settingRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-    settingInfo: {
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    settingIcon: {
-      marginEnd: spacing.sm,
-    },
-    settingLabel: {
-      ...typography('body'),
-      ...fontWeight('500'),
-      color: theme.colors.text,
-      textAlign: isRTL ? 'right' : 'left',
-    },
-    toggleTrack: {
-      width: 48,
-      height: 24,
-      borderRadius: 12,
-      padding: 2,
-      justifyContent: 'center',
-    },
-    toggleTrackActive: {
-      backgroundColor: theme.colors.primary,
-      alignItems: 'flex-end',
-    },
-    toggleTrackInactive: {
-      backgroundColor: theme.colors.textTertiary,
-      alignItems: 'flex-start',
-    },
-    toggleThumb: {
-      width: 20,
-      height: 20,
-      borderRadius: 10,
-      backgroundColor: '#FFF',
-    },
-    toggleThumbActive: {},
-    toggleThumbInactive: {},
     actionArea: {
-      paddingHorizontal: layout.screenPadding,
-      paddingTop: spacing.lg,
+      padding: spacing.md,
       paddingBottom: Math.max(insets.bottom, spacing.md),
-      backgroundColor: theme.colors.background,
+      backgroundColor: theme.colors.card,
       borderTopWidth: 1,
       borderTopColor: theme.colors.border,
-    },
-    disclaimerText: {
-      ...typography('caption'),
-      fontSize: 12,
-      color: theme.colors.textTertiary,
-      textAlign: 'center',
-      marginTop: spacing.md,
     },
   });
 

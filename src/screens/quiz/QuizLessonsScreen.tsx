@@ -22,11 +22,13 @@ import { useTypography } from '../../hooks/useTypography';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import AppButton from '../../components/AppButton';
 import { GenericListSkeleton } from '../../components/SkeletonLoader';
+import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
 
 interface Subject {
   id: string;
   name: string;
   description?: string;
+  language?: string;
 }
 interface Lesson {
   id: string;
@@ -132,6 +134,10 @@ const QuizLessonsScreen: React.FC = () => {
       .filter((chapter) => chapter.lessons.length > 0);
   }, [chapters, selectedLessons]);
 
+  const { contentAlign, contentFlexAlign, contentRowDirection, isContentRTL } = useSubjectTextAlign(
+    subject?.language,
+  );
+
   const currentStyles = styles(
     theme,
     common,
@@ -141,6 +147,10 @@ const QuizLessonsScreen: React.FC = () => {
     spacing,
     borderRadius,
     insets,
+    contentAlign,
+    contentFlexAlign,
+    contentRowDirection,
+    !!isContentRTL,
   );
 
   if (loading)
@@ -194,9 +204,19 @@ const QuizLessonsScreen: React.FC = () => {
                       {selectedInChapter}/{chapterLessonIds.length}{' '}
                       {t('quiz_lessons.lessons_selected', 'lessons selected')}
                     </Text>
-                    <View style={currentStyles.progressBarBackground}>
+                    <View
+                      style={[
+                        currentStyles.progressBarBackground,
+                        { transform: [{ scaleX: contentAlign === 'right' ? -1 : 1 }] },
+                      ]}
+                    >
                       <View
-                        style={[currentStyles.progressBarFill, { width: `${progressPercentage}%` }]}
+                        style={[
+                          currentStyles.progressBarFill,
+                          {
+                            width: `${progressPercentage}%`,
+                          },
+                        ]}
                       />
                     </View>
                   </View>
@@ -298,6 +318,10 @@ const styles = (
   spacing: any,
   borderRadius: any,
   insets: any,
+  contentAlign: 'left' | 'right',
+  contentFlexAlign: 'flex-start' | 'flex-end',
+  contentRowDirection: 'row' | 'row-reverse',
+  isContentRTL: boolean,
 ) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.background },
@@ -312,7 +336,7 @@ const styles = (
       marginBottom: spacing.xs,
     },
     unitCard: {
-      flexDirection: common.rowDirection,
+      flexDirection: contentRowDirection,
       alignItems: 'center',
       justifyContent: 'space-between',
       padding: spacing.md,
@@ -325,25 +349,27 @@ const styles = (
     },
     unitContent: {
       flex: 1,
-      ...common.marginEnd(spacing.md),
-      alignItems: common.alignStart,
+      marginRight: isContentRTL ? 0 : spacing.md,
+      marginLeft: isContentRTL ? spacing.md : 0,
+      alignItems: contentFlexAlign,
     },
     unitName: {
       ...typography('h3'),
       ...fontWeight('bold'),
       color: theme.colors.text,
       marginBottom: spacing.xs,
-      textAlign: common.textAlign,
+      textAlign: contentAlign,
     },
     unitStatsRow: {
-      flexDirection: common.rowDirection,
+      flexDirection: contentRowDirection,
       alignItems: 'center',
     },
     unitStatsText: {
       ...typography('caption'),
       color: theme.colors.primary,
       opacity: 0.8,
-      ...common.marginEnd(spacing.sm),
+      marginRight: isContentRTL ? 0 : spacing.sm,
+      marginLeft: isContentRTL ? spacing.sm : 0,
       fontSize: 12,
     },
     progressBarBackground: {
@@ -363,7 +389,7 @@ const styles = (
       marginBottom: spacing.md,
     },
     lessonCard: {
-      flexDirection: common.rowDirection,
+      flexDirection: contentRowDirection,
       alignItems: 'center',
       justifyContent: 'space-between',
       padding: spacing.md,
@@ -375,14 +401,15 @@ const styles = (
     },
     lessonContent: {
       flex: 1,
-      ...common.marginEnd(spacing.md),
-      alignItems: common.alignStart,
+      marginRight: isContentRTL ? 0 : spacing.md,
+      marginLeft: isContentRTL ? spacing.md : 0,
+      alignItems: contentFlexAlign,
     },
     lessonName: {
       ...typography('button'),
       ...fontWeight('500'),
       color: theme.colors.text,
-      textAlign: common.textAlign,
+      textAlign: contentAlign,
     },
     checkboxBase: {
       height: 24,
@@ -399,14 +426,14 @@ const styles = (
       borderColor: theme.colors.primary,
     },
     unitDivider: {
-      height: 8,
-      backgroundColor: theme.colors.background,
-      marginVertical: spacing.xs,
+      height: 1,
+      backgroundColor: theme.colors.border,
+      opacity: 0.5,
+      marginVertical: spacing.md,
     },
     emptyState: { padding: spacing.xl, alignItems: 'center', marginTop: spacing.xl },
     emptyStateTitle: {
       ...typography('h3'),
-      ...fontWeight('bold'),
       marginTop: spacing.md,
       marginBottom: spacing.xs,
       color: theme.colors.text,
@@ -417,16 +444,16 @@ const styles = (
       color: theme.colors.textSecondary,
     },
     footer: {
-      paddingHorizontal: layout.screenPadding,
-      paddingVertical: spacing.lg,
-      paddingBottom: Math.max(insets.bottom, spacing.lg),
-      backgroundColor: theme.colors.card,
-      borderTopWidth: 1,
-      borderTopColor: theme.colors.border,
       position: 'absolute',
       bottom: 0,
       left: 0,
       right: 0,
+      padding: spacing.md,
+      paddingBottom: Math.max(insets.bottom, spacing.md),
+      backgroundColor: theme.colors.card,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.border,
+      ...layout.shadow,
     },
   });
 

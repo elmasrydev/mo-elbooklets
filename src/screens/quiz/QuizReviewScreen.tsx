@@ -23,6 +23,7 @@ import { useTypography } from '../../hooks/useTypography';
 import AppButton from '../../components/AppButton';
 import { textAlign } from '../../lib/rtl';
 import { QuizScreenSkeleton } from '../../components/SkeletonLoader';
+import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
 import RetryView from '../../components/RetryView';
 
 const QuizReviewScreen: React.FC = () => {
@@ -56,6 +57,11 @@ const QuizReviewScreen: React.FC = () => {
             quiz {
               id
               name
+              subject {
+                id
+                name
+                language
+              }
             }
             isPublished
             userAnswers {
@@ -132,11 +138,14 @@ const QuizReviewScreen: React.FC = () => {
       `;
 
       const response = await tryFetchWithFallback(mutation, { quizId }, token);
-      
+
       if (response.data?.publishQuizToFeed?.success) {
         setPublished(!published);
       } else {
-        const errMsg = response.data?.publishQuizToFeed?.message || response.errors?.[0]?.message || t('common.error');
+        const errMsg =
+          response.data?.publishQuizToFeed?.message ||
+          response.errors?.[0]?.message ||
+          t('common.error');
         setError(errMsg);
       }
     } catch (err: any) {
@@ -155,6 +164,10 @@ const QuizReviewScreen: React.FC = () => {
     }
   }, [quizId]);
 
+  const { contentAlign, contentRowDirection } = useSubjectTextAlign(
+    result?.quiz?.subject?.language,
+  );
+
   const currentStyles = styles(
     theme,
     spacing,
@@ -164,6 +177,8 @@ const QuizReviewScreen: React.FC = () => {
     typography,
     fontWeight,
     isRTL,
+    contentAlign,
+    contentRowDirection,
   );
 
   if (loading) {
@@ -175,12 +190,7 @@ const QuizReviewScreen: React.FC = () => {
   }
 
   if (error || !result) {
-    return (
-      <RetryView 
-        message={error || t('common.error')}
-        onRetry={fetchResults}
-      />
-    );
+    return <RetryView message={error || t('common.error')} onRetry={fetchResults} />;
   }
 
   const wrongAnswers = result.userAnswers.filter((a: any) => !a.is_correct);
@@ -324,7 +334,10 @@ const QuizReviewScreen: React.FC = () => {
                 )}
               </View>
 
-              <Text style={currentStyles.questionText}> {ua.question.question} </Text>
+              <Text style={[currentStyles.questionText, { textAlign: contentAlign }]}>
+                {' '}
+                {ua.question.question}{' '}
+              </Text>
 
               {isDescriptive ? (
                 /* Descriptive review: clean comparison layout */
@@ -365,7 +378,7 @@ const QuizReviewScreen: React.FC = () => {
                             ...typography('bodySmall'),
                             color: theme.colors.text,
                             lineHeight: 20,
-                            textAlign: common.textAlign as any,
+                            textAlign: contentAlign,
                           }}
                         >
                           {ua.selected_answer || t('quiz_review.no_answer', 'No answer provided')}
@@ -408,7 +421,7 @@ const QuizReviewScreen: React.FC = () => {
                             ...typography('bodySmall'),
                             color: theme.colors.text,
                             lineHeight: 20,
-                            textAlign: common.textAlign as any,
+                            textAlign: contentAlign,
                           }}
                         >
                           {ua.question.answer_1}
@@ -489,7 +502,7 @@ const QuizReviewScreen: React.FC = () => {
                                       ...typography('bodySmall'),
                                       color: '#065F46',
                                       lineHeight: 20,
-                                      textAlign: common.textAlign as any,
+                                      textAlign: contentAlign,
                                     }}
                                   >
                                     {concept}
@@ -533,7 +546,7 @@ const QuizReviewScreen: React.FC = () => {
                                       ...typography('bodySmall'),
                                       color: '#92400E',
                                       lineHeight: 20,
-                                      textAlign: common.textAlign as any,
+                                      textAlign: contentAlign,
                                     }}
                                   >
                                     {concept}
@@ -577,7 +590,7 @@ const QuizReviewScreen: React.FC = () => {
                                       ...typography('bodySmall'),
                                       color: '#991B1B',
                                       lineHeight: 20,
-                                      textAlign: common.textAlign as any,
+                                      textAlign: contentAlign,
                                     }}
                                   >
                                     {concept}
@@ -610,7 +623,7 @@ const QuizReviewScreen: React.FC = () => {
                                     color: '#7F1D1D',
                                     lineHeight: 20,
                                     flex: 1,
-                                    textAlign: common.textAlign as any,
+                                    textAlign: contentAlign,
                                   }}
                                 >
                                   {item}
@@ -667,7 +680,7 @@ const QuizReviewScreen: React.FC = () => {
                           ...typography('bodySmall'),
                           color: '#1E3A5F',
                           lineHeight: 21,
-                          textAlign: common.textAlign as any,
+                          textAlign: contentAlign,
                         }}
                       >
                         {ua.descriptive_feedback.feedback}
@@ -709,9 +722,13 @@ const QuizReviewScreen: React.FC = () => {
                         <Text style={[currentStyles.optionText, textStyle]}>
                           {' '}
                           {opt.toLowerCase() === 'true'
-                            ? t('common.true')
+                            ? result?.quiz?.subject?.language === 'ar'
+                              ? 'صح'
+                              : 'True'
                             : opt.toLowerCase() === 'false'
-                              ? t('common.false')
+                              ? result?.quiz?.subject?.language === 'ar'
+                                ? 'خطأ'
+                                : 'False'
                               : opt}{' '}
                         </Text>
                         <View style={currentStyles.dotIconContainer}>
@@ -753,11 +770,19 @@ const QuizReviewScreen: React.FC = () => {
 
         <View style={{ gap: 12, marginBottom: 12 }}>
           <AppButton
-            title={published ? t('quiz_review.published_to_feed') : t('quiz_review.publish_to_feed')}
+            title={
+              published ? t('quiz_review.published_to_feed') : t('quiz_review.publish_to_feed')
+            }
             onPress={publishToFeed}
             loading={isPublishing}
             variant={published ? 'success' : 'primary'}
-            icon={<Ionicons name={published ? 'checkmark-circle' : 'share-social'} size={20} color="#fff" />}
+            icon={
+              <Ionicons
+                name={published ? 'checkmark-circle' : 'share-social'}
+                size={20}
+                color="#fff"
+              />
+            }
             size="lg"
           />
 
@@ -783,6 +808,8 @@ const styles = (
   typography: any,
   fontWeight: any,
   isRTL: boolean,
+  contentAlign: 'left' | 'right',
+  contentRowDirection: 'row' | 'row-reverse',
 ) =>
   StyleSheet.create({
     center: {
@@ -815,7 +842,7 @@ const styles = (
       ...typography('h2'),
       ...fontWeight('900'),
       color: '#ffffff',
-      textAlign: common.textAlign,
+      textAlign: contentAlign,
     },
     scrollContent: {
       padding: 16,
@@ -892,15 +919,16 @@ const styles = (
       ...fontWeight('700'),
       color: theme.colors.text,
       marginBottom: 24,
-      textAlign: common.textAlign,
+      textAlign: contentAlign,
     },
     optionsContainer: {
       gap: 16,
     },
     optionItem: {
-      flexDirection: common.rowDirection,
+      flexDirection: contentRowDirection,
+      gap: 7,
       alignItems: 'center',
-      padding: 16,
+      padding: 10,
       borderRadius: 12,
       borderWidth: 2,
       borderColor: 'transparent',
@@ -957,7 +985,7 @@ const styles = (
       ...typography('body'),
       ...fontWeight('500'),
       color: theme.colors.text,
-      textAlign: common.textAlign,
+      textAlign: contentAlign,
       marginStart: 4,
     },
     optionTextCorrect: {
@@ -973,7 +1001,7 @@ const styles = (
     },
     explanationBox: {
       backgroundColor: '#F0F9FF',
-      padding: 20,
+      padding: 16,
       borderRadius: 12,
       marginTop: 24,
       borderWidth: 1,
@@ -983,12 +1011,12 @@ const styles = (
       color: '#0369A1',
       ...fontWeight('bold'),
       fontSize: 16,
-      textAlign: common.textAlign,
+      textAlign: contentAlign,
     },
     explanationText: {
       ...typography('bodySmall'),
       color: '#334155',
-      textAlign: common.textAlign,
+      textAlign: contentAlign,
       ...fontWeight('400'),
       lineHeight: 22,
     },

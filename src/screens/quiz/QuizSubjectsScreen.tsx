@@ -28,6 +28,7 @@ interface Subject {
   id: string;
   name: string;
   description?: string;
+  language?: string;
 }
 
 const QuizSubjectsScreen: React.FC = () => {
@@ -52,7 +53,7 @@ const QuizSubjectsScreen: React.FC = () => {
       const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
       const result = await tryFetchWithFallback(
-        `query SubjectsForUserGrade { subjectsForUserGrade { id name description } }`,
+        `query SubjectsForUserGrade { subjectsForUserGrade { id name description language } }`,
         undefined,
         token,
       );

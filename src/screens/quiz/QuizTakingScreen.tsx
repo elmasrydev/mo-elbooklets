@@ -26,6 +26,7 @@ import UnifiedHeader from '../../components/UnifiedHeader';
 import AppButton from '../../components/AppButton';
 import RetryView from '../../components/RetryView';
 import { QuizScreenSkeleton } from '../../components/SkeletonLoader';
+import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
 
 const DESCRIPTIVE_TYPES = ['what_happens', 'give_a_reason'];
 
@@ -45,6 +46,7 @@ interface Quiz {
   subject: {
     id: string;
     name: string;
+    language?: string;
   };
   questions: QuizQuestion[];
   isCompleted: boolean;
@@ -138,6 +140,7 @@ const QuizTakingScreen: React.FC = () => {
             subject {
               id
               name
+              language
             }
             questions {
               id
@@ -324,7 +327,17 @@ const QuizTakingScreen: React.FC = () => {
     };
   }, []);
 
-  const currentStyles = styles(theme, typography, fontWeight, spacing, borderRadius, common);
+  const { contentAlign, contentRowDirection } = useSubjectTextAlign(quiz?.subject?.language);
+  const currentStyles = styles(
+    theme,
+    typography,
+    fontWeight,
+    spacing,
+    borderRadius,
+    common,
+    contentAlign,
+    contentRowDirection,
+  );
 
   if (loading) {
     return (
@@ -443,7 +456,7 @@ const QuizTakingScreen: React.FC = () => {
             /* Descriptive answer: multi-line text input */
             <View style={currentStyles.descriptiveContainer}>
               <TextInput
-                style={[currentStyles.descriptiveInput, { textAlign: isRTL ? 'right' : 'left' }]}
+                style={[currentStyles.descriptiveInput, { textAlign: contentAlign }]}
                 value={selectedAnswers[currentQuestion.id] || ''}
                 onChangeText={(text) => handleDescriptiveAnswer(currentQuestion.id, text)}
                 placeholder={t('quiz_taking.write_your_answer', 'Write your answer here...')}
@@ -494,9 +507,13 @@ const QuizTakingScreen: React.FC = () => {
                         ]}
                       >
                         {parts[0].toLowerCase() === 'true'
-                          ? t('common.true')
+                          ? quiz?.subject?.language === 'ar'
+                            ? 'صح'
+                            : 'True'
                           : parts[0].toLowerCase() === 'false'
-                            ? t('common.false')
+                            ? quiz?.subject?.language === 'ar'
+                              ? 'خطأ'
+                              : 'False'
                             : parts[0]}
                       </Text>
                       {hasSubtitle && (
@@ -589,6 +606,8 @@ const styles = (
   spacing: any,
   borderRadius: any,
   common: any,
+  contentAlign: 'left' | 'right',
+  contentRowDirection: 'row' | 'row-reverse',
 ) =>
   StyleSheet.create({
     screenContainer: {
@@ -612,12 +631,12 @@ const styles = (
       color: '#6B7280',
       ...fontWeight('700'),
       marginBottom: 4,
-      textAlign: common.textAlign,
+      textAlign: contentAlign,
     },
     progressSteps: {
       ...typography('body'),
       color: '#6B7280',
-      textAlign: common.textAlign,
+      textAlign: contentAlign,
     },
     progressCurrentStep: {
       color: '#111827',
@@ -673,20 +692,21 @@ const styles = (
       ...fontWeight('bold'),
       marginBottom: 24,
       lineHeight: 34,
-      textAlign: common.textAlign,
+      textAlign: contentAlign,
     },
     // Options
     answersContainer: {
       gap: 16,
     },
     answerCard: {
-      flexDirection: common.rowDirection,
+      flexDirection: contentRowDirection,
       alignItems: 'center',
       backgroundColor: '#FFFFFF',
       padding: 16,
       borderRadius: 24, // High rounding per Calm Design mockup
       borderWidth: 1.5,
       borderColor: '#E5E7EB',
+      gap: 7,
     },
     selectedAnswerCard: {
       backgroundColor: '#F8FAFF',
@@ -695,7 +715,7 @@ const styles = (
     radioContainer: {
       justifyContent: 'center',
       alignItems: 'center',
-      ...common.marginEnd(16),
+      //...common.marginEnd(16),
     },
     radioCircle: {
       width: 24,
@@ -723,7 +743,7 @@ const styles = (
       ...typography('body'),
       color: '#374151',
       ...fontWeight('bold'),
-      textAlign: common.textAlign,
+      textAlign: contentAlign,
     },
     selectedAnswerTitle: {
       color: '#284196',
@@ -733,7 +753,7 @@ const styles = (
       color: '#6B7280',
       marginTop: 4,
       lineHeight: 20,
-      textAlign: common.textAlign,
+      textAlign: contentAlign,
     },
     selectedAnswerSubtitle: {
       color: '#4B5563',

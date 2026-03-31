@@ -23,11 +23,13 @@ import AppButton from '../../components/AppButton';
 import { GenericListSkeleton } from '../../components/SkeletonLoader';
 import RetryView from '../../components/RetryView';
 import { useSubscriptionGate } from '../../hooks/useSubscriptionGate';
+import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
 
 interface Subject {
   id: string;
   name: string;
   description?: string;
+  language?: string;
 }
 
 interface LessonPoint {
@@ -143,7 +145,22 @@ const StudyChaptersScreen: React.FC = () => {
     navigation.navigate('StudyLesson', { lesson, allLessons, subject });
   };
 
-  const currentStyles = styles(theme, fontSizes, spacing, borderRadius, common, typography);
+  const { contentAlign, contentFlexAlign, contentRowDirection, isContentRTL } = useSubjectTextAlign(
+    subject?.language,
+  );
+
+  const currentStyles = styles(
+    theme,
+    fontSizes,
+    spacing,
+    borderRadius,
+    common,
+    typography,
+    contentAlign,
+    contentFlexAlign,
+    contentRowDirection,
+    !!isContentRTL,
+  );
 
   if (loading) {
     return (
@@ -160,10 +177,7 @@ const StudyChaptersScreen: React.FC = () => {
     return (
       <View style={common.container}>
         <UnifiedHeader showBackButton title={subject.name} />
-        <RetryView 
-          message={error}
-          onRetry={fetchLessons}
-        />
+        <RetryView message={error} onRetry={fetchLessons} />
       </View>
     );
   }
@@ -236,15 +250,29 @@ const StudyChaptersScreen: React.FC = () => {
                       </Text>
                     )}
                     {lesson.isLocked && (
-                      <Text style={[currentStyles.lessonSummary, { color: theme.colors.error || '#EF4444' }]} numberOfLines={1}>
+                      <Text
+                        style={[
+                          currentStyles.lessonSummary,
+                          { color: theme.colors.error || '#EF4444' },
+                        ]}
+                        numberOfLines={1}
+                      >
                         {t('study_chapters.locked_lesson', 'Purchase required or restricted')}
                       </Text>
                     )}
                   </View>
                   <Ionicons
-                    name={lesson.isLocked ? "lock-closed" : (isRTL ? 'chevron-back' : 'chevron-forward')}
+                    name={
+                      lesson.isLocked
+                        ? 'lock-closed'
+                        : subject?.language === 'ar'
+                          ? 'chevron-back'
+                          : 'chevron-forward'
+                    }
                     size={spacing.icon.xs}
-                    color={lesson.isLocked ? (theme.colors.error || '#EF4444') : theme.colors.textTertiary}
+                    color={
+                      lesson.isLocked ? theme.colors.error || '#EF4444' : theme.colors.textTertiary
+                    }
                   />
                 </TouchableOpacity>
               ))}
@@ -277,6 +305,10 @@ const styles = (
   borderRadius: any,
   common: any,
   typography: any,
+  contentAlign: 'left' | 'right',
+  contentFlexAlign: 'flex-start' | 'flex-end',
+  contentRowDirection: 'row' | 'row-reverse',
+  isContentRTL: boolean,
 ) =>
   StyleSheet.create({
     content: { flex: 1 },
@@ -314,7 +346,7 @@ const styles = (
       ...layout.shadow,
     },
     chapterHeader: {
-      flexDirection: common.rowDirection,
+      flexDirection: contentRowDirection,
       alignItems: 'center',
       padding: spacing.md,
       backgroundColor: theme.colors.primary + '0D', // Very light tint of primary color
@@ -328,43 +360,53 @@ const styles = (
       backgroundColor: theme.colors.primary + '1A',
       justifyContent: 'center',
       alignItems: 'center',
-      ...common.marginEnd(spacing.sm),
+      marginRight: isContentRTL ? 0 : spacing.sm,
+      marginLeft: isContentRTL ? spacing.sm : 0,
     },
-    chapterInfo: { flex: 1, alignItems: common.alignStart },
+    chapterInfo: {
+      flex: 1,
+      alignItems: contentFlexAlign,
+    },
     chapterName: {
       ...typography('h3'),
       color: theme.colors.text,
-      textAlign: common.textAlign,
+      textAlign: contentAlign,
     },
     lessonCount: {
       ...typography('caption'),
       marginTop: 2,
       color: theme.colors.textSecondary,
-      textAlign: common.textAlign,
+      textAlign: contentAlign,
     },
     lessonsContainer: { paddingVertical: spacing.xxs },
     lessonItem: {
-      flexDirection: common.rowDirection,
+      flexDirection: contentRowDirection,
       alignItems: 'center',
       paddingVertical: spacing.md,
       paddingHorizontal: spacing.md,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.border,
     },
-    lessonIconContainer: { ...common.marginEnd(spacing.sm) },
-    lessonInfo: { flex: 1, alignItems: common.alignStart },
+    lessonIconContainer: {
+      marginRight: isContentRTL ? 0 : spacing.sm,
+      marginLeft: isContentRTL ? spacing.sm : 0,
+    },
+    lessonInfo: {
+      flex: 1,
+      alignItems: contentFlexAlign,
+    },
     lessonName: {
       ...typography('bodySmall'),
       fontSize: 15,
       color: theme.colors.text,
-      textAlign: common.textAlign,
+      textAlign: contentAlign,
     },
     lessonSummary: {
       ...typography('caption'),
       fontSize: 13,
       marginTop: 2,
       color: theme.colors.textSecondary,
-      textAlign: common.textAlign,
+      textAlign: contentAlign,
     },
     emptyState: { padding: spacing.xl, alignItems: 'center', marginTop: spacing.xl },
     emptyStateTitle: {

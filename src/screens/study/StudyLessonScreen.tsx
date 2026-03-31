@@ -27,6 +27,7 @@ import { useTypography } from '../../hooks/useTypography';
 import useAndroidBack from '../../hooks/useAndroidBack';
 import AppButton from '../../components/AppButton';
 import { ConfirmModal } from '../../components/ConfirmModal';
+import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
 import { isRTL, textAlign } from '../../lib/rtl';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -198,7 +199,18 @@ const StudyLessonScreen: React.FC = () => {
   const previousLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
   const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
 
-  const currentStyles = styles(theme, isRTL, typography, fontWeight, insets, spacing, borderRadius);
+  const { contentAlign, contentRowDirection } = useSubjectTextAlign(subject?.language);
+  const currentStyles = styles(
+    theme,
+    isRTL,
+    typography,
+    fontWeight,
+    insets,
+    spacing,
+    borderRadius,
+    contentAlign,
+    contentRowDirection,
+  );
 
   // Open local leave-disclaimer (works inside iOS native fullScreenModal).
   const handleLeaveLesson = useCallback(() => {
@@ -324,7 +336,10 @@ const StudyLessonScreen: React.FC = () => {
 
   return (
     <View style={currentStyles.container}>
-      <UnifiedHeader leftContent={<CloseButton onPress={handleLeaveLesson} />} title={t('study_lesson.lesson_content')} />
+      <UnifiedHeader
+        leftContent={<CloseButton onPress={handleLeaveLesson} />}
+        title={t('study_lesson.lesson_content')}
+      />
 
       <ScrollView
         ref={scrollViewRef}
@@ -344,9 +359,9 @@ const StudyLessonScreen: React.FC = () => {
               color={theme.colors.primary}
               style={currentStyles.breadcrumbIcon}
             />
-            <Text style={currentStyles.chapterBadge}> {currentLesson.chapter.name} </Text>
+            <Text style={currentStyles.chapterBadge}>{currentLesson.chapter.name}</Text>
           </View>
-          <Text style={currentStyles.mainTitle}> {currentLesson.name} </Text>
+          <Text style={currentStyles.mainTitle}>{currentLesson.name}</Text>
         </View>
 
         {currentLesson.videoUrl && (
@@ -375,9 +390,9 @@ const StudyLessonScreen: React.FC = () => {
             </Text>
           </View>
           {currentLesson.summary ? (
-            <Text style={currentStyles.summaryText}> {currentLesson.summary} </Text>
+            <Text style={currentStyles.summaryText}>{currentLesson.summary}</Text>
           ) : (
-            <Text style={currentStyles.noContentText}> {t('study_lesson.no_summary')} </Text>
+            <Text style={currentStyles.noContentText}>{t('study_lesson.no_summary')}</Text>
           )}
         </View>
 
@@ -414,7 +429,7 @@ const StudyLessonScreen: React.FC = () => {
                           }
                         />
                       </View>
-                      <Text style={currentStyles.pointText}> {point.title} </Text>
+                      <Text style={currentStyles.pointText}>{point.title}</Text>
                       {point.explanation && (
                         <Ionicons
                           name={isExpanded ? 'chevron-up' : 'chevron-down'}
@@ -425,7 +440,7 @@ const StudyLessonScreen: React.FC = () => {
                     </View>
                     {isExpanded && point.explanation && (
                       <View style={currentStyles.explanationContainer}>
-                        <Text style={currentStyles.explanationText}> {point.explanation} </Text>
+                        <Text style={currentStyles.explanationText}>{point.explanation}</Text>
                       </View>
                     )}
                   </TouchableOpacity>
@@ -442,13 +457,13 @@ const StudyLessonScreen: React.FC = () => {
                     >
                       <Ionicons name="bookmark" size={12} color={theme.colors.textOnDark} />
                     </View>
-                    <Text style={currentStyles.pointText}> {point} </Text>
+                    <Text style={currentStyles.pointText}>{point}</Text>
                   </View>
                 </View>
               ))}
             </View>
           ) : (
-            <Text style={currentStyles.noContentText}> {t('study_lesson.no_key_points')} </Text>
+            <Text style={currentStyles.noContentText}>{t('study_lesson.no_key_points')}</Text>
           )}
         </View>
 
@@ -583,7 +598,10 @@ const StudyLessonScreen: React.FC = () => {
         message={t('study_lesson.leave_message')}
         confirmLabel={t('common.yes')}
         cancelLabel={t('common.no')}
-        onConfirm={() => { setShowLeaveModal(false); navigation.goBack(); }}
+        onConfirm={() => {
+          setShowLeaveModal(false);
+          navigation.goBack();
+        }}
         onCancel={() => setShowLeaveModal(false)}
       />
     </View>
@@ -598,6 +616,8 @@ const styles = (
   insets: { top: number; bottom: number },
   spacing: any,
   borderRadius: any,
+  contentAlign: 'left' | 'right',
+  contentRowDirection: 'row' | 'row-reverse',
 ) =>
   StyleSheet.create({
     container: {
@@ -636,7 +656,7 @@ const styles = (
       fontSize: 13,
       ...fontWeight('700'),
       color: theme.colors.primary,
-      textAlign: 'left',
+      textAlign: contentAlign,
     },
     mainTitle: {
       ...typography('h3'),
@@ -644,7 +664,8 @@ const styles = (
       lineHeight: 28,
       ...fontWeight('800'),
       color: theme.colors.text,
-      textAlign: 'left',
+      textAlign: contentAlign,
+      width: '100%',
     },
     section: {
       marginBottom: spacing.sectionGap,
@@ -686,28 +707,29 @@ const styles = (
       ...typography('bodyLarge'),
       lineHeight: 24,
       color: theme.colors.text,
-      textAlign: 'left',
+      textAlign: contentAlign,
     },
     noContentText: {
       ...typography('caption'),
       fontStyle: 'italic',
       color: theme.colors.textSecondary,
-      textAlign: 'left',
+      textAlign: contentAlign,
     },
     pointsList: {
       gap: spacing.sm,
     },
     pointItem: {
       paddingVertical: spacing.sm,
-      paddingHorizontal: spacing.md,
+      paddingHorizontal: spacing.sm,
       borderRadius: borderRadius.md,
       backgroundColor: theme.colors.background,
       borderWidth: 1,
       borderColor: theme.colors.border,
     },
     pointHeader: {
-      flexDirection: 'row',
+      flexDirection: contentRowDirection,
       alignItems: 'center',
+      gap: 7,
     },
     pointBullet: {
       width: 20,
@@ -724,7 +746,7 @@ const styles = (
       marginLeft: spacing.sm,
       marginRight: 0,
       color: theme.colors.text,
-      textAlign: 'left',
+      textAlign: contentAlign,
       fontWeight: '600',
     },
     explanationContainer: {
@@ -740,7 +762,7 @@ const styles = (
       fontSize: 15,
       lineHeight: 20,
       color: theme.colors.textSecondary,
-      textAlign: 'left',
+      textAlign: contentAlign,
     },
     takeQuizSection: {
       marginTop: spacing.lg,
@@ -779,7 +801,7 @@ const styles = (
       ...typography('caption'),
       color: theme.colors.text,
       flex: 1,
-      textAlign: 'left',
+      textAlign: contentAlign,
     },
     dodProgressContainer: {
       flexDirection: 'row',
