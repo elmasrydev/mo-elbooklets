@@ -14,5 +14,10 @@
     <false/>
     <key>destination</key>
     <string>export</string>
+    <key>provisioningProfiles</key>
+    <dict>
+        <key>com.elbooklets.app</key>
+        <string>Elbooklets Dist profile</string>
+    </dict>
 </dict>
 </plist>
