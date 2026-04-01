@@ -29,7 +29,7 @@
     },
     "android": {
       "package": "com.elbooklets.app",
-      "versionCode": 4,
+      "versionCode": 5,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -37,10 +37,7 @@
       "supportsRtl": true,
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "permissions": [
-        "INTERNET",
-        "ACCESS_NETWORK_STATE"
-      ],
+      "permissions": ["INTERNET", "ACCESS_NETWORK_STATE"],
       "googleServicesFile": "./google-services.json"
     },
     "web": {
