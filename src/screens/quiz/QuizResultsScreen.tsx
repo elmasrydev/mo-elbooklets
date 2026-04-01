@@ -25,7 +25,7 @@ import UnifiedHeader from '../../components/UnifiedHeader';
 import AppButton from '../../components/AppButton';
 import RetryView from '../../components/RetryView';
 import { GenericListSkeleton } from '../../components/SkeletonLoader';
-import { textAlign } from '../../lib/rtl';
+import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
 
 interface UserQuizAnswer {
   question: {
@@ -49,7 +49,9 @@ interface QuizResult {
     id: string;
     name: string;
     subject: {
+      id: string;
       name: string;
+      language?: string;
     };
     lessons: {
       id: string;
@@ -63,6 +65,7 @@ interface QuizResult {
   totalQuestions: number;
   userAnswers: UserQuizAnswer[];
   isPassed: boolean;
+  isPublished?: boolean;
 }
 
 interface QuizResultsScreenProps {
@@ -84,14 +87,14 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
       if (navigation.canGoBack()) {
         navigation.goBack();
       } else {
-        navigation.navigate('MainTabs', { screen: 'Quiz' });
+        navigation.navigate('MainTabs', { screen: 'QuizTab' });
       }
     });
 
   const onGoHome =
     props.onGoHome ||
     (() => {
-      navigation.navigate('MainTabs', { screen: 'Home' });
+      navigation.navigate('MainTabs', { screen: 'HomeTab' });
     });
 
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
@@ -131,6 +134,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
               subject {
                 id
                 name
+                language
               }
               lessons {
                 id
@@ -200,11 +204,14 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
       `;
 
       const response = await tryFetchWithFallback(mutation, { quizId }, token);
-      
+
       if (response.data?.publishQuizToFeed?.success) {
         setPublished(!published);
       } else {
-        const errMsg = response.data?.publishQuizToFeed?.message || response.errors?.[0]?.message || t('common.error');
+        const errMsg =
+          response.data?.publishQuizToFeed?.message ||
+          response.errors?.[0]?.message ||
+          t('common.error');
         setError(errMsg);
       }
     } catch (err: any) {
@@ -240,7 +247,13 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
     return crumbs;
   };
 
-  const currentStyles = styles(
+  const breadcrumbs = quizResult ? getBreadcrumbs() : [];
+
+  const { contentAlign, contentFlexAlign, contentRowDirection, isContentRTL } = useSubjectTextAlign(
+    quizResult?.quiz?.subject?.language,
+  );
+
+  const currentStyles = createStyles(
     theme,
     fontSizes,
     typography,
@@ -249,8 +262,11 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
     borderRadius,
     common,
     insets,
+    contentAlign,
+    contentFlexAlign,
+    contentRowDirection,
+    !!isContentRTL,
   );
-  const breadcrumbs = quizResult ? getBreadcrumbs() : [];
 
   if (loading) {
     return (
@@ -271,10 +287,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
           onBackPress={onBack}
           title={t('quiz_results.results_error')}
         />
-        <RetryView 
-          message={error}
-          onRetry={fetchQuizResults}
-        />
+        <RetryView message={error} onRetry={fetchQuizResults} />
       </View>
     );
   }
@@ -290,8 +303,8 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
             color={theme.colors.textSecondary}
             style={{ marginBottom: spacing.lg }}
           />
-          <Text style={currentStyles.errorTitle}> {t('quiz_results.no_results_available')} </Text>
-          <Text style={currentStyles.errorText}> {t('quiz_results.results_not_available')} </Text>
+          <Text style={currentStyles.errorTitle}>{t('quiz_results.no_results_available')}</Text>
+          <Text style={currentStyles.errorText}>{t('quiz_results.results_not_available')}</Text>
         </View>
       </View>
     );
@@ -299,7 +312,6 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
 
   const percentage = Math.round((quizResult.score / quizResult.totalQuestions) * 100);
   const correctAnswers = quizResult.userAnswers.filter((answer) => answer.is_correct).length;
-
   const timeTaken = props.timeTaken ?? route.params?.timeTaken;
 
   const formatTime = (seconds?: number) => {
@@ -312,11 +324,12 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
   const formattedTime = formatTime(timeTaken);
 
   // Determine state based on percentage and determine icon asset
-  const celebrationIcon = percentage < 60
-    ? require('../../../assets/images/quizzLowIcon.png')
-    : percentage < 80
-      ? require('../../../assets/images/quizzNormalIcon.png')
-      : require('../../../assets/images/quizzSucessIcon.png');
+  const celebrationIcon =
+    percentage < 60
+      ? require('../../../assets/images/quizzLowIcon.png')
+      : percentage < 80
+        ? require('../../../assets/images/quizzNormalIcon.png')
+        : require('../../../assets/images/quizzSucessIcon.png');
 
   let stateTheme = {
     color: '#10B981', // green
@@ -442,19 +455,23 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
           />
 
           <AppButton
-            title={published ? t('quiz_review.published_to_feed') : t('quiz_review.publish_to_feed')}
+            title={
+              published ? t('quiz_review.published_to_feed') : t('quiz_review.publish_to_feed')
+            }
             onPress={publishToFeed}
             loading={isPublishing}
             variant={published ? 'success' : 'primary'}
             icon={
-              <Ionicons 
-                name={published ? 'checkmark-circle' : 'share-social'} 
-                size={20} 
-                color={published ? theme.colors.success : "#fff"} 
+              <Ionicons
+                name={published ? 'checkmark-circle' : 'share-social'}
+                size={20}
+                color={published ? theme.colors.success : '#fff'}
               />
             }
             size="lg"
-            style={published ? { backgroundColor: theme.colors.success + '1A', opacity: 1 } : undefined}
+            style={
+              published ? { backgroundColor: theme.colors.success + '1A', opacity: 1 } : undefined
+            }
             textStyle={published ? { color: theme.colors.success } : undefined}
           />
 
@@ -469,7 +486,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
           />
         </View>
 
-        {/* Breadcrumb matching settings design */}
+        {/* Subject Card Mirroring Settings Design */}
         {quizResult?.quiz?.subject?.name ? (
           <View style={currentStyles.subjectBadgeCard}>
             <View style={currentStyles.subjectBadgeIconContainer}>
@@ -484,13 +501,14 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
           </View>
         ) : null}
 
+        {/* Breadcrumb section with dynamic alignment */}
         {breadcrumbs && breadcrumbs.length > 0 && (
           <View style={currentStyles.breadcrumbsCard}>
             <Text style={currentStyles.breadcrumbsCardTitle}>
               {t('quiz_results.covered_topics', 'Covered Topics')}
             </Text>
             {breadcrumbs.map((crumb, index) => (
-              <View key={index} style={currentStyles.unitBreadcrumb}>
+              <View key={`crumb-${index}`} style={currentStyles.unitBreadcrumb}>
                 <View style={currentStyles.unitBreadcrumbHeader}>
                   <View style={currentStyles.breadcrumbDot} />
                   <Text style={currentStyles.unitBreadcrumbName}>{crumb.title}</Text>
@@ -498,7 +516,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
                 {crumb.lessons && (
                   <View style={currentStyles.lessonBreadcrumbsList}>
                     {crumb.lessons.map((lesson, lessonIdx) => (
-                      <View key={lessonIdx} style={currentStyles.lessonBreadcrumbItem}>
+                      <View key={`lesson-${lessonIdx}`} style={currentStyles.lessonBreadcrumbItem}>
                         <View style={currentStyles.lessonBreadcrumbDot} />
                         <Text style={currentStyles.lessonBreadcrumbName}>{lesson}</Text>
                       </View>
@@ -516,7 +534,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
   );
 };
 
-const styles = (
+const createStyles = (
   theme: any,
   fontSizes: any,
   typography: any,
@@ -525,6 +543,10 @@ const styles = (
   borderRadius: any,
   common: any,
   insets: any,
+  contentAlign: 'left' | 'right',
+  contentFlexAlign: 'flex-start' | 'flex-end',
+  contentRowDirection: 'row' | 'row-reverse',
+  isContentRTL: boolean,
 ) =>
   StyleSheet.create({
     backButton: {
@@ -540,7 +562,7 @@ const styles = (
       alignItems: 'stretch',
     },
     subjectBadgeCard: {
-      flexDirection: common.rowDirection,
+      flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: theme.colors.primary + '0D',
       borderWidth: 1,
@@ -559,22 +581,20 @@ const styles = (
     },
     subjectBadgeInfo: {
       flex: 1,
-      paddingLeft: spacing.md,
-      paddingRight: spacing.md,
-      alignItems: 'flex-start',
+      paddingHorizontal: spacing.md,
     },
     subjectBadgeLabel: {
       ...typography('caption'),
       ...fontWeight('600'),
       color: theme.colors.primary,
       textTransform: 'uppercase',
-      textAlign: common.textAlign,
+      textAlign: 'left',
     },
     subjectBadgeTitle: {
       fontSize: Math.max(16, fontSizes.lg),
       ...fontWeight('700'),
       color: theme.colors.text,
-      textAlign: common.textAlign,
+      textAlign: 'left',
     },
     breadcrumbsCard: {
       backgroundColor: theme.colors.card,
@@ -596,13 +616,13 @@ const styles = (
       textTransform: 'uppercase',
       letterSpacing: 1,
       marginBottom: spacing.md,
-      textAlign: common.textAlign,
+      textAlign: 'left',
     },
     unitBreadcrumb: {
       marginBottom: spacing.sm,
     },
     unitBreadcrumbHeader: {
-      flexDirection: common.rowDirection,
+      flexDirection: contentRowDirection,
       alignItems: 'center',
       marginBottom: spacing.sm,
       flexShrink: 1,
@@ -612,24 +632,25 @@ const styles = (
       height: 8,
       borderRadius: 4,
       backgroundColor: theme.colors.primary,
-      marginEnd: spacing.sm,
+      marginHorizontal: spacing.sm,
     },
     unitBreadcrumbName: {
       ...typography('subtitle2'),
       ...fontWeight('700'),
       color: theme.colors.text,
       flexShrink: 1,
-      textAlign: common.textAlign,
+      textAlign: contentAlign,
     },
     lessonBreadcrumbsList: {
-      paddingStart: 20,
+      paddingHorizontal: 20,
       paddingVertical: spacing.xs,
     },
     lessonBreadcrumbItem: {
-      flexDirection: common.rowDirection,
+      flexDirection: contentRowDirection,
       alignItems: 'center',
       marginBottom: spacing.xs,
       flexShrink: 1,
+      gap: 5,
     },
     lessonBreadcrumbDot: {
       width: 6,
@@ -643,7 +664,7 @@ const styles = (
       fontSize: 13,
       color: theme.colors.textSecondary,
       flexShrink: 1,
-      textAlign: common.textAlign,
+      textAlign: contentAlign,
     },
     loadingContainer: {
       flex: 1,

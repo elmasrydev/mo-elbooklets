@@ -28,6 +28,7 @@ export interface Subject {
   id: string;
   name: string;
   description?: string;
+  language?: string;
 }
 
 export interface Chapter {
@@ -84,6 +85,7 @@ export interface UserQuizHistory {
   subject: {
     id: string;
     name: string;
+    language?: string;
   };
   score: number;
   totalQuestions: number;
@@ -109,6 +111,7 @@ export const SUBJECTS_FOR_USER_GRADE_QUERY = gql`
       id
       name
       description
+      language
     }
   }
 `;
@@ -134,6 +137,7 @@ export const QUIZ_QUERY = gql`
       subject {
         id
         name
+        language
       }
       questions {
         id
@@ -156,7 +160,9 @@ export const QUIZ_RESULTS_QUERY = gql`
         id
         name
         subject {
+          id
           name
+          language
         }
       }
       score
@@ -184,6 +190,7 @@ export const USER_QUIZ_HISTORY_QUERY = gql`
       subject {
         id
         name
+        language
       }
       score
       totalQuestions
@@ -245,6 +252,7 @@ export const START_QUIZ_MUTATION = gql`
       subject {
         id
         name
+        language
       }
     }
   }

@@ -337,6 +337,8 @@
     "time_taken_label": "Time Taken",
     "your_score": "Your Score",
     "pass_status": "Pass Status",
+    "covered_topics": "Covered Topics",
+    "quiz_covered": "Quiz Covered",
     "back_to_home": "Home"
   },
   "quiz_review": {

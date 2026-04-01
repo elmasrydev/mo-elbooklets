@@ -329,6 +329,8 @@
     "time_taken_label": "الوقت المستغرق",
     "your_score": "نتيجتك",
     "pass_status": "حالة النجاح",
+    "covered_topics": "المواضيع المغطاة",
+    "quiz_covered": "محتوى الاختبار",
     "back_to_home": "العودة إلي الرئيسية"
   },
   "quiz_review": {

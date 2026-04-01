@@ -20,6 +20,7 @@ interface Subject {
   id: string;
   name: string;
   description?: string;
+  language?: string;
   chapters: { id: string }[];
   study_progress: number;
   quiz_progress: number;
@@ -119,6 +120,7 @@ const StudyScreen: React.FC = () => {
             id
             name
             description
+            language
             study_progress
             quiz_progress
             chapters {

@@ -509,7 +509,6 @@ const styles = (
     },
     settingContent: {
       flex: 1,
-      alignItems: 'center',
       justifyContent: 'center',
     },
     deleteAccountContent: {
@@ -567,7 +566,6 @@ const styles = (
       borderRadius: borderRadius.lg,
       borderWidth: 1,
       borderColor: theme.colors.error + '40',
-      backgroundColor: 'transparent',
       backgroundColor: 'red',
       opacity: 0.75,
     },
