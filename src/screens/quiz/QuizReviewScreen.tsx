@@ -101,11 +101,25 @@ const QuizReviewScreen: React.FC = () => {
           userAnswers: response.data.quizResults.userAnswers.map((ua: any) => {
             const q = ua.question;
             const isDescriptive = ['what_happens', 'give_a_reason'].includes(q.type);
-            const answers = isDescriptive
+            
+            // Check if it's a True/False question
+            const isTrueFalse = 
+              q.type === 'true_false' || 
+              (q.answer_1?.trim().toLowerCase() === 'true' && q.answer_2?.trim().toLowerCase() === 'false') ||
+              (q.answer_1?.trim().toLowerCase() === 'false' && q.answer_2?.trim().toLowerCase() === 'true');
+
+            let answers = isDescriptive
               ? [] // No MCQ options for descriptive
               : [q.answer_1, q.answer_2, q.answer_3, q.answer_4].filter(
-                  (a) => a !== null && a !== undefined && a !== '',
+                  (a) => a !== null && a !== undefined && a !== '' && String(a).toLowerCase() !== 'null',
                 );
+
+            if (isTrueFalse) {
+              answers = [q.answer_1, q.answer_2].filter(
+                (a) => a !== null && a !== undefined && a !== '' && String(a).toLowerCase() !== 'null'
+              );
+            }
+
             return { ...ua, question: { ...q, answers } };
           }),
         };
