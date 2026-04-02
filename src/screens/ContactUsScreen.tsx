@@ -61,9 +61,15 @@ const ContactUsScreen = ({ navigation }: any) => {
     setTouchedMessage(true);
 
     if (!isNameValid || !isEmailValid || !isSubjectValid || !isMessageValid) {
+      let errorMessage = t('contact_us.form_incomplete');
+      if (!isNameValid) errorMessage = t('contact_us.name_error');
+      else if (!isEmailValid) errorMessage = t('auth.invalid_email');
+      else if (!isSubjectValid) errorMessage = t('contact_us.subject_error');
+      else if (!isMessageValid) errorMessage = t('contact_us.message_error');
+
       showConfirm({
         title: t('common.error'),
-        message: t('auth.fill_all_fields', 'Please check highlighted fields'),
+        message: errorMessage,
         showCancel: false,
         onConfirm: () => {},
       });

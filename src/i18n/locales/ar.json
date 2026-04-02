@@ -549,7 +549,11 @@
     "email_placeholder": "بريدك الإلكتروني",
     "subject_placeholder": "كيف يمكننا مساعدتك؟",
     "message_placeholder": "أخبرنا كيف يمكننا مساعدتك...",
-    "send_message": "إرسال الرسالة"
+    "send_message": "إرسال الرسالة",
+    "form_incomplete": "يرجى مراجعة الحقول المحددة.",
+    "name_error": "الاسم يجب أن يكون 3 أحرف على الأقل",
+    "subject_error": "الموضوع يجب أن يكون 3 أحرف على الأقل",
+    "message_error": "الرسالة يجب أن تكون 10 أحرف على الأقل"
   },
   "quiz_types": {
     "default": "الافتراضي",
