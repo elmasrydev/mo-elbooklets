@@ -42,7 +42,6 @@ const ProfileScreen: React.FC = () => {
   const { typography, fontWeight } = useTypography();
   const { t } = useTranslation();
 
-  const [showParentalPrompt, setShowParentalPrompt] = useState(false);
   const [deleteAccountMutation, { loading: isDeletingAccount }] = useMutation<
     DeleteAccountMutation,
     DeleteAccountMutationVariables
@@ -253,7 +252,7 @@ const ProfileScreen: React.FC = () => {
           {/* Parental Linking */}
           <TouchableOpacity
             style={currentStyles.settingItem}
-            onPress={() => setShowParentalPrompt(true)}
+            onPress={() => navigation.navigate('ParentLinking' as never)}
           >
             <View
               style={[
@@ -377,11 +376,6 @@ const ProfileScreen: React.FC = () => {
       </ScrollView>
 
       <ProfileCompletionPrompt context="more" />
-      <ProfileCompletionPrompt
-        context="parental"
-        isVisible={showParentalPrompt}
-        onClose={() => setShowParentalPrompt(false)}
-      />
     </View>
   );
 };
