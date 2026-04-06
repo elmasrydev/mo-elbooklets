@@ -1,38 +1,29 @@
 /**
  * Centralized API Configuration
  *
- * This file contains all API-related configuration including fallback URLs
- * for different network scenarios. Update the environment configuration here
- * to apply changes across the entire application.
+ * The default API URL is determined by the `debugMode` flag in app.json:
+ *   debugMode: true  → https://demo.elbooklets.com/graphql
+ *   debugMode: false → https://elbooklets.com/graphql
+ *
+ * This flag is read at build time via expo-constants and controls the entire
+ * app behaviour (API URL, Firebase Remote Config keys, API URL Switcher).
  */
 
-// Environment configuration
-const IS_PRODUCTION = !__DEV__; // Use production in release builds
+import Constants from 'expo-constants';
 
-// Production API configuration
-const PRODUCTION_URLS = [
-  'https://elbooklets.com/graphql', // Production backend
-];
+const PRODUCTION_URL = 'https://elbooklets.com/graphql';
+const DEMO_URL = 'https://demo.elbooklets.com/graphql';
 
-// Development fallback URLs for different network scenarios
-const DEVELOPMENT_URLS = [
-  // 'http://192.168.1.188:8001/graphql',  // Current WiFi network
-  // 'http://169.254.105.59:8001/graphql', // Link-local address
-  //'http://10.0.2.2:8000/graphql', // Localhost
-  'https://demo.elbooklets.com/graphql', // Android emulator
-  'https://demo.elbooklets.com/graphql', // iOS simulator
-];
+// Default URL based on app.json > extra.debugMode (set before building)
+export const PRIMARY_API_URL =
+  Constants.expoConfig?.extra?.debugMode === true ? DEMO_URL : PRODUCTION_URL;
 
-// Select URLs based on environment
-export const POSSIBLE_URLS = IS_PRODUCTION ? PRODUCTION_URLS : DEVELOPMENT_URLS;
-
-// Primary API URL (first in the fallback list)
-export const PRIMARY_API_URL = POSSIBLE_URLS[0];
+// Fallback list starts with the primary URL
+export const POSSIBLE_URLS = [PRIMARY_API_URL];
 
 // Environment info for debugging
 export const ENVIRONMENT_INFO = {
-  isProduction: IS_PRODUCTION,
-  isDevelopment: __DEV__,
+  isDebugMode: Constants.expoConfig?.extra?.debugMode === true,
   apiUrl: PRIMARY_API_URL,
   fallbackCount: POSSIBLE_URLS.length,
 };

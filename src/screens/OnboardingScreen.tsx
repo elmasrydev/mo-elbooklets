@@ -1,11 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Image,
   TouchableOpacity,
-  Platform,
   ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,7 +16,6 @@ import { layout } from '../config/layout';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
-import { useRef, useState, useCallback } from 'react';
 import { isDebugMode } from '../config/debug';
 import ApiUrlSwitcherModal from '../components/ApiUrlSwitcherModal';
 
@@ -36,23 +34,6 @@ const OnboardingScreen: React.FC = () => {
   };
 
   const [showApiModal, setShowApiModal] = useState(false);
-  const tapCount = useRef(0);
-  const lastTap = useRef(0);
-
-  const handleLogoTap = useCallback(() => {
-    if (!isDebugMode()) return;
-    const now = Date.now();
-    if (now - lastTap.current > 5000) {
-      tapCount.current = 1;
-    } else {
-      tapCount.current += 1;
-    }
-    lastTap.current = now;
-    if (tapCount.current >= 7) {
-      setShowApiModal(true);
-      tapCount.current = 0;
-    }
-  }, []);
 
   return (
     <>
@@ -61,7 +42,20 @@ const OnboardingScreen: React.FC = () => {
         style={{ flex: 1, backgroundColor: theme.colors.background }}
         contentContainerStyle={currentStyles.container}
       >
-        {/* 2. Top Header with Logo & Language Switcher */}
+        {/* Top Header Buttons */}
+        {isDebugMode() && (
+          <TouchableOpacity
+            onPress={() => setShowApiModal(true)}
+            style={[
+              currentStyles.languageButton,
+              { top: insets.top + spacing.sm, left: spacing.md },
+            ]}
+          >
+            <Ionicons name="server-outline" size={20} color={theme.colors.primary} />
+            <Text style={currentStyles.languageText}>API</Text>
+          </TouchableOpacity>
+        )}
+
         <TouchableOpacity
           onPress={toggleLanguage}
           style={[
@@ -73,13 +67,11 @@ const OnboardingScreen: React.FC = () => {
           <Text style={currentStyles.languageText}>{language === 'ar' ? 'English' : 'عربي'}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity activeOpacity={1} onPress={handleLogoTap}>
-          <Image
-            source={require('../../assets/transWithSlogan.png')}
-            style={currentStyles.logo}
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
+        <Image
+          source={require('../../assets/transWithSlogan.png')}
+          style={currentStyles.logo}
+          resizeMode="contain"
+        />
 
         <Image
           source={require('../../assets/onboarding-bg.png')}
@@ -87,7 +79,7 @@ const OnboardingScreen: React.FC = () => {
           resizeMode="contain"
         />
 
-        {/* 3. Bottom Content */}
+        {/* Bottom Content */}
         <View style={currentStyles.bottomContent}>
           <AppButton
             title={t('onboarding.get_started')}
@@ -107,9 +99,9 @@ const OnboardingScreen: React.FC = () => {
           <Text style={currentStyles.subtitle}> {t('onboarding.subtitle')} </Text>
         </View>
       </ScrollView>
-      <ApiUrlSwitcherModal 
-        isVisible={showApiModal} 
-        onClose={() => setShowApiModal(false)} 
+      <ApiUrlSwitcherModal
+        isVisible={showApiModal}
+        onClose={() => setShowApiModal(false)}
       />
     </>
   );
@@ -154,8 +146,6 @@ const styles = (
     logo: {
       marginTop: 50,
       marginBottom: -10,
-      // width: 100,
-      // height: 85,
       height: 80,
       width: 262,
     },

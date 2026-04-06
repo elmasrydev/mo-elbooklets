@@ -30,8 +30,8 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-    paddingBottom: 100,
+    justifyContent: 'center',
+    paddingHorizontal: 12,
   },
   container: {
     paddingHorizontal: 20,
@@ -59,10 +59,7 @@ const styles = StyleSheet.create({
   },
 });
 
-const ApiUrlSwitcherModal: React.FC<ApiUrlSwitcherModalProps> = ({
-  isVisible,
-  onClose,
-}) => {
+const ApiUrlSwitcherModal: React.FC<ApiUrlSwitcherModalProps> = ({ isVisible, onClose }) => {
   const { t } = useTranslation();
   const { theme, borderRadius } = useTheme();
   const { typography, fontWeight } = useTypography();
@@ -109,12 +106,7 @@ const ApiUrlSwitcherModal: React.FC<ApiUrlSwitcherModalProps> = ({
   const isDemo = currentUrl === DEMO_URL;
 
   return (
-    <Modal
-      visible={isVisible}
-      transparent={true}
-      animationType="slide"
-      onRequestClose={onClose}
-    >
+    <Modal visible={isVisible} transparent={true} animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.overlay} onPress={onClose}>
         <View
           onStartShouldSetResponder={() => true}
@@ -122,28 +114,17 @@ const ApiUrlSwitcherModal: React.FC<ApiUrlSwitcherModalProps> = ({
             styles.container,
             {
               backgroundColor: theme.colors.surface,
-              borderTopLeftRadius: borderRadius.xl,
-              borderTopRightRadius: borderRadius.xl,
+              borderRadius: borderRadius.xl,
             },
           ]}
         >
           {/* Header */}
           <View style={styles.header}>
-            <Text
-              style={[
-                typography('h3'),
-                fontWeight('700'),
-                { color: theme.colors.text },
-              ]}
-            >
+            <Text style={[typography('h3'), fontWeight('700'), { color: theme.colors.text }]}>
               {t('common.api_url_switcher_title')}
             </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Ionicons
-                name="close"
-                size={24}
-                color={theme.colors.textSecondary}
-              />
+              <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
@@ -158,12 +139,7 @@ const ApiUrlSwitcherModal: React.FC<ApiUrlSwitcherModalProps> = ({
                 },
               ]}
             >
-              <Text
-                style={[
-                  typography('caption'),
-                  { color: theme.colors.textSecondary },
-                ]}
-              >
+              <Text style={[typography('caption'), { color: theme.colors.textSecondary }]}>
                 {t('common.api_current_url')}
               </Text>
               <Text
