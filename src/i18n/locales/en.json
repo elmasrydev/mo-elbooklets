@@ -4,7 +4,9 @@
     "subtitle": "Curriculum-aligned practice • Instant feedback • Track your progress",
     "get_started": "Get Started",
     "already_have_account": "Already have an account?",
-    "sign_in": "Sign In"
+    "sign_in": "Sign In",
+    "role_student": "Student",
+    "role_parent": "Parent"
   },
   "common": {
     "forceUpdate": {
@@ -37,6 +39,8 @@
     "about": "About",
     "logout": "Logout",
     "cancel": "Cancel",
+    "accept": "Accept",
+    "decline": "Decline",
     "ok": "OK",
     "version": "Version",
     "language": "Language",
@@ -473,7 +477,41 @@
     "select_edu_system": "Select Educational System",
     "free_campaign_active": "A free access campaign is currently active! You will get full access automatically.",
     "referral_disclaimer": "If you don't have a code, you will start with Trial Limited Access.",
-    "no_referral_disclaimer": "You are now going to sign up without referral code and will have Trial Limited Access only"
+    "no_referral_disclaimer": "You are now going to sign up without referral code and will have Trial Limited Access only",
+    "parent_login_title": "Parent Login",
+    "parent_register_title": "Parent Registration",
+    "parent_register_subtitle": "Create your parent account to monitor your child's progress",
+    "parent_forgot_password": "Reset Parent Password"
+  },
+  "parent_dashboard": {
+    "header_title": "Parent Dashboard",
+    "hi": "Hello",
+    "greeting": "Welcome back, {{name}}!",
+    "logout": "Logout",
+    "my_children": "My Children",
+    "invitations": "Link Requests",
+    "no_children": "No children linked yet.",
+    "add_child": "Add Child",
+    "enter_child_mobile": "Enter child's mobile number",
+    "invite_success": "Invitation sent successfully",
+    "invite_error": "Failed to send invitation",
+    "empty_invitations": "No pending invitations",
+    "incoming": "Incoming",
+    "outgoing": "Outgoing",
+    "stats": "Performance Summary",
+    "view_details": "View Progress",
+    "accept": "Accept",
+    "decline": "Decline",
+    "link_accepted": "Link request accepted successfully",
+    "link_declined": "Link request declined",
+    "student_wants_link": "Student wants to link with you",
+    "child_mobile_placeholder": "01xxxxxxxxx",
+    "invite_sent_success": "Invitation sent successfully",
+    "request_accepted": "Link request accepted",
+    "request_declined": "Link request declined",
+    "request_cancelled": "Link request cancelled",
+    "status_pending": "Pending",
+    "cancel_request": "Cancel Request"
   },
   "time": {
     "just_now": "Just now",

@@ -7,10 +7,16 @@ import RegisterScreen from '../screens/RegisterScreen';
 import TabNavigator from './TabNavigator';
 import OnboardingScreen from '../screens/OnboardingScreen';
 
+import ParentLoginScreen from '../screens/ParentLoginScreen';
+import ParentRegisterScreen from '../screens/ParentRegisterScreen';
+import ParentForgotPasswordScreen from '../screens/ParentForgotPasswordScreen';
+import ParentDashboardScreen from '../screens/ParentDashboardScreen';
+import ParentSettingsScreen from '../screens/ParentSettingsScreen';
+
 const RootStack = createNativeStackNavigator();
 
 const AppNavigator: React.FC = () => {
-  const { isLoading, isAuthenticated } = useAuth();
+  const { isLoading, isAuthenticated, userRole } = useAuth();
   const [showSplash, setShowSplash] = useState(true);
 
   const handleSplashFinish = (authenticated: boolean) => {
@@ -25,16 +31,29 @@ const AppNavigator: React.FC = () => {
   return (
     <RootStack.Navigator screenOptions={{ headerShown: false }}>
       {isAuthenticated ? (
-        <RootStack.Screen name="MainTabs" component={TabNavigator} />
+        userRole === 'parent' ? (
+          <RootStack.Group>
+            <RootStack.Screen name="ParentDashboard" component={ParentDashboardScreen} />
+            <RootStack.Screen name="ParentSettings" component={ParentSettingsScreen} />
+            <RootStack.Screen name="FAQs" component={require('../screens/FAQScreen').default} />
+            <RootStack.Screen name="ContactUs" component={require('../screens/ContactUsScreen').default} />
+          </RootStack.Group>
+        ) : (
+          <RootStack.Screen name="MainTabs" component={TabNavigator} />
+        )
       ) : (
         <RootStack.Group>
           <RootStack.Screen name="Onboarding" component={OnboardingScreen} />
           <RootStack.Screen name="Login" component={LoginScreen} />
           <RootStack.Screen name="Register" component={RegisterScreen} />
+          <RootStack.Screen name="ParentLogin" component={ParentLoginScreen} />
+          <RootStack.Screen name="ParentRegister" component={ParentRegisterScreen} />
+          <RootStack.Screen name="ParentForgotPassword" component={ParentForgotPasswordScreen} />
         </RootStack.Group>
       )}
     </RootStack.Navigator>
   );
 };
+
 
 export default AppNavigator;

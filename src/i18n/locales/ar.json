@@ -4,7 +4,9 @@
     "subtitle": "تدريب متوافق مع المنهج • تقييم فوري • تتبع تقدمك",
     "get_started": "ابدأ الآن",
     "already_have_account": "لديك حساب بالفعل؟",
-    "sign_in": "تسجيل الدخول"
+    "sign_in": "تسجيل الدخول",
+    "role_student": "طالب",
+    "role_parent": "ولي أمر"
   },
   "common": {
     "forceUpdate": {
@@ -37,6 +39,8 @@
     "about": "حول",
     "logout": "تسجيل الخروج",
     "cancel": "إلغاء",
+    "accept": "قبول",
+    "decline": "رفض",
     "ok": "موافق",
     "version": "الإصدار",
     "language": "اللغة",
@@ -465,7 +469,41 @@
     "select_edu_system": "اختر نظامك التعليمي",
     "free_campaign_active": "حملة الوصول المجاني نشطة حالياً! ستحصل على وصول كامل تلقائياً.",
     "referral_disclaimer": "إذا لم يكن لديك كود، ستبدأ بفترة تجريبية محدودة.",
-    "no_referral_disclaimer": "أنت الآن بصدد التسجيل بدون كود دعوة وستحصل على وصول تجريبي محدود فقط"
+    "no_referral_disclaimer": "أنت الآن بصدد التسجيل بدون كود دعوة وستحصل على وصول تجريبي محدود فقط",
+    "parent_login_title": "دخول ولي الأمر",
+    "parent_register_title": "تسجيل ولي أمر جديد",
+    "parent_register_subtitle": "أنشئ حسابك كولي أمر لمتابعة تقدم طفلك",
+    "parent_forgot_password": "استعادة كلمة مرور ولي الأمر"
+  },
+  "parent_dashboard": {
+    "header_title": "لوحة تحكم ولي الأمر",
+    "hi": "مرحباً",
+    "greeting": "مرحباً بعودتك، {{name}}!",
+    "logout": "خروج",
+    "my_children": "أبنائي",
+    "invitations": "طلبات الارتباط",
+    "no_children": "لا يوجد أبناء مرتبطين بعد.",
+    "add_child": "إضافة ابن",
+    "enter_child_mobile": "أدخل رقم هاتف الابن",
+    "invite_success": "تم إرسال الدعوة بنجاح",
+    "invite_error": "فشل إرسال الدعوة",
+    "empty_invitations": "لا توجد دعوات معلقة",
+    "incoming": "الواردة",
+    "outgoing": "المرسلة",
+    "stats": "ملخص الأداء",
+    "view_details": "عرض التقدم",
+    "accept": "قبول",
+    "decline": "رفض",
+    "link_accepted": "تم قبول طلب الارتباط بنجاح",
+    "link_declined": "تم رفض طلب الارتباط",
+    "student_wants_link": "طالب يريد الارتباط بك",
+    "child_mobile_placeholder": "01xxxxxxxxx",
+    "invite_sent_success": "تم إرسال الدعوة بنجاح",
+    "request_accepted": "تم قبول الطلب",
+    "request_declined": "تم رفض الطلب",
+    "request_cancelled": "تم إلغاء الطلب",
+    "status_pending": "قيد الانتظار",
+    "cancel_request": "إلغاء الطلب"
   },
   "time": {
     "just_now": "الآن",

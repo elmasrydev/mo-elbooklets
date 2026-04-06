@@ -46,3 +46,133 @@ export const CANCEL_PARENT_LINK_REQUEST_MUTATION = gql`
   }
 `;
 
+/**
+ * PARENT APP AUTH MUTATIONS
+ */
+
+export const PARENT_REGISTER_MUTATION = gql`
+  mutation ParentRegister($name: String!, $mobile: String!, $password: String!) {
+    parentRegister(input: {
+      name: $name,
+      mobile: $mobile,
+      password: $password
+    }) {
+      access_token
+      token_type
+      parent {
+        id
+        name
+        mobile
+      }
+    }
+  }
+`;
+
+export const PARENT_LOGIN_MUTATION = gql`
+  mutation ParentLogin($mobile: String!, $password: String!) {
+    parentLogin(input: {
+      mobile: $mobile,
+      password: $password
+    }) {
+      access_token
+      token_type
+      parent {
+        id
+        name
+        mobile
+      }
+    }
+  }
+`;
+
+export const PARENT_ME_QUERY = gql`
+  query ParentMe {
+    parentMe {
+      id
+      name
+      mobile
+      country_code
+    }
+  }
+`;
+
+/**
+ * PARENT APP DASHBOARD QUERIES & MUTATIONS
+ */
+
+export const MY_LINKED_CHILDREN_QUERY = gql`
+  query MyLinkedChildren {
+    linkedChildren {
+      id
+      name
+      mobile
+      grade {
+        name
+      }
+      educational_system {
+        name
+      }
+    }
+  }
+`;
+
+export const PARENT_CANCEL_LINK_REQUEST_MUTATION = gql`
+  mutation ParentCancelLinkRequest($requestId: ID!) {
+    parentCancelLinkRequest(request_id: $requestId) {
+      success
+      message
+    }
+  }
+`;
+
+export const GET_CHILD_DASHBOARD_QUERY = gql`
+  query GetChildDashboard($childId: ID!) {
+    childDashboard(child_id: $childId) {
+      child {
+        name
+      }
+      quizzes_solved
+      average_score
+      started_subjects_count
+      
+      subject_performance {
+        subject_name
+        quiz_count
+        avg_score
+      }
+      
+      recent_activity {
+        quiz_name
+        subject_name
+        score
+        total_questions
+        is_passed
+        completed_at
+      }
+      
+      wheel_of_success {
+        overall_percentage
+        subject_metrics {
+          subject_name
+          score
+        }
+      }
+      
+      today_schedule {
+        date
+        is_school_day
+        entries {
+          id
+          subject { name }
+          lesson_goal
+          quiz_goal
+          lessons_viewed
+          quizzes_solved
+          is_completed
+        }
+      }
+    }
+  }
+`;
+
+
