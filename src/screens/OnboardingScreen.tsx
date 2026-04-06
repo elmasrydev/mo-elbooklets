@@ -17,6 +17,9 @@ import { layout } from '../config/layout';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
+import { useRef, useState, useCallback } from 'react';
+import { isDebugMode } from '../config/debug';
+import ApiUrlSwitcherModal from '../components/ApiUrlSwitcherModal';
 
 const OnboardingScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -31,6 +34,25 @@ const OnboardingScreen: React.FC = () => {
   const toggleLanguage = () => {
     setLanguage(language === 'ar' ? 'en' : 'ar');
   };
+
+  const [showApiModal, setShowApiModal] = useState(false);
+  const tapCount = useRef(0);
+  const lastTap = useRef(0);
+
+  const handleLogoTap = useCallback(() => {
+    if (!isDebugMode()) return;
+    const now = Date.now();
+    if (now - lastTap.current > 5000) {
+      tapCount.current = 1;
+    } else {
+      tapCount.current += 1;
+    }
+    lastTap.current = now;
+    if (tapCount.current >= 7) {
+      setShowApiModal(true);
+      tapCount.current = 0;
+    }
+  }, []);
 
   return (
     <>
@@ -51,11 +73,13 @@ const OnboardingScreen: React.FC = () => {
           <Text style={currentStyles.languageText}>{language === 'ar' ? 'English' : 'عربي'}</Text>
         </TouchableOpacity>
 
-        <Image
-          source={require('../../assets/transWithSlogan.png')}
-          style={currentStyles.logo}
-          resizeMode="contain"
-        />
+        <TouchableOpacity activeOpacity={1} onPress={handleLogoTap}>
+          <Image
+            source={require('../../assets/transWithSlogan.png')}
+            style={currentStyles.logo}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
 
         <Image
           source={require('../../assets/onboarding-bg.png')}
@@ -83,6 +107,10 @@ const OnboardingScreen: React.FC = () => {
           <Text style={currentStyles.subtitle}> {t('onboarding.subtitle')} </Text>
         </View>
       </ScrollView>
+      <ApiUrlSwitcherModal 
+        isVisible={showApiModal} 
+        onClose={() => setShowApiModal(false)} 
+      />
     </>
   );
 };

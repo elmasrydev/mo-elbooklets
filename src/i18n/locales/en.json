@@ -78,7 +78,11 @@
     "save_and_continue": "Save & Continue",
     "skip_for_now": "Skip for now",
     "api_connection_title": "API Connection",
-    "api_connected_to": "app connected to {{url}}"
+    "api_connected_to": "App connected to",
+    "api_url_switcher_title": "Developer: API URL Switcher",
+    "api_current_url": "Current API URL",
+    "api_switch_demo": "Switch to Demo",
+    "api_switch_production": "Switch to Production"
   },
   "subscription": {
     "required_title": "Subscription Required",

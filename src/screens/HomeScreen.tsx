@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Image,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -33,6 +34,9 @@ import ConnectionCard from '../components/feed/ConnectionCard';
 import { CardListSkeleton } from '../components/SkeletonLoader';
 import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
 import { isRTL, textAlign } from '../lib/rtl';
+import { isDebugMode } from '../config/debug';
+import ApiUrlSwitcherModal from '../components/ApiUrlSwitcherModal';
+import { useRef as useReactRef } from 'react'; // HomeScreen already imports useRef from react at line 1
 
 const { width } = Dimensions.get('window');
 
@@ -223,6 +227,30 @@ const HomeScreen: React.FC = () => {
   const [leaderboardEntries, setLeaderboardEntries] = useState<LeaderboardEntry[]>([]);
   const [leaderboardUser, setLeaderboardUser] = useState<LeaderboardEntry | null>(null);
   const [socialFeed, setSocialFeed] = useState<SocialFeedItem[]>([]);
+  const [showApiModal, setShowApiModal] = useState(false);
+
+  // ─── Secret Tap Logic ──────────────────────────────────────────────────────
+  const tapCount = useReactRef(0);
+  const lastTap = useReactRef(0);
+
+  const handleSecretTap = useCallback(() => {
+    console.log('here');
+    if (!isDebugMode()) return;
+
+    const now = Date.now();
+    if (now - lastTap.current > 5000) {
+      tapCount.current = 1;
+    } else {
+      tapCount.current += 1;
+    }
+    lastTap.current = now;
+
+    if (tapCount.current >= 7) {
+      console.log('GOOOO');
+      setShowApiModal(true);
+      tapCount.current = 0;
+    }
+  }, []);
   const [todaySchedule, setTodaySchedule] = useState<TodayScheduleData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -359,7 +387,7 @@ const HomeScreen: React.FC = () => {
   return (
     <View style={common.container}>
       <UnifiedHeader leftContent={<AnimatedNavbarLogo isRTL={isRTL} />} />
-
+      <ApiUrlSwitcherModal isVisible={showApiModal} onClose={() => setShowApiModal(false)} />
       <ScrollView
         style={s.scrollFlex}
         showsVerticalScrollIndicator={false}
@@ -369,20 +397,22 @@ const HomeScreen: React.FC = () => {
         }}
       >
         {/* ─── 1. Greeting Card ──────────────────────────────────── */}
-        <View style={s.greetingCard}>
-          <View style={s.flex1}>
-            <Text style={s.greetingName}>
-              {t('home_screen.hi')}, {user?.name?.split(' ')[0] || 'Student'}! 👋
-            </Text>
-            <Text style={s.greetingSubtext}>
-              {user?.grade?.name || t('more_screen.grade')} •{' '}
-              {user?.educational_system?.name || t('auth.educational_system')}
-            </Text>
+        <TouchableWithoutFeedback onPress={handleSecretTap}>
+          <View style={s.greetingCard}>
+            <View style={s.flex1}>
+              <Text style={s.greetingName}>
+                {t('home_screen.hi')}, {user?.name?.split(' ')[0] || 'Student'}! 👋
+              </Text>
+              <Text style={s.greetingSubtext}>
+                {user?.grade?.name || t('more_screen.grade')} •{' '}
+                {user?.educational_system?.name || t('auth.educational_system')}
+              </Text>
+            </View>
+            <View style={s.greetingAvatar}>
+              <Text style={s.greetingAvatarText}>{getInitials(user?.name || '')}</Text>
+            </View>
           </View>
-          <View style={s.greetingAvatar}>
-            <Text style={s.greetingAvatarText}>{getInitials(user?.name || '')}</Text>
-          </View>
-        </View>
+        </TouchableWithoutFeedback>
 
         {/* ─── 2. Streak Card ───────────────────────────────────── */}
         {activitiesData && (

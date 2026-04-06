@@ -1,19 +1,20 @@
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useModal } from '../context/ModalContext';
-import { PRIMARY_API_URL } from '../config/api';
+import { ApiUriManager } from '../config/api';
 
 export const ApiDomainChecker: React.FC = () => {
   const { t } = useTranslation();
   const { showConfirm } = useModal();
 
   useEffect(() => {
+    const activeUrl = ApiUriManager.getActiveUrl();
     const timer = setTimeout(() => {
       // Check if the domain is not its base
-      if (!PRIMARY_API_URL.startsWith('https://elbooklets.com')) {
+      if (!activeUrl.startsWith('https://elbooklets.com')) {
         showConfirm({
           title: t('common.api_connection_title', 'API Connection'),
-          message: t('common.api_connected_to', { url: PRIMARY_API_URL }),
+          message: `${t('common.api_connected_to')}: \n ${activeUrl}`,
           confirmLabel: t('common.ok'),
           onConfirm: () => {},
         });

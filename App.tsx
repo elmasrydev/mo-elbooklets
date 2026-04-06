@@ -10,6 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthProvider } from './src/context/AuthContext';
 import { ThemeProvider } from './src/context/ThemeContext';
 import apolloClient from './src/lib/apollo';
+import { ApiUriManager } from './src/config/api';
 import AppNavigator from './src/components/AppNavigator';
 
 import { I18nextProvider } from 'react-i18next';
@@ -119,7 +120,10 @@ export default function App() {
         I18nManager.allowRTL(shouldBeRTL);
         I18nManager.forceRTL(shouldBeRTL);
 
-        // Step 4: Initialize i18next with the correct language
+        // Step 4: Initialize API URI Manager (check for custom URLs)
+        await ApiUriManager.init();
+
+        // Step 5: Initialize i18next with the correct language
         await initI18n(lang);
 
         // Step 5: Ready to render

@@ -79,6 +79,85 @@ const handleAuthError = async () => {
   }
 };
 
+import { isDebugMode } from './debug';
+
+// AsyncStorage key for API URL override
+export const CUSTOM_API_URL_KEY = 'custom_api_url_override';
+
+// Known valid API endpoints
+const KNOWN_API_URLS = [
+  'https://elbooklets.com/graphql',
+  'https://demo.elbooklets.com/graphql',
+] as const;
+
+/**
+ * Manages the active API URL with a cache for synchronous access.
+ * This is essential for components like Apollo Client that need a sync value at initialization.
+ */
+class ApiUriManager {
+  private static activeUrl: string = PRIMARY_API_URL;
+  private static isInitialized: boolean = false;
+
+  /**
+   * Initializes the manager by reading the custom URL from storage.
+   * Call this in App.tsx before rendering.
+   */
+  static async init(): Promise<string> {
+    if (this.isInitialized) return this.activeUrl;
+
+    try {
+      const savedUrl = await AsyncStorage.getItem(CUSTOM_API_URL_KEY);
+      if (
+        isDebugMode() &&
+        savedUrl &&
+        KNOWN_API_URLS.includes(savedUrl as (typeof KNOWN_API_URLS)[number])
+      ) {
+        this.activeUrl = savedUrl;
+      } else {
+        this.activeUrl = PRIMARY_API_URL;
+      }
+    } catch (e) {
+      if (__DEV__) console.log('Error initializing ApiUriManager:', e);
+      this.activeUrl = PRIMARY_API_URL;
+    }
+
+    this.isInitialized = true;
+    if (__DEV__) console.log('[ApiUriManager] Active URL:', this.activeUrl);
+    return this.activeUrl;
+  }
+
+  /**
+   * Synchronously gets the active URL.
+   */
+  static getActiveUrl(): string {
+    return this.activeUrl;
+  }
+
+  /**
+   * Updates the active API URL. Only accepts known production/demo URLs.
+   * If the URL matches PRIMARY_API_URL, clears the override from storage.
+   */
+  static async updateUrl(url: string): Promise<void> {
+    // Safety: only accept known URLs
+    if (!KNOWN_API_URLS.includes(url as (typeof KNOWN_API_URLS)[number])) {
+      if (__DEV__) console.warn('[ApiUriManager] Rejected unknown URL:', url);
+      return;
+    }
+
+    if (url === PRIMARY_API_URL) {
+      // No override needed — clear storage so default kicks in
+      await AsyncStorage.removeItem(CUSTOM_API_URL_KEY);
+    } else {
+      await AsyncStorage.setItem(CUSTOM_API_URL_KEY, url);
+    }
+
+    this.activeUrl = url;
+    if (__DEV__) console.log('[ApiUriManager] URL updated to:', url);
+  }
+}
+
+export { ApiUriManager };
+
 /**
  * Utility function to try fetching with fallback URLs
  * This provides network resilience by trying multiple URLs in sequence
@@ -96,7 +175,11 @@ export const tryFetchWithFallback = async (
     authToken = (await SecureStore.getItemAsync('auth_token')) || undefined;
   }
 
-  for (const url of POSSIBLE_URLS) {
+  // Determine the sequence of URLs to try. Start with the active one from manager.
+  const activeUrl = ApiUriManager.getActiveUrl();
+  const urlsToTry = [activeUrl, ...POSSIBLE_URLS.filter((u) => u !== activeUrl)];
+
+  for (const url of urlsToTry) {
     try {
       if (__DEV__) console.log(`Trying to connect to: ${url}`);
 
@@ -111,6 +194,7 @@ export const tryFetchWithFallback = async (
       if (authToken) {
         headers['Authorization'] = `Bearer ${authToken}`;
       }
+      if (__DEV__) console.log('API HEADERS: ', headers);
 
       const response = await fetch(url, {
         method: 'POST',

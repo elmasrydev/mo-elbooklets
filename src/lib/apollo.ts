@@ -3,7 +3,7 @@ import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import { PRIMARY_API_URL } from '../config/api';
+import { PRIMARY_API_URL, ApiUriManager } from '../config/api';
 
 // Logout handler to be set by AuthContext
 let logoutHandler: (() => void) | null = null;
@@ -11,8 +11,13 @@ export const setLogoutHandler = (handler: () => void) => {
   logoutHandler = handler;
 };
 
+// Create a dynamic link that selects the active URL from the manager
 const httpLink = createHttpLink({
-  uri: PRIMARY_API_URL,
+  // uri can be a function that returns the URI string
+  uri: (operation) => {
+    // If a custom URL is set, use it, otherwise use PRIMARY_API_URL
+    return ApiUriManager.getActiveUrl();
+  },
 });
 
 const authLink = setContext(async (_, { headers }) => {

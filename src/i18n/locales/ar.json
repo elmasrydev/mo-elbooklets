@@ -78,7 +78,11 @@
     "save_and_continue": "حفظ ومتابعة",
     "skip_for_now": "تخطي الآن",
     "api_connection_title": "اتصال API",
-    "api_connected_to": "التطبيق متصل بـ {{url}}"
+    "api_connected_to": "التطبيق متصل بـ",
+    "api_url_switcher_title": "المطور: تبديل رابط API",
+    "api_current_url": "رابط API الحالي",
+    "api_switch_demo": "التبديل إلى Demo",
+    "api_switch_production": "التبديل إلى Production"
   },
   "subscription": {
     "required_title": "اشتراك مطلوب",
