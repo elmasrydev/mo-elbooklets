@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -23,6 +23,11 @@ const ForceUpdateModal: React.FC = () => {
   const { t } = useTranslation();
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { shouldUpdate, isForceUpdate, dismissUpdate } = useForceUpdate();
+
+  const currentStyles = useMemo(
+    () => styles(theme, borderRadius, spacing),
+    [theme, borderRadius, spacing],
+  );
 
   useEffect(() => {
     if (!shouldUpdate) return;
@@ -53,27 +58,34 @@ const ForceUpdateModal: React.FC = () => {
       statusBarTranslucent
       onRequestClose={() => {}}
     >
-      <TouchableOpacity style={styles(theme).overlay} activeOpacity={1}>
-        <TouchableOpacity style={styles(theme, borderRadius, spacing).container} activeOpacity={1}>
-          <View style={styles(theme, borderRadius, spacing).logoContainer}>
+      <TouchableOpacity
+        style={currentStyles.overlay}
+        activeOpacity={1}
+        onPress={handleSkip}
+      >
+        <View
+          style={currentStyles.container}
+          onStartShouldSetResponder={() => true}
+        >
+          <View style={currentStyles.logoContainer}>
             <Ionicons name="rocket-outline" size={60} color={theme.colors.primary} />
           </View>
 
-          <View style={styles(theme, borderRadius, spacing).content}>
-            <Text style={styles(theme, borderRadius, spacing).title}>
+          <View style={currentStyles.content}>
+            <Text style={currentStyles.title}>
               {isForceUpdate
                 ? t('common.forceUpdate.requiredTitle')
                 : t('common.forceUpdate.optionalTitle')}
             </Text>
 
-            <Text style={styles(theme, borderRadius, spacing).description}>
+            <Text style={currentStyles.description}>
               {isForceUpdate
                 ? t('common.forceUpdate.requiredDescription')
                 : t('common.forceUpdate.optionalDescription')}
             </Text>
           </View>
 
-          <View style={styles(theme, borderRadius, spacing).buttonContainer}>
+          <View style={currentStyles.buttonContainer}>
             <AppButton
               title={t('common.forceUpdate.updateNow')}
               onPress={handleUpdate}
@@ -94,20 +106,20 @@ const ForceUpdateModal: React.FC = () => {
           </View>
 
           {isForceUpdate && (
-            <View style={styles(theme, borderRadius, spacing).forceBadge}>
+            <View style={currentStyles.forceBadge}>
               <Ionicons name="lock-closed" size={14} color="#FFF" />
-              <Text style={styles(theme, borderRadius, spacing).forceBadgeText}>
+              <Text style={currentStyles.forceBadgeText}>
                 {t('common.forceUpdate.mandatoryUpdate')}
               </Text>
             </View>
           )}
-        </TouchableOpacity>
+        </View>
       </TouchableOpacity>
     </Modal>
   );
 };
 
-const styles = (theme: any, borderRadius: any = {}, spacing: any = {}) =>
+const styles = (theme: any, borderRadius: any, spacing: any) =>
   StyleSheet.create({
     overlay: {
       flex: 1,
@@ -118,7 +130,7 @@ const styles = (theme: any, borderRadius: any = {}, spacing: any = {}) =>
     },
     container: {
       width: '100%',
-      backgroundColor: theme.colors?.surface || theme.colors?.card || '#FFF',
+      backgroundColor: theme.colors.surface || theme.colors.card || '#FFF',
       borderRadius: borderRadius.xl || 16,
       overflow: 'hidden',
       shadowColor: '#000',
@@ -139,13 +151,13 @@ const styles = (theme: any, borderRadius: any = {}, spacing: any = {}) =>
     title: {
       fontSize: 22,
       fontWeight: 'bold',
-      color: theme.colors?.text || '#000',
+      color: theme.colors.text || '#000',
       textAlign: 'center',
       marginBottom: spacing.sm || 8,
     },
     description: {
       fontSize: 16,
-      color: theme.colors?.textSecondary || '#666',
+      color: theme.colors.textSecondary || '#666',
       textAlign: 'center',
       lineHeight: 24,
     },
@@ -157,7 +169,7 @@ const styles = (theme: any, borderRadius: any = {}, spacing: any = {}) =>
       position: 'absolute',
       top: spacing.md || 16,
       right: spacing.md || 16,
-      backgroundColor: theme.colors?.error || '#ef4444',
+      backgroundColor: theme.colors.error || '#ef4444',
       borderRadius: 999,
       paddingHorizontal: spacing.sm || 12,
       paddingVertical: 4,

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { View, Text, Modal, StyleSheet, Platform, BackHandler } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -11,6 +11,11 @@ const MaintenanceModal: React.FC = () => {
   const { theme, spacing, borderRadius } = useTheme();
   const { typography } = useTypography();
   const { t } = useTranslation();
+
+  const currentStyles = useMemo(
+    () => styles(theme, borderRadius, spacing),
+    [theme, borderRadius, spacing],
+  );
 
   useEffect(() => {
     if (!isMaintenanceMode) return;
@@ -27,23 +32,21 @@ const MaintenanceModal: React.FC = () => {
   if (!isMaintenanceMode) return null;
 
   return (
-    <Modal
-      visible={isMaintenanceMode}
-      transparent
-      animationType="fade"
-      statusBarTranslucent
-    >
-      <View style={styles(theme, borderRadius, spacing).overlay}>
-        <View style={styles(theme, borderRadius, spacing).container}>
-          <View style={styles(theme, borderRadius, spacing).iconContainer}>
+    <Modal visible={isMaintenanceMode} transparent animationType="fade" statusBarTranslucent>
+      <View style={currentStyles.overlay}>
+        <View
+          style={currentStyles.container}
+          onStartShouldSetResponder={() => true}
+        >
+          <View style={currentStyles.iconContainer}>
             <Ionicons name="construct" size={48} color={theme.colors.primary} />
           </View>
 
-          <View style={styles(theme, borderRadius, spacing).textContainer}>
-            <Text style={[typography('h3'), styles(theme, borderRadius, spacing).title]}>
+          <View style={currentStyles.textContainer}>
+            <Text style={[typography('h3'), currentStyles.title]}>
               {t('common.maintenance.title')}
             </Text>
-            <Text style={[typography('body'), styles(theme, borderRadius, spacing).description]}>
+            <Text style={[typography('body'), currentStyles.description]}>
               {t('common.maintenance.description')}
             </Text>
           </View>

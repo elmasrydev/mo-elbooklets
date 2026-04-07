@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -44,14 +44,18 @@ const ParentDashboardScreen: React.FC = () => {
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [childMobile, setChildMobile] = useState('');
 
-  const currentStyles = styles({
-    theme,
-    spacing,
-    borderRadius,
-    isRTL,
-    typography,
-    fontWeight,
-  });
+  const currentStyles = useMemo(
+    () =>
+      styles({
+        theme,
+        spacing,
+        borderRadius,
+        isRTL,
+        typography,
+        fontWeight,
+      }),
+    [theme, spacing, borderRadius, isRTL, typography, fontWeight],
+  );
 
   const onAddChild = async () => {
     const success = await handleAddChild(childMobile);
@@ -61,159 +65,169 @@ const ParentDashboardScreen: React.FC = () => {
     }
   };
 
-  const renderChildCard = (child: Child) => (
-    <TouchableOpacity
-      key={child.id}
-      style={currentStyles.childCard}
-      onPress={() => navigation.navigate('ChildDetailsScreen', { childId: child.id })}
-      activeOpacity={0.7}
-    >
-      <View style={currentStyles.childIconContainer}>
-        <Ionicons name="person" size={24} color={theme.colors.primary} />
-      </View>
-      <View style={currentStyles.childInfo}>
-        <Text
-          style={[
-            typography('body'),
-            fontWeight('700'),
-            { color: theme.colors.text, textAlign: 'left' },
-          ]}
-        >
-          {child.name}
-        </Text>
-        <View style={currentStyles.childSubInfo}>
-          <Ionicons name="call-outline" size={12} color={theme.colors.textTertiary} />
-          <Text
-            style={[
-              typography('caption'),
-              { color: theme.colors.textTertiary, marginHorizontal: 4 },
-            ]}
-          >
-            {child.mobile}
-          </Text>
-          <View style={currentStyles.infoSeparator} />
-          <Ionicons name="school-outline" size={12} color={theme.colors.textTertiary} />
-          <Text
-            style={[
-              typography('caption'),
-              { color: theme.colors.textTertiary, marginHorizontal: 4 },
-            ]}
-            numberOfLines={1}
-          >
-            {child.grade?.name || t('profile_screen.not_specified')}
-          </Text>
+  const renderChildCard = useCallback(
+    (child: Child) => (
+      <TouchableOpacity
+        key={child.id}
+        style={currentStyles.childCard}
+        onPress={() => navigation.navigate('ChildDetailsScreen', { childId: child.id })}
+        activeOpacity={0.7}
+      >
+        <View style={currentStyles.childIconContainer}>
+          <Ionicons name="person" size={24} color={theme.colors.primary} />
         </View>
-      </View>
-      <View style={currentStyles.viewProgressBtn}>
-        <Ionicons
-          name={isRTL ? 'chevron-back' : 'chevron-forward'}
-          size={24}
-          color={theme.colors.textTertiary}
-        />
-      </View>
-    </TouchableOpacity>
-  );
-
-  const renderIncomingRequest = (req: LinkRequest) => {
-    const isStudentInitiated = req.initiated_by === 'student';
-    const isResponding = respondingId === req.id;
-
-    return (
-      <View key={req.id} style={currentStyles.incomingCard}>
-        {/* Card header: child info */}
-        <View style={currentStyles.incomingHeader}>
-          <View style={currentStyles.incomingIconBox}>
-            <Ionicons
-              name={isStudentInitiated ? 'person-add' : 'time-outline'}
-              size={20}
-              color={theme.colors.primary}
-            />
-          </View>
-          <View style={currentStyles.incomingHeaderText}>
-            <Text
-              style={[
-                typography('body'),
-                fontWeight('700'),
-                { color: theme.colors.text, textAlign: 'left' },
-              ]}
-            >
-              {req.child.name}
-            </Text>
+        <View style={currentStyles.childInfo}>
+          <Text
+            style={[
+              typography('body'),
+              fontWeight('700'),
+              { color: theme.colors.text, textAlign: 'left' },
+            ]}
+          >
+            {child.name}
+          </Text>
+          <View style={currentStyles.childSubInfo}>
+            <Ionicons name="call-outline" size={12} color={theme.colors.textTertiary} />
             <Text
               style={[
                 typography('caption'),
-                { color: theme.colors.textTertiary, textAlign: 'left' },
+                { color: theme.colors.textTertiary, marginHorizontal: 4 },
               ]}
             >
-              {req.child.school_name || t('onboarding.role_student')}
+              {child.mobile}
+            </Text>
+            <View style={currentStyles.infoSeparator} />
+            <Ionicons name="school-outline" size={12} color={theme.colors.textTertiary} />
+            <Text
+              style={[
+                typography('caption'),
+                { color: theme.colors.textTertiary, marginHorizontal: 4 },
+              ]}
+              numberOfLines={1}
+            >
+              {child.grade?.name || t('profile_screen.not_specified')}
             </Text>
           </View>
+        </View>
+        <View style={currentStyles.viewProgressBtn}>
+          <Ionicons
+            name={isRTL ? 'chevron-back' : 'chevron-forward'}
+            size={24}
+            color={theme.colors.textTertiary}
+          />
+        </View>
+      </TouchableOpacity>
+    ),
+    [currentStyles, navigation, theme, typography, fontWeight, isRTL, t],
+  );
 
-          {/* Pending badge for parent-initiated requests */}
-          {!isStudentInitiated && (
-            <View style={currentStyles.pendingBadge}>
-              <Text style={[typography('caption'), fontWeight('600'), { color: theme.colors.primary }]}>
-                {t('parent_dashboard.status_pending')}
+  const renderIncomingRequest = useCallback(
+    (req: LinkRequest) => {
+      const isStudentInitiated = req.initiated_by === 'student';
+      const isResponding = respondingId === req.id;
+
+      return (
+        <View key={req.id} style={currentStyles.incomingCard}>
+          <View style={currentStyles.incomingHeader}>
+            <View style={currentStyles.incomingIconBox}>
+              <Ionicons
+                name={isStudentInitiated ? 'person-add' : 'time-outline'}
+                size={20}
+                color={theme.colors.primary}
+              />
+            </View>
+            <View style={currentStyles.incomingHeaderText}>
+              <Text
+                style={[
+                  typography('body'),
+                  fontWeight('700'),
+                  { color: theme.colors.text, textAlign: 'left' },
+                ]}
+              >
+                {req.child.name}
+              </Text>
+              <Text
+                style={[
+                  typography('caption'),
+                  { color: theme.colors.textTertiary, textAlign: 'left' },
+                ]}
+              >
+                {req.child.school_name || t('onboarding.role_student')}
               </Text>
             </View>
-          )}
-        </View>
 
-        {/* Actions: branch on who initiated */}
-        <View style={currentStyles.incomingActions}>
-          {isStudentInitiated ? (
-            // Student sent invite → parent can Accept or Decline
-            <>
-              <TouchableOpacity
-                style={[currentStyles.actionBtn, currentStyles.declineBtn]}
-                onPress={() => handleRespondToLink(req.id, 'DECLINED')}
-                disabled={isResponding}
-              >
-                <Text style={[typography('caption'), fontWeight('600'), { color: theme.colors.error }]}>
-                  {t('common.decline')}
+            {!isStudentInitiated && (
+              <View style={currentStyles.pendingBadge}>
+                <Text style={[typography('caption'), fontWeight('600'), { color: theme.colors.primary }]}>
+                  {t('parent_dashboard.status_pending')}
                 </Text>
-              </TouchableOpacity>
+              </View>
+            )}
+          </View>
 
+          <View style={currentStyles.incomingActions}>
+            {isStudentInitiated ? (
+              <>
+                <TouchableOpacity
+                  style={[currentStyles.actionBtn, currentStyles.declineBtn]}
+                  onPress={() => handleRespondToLink(req.id, 'DECLINED')}
+                  disabled={isResponding}
+                >
+                  <Text style={[typography('caption'), fontWeight('600'), { color: theme.colors.error }]}>
+                    {t('common.decline')}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[currentStyles.actionBtn, currentStyles.acceptBtn]}
+                  onPress={() => handleRespondToLink(req.id, 'ACCEPTED')}
+                  disabled={isResponding}
+                >
+                  {isResponding ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : (
+                    <Text style={[typography('caption'), fontWeight('600'), { color: '#FFFFFF' }]}>
+                      {t('common.accept')}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </>
+            ) : (
               <TouchableOpacity
-                style={[currentStyles.actionBtn, currentStyles.acceptBtn]}
-                onPress={() => handleRespondToLink(req.id, 'ACCEPTED')}
+                style={[currentStyles.actionBtn, currentStyles.declineBtn, { flex: 1 }]}
+                onPress={() => handleCancelRequest(req.id)}
                 disabled={isResponding}
               >
                 {isResponding ? (
-                  <ActivityIndicator color="#FFFFFF" size="small" />
+                  <ActivityIndicator color={theme.colors.error} size="small" />
                 ) : (
-                  <Text style={[typography('caption'), fontWeight('600'), { color: '#FFFFFF' }]}>
-                    {t('common.accept')}
+                  <Text style={[typography('caption'), fontWeight('600'), { color: theme.colors.error }]}>
+                    {t('parent_dashboard.cancel_request')}
                   </Text>
                 )}
               </TouchableOpacity>
-            </>
-          ) : (
-            // Parent sent invite → waiting for student; can cancel
-            <TouchableOpacity
-              style={[currentStyles.actionBtn, currentStyles.declineBtn, { flex: 1 }]}
-              onPress={() => handleCancelRequest(req.id)}
-              disabled={isResponding}
-            >
-              {isResponding ? (
-                <ActivityIndicator color={theme.colors.error} size="small" />
-              ) : (
-                <Text style={[typography('caption'), fontWeight('600'), { color: theme.colors.error }]}>
-                  {t('parent_dashboard.cancel_request')}
-                </Text>
-              )}
-            </TouchableOpacity>
-          )}
+            )}
+          </View>
         </View>
-      </View>
-    );
-  };
+      );
+    },
+    [
+      currentStyles,
+      theme,
+      typography,
+      fontWeight,
+      respondingId,
+      handleRespondToLink,
+      handleCancelRequest,
+      t,
+    ],
+  );
 
   return (
     <View style={currentStyles.container}>
       <UnifiedHeader
         title={t('parent_dashboard.header_title')}
-        hideBackButton
+        showBackButton={false}
         rightContent={
           <TouchableOpacity
             style={currentStyles.settingsBtn}
@@ -235,7 +249,6 @@ const ParentDashboardScreen: React.FC = () => {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Greeting Card */}
         <View style={currentStyles.greetingCard}>
           <View style={currentStyles.greetingContent}>
             <Text
@@ -255,7 +268,6 @@ const ParentDashboardScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Incoming Requests Section - Only visible if there are requests */}
         {incomingRequests && incomingRequests.length > 0 && (
           <View style={currentStyles.section}>
             <Text style={currentStyles.sectionTitle}>{t('parent_dashboard.invitations')}</Text>
@@ -263,7 +275,6 @@ const ParentDashboardScreen: React.FC = () => {
           </View>
         )}
 
-        {/* Children List */}
         <View style={currentStyles.section}>
           <Text style={currentStyles.sectionTitle}>{t('parent_dashboard.my_children')}</Text>
           {loading && children.length === 0 ? (
@@ -281,7 +292,6 @@ const ParentDashboardScreen: React.FC = () => {
         </View>
       </ScrollView>
 
-      {/* Floating Add Child Button */}
       <TouchableOpacity
         style={[currentStyles.fab, { end: 24 }]}
         onPress={() => setIsAddModalVisible(true)}
@@ -290,14 +300,16 @@ const ParentDashboardScreen: React.FC = () => {
         <Ionicons name="person-add" size={24} color="#FFFFFF" />
       </TouchableOpacity>
 
-      {/* Add Child Modal */}
       <Modal
         visible={isAddModalVisible}
         transparent
         animationType="fade"
         onRequestClose={() => setIsAddModalVisible(false)}
       >
-        <View style={currentStyles.modalOverlay}>
+        <View
+          style={currentStyles.modalOverlay}
+          onStartShouldSetResponder={() => true}
+        >
           <View style={currentStyles.modalContent}>
             <Text style={currentStyles.modalTitle}>{t('parent_dashboard.add_child')}</Text>
             <Text style={currentStyles.modalSubtitle}>
@@ -305,12 +317,13 @@ const ParentDashboardScreen: React.FC = () => {
             </Text>
 
             <TextInput
-              style={[currentStyles.input, { textAlign: 'left' }]}
+              style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
               placeholder={t('parent_dashboard.child_mobile_placeholder')}
               placeholderTextColor={theme.colors.textTertiary}
               keyboardType="phone-pad"
               value={childMobile}
-              onChangeText={setChildMobile}
+              onChangeText={(val) => setChildMobile(val.replace(/\D/g, '').slice(0, 11))}
+              maxLength={11}
             />
 
             <View style={currentStyles.modalActions}>
