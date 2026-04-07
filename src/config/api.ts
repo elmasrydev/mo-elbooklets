@@ -186,6 +186,7 @@ export const tryFetchWithFallback = async (
         headers['Authorization'] = `Bearer ${authToken}`;
       }
       if (__DEV__) console.log('API HEADERS: ', headers);
+      if (__DEV__) console.log('API query: ', query, variables);
 
       const response = await fetch(url, {
         method: 'POST',
