@@ -423,6 +423,8 @@
     "dont_have_account": "Don't have an account?",
     "already_have_account": "Already have an account?",
     "invalid_credentials": "Invalid email or password",
+    "no_account_found": "No account found with this mobile number. Please check the number or register a new account.",
+    "incorrect_password": "Incorrect password. Please try again or use Forgot Password.",
     "login_failed": "Login Failed",
     "registration_failed": "Registration Failed",
     "email_placeholder": "Enter your email",

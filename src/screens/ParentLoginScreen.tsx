@@ -72,9 +72,18 @@ const ParentLoginScreen: React.FC = () => {
     try {
       const result = await parentLogin({ mobile: mobile.trim(), password });
       if (!result.success) {
+        const rawError = (result.error || '').toLowerCase();
+        let errorKey = 'auth.invalid_credentials';
+
+        if (rawError.includes('not found') || rawError.includes('no account') || rawError.includes('no user')) {
+          errorKey = 'auth.no_account_found';
+        } else if (rawError.includes('password') || rawError.includes('incorrect') || rawError.includes('wrong')) {
+          errorKey = 'auth.incorrect_password';
+        }
+
         showConfirm({
           title: t('auth.login_failed'),
-          message: t(result.error || 'auth.invalid_credentials'),
+          message: t(errorKey),
           showCancel: false,
           onConfirm: () => {},
         });
