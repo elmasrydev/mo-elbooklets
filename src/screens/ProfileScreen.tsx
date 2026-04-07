@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -31,6 +31,7 @@ import {
 } from '../generated/graphql';
 import { isDebugMode } from '../config/debug';
 import ApiUrlSwitcherModal from '../components/ApiUrlSwitcherModal';
+import crashlytics from '@react-native-firebase/crashlytics';
 
 const APP_VERSION = `EL-Booklets v${DeviceInfo.getVersion()}`;
 
@@ -44,6 +45,17 @@ const ProfileScreen: React.FC = () => {
   const { typography, fontWeight } = useTypography();
   const { t } = useTranslation();
   const [showApiModal, setShowApiModal] = useState(false);
+
+  const handleTestCrash = () => {
+    crashlytics().crash();
+  };
+
+  const handleTestLogError = () => {
+    crashlytics().log('Test log from Profile Screen');
+    crashlytics().recordError(
+      new Error('Test error from Profile Screen at ' + new Date().toISOString()),
+    );
+  };
 
   const [deleteAccountMutation, { loading: isDeletingAccount }] = useMutation<
     DeleteAccountMutation,
@@ -349,6 +361,41 @@ const ProfileScreen: React.FC = () => {
             </TouchableOpacity>
           )}
 
+          {/* Crashlytics Testing (debug builds only) */}
+          {isDebugMode() && (
+            <View style={currentStyles.crashTestContainer}>
+              <View style={currentStyles.crashTestHeader}>
+                <Ionicons name="bug-outline" size={18} color={theme.colors.warning} />
+                <Text style={currentStyles.crashTestTitle}>
+                  {t('profile_screen.crashlytics_testing')}
+                </Text>
+              </View>
+              <Text style={currentStyles.crashTestSubtitle}>
+                {t('profile_screen.crashlytics_testing_desc')}
+              </Text>
+              <View style={currentStyles.crashTestButtonsRow}>
+                <TouchableOpacity
+                  style={currentStyles.crashButton}
+                  onPress={handleTestCrash}
+                >
+                  <Ionicons name="flame-outline" size={16} color="#fff" />
+                  <Text style={currentStyles.crashButtonText}>
+                    {t('profile_screen.test_crash')}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={currentStyles.logErrorButton}
+                  onPress={handleTestLogError}
+                >
+                  <Ionicons name="alert-circle-outline" size={16} color="#fff" />
+                  <Text style={currentStyles.crashButtonText}>
+                    {t('profile_screen.test_log_error')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
           {/* Dark Mode Toggle */}
           <View style={currentStyles.settingItem}>
             <View style={currentStyles.settingIconBox}>
@@ -611,6 +658,60 @@ const styles = (
       ...fontWeight('bold'),
       color: '#fff',
       textAlign: common.textAlign,
+    },
+    crashTestContainer: {
+      marginTop: spacing.sm,
+      padding: spacing.md,
+      backgroundColor: isDark ? theme.colors.warning + '0D' : '#FFF8E1',
+      borderRadius: borderRadius.xl,
+      borderWidth: 1,
+      borderColor: isDark ? theme.colors.warning + '33' : '#FFE082',
+    },
+    crashTestHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: spacing.xs,
+    },
+    crashTestTitle: {
+      ...typography('body'),
+      ...fontWeight('bold'),
+      color: theme.colors.warning,
+      ...common.marginStart(spacing.xs),
+    },
+    crashTestSubtitle: {
+      ...typography('caption'),
+      color: theme.colors.textSecondary,
+      marginBottom: spacing.sm,
+      textAlign: common.textAlign,
+    },
+    crashTestButtonsRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    crashButton: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs,
+      backgroundColor: theme.colors.error,
+      paddingVertical: spacing.sm,
+      borderRadius: borderRadius.lg,
+    },
+    logErrorButton: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs,
+      backgroundColor: theme.colors.warning,
+      paddingVertical: spacing.sm,
+      borderRadius: borderRadius.lg,
+    },
+    crashButtonText: {
+      ...typography('caption'),
+      ...fontWeight('bold'),
+      color: '#ffffff',
     },
     versionText: {
       ...typography('caption'),

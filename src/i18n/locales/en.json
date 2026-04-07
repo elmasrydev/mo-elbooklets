@@ -583,7 +583,11 @@
     "parental_linking_desc": "Connect with your parents",
     "not_specified": "Not specified",
     "delete_account": "Delete Account",
-    "delete_account_confirm": "Are you sure you want to delete your account? This action cannot be undone."
+    "delete_account_confirm": "Are you sure you want to delete your account? This action cannot be undone.",
+    "crashlytics_testing": "Crashlytics Testing",
+    "crashlytics_testing_desc": "Test Firebase Crashlytics integration. Crash will force-close the app.",
+    "test_crash": "Test Crash",
+    "test_log_error": "Log Error"
   },
   "faq": {
     "header_title": "FAQs",

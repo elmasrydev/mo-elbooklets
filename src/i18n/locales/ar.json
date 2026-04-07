@@ -580,7 +580,11 @@
     "parental_linking": "ربط ولي الأمر",
     "parental_linking_desc": "تواصل مع والديك",
     "delete_account": "حذف الحساب",
-    "delete_account_confirm": "هل أنت متأكد أنك تريد حذف حسابك؟ لا يمكن التراجع عن هذا الإجراء."
+    "delete_account_confirm": "هل أنت متأكد أنك تريد حذف حسابك؟ لا يمكن التراجع عن هذا الإجراء.",
+    "crashlytics_testing": "اختبار Crashlytics",
+    "crashlytics_testing_desc": "اختبار تكامل Firebase Crashlytics. سيؤدي الانهيار إلى إغلاق التطبيق.",
+    "test_crash": "اختبار انهيار",
+    "test_log_error": "تسجيل خطأ"
   },
   "faq": {
     "header_title": "الأسئلة الشائعة",

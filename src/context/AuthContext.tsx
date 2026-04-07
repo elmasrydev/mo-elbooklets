@@ -10,7 +10,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { tryFetchWithFallback, setAuthErrorHandler } from '../config/api';
 import { setLogoutHandler } from '../lib/apollo';
-import { configureCrashlyticsUser } from '../utils/crashlyticsHelper';
+import {
+  configureCrashlyticsStudent,
+  configureCrashlyticsParent,
+  configureCrashlyticsGuest,
+} from '../utils/crashlyticsHelper';
 
 // Temporary types for testing
 interface User {
@@ -128,22 +132,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           if (userData) {
             const parsedUser = JSON.parse(userData);
             setUser(parsedUser);
-            configureCrashlyticsUser(parsedUser);
+            configureCrashlyticsStudent(parsedUser);
           }
         } else {
           const parentData = await AsyncStorage.getItem('parent_data');
           if (parentData) {
             const parsedParent = JSON.parse(parentData);
             setParentUser(parsedParent);
-            configureCrashlyticsUser(parsedParent);
+            configureCrashlyticsParent(parsedParent);
           }
         }
       } else {
-        configureCrashlyticsUser(null);
+        configureCrashlyticsGuest();
       }
     } catch (error) {
       console.error('Error checking auth status:', error);
-      configureCrashlyticsUser(null);
+      configureCrashlyticsGuest();
     } finally {
       setIsLoading(false);
     }
@@ -182,7 +186,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           await AsyncStorage.setItem('user_role', 'student');
           setUser(authPayload.user);
           setUserRole('student');
-          configureCrashlyticsUser(authPayload.user);
+          configureCrashlyticsStudent(authPayload.user);
           return { success: true };
         }
 
@@ -233,7 +237,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           await AsyncStorage.setItem('user_role', 'student');
           setUser(authPayload.user);
           setUserRole('student');
-          configureCrashlyticsUser(authPayload.user);
+          configureCrashlyticsStudent(authPayload.user);
           return { success: true };
         }
 
@@ -280,7 +284,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           await AsyncStorage.setItem('user_role', 'parent');
           setParentUser(authPayload.parent);
           setUserRole('parent');
-          configureCrashlyticsUser(authPayload.parent);
+          configureCrashlyticsParent(authPayload.parent);
           return { success: true };
         }
 
@@ -323,7 +327,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           await AsyncStorage.setItem('user_role', 'parent');
           setParentUser(authPayload.parent);
           setUserRole('parent');
-          configureCrashlyticsUser(authPayload.parent);
+          configureCrashlyticsParent(authPayload.parent);
           return { success: true };
         }
 
@@ -345,7 +349,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(null);
       setParentUser(null);
       setUserRole(null);
-      configureCrashlyticsUser(null);
+      configureCrashlyticsGuest();
     } catch (error) {
       console.error('Logout error:', error);
     }
@@ -372,7 +376,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (result.data?.me) {
           await AsyncStorage.setItem('user_data', JSON.stringify(result.data.me));
           setUser(result.data.me);
-          configureCrashlyticsUser(result.data.me);
+          configureCrashlyticsStudent(result.data.me);
         }
       } else {
         const result = await tryFetchWithFallback(
@@ -387,7 +391,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (result.data?.parentMe) {
           await AsyncStorage.setItem('parent_data', JSON.stringify(result.data.parentMe));
           setParentUser(result.data.parentMe);
-          configureCrashlyticsUser(result.data.parentMe);
+          configureCrashlyticsParent(result.data.parentMe);
         }
       }
     } catch (error) {
