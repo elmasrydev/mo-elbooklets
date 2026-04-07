@@ -162,7 +162,7 @@ const ParentRegisterScreen: React.FC = () => {
                     placeholder={t('auth.full_name_placeholder')}
                     placeholderTextColor={theme.colors.textTertiary}
                     editable={!isLoading}
-                    textAlign={isRTL ? 'right' : 'left'}
+                    textAlign="left"
                     returnKeyType="next"
                     onSubmitEditing={() => mobileRef.current?.focus()}
                   />
@@ -184,7 +184,7 @@ const ParentRegisterScreen: React.FC = () => {
                     placeholderTextColor={theme.colors.textTertiary}
                     keyboardType="phone-pad"
                     editable={!isLoading}
-                    textAlign={isRTL ? 'right' : 'left'}
+                    textAlign="left"
                     returnKeyType="next"
                     onSubmitEditing={() => passwordRef.current?.focus()}
                   />
@@ -205,7 +205,7 @@ const ParentRegisterScreen: React.FC = () => {
                     placeholderTextColor={theme.colors.textTertiary}
                     secureTextEntry={!showPassword}
                     editable={!isLoading}
-                    textAlign={isRTL ? 'right' : 'left'}
+                    textAlign="left"
                     returnKeyType="next"
                     onSubmitEditing={() => confirmPasswordRef.current?.focus()}
                   />
@@ -229,7 +229,7 @@ const ParentRegisterScreen: React.FC = () => {
                     placeholderTextColor={theme.colors.textTertiary}
                     secureTextEntry={!showConfirmPassword}
                     editable={!isLoading}
-                    textAlign={isRTL ? 'right' : 'left'}
+                    textAlign="left"
                     returnKeyType="done"
                     onSubmitEditing={handleRegister}
                   />
@@ -241,7 +241,7 @@ const ParentRegisterScreen: React.FC = () => {
 
               <TouchableOpacity style={currentStyles.submitButton} onPress={handleRegister} disabled={isLoading}>
                 <Text style={currentStyles.submitButtonText}>{t('auth.sign_up')}</Text>
-                {isLoading && <ActivityIndicator size="small" color="#FFF" style={{ marginLeft: 8 }} />}
+                {isLoading && <ActivityIndicator size="small" color="#FFF" style={{ marginStart: 8 }} />}
               </TouchableOpacity>
 
               <TouchableOpacity style={currentStyles.langButton} onPress={() => setLanguage(language === 'ar' ? 'en' : 'ar')}>
@@ -280,7 +280,7 @@ const styles = (config: any) => {
     subtitle: { ...typography('body'), color: theme.colors.textSecondary, textAlign: 'center', marginTop: 4 },
     form: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
     inputGroup: { marginBottom: spacing.lg },
-    inputLabel: { ...typography('caption'), ...fontWeight('600'), color: theme.colors.textSecondary, marginBottom: spacing.xs, textAlign: isRTL ? 'right' : 'left' },
+    inputLabel: { ...typography('caption'), ...fontWeight('600'), color: theme.colors.textSecondary, marginBottom: spacing.xs, textAlign: 'left' },
     inputWrapper: { flexDirection: 'row', alignItems: 'center', height: 56, borderWidth: 1, borderColor: theme.colors.border, borderRadius: borderRadius.md || 12, backgroundColor: theme.colors.background, paddingHorizontal: spacing.sm },
     inputIcon: { marginHorizontal: spacing.xs },
     eyeIcon: { padding: spacing.xs },

@@ -130,7 +130,7 @@ const ParentLoginScreen: React.FC = () => {
                     placeholderTextColor={theme.colors.textTertiary}
                     keyboardType="phone-pad"
                     editable={!isLoading}
-                    textAlign={isRTL ? 'right' : 'left'}
+                    textAlign="left"
                     returnKeyType="next"
                     onSubmitEditing={() => passwordRef.current?.focus()}
                   />
@@ -155,7 +155,7 @@ const ParentLoginScreen: React.FC = () => {
                     placeholderTextColor={theme.colors.textTertiary}
                     secureTextEntry={!showPassword}
                     editable={!isLoading}
-                    textAlign={isRTL ? 'right' : 'left'}
+                    textAlign="left"
                     returnKeyType="done"
                     onSubmitEditing={handleLogin}
                   />
@@ -167,7 +167,7 @@ const ParentLoginScreen: React.FC = () => {
 
               <TouchableOpacity style={currentStyles.submitButton} onPress={handleLogin} disabled={isLoading}>
                 <Text style={currentStyles.submitButtonText}>{t('auth.sign_in')}</Text>
-                {isLoading && <ActivityIndicator size="small" color="#FFF" style={{ marginLeft: 8 }} />}
+                {isLoading && <ActivityIndicator size="small" color="#FFF" style={{ marginStart: 8 }} />}
               </TouchableOpacity>
 
               <TouchableOpacity style={currentStyles.langButton} onPress={() => setLanguage(language === 'ar' ? 'en' : 'ar')}>
@@ -206,7 +206,7 @@ const styles = (config: any) => {
     subtitle: { ...typography('body'), color: theme.colors.textSecondary, textAlign: 'center' },
     form: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
     inputGroup: { marginBottom: spacing.lg },
-    inputLabel: { ...typography('caption'), ...fontWeight('600'), color: theme.colors.textSecondary, marginBottom: spacing.xs, textAlign: isRTL ? 'right' : 'left' },
+    inputLabel: { ...typography('caption'), ...fontWeight('600'), color: theme.colors.textSecondary, marginBottom: spacing.xs, textAlign: 'left' },
     labelRow: { flexDirection: 'row', justifyContent: 'space-between' },
     forgotText: { ...typography('caption'), ...fontWeight('600'), color: theme.colors.primary },
     inputWrapper: { flexDirection: 'row', alignItems: 'center', height: 56, borderWidth: 1, borderColor: theme.colors.border, borderRadius: borderRadius.md || 12, backgroundColor: theme.colors.background, paddingHorizontal: spacing.sm },

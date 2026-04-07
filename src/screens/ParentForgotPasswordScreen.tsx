@@ -113,14 +113,14 @@ const ParentForgotPasswordScreen: React.FC = () => {
                     placeholderTextColor={theme.colors.textTertiary}
                     keyboardType="phone-pad"
                     editable={!isLoading}
-                    textAlign={isRTL ? 'right' : 'left'}
+                    textAlign="left"
                   />
                 </View>
               </View>
 
               <TouchableOpacity style={currentStyles.submitButton} onPress={handleReset} disabled={isLoading}>
                 <Text style={currentStyles.submitButtonText}>{t('common.continue')}</Text>
-                {isLoading && <ActivityIndicator size="small" color="#FFF" style={{ marginLeft: 8 }} />}
+                {isLoading && <ActivityIndicator size="small" color="#FFF" style={{ marginStart: 8 }} />}
               </TouchableOpacity>
             </View>
           </ScrollView>
@@ -148,7 +148,7 @@ const styles = (config: any) => {
     subtitle: { ...typography('bodySmall'), color: theme.colors.textSecondary, textAlign: 'center', marginTop: 8 },
     form: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
     inputGroup: { marginBottom: spacing.lg },
-    inputLabel: { ...typography('caption'), ...fontWeight('600'), color: theme.colors.textSecondary, marginBottom: spacing.xs, textAlign: isRTL ? 'right' : 'left' },
+    inputLabel: { ...typography('caption'), ...fontWeight('600'), color: theme.colors.textSecondary, marginBottom: spacing.xs, textAlign: 'left' },
     inputWrapper: { flexDirection: 'row', alignItems: 'center', height: 56, borderWidth: 1, borderColor: theme.colors.border, borderRadius: borderRadius.md || 12, backgroundColor: theme.colors.background, paddingHorizontal: spacing.sm },
     inputIcon: { marginHorizontal: spacing.xs },
     input: { flex: 1, fontSize: fontSizes.base, color: theme.colors.text, height: '100%', paddingHorizontal: spacing.sm },

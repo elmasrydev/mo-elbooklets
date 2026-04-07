@@ -301,7 +301,7 @@ const ParentSettingsScreen: React.FC = () => {
               {t('profile_screen.delete_account')}
             </Text>
           </View>
-          {isDeletingAccount && <ActivityIndicator color="#fff" size="small" style={{ marginLeft: 8 }} />}
+          {isDeletingAccount && <ActivityIndicator color="#fff" size="small" style={{ marginStart: 8 }} />}
         </TouchableOpacity>
       </ScrollView>
 

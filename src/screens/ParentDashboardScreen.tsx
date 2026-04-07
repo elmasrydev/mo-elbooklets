@@ -76,7 +76,7 @@ const ParentDashboardScreen: React.FC = () => {
           style={[
             typography('body'),
             fontWeight('700'),
-            { color: theme.colors.text, textAlign: isRTL ? 'right' : 'left' },
+            { color: theme.colors.text, textAlign: 'left' },
           ]}
         >
           {child.name}
@@ -134,7 +134,7 @@ const ParentDashboardScreen: React.FC = () => {
               style={[
                 typography('body'),
                 fontWeight('700'),
-                { color: theme.colors.text, textAlign: isRTL ? 'right' : 'left' },
+                { color: theme.colors.text, textAlign: 'left' },
               ]}
             >
               {req.child.name}
@@ -142,7 +142,7 @@ const ParentDashboardScreen: React.FC = () => {
             <Text
               style={[
                 typography('caption'),
-                { color: theme.colors.textTertiary, textAlign: isRTL ? 'right' : 'left' },
+                { color: theme.colors.textTertiary, textAlign: 'left' },
               ]}
             >
               {req.child.school_name || t('onboarding.role_student')}
@@ -242,7 +242,7 @@ const ParentDashboardScreen: React.FC = () => {
               style={[
                 typography('h2'),
                 fontWeight('bold'),
-                { color: '#FFFFFF', textAlign: isRTL ? 'right' : 'left' },
+                { color: '#FFFFFF', textAlign: 'left' },
               ]}
             >
               {t('parent_dashboard.greeting', {
@@ -283,7 +283,7 @@ const ParentDashboardScreen: React.FC = () => {
 
       {/* Floating Add Child Button */}
       <TouchableOpacity
-        style={[currentStyles.fab, isRTL ? { left: 24 } : { right: 24 }]}
+        style={[currentStyles.fab, { end: 24 }]}
         onPress={() => setIsAddModalVisible(true)}
         activeOpacity={0.8}
       >
@@ -305,7 +305,7 @@ const ParentDashboardScreen: React.FC = () => {
             </Text>
 
             <TextInput
-              style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
+              style={[currentStyles.input, { textAlign: 'left' }]}
               placeholder={t('parent_dashboard.child_mobile_placeholder')}
               placeholderTextColor={theme.colors.textTertiary}
               keyboardType="phone-pad"
@@ -361,7 +361,7 @@ const styles = (config: any) => {
       backgroundColor: theme.colors.primary,
       borderRadius: borderRadius.xl,
       padding: 24,
-      flexDirection: isRTL ? 'row-reverse' : 'row',
+      flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       marginBottom: 24,
@@ -371,8 +371,7 @@ const styles = (config: any) => {
       flex: 1,
     },
     shieldContainer: {
-      marginLeft: isRTL ? 0 : 12,
-      marginRight: isRTL ? 12 : 0,
+      marginEnd: 12,
     },
     section: {
       marginBottom: 24,
@@ -382,13 +381,13 @@ const styles = (config: any) => {
       ...fontWeight('bold'),
       color: theme.colors.text,
       marginBottom: 12,
-      textAlign: isRTL ? 'right' : 'left',
+      textAlign: 'left',
     },
     childCard: {
       backgroundColor: theme.colors.card,
       borderRadius: borderRadius.lg,
       padding: 16,
-      flexDirection: isRTL ? 'row-reverse' : 'row',
+      flexDirection: 'row',
       alignItems: 'center',
       marginBottom: 12,
       ...layout.shadow,
@@ -401,14 +400,13 @@ const styles = (config: any) => {
       backgroundColor: theme.colors.primary100,
       justifyContent: 'center',
       alignItems: 'center',
-      marginLeft: isRTL ? 12 : 0,
-      marginRight: isRTL ? 0 : 12,
+      marginEnd: 12,
     },
     childInfo: {
       flex: 1,
     },
     childSubInfo: {
-      flexDirection: isRTL ? 'row-reverse' : 'row',
+      flexDirection: 'row',
       alignItems: 'center',
       marginTop: 4,
     },
@@ -421,8 +419,7 @@ const styles = (config: any) => {
       opacity: 0.3,
     },
     viewProgressBtn: {
-      marginLeft: isRTL ? 0 : 8,
-      marginRight: isRTL ? 8 : 0,
+      marginStart: 8,
     },
     incomingCard: {
       backgroundColor: theme.colors.card,
@@ -434,7 +431,7 @@ const styles = (config: any) => {
       ...layout.shadow,
     },
     incomingHeader: {
-      flexDirection: isRTL ? 'row-reverse' : 'row',
+      flexDirection: 'row',
       alignItems: 'center',
       marginBottom: 16,
     },
@@ -445,8 +442,7 @@ const styles = (config: any) => {
       backgroundColor: theme.colors.primary100,
       justifyContent: 'center',
       alignItems: 'center',
-      marginLeft: isRTL ? 12 : 0,
-      marginRight: isRTL ? 0 : 12,
+      marginEnd: 12,
     },
     incomingHeaderText: {
       flex: 1,
@@ -460,7 +456,7 @@ const styles = (config: any) => {
       paddingVertical: 3,
     },
     incomingActions: {
-      flexDirection: isRTL ? 'row-reverse' : 'row',
+      flexDirection: 'row',
       gap: 12,
     },
     actionBtn: {
@@ -530,13 +526,13 @@ const styles = (config: any) => {
       ...fontWeight('bold'),
       color: theme.colors.text,
       marginBottom: 8,
-      textAlign: isRTL ? 'right' : 'left',
+      textAlign: 'left',
     },
     modalSubtitle: {
       ...typography('body'),
       color: theme.colors.textSecondary,
       marginBottom: 20,
-      textAlign: isRTL ? 'right' : 'left',
+      textAlign: 'left',
     },
     input: {
       backgroundColor: theme.colors.background,
@@ -548,7 +544,7 @@ const styles = (config: any) => {
       marginBottom: 24,
     },
     modalActions: {
-      flexDirection: isRTL ? 'row-reverse' : 'row',
+      flexDirection: 'row',
       gap: 12,
     },
     modalBtn: {
