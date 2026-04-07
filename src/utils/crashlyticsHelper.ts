@@ -1,6 +1,7 @@
 import crashlytics from '@react-native-firebase/crashlytics';
 import DeviceInfo from 'react-native-device-info';
 import i18n from '../i18n';
+import { logError, logInfo } from './logger';
 
 type UserRole = 'student' | 'parent' | 'guest';
 
@@ -54,15 +55,9 @@ export const configureCrashlyticsStudent = async (
       selected_language: currentLanguage,
     });
 
-    if (__DEV__) {
-      console.log(
-        '[Crashlytics] Student attributes configured:',
-        user.name,
-        user.id,
-      );
-    }
+    logInfo(`[Crashlytics] Student attributes configured: ${user.name} (${user.id})`);
   } catch (error) {
-    console.error('[Crashlytics] Failed to set student properties', error);
+    logError('[Crashlytics] Failed to set student properties', error);
   }
 };
 
@@ -91,15 +86,9 @@ export const configureCrashlyticsParent = async (
       selected_language: currentLanguage,
     });
 
-    if (__DEV__) {
-      console.log(
-        '[Crashlytics] Parent attributes configured:',
-        parent.name,
-        parent.id,
-      );
-    }
+    logInfo(`[Crashlytics] Parent attributes configured: ${parent.name} (${parent.id})`);
   } catch (error) {
-    console.error('[Crashlytics] Failed to set parent properties', error);
+    logError('[Crashlytics] Failed to set parent properties', error);
   }
 };
 
@@ -126,10 +115,8 @@ export const configureCrashlyticsGuest = async (): Promise<void> => {
       selected_language: currentLanguage,
     });
 
-    if (__DEV__) {
-      console.log('[Crashlytics] Guest attributes configured.');
-    }
+    logInfo('[Crashlytics] Guest attributes configured.');
   } catch (error) {
-    console.error('[Crashlytics] Failed to set guest properties', error);
+    logError('[Crashlytics] Failed to set guest properties', error);
   }
 };

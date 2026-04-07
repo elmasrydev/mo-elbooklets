@@ -31,8 +31,13 @@ import {
 import { isDebugMode } from '../config/debug';
 import ApiUrlSwitcherModal from '../components/ApiUrlSwitcherModal';
 import crashlytics from '@react-native-firebase/crashlytics';
+import { logError } from '../utils/logger';
 
 const APP_VERSION = `EL-Booklets v${DeviceInfo.getVersion()}`;
+
+const CrashTrigger = () => {
+  throw new Error('Test React Render Error for ErrorBoundary');
+};
 
 const ParentSettingsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -44,6 +49,7 @@ const ParentSettingsScreen: React.FC = () => {
   const { typography, fontWeight } = useTypography();
   const { t } = useTranslation();
   const [showApiModal, setShowApiModal] = useState(false);
+  const [triggerReactCrash, setTriggerReactCrash] = useState(false);
 
   const handleTestCrash = () => {
     crashlytics().crash();
@@ -56,7 +62,14 @@ const ParentSettingsScreen: React.FC = () => {
     );
   };
 
-  const [deleteAccountMutation, { loading: isDeletingAccount }] = useMutation<DeleteAccountMutation, DeleteAccountMutationVariables>(DeleteAccountDocument);
+  const handleTestReactCrash = () => {
+    setTriggerReactCrash(true);
+  };
+
+  const [deleteAccountMutation, { loading: isDeletingAccount }] = useMutation<
+    DeleteAccountMutation,
+    DeleteAccountMutationVariables
+  >(DeleteAccountDocument);
 
   const handleLogout = () => {
     showConfirm({
@@ -83,13 +96,10 @@ const ParentSettingsScreen: React.FC = () => {
           if (result.data?.deleteAccount?.success) {
             logout();
           } else {
-            console.error(
-              'Delete account server returned false',
-              result.data?.deleteAccount?.message,
-            );
+            logError('Delete account server returned false', result.data?.deleteAccount?.message);
           }
         } catch (error) {
-          console.error('Error deleting account:', error);
+          logError('Error deleting account', error);
         }
       },
     });
@@ -137,6 +147,7 @@ const ParentSettingsScreen: React.FC = () => {
         ]}
         showsVerticalScrollIndicator={false}
       >
+        {triggerReactCrash && <CrashTrigger />}
         {/* Profile Section */}
         <View style={currentStyles.profileSection}>
           <View style={currentStyles.avatarRingWrapper}>
@@ -151,9 +162,7 @@ const ParentSettingsScreen: React.FC = () => {
 
           <View style={currentStyles.userInfoTextContainer}>
             <Text style={currentStyles.userName}>{parentUser?.name || 'Parent'}</Text>
-            <Text style={currentStyles.userSubtitle}>
-              {t('onboarding.role_parent')}
-            </Text>
+            <Text style={currentStyles.userSubtitle}>{t('onboarding.role_parent')}</Text>
             {parentUser?.mobile ? (
               <Text
                 style={[
@@ -173,10 +182,10 @@ const ParentSettingsScreen: React.FC = () => {
           {/* Change Language */}
           <TouchableOpacity style={currentStyles.settingItem} onPress={handleLanguagePress}>
             <View style={currentStyles.settingIconBox}>
-                <Image
-                  source={require('../../assets/images/changeLang.png')}
-                  style={currentStyles.menuImage}
-                />
+              <Image
+                source={require('../../assets/images/changeLang.png')}
+                style={currentStyles.menuImage}
+              />
             </View>
             <View style={currentStyles.settingContent}>
               <Text style={currentStyles.settingTitle}>{t('profile_screen.change_language')}</Text>
@@ -249,9 +258,7 @@ const ParentSettingsScreen: React.FC = () => {
                 <Ionicons name="server-outline" size={22} color={theme.colors.warning} />
               </View>
               <View style={currentStyles.settingContent}>
-                <Text style={currentStyles.settingTitle}>
-                  {t('common.api_url_switcher_title')}
-                </Text>
+                <Text style={currentStyles.settingTitle}>{t('common.api_url_switcher_title')}</Text>
               </View>
               <Ionicons
                 name={isRTL ? 'chevron-back' : 'chevron-forward'}
@@ -274,19 +281,20 @@ const ParentSettingsScreen: React.FC = () => {
                 {t('profile_screen.crashlytics_testing_desc')}
               </Text>
               <View style={currentStyles.crashTestButtonsRow}>
-                <TouchableOpacity
-                  style={currentStyles.crashButton}
-                  onPress={handleTestCrash}
-                >
+                <TouchableOpacity style={currentStyles.crashButton} onPress={handleTestCrash}>
                   <Ionicons name="flame-outline" size={16} color="#fff" />
                   <Text style={currentStyles.crashButtonText}>
                     {t('profile_screen.test_crash')}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={currentStyles.logErrorButton}
-                  onPress={handleTestLogError}
+                  style={[currentStyles.crashButton, { backgroundColor: '#8B5CF6' }]}
+                  onPress={handleTestReactCrash}
                 >
+                  <Ionicons name="warning-outline" size={16} color="#fff" />
+                  <Text style={currentStyles.crashButtonText}>{t('common.test_react_crash')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={currentStyles.logErrorButton} onPress={handleTestLogError}>
                   <Ionicons name="alert-circle-outline" size={16} color="#fff" />
                   <Text style={currentStyles.crashButtonText}>
                     {t('profile_screen.test_log_error')}
@@ -299,10 +307,10 @@ const ParentSettingsScreen: React.FC = () => {
           {/* Dark Mode Toggle */}
           <View style={currentStyles.settingItem}>
             <View style={currentStyles.settingIconBox}>
-                <Image
-                  source={require('../../assets/images/darkMode.png')}
-                  style={currentStyles.menuImage}
-                />
+              <Image
+                source={require('../../assets/images/darkMode.png')}
+                style={currentStyles.menuImage}
+              />
             </View>
             <View style={currentStyles.settingContent}>
               <Text style={currentStyles.settingTitle}>{t('profile_screen.dark_mode')}</Text>
@@ -348,14 +356,13 @@ const ParentSettingsScreen: React.FC = () => {
               {t('profile_screen.delete_account')}
             </Text>
           </View>
-          {isDeletingAccount && <ActivityIndicator color="#fff" size="small" style={{ marginStart: 8 }} />}
+          {isDeletingAccount && (
+            <ActivityIndicator color="#fff" size="small" style={{ marginStart: 8 }} />
+          )}
         </TouchableOpacity>
       </ScrollView>
 
-      <ApiUrlSwitcherModal
-        isVisible={showApiModal}
-        onClose={() => setShowApiModal(false)}
-      />
+      <ApiUrlSwitcherModal isVisible={showApiModal} onClose={() => setShowApiModal(false)} />
     </View>
   );
 };
@@ -566,7 +573,7 @@ const styles = (
       textAlign: common.textAlign,
     },
     crashTestButtonsRow: {
-      flexDirection: 'row',
+      //flexDirection: 'row',
       gap: spacing.sm,
     },
     crashButton: {

@@ -15,6 +15,7 @@ import {
   configureCrashlyticsParent,
   configureCrashlyticsGuest,
 } from '../utils/crashlyticsHelper';
+import { logError, logInfo } from '../utils/logger';
 
 // Temporary types for testing
 interface User {
@@ -107,7 +108,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     // Create logout function to share between handlers
     const handleSessionExpired = () => {
-      if (__DEV__) console.log('Session expired - logging out');
+      logInfo('Session expired - logging out');
       setUser(null);
       setParentUser(null);
       setUserRole(null);
@@ -146,7 +147,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         configureCrashlyticsGuest();
       }
     } catch (error) {
-      console.error('Error checking auth status:', error);
+      logError('Error checking auth status', error);
       configureCrashlyticsGuest();
     } finally {
       setIsLoading(false);
@@ -197,7 +198,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         return { success: false, error: errorMessage };
       } catch (error: any) {
-        console.error('Login error:', error);
+        logError('Login error', error);
         return { success: false, error: error.message || 'An error occurred during login' };
       }
     },
@@ -248,7 +249,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         return { success: false, error: errorMessage };
       } catch (error: any) {
-        console.error('Registration error:', error);
+        logError('Registration error', error);
         return { success: false, error: error.message || 'An error occurred during registration' };
       }
     },
@@ -290,7 +291,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         return { success: false, error: result.errors?.[0]?.message || 'Login failed' };
       } catch (error: any) {
-        console.error('Parent login error:', error);
+        logError('Parent login error', error);
         return { success: false, error: error.message || 'An error occurred during parent login' };
       }
     },
@@ -333,7 +334,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         return { success: false, error: result.errors?.[0]?.message || 'Registration failed' };
       } catch (error: any) {
-        console.error('Parent registration error:', error);
+        logError('Parent registration error', error);
         return { success: false, error: error.message || 'An error occurred during parent registration' };
       }
     },
@@ -351,7 +352,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUserRole(null);
       configureCrashlyticsGuest();
     } catch (error) {
-      console.error('Logout error:', error);
+      logError('Logout error', error);
     }
   }, []);
 
@@ -395,7 +396,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       }
     } catch (error) {
-      console.error('Refresh user error:', error);
+      logError('Refresh user error', error);
     }
   }, []);
 
