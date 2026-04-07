@@ -485,7 +485,10 @@
     "parent_login_title": "Parent Login",
     "parent_register_title": "Parent Registration",
     "parent_register_subtitle": "Create your parent account to monitor your child's progress",
-    "parent_forgot_password": "Reset Parent Password"
+    "parent_forgot_password": "Reset Parent Password",
+    "invalid_mobile": "Invalid mobile number",
+    "forgot_password_subtitle": "Enter your mobile number to reset your password",
+    "reset_link_sent": "If this mobile is registered, you will receive a reset link/code."
   },
   "parent_dashboard": {
     "header_title": "Parent Dashboard",

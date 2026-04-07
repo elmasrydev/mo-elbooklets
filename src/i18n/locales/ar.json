@@ -477,7 +477,10 @@
     "parent_login_title": "دخول ولي الأمر",
     "parent_register_title": "تسجيل ولي أمر جديد",
     "parent_register_subtitle": "أنشئ حسابك كولي أمر لمتابعة تقدم طفلك",
-    "parent_forgot_password": "استعادة كلمة مرور ولي الأمر"
+    "parent_forgot_password": "استعادة كلمة مرور ولي الأمر",
+    "invalid_mobile": "رقم هاتف غير صحيح",
+    "forgot_password_subtitle": "أدخل رقم هاتفك المحمول لإعادة تعيين كلمة المرور",
+    "reset_link_sent": "إذا كان هذا الهاتف مسجلاً، فستتلقى رابطاً أو رمزاً لإعادة التعيين."
   },
   "parent_dashboard": {
     "header_title": "لوحة تحكم ولي الأمر",
