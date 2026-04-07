@@ -26,11 +26,14 @@ const ParentRegisterScreen: React.FC = () => {
   const [name, setName] = useState('');
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const mobileRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
+  const confirmPasswordRef = useRef<TextInput>(null);
 
   const { parentRegister } = useAuth();
   const { showConfirm } = useModal();
@@ -41,7 +44,7 @@ const ParentRegisterScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
 
   const handleRegister = async () => {
-    if (!name.trim() || !mobile.trim() || !password.trim()) {
+    if (!name.trim() || !mobile.trim() || !password.trim() || !confirmPassword.trim()) {
       showConfirm({
         title: t('common.error'),
         message: t('auth.fill_all_fields'),
@@ -55,6 +58,26 @@ const ParentRegisterScreen: React.FC = () => {
       showConfirm({
         title: t('common.error'),
         message: t('auth.invalid_mobile'),
+        showCancel: false,
+        onConfirm: () => {},
+      });
+      return;
+    }
+
+    if (password.length < 8) {
+      showConfirm({
+        title: t('common.error'),
+        message: t('auth.password_too_short'),
+        showCancel: false,
+        onConfirm: () => {},
+      });
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      showConfirm({
+        title: t('common.error'),
+        message: t('auth.passwords_not_match'),
         showCancel: false,
         onConfirm: () => {},
       });
@@ -157,7 +180,7 @@ const ParentRegisterScreen: React.FC = () => {
                     value={mobile}
                     onChangeText={(val) => setMobile(val.replace(/\D/g, '').slice(0, 11))}
                     maxLength={11}
-                    placeholder="01xxxxxxxxx"
+                    placeholder={t('auth.mobile_number_eg_placeholder')}
                     placeholderTextColor={theme.colors.textTertiary}
                     keyboardType="phone-pad"
                     editable={!isLoading}
@@ -183,11 +206,35 @@ const ParentRegisterScreen: React.FC = () => {
                     secureTextEntry={!showPassword}
                     editable={!isLoading}
                     textAlign={isRTL ? 'right' : 'left'}
-                    returnKeyType="done"
-                    onSubmitEditing={handleRegister}
+                    returnKeyType="next"
+                    onSubmitEditing={() => confirmPasswordRef.current?.focus()}
                   />
                   <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={currentStyles.eyeIcon}>
                     <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={theme.colors.textTertiary} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Confirm Password */}
+              <View style={currentStyles.inputGroup}>
+                <Text style={currentStyles.inputLabel}>{t('auth.confirm_password')}</Text>
+                <View style={currentStyles.inputWrapper}>
+                  <Ionicons name="lock-closed-outline" size={20} color={theme.colors.textTertiary} style={currentStyles.inputIcon} />
+                  <TextInput
+                    ref={confirmPasswordRef}
+                    style={currentStyles.input}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    placeholder={t('auth.confirm_password_placeholder')}
+                    placeholderTextColor={theme.colors.textTertiary}
+                    secureTextEntry={!showConfirmPassword}
+                    editable={!isLoading}
+                    textAlign={isRTL ? 'right' : 'left'}
+                    returnKeyType="done"
+                    onSubmitEditing={handleRegister}
+                  />
+                  <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={currentStyles.eyeIcon}>
+                    <Ionicons name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={theme.colors.textTertiary} />
                   </TouchableOpacity>
                 </View>
               </View>

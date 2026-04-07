@@ -79,7 +79,10 @@ export const useParentDashboard = () => {
       if (requestsRes.data?.parentChildRequests) {
         setIncomingRequests(
           requestsRes.data.parentChildRequests.filter(
-            (r: LinkRequest) => r.status.toLowerCase() !== 'accepted',
+            (r: LinkRequest) => {
+              const status = r.status.toLowerCase();
+              return status !== 'accepted' && status !== 'declined' && status !== 'rejected';
+            },
           ),
         );
       }
