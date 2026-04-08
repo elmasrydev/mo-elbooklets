@@ -11,6 +11,7 @@ import * as SecureStore from 'expo-secure-store';
 import { tryFetchWithFallback, setAuthErrorHandler } from '../config/api';
 import { setLogoutHandler } from '../lib/apollo';
 import { configureCrashlyticsUser } from '../utils/crashlyticsHelper';
+import analytics from '../lib/analytics';
 
 // Temporary types for testing
 interface User {
@@ -55,8 +56,8 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (input: LoginInput) => Promise<{ success: boolean; error?: string }>;
-  register: (input: RegisterInput) => Promise<{ success: boolean; error?: string }>;
+  login: (input: LoginInput) => Promise<{ success: boolean; user?: User; error?: string }>;
+  register: (input: RegisterInput) => Promise<{ success: boolean; user?: User; error?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   onAuthStateChange?: (isAuthenticated: boolean) => void;
@@ -98,6 +99,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const parsedUser = JSON.parse(userData);
         setUser(parsedUser);
         configureCrashlyticsUser(parsedUser);
+        analytics.identify(parsedUser.id, {
+          name: parsedUser.name,
+          mobile: parsedUser.mobile,
+          grade: parsedUser.grade?.name,
+        });
       } else {
         configureCrashlyticsUser(null);
       }
@@ -110,7 +116,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const login = useCallback(
-    async (input: LoginInput): Promise<{ success: boolean; error?: string }> => {
+    async (input: LoginInput): Promise<{ success: boolean; user?: User; error?: string }> => {
       try {
         const result = await tryFetchWithFallback(
           `
@@ -147,7 +153,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           await AsyncStorage.setItem('user_data', JSON.stringify(authPayload.user));
           setUser(authPayload.user);
           configureCrashlyticsUser(authPayload.user);
-          return { success: true };
+          analytics.identify(authPayload.user.id, {
+            name: authPayload.user.name,
+            mobile: authPayload.user.mobile,
+            grade: authPayload.user.grade?.name,
+          });
+          return { success: true, user: authPayload.user };
         }
 
         let errorMessage = result.errors?.[0]?.message || 'Login failed';
@@ -174,7 +185,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   );
 
   const register = useCallback(
-    async (input: RegisterInput): Promise<{ success: boolean; error?: string }> => {
+    async (input: RegisterInput): Promise<{ success: boolean; user?: User; error?: string }> => {
       try {
         const result = await tryFetchWithFallback(
           `
@@ -211,7 +222,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           await AsyncStorage.setItem('user_data', JSON.stringify(authPayload.user));
           setUser(authPayload.user);
           configureCrashlyticsUser(authPayload.user);
-          return { success: true };
+          analytics.identify(authPayload.user.id, {
+            name: authPayload.user.name,
+            mobile: authPayload.user.mobile,
+            grade: authPayload.user.grade?.name,
+          });
+          return { success: true, user: authPayload.user };
         }
 
         let errorMessage = result.errors?.[0]?.message || 'Registration failed';
@@ -243,6 +259,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await AsyncStorage.removeItem('user_data');
       setUser(null);
       configureCrashlyticsUser(null);
+      analytics.trackLogout();
+      analytics.reset();
     } catch (error) {
       console.error('Logout error:', error);
     }

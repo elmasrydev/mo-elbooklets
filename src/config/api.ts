@@ -18,8 +18,8 @@ const PRODUCTION_URLS = [
 const DEVELOPMENT_URLS = [
   // 'http://192.168.1.188:8001/graphql',  // Current WiFi network
   // 'http://169.254.105.59:8001/graphql', // Link-local address
-  'http://10.0.2.2:8000/graphql', // Localhost
-  // 'https://elbooklets.com/graphql', // Android emulator
+  // 'http://10.0.2.2:8000/graphql', // Localhost
+  'https://elbooklets.com/graphql', // Android emulator
   // 'https://elbooklets.com/graphql', // iOS simulator
 ];
 

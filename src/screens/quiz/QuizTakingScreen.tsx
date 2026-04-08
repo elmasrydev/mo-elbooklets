@@ -27,6 +27,8 @@ import AppButton from '../../components/AppButton';
 import RetryView from '../../components/RetryView';
 import { QuizScreenSkeleton } from '../../components/SkeletonLoader';
 import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
+import { useScreenTracking } from '../../hooks/useScreenTracking';
+import analytics from '../../lib/analytics';
 
 const DESCRIPTIVE_TYPES = ['what_happens', 'give_a_reason'];
 
@@ -56,6 +58,7 @@ interface Quiz {
 const QuizTakingScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  useScreenTracking('Quiz Taking');
   const { quizId, isTimed } = route.params || {};
 
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
@@ -161,7 +164,14 @@ const QuizTakingScreen: React.FC = () => {
       );
 
       if (result.data?.quiz) {
-        setQuiz(result.data.quiz);
+        const quizData = result.data.quiz;
+        setQuiz(quizData);
+        analytics.trackQuizStarted({
+          quiz_id: quizData.id,
+          quiz_name: quizData.name,
+          subject_id: quizData.subject?.id,
+          subject_name: quizData.subject?.name,
+        });
       } else {
         setError(result.errors?.[0]?.message || t('quiz_taking.error_loading_quiz'));
       }

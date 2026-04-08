@@ -22,9 +22,12 @@ import { useAutoReset } from '../hooks/useAutoReset';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useScreenTracking } from '../hooks/useScreenTracking';
+import analytics from '../lib/analytics';
 
 const LoginScreen: React.FC = () => {
   const navigation = useNavigation<any>();
+  useScreenTracking('Login');
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -57,7 +60,14 @@ const LoginScreen: React.FC = () => {
     setIsLoading(true);
     try {
       const result = await login({ mobile: mobile.trim(), password });
-      if (!result.success) {
+      if (result.success && result.user) {
+        analytics.trackLogin('phone');
+        analytics.identify(result.user.id, {
+          name: result.user.name,
+          mobile: result.user.mobile,
+          grade: result.user.grade?.name,
+        });
+      } else if (!result.success) {
         showConfirm({
           title: t('auth.login_failed'),
           message: t(result.error || 'auth.invalid_credentials'),
