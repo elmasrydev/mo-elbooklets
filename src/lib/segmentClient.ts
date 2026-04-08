@@ -8,7 +8,7 @@ import { FirebasePlugin } from '@segment/analytics-react-native-plugin-firebase'
  */
 export const segmentClient = createClient({
   // Use environment variable for the write key, or a placeholder for development
-  writeKey: 'YOUR_SEGMENT_WRITE_KEY', // Replace with your actual Segment Write Key
+  writeKey: 'vXoZ4B2WvTqX8N3M1R7L5K9J0H6G4F2D', // Replace with your actual Segment Write Key
   trackAppLifecycleEvents: true,
   debug: __DEV__,
 });
