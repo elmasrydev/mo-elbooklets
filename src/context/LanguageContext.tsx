@@ -3,7 +3,8 @@ import { I18nManager, NativeModules } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import i18n, { LANGUAGE_KEY } from '../i18n';
 import * as Updates from 'expo-updates';
-import { useTranslation } from 'react-i18next'; // Assuming this import is needed for 't'
+import { useTranslation } from 'react-i18next';
+import { analytics } from '../lib/analytics';
 import { useModal } from './ModalContext'; // Assuming this path for ModalContext
 
 type Language = 'en' | 'ar';
@@ -84,6 +85,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({
           // 2. Update i18n language
           await i18n.changeLanguage(lang);
           setLanguageState(lang);
+          analytics.trackLanguageChanged(lang);
 
           // 3. Set native RTL direction
           const shouldBeRTL = lang === 'ar';
