@@ -89,7 +89,8 @@
     "api_url_switcher_title": "المطور: تبديل رابط API",
     "api_current_url": "رابط API الحالي",
     "api_switch_demo": "التبديل إلى Demo",
-    "api_switch_production": "التبديل إلى Production"
+    "api_switch_production": "التبديل إلى Production",
+    "api_switch_prs": "التبديل إلى PRS"
   },
   "subscription": {
     "required_title": "اشتراك مطلوب",
@@ -489,7 +490,14 @@
     "parent_forgot_password": "استعادة كلمة مرور ولي الأمر",
     "invalid_mobile": "رقم هاتف غير صحيح",
     "forgot_password_subtitle": "أدخل رقم هاتفك المحمول لإعادة تعيين كلمة المرور",
-    "reset_link_sent": "إذا كان هذا الهاتف مسجلاً، فستتلقى رابطاً أو رمزاً لإعادة التعيين."
+    "reset_link_sent": "إذا كان هذا الهاتف مسجلاً، فستتلقى رابطاً أو رمزاً لإعادة التعيين.",
+    "email_label": "البريد الإلكتروني",
+    "email_placeholder_parent": "أدخل بريدك الإلكتروني",
+    "invalid_email_format": "يرجى إدخال بريد إلكتروني صحيح",
+    "forgot_password_email_subtitle": "أدخل بريدك الإلكتروني لإعادة تعيين كلمة المرور",
+    "forgot_password_success_title": "تم الإرسال",
+    "forgot_password_success_message": "إذا كان هذا البريد مسجلاً، ستتلقى تعليمات إعادة تعيين كلمة المرور.",
+    "forgot_password_failed": "فشل الإعادة"
   },
   "parent_dashboard": {
     "header_title": "لوحة تحكم ولي الأمر",
@@ -587,7 +595,8 @@
     "crashlytics_testing": "اختبار Crashlytics",
     "crashlytics_testing_desc": "اختبار تكامل Firebase Crashlytics. سيؤدي الانهيار إلى إغلاق التطبيق.",
     "test_crash": "اختبار انهيار",
-    "test_log_error": "تسجيل خطأ"
+    "test_log_error": "تسجيل خطأ",
+    "internal_settings": "إعدادات المطور"
   },
   "faq": {
     "header_title": "الأسئلة الشائعة",

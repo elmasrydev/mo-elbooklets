@@ -15,7 +15,7 @@ import { useTranslation } from 'react-i18next';
 import * as Updates from 'expo-updates';
 import { useTheme } from '../context/ThemeContext';
 import { useTypography } from '../hooks/useTypography';
-import { ApiUriManager } from '../config/api';
+import { ApiUriManager, PRS_URL } from '../config/api';
 import AppButton from './AppButton';
 import { useModal } from '../context/ModalContext';
 
@@ -115,6 +115,7 @@ const ApiUrlSwitcherModal: React.FC<ApiUrlSwitcherModalProps> = ({ isVisible, on
 
   const isProduction = currentUrl === PRODUCTION_URL;
   const isDemo = currentUrl === DEMO_URL;
+  const isPrs = currentUrl === PRS_URL;
 
   return (
     <Modal visible={isVisible} transparent={true} animationType="slide" onRequestClose={onClose}>
@@ -177,6 +178,12 @@ const ApiUrlSwitcherModal: React.FC<ApiUrlSwitcherModalProps> = ({ isVisible, on
                 variant={isDemo ? 'primary' : 'outline'}
                 disabled={isDemo}
                 onPress={() => applyUrl(DEMO_URL)}
+              />
+              <AppButton
+                title={t('common.api_switch_prs')}
+                variant={isPrs ? 'primary' : 'outline'}
+                disabled={isPrs}
+                onPress={() => applyUrl(PRS_URL)}
               />
             </View>
           </View>

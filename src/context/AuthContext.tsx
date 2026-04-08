@@ -39,6 +39,7 @@ interface Parent {
   id: string;
   name: string;
   mobile: string;
+  email?: string;
   country_code?: string;
 }
 
@@ -50,6 +51,7 @@ interface ParentLoginInput {
 interface ParentRegisterInput {
   name: string;
   mobile: string;
+  email: string;
   password: string;
 }
 
@@ -83,8 +85,10 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (input: LoginInput) => Promise<{ success: boolean; error?: string }>;
   register: (input: RegisterInput) => Promise<{ success: boolean; error?: string }>;
+  forgotPassword: (email: string) => Promise<{ success: boolean; message?: string }>;
   parentLogin: (input: ParentLoginInput) => Promise<{ success: boolean; error?: string }>;
   parentRegister: (input: ParentRegisterInput) => Promise<{ success: boolean; error?: string }>;
+  parentForgotPassword: (email: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   onAuthStateChange?: (isAuthenticated: boolean) => void;
@@ -256,6 +260,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     [],
   );
 
+  const forgotPassword = useCallback(
+    async (email: string): Promise<{ success: boolean; message?: string }> => {
+      try {
+        const result = await tryFetchWithFallback(
+          `
+        mutation ForgotPassword($email: String!) {
+          forgotPassword(email: $email) {
+            success
+            message
+          }
+        }
+      `,
+          { email },
+        );
+
+        if (result.data?.forgotPassword) {
+          return {
+            success: result.data.forgotPassword.success,
+            message: result.data.forgotPassword.message,
+          };
+        }
+
+        return {
+          success: false,
+          message: result.errors?.[0]?.message || 'Forgot password failed',
+        };
+      } catch (error: any) {
+        logError('Forgot password error', error);
+        return { success: false, message: error.message };
+      }
+    },
+    [],
+  );
+
   const parentLogin = useCallback(
     async (input: ParentLoginInput): Promise<{ success: boolean; error?: string }> => {
       try {
@@ -303,10 +341,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         const result = await tryFetchWithFallback(
           `
-        mutation ParentRegister($name: String!, $mobile: String!, $password: String!) {
+        mutation ParentRegister($name: String!, $mobile: String!, $email: String!, $password: String!) {
           parentRegister(input: {
             name: $name,
             mobile: $mobile,
+            email: $email,
             password: $password
           }) {
             access_token
@@ -314,11 +353,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               id
               name
               mobile
+              email
             }
           }
         }
       `,
-          { name: input.name, mobile: input.mobile, password: input.password },
+          { name: input.name, mobile: input.mobile, email: input.email, password: input.password },
         );
 
         if (result.data?.parentRegister) {
@@ -336,6 +376,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } catch (error: any) {
         logError('Parent registration error', error);
         return { success: false, error: error.message || 'An error occurred during parent registration' };
+      }
+    },
+    [],
+  );
+
+  const parentForgotPassword = useCallback(
+    async (email: string): Promise<{ success: boolean; message?: string }> => {
+      try {
+        const result = await tryFetchWithFallback(
+          `
+        mutation ParentForgotPassword($email: String!) {
+          parentForgotPassword(email: $email) {
+            success
+            message
+          }
+        }
+      `,
+          { email },
+        );
+
+        if (result.data?.parentForgotPassword) {
+          return {
+            success: result.data.parentForgotPassword.success,
+            message: result.data.parentForgotPassword.message,
+          };
+        }
+
+        return {
+          success: false,
+          message: result.errors?.[0]?.message || 'Forgot password failed',
+        };
+      } catch (error: any) {
+        logError('Parent forgot password error', error);
+        return { success: false, message: error.message };
       }
     },
     [],
@@ -409,12 +483,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       isAuthenticated: !!user || !!parentUser,
       login,
       register,
+      forgotPassword,
       parentLogin,
       parentRegister,
+      parentForgotPassword,
       logout,
       refreshUser,
     }),
-    [user, parentUser, userRole, isLoading, login, register, parentLogin, parentRegister, logout, refreshUser],
+    [user, parentUser, userRole, isLoading, login, register, forgotPassword, parentLogin, parentRegister, parentForgotPassword, logout, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -91,7 +91,8 @@
     "api_url_switcher_title": "Developer: API URL Switcher",
     "api_current_url": "Current API URL",
     "api_switch_demo": "Switch to Demo",
-    "api_switch_production": "Switch to Production"
+    "api_switch_production": "Switch to Production",
+    "api_switch_prs": "Switch to PRS"
   },
   "subscription": {
     "required_title": "Subscription Required",
@@ -499,7 +500,14 @@
     "parent_forgot_password": "Reset Parent Password",
     "invalid_mobile": "Invalid mobile number",
     "forgot_password_subtitle": "Enter your mobile number to reset your password",
-    "reset_link_sent": "If this mobile is registered, you will receive a reset link/code."
+    "reset_link_sent": "If this mobile is registered, you will receive a reset link/code.",
+    "email_label": "Email Address",
+    "email_placeholder_parent": "Enter your email address",
+    "invalid_email_format": "Please enter a valid email address",
+    "forgot_password_email_subtitle": "Enter your email address to reset your password",
+    "forgot_password_success_title": "Email Sent",
+    "forgot_password_success_message": "If this email is registered, you will receive password reset instructions.",
+    "forgot_password_failed": "Reset Failed"
   },
   "parent_dashboard": {
     "header_title": "Parent Dashboard",
@@ -592,7 +600,8 @@
     "crashlytics_testing": "Crashlytics Testing",
     "crashlytics_testing_desc": "Test Firebase Crashlytics integration. Crash will force-close the app.",
     "test_crash": "Test Crash",
-    "test_log_error": "Log Error"
+    "test_log_error": "Log Error",
+    "internal_settings": "Internal Settings"
   },
   "faq": {
     "header_title": "FAQs",

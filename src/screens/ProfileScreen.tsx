@@ -30,9 +30,6 @@ import {
   DeleteAccountMutationVariables,
 } from '../generated/graphql';
 import { isDebugMode } from '../config/debug';
-import ApiUrlSwitcherModal from '../components/ApiUrlSwitcherModal';
-import { configureCrashlyticsStudent, configureCrashlyticsGuest } from '../utils/crashlyticsHelper';
-import { logError } from '../utils/logger';
 import crashlytics from '@react-native-firebase/crashlytics';
 
 const APP_VERSION = `EL-Booklets v${DeviceInfo.getVersion()}`;
@@ -50,23 +47,6 @@ const ProfileScreen: React.FC = () => {
   const { isRTL, setLanguage, language } = useLanguage();
   const { typography, fontWeight } = useTypography();
   const { t } = useTranslation();
-  const [showApiModal, setShowApiModal] = useState(false);
-  const [triggerReactCrash, setTriggerReactCrash] = useState(false);
-
-  const handleTestCrash = () => {
-    crashlytics().crash();
-  };
-
-  const handleTestLogError = () => {
-    crashlytics().log('Test log from Profile Screen');
-    crashlytics().recordError(
-      new Error('Test error from Profile Screen at ' + new Date().toISOString()),
-    );
-  };
-
-  const handleTestReactCrash = () => {
-    setTriggerReactCrash(true);
-  };
 
   const [deleteAccountMutation, { loading: isDeletingAccount }] = useMutation<
     DeleteAccountMutation,
@@ -149,7 +129,6 @@ const ProfileScreen: React.FC = () => {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {triggerReactCrash && <CrashTrigger />}
         {/* Profile Section */}
         <View style={currentStyles.profileSection}>
           <View style={currentStyles.avatarRingWrapper}>
@@ -343,11 +322,11 @@ const ProfileScreen: React.FC = () => {
           </TouchableOpacity>
           */}
 
-          {/* API URL Switcher (debug builds only) */}
+          {/* Internal Settings (debug builds only) */}
           {isDebugMode() && (
             <TouchableOpacity
               style={currentStyles.settingItem}
-              onPress={() => setShowApiModal(true)}
+              onPress={() => navigation.navigate('InternalSettings')}
             >
               <View
                 style={[
@@ -355,10 +334,10 @@ const ProfileScreen: React.FC = () => {
                   { backgroundColor: theme.colors.warning + '20' },
                 ]}
               >
-                <Ionicons name="server-outline" size={22} color={theme.colors.warning} />
+                <Ionicons name="settings-outline" size={22} color={theme.colors.warning} />
               </View>
               <View style={currentStyles.settingContent}>
-                <Text style={currentStyles.settingTitle}>{t('common.api_url_switcher_title')}</Text>
+                <Text style={currentStyles.settingTitle}>{t('profile_screen.internal_settings')}</Text>
               </View>
               <Ionicons
                 name={isRTL ? 'chevron-back' : 'chevron-forward'}
@@ -366,42 +345,6 @@ const ProfileScreen: React.FC = () => {
                 color={theme.colors.textTertiary}
               />
             </TouchableOpacity>
-          )}
-
-          {/* Crashlytics Testing (debug builds only) */}
-          {isDebugMode() && (
-            <View style={currentStyles.crashTestContainer}>
-              <View style={currentStyles.crashTestHeader}>
-                <Ionicons name="bug-outline" size={18} color={theme.colors.warning} />
-                <Text style={currentStyles.crashTestTitle}>
-                  {t('profile_screen.crashlytics_testing')}
-                </Text>
-              </View>
-              <Text style={currentStyles.crashTestSubtitle}>
-                {t('profile_screen.crashlytics_testing_desc')}
-              </Text>
-              <View style={currentStyles.crashTestButtonsRow}>
-                <TouchableOpacity style={currentStyles.crashButton} onPress={handleTestCrash}>
-                  <Ionicons name="flame-outline" size={16} color="#fff" />
-                  <Text style={currentStyles.crashButtonText}>
-                    {t('profile_screen.test_crash')}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[currentStyles.crashButton, { backgroundColor: '#8B5CF6' }]}
-                  onPress={handleTestReactCrash}
-                >
-                  <Ionicons name="warning-outline" size={16} color="#fff" />
-                  <Text style={currentStyles.crashButtonText}>{t('common.test_react_crash')}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={currentStyles.logErrorButton} onPress={handleTestLogError}>
-                  <Ionicons name="alert-circle-outline" size={16} color="#fff" />
-                  <Text style={currentStyles.crashButtonText}>
-                    {t('profile_screen.test_log_error')}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
           )}
 
           {/* Dark Mode Toggle */}
@@ -461,7 +404,6 @@ const ProfileScreen: React.FC = () => {
       </ScrollView>
 
       <ProfileCompletionPrompt context="more" />
-      <ApiUrlSwitcherModal isVisible={showApiModal} onClose={() => setShowApiModal(false)} />
     </View>
   );
 };

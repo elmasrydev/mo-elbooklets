@@ -23,12 +23,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAutoReset } from '../hooks/useAutoReset';
 
 const EGYPT_MOBILE_REGEX = /^01[0125]\d{8}$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const STRONG_PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
 
 const ParentRegisterScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const [name, setName] = useState('');
   const [mobile, setMobile] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -38,10 +40,12 @@ const ParentRegisterScreen: React.FC = () => {
   // Touch States for Inline Validation
   const [touchedName, setTouchedName] = useAutoReset(false);
   const [touchedMobile, setTouchedMobile] = useAutoReset(false);
+  const [touchedEmail, setTouchedEmail] = useAutoReset(false);
   const [touchedPassword, setTouchedPassword] = useAutoReset(false);
   const [touchedConfirm, setTouchedConfirm] = useAutoReset(false);
 
   const mobileRef = useRef<TextInput>(null);
+  const emailRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
   const confirmPasswordRef = useRef<TextInput>(null);
 
@@ -56,6 +60,7 @@ const ParentRegisterScreen: React.FC = () => {
   // Validation Flags
   const isNameValid = name.trim().length >= 3;
   const isMobileValid = EGYPT_MOBILE_REGEX.test(mobile.trim());
+  const isEmailValid = EMAIL_REGEX.test(email.trim());
   const isPasswordStrong = STRONG_PASSWORD_REGEX.test(password);
   const isConfirmValid = password === confirmPassword && password.length > 0;
 
@@ -69,14 +74,16 @@ const ParentRegisterScreen: React.FC = () => {
   const handleRegister = async () => {
     setTouchedName(true);
     setTouchedMobile(true);
+    setTouchedEmail(true);
     setTouchedPassword(true);
     setTouchedConfirm(true);
 
-    if (!isNameValid || !isMobileValid || !isPasswordStrong || !isConfirmValid) {
+    if (!isNameValid || !isMobileValid || !isEmailValid || !isPasswordStrong || !isConfirmValid) {
       let errorMsg = t('auth.fill_all_fields');
 
       if (!isNameValid && name.trim().length > 0) errorMsg = t('auth.name_too_short');
       else if (!isMobileValid && mobile.trim().length > 0) errorMsg = t('auth.invalid_egyptian_mobile');
+      else if (!isEmailValid && email.trim().length > 0) errorMsg = t('auth.invalid_email_format');
       else if (!isPasswordStrong && password.length > 0) errorMsg = t('auth.password_not_strong_enough');
       else if (!isConfirmValid && confirmPassword.length > 0) errorMsg = t('auth.passwords_not_match');
 
@@ -94,6 +101,7 @@ const ParentRegisterScreen: React.FC = () => {
       const result = await parentRegister({
         name: name.trim(),
         mobile: mobile.trim(),
+        email: email.trim(),
         password,
       });
       if (!result.success) {
@@ -224,11 +232,46 @@ const ParentRegisterScreen: React.FC = () => {
                     editable={!isLoading}
                     returnKeyType="next"
                     onBlur={() => setTouchedMobile(true)}
-                    onSubmitEditing={() => passwordRef.current?.focus()}
+                    onSubmitEditing={() => emailRef.current?.focus()}
                   />
                 </View>
                 {touchedMobile && !isMobileValid && mobile.length > 0 && (
                   <Text style={currentStyles.errorText}>{t('auth.invalid_egyptian_mobile')}</Text>
+                )}
+              </View>
+
+              {/* Email Address */}
+              <View style={currentStyles.inputGroup}>
+                <Text style={currentStyles.inputLabel}>{t('auth.email_label')}</Text>
+                <View
+                  style={[
+                    currentStyles.inputWrapper,
+                    { borderColor: getBorderColor(touchedEmail, isEmailValid, email) },
+                  ]}
+                >
+                  <Ionicons
+                    name="mail-outline"
+                    size={20}
+                    color={touchedEmail && !isEmailValid ? '#FF6B6B' : theme.colors.textTertiary}
+                    style={currentStyles.inputIcon}
+                  />
+                  <TextInput
+                    ref={emailRef}
+                    style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
+                    value={email}
+                    onChangeText={setEmail}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    placeholder={t('auth.email_placeholder_parent')}
+                    placeholderTextColor={theme.colors.textTertiary}
+                    editable={!isLoading}
+                    returnKeyType="next"
+                    onBlur={() => setTouchedEmail(true)}
+                    onSubmitEditing={() => passwordRef.current?.focus()}
+                  />
+                </View>
+                {touchedEmail && !isEmailValid && email.length > 0 && (
+                  <Text style={currentStyles.errorText}>{t('auth.invalid_email_format')}</Text>
                 )}
               </View>
 

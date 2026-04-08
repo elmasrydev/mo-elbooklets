@@ -51,10 +51,11 @@ export const CANCEL_PARENT_LINK_REQUEST_MUTATION = gql`
  */
 
 export const PARENT_REGISTER_MUTATION = gql`
-  mutation ParentRegister($name: String!, $mobile: String!, $password: String!) {
+  mutation ParentRegister($name: String!, $mobile: String!, $email: String!, $password: String!) {
     parentRegister(input: {
       name: $name,
       mobile: $mobile,
+      email: $email,
       password: $password
     }) {
       access_token
@@ -63,6 +64,7 @@ export const PARENT_REGISTER_MUTATION = gql`
         id
         name
         mobile
+        email
       }
     }
   }
@@ -171,6 +173,15 @@ export const GET_CHILD_DASHBOARD_QUERY = gql`
           is_completed
         }
       }
+    }
+  }
+`;
+
+export const PARENT_FORGOT_PASSWORD_MUTATION = gql`
+  mutation ParentForgotPassword($email: String!) {
+    parentForgotPassword(email: $email) {
+      success
+      message
     }
   }
 `;

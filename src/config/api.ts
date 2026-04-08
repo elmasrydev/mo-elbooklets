@@ -13,6 +13,7 @@ import Constants from 'expo-constants';
 
 const PRODUCTION_URL = 'https://elbooklets.com/graphql';
 const DEMO_URL = 'https://demo.elbooklets.com/graphql';
+export const PRS_URL = 'https://prs.elbooklets.com/graphql';
 
 // Default URL based on app.json > extra.debugMode (set before building)
 export const PRIMARY_API_URL =
@@ -79,6 +80,7 @@ export const CUSTOM_API_URL_KEY = 'custom_api_url_override';
 const KNOWN_API_URLS = [
   'https://elbooklets.com/graphql',
   'https://demo.elbooklets.com/graphql',
+  'https://prs.elbooklets.com/graphql',
 ] as const;
 
 /**
