@@ -26,6 +26,8 @@ import AppButton from '../../components/AppButton';
 import RetryView from '../../components/RetryView';
 import { GenericListSkeleton } from '../../components/SkeletonLoader';
 import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
+import { useScreenTracking } from '../../hooks/useScreenTracking';
+import analytics from '../../lib/analytics';
 
 interface UserQuizAnswer {
   question: {
@@ -78,6 +80,7 @@ interface QuizResultsScreenProps {
 const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  useScreenTracking('Quiz Results');
 
   // Use either props (if used in Modal) or route params (if navigated to as a screen)
   const quizId = props.quizId || route.params?.quizId;
@@ -173,8 +176,17 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
       );
 
       if (result.data?.quizResults) {
-        setQuizResult(result.data.quizResults);
-        setPublished(!!result.data.quizResults.isPublished);
+        const results = result.data.quizResults;
+        setQuizResult(results);
+        analytics.trackQuizCompleted({
+          quiz_id: results.quiz.id,
+          quiz_name: results.quiz.name,
+          score: results.score,
+          is_completed: true,
+          subject_id: results.quiz.subject?.id,
+          subject_name: results.quiz.subject?.name,
+        });
+        setPublished(!!results.isPublished);
       } else {
         setError(result.errors?.[0]?.message || t('quiz_results.error_loading_results'));
       }

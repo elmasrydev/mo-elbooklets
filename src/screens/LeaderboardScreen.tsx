@@ -26,6 +26,8 @@ import { useFollowToggle } from '../hooks/useFollowToggle';
 import RetryView from '../components/RetryView';
 import { layout } from '../config/layout';
 import { tryFetchWithFallback } from '../config/api';
+import { useScreenTracking } from '../hooks/useScreenTracking';
+import analytics from '../lib/analytics';
 
 interface Subject {
   id: string;
@@ -52,6 +54,7 @@ const LeaderboardScreen: React.FC = () => {
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
   const navigation = useNavigation<any>();
+  useScreenTracking('Leaderboard');
 
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [selectedTab, setSelectedTab] = useState<string>('all');
@@ -68,6 +71,7 @@ const LeaderboardScreen: React.FC = () => {
 
   useEffect(() => {
     fetchSubjects();
+    analytics.trackLeaderboardViewed();
   }, []);
 
   useEffect(() => {

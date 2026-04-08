@@ -24,6 +24,8 @@ import { useTypography } from '../hooks/useTypography';
 import { useAutoReset } from '../hooks/useAutoReset';
 import { useModal } from '../context/ModalContext';
 import { useNavigation } from '@react-navigation/native';
+import { useScreenTracking } from '../hooks/useScreenTracking';
+import analytics from '../lib/analytics';
 
 import BackButton from '../components/navigation/BackButton';
 import AppButton from '../components/AppButton';
@@ -32,6 +34,7 @@ import AppButton from '../components/AppButton';
 
 const RegisterScreen: React.FC = () => {
   const navigation = useNavigation<any>();
+  useScreenTracking('Register');
   const [currentStep, setCurrentStep] = useState(1);
   const [countryCode] = useState('+2');
 
@@ -208,7 +211,14 @@ const RegisterScreen: React.FC = () => {
         educational_system_id: selectedEduSystem,
         promo_code: promoCode || undefined,
       });
-      if (!result.success) {
+      if (result.success && result.user) {
+        analytics.trackSignUp('phone');
+        analytics.identify(result.user.id, {
+          name: result.user.name,
+          mobile: result.user.mobile,
+          grade: result.user.grade?.name,
+        });
+      } else if (!result.success) {
         showConfirm({
           title: t('auth.registration_failed'),
           message: t(result.error || 'auth.registration_error'),

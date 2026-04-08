@@ -17,9 +17,12 @@ import { layout } from '../config/layout';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
+import { useScreenTracking } from '../hooks/useScreenTracking';
+import analytics from '../lib/analytics';
 
 const OnboardingScreen: React.FC = () => {
   const navigation = useNavigation<any>();
+  useScreenTracking('Onboarding');
   const { t } = useTranslation();
   const { language, setLanguage, isRTL } = useLanguage();
   const { typography, fontWeight } = useTypography();
@@ -67,7 +70,10 @@ const OnboardingScreen: React.FC = () => {
         <View style={currentStyles.bottomContent}>
           <AppButton
             title={t('onboarding.get_started')}
-            onPress={() => navigation.navigate('Register')}
+            onPress={() => {
+              analytics.trackOnboardingCompleted();
+              navigation.navigate('Register');
+            }}
             size="lg"
           />
 
