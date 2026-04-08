@@ -29,6 +29,8 @@ import {
   DeleteAccountMutation,
   DeleteAccountMutationVariables,
 } from '../generated/graphql';
+import { isDebugMode } from '../config/debug';
+import ApiUrlSwitcherModal from '../components/ApiUrlSwitcherModal';
 
 const APP_VERSION = `EL-Booklets v${DeviceInfo.getVersion()}`;
 
@@ -41,8 +43,8 @@ const ProfileScreen: React.FC = () => {
   const { isRTL, setLanguage, language } = useLanguage();
   const { typography, fontWeight } = useTypography();
   const { t } = useTranslation();
+  const [showApiModal, setShowApiModal] = useState(false);
 
-  const [showParentalPrompt, setShowParentalPrompt] = useState(false);
   const [deleteAccountMutation, { loading: isDeletingAccount }] = useMutation<
     DeleteAccountMutation,
     DeleteAccountMutationVariables
@@ -253,7 +255,7 @@ const ProfileScreen: React.FC = () => {
           {/* Parental Linking */}
           <TouchableOpacity
             style={currentStyles.settingItem}
-            onPress={() => setShowParentalPrompt(true)}
+            onPress={() => navigation.navigate('ParentLinking' as never)}
           >
             <View
               style={[
@@ -320,6 +322,33 @@ const ProfileScreen: React.FC = () => {
           </TouchableOpacity>
           */}
 
+          {/* API URL Switcher (debug builds only) */}
+          {isDebugMode() && (
+            <TouchableOpacity
+              style={currentStyles.settingItem}
+              onPress={() => setShowApiModal(true)}
+            >
+              <View
+                style={[
+                  currentStyles.settingIconBox,
+                  { backgroundColor: theme.colors.warning + '20' },
+                ]}
+              >
+                <Ionicons name="server-outline" size={22} color={theme.colors.warning} />
+              </View>
+              <View style={currentStyles.settingContent}>
+                <Text style={currentStyles.settingTitle}>
+                  {t('common.api_url_switcher_title')}
+                </Text>
+              </View>
+              <Ionicons
+                name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                size={20}
+                color={theme.colors.textTertiary}
+              />
+            </TouchableOpacity>
+          )}
+
           {/* Dark Mode Toggle */}
           <View style={currentStyles.settingItem}>
             <View style={currentStyles.settingIconBox}>
@@ -377,10 +406,9 @@ const ProfileScreen: React.FC = () => {
       </ScrollView>
 
       <ProfileCompletionPrompt context="more" />
-      <ProfileCompletionPrompt
-        context="parental"
-        isVisible={showParentalPrompt}
-        onClose={() => setShowParentalPrompt(false)}
+      <ApiUrlSwitcherModal
+        isVisible={showApiModal}
+        onClose={() => setShowApiModal(false)}
       />
     </View>
   );

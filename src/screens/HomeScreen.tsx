@@ -34,6 +34,7 @@ import { CardListSkeleton } from '../components/SkeletonLoader';
 import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
 import { isRTL, textAlign } from '../lib/rtl';
 
+
 const { width } = Dimensions.get('window');
 
 // ─── Type Definitions ────────────────────────────────────────────────────────
@@ -223,6 +224,7 @@ const HomeScreen: React.FC = () => {
   const [leaderboardEntries, setLeaderboardEntries] = useState<LeaderboardEntry[]>([]);
   const [leaderboardUser, setLeaderboardUser] = useState<LeaderboardEntry | null>(null);
   const [socialFeed, setSocialFeed] = useState<SocialFeedItem[]>([]);
+
   const [todaySchedule, setTodaySchedule] = useState<TodayScheduleData | null>(null);
   const [loading, setLoading] = useState(true);
 
