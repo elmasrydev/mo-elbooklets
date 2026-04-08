@@ -26,7 +26,9 @@ import UnifiedHeader from '../../components/UnifiedHeader';
 import AppButton from '../../components/AppButton';
 import RetryView from '../../components/RetryView';
 import { QuizScreenSkeleton } from '../../components/SkeletonLoader';
+import { useScreenTracking } from '../../hooks/useScreenTracking';
 import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
+import { analytics } from '../../lib/analytics';
 
 const DESCRIPTIVE_TYPES = ['what_happens', 'give_a_reason'];
 
@@ -56,6 +58,7 @@ interface Quiz {
 const QuizTakingScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  useScreenTracking('Quiz Taking');
   const { quizId, isTimed } = route.params || {};
 
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
@@ -162,6 +165,12 @@ const QuizTakingScreen: React.FC = () => {
 
       if (result.data?.quiz) {
         setQuiz(result.data.quiz);
+        analytics.trackQuizStarted({
+          quiz_id: result.data.quiz.id,
+          quiz_title: result.data.quiz.name,
+          subject_id: result.data.quiz.subject?.id,
+          lesson_count: result.data.quiz.questions.length,
+        });
       } else {
         setError(result.errors?.[0]?.message || t('quiz_taking.error_loading_quiz'));
       }

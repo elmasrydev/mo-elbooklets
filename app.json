@@ -6,7 +6,7 @@
       "ar": "./locales/ar.json"
     },
     "slug": "mobile-elbooklets",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -23,8 +23,7 @@
         "ITSAppUsesNonExemptEncryption": false
       },
       "bundleIdentifier": "com.elbooklets.app",
-      "buildNumber": "6",
-      "appleTeamId": "XJAN9FLEYZ",
+      "buildNumber": "11",
       "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
@@ -37,7 +36,10 @@
       "supportsRtl": true,
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "permissions": ["INTERNET", "ACCESS_NETWORK_STATE"],
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ],
       "googleServicesFile": "./google-services.json"
     },
     "web": {
@@ -49,7 +51,7 @@
       "checkAutomatically": "ON_LOAD",
       "fallbackToCacheTimeout": 0
     },
-    "runtimeVersion": "1.0.0",
+    "runtimeVersion": "1.0.1",
     "plugins": [
       "expo-font",
       "./plugins/withAndroidSigning.js",
