@@ -17,6 +17,8 @@ import { layout } from '../config/layout';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
+import { analytics } from '../lib/analytics';
+import { useScreenTracking } from '../hooks/useScreenTracking';
 
 const OnboardingScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -25,6 +27,8 @@ const OnboardingScreen: React.FC = () => {
   const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
   const { theme, spacing } = useTheme();
+
+  useScreenTracking('Onboarding');
 
   const currentStyles = styles(typography, fontWeight, insets, isRTL, theme);
 
@@ -67,7 +71,10 @@ const OnboardingScreen: React.FC = () => {
         <View style={currentStyles.bottomContent}>
           <AppButton
             title={t('onboarding.get_started')}
-            onPress={() => navigation.navigate('Register')}
+            onPress={() => {
+              analytics.trackOnboardingCompleted();
+              navigation.navigate('Register');
+            }}
             size="lg"
           />
 

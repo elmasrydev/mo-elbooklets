@@ -23,6 +23,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useModal } from '../context/ModalContext';
 import { tryFetchWithFallback } from '../config/api';
 import * as SecureStore from 'expo-secure-store';
+import { analytics } from '../lib/analytics';
+import { useScreenTracking } from '../hooks/useScreenTracking';
 
 const ContactUsScreen = ({ navigation }: any) => {
   const { t } = useTranslation();
@@ -32,6 +34,8 @@ const ContactUsScreen = ({ navigation }: any) => {
   const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
   const { showConfirm } = useModal();
+
+  useScreenTracking('Contact Us');
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -85,6 +89,7 @@ const ContactUsScreen = ({ navigation }: any) => {
       const response = await tryFetchWithFallback(mutation, { name, email, subject, message }, token || undefined);
       
       if (response.data?.sendContactMessage?.success) {
+        analytics.trackContactSupport(subject);
         showConfirm({
           title: t('common.success'),
           message: response.data.sendContactMessage.message || t('contact_us.success_message'),

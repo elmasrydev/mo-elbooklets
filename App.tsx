@@ -11,6 +11,9 @@ import { AuthProvider } from './src/context/AuthContext';
 import { ThemeProvider } from './src/context/ThemeContext';
 import apolloClient from './src/lib/apollo';
 import AppNavigator from './src/components/AppNavigator';
+import { AnalyticsProvider } from '@segment/analytics-react-native';
+import { segmentClient } from './src/lib/segmentClient';
+import { analytics } from './src/lib/analytics';
 
 import { I18nextProvider } from 'react-i18next';
 import i18n, { getInitialLanguage, initI18n, LANGUAGE_KEY } from './src/i18n';
@@ -148,7 +151,8 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <ApolloProvider client={apolloClient}>
+      <AnalyticsProvider client={segmentClient}>
+        <ApolloProvider client={apolloClient}>
         <ThemeProvider>
           <ForceUpdateProvider>
             <ModalProvider>
@@ -168,7 +172,7 @@ export default function App() {
                         const previousRouteName = routeNameRef.current;
                         const currentRouteName = navigationRef.current?.getCurrentRoute()?.name;
 
-                        if (previousRouteName !== currentRouteName) {
+                        if (previousRouteName !== currentRouteName && currentRouteName) {
                           crashlytics().log(`Navigated to: ${currentRouteName}`);
                         }
                         routeNameRef.current = currentRouteName;
@@ -187,6 +191,7 @@ export default function App() {
           </ForceUpdateProvider>
         </ThemeProvider>
       </ApolloProvider>
+    </AnalyticsProvider>
       <StatusBar style="auto" />
     </SafeAreaProvider>
   );

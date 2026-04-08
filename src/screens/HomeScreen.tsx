@@ -33,6 +33,7 @@ import ConnectionCard from '../components/feed/ConnectionCard';
 import { CardListSkeleton } from '../components/SkeletonLoader';
 import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
 import { isRTL, textAlign } from '../lib/rtl';
+import { analytics } from '../lib/analytics';
 
 const { width } = Dimensions.get('window');
 
@@ -542,7 +543,10 @@ const HomeScreen: React.FC = () => {
                     key={subject.id}
                     style={s.subjectCard}
                     activeOpacity={0.7}
-                    onPress={() => navigation.navigate('StudyChapters', { subject })}
+                    onPress={() => {
+                      analytics.trackSubjectStarted(subject.id, subject.name);
+                      navigation.navigate('StudyChapters', { subject });
+                    }}
                   >
                     <SubjectIcon
                       subjectName={subject.name}
