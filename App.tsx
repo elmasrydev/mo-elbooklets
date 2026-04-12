@@ -12,6 +12,8 @@ import { ThemeProvider } from './src/context/ThemeContext';
 import apolloClient from './src/lib/apollo';
 import { ApiUriManager } from './src/config/api';
 import AppNavigator from './src/components/AppNavigator';
+import ErrorBoundary from './src/components/ErrorBoundary';
+import { logError } from './src/utils/logger';
 
 import { I18nextProvider } from 'react-i18next';
 import i18n, { getInitialLanguage, initI18n, LANGUAGE_KEY } from './src/i18n';
@@ -130,7 +132,7 @@ export default function App() {
         setInitialLanguage(lang);
         setAppReady(true);
       } catch (error) {
-        console.error('[App] Bootstrap error:', error);
+        logError('[App] Bootstrap error', error);
         // Fallback: try to show the app anyway
         await initI18n('en');
         setInitialLanguage('en');
@@ -178,7 +180,9 @@ export default function App() {
                         routeNameRef.current = currentRouteName;
                       }}
                     >
-                      <AppNavigator />
+                      <ErrorBoundary>
+                        <AppNavigator />
+                      </ErrorBoundary>
                     </NavigationContainer>
                     <ForceUpdateModal />
                     <MaintenanceModal />

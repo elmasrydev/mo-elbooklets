@@ -348,8 +348,7 @@ const styles = (
       paddingHorizontal: spacing.sm,
       paddingVertical: 4,
       borderRadius: borderRadius.full,
-      marginLeft: spacing.sm,
-      marginRight: 0,
+      marginStart: spacing.sm,
     },
     badgeText: {
       ...typography('caption'),

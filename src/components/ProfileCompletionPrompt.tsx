@@ -265,7 +265,10 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
   return (
     <Modal visible={visible} transparent animationType="slide">
       <View style={styles.overlay}>
-        <View style={[styles.card, { backgroundColor: theme.colors.card, borderRadius: borderRadius.xl }]}>
+        <View
+          style={[styles.card, { backgroundColor: theme.colors.card, borderRadius: borderRadius.xl }]}
+          onStartShouldSetResponder={() => true}
+        >
           <View style={styles.header}>
             <View style={[styles.iconContainer, { backgroundColor: theme.colors.primary + '1A' }]}>
               <Ionicons name="person-circle-outline" size={32} color={theme.colors.primary} />

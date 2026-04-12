@@ -34,6 +34,23 @@ const OnboardingScreen: React.FC = () => {
   };
 
   const [showApiModal, setShowApiModal] = useState(false);
+  const [activeRole, setActiveRole] = useState<'student' | 'parent'>('student');
+
+  const handleGetStarted = () => {
+    if (activeRole === 'student') {
+      navigation.navigate('Register');
+    } else {
+      navigation.navigate('ParentRegister');
+    }
+  };
+
+  const handleSignIn = () => {
+    if (activeRole === 'student') {
+      navigation.navigate('Login');
+    } else {
+      navigation.navigate('ParentLogin');
+    }
+  };
 
   return (
     <>
@@ -73,6 +90,42 @@ const OnboardingScreen: React.FC = () => {
           resizeMode="contain"
         />
 
+        {/* Role Toggle */}
+        <View style={currentStyles.roleToggleContainer}>
+          <TouchableOpacity
+            onPress={() => setActiveRole('student')}
+            style={[
+              currentStyles.roleToggleButton,
+              activeRole === 'student' && currentStyles.roleToggleActive,
+            ]}
+          >
+            <Text
+              style={[
+                currentStyles.roleToggleText,
+                activeRole === 'student' && currentStyles.roleToggleActiveText,
+              ]}
+            >
+              {t('onboarding.role_student')}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setActiveRole('parent')}
+            style={[
+              currentStyles.roleToggleButton,
+              activeRole === 'parent' && currentStyles.roleToggleActive,
+            ]}
+          >
+            <Text
+              style={[
+                currentStyles.roleToggleText,
+                activeRole === 'parent' && currentStyles.roleToggleActiveText,
+              ]}
+            >
+              {t('onboarding.role_parent')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         <Image
           source={require('../../assets/onboarding-bg.png')}
           style={currentStyles.onboardingBg}
@@ -83,14 +136,14 @@ const OnboardingScreen: React.FC = () => {
         <View style={currentStyles.bottomContent}>
           <AppButton
             title={t('onboarding.get_started')}
-            onPress={() => navigation.navigate('Register')}
+            onPress={handleGetStarted}
             size="lg"
           />
 
           <View style={[currentStyles.footer]}>
             <Text style={currentStyles.footerText}>
               {t('onboarding.already_have_account')}{' '}
-              <Text style={currentStyles.link} onPress={() => navigation.navigate('Login')}>
+              <Text style={currentStyles.link} onPress={handleSignIn}>
                 {t('onboarding.sign_in')}
               </Text>
             </Text>
@@ -148,6 +201,34 @@ const styles = (
       marginBottom: -10,
       height: 80,
       width: 262,
+    },
+    roleToggleContainer: {
+      flexDirection: 'row',
+      backgroundColor: theme.colors.card,
+      borderRadius: 12,
+      padding: 4,
+      marginTop: 20,
+      marginBottom: 10,
+      width: '80%',
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    roleToggleButton: {
+      flex: 1,
+      paddingVertical: 10,
+      alignItems: 'center',
+      borderRadius: 10,
+    },
+    roleToggleActive: {
+      backgroundColor: theme.colors.primary,
+    },
+    roleToggleText: {
+      ...typography('body'),
+      ...fontWeight('600'),
+      color: theme.colors.text,
+    },
+    roleToggleActiveText: {
+      color: '#FFFFFF',
     },
     bottomContent: {
       paddingHorizontal: layout.screenPadding,

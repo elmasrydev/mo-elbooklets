@@ -15,8 +15,9 @@ import { useTranslation } from 'react-i18next';
 import * as Updates from 'expo-updates';
 import { useTheme } from '../context/ThemeContext';
 import { useTypography } from '../hooks/useTypography';
-import { ApiUriManager } from '../config/api';
+import { ApiUriManager, PRS_URL } from '../config/api';
 import AppButton from './AppButton';
+import { useModal } from '../context/ModalContext';
 
 interface ApiUrlSwitcherModalProps {
   isVisible: boolean;
@@ -63,7 +64,7 @@ const ApiUrlSwitcherModal: React.FC<ApiUrlSwitcherModalProps> = ({ isVisible, on
   const { t } = useTranslation();
   const { theme, borderRadius } = useTheme();
   const { typography, fontWeight } = useTypography();
-
+  const { showConfirm } = useModal();
   const [currentUrl, setCurrentUrl] = useState('');
 
   useEffect(() => {
@@ -78,16 +79,26 @@ const ApiUrlSwitcherModal: React.FC<ApiUrlSwitcherModalProps> = ({ isVisible, on
       if (DevSettings?.reload) {
         DevSettings.reload();
       } else {
-        Alert.alert('Manual Reload Required', 'Please restart the app manually.');
+        showConfirm({
+          title: 'Manual Reload Required',
+          message: 'Please restart the app manually.',
+          showCancel: false,
+          onConfirm: () => {},
+        });
       }
     } else {
       try {
         await Updates.reloadAsync();
       } catch (_e) {
-        Alert.alert('Error', 'Please restart the app manually.');
+        showConfirm({
+          title: 'Error',
+          message: 'Please restart the app manually.',
+          showCancel: false,
+          onConfirm: () => {},
+        });
       }
     }
-  }, []);
+  }, [showConfirm]);
 
   const applyUrl = useCallback(
     async (url: string) => {
@@ -104,6 +115,7 @@ const ApiUrlSwitcherModal: React.FC<ApiUrlSwitcherModalProps> = ({ isVisible, on
 
   const isProduction = currentUrl === PRODUCTION_URL;
   const isDemo = currentUrl === DEMO_URL;
+  const isPrs = currentUrl === PRS_URL;
 
   return (
     <Modal visible={isVisible} transparent={true} animationType="slide" onRequestClose={onClose}>
@@ -166,6 +178,12 @@ const ApiUrlSwitcherModal: React.FC<ApiUrlSwitcherModalProps> = ({ isVisible, on
                 variant={isDemo ? 'primary' : 'outline'}
                 disabled={isDemo}
                 onPress={() => applyUrl(DEMO_URL)}
+              />
+              <AppButton
+                title={t('common.api_switch_prs')}
+                variant={isPrs ? 'primary' : 'outline'}
+                disabled={isPrs}
+                onPress={() => applyUrl(PRS_URL)}
               />
             </View>
           </View>
