@@ -1,11 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Image,
   TouchableOpacity,
-  Platform,
   ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,6 +16,8 @@ import { layout } from '../config/layout';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
+import { isDebugMode } from '../config/debug';
+import ApiUrlSwitcherModal from '../components/ApiUrlSwitcherModal';
 
 const OnboardingScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -32,6 +33,25 @@ const OnboardingScreen: React.FC = () => {
     setLanguage(language === 'ar' ? 'en' : 'ar');
   };
 
+  const [showApiModal, setShowApiModal] = useState(false);
+  const [activeRole, setActiveRole] = useState<'student' | 'parent'>('student');
+
+  const handleGetStarted = () => {
+    if (activeRole === 'student') {
+      navigation.navigate('Register');
+    } else {
+      navigation.navigate('ParentRegister');
+    }
+  };
+
+  const handleSignIn = () => {
+    if (activeRole === 'student') {
+      navigation.navigate('Login');
+    } else {
+      navigation.navigate('ParentLogin');
+    }
+  };
+
   return (
     <>
       <ScrollView
@@ -39,7 +59,20 @@ const OnboardingScreen: React.FC = () => {
         style={{ flex: 1, backgroundColor: theme.colors.background }}
         contentContainerStyle={currentStyles.container}
       >
-        {/* 2. Top Header with Logo & Language Switcher */}
+        {/* Top Header Buttons */}
+        {isDebugMode() && (
+          <TouchableOpacity
+            onPress={() => setShowApiModal(true)}
+            style={[
+              currentStyles.languageButton,
+              { top: insets.top + spacing.sm, left: spacing.md },
+            ]}
+          >
+            <Ionicons name="server-outline" size={20} color={theme.colors.primary} />
+            <Text style={currentStyles.languageText}>API</Text>
+          </TouchableOpacity>
+        )}
+
         <TouchableOpacity
           onPress={toggleLanguage}
           style={[
@@ -57,24 +90,60 @@ const OnboardingScreen: React.FC = () => {
           resizeMode="contain"
         />
 
+        {/* Role Toggle */}
+        <View style={currentStyles.roleToggleContainer}>
+          <TouchableOpacity
+            onPress={() => setActiveRole('student')}
+            style={[
+              currentStyles.roleToggleButton,
+              activeRole === 'student' && currentStyles.roleToggleActive,
+            ]}
+          >
+            <Text
+              style={[
+                currentStyles.roleToggleText,
+                activeRole === 'student' && currentStyles.roleToggleActiveText,
+              ]}
+            >
+              {t('onboarding.role_student')}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setActiveRole('parent')}
+            style={[
+              currentStyles.roleToggleButton,
+              activeRole === 'parent' && currentStyles.roleToggleActive,
+            ]}
+          >
+            <Text
+              style={[
+                currentStyles.roleToggleText,
+                activeRole === 'parent' && currentStyles.roleToggleActiveText,
+              ]}
+            >
+              {t('onboarding.role_parent')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         <Image
           source={require('../../assets/onboarding-bg.png')}
           style={currentStyles.onboardingBg}
           resizeMode="contain"
         />
 
-        {/* 3. Bottom Content */}
+        {/* Bottom Content */}
         <View style={currentStyles.bottomContent}>
           <AppButton
             title={t('onboarding.get_started')}
-            onPress={() => navigation.navigate('Register')}
+            onPress={handleGetStarted}
             size="lg"
           />
 
           <View style={[currentStyles.footer]}>
             <Text style={currentStyles.footerText}>
               {t('onboarding.already_have_account')}{' '}
-              <Text style={currentStyles.link} onPress={() => navigation.navigate('Login')}>
+              <Text style={currentStyles.link} onPress={handleSignIn}>
                 {t('onboarding.sign_in')}
               </Text>
             </Text>
@@ -83,6 +152,10 @@ const OnboardingScreen: React.FC = () => {
           <Text style={currentStyles.subtitle}> {t('onboarding.subtitle')} </Text>
         </View>
       </ScrollView>
+      <ApiUrlSwitcherModal
+        isVisible={showApiModal}
+        onClose={() => setShowApiModal(false)}
+      />
     </>
   );
 };
@@ -126,10 +199,36 @@ const styles = (
     logo: {
       marginTop: 50,
       marginBottom: -10,
-      // width: 100,
-      // height: 85,
       height: 80,
       width: 262,
+    },
+    roleToggleContainer: {
+      flexDirection: 'row',
+      backgroundColor: theme.colors.card,
+      borderRadius: 12,
+      padding: 4,
+      marginTop: 20,
+      marginBottom: 10,
+      width: '80%',
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    roleToggleButton: {
+      flex: 1,
+      paddingVertical: 10,
+      alignItems: 'center',
+      borderRadius: 10,
+    },
+    roleToggleActive: {
+      backgroundColor: theme.colors.primary,
+    },
+    roleToggleText: {
+      ...typography('body'),
+      ...fontWeight('600'),
+      color: theme.colors.text,
+    },
+    roleToggleActiveText: {
+      color: '#FFFFFF',
     },
     bottomContent: {
       paddingHorizontal: layout.screenPadding,

@@ -42,3 +42,6 @@ yarn-error.*
 
 
 .agent/
+
+# AI agent skills (symlinks to global)
+.agents/

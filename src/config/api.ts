@@ -1,38 +1,30 @@
 /**
  * Centralized API Configuration
  *
- * This file contains all API-related configuration including fallback URLs
- * for different network scenarios. Update the environment configuration here
- * to apply changes across the entire application.
+ * The default API URL is determined by the `debugMode` flag in app.json:
+ *   debugMode: true  → https://demo.elbooklets.com/graphql
+ *   debugMode: false → https://elbooklets.com/graphql
+ *
+ * This flag is read at build time via expo-constants and controls the entire
+ * app behaviour (API URL, Firebase Remote Config keys, API URL Switcher).
  */
 
-// Environment configuration
-const IS_PRODUCTION = !__DEV__; // Use production in release builds
+import Constants from 'expo-constants';
 
-// Production API configuration
-const PRODUCTION_URLS = [
-  'https://elbooklets.com/graphql', // Production backend
-];
+const PRODUCTION_URL = 'https://elbooklets.com/graphql';
+const DEMO_URL = 'https://demo.elbooklets.com/graphql';
+export const PRS_URL = 'https://prs.elbooklets.com/graphql';
 
-// Development fallback URLs for different network scenarios
-const DEVELOPMENT_URLS = [
-  // 'http://192.168.1.188:8001/graphql',  // Current WiFi network
-  // 'http://169.254.105.59:8001/graphql', // Link-local address
-  // 'http://10.0.2.2:8000/graphql', // Localhost
-  'https://elbooklets.com/graphql', // Android emulator
-  'https://elbooklets.com/graphql', // iOS simulator
-];
+// Default URL based on app.json > extra.debugMode (set before building)
+export const PRIMARY_API_URL =
+  Constants.expoConfig?.extra?.debugMode === true ? DEMO_URL : PRODUCTION_URL;
 
-// Select URLs based on environment
-export const POSSIBLE_URLS = IS_PRODUCTION ? PRODUCTION_URLS : DEVELOPMENT_URLS;
-
-// Primary API URL (first in the fallback list)
-export const PRIMARY_API_URL = POSSIBLE_URLS[0];
+// Fallback list starts with the primary URL
+export const POSSIBLE_URLS = [PRIMARY_API_URL];
 
 // Environment info for debugging
 export const ENVIRONMENT_INFO = {
-  isProduction: IS_PRODUCTION,
-  isDevelopment: __DEV__,
+  isDebugMode: Constants.expoConfig?.extra?.debugMode === true,
   apiUrl: PRIMARY_API_URL,
   fallbackCount: POSSIBLE_URLS.length,
 };
@@ -79,6 +71,86 @@ const handleAuthError = async () => {
   }
 };
 
+import { isDebugMode } from './debug';
+
+// AsyncStorage key for API URL override
+export const CUSTOM_API_URL_KEY = 'custom_api_url_override';
+
+// Known valid API endpoints
+const KNOWN_API_URLS = [
+  'https://elbooklets.com/graphql',
+  'https://demo.elbooklets.com/graphql',
+  'https://prs.elbooklets.com/graphql',
+] as const;
+
+/**
+ * Manages the active API URL with a cache for synchronous access.
+ * This is essential for components like Apollo Client that need a sync value at initialization.
+ */
+class ApiUriManager {
+  private static activeUrl: string = PRIMARY_API_URL;
+  private static isInitialized: boolean = false;
+
+  /**
+   * Initializes the manager by reading the custom URL from storage.
+   * Call this in App.tsx before rendering.
+   */
+  static async init(): Promise<string> {
+    if (this.isInitialized) return this.activeUrl;
+
+    try {
+      const savedUrl = await AsyncStorage.getItem(CUSTOM_API_URL_KEY);
+      if (
+        isDebugMode() &&
+        savedUrl &&
+        KNOWN_API_URLS.includes(savedUrl as (typeof KNOWN_API_URLS)[number])
+      ) {
+        this.activeUrl = savedUrl;
+      } else {
+        this.activeUrl = PRIMARY_API_URL;
+      }
+    } catch (e) {
+      if (__DEV__) console.log('Error initializing ApiUriManager:', e);
+      this.activeUrl = PRIMARY_API_URL;
+    }
+
+    this.isInitialized = true;
+    if (__DEV__) console.log('[ApiUriManager] Active URL:', this.activeUrl);
+    return this.activeUrl;
+  }
+
+  /**
+   * Synchronously gets the active URL.
+   */
+  static getActiveUrl(): string {
+    return this.activeUrl;
+  }
+
+  /**
+   * Updates the active API URL. Only accepts known production/demo URLs.
+   * If the URL matches PRIMARY_API_URL, clears the override from storage.
+   */
+  static async updateUrl(url: string): Promise<void> {
+    // Safety: only accept known URLs
+    if (!KNOWN_API_URLS.includes(url as (typeof KNOWN_API_URLS)[number])) {
+      if (__DEV__) console.warn('[ApiUriManager] Rejected unknown URL:', url);
+      return;
+    }
+
+    if (url === PRIMARY_API_URL) {
+      // No override needed — clear storage so default kicks in
+      await AsyncStorage.removeItem(CUSTOM_API_URL_KEY);
+    } else {
+      await AsyncStorage.setItem(CUSTOM_API_URL_KEY, url);
+    }
+
+    this.activeUrl = url;
+    if (__DEV__) console.log('[ApiUriManager] URL updated to:', url);
+  }
+}
+
+export { ApiUriManager };
+
 /**
  * Utility function to try fetching with fallback URLs
  * This provides network resilience by trying multiple URLs in sequence
@@ -96,7 +168,11 @@ export const tryFetchWithFallback = async (
     authToken = (await SecureStore.getItemAsync('auth_token')) || undefined;
   }
 
-  for (const url of POSSIBLE_URLS) {
+  // Determine the sequence of URLs to try. Start with the active one from manager.
+  const activeUrl = ApiUriManager.getActiveUrl();
+  const urlsToTry = [activeUrl, ...POSSIBLE_URLS.filter((u) => u !== activeUrl)];
+
+  for (const url of urlsToTry) {
     try {
       if (__DEV__) console.log(`Trying to connect to: ${url}`);
 
@@ -111,6 +187,8 @@ export const tryFetchWithFallback = async (
       if (authToken) {
         headers['Authorization'] = `Bearer ${authToken}`;
       }
+      if (__DEV__) console.log('API HEADERS: ', headers);
+      if (__DEV__) console.log('API query: ', query, variables);
 
       const response = await fetch(url, {
         method: 'POST',

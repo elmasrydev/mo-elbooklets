@@ -8,6 +8,7 @@ import {
   getValue,
 } from '@react-native-firebase/remote-config';
 import DeviceInfo from 'react-native-device-info';
+import { isDebugMode as checkDebugMode } from '../config/debug';
 
 export interface PlatformVersionConfig {
   version: string;
@@ -30,14 +31,14 @@ export interface ForceUpdateContextType {
 
 const ForceUpdateContext = createContext<ForceUpdateContextType | undefined>(undefined);
 
-const isDebugMode = __DEV__;
+const IS_DEBUG_MODE = checkDebugMode();
 
 // Remote Config key
-const REMOTE_CONFIG_KEY = isDebugMode ? 'mobileMinVersionDev' : 'mobileMinVersion';
-const MAINTENANCE_CONFIG_KEY = isDebugMode ? 'mobileMaintenanceDev' : 'mobileMaintenance';
+const REMOTE_CONFIG_KEY = IS_DEBUG_MODE ? 'mobileMinVersionDev' : 'mobileMinVersion';
+const MAINTENANCE_CONFIG_KEY = IS_DEBUG_MODE ? 'mobileMaintenanceDev' : 'mobileMaintenance';
 
 // Firebase cache duration in milliseconds
-const MINIMUM_FETCH_INTERVAL_MS = isDebugMode
+const MINIMUM_FETCH_INTERVAL_MS = IS_DEBUG_MODE
   ? 1 * 60 * 1000 // 1 minutes in debug mode
   : 30 * 60 * 1000; // 30 minutes in production
 

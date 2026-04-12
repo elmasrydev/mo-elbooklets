@@ -22,7 +22,6 @@ import UnifiedHeader from '../components/UnifiedHeader';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import DeviceInfo from 'react-native-device-info';
-import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
 import { useMutation } from '@apollo/client/react';
 import {
   DeleteAccountDocument,
@@ -38,9 +37,9 @@ const CrashTrigger = () => {
   throw new Error('Test React Render Error for ErrorBoundary');
 };
 
-const ProfileScreen: React.FC = () => {
+const ParentSettingsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
-  const { user, logout } = useAuth();
+  const { parentUser, logout } = useAuth();
   const { showConfirm } = useModal();
   const { theme, spacing, fontSizes, borderRadius, isDark, toggleTheme } = useTheme();
   const common = useCommonStyles();
@@ -78,11 +77,10 @@ const ProfileScreen: React.FC = () => {
           if (result.data?.deleteAccount?.success) {
             logout();
           } else {
-            // Error handling can go here quietly
             logError('Delete account server returned false', result.data?.deleteAccount?.message);
           }
         } catch (error) {
-          console.error('Error deleting account:', error);
+          logError('Error deleting account', error);
         }
       },
     });
@@ -93,7 +91,7 @@ const ProfileScreen: React.FC = () => {
       title: t('profile_screen.choose_language'),
       message: t('profile_screen.select_language_msg'),
       confirmLabel: language === 'ar' ? 'English (US)' : 'العربية',
-      cancelLabel: t('common.cancel') || 'Cancel',
+      cancelLabel: t('common.cancel'),
       onConfirm: () => setLanguage(language === 'ar' ? 'en' : 'ar', true),
     });
   };
@@ -118,6 +116,7 @@ const ProfileScreen: React.FC = () => {
     <View style={currentStyles.mainContainer}>
       <UnifiedHeader
         title={t('profile_screen.header_title')}
+        showBackButton={true}
         style={currentStyles.headerOverride}
       />
 
@@ -135,31 +134,24 @@ const ProfileScreen: React.FC = () => {
             <View style={currentStyles.avatarOuterRing}>
               <View style={[currentStyles.avatarImage, currentStyles.avatarFallback]}>
                 <Text style={currentStyles.avatarFallbackText}>
-                  {user?.name?.charAt(0).toUpperCase() || 'U'}
+                  {parentUser?.name?.charAt(0).toUpperCase() || 'P'}
                 </Text>
               </View>
             </View>
-            {/* Hide edit avatar button for now */}
-            {/* <TouchableOpacity style={currentStyles.editAvatarButton}>
-              <Ionicons name="pencil" size={14} color="#ffffff" />
-            </TouchableOpacity> */}
           </View>
 
           <View style={currentStyles.userInfoTextContainer}>
-            <Text style={currentStyles.userName}>{user?.name || 'User'}</Text>
-            <Text style={currentStyles.userSubtitle}>
-              {user?.grade?.name || t('profile_screen.not_specified')}{' '}
-              {user?.educational_system?.name ? `• ${user.educational_system.name}` : ''}
-            </Text>
-            {user?.mobile ? (
+            <Text style={currentStyles.userName}>{parentUser?.name || 'Parent'}</Text>
+            <Text style={currentStyles.userSubtitle}>{t('onboarding.role_parent')}</Text>
+            {parentUser?.mobile ? (
               <Text
                 style={[
                   currentStyles.userSubtitle,
-                  { marginTop: 4, fontWeight: 'normal', opacity: 0.8 },
+                  { marginTop: 4, fontWeight: 'normal' as any, opacity: 0.8 },
                 ]}
               >
-                {user?.country_code ? `${user.country_code} ` : ''}
-                {user.mobile}
+                {parentUser?.country_code ? `${parentUser.country_code} ` : ''}
+                {parentUser.mobile}
               </Text>
             ) : null}
           </View>
@@ -167,27 +159,6 @@ const ProfileScreen: React.FC = () => {
 
         {/* Menu Section */}
         <View style={currentStyles.menuSection}>
-          {/* Menu Items "TODO: we need to release and show it in next release"*/}
-          {/*<TouchableOpacity 
-            style={currentStyles.settingItem}
-            onPress={() => navigation.navigate('EditProfile')}
-          >
-            <View style={currentStyles.settingIconBox}>
-              <Image
-                source={require('../../assets/images/editProfile.png')}
-                style={currentStyles.menuImage}
-              />
-            </View>
-            <View style={currentStyles.settingContent}>
-              <Text style={currentStyles.settingTitle}>{t('profile_screen.edit_profile')}</Text>
-            </View>
-            <Ionicons
-              name={isRTL ? 'chevron-back' : 'chevron-forward'}
-              size={20}
-              color={theme.colors.textTertiary}
-            />
-          </TouchableOpacity>*/}
-
           {/* Change Language */}
           <TouchableOpacity style={currentStyles.settingItem} onPress={handleLanguagePress}>
             <View style={currentStyles.settingIconBox}>
@@ -251,76 +222,6 @@ const ProfileScreen: React.FC = () => {
               color={theme.colors.textTertiary}
             />
           </TouchableOpacity>
-
-          {/* Parental Linking */}
-          <TouchableOpacity
-            style={currentStyles.settingItem}
-            onPress={() => navigation.navigate('ParentLinking' as never)}
-          >
-            <View
-              style={[
-                currentStyles.settingIconBox,
-                { backgroundColor: theme.colors.primary + '20' },
-              ]}
-            >
-              <Ionicons name="people-outline" size={22} color={theme.colors.primary} />
-            </View>
-            <View style={currentStyles.settingContent}>
-              <Text style={currentStyles.settingTitle}>
-                {t('profile_screen.parental_linking', 'Parental Linking')}
-              </Text>
-              <Text style={currentStyles.settingSubtitle}>
-                {user?.parent_mobile
-                  ? user.parent_mobile
-                  : t('profile_screen.parental_linking_desc', 'Connect with your parents')}
-              </Text>
-            </View>
-            <Ionicons
-              name={isRTL ? 'chevron-back' : 'chevron-forward'}
-              size={20}
-              color={theme.colors.textTertiary}
-            />
-          </TouchableOpacity>
-
-          {/* Badges - Hidden */}
-          {/*
-          <TouchableOpacity style={currentStyles.settingItem}>
-            <View style={currentStyles.settingIconBox}>
-              <Image
-                source={require('../../assets/images/Badges.png')}
-                style={currentStyles.menuImage}
-              />
-            </View>
-            <View style={currentStyles.settingContent}>
-              <Text style={currentStyles.settingTitle}>{t('profile_screen.badges')}</Text>
-            </View>
-            <Ionicons
-              name={isRTL ? 'chevron-back' : 'chevron-forward'}
-              size={20}
-              color={theme.colors.textTertiary}
-            />
-          </TouchableOpacity>
-          */}
-
-          {/* Help and Support - Hidden for now */}
-          {/*
-          <TouchableOpacity style={currentStyles.settingItem}>
-            <View style={currentStyles.settingIconBox}>
-              <Image
-                source={require('../../assets/images/help.png')}
-                style={currentStyles.menuImage}
-              />
-            </View>
-            <View style={currentStyles.settingContent}>
-              <Text style={currentStyles.settingTitle}>{t('profile_screen.help_support')}</Text>
-            </View>
-            <Ionicons
-              name={isRTL ? 'chevron-back' : 'chevron-forward'}
-              size={20}
-              color={theme.colors.textTertiary}
-            />
-          </TouchableOpacity>
-          */}
 
           {/* Internal Settings (debug builds only) */}
           {isDebugMode() && (
@@ -399,11 +300,12 @@ const ProfileScreen: React.FC = () => {
               {t('profile_screen.delete_account')}
             </Text>
           </View>
-          {isDeletingAccount && <ActivityIndicator color={theme.colors.error} size="small" />}
+          {isDeletingAccount && (
+            <ActivityIndicator color="#fff" size="small" style={{ marginStart: 8 }} />
+          )}
         </TouchableOpacity>
       </ScrollView>
 
-      <ProfileCompletionPrompt context="more" />
     </View>
   );
 };
@@ -425,7 +327,7 @@ const styles = (
       backgroundColor: theme.colors.background,
     },
     headerOverride: {
-      backgroundColor: '#1E40AF', // Enforce specific blue from HTML design
+      backgroundColor: '#1E40AF',
       borderBottomWidth: 0,
     },
     scrollView: {
@@ -442,9 +344,9 @@ const styles = (
     avatarOuterRing: {
       padding: 4,
       borderRadius: borderRadius.full,
-      backgroundColor: theme.colors.primary100,
+      backgroundColor: theme.colors.primary + '15',
       borderWidth: 2,
-      borderColor: theme.colors.primary + '33', // 20% opacity
+      borderColor: theme.colors.primary + '33',
     },
     avatarImage: {
       width: 110,
@@ -462,21 +364,6 @@ const styles = (
       ...typography('h1'),
       ...fontWeight('bold'),
       color: '#ffffff',
-    },
-    editAvatarButton: {
-      position: 'absolute',
-      bottom: 4,
-      right: 4,
-      backgroundColor: theme.colors.primary,
-      padding: spacing.xs,
-      borderRadius: borderRadius.full,
-      borderWidth: 2,
-      borderColor: theme.colors.card,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
-      elevation: 4,
     },
     userInfoTextContainer: {
       marginTop: spacing.md,
@@ -533,11 +420,6 @@ const styles = (
       flex: 1,
       justifyContent: 'center',
     },
-    deleteAccountContent: {
-      //flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
     settingTitle: {
       ...typography('body'),
       ...fontWeight('600'),
@@ -556,11 +438,11 @@ const styles = (
     logoutItem: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      backgroundColor: isDark ? theme.colors.error + '1A' : '#FEF2F2', // red-50
+      backgroundColor: isDark ? theme.colors.error + '1A' : '#FEF2F2',
       padding: spacing.md,
       borderRadius: borderRadius.xl,
       borderWidth: 1,
-      borderColor: isDark ? theme.colors.error + '33' : '#FEE2E2', // red-100
+      borderColor: isDark ? theme.colors.error + '33' : '#FEE2E2',
     },
     logoutIconBox: {
       width: 40,
@@ -583,22 +465,24 @@ const styles = (
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: spacing.xs,
+      padding: spacing.sm,
       marginTop: spacing['3xl'],
       borderRadius: borderRadius.lg,
-      borderWidth: 1,
-      borderColor: theme.colors.error + '40',
-      backgroundColor: 'red',
-      opacity: 0.75,
+      backgroundColor: theme.colors.error,
+      opacity: 0.8,
     },
     deleteAccountIconBox: {
-      width: 34,
-      height: 34,
+      width: 30,
+      height: 30,
       borderRadius: borderRadius.sm,
-      backgroundColor: theme.colors.error + '1A',
+      backgroundColor: 'rgba(255,255,255,0.2)',
       justifyContent: 'center',
       alignItems: 'center',
       ...common.marginEnd(spacing.sm),
+    },
+    deleteAccountContent: {
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     deleteAccountTitle: {
       ...typography('body'),
@@ -632,6 +516,7 @@ const styles = (
       textAlign: common.textAlign,
     },
     crashTestButtonsRow: {
+      //flexDirection: 'row',
       gap: spacing.sm,
     },
     crashButton: {
@@ -663,11 +548,11 @@ const styles = (
       ...typography('caption'),
       color: theme.colors.textSecondary,
       textAlign: 'center',
-      marginTop: spacing['lg'],
+      marginTop: spacing.lg,
     },
     scrollContentContainer: {
       padding: layout.screenPadding,
     },
   });
 
-export default ProfileScreen;
+export default ParentSettingsScreen;

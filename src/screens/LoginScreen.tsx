@@ -179,7 +179,7 @@ const LoginScreen: React.FC = () => {
               <View style={currentStyles.inputGroup}>
                 <View style={currentStyles.passwordLabelRow}>
                   <Text style={currentStyles.inputLabel}>{t('auth.password_placeholder')}</Text>
-                  <TouchableOpacity>
+                  <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
                     <Text style={currentStyles.forgotText}>{t('auth.forgot_password')}</Text>
                   </TouchableOpacity>
                 </View>

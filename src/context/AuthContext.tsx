@@ -10,7 +10,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { tryFetchWithFallback, setAuthErrorHandler } from '../config/api';
 import { setLogoutHandler } from '../lib/apollo';
-import { configureCrashlyticsUser } from '../utils/crashlyticsHelper';
+import {
+  configureCrashlyticsStudent,
+  configureCrashlyticsParent,
+  configureCrashlyticsGuest,
+} from '../utils/crashlyticsHelper';
+import { logError, logInfo } from '../utils/logger';
 
 // Temporary types for testing
 interface User {
@@ -27,6 +32,27 @@ interface User {
   educational_system_id?: string;
   educational_system?: { id: string; name: string };
   is_subscribed?: boolean;
+  role?: 'student' | 'parent';
+}
+
+interface Parent {
+  id: string;
+  name: string;
+  mobile: string;
+  email?: string;
+  country_code?: string;
+}
+
+interface ParentLoginInput {
+  mobile: string;
+  password: string;
+}
+
+interface ParentRegisterInput {
+  name: string;
+  mobile: string;
+  email: string;
+  password: string;
 }
 
 interface LoginInput {
@@ -53,10 +79,16 @@ interface RegisterInput {
 
 interface AuthContextType {
   user: User | null;
+  parentUser: Parent | null;
+  userRole: 'student' | 'parent' | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (input: LoginInput) => Promise<{ success: boolean; error?: string }>;
   register: (input: RegisterInput) => Promise<{ success: boolean; error?: string }>;
+  forgotPassword: (email: string) => Promise<{ success: boolean; message?: string }>;
+  parentLogin: (input: ParentLoginInput) => Promise<{ success: boolean; error?: string }>;
+  parentRegister: (input: ParentRegisterInput) => Promise<{ success: boolean; error?: string }>;
+  parentForgotPassword: (email: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   onAuthStateChange?: (isAuthenticated: boolean) => void;
@@ -70,6 +102,8 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [parentUser, setParentUser] = useState<Parent | null>(null);
+  const [userRole, setUserRole] = useState<'student' | 'parent' | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Check if user is already logged in on app start
@@ -78,8 +112,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     // Create logout function to share between handlers
     const handleSessionExpired = () => {
-      if (__DEV__) console.log('Session expired - logging out');
+      logInfo('Session expired - logging out');
       setUser(null);
+      setParentUser(null);
+      setUserRole(null);
     };
 
     // Register logout handler for Apollo error link
@@ -92,18 +128,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const checkAuthStatus = async () => {
     try {
       const token = await SecureStore.getItemAsync('auth_token');
-      const userData = await AsyncStorage.getItem('user_data');
+      const role = (await AsyncStorage.getItem('user_role')) as 'student' | 'parent' | null;
 
-      if (token && userData) {
-        const parsedUser = JSON.parse(userData);
-        setUser(parsedUser);
-        configureCrashlyticsUser(parsedUser);
+      if (token && role) {
+        setUserRole(role);
+        if (role === 'student') {
+          const userData = await AsyncStorage.getItem('user_data');
+          if (userData) {
+            const parsedUser = JSON.parse(userData);
+            setUser(parsedUser);
+            configureCrashlyticsStudent(parsedUser);
+          }
+        } else {
+          const parentData = await AsyncStorage.getItem('parent_data');
+          if (parentData) {
+            const parsedParent = JSON.parse(parentData);
+            setParentUser(parsedParent);
+            configureCrashlyticsParent(parsedParent);
+          }
+        }
       } else {
-        configureCrashlyticsUser(null);
+        configureCrashlyticsGuest();
       }
     } catch (error) {
-      console.error('Error checking auth status:', error);
-      configureCrashlyticsUser(null);
+      logError('Error checking auth status', error);
+      configureCrashlyticsGuest();
     } finally {
       setIsLoading(false);
     }
@@ -124,15 +173,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               mobile
               country_code
               grade_id
-              grade {
-                id
-                name
-              }
+              grade { id name }
               educational_system_id
-              educational_system {
-                id
-                name
-              }
+              educational_system { id name }
               is_subscribed
             }
           }
@@ -145,29 +188,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const authPayload = result.data.login;
           await SecureStore.setItemAsync('auth_token', authPayload.access_token);
           await AsyncStorage.setItem('user_data', JSON.stringify(authPayload.user));
+          await AsyncStorage.setItem('user_role', 'student');
           setUser(authPayload.user);
-          configureCrashlyticsUser(authPayload.user);
+          setUserRole('student');
+          configureCrashlyticsStudent(authPayload.user);
           return { success: true };
         }
 
         let errorMessage = result.errors?.[0]?.message || 'Login failed';
         if (errorMessage === 'These credentials do not match our records.') {
           errorMessage = 'auth.invalid_credentials';
-        } else if (errorMessage === 'The mobile has already been taken.') {
-          errorMessage = 'auth.mobile_taken';
         }
 
         return { success: false, error: errorMessage };
       } catch (error: any) {
-        console.error('Login error:', error);
-        let errorMessage = error.message || 'An error occurred during login';
-        if (errorMessage === 'These credentials do not match our records.') {
-          errorMessage = 'auth.invalid_credentials';
-        }
-        return {
-          success: false,
-          error: errorMessage,
-        };
+        logError('Login error', error);
+        return { success: false, error: error.message || 'An error occurred during login' };
       }
     },
     [],
@@ -188,15 +224,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               mobile
               country_code
               grade_id
-              grade {
-                id
-                name
-              }
+              grade { id name }
               educational_system_id
-              educational_system {
-                id
-                name
-              }
+              educational_system { id name }
               is_subscribed
             }
           }
@@ -209,29 +239,177 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const authPayload = result.data.register;
           await SecureStore.setItemAsync('auth_token', authPayload.access_token);
           await AsyncStorage.setItem('user_data', JSON.stringify(authPayload.user));
+          await AsyncStorage.setItem('user_role', 'student');
           setUser(authPayload.user);
-          configureCrashlyticsUser(authPayload.user);
+          setUserRole('student');
+          configureCrashlyticsStudent(authPayload.user);
           return { success: true };
         }
 
         let errorMessage = result.errors?.[0]?.message || 'Registration failed';
-        if (errorMessage === 'These credentials do not match our records.') {
-          errorMessage = 'auth.invalid_credentials';
-        } else if (errorMessage === 'The mobile has already been taken.') {
+        if (errorMessage === 'The mobile has already been taken.') {
           errorMessage = 'auth.mobile_taken';
         }
 
         return { success: false, error: errorMessage };
       } catch (error: any) {
-        console.error('Registration error:', error);
-        let errorMessage = error.message || 'An error occurred during registration';
-        if (errorMessage === 'These credentials do not match our records.') {
-          errorMessage = 'auth.invalid_credentials';
+        logError('Registration error', error);
+        return { success: false, error: error.message || 'An error occurred during registration' };
+      }
+    },
+    [],
+  );
+
+  const forgotPassword = useCallback(
+    async (email: string): Promise<{ success: boolean; message?: string }> => {
+      try {
+        const result = await tryFetchWithFallback(
+          `
+        mutation ForgotPassword($email: String!) {
+          forgotPassword(email: $email) {
+            success
+            message
+          }
         }
+      `,
+          { email },
+        );
+
+        if (result.data?.forgotPassword) {
+          return {
+            success: result.data.forgotPassword.success,
+            message: result.data.forgotPassword.message,
+          };
+        }
+
         return {
           success: false,
-          error: errorMessage,
+          message: result.errors?.[0]?.message || 'Forgot password failed',
         };
+      } catch (error: any) {
+        logError('Forgot password error', error);
+        return { success: false, message: error.message };
+      }
+    },
+    [],
+  );
+
+  const parentLogin = useCallback(
+    async (input: ParentLoginInput): Promise<{ success: boolean; error?: string }> => {
+      try {
+        const result = await tryFetchWithFallback(
+          `
+        mutation ParentLogin($mobile: String!, $password: String!) {
+          parentLogin(input: {
+            mobile: $mobile,
+            password: $password
+          }) {
+            access_token
+            parent {
+              id
+              name
+              mobile
+            }
+          }
+        }
+      `,
+          { mobile: input.mobile, password: input.password },
+        );
+
+        if (result.data?.parentLogin) {
+          const authPayload = result.data.parentLogin;
+          await SecureStore.setItemAsync('auth_token', authPayload.access_token);
+          await AsyncStorage.setItem('parent_data', JSON.stringify(authPayload.parent));
+          await AsyncStorage.setItem('user_role', 'parent');
+          setParentUser(authPayload.parent);
+          setUserRole('parent');
+          configureCrashlyticsParent(authPayload.parent);
+          return { success: true };
+        }
+
+        return { success: false, error: result.errors?.[0]?.message || 'Login failed' };
+      } catch (error: any) {
+        logError('Parent login error', error);
+        return { success: false, error: error.message || 'An error occurred during parent login' };
+      }
+    },
+    [],
+  );
+
+  const parentRegister = useCallback(
+    async (input: ParentRegisterInput): Promise<{ success: boolean; error?: string }> => {
+      try {
+        const result = await tryFetchWithFallback(
+          `
+        mutation ParentRegister($name: String!, $mobile: String!, $email: String!, $password: String!) {
+          parentRegister(input: {
+            name: $name,
+            mobile: $mobile,
+            email: $email,
+            password: $password
+          }) {
+            access_token
+            parent {
+              id
+              name
+              mobile
+              email
+            }
+          }
+        }
+      `,
+          { name: input.name, mobile: input.mobile, email: input.email, password: input.password },
+        );
+
+        if (result.data?.parentRegister) {
+          const authPayload = result.data.parentRegister;
+          await SecureStore.setItemAsync('auth_token', authPayload.access_token);
+          await AsyncStorage.setItem('parent_data', JSON.stringify(authPayload.parent));
+          await AsyncStorage.setItem('user_role', 'parent');
+          setParentUser(authPayload.parent);
+          setUserRole('parent');
+          configureCrashlyticsParent(authPayload.parent);
+          return { success: true };
+        }
+
+        return { success: false, error: result.errors?.[0]?.message || 'Registration failed' };
+      } catch (error: any) {
+        logError('Parent registration error', error);
+        return { success: false, error: error.message || 'An error occurred during parent registration' };
+      }
+    },
+    [],
+  );
+
+  const parentForgotPassword = useCallback(
+    async (email: string): Promise<{ success: boolean; message?: string }> => {
+      try {
+        const result = await tryFetchWithFallback(
+          `
+        mutation ParentForgotPassword($email: String!) {
+          parentForgotPassword(email: $email) {
+            success
+            message
+          }
+        }
+      `,
+          { email },
+        );
+
+        if (result.data?.parentForgotPassword) {
+          return {
+            success: result.data.parentForgotPassword.success,
+            message: result.data.parentForgotPassword.message,
+          };
+        }
+
+        return {
+          success: false,
+          message: result.errors?.[0]?.message || 'Forgot password failed',
+        };
+      } catch (error: any) {
+        logError('Parent forgot password error', error);
+        return { success: false, message: error.message };
       }
     },
     [],
@@ -241,51 +419,78 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       await SecureStore.deleteItemAsync('auth_token');
       await AsyncStorage.removeItem('user_data');
+      await AsyncStorage.removeItem('parent_data');
+      await AsyncStorage.removeItem('user_role');
       setUser(null);
-      configureCrashlyticsUser(null);
+      setParentUser(null);
+      setUserRole(null);
+      configureCrashlyticsGuest();
     } catch (error) {
-      console.error('Logout error:', error);
+      logError('Logout error', error);
     }
   }, []);
 
   const refreshUser = useCallback(async () => {
     try {
       const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
+      const role = await AsyncStorage.getItem('user_role');
+      if (!token || !role) return;
 
-      const result = await tryFetchWithFallback(
-        `query Me { 
-          me { 
-            id name email mobile country_code gender school_id 
-            grade_id grade { id name } educational_system_id educational_system { id name } 
-            is_subscribed
-          } 
-        }`,
-        undefined,
-        token
-      );
-
-      if (result.data?.me) {
-        await AsyncStorage.setItem('user_data', JSON.stringify(result.data.me));
-        setUser(result.data.me);
-        configureCrashlyticsUser(result.data.me);
+      if (role === 'student') {
+        const result = await tryFetchWithFallback(
+          `query Me { 
+            me { 
+              id name email mobile country_code gender school_id 
+              grade_id grade { id name } educational_system_id educational_system { id name } 
+              is_subscribed
+            } 
+          }`,
+          undefined,
+          token
+        );
+        if (result.data?.me) {
+          await AsyncStorage.setItem('user_data', JSON.stringify(result.data.me));
+          setUser(result.data.me);
+          configureCrashlyticsStudent(result.data.me);
+        }
+      } else {
+        const result = await tryFetchWithFallback(
+          `query ParentMe { 
+            parentMe { 
+              id name mobile country_code
+            } 
+          }`,
+          undefined,
+          token
+        );
+        if (result.data?.parentMe) {
+          await AsyncStorage.setItem('parent_data', JSON.stringify(result.data.parentMe));
+          setParentUser(result.data.parentMe);
+          configureCrashlyticsParent(result.data.parentMe);
+        }
       }
     } catch (error) {
-      console.error('Refresh user error:', error);
+      logError('Refresh user error', error);
     }
   }, []);
 
   const value: AuthContextType = React.useMemo(
     () => ({
       user,
+      parentUser,
+      userRole,
       isLoading,
-      isAuthenticated: !!user,
+      isAuthenticated: !!user || !!parentUser,
       login,
       register,
+      forgotPassword,
+      parentLogin,
+      parentRegister,
+      parentForgotPassword,
       logout,
       refreshUser,
     }),
-    [user, isLoading, login, register, logout, refreshUser],
+    [user, parentUser, userRole, isLoading, login, register, forgotPassword, parentLogin, parentRegister, parentForgotPassword, logout, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -298,3 +503,4 @@ export const useAuth = (): AuthContextType => {
   }
   return context;
 };
+

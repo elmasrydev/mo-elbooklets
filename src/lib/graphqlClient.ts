@@ -9,6 +9,7 @@ import React from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { tryFetchWithFallback } from '../config/api';
+import { logError } from '../utils/logger';
 
 /**
  * Execute a GraphQL query or mutation with automatic fallback
@@ -31,7 +32,7 @@ export const executeGraphQL = async <TData = any, TVariables = any>(
     const result = await tryFetchWithFallback(query, variables, token || undefined);
     return result;
   } catch (error: any) {
-    console.error('GraphQL execution error:', error);
+    logError('GraphQL execution error', error);
     throw error;
   }
 };
