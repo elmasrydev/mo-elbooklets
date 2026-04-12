@@ -193,21 +193,21 @@ const generateThemeColors = (mode: ThemeMode, palette: ColorPalette): ThemeColor
       text: '#f8fafc', // Slate 50
       textSecondary: '#94a3b8', // Slate 400
       textTertiary: '#64748b', // Slate 500
-      border: '#1e293b', // Slate 800
-      primary: palette.primary500,
+      border: '#334155', // Slate 700 (better visibility)
+      primary: palette.primary400, // Vibrant blue (Slate 400) for better contrast
       secondary: palette.secondary,
-      card: '#1e293b', // Slate 800
-      headerBackground: '#020617',
+      card: '#1e293b', // Slate 800 - better separation from background
+      headerBackground: '#0f172a', // Slate 900
       headerText: '#f8fafc',
       headerSubtitle: '#94a3b8',
       tabActive: '#1e293b',
       tabInactive: 'transparent',
-      tabActiveText: '#f8fafc',
+      tabActiveText: '#60a5fa', // Use primary color for active tab
       tabInactiveText: '#64748b',
-      buttonPrimary: palette.primary500,
-      buttonPrimaryText: '#ffffff',
-      buttonSecondary: '#333333',
-      buttonSecondaryText: '#B0B0B0',
+      buttonPrimary: palette.primary400,
+      buttonPrimaryText: '#0f172a', // Dark text on light blue button for contrast
+      buttonSecondary: '#1e293b',
+      buttonSecondaryText: '#cbd5e1',
       buttonDisabled: '#333333',
       buttonDisabledText: '#808080',
       avatarBackground: palette.primary500,

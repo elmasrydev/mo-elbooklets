@@ -349,7 +349,7 @@ const styles = (
       flexDirection: contentRowDirection,
       alignItems: 'center',
       padding: spacing.md,
-      backgroundColor: theme.colors.primary + '0D', // Very light tint of primary color
+      backgroundColor: theme.mode === 'dark' ? theme.colors.primary + '26' : theme.colors.primary + '0D',
       borderBottomWidth: 1.5,
       borderBottomColor: theme.colors.border,
     },
@@ -369,6 +369,8 @@ const styles = (
     },
     chapterName: {
       ...typography('h3'),
+      fontSize: 18,
+      fontWeight: '800',
       color: theme.colors.text,
       textAlign: contentAlign,
     },
