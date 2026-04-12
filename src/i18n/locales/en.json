@@ -603,6 +603,23 @@
     "test_log_error": "Log Error",
     "internal_settings": "Internal Settings"
   },
+  "badges_screen": {
+    "header_title": "Badges",
+    "total_progress": "Total Progress",
+    "badges_earned": "Badges Earned",
+    "earned": "Earned",
+    "locked": "Locked",
+    "badge_details": "Badge Details",
+    "requirement": "REQUIREMENT",
+    "loading": "Loading badges...",
+    "error_loading": "Could not load badges. Please check your connection.",
+    "no_badges": "No badges available yet",
+    "no_description": "Complete challenges to earn this badge!",
+    "awarded_at": "Awarded on {{date}}",
+    "badges_short": "Badges",
+    "category_general": "General",
+    "default_description": "Complete challenges to earn this badge!"
+  },
   "faq": {
     "header_title": "FAQs",
     "intro": "Here are answers to some questions you might have:",

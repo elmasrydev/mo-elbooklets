@@ -598,6 +598,23 @@
     "test_log_error": "تسجيل خطأ",
     "internal_settings": "إعدادات المطور"
   },
+  "badges_screen": {
+    "header_title": "الأوسمة",
+    "total_progress": "التقدم الإجمالي",
+    "badges_earned": "الأوسمة المكتسبة",
+    "earned": "مكتسب",
+    "locked": "مغلق",
+    "badge_details": "تفاصيل الوسام",
+    "requirement": "الشروط",
+    "loading": "جاري تحميل الأوسمة...",
+    "error_loading": "تعذر تحميل الأوسمة. يرجى التحقق من اتصالك.",
+    "no_badges": "لا توجد أوسمة متاحة حالياً",
+    "no_description": "أكمل التحديات للحصول على هذا الوسام!",
+    "awarded_at": "تم الحصول عليه في {{date}}",
+    "badges_short": "أوسمة",
+    "category_general": "عام",
+    "default_description": "أكمل التحديات للحصول على هذا الوسام!"
+  },
   "faq": {
     "header_title": "الأسئلة الشائعة",
     "intro": "إليك إجابات لبعض الأسئلة التي قد تدور في ذهنك:",
