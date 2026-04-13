@@ -204,19 +204,35 @@ const SocialScreen: React.FC = () => {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       const token = await SecureStore.getItemAsync('auth_token');
-      if (!token || feedItem.type !== 'quiz_completion' || !feedItem.quizData) return;
+      if (!token) return;
+
+      // Optimistic update
+      setFeedItems((prev) =>
+        prev.map((item) =>
+          item.id === feedItem.id
+            ? { ...item, isLiked: !item.isLiked, likes: item.isLiked ? item.likes - 1 : item.likes + 1 }
+            : item,
+        ),
+      );
+
+      // Use quizUserId for quiz_completion posts if available (legacy), newsFeedId for all others
+      const isLegacyQuiz = feedItem.type === 'quiz_completion' && feedItem.quizData?.quizUserId;
+      const variables = isLegacyQuiz
+        ? { quizUserId: feedItem.quizData!.quizUserId }
+        : { newsFeedId: feedItem.id };
 
       const result = await tryFetchWithFallback(
-        `
-        mutation LikeActivity($quizUserId: ID!) {
-          likeActivity(quizUserId: $quizUserId) { success isLiked likeCount message }
-        }
-      `,
-        { quizUserId: feedItem.quizData.quizUserId },
+        `mutation LikeActivity($quizUserId: ID, $newsFeedId: ID) {
+          likeActivity(quizUserId: $quizUserId, newsFeedId: $newsFeedId) {
+            success isLiked likeCount message
+          }
+        }`,
+        variables,
         token,
       );
 
       if (result.data?.likeActivity?.success) {
+        // Confirm with server values
         setFeedItems((prev) =>
           prev.map((item) =>
             item.id === feedItem.id
@@ -228,9 +244,26 @@ const SocialScreen: React.FC = () => {
               : item,
           ),
         );
+      } else {
+        // Rollback optimistic update on failure
+        setFeedItems((prev) =>
+          prev.map((item) =>
+            item.id === feedItem.id
+              ? { ...item, isLiked: feedItem.isLiked, likes: feedItem.likes }
+              : item,
+          ),
+        );
       }
     } catch (err: any) {
       console.error('Like error:', err);
+      // Rollback on error
+      setFeedItems((prev) =>
+        prev.map((item) =>
+          item.id === feedItem.id
+            ? { ...item, isLiked: feedItem.isLiked, likes: feedItem.likes }
+            : item,
+        ),
+      );
     }
   };
 
@@ -251,9 +284,9 @@ const SocialScreen: React.FC = () => {
       if (item.type === 'quiz_completion' && item.quizData)
         return <QuizCompletionCard item={item as any} onLike={() => handleLike(item)} />;
       if (item.type === 'new_connection' && item.connectedUser)
-        return <ConnectionCard item={item as any} onLike={() => {}} />;
+        return <ConnectionCard item={item as any} onLike={() => handleLike(item)} />;
       if (item.type === 'rank_change' && item.rankData)
-        return <RankChangeCard item={item as any} onLike={() => {}} />;
+        return <RankChangeCard item={item as any} onLike={() => handleLike(item)} />;
       return null;
     },
     [t, handleLike, showConfirm],
