@@ -396,53 +396,69 @@ const EditProfileScreen: React.FC = () => {
                     )}
                   </View>
 
-                  {showSuggestions && schoolSuggestions.length > 0 && (
-                    <View
-                      style={[
-                        currentStyles.suggestionsContainer,
-                        { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
-                      ]}
+                  {/* Modal for suggestions to stay above keyboard */}
+                  <Modal
+                    visible={showSuggestions && schoolSuggestions.length > 0}
+                    transparent={true}
+                    animationType="fade"
+                    onRequestClose={() => setShowSuggestions(false)}
+                  >
+                    <TouchableOpacity 
+                      style={currentStyles.modalOverlay} 
+                      activeOpacity={1} 
+                      onPress={() => setShowSuggestions(false)}
                     >
-                      <ScrollView
-                        style={{ maxHeight: 200 }}
-                        keyboardShouldPersistTaps="handled"
-                        nestedScrollEnabled
+                      <View 
+                        style={[
+                          currentStyles.floatingSuggestionsContainer,
+                          { 
+                            backgroundColor: theme.colors.card, 
+                            borderColor: theme.colors.border,
+                            top: schoolInputY + 130 // Position below the input box
+                          }
+                        ]}
                       >
-                        {schoolSuggestions.map((school) => (
-                          <TouchableOpacity
-                            key={school.id}
-                            style={[
-                              currentStyles.suggestionItem,
-                              { borderBottomColor: theme.colors.border },
-                            ]}
-                            onPress={() => {
-                              setFormData((p) => ({
-                                ...p,
-                                school_name: isRTL ? school.name : school.name_en || school.name,
-                              }));
-                              setShowSuggestions(false);
-                            }}
-                          >
-                            <Text
-                              style={[currentStyles.suggestionText, { color: theme.colors.text }]}
+                        <ScrollView
+                          style={{ maxHeight: 250 }}
+                          keyboardShouldPersistTaps="handled"
+                          nestedScrollEnabled
+                        >
+                          {schoolSuggestions.map((school) => (
+                            <TouchableOpacity
+                              key={school.id}
+                              style={[
+                                currentStyles.suggestionItem,
+                                { borderBottomColor: theme.colors.border },
+                              ]}
+                              onPress={() => {
+                                setFormData((p) => ({
+                                  ...p,
+                                  school_name: isRTL ? school.name : school.name_en || school.name,
+                                }));
+                                setShowSuggestions(false);
+                              }}
                             >
-                              {school.name}
-                            </Text>
-                            {school.name_en && (
                               <Text
-                                style={[
-                                  currentStyles.suggestionTextEn,
-                                  { color: theme.colors.textTertiary },
-                                ]}
+                                style={[currentStyles.suggestionText, { color: theme.colors.text }]}
                               >
-                                {school.name_en}
+                                {school.name}
                               </Text>
-                            )}
-                          </TouchableOpacity>
-                        ))}
-                      </ScrollView>
-                    </View>
-                  )}
+                              {school.name_en && (
+                                <Text
+                                  style={[
+                                    currentStyles.suggestionTextEn,
+                                    { color: theme.colors.textTertiary },
+                                  ]}
+                                >
+                                  {school.name_en}
+                                </Text>
+                              )}
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
+                      </View>
+                    </TouchableOpacity>
+                  </Modal>
                 </View>
 
                 {/* Gender */}
@@ -786,11 +802,14 @@ const styles = (config: any) => {
       backgroundColor: theme.colors.primary,
       width: '100%',
     },
-    suggestionsContainer: {
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'transparent',
+    },
+    floatingSuggestionsContainer: {
       position: 'absolute',
-      top: 86,
-      left: 0,
-      right: 0,
+      left: spacing.md,
+      right: spacing.md,
       zIndex: 1000,
       borderWidth: 1,
       borderRadius: borderRadius.lg || 12,
