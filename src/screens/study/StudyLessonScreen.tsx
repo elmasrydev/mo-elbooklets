@@ -102,6 +102,20 @@ const LessonVideoPlayer: React.FC<{ url: string; theme: any; spacing: any; borde
     }
   };
 
+  const handleFullscreen = async () => {
+    try {
+      if (video.current) {
+        if (typeof (video.current as any).presentFullscreenPlayer === 'function') {
+          await (video.current as any).presentFullscreenPlayer();
+        } else if (typeof (video.current as any).presentFullscreenPlayerAsync === 'function') {
+          await (video.current as any).presentFullscreenPlayerAsync();
+        }
+      }
+    } catch (error) {
+      console.error('Fullscreen error:', error);
+    }
+  };
+
   const currentVideoStyles = videoStyles(theme, spacing, borderRadius);
 
   return (
@@ -157,16 +171,25 @@ const LessonVideoPlayer: React.FC<{ url: string; theme: any; spacing: any; borde
             />
           </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          onPress={() => setIsMuted(!isMuted)}
-          style={currentVideoStyles.muteButton}
-        >
-          <Ionicons
-            name={isMuted ? 'volume-mute' : 'volume-high'}
-            size={20}
-            color={theme.colors.textOnDark}
-          />
-        </TouchableOpacity>
+        {/* Mute + Fullscreen */}
+        <View style={currentVideoStyles.bottomActionsRow}>
+          <TouchableOpacity
+            onPress={() => setIsMuted(!isMuted)}
+            style={currentVideoStyles.actionIconButton}
+          >
+            <Ionicons
+              name={isMuted ? 'volume-mute' : 'volume-high'}
+              size={20}
+              color={theme.colors.textOnDark}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleFullscreen}
+            style={currentVideoStyles.actionIconButton}
+          >
+            <Ionicons name="expand" size={20} color={theme.colors.textOnDark} />
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -703,6 +726,25 @@ const styles = (
       backgroundColor: '#000',
       ...layout.shadow,
     },
+    interactionRow: {
+      flexDirection: 'row',
+      marginTop: spacing.sm,
+      gap: spacing.md,
+    },
+    interactionButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      gap: 8,
+    },
+    interactionText: {
+      ...typography('caption'),
+      ...fontWeight('600'),
+    },
     summaryText: {
       ...typography('bodyLarge'),
       lineHeight: 24,
@@ -894,6 +936,17 @@ const videoStyles = (theme: any, spacing: any, borderRadius: any) =>
       position: 'absolute',
       right: spacing.sm,
       bottom: spacing.xs,
+      padding: 5,
+    },
+    bottomActionsRow: {
+      position: 'absolute',
+      right: spacing.sm,
+      bottom: spacing.xs,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    actionIconButton: {
       padding: 5,
     },
   });
