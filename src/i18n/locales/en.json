@@ -642,7 +642,11 @@
     "email_placeholder": "your@email.com",
     "subject_placeholder": "How can we help?",
     "message_placeholder": "Tell us how we can help...",
-    "send_message": "Send Message"
+    "send_message": "Send Message",
+    "form_incomplete": "Please review the highlighted fields.",
+    "name_error": "Name must be at least 3 characters",
+    "subject_error": "Subject must be at least 3 characters",
+    "message_error": "Message must be at least 10 characters"
   },
   "booklets_screen": {
     "header_title": "Booklets",
