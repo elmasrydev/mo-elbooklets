@@ -90,7 +90,9 @@
     "api_current_url": "رابط API الحالي",
     "api_switch_demo": "التبديل إلى Demo",
     "api_switch_production": "التبديل إلى Production",
-    "api_switch_prs": "التبديل إلى PRS"
+    "api_switch_prs": "التبديل إلى PRS",
+    "like": "إعجاب",
+    "dislike": "عدم إعجاب"
   },
   "subscription": {
     "required_title": "اشتراك مطلوب",
@@ -673,5 +675,18 @@
     "name_not_editable": "لا يمكن تغيير الاسم يدوياً",
     "gender": "الجنس",
     "update_success": "تم تحديث الملف الشخصي بنجاح"
+  },
+  "report_question": {
+    "title": "الإبلاغ عن سؤال",
+    "subtitle": "ساعدنا في التحسين من خلال الإبلاغ عن الأسئلة الخاطئة أو غير الواضحة.",
+    "select_reason": "اختر سبباً",
+    "comment_label": "تعليقات إضافية (اختياري)",
+    "comment_placeholder": "صف المشكلة بمزيد من التفاصيل...",
+    "submit": "إرسال البلاغ",
+    "report_btn": "إبلاغ",
+    "success_title": "تم إرسال البلاغ",
+    "success_message": "شكراً لك! سيقوم فريقنا بمراجعة السؤال واتخاذ الإجراء المناسب.",
+    "submit_error": "فشل إرسال البلاغ. يرجى المحاولة مرة أخرى.",
+    "error_loading_types": "تعذر تحميل أنواع البلاغات. اضغط للمحاولة مجدداً."
   }
 }

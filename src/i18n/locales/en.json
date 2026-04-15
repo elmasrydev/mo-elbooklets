@@ -82,6 +82,8 @@
     "false": "False",
     "yes": "Yes",
     "no": "No",
+    "like": "Like",
+    "dislike": "Dislike",
     "go_back": "Go Back",
     "save": "Save",
     "save_and_continue": "Save & Continue",
@@ -677,5 +679,18 @@
     "name_not_editable": "Name cannot be changed manually",
     "gender": "Gender",
     "update_success": "Profile updated successfully"
+  },
+  "report_question": {
+    "title": "Report Question",
+    "subtitle": "Help us improve by flagging incorrect or unclear questions.",
+    "select_reason": "Select a reason",
+    "comment_label": "Additional comments (optional)",
+    "comment_placeholder": "Describe the issue in more detail...",
+    "submit": "Submit Report",
+    "report_btn": "Report",
+    "success_title": "Report Submitted",
+    "success_message": "Thank you! Our team will review the question and take action.",
+    "submit_error": "Failed to submit the report. Please try again.",
+    "error_loading_types": "Could not load report types. Tap to retry."
   }
 }
