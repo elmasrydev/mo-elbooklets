@@ -229,12 +229,16 @@ const StudyLessonScreen: React.FC = () => {
   const confirmedInteractionRef = useRef<'LIKE' | 'DISLIKE' | null>(
     currentLesson.myInteraction ?? null,
   );
+  const interactionCacheRef = useRef<Map<string, 'LIKE' | 'DISLIKE' | null>>(
+    new Map(allLessons.map((l) => [l.id, l.myInteraction ?? null])),
+  );
   const mutationInFlightRef = useRef(false);
 
-  // Re-seed when the user navigates to a different lesson in the navigator
+  // Re-seed when the user navigates to a different lesson
   useEffect(() => {
-    setInteraction(currentLesson.myInteraction ?? null);
-    confirmedInteractionRef.current = currentLesson.myInteraction ?? null;
+    const cachedInteraction = interactionCacheRef.current.get(currentLesson.id) ?? null;
+    setInteraction(cachedInteraction);
+    confirmedInteractionRef.current = cachedInteraction;
   }, [currentLesson.id]);
 
   const handleVideoInteraction = useCallback(
@@ -267,10 +271,12 @@ const StudyLessonScreen: React.FC = () => {
           // Server tells us the new interactionType ("LIKE", "DISLIKE", or null)
           const confirmed = (payload.interactionType as 'LIKE' | 'DISLIKE' | null) ?? null;
           confirmedInteractionRef.current = confirmed;
+          interactionCacheRef.current.set(currentLesson.id, confirmed);
           setInteraction(confirmed);
         } else {
           // Roll back to last confirmed state
           confirmedInteractionRef.current = previous;
+          interactionCacheRef.current.set(currentLesson.id, previous);
           setInteraction(previous);
         }
       } catch (err) {
@@ -382,9 +388,13 @@ const StudyLessonScreen: React.FC = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setCurrentLesson(lesson);
     setExpandedPoints(new Set());
-    setViewedPoints(
-      new Set(lesson.lessonPoints?.filter((p) => p.is_viewed).map((p) => p.id) || []),
-    );
+    setViewedPoints(new Set(lesson.lessonPoints?.filter((p) => p.is_viewed).map((p) => p.id) || []));
+
+    // Restore persisted interaction from cache instead of stale lesson object
+    const cachedInteraction = interactionCacheRef.current.get(lesson.id) ?? null;
+    setInteraction(cachedInteraction);
+    confirmedInteractionRef.current = cachedInteraction;
+
     scrollViewRef.current?.scrollTo({ y: 0, animated: false });
   };
 
