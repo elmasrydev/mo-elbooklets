@@ -17,7 +17,7 @@ export const PRS_URL = 'https://prs.elbooklets.com/graphql';
 
 // Default URL based on app.json > extra.debugMode (set before building)
 export const PRIMARY_API_URL =
-  Constants.expoConfig?.extra?.debugMode === true ? DEMO_URL : PRODUCTION_URL;
+  Constants.expoConfig?.extra?.debugMode === true ? PRS_URL : PRODUCTION_URL;
 
 // Fallback list starts with the primary URL
 export const POSSIBLE_URLS = [PRIMARY_API_URL];

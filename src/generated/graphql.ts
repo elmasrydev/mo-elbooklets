@@ -1,5 +1,6 @@
 import { gql } from '@apollo/client';
-import * as Apollo from '@apollo/client';
+import * as ApolloReactCommon from '../graphql/apollo-merged';
+import * as ApolloReactHooks from '../graphql/apollo-merged';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = T | null;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
@@ -29,6 +30,41 @@ export type AuthPayload = {
   expires_in: Scalars['Int']['output'];
   token_type: Scalars['String']['output'];
   user: User;
+};
+
+export type Badge = {
+  __typename?: 'Badge';
+  awardedAt?: Maybe<Scalars['DateTime']['output']>;
+  category: BadgeCategory;
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  logoUrl?: Maybe<Scalars['String']['output']>;
+  name: Scalars['String']['output'];
+  rules: Array<BadgeRule>;
+  rulesPreview?: Maybe<Scalars['String']['output']>;
+};
+
+export type BadgeCategory = {
+  __typename?: 'BadgeCategory';
+  badgeCount?: Maybe<Scalars['Int']['output']>;
+  color?: Maybe<Scalars['String']['output']>;
+  description?: Maybe<Scalars['String']['output']>;
+  icon?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+};
+
+export type BadgeRule = {
+  __typename?: 'BadgeRule';
+  conditionType: Scalars['String']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  operator: Scalars['String']['output'];
+  scoreThreshold?: Maybe<Scalars['Float']['output']>;
+  subject?: Maybe<Subject>;
+  timeframe?: Maybe<Scalars['String']['output']>;
+  value: Scalars['String']['output'];
+  valueEnd?: Maybe<Scalars['String']['output']>;
 };
 
 export type Chapter = {
@@ -74,12 +110,17 @@ export type LessonPoint = {
 export type Mutation = {
   __typename?: 'Mutation';
   deleteAccount: SocialActionResponse;
+  forgotPassword: SocialActionResponse;
   login: AuthPayload;
   publishQuizToFeed: SocialActionResponse;
   register: AuthPayload;
   saveStudySchedule: Array<StudySchedule>;
   startQuiz: Quiz;
   submitQuizAnswers: QuizSubmissionResult;
+};
+
+export type MutationForgotPasswordArgs = {
+  email: Scalars['String']['input'];
 };
 
 export type MutationLoginArgs = {
@@ -115,6 +156,8 @@ export type MutationSubmitQuizAnswersArgs = {
 
 export type Query = {
   __typename?: 'Query';
+  allBadges: Array<Badge>;
+  badgeCategories: Array<BadgeCategory>;
   grades: Array<Grade>;
   lessonsForSubject: Array<Lesson>;
   quiz?: Maybe<Quiz>;
@@ -213,7 +256,7 @@ export type StudyScheduleInput = {
 
 export type Subject = {
   __typename?: 'Subject';
-  chaptersCount: Scalars['Int']['output'];
+  chaptersCount?: Maybe<Scalars['Int']['output']>;
   description?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
@@ -306,6 +349,68 @@ export type DeleteAccountMutation = {
   deleteAccount: { __typename?: 'SocialActionResponse'; success: boolean; message?: string | null };
 };
 
+export type ForgotPasswordMutationVariables = Exact<{
+  email: Scalars['String']['input'];
+}>;
+
+export type ForgotPasswordMutation = {
+  __typename?: 'Mutation';
+  forgotPassword: {
+    __typename?: 'SocialActionResponse';
+    success: boolean;
+    message?: string | null;
+  };
+};
+
+export type GetAllBadgesQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetAllBadgesQuery = {
+  __typename?: 'Query';
+  allBadges: Array<{
+    __typename?: 'Badge';
+    id: string;
+    name: string;
+    description?: string | null;
+    logoUrl?: string | null;
+    awardedAt?: string | null;
+    rulesPreview?: string | null;
+    category: {
+      __typename?: 'BadgeCategory';
+      id: string;
+      name: string;
+      icon?: string | null;
+      color?: string | null;
+    };
+    rules: Array<{
+      __typename?: 'BadgeRule';
+      id: string;
+      conditionType: string;
+      operator: string;
+      value: string;
+      valueEnd?: string | null;
+      timeframe?: string | null;
+      scoreThreshold?: number | null;
+      description?: string | null;
+      subject?: { __typename?: 'Subject'; id: string; name: string } | null;
+    }>;
+  }>;
+};
+
+export type GetBadgeCategoriesQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetBadgeCategoriesQuery = {
+  __typename?: 'Query';
+  badgeCategories: Array<{
+    __typename?: 'BadgeCategory';
+    id: string;
+    name: string;
+    description?: string | null;
+    icon?: string | null;
+    color?: string | null;
+    badgeCount?: number | null;
+  }>;
+};
+
 export type StudyScheduleQueryVariables = Exact<{ [key: string]: never }>;
 
 export type StudyScheduleQuery = {
@@ -390,7 +495,7 @@ export type SubjectsForUserGradeQuery = {
     id: string;
     name: string;
     description?: string | null;
-    chaptersCount: number;
+    chaptersCount?: number | null;
   }>;
 };
 
@@ -511,7 +616,10 @@ export const LoginDocument = gql`
     }
   }
 `;
-export type LoginMutationFn = Apollo.MutationFunction<LoginMutation, LoginMutationVariables>;
+export type LoginMutationFn = ApolloReactCommon.MutationFunction<
+  LoginMutation,
+  LoginMutationVariables
+>;
 
 /**
  * __useLoginMutation__
@@ -532,14 +640,17 @@ export type LoginMutationFn = Apollo.MutationFunction<LoginMutation, LoginMutati
  * });
  */
 export function useLoginMutation(
-  baseOptions?: Apollo.MutationHookOptions<LoginMutation, LoginMutationVariables>,
+  baseOptions?: ApolloReactHooks.MutationHookOptions<LoginMutation, LoginMutationVariables>,
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<LoginMutation, LoginMutationVariables>(LoginDocument, options);
+  return ApolloReactHooks.useMutation<LoginMutation, LoginMutationVariables>(
+    LoginDocument,
+    options,
+  );
 }
 export type LoginMutationHookResult = ReturnType<typeof useLoginMutation>;
-export type LoginMutationResult = Apollo.MutationResult<LoginMutation>;
-export type LoginMutationOptions = Apollo.BaseMutationOptions<
+export type LoginMutationResult = ApolloReactCommon.MutationResult<LoginMutation>;
+export type LoginMutationOptions = ApolloReactCommon.BaseMutationOptions<
   LoginMutation,
   LoginMutationVariables
 >;
@@ -573,7 +684,7 @@ export const RegisterDocument = gql`
     }
   }
 `;
-export type RegisterMutationFn = Apollo.MutationFunction<
+export type RegisterMutationFn = ApolloReactCommon.MutationFunction<
   RegisterMutation,
   RegisterMutationVariables
 >;
@@ -600,14 +711,17 @@ export type RegisterMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useRegisterMutation(
-  baseOptions?: Apollo.MutationHookOptions<RegisterMutation, RegisterMutationVariables>,
+  baseOptions?: ApolloReactHooks.MutationHookOptions<RegisterMutation, RegisterMutationVariables>,
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<RegisterMutation, RegisterMutationVariables>(RegisterDocument, options);
+  return ApolloReactHooks.useMutation<RegisterMutation, RegisterMutationVariables>(
+    RegisterDocument,
+    options,
+  );
 }
 export type RegisterMutationHookResult = ReturnType<typeof useRegisterMutation>;
-export type RegisterMutationResult = Apollo.MutationResult<RegisterMutation>;
-export type RegisterMutationOptions = Apollo.BaseMutationOptions<
+export type RegisterMutationResult = ApolloReactCommon.MutationResult<RegisterMutation>;
+export type RegisterMutationOptions = ApolloReactCommon.BaseMutationOptions<
   RegisterMutation,
   RegisterMutationVariables
 >;
@@ -636,25 +750,33 @@ export const GetGradesDocument = gql`
  * });
  */
 export function useGetGradesQuery(
-  baseOptions?: Apollo.QueryHookOptions<GetGradesQuery, GetGradesQueryVariables>,
+  baseOptions?: ApolloReactHooks.QueryHookOptions<GetGradesQuery, GetGradesQueryVariables>,
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<GetGradesQuery, GetGradesQueryVariables>(GetGradesDocument, options);
+  return ApolloReactHooks.useQuery<GetGradesQuery, GetGradesQueryVariables>(
+    GetGradesDocument,
+    options,
+  );
 }
 export function useGetGradesLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<GetGradesQuery, GetGradesQueryVariables>,
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetGradesQuery, GetGradesQueryVariables>,
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<GetGradesQuery, GetGradesQueryVariables>(GetGradesDocument, options);
+  return ApolloReactHooks.useLazyQuery<GetGradesQuery, GetGradesQueryVariables>(
+    GetGradesDocument,
+    options,
+  );
 }
 export function useGetGradesSuspenseQuery(
   baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<GetGradesQuery, GetGradesQueryVariables>,
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<GetGradesQuery, GetGradesQueryVariables>,
 ) {
   const options =
-    baseOptions === Apollo.skipToken ? baseOptions : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<GetGradesQuery, GetGradesQueryVariables>(
+    baseOptions === ApolloReactHooks.skipToken
+      ? baseOptions
+      : { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useSuspenseQuery<GetGradesQuery, GetGradesQueryVariables>(
     GetGradesDocument,
     options,
   );
@@ -662,7 +784,10 @@ export function useGetGradesSuspenseQuery(
 export type GetGradesQueryHookResult = ReturnType<typeof useGetGradesQuery>;
 export type GetGradesLazyQueryHookResult = ReturnType<typeof useGetGradesLazyQuery>;
 export type GetGradesSuspenseQueryHookResult = ReturnType<typeof useGetGradesSuspenseQuery>;
-export type GetGradesQueryResult = Apollo.QueryResult<GetGradesQuery, GetGradesQueryVariables>;
+export type GetGradesQueryResult = ApolloReactCommon.QueryResult<
+  GetGradesQuery,
+  GetGradesQueryVariables
+>;
 export const DeleteAccountDocument = gql`
   mutation DeleteAccount {
     deleteAccount {
@@ -671,7 +796,7 @@ export const DeleteAccountDocument = gql`
     }
   }
 `;
-export type DeleteAccountMutationFn = Apollo.MutationFunction<
+export type DeleteAccountMutationFn = ApolloReactCommon.MutationFunction<
   DeleteAccountMutation,
   DeleteAccountMutationVariables
 >;
@@ -693,19 +818,240 @@ export type DeleteAccountMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useDeleteAccountMutation(
-  baseOptions?: Apollo.MutationHookOptions<DeleteAccountMutation, DeleteAccountMutationVariables>,
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
+    DeleteAccountMutation,
+    DeleteAccountMutationVariables
+  >,
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<DeleteAccountMutation, DeleteAccountMutationVariables>(
+  return ApolloReactHooks.useMutation<DeleteAccountMutation, DeleteAccountMutationVariables>(
     DeleteAccountDocument,
     options,
   );
 }
 export type DeleteAccountMutationHookResult = ReturnType<typeof useDeleteAccountMutation>;
-export type DeleteAccountMutationResult = Apollo.MutationResult<DeleteAccountMutation>;
-export type DeleteAccountMutationOptions = Apollo.BaseMutationOptions<
+export type DeleteAccountMutationResult = ApolloReactCommon.MutationResult<DeleteAccountMutation>;
+export type DeleteAccountMutationOptions = ApolloReactCommon.BaseMutationOptions<
   DeleteAccountMutation,
   DeleteAccountMutationVariables
+>;
+export const ForgotPasswordDocument = gql`
+  mutation ForgotPassword($email: String!) {
+    forgotPassword(email: $email) {
+      success
+      message
+    }
+  }
+`;
+export type ForgotPasswordMutationFn = ApolloReactCommon.MutationFunction<
+  ForgotPasswordMutation,
+  ForgotPasswordMutationVariables
+>;
+
+/**
+ * __useForgotPasswordMutation__
+ *
+ * To run a mutation, you first call `useForgotPasswordMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useForgotPasswordMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [forgotPasswordMutation, { data, loading, error }] = useForgotPasswordMutation({
+ *   variables: {
+ *      email: // value for 'email'
+ *   },
+ * });
+ */
+export function useForgotPasswordMutation(
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
+    ForgotPasswordMutation,
+    ForgotPasswordMutationVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useMutation<ForgotPasswordMutation, ForgotPasswordMutationVariables>(
+    ForgotPasswordDocument,
+    options,
+  );
+}
+export type ForgotPasswordMutationHookResult = ReturnType<typeof useForgotPasswordMutation>;
+export type ForgotPasswordMutationResult = ApolloReactCommon.MutationResult<ForgotPasswordMutation>;
+export type ForgotPasswordMutationOptions = ApolloReactCommon.BaseMutationOptions<
+  ForgotPasswordMutation,
+  ForgotPasswordMutationVariables
+>;
+export const GetAllBadgesDocument = gql`
+  query getAllBadges {
+    allBadges {
+      id
+      name
+      description
+      logoUrl
+      awardedAt
+      rulesPreview
+      category {
+        id
+        name
+        icon
+        color
+      }
+      rules {
+        id
+        conditionType
+        operator
+        value
+        valueEnd
+        subject {
+          id
+          name
+        }
+        timeframe
+        scoreThreshold
+        description
+      }
+    }
+  }
+`;
+
+/**
+ * __useGetAllBadgesQuery__
+ *
+ * To run a query within a React component, call `useGetAllBadgesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetAllBadgesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetAllBadgesQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useGetAllBadgesQuery(
+  baseOptions?: ApolloReactHooks.QueryHookOptions<GetAllBadgesQuery, GetAllBadgesQueryVariables>,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useQuery<GetAllBadgesQuery, GetAllBadgesQueryVariables>(
+    GetAllBadgesDocument,
+    options,
+  );
+}
+export function useGetAllBadgesLazyQuery(
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
+    GetAllBadgesQuery,
+    GetAllBadgesQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useLazyQuery<GetAllBadgesQuery, GetAllBadgesQueryVariables>(
+    GetAllBadgesDocument,
+    options,
+  );
+}
+export function useGetAllBadgesSuspenseQuery(
+  baseOptions?:
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<GetAllBadgesQuery, GetAllBadgesQueryVariables>,
+) {
+  const options =
+    baseOptions === ApolloReactHooks.skipToken
+      ? baseOptions
+      : { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useSuspenseQuery<GetAllBadgesQuery, GetAllBadgesQueryVariables>(
+    GetAllBadgesDocument,
+    options,
+  );
+}
+export type GetAllBadgesQueryHookResult = ReturnType<typeof useGetAllBadgesQuery>;
+export type GetAllBadgesLazyQueryHookResult = ReturnType<typeof useGetAllBadgesLazyQuery>;
+export type GetAllBadgesSuspenseQueryHookResult = ReturnType<typeof useGetAllBadgesSuspenseQuery>;
+export type GetAllBadgesQueryResult = ApolloReactCommon.QueryResult<
+  GetAllBadgesQuery,
+  GetAllBadgesQueryVariables
+>;
+export const GetBadgeCategoriesDocument = gql`
+  query getBadgeCategories {
+    badgeCategories {
+      id
+      name
+      description
+      icon
+      color
+      badgeCount
+    }
+  }
+`;
+
+/**
+ * __useGetBadgeCategoriesQuery__
+ *
+ * To run a query within a React component, call `useGetBadgeCategoriesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetBadgeCategoriesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetBadgeCategoriesQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useGetBadgeCategoriesQuery(
+  baseOptions?: ApolloReactHooks.QueryHookOptions<
+    GetBadgeCategoriesQuery,
+    GetBadgeCategoriesQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useQuery<GetBadgeCategoriesQuery, GetBadgeCategoriesQueryVariables>(
+    GetBadgeCategoriesDocument,
+    options,
+  );
+}
+export function useGetBadgeCategoriesLazyQuery(
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
+    GetBadgeCategoriesQuery,
+    GetBadgeCategoriesQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useLazyQuery<GetBadgeCategoriesQuery, GetBadgeCategoriesQueryVariables>(
+    GetBadgeCategoriesDocument,
+    options,
+  );
+}
+export function useGetBadgeCategoriesSuspenseQuery(
+  baseOptions?:
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
+        GetBadgeCategoriesQuery,
+        GetBadgeCategoriesQueryVariables
+      >,
+) {
+  const options =
+    baseOptions === ApolloReactHooks.skipToken
+      ? baseOptions
+      : { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useSuspenseQuery<
+    GetBadgeCategoriesQuery,
+    GetBadgeCategoriesQueryVariables
+  >(GetBadgeCategoriesDocument, options);
+}
+export type GetBadgeCategoriesQueryHookResult = ReturnType<typeof useGetBadgeCategoriesQuery>;
+export type GetBadgeCategoriesLazyQueryHookResult = ReturnType<
+  typeof useGetBadgeCategoriesLazyQuery
+>;
+export type GetBadgeCategoriesSuspenseQueryHookResult = ReturnType<
+  typeof useGetBadgeCategoriesSuspenseQuery
+>;
+export type GetBadgeCategoriesQueryResult = ApolloReactCommon.QueryResult<
+  GetBadgeCategoriesQuery,
+  GetBadgeCategoriesQueryVariables
 >;
 export const StudyScheduleDocument = gql`
   query StudySchedule {
@@ -740,31 +1086,36 @@ export const StudyScheduleDocument = gql`
  * });
  */
 export function useStudyScheduleQuery(
-  baseOptions?: Apollo.QueryHookOptions<StudyScheduleQuery, StudyScheduleQueryVariables>,
+  baseOptions?: ApolloReactHooks.QueryHookOptions<StudyScheduleQuery, StudyScheduleQueryVariables>,
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<StudyScheduleQuery, StudyScheduleQueryVariables>(
+  return ApolloReactHooks.useQuery<StudyScheduleQuery, StudyScheduleQueryVariables>(
     StudyScheduleDocument,
     options,
   );
 }
 export function useStudyScheduleLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<StudyScheduleQuery, StudyScheduleQueryVariables>,
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
+    StudyScheduleQuery,
+    StudyScheduleQueryVariables
+  >,
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<StudyScheduleQuery, StudyScheduleQueryVariables>(
+  return ApolloReactHooks.useLazyQuery<StudyScheduleQuery, StudyScheduleQueryVariables>(
     StudyScheduleDocument,
     options,
   );
 }
 export function useStudyScheduleSuspenseQuery(
   baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<StudyScheduleQuery, StudyScheduleQueryVariables>,
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<StudyScheduleQuery, StudyScheduleQueryVariables>,
 ) {
   const options =
-    baseOptions === Apollo.skipToken ? baseOptions : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<StudyScheduleQuery, StudyScheduleQueryVariables>(
+    baseOptions === ApolloReactHooks.skipToken
+      ? baseOptions
+      : { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useSuspenseQuery<StudyScheduleQuery, StudyScheduleQueryVariables>(
     StudyScheduleDocument,
     options,
   );
@@ -772,7 +1123,7 @@ export function useStudyScheduleSuspenseQuery(
 export type StudyScheduleQueryHookResult = ReturnType<typeof useStudyScheduleQuery>;
 export type StudyScheduleLazyQueryHookResult = ReturnType<typeof useStudyScheduleLazyQuery>;
 export type StudyScheduleSuspenseQueryHookResult = ReturnType<typeof useStudyScheduleSuspenseQuery>;
-export type StudyScheduleQueryResult = Apollo.QueryResult<
+export type StudyScheduleQueryResult = ApolloReactCommon.QueryResult<
   StudyScheduleQuery,
   StudyScheduleQueryVariables
 >;
@@ -817,31 +1168,36 @@ export const TodayScheduleDocument = gql`
  * });
  */
 export function useTodayScheduleQuery(
-  baseOptions?: Apollo.QueryHookOptions<TodayScheduleQuery, TodayScheduleQueryVariables>,
+  baseOptions?: ApolloReactHooks.QueryHookOptions<TodayScheduleQuery, TodayScheduleQueryVariables>,
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<TodayScheduleQuery, TodayScheduleQueryVariables>(
+  return ApolloReactHooks.useQuery<TodayScheduleQuery, TodayScheduleQueryVariables>(
     TodayScheduleDocument,
     options,
   );
 }
 export function useTodayScheduleLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<TodayScheduleQuery, TodayScheduleQueryVariables>,
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
+    TodayScheduleQuery,
+    TodayScheduleQueryVariables
+  >,
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<TodayScheduleQuery, TodayScheduleQueryVariables>(
+  return ApolloReactHooks.useLazyQuery<TodayScheduleQuery, TodayScheduleQueryVariables>(
     TodayScheduleDocument,
     options,
   );
 }
 export function useTodayScheduleSuspenseQuery(
   baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<TodayScheduleQuery, TodayScheduleQueryVariables>,
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<TodayScheduleQuery, TodayScheduleQueryVariables>,
 ) {
   const options =
-    baseOptions === Apollo.skipToken ? baseOptions : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<TodayScheduleQuery, TodayScheduleQueryVariables>(
+    baseOptions === ApolloReactHooks.skipToken
+      ? baseOptions
+      : { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useSuspenseQuery<TodayScheduleQuery, TodayScheduleQueryVariables>(
     TodayScheduleDocument,
     options,
   );
@@ -849,7 +1205,7 @@ export function useTodayScheduleSuspenseQuery(
 export type TodayScheduleQueryHookResult = ReturnType<typeof useTodayScheduleQuery>;
 export type TodayScheduleLazyQueryHookResult = ReturnType<typeof useTodayScheduleLazyQuery>;
 export type TodayScheduleSuspenseQueryHookResult = ReturnType<typeof useTodayScheduleSuspenseQuery>;
-export type TodayScheduleQueryResult = Apollo.QueryResult<
+export type TodayScheduleQueryResult = ApolloReactCommon.QueryResult<
   TodayScheduleQuery,
   TodayScheduleQueryVariables
 >;
@@ -869,7 +1225,7 @@ export const SaveStudyScheduleDocument = gql`
     }
   }
 `;
-export type SaveStudyScheduleMutationFn = Apollo.MutationFunction<
+export type SaveStudyScheduleMutationFn = ApolloReactCommon.MutationFunction<
   SaveStudyScheduleMutation,
   SaveStudyScheduleMutationVariables
 >;
@@ -892,20 +1248,21 @@ export type SaveStudyScheduleMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useSaveStudyScheduleMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     SaveStudyScheduleMutation,
     SaveStudyScheduleMutationVariables
   >,
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<SaveStudyScheduleMutation, SaveStudyScheduleMutationVariables>(
-    SaveStudyScheduleDocument,
-    options,
-  );
+  return ApolloReactHooks.useMutation<
+    SaveStudyScheduleMutation,
+    SaveStudyScheduleMutationVariables
+  >(SaveStudyScheduleDocument, options);
 }
 export type SaveStudyScheduleMutationHookResult = ReturnType<typeof useSaveStudyScheduleMutation>;
-export type SaveStudyScheduleMutationResult = Apollo.MutationResult<SaveStudyScheduleMutation>;
-export type SaveStudyScheduleMutationOptions = Apollo.BaseMutationOptions<
+export type SaveStudyScheduleMutationResult =
+  ApolloReactCommon.MutationResult<SaveStudyScheduleMutation>;
+export type SaveStudyScheduleMutationOptions = ApolloReactCommon.BaseMutationOptions<
   SaveStudyScheduleMutation,
   SaveStudyScheduleMutationVariables
 >;
@@ -942,31 +1299,42 @@ export const UserQuizHistoryDocument = gql`
  * });
  */
 export function useUserQuizHistoryQuery(
-  baseOptions?: Apollo.QueryHookOptions<UserQuizHistoryQuery, UserQuizHistoryQueryVariables>,
+  baseOptions?: ApolloReactHooks.QueryHookOptions<
+    UserQuizHistoryQuery,
+    UserQuizHistoryQueryVariables
+  >,
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<UserQuizHistoryQuery, UserQuizHistoryQueryVariables>(
+  return ApolloReactHooks.useQuery<UserQuizHistoryQuery, UserQuizHistoryQueryVariables>(
     UserQuizHistoryDocument,
     options,
   );
 }
 export function useUserQuizHistoryLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<UserQuizHistoryQuery, UserQuizHistoryQueryVariables>,
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
+    UserQuizHistoryQuery,
+    UserQuizHistoryQueryVariables
+  >,
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<UserQuizHistoryQuery, UserQuizHistoryQueryVariables>(
+  return ApolloReactHooks.useLazyQuery<UserQuizHistoryQuery, UserQuizHistoryQueryVariables>(
     UserQuizHistoryDocument,
     options,
   );
 }
 export function useUserQuizHistorySuspenseQuery(
   baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<UserQuizHistoryQuery, UserQuizHistoryQueryVariables>,
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
+        UserQuizHistoryQuery,
+        UserQuizHistoryQueryVariables
+      >,
 ) {
   const options =
-    baseOptions === Apollo.skipToken ? baseOptions : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<UserQuizHistoryQuery, UserQuizHistoryQueryVariables>(
+    baseOptions === ApolloReactHooks.skipToken
+      ? baseOptions
+      : { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useSuspenseQuery<UserQuizHistoryQuery, UserQuizHistoryQueryVariables>(
     UserQuizHistoryDocument,
     options,
   );
@@ -976,7 +1344,7 @@ export type UserQuizHistoryLazyQueryHookResult = ReturnType<typeof useUserQuizHi
 export type UserQuizHistorySuspenseQueryHookResult = ReturnType<
   typeof useUserQuizHistorySuspenseQuery
 >;
-export type UserQuizHistoryQueryResult = Apollo.QueryResult<
+export type UserQuizHistoryQueryResult = ApolloReactCommon.QueryResult<
   UserQuizHistoryQuery,
   UserQuizHistoryQueryVariables
 >;
@@ -1007,43 +1375,45 @@ export const SubjectsForUserGradeDocument = gql`
  * });
  */
 export function useSubjectsForUserGradeQuery(
-  baseOptions?: Apollo.QueryHookOptions<
+  baseOptions?: ApolloReactHooks.QueryHookOptions<
     SubjectsForUserGradeQuery,
     SubjectsForUserGradeQueryVariables
   >,
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<SubjectsForUserGradeQuery, SubjectsForUserGradeQueryVariables>(
+  return ApolloReactHooks.useQuery<SubjectsForUserGradeQuery, SubjectsForUserGradeQueryVariables>(
     SubjectsForUserGradeDocument,
     options,
   );
 }
 export function useSubjectsForUserGradeLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
     SubjectsForUserGradeQuery,
     SubjectsForUserGradeQueryVariables
   >,
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<SubjectsForUserGradeQuery, SubjectsForUserGradeQueryVariables>(
-    SubjectsForUserGradeDocument,
-    options,
-  );
+  return ApolloReactHooks.useLazyQuery<
+    SubjectsForUserGradeQuery,
+    SubjectsForUserGradeQueryVariables
+  >(SubjectsForUserGradeDocument, options);
 }
 export function useSubjectsForUserGradeSuspenseQuery(
   baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
         SubjectsForUserGradeQuery,
         SubjectsForUserGradeQueryVariables
       >,
 ) {
   const options =
-    baseOptions === Apollo.skipToken ? baseOptions : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<SubjectsForUserGradeQuery, SubjectsForUserGradeQueryVariables>(
-    SubjectsForUserGradeDocument,
-    options,
-  );
+    baseOptions === ApolloReactHooks.skipToken
+      ? baseOptions
+      : { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useSuspenseQuery<
+    SubjectsForUserGradeQuery,
+    SubjectsForUserGradeQueryVariables
+  >(SubjectsForUserGradeDocument, options);
 }
 export type SubjectsForUserGradeQueryHookResult = ReturnType<typeof useSubjectsForUserGradeQuery>;
 export type SubjectsForUserGradeLazyQueryHookResult = ReturnType<
@@ -1052,7 +1422,7 @@ export type SubjectsForUserGradeLazyQueryHookResult = ReturnType<
 export type SubjectsForUserGradeSuspenseQueryHookResult = ReturnType<
   typeof useSubjectsForUserGradeSuspenseQuery
 >;
-export type SubjectsForUserGradeQueryResult = Apollo.QueryResult<
+export type SubjectsForUserGradeQueryResult = ApolloReactCommon.QueryResult<
   SubjectsForUserGradeQuery,
   SubjectsForUserGradeQueryVariables
 >;
@@ -1088,35 +1458,43 @@ export const LessonsForSubjectDocument = gql`
  * });
  */
 export function useLessonsForSubjectQuery(
-  baseOptions: Apollo.QueryHookOptions<LessonsForSubjectQuery, LessonsForSubjectQueryVariables> &
+  baseOptions: ApolloReactHooks.QueryHookOptions<
+    LessonsForSubjectQuery,
+    LessonsForSubjectQueryVariables
+  > &
     ({ variables: LessonsForSubjectQueryVariables; skip?: boolean } | { skip: boolean }),
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<LessonsForSubjectQuery, LessonsForSubjectQueryVariables>(
+  return ApolloReactHooks.useQuery<LessonsForSubjectQuery, LessonsForSubjectQueryVariables>(
     LessonsForSubjectDocument,
     options,
   );
 }
 export function useLessonsForSubjectLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
     LessonsForSubjectQuery,
     LessonsForSubjectQueryVariables
   >,
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<LessonsForSubjectQuery, LessonsForSubjectQueryVariables>(
+  return ApolloReactHooks.useLazyQuery<LessonsForSubjectQuery, LessonsForSubjectQueryVariables>(
     LessonsForSubjectDocument,
     options,
   );
 }
 export function useLessonsForSubjectSuspenseQuery(
   baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<LessonsForSubjectQuery, LessonsForSubjectQueryVariables>,
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
+        LessonsForSubjectQuery,
+        LessonsForSubjectQueryVariables
+      >,
 ) {
   const options =
-    baseOptions === Apollo.skipToken ? baseOptions : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<LessonsForSubjectQuery, LessonsForSubjectQueryVariables>(
+    baseOptions === ApolloReactHooks.skipToken
+      ? baseOptions
+      : { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useSuspenseQuery<LessonsForSubjectQuery, LessonsForSubjectQueryVariables>(
     LessonsForSubjectDocument,
     options,
   );
@@ -1126,7 +1504,7 @@ export type LessonsForSubjectLazyQueryHookResult = ReturnType<typeof useLessonsF
 export type LessonsForSubjectSuspenseQueryHookResult = ReturnType<
   typeof useLessonsForSubjectSuspenseQuery
 >;
-export type LessonsForSubjectQueryResult = Apollo.QueryResult<
+export type LessonsForSubjectQueryResult = ApolloReactCommon.QueryResult<
   LessonsForSubjectQuery,
   LessonsForSubjectQueryVariables
 >;
@@ -1162,29 +1540,33 @@ export const QuizDocument = gql`
  * });
  */
 export function useQuizQuery(
-  baseOptions: Apollo.QueryHookOptions<QuizQuery, QuizQueryVariables> &
+  baseOptions: ApolloReactHooks.QueryHookOptions<QuizQuery, QuizQueryVariables> &
     ({ variables: QuizQueryVariables; skip?: boolean } | { skip: boolean }),
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<QuizQuery, QuizQueryVariables>(QuizDocument, options);
+  return ApolloReactHooks.useQuery<QuizQuery, QuizQueryVariables>(QuizDocument, options);
 }
 export function useQuizLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<QuizQuery, QuizQueryVariables>,
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<QuizQuery, QuizQueryVariables>,
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<QuizQuery, QuizQueryVariables>(QuizDocument, options);
+  return ApolloReactHooks.useLazyQuery<QuizQuery, QuizQueryVariables>(QuizDocument, options);
 }
 export function useQuizSuspenseQuery(
-  baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<QuizQuery, QuizQueryVariables>,
+  baseOptions?:
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<QuizQuery, QuizQueryVariables>,
 ) {
   const options =
-    baseOptions === Apollo.skipToken ? baseOptions : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<QuizQuery, QuizQueryVariables>(QuizDocument, options);
+    baseOptions === ApolloReactHooks.skipToken
+      ? baseOptions
+      : { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useSuspenseQuery<QuizQuery, QuizQueryVariables>(QuizDocument, options);
 }
 export type QuizQueryHookResult = ReturnType<typeof useQuizQuery>;
 export type QuizLazyQueryHookResult = ReturnType<typeof useQuizLazyQuery>;
 export type QuizSuspenseQueryHookResult = ReturnType<typeof useQuizSuspenseQuery>;
-export type QuizQueryResult = Apollo.QueryResult<QuizQuery, QuizQueryVariables>;
+export type QuizQueryResult = ApolloReactCommon.QueryResult<QuizQuery, QuizQueryVariables>;
 export const QuizResultsDocument = gql`
   query QuizResults($quizId: ID!) {
     quizResults(quizId: $quizId) {
@@ -1226,29 +1608,34 @@ export const QuizResultsDocument = gql`
  * });
  */
 export function useQuizResultsQuery(
-  baseOptions: Apollo.QueryHookOptions<QuizResultsQuery, QuizResultsQueryVariables> &
+  baseOptions: ApolloReactHooks.QueryHookOptions<QuizResultsQuery, QuizResultsQueryVariables> &
     ({ variables: QuizResultsQueryVariables; skip?: boolean } | { skip: boolean }),
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<QuizResultsQuery, QuizResultsQueryVariables>(QuizResultsDocument, options);
+  return ApolloReactHooks.useQuery<QuizResultsQuery, QuizResultsQueryVariables>(
+    QuizResultsDocument,
+    options,
+  );
 }
 export function useQuizResultsLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<QuizResultsQuery, QuizResultsQueryVariables>,
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<QuizResultsQuery, QuizResultsQueryVariables>,
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<QuizResultsQuery, QuizResultsQueryVariables>(
+  return ApolloReactHooks.useLazyQuery<QuizResultsQuery, QuizResultsQueryVariables>(
     QuizResultsDocument,
     options,
   );
 }
 export function useQuizResultsSuspenseQuery(
   baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<QuizResultsQuery, QuizResultsQueryVariables>,
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<QuizResultsQuery, QuizResultsQueryVariables>,
 ) {
   const options =
-    baseOptions === Apollo.skipToken ? baseOptions : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<QuizResultsQuery, QuizResultsQueryVariables>(
+    baseOptions === ApolloReactHooks.skipToken
+      ? baseOptions
+      : { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useSuspenseQuery<QuizResultsQuery, QuizResultsQueryVariables>(
     QuizResultsDocument,
     options,
   );
@@ -1256,7 +1643,7 @@ export function useQuizResultsSuspenseQuery(
 export type QuizResultsQueryHookResult = ReturnType<typeof useQuizResultsQuery>;
 export type QuizResultsLazyQueryHookResult = ReturnType<typeof useQuizResultsLazyQuery>;
 export type QuizResultsSuspenseQueryHookResult = ReturnType<typeof useQuizResultsSuspenseQuery>;
-export type QuizResultsQueryResult = Apollo.QueryResult<
+export type QuizResultsQueryResult = ApolloReactCommon.QueryResult<
   QuizResultsQuery,
   QuizResultsQueryVariables
 >;
@@ -1274,7 +1661,7 @@ export const StartQuizDocument = gql`
     }
   }
 `;
-export type StartQuizMutationFn = Apollo.MutationFunction<
+export type StartQuizMutationFn = ApolloReactCommon.MutationFunction<
   StartQuizMutation,
   StartQuizMutationVariables
 >;
@@ -1298,17 +1685,17 @@ export type StartQuizMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useStartQuizMutation(
-  baseOptions?: Apollo.MutationHookOptions<StartQuizMutation, StartQuizMutationVariables>,
+  baseOptions?: ApolloReactHooks.MutationHookOptions<StartQuizMutation, StartQuizMutationVariables>,
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<StartQuizMutation, StartQuizMutationVariables>(
+  return ApolloReactHooks.useMutation<StartQuizMutation, StartQuizMutationVariables>(
     StartQuizDocument,
     options,
   );
 }
 export type StartQuizMutationHookResult = ReturnType<typeof useStartQuizMutation>;
-export type StartQuizMutationResult = Apollo.MutationResult<StartQuizMutation>;
-export type StartQuizMutationOptions = Apollo.BaseMutationOptions<
+export type StartQuizMutationResult = ApolloReactCommon.MutationResult<StartQuizMutation>;
+export type StartQuizMutationOptions = ApolloReactCommon.BaseMutationOptions<
   StartQuizMutation,
   StartQuizMutationVariables
 >;
@@ -1325,7 +1712,7 @@ export const SubmitQuizAnswersDocument = gql`
     }
   }
 `;
-export type SubmitQuizAnswersMutationFn = Apollo.MutationFunction<
+export type SubmitQuizAnswersMutationFn = ApolloReactCommon.MutationFunction<
   SubmitQuizAnswersMutation,
   SubmitQuizAnswersMutationVariables
 >;
@@ -1349,20 +1736,21 @@ export type SubmitQuizAnswersMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useSubmitQuizAnswersMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     SubmitQuizAnswersMutation,
     SubmitQuizAnswersMutationVariables
   >,
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<SubmitQuizAnswersMutation, SubmitQuizAnswersMutationVariables>(
-    SubmitQuizAnswersDocument,
-    options,
-  );
+  return ApolloReactHooks.useMutation<
+    SubmitQuizAnswersMutation,
+    SubmitQuizAnswersMutationVariables
+  >(SubmitQuizAnswersDocument, options);
 }
 export type SubmitQuizAnswersMutationHookResult = ReturnType<typeof useSubmitQuizAnswersMutation>;
-export type SubmitQuizAnswersMutationResult = Apollo.MutationResult<SubmitQuizAnswersMutation>;
-export type SubmitQuizAnswersMutationOptions = Apollo.BaseMutationOptions<
+export type SubmitQuizAnswersMutationResult =
+  ApolloReactCommon.MutationResult<SubmitQuizAnswersMutation>;
+export type SubmitQuizAnswersMutationOptions = ApolloReactCommon.BaseMutationOptions<
   SubmitQuizAnswersMutation,
   SubmitQuizAnswersMutationVariables
 >;
