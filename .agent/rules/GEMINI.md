@@ -47,6 +47,62 @@ trigger: always_on
 - **Usage Protocol**: Always use the translation keys in the UI (e.g., via `t('key')`). NEVER hardcode strings in components.
 - **Native Alignment**: Use `textAlign: 'left'` and `flexDirection: 'row'`. Native RTL flips these automatically.
 
+### 📐 RTL Implementation Rules (CRITICAL — read before touching any UI)
+
+This app uses **`I18nManager.forceRTL(true)`** on language switch + app reload. React Native's native RTL engine then mirrors the entire layout automatically. **You MUST NOT fight this system.**
+
+#### ✅ CORRECT patterns
+
+| What you want | Write this | Why |
+|---|---|---|
+| Text aligned to reading start | `textAlign: 'left'` | Native flips to `'right'` in Arabic automatically |
+| Row that reads start→end | `flexDirection: 'row'` | Native flips to `row-reverse` in Arabic automatically |
+| Close button at reading end | `end: 12` (logical) | Flips from right→left automatically |
+| Margin after an icon | `marginEnd: 8` | Physical `marginRight` won't flip |
+| Padding at reading start | `paddingStart: 16` | Physical `paddingLeft` won't flip |
+
+#### ❌ FORBIDDEN patterns
+
+```tsx
+// ❌ NEVER do this — fights the native RTL system
+const { isRTL } = useLanguage();
+flexDirection: isRTL ? 'row-reverse' : 'row'   // ← wrong
+textAlign: isRTL ? 'right' : 'left'            // ← wrong
+left: isRTL ? 12 : undefined                   // ← wrong
+right: isRTL ? undefined : 12                  // ← wrong
+
+// ✅ DO this instead — let native handle it
+flexDirection: 'row'      // flips automatically
+textAlign: 'left'         // flips automatically
+end: 12                   // logical property, always "reading end"
+```
+
+#### 🔤 Typography & Fonts
+
+- **NEVER** manually set `fontFamily`. Use `typography()` and `fontWeight()` from `useTypography()`.
+- `useTypography` automatically selects **Cairo** (Arabic) or **Lexend** (English) based on `language` from `useLanguage()`.
+- On Android it also resolves the correct Bold/SemiBold/Medium variant.
+
+```tsx
+// ✅ Correct
+const { typography, fontWeight } = useTypography();
+<Text style={[typography('body'), fontWeight('600')]}>{t('key')}</Text>
+
+// ❌ Wrong — never hardcode font families
+<Text style={{ fontFamily: 'Cairo-Bold', fontSize: 16 }}>
+```
+
+#### 📌 Positioning (absolute elements)
+
+Use **logical** positioning properties so elements auto-flip:
+- `start` / `end` instead of `left` / `right`
+- `marginStart` / `marginEnd` instead of `marginLeft` / `marginRight`
+- See [`src/lib/rtl.ts`](file:///Users/ebrahim3bmo3ty/Documents/ReactNative/mo-elbooklets/src/lib/rtl.ts) for helpers: `startPosition()`, `endPosition()`, `marginStart()`, `marginEnd()`
+
+#### 🚫 Do NOT import `useLanguage` just for RTL
+
+`useLanguage` / `isRTL` are only needed for **content-language-specific** logic (e.g., fetching Arabic content, subject `.language` alignment). For UI layout RTL, the native engine handles everything — no manual checks needed.
+
 ### 🏗️ Architecture & UI
 
 - **Header**: ALWAYS use [`UnifiedHeader.tsx`](file:///Users/ebrahim3bmo3ty/Documents/ReactNative/mo-elbooklets/src/components/UnifiedHeader.tsx).

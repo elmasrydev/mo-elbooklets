@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -49,6 +49,7 @@ interface Lesson {
   points?: string[];
   lessonPoints?: LessonPoint[];
   videoUrl?: string;
+  myInteraction?: 'LIKE' | 'DISLIKE' | null;
   chapter: {
     id: string;
     name: string;
@@ -102,6 +103,20 @@ const LessonVideoPlayer: React.FC<{ url: string; theme: any; spacing: any; borde
     }
   };
 
+  const handleFullscreen = async () => {
+    try {
+      if (video.current) {
+        if (typeof (video.current as any).presentFullscreenPlayer === 'function') {
+          await (video.current as any).presentFullscreenPlayer();
+        } else if (typeof (video.current as any).presentFullscreenPlayerAsync === 'function') {
+          await (video.current as any).presentFullscreenPlayerAsync();
+        }
+      }
+    } catch (error) {
+      console.error('Fullscreen error:', error);
+    }
+  };
+
   const currentVideoStyles = videoStyles(theme, spacing, borderRadius);
 
   return (
@@ -132,6 +147,19 @@ const LessonVideoPlayer: React.FC<{ url: string; theme: any; spacing: any; borde
           </View>
         </View>
         <View style={currentVideoStyles.mainButtonsRow}>
+          {/* Mute — left side */}
+          <TouchableOpacity
+            onPress={() => setIsMuted(!isMuted)}
+            style={currentVideoStyles.actionIconButton}
+          >
+            <Ionicons
+              name={isMuted ? 'volume-mute' : 'volume-high'}
+              size={20}
+              color={theme.colors.textOnDark}
+            />
+          </TouchableOpacity>
+
+          {/* Skip back */}
           <TouchableOpacity
             onPress={() => handleSkip(-10)}
             style={currentVideoStyles.controlButton}
@@ -142,6 +170,8 @@ const LessonVideoPlayer: React.FC<{ url: string; theme: any; spacing: any; borde
               color={theme.colors.textOnDark}
             />
           </TouchableOpacity>
+
+          {/* Play / Pause */}
           <TouchableOpacity onPress={handlePlayPause} style={currentVideoStyles.playButton}>
             <Ionicons
               name={status.isPlaying ? 'pause' : 'play'}
@@ -149,6 +179,8 @@ const LessonVideoPlayer: React.FC<{ url: string; theme: any; spacing: any; borde
               color={theme.colors.textOnDark}
             />
           </TouchableOpacity>
+
+          {/* Skip forward */}
           <TouchableOpacity onPress={() => handleSkip(10)} style={currentVideoStyles.controlButton}>
             <Ionicons
               name={isRTL() ? 'play-back' : 'play-forward'}
@@ -156,17 +188,12 @@ const LessonVideoPlayer: React.FC<{ url: string; theme: any; spacing: any; borde
               color={theme.colors.textOnDark}
             />
           </TouchableOpacity>
+
+          {/* Fullscreen — right side */}
+          <TouchableOpacity onPress={handleFullscreen} style={currentVideoStyles.actionIconButton}>
+            <Ionicons name="expand" size={20} color={theme.colors.textOnDark} />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          onPress={() => setIsMuted(!isMuted)}
-          style={currentVideoStyles.muteButton}
-        >
-          <Ionicons
-            name={isMuted ? 'volume-mute' : 'volume-high'}
-            size={20}
-            color={theme.colors.textOnDark}
-          />
-        </TouchableOpacity>
       </View>
     </View>
   );
@@ -194,6 +221,73 @@ const StudyLessonScreen: React.FC = () => {
   // Local state for the leave-lesson confirmation — must be rendered here
   // because GlobalModalHandler (root-level) cannot pierce iOS native fullScreenModal.
   const [showLeaveModal, setShowLeaveModal] = useState(false);
+
+  // Like / Dislike — seeded from the lesson list query (myInteraction)
+  const [interaction, setInteraction] = useState<'LIKE' | 'DISLIKE' | null>(
+    currentLesson.myInteraction ?? null,
+  );
+  const confirmedInteractionRef = useRef<'LIKE' | 'DISLIKE' | null>(
+    currentLesson.myInteraction ?? null,
+  );
+  const interactionCacheRef = useRef<Map<string, 'LIKE' | 'DISLIKE' | null>>(
+    new Map(allLessons.map((l) => [l.id, l.myInteraction ?? null])),
+  );
+  const mutationInFlightRef = useRef(false);
+
+  // Re-seed when the user navigates to a different lesson
+  useEffect(() => {
+    const cachedInteraction = interactionCacheRef.current.get(currentLesson.id) ?? null;
+    setInteraction(cachedInteraction);
+    confirmedInteractionRef.current = cachedInteraction;
+  }, [currentLesson.id]);
+
+  const handleVideoInteraction = useCallback(
+    async (type: 'LIKE' | 'DISLIKE') => {
+      if (mutationInFlightRef.current) return;
+      try {
+        mutationInFlightRef.current = true;
+        const token = await SecureStore.getItemAsync('auth_token');
+        if (!token) return;
+
+        const previous = confirmedInteractionRef.current;
+        // Toggle off if same type, switch otherwise
+        const optimistic: 'LIKE' | 'DISLIKE' | null = previous === type ? null : type;
+        setInteraction(optimistic);
+
+        const result = await tryFetchWithFallback(
+          `mutation ToggleLessonInteraction($lessonId: ID!, $type: String!) {
+          toggleLessonInteraction(lessonId: $lessonId, type: $type) {
+            success
+            interactionType
+            message
+          }
+        }`,
+          { lessonId: currentLesson.id, type },
+          token,
+        );
+
+        const payload = result.data?.toggleLessonInteraction;
+        if (payload?.success) {
+          // Server tells us the new interactionType ("LIKE", "DISLIKE", or null)
+          const confirmed = (payload.interactionType as 'LIKE' | 'DISLIKE' | null) ?? null;
+          confirmedInteractionRef.current = confirmed;
+          interactionCacheRef.current.set(currentLesson.id, confirmed);
+          setInteraction(confirmed);
+        } else {
+          // Roll back to last confirmed state
+          confirmedInteractionRef.current = previous;
+          interactionCacheRef.current.set(currentLesson.id, previous);
+          setInteraction(previous);
+        }
+      } catch (err) {
+        console.error('Toggle interaction error:', err);
+        setInteraction(confirmedInteractionRef.current);
+      } finally {
+        mutationInFlightRef.current = false;
+      }
+    },
+    [currentLesson.id],
+  );
 
   const currentIndex = allLessons.findIndex((l) => l.id === currentLesson.id);
   const previousLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
@@ -294,9 +388,13 @@ const StudyLessonScreen: React.FC = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setCurrentLesson(lesson);
     setExpandedPoints(new Set());
-    setViewedPoints(
-      new Set(lesson.lessonPoints?.filter((p) => p.is_viewed).map((p) => p.id) || []),
-    );
+    setViewedPoints(new Set(lesson.lessonPoints?.filter((p) => p.is_viewed).map((p) => p.id) || []));
+
+    // Restore persisted interaction from cache instead of stale lesson object
+    const cachedInteraction = interactionCacheRef.current.get(lesson.id) ?? null;
+    setInteraction(cachedInteraction);
+    confirmedInteractionRef.current = cachedInteraction;
+
     scrollViewRef.current?.scrollTo({ y: 0, animated: false });
   };
 
@@ -372,6 +470,56 @@ const StudyLessonScreen: React.FC = () => {
               spacing={spacing}
               borderRadius={borderRadius}
             />
+            {/* Like / Dislike */}
+            <View style={currentStyles.interactionRow}>
+              <TouchableOpacity
+                style={[
+                  currentStyles.interactionButton,
+                  interaction === 'LIKE'
+                    ? currentStyles.interactionButtonLikeActive
+                    : currentStyles.interactionButtonDefault,
+                ]}
+                onPress={() => handleVideoInteraction('LIKE')}
+              >
+                <Ionicons
+                  name={interaction === 'LIKE' ? 'thumbs-up' : 'thumbs-up-outline'}
+                  size={20}
+                  color={interaction === 'LIKE' ? '#fff' : theme.colors.textSecondary}
+                />
+                <Text
+                  style={[
+                    currentStyles.interactionText,
+                    { color: interaction === 'LIKE' ? '#fff' : theme.colors.textSecondary },
+                  ]}
+                >
+                  {t('common.like')}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  currentStyles.interactionButton,
+                  interaction === 'DISLIKE'
+                    ? currentStyles.interactionButtonDislikeActive
+                    : currentStyles.interactionButtonDefault,
+                ]}
+                onPress={() => handleVideoInteraction('DISLIKE')}
+              >
+                <Ionicons
+                  name={interaction === 'DISLIKE' ? 'thumbs-down' : 'thumbs-down-outline'}
+                  size={20}
+                  color={interaction === 'DISLIKE' ? '#fff' : theme.colors.textSecondary}
+                />
+                <Text
+                  style={[
+                    currentStyles.interactionText,
+                    { color: interaction === 'DISLIKE' ? '#fff' : theme.colors.textSecondary },
+                  ]}
+                >
+                  {t('common.dislike')}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
@@ -705,6 +853,38 @@ const styles = (
       backgroundColor: '#000',
       ...layout.shadow,
     },
+    interactionRow: {
+      flexDirection: 'row',
+      marginTop: spacing.sm,
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.xs,
+      paddingBottom: spacing.xs,
+    },
+    interactionButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 9,
+      paddingHorizontal: 20,
+      borderRadius: 22,
+      borderWidth: 1.5,
+      gap: 8,
+    },
+    interactionButtonDefault: {
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.card,
+    },
+    interactionButtonLikeActive: {
+      borderColor: theme.colors.primary,
+      backgroundColor: theme.colors.primary,
+    },
+    interactionButtonDislikeActive: {
+      borderColor: theme.colors.error,
+      backgroundColor: theme.colors.error,
+    },
+    interactionText: {
+      ...typography('caption'),
+      ...fontWeight('600'),
+    },
     summaryText: {
       ...typography('bodyLarge'),
       lineHeight: 24,
@@ -877,9 +1057,9 @@ const videoStyles = (theme: any, spacing: any, borderRadius: any) =>
     },
     mainButtonsRow: {
       flexDirection: 'row',
-      justifyContent: 'center',
+      justifyContent: 'space-between',
       alignItems: 'center',
-      gap: spacing.lg,
+      paddingHorizontal: spacing.xs,
     },
     controlButton: {
       padding: spacing.xs,
@@ -897,6 +1077,14 @@ const videoStyles = (theme: any, spacing: any, borderRadius: any) =>
       right: spacing.sm,
       bottom: spacing.xs,
       padding: 5,
+    },
+    bottomActionsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    actionIconButton: {
+      padding: 6,
     },
   });
 

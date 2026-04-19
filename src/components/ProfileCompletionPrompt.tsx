@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   ScrollView,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
@@ -264,7 +265,10 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
 
   return (
     <Modal visible={visible} transparent animationType="slide">
-      <View style={styles.overlay}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+        style={styles.overlay}
+      >
         <View
           style={[styles.card, { backgroundColor: theme.colors.card, borderRadius: borderRadius.xl }]}
           onStartShouldSetResponder={() => true}
@@ -471,7 +475,7 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
             )}
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
