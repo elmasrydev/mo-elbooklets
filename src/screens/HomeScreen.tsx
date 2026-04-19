@@ -818,7 +818,11 @@ const HomeScreen: React.FC = () => {
                 activity={a}
                 onPress={() => {
                   const isQuiz = a.name?.toLowerCase().includes('quiz') || a.totalQuestions > 0;
-                  navigation.navigate(isQuiz ? 'Quiz' : 'Study');
+                  if (isQuiz) {
+                    navigation.navigate('QuizResults', { quizId: a.id });
+                  } else {
+                    navigation.navigate('Study');
+                  }
                 }}
               />
             ))}

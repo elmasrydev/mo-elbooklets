@@ -27,6 +27,7 @@ import AppButton from '../../components/AppButton';
 import RetryView from '../../components/RetryView';
 import { QuizScreenSkeleton } from '../../components/SkeletonLoader';
 import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
+import ReportQuestionModal from '../../components/ReportQuestionModal';
 
 const DESCRIPTIVE_TYPES = ['what_happens', 'give_a_reason'];
 
@@ -74,6 +75,7 @@ const QuizTakingScreen: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isTimerPaused, setIsTimerPaused] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -452,6 +454,18 @@ const QuizTakingScreen: React.FC = () => {
 
           <Text style={currentStyles.questionText}>{currentQuestion.question}</Text>
 
+          {/* Report button */}
+          <TouchableOpacity
+            style={[currentStyles.reportBtn, { borderColor: theme.colors.border }]}
+            onPress={() => setShowReportModal(true)}
+            activeOpacity={0.75}
+          >
+            <Ionicons name="flag" size={15} color={theme.colors.error} />
+            <Text style={[currentStyles.reportBtnText, { color: theme.colors.textSecondary }]}>
+              {t('report_question.report_btn', 'Report')}
+            </Text>
+          </TouchableOpacity>
+
           {isDescriptive ? (
             /* Descriptive answer: multi-line text input */
             <View style={currentStyles.descriptiveContainer}>
@@ -595,6 +609,15 @@ const QuizTakingScreen: React.FC = () => {
           </TouchableOpacity>
         )}
       </View>
+
+      {/* Report Question Modal */}
+      {quiz && (
+        <ReportQuestionModal
+          visible={showReportModal}
+          questionId={quiz.questions[currentQuestionIndex]?.id}
+          onClose={() => setShowReportModal(false)}
+        />
+      )}
     </View>
   );
 };
@@ -878,6 +901,21 @@ const styles = (
       textAlign: 'center',
       marginBottom: 20,
       color: theme.colors.textSecondary,
+    },
+    reportBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      borderWidth: 1,
+      borderRadius: 20,
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      gap: 5,
+      marginBottom: 20,
+    },
+    reportBtnText: {
+      ...typography('caption'),
+      ...fontWeight('600'),
     },
   });
 
