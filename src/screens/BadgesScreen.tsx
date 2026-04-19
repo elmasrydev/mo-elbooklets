@@ -34,19 +34,19 @@ const BadgesScreen: React.FC = () => {
   // Helper to validate if an icon name is likely a valid MaterialIcon
   const getValidIcon = (iconName: string | null | undefined): any => {
     if (!iconName) return 'stars';
-    
+
     // Curated list of design-approved icons from code.html and common ones
     const DESIGN_ICONS = [
-      'rocket_launch', 'edit_note', 'calendar_month', 'star', 'trending_up', 
-      'menu_book', 'workspace_premium', 'stars', 'ribbon', 'school', 'psychology', 
-      'quiz', 'emoji_events', 'military_tech', 'diamond', 'local_fire_department', 
-      'wb_sunny', 'event_available', 'shield', 'lightbulb', 'speed', 'volunteer_activism', 
+      'rocket_launch', 'edit_note', 'calendar_month', 'star', 'trending_up',
+      'menu_book', 'workspace_premium', 'stars', 'ribbon', 'school', 'psychology',
+      'quiz', 'emoji_events', 'military_tech', 'diamond', 'local_fire_department',
+      'wb_sunny', 'event_available', 'shield', 'lightbulb', 'speed', 'volunteer_activism',
       'show_chart', 'bolt', 'calculate', 'functions', 'science', 'biotech', 'public'
     ];
 
     // If it's in our design list, use it
     if (DESIGN_ICONS.includes(iconName)) return iconName;
-    
+
     // Basic format check: no spaces, lowercase (Material icon style)
     const isValidFormat = /^[a-z_0-9]+$/.test(iconName);
     if (isValidFormat) return iconName;
@@ -164,7 +164,7 @@ const BadgesScreen: React.FC = () => {
               <View style={styles.categoryHeader}>
                 <View style={styles.categoryTitleRow}>
                   <MaterialIcons name={getValidIcon(group.category.icon)} size={18} color={catColor} />
-                  <Text style={[typography('body'), fontWeight('700'), { color: catColor, marginLeft: 8 }]}>
+                  <Text style={[typography('body'), fontWeight('700'), { color: catColor, marginStart: 8 }]}>
                     {group.category.name}
                   </Text>
                 </View>
@@ -173,7 +173,7 @@ const BadgesScreen: React.FC = () => {
                   <View style={[styles.catProgressBarBg, { backgroundColor: theme.colors.border + '50' }]}>
                     <View style={[styles.catProgressBarFill, { backgroundColor: catColor, width: `${catPercentage}%` }]} />
                   </View>
-                  <Text style={[typography('caption'), fontWeight('700'), { color: theme.colors.textSecondary, marginLeft: 8, width: 30, textAlign: 'right' }]}>
+                  <Text style={[typography('caption'), fontWeight('700'), { color: theme.colors.textSecondary, marginStart: 8, width: 30, textAlign: 'right' }]}>
                     {catEarned}/{catTotal}
                   </Text>
                 </View>
@@ -213,10 +213,10 @@ const BadgesScreen: React.FC = () => {
                             ]}
                           />
                         ) : (
-                          <MaterialIcons 
-                            name={getValidIcon(group.category.icon)} 
-                            size={24} 
-                            color={badge.awardedAt ? catColor : theme.colors.textTertiary} 
+                          <MaterialIcons
+                            name={getValidIcon(group.category.icon)}
+                            size={24}
+                            color={badge.awardedAt ? catColor : theme.colors.textTertiary}
                             style={!badge.awardedAt && { opacity: 0.3 }}
                           />
                         )}
@@ -292,10 +292,10 @@ const BadgesScreen: React.FC = () => {
                         onError={() => setModalImageError(true)}
                       />
                     ) : (
-                      <MaterialIcons 
-                        name={getValidIcon(selectedBadge.category?.icon)} 
-                        size={60} 
-                        color={selectedBadge.awardedAt ? (selectedBadge.category?.color || theme.colors.primary) : theme.colors.textTertiary} 
+                      <MaterialIcons
+                        name={getValidIcon(selectedBadge.category?.icon)}
+                        size={60}
+                        color={selectedBadge.awardedAt ? (selectedBadge.category?.color || theme.colors.primary) : theme.colors.textTertiary}
                       />
                     )}
                   </View>
@@ -326,7 +326,7 @@ const BadgesScreen: React.FC = () => {
                       fontWeight('700'),
                       {
                         color: selectedBadge.awardedAt ? theme.colors.success : theme.colors.textSecondary,
-                        marginLeft: 4
+                        marginStart: 4
                       }
                     ]}>
                       {selectedBadge.awardedAt ? t('badges_screen.earned', 'Earned') : t('badges_screen.locked', 'Locked')}
@@ -499,7 +499,6 @@ const styles = StyleSheet.create({
   badgeName: {
     textAlign: 'center',
     fontSize: 10,
-    lineHeight: 12,
     height: 24,
   },
   emptyContainer: {
