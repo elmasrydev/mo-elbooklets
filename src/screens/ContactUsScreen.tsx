@@ -24,7 +24,6 @@ import { useModal } from '../context/ModalContext';
 import { tryFetchWithFallback } from '../config/api';
 import * as SecureStore from 'expo-secure-store';
 import { analytics } from '../lib/analytics';
-import { useScreenTracking } from '../hooks/useScreenTracking';
 
 const ContactUsScreen = ({ navigation }: any) => {
   const { t } = useTranslation();
@@ -35,7 +34,6 @@ const ContactUsScreen = ({ navigation }: any) => {
   const insets = useSafeAreaInsets();
   const { showConfirm } = useModal();
 
-  useScreenTracking('Contact Us');
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');

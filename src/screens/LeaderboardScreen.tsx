@@ -27,7 +27,6 @@ import RetryView from '../components/RetryView';
 import { layout } from '../config/layout';
 import { tryFetchWithFallback } from '../config/api';
 import { analytics } from '../lib/analytics';
-import { useScreenTracking } from '../hooks/useScreenTracking';
 
 interface Subject {
   id: string;
@@ -55,7 +54,6 @@ const LeaderboardScreen: React.FC = () => {
   const { typography, fontWeight } = useTypography();
   const navigation = useNavigation<any>();
 
-  useScreenTracking('Leaderboard');
 
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [selectedTab, setSelectedTab] = useState<string>('all');

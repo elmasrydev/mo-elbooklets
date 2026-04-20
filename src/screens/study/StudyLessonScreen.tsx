@@ -28,7 +28,6 @@ import useAndroidBack from '../../hooks/useAndroidBack';
 import AppButton from '../../components/AppButton';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
-import { useScreenTracking } from '../../hooks/useScreenTracking';
 import { isRTL, textAlign } from '../../lib/rtl';
 import { analytics } from '../../lib/analytics';
 
@@ -207,7 +206,6 @@ const StudyLessonScreen: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  useScreenTracking('Lesson');
   const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
 

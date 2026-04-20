@@ -17,7 +17,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 import { analytics } from '../lib/analytics';
-import { useScreenTracking } from '../hooks/useScreenTracking';
 import { isDebugMode } from '../config/debug';
 import ApiUrlSwitcherModal from '../components/ApiUrlSwitcherModal';
 
@@ -29,7 +28,7 @@ const OnboardingScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { theme, spacing } = useTheme();
 
-  useScreenTracking('Onboarding');
+
 
   const currentStyles = styles(typography, fontWeight, insets, isRTL, theme);
 

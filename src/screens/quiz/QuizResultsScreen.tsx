@@ -25,7 +25,6 @@ import UnifiedHeader from '../../components/UnifiedHeader';
 import AppButton from '../../components/AppButton';
 import RetryView from '../../components/RetryView';
 import { GenericListSkeleton } from '../../components/SkeletonLoader';
-import { useScreenTracking } from '../../hooks/useScreenTracking';
 import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
 import { analytics } from '../../lib/analytics';
 
@@ -80,7 +79,6 @@ interface QuizResultsScreenProps {
 const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  useScreenTracking('Quiz Results');
 
   // Use either props (if used in Modal) or route params (if navigated to as a screen)
   const quizId = props.quizId || route.params?.quizId;

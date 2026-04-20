@@ -26,7 +26,6 @@ import UnifiedHeader from '../../components/UnifiedHeader';
 import AppButton from '../../components/AppButton';
 import RetryView from '../../components/RetryView';
 import { QuizScreenSkeleton } from '../../components/SkeletonLoader';
-import { useScreenTracking } from '../../hooks/useScreenTracking';
 import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
 import { analytics } from '../../lib/analytics';
 import ReportQuestionModal from '../../components/ReportQuestionModal';
@@ -59,7 +58,6 @@ interface Quiz {
 const QuizTakingScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  useScreenTracking('Quiz Taking');
   const { quizId, isTimed } = route.params || {};
 
   const { theme, fontSizes, spacing, borderRadius } = useTheme();

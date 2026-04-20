@@ -23,11 +23,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { analytics } from '../lib/analytics';
-import { useScreenTracking } from '../hooks/useScreenTracking';
 
 const LoginScreen: React.FC = () => {
   const navigation = useNavigation<any>();
-  useScreenTracking('Login');
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);

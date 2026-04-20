@@ -24,7 +24,6 @@ import { useTypography } from '../hooks/useTypography';
 import { useAutoReset } from '../hooks/useAutoReset';
 import { useModal } from '../context/ModalContext';
 import { useNavigation } from '@react-navigation/native';
-import { useScreenTracking } from '../hooks/useScreenTracking';
 import { analytics } from '../lib/analytics';
 
 import BackButton from '../components/navigation/BackButton';
@@ -34,7 +33,6 @@ import AppButton from '../components/AppButton';
 
 const RegisterScreen: React.FC = () => {
   const navigation = useNavigation<any>();
-  useScreenTracking('Register');
   const [currentStep, setCurrentStep] = useState(1);
   const [countryCode] = useState('+2');
 
