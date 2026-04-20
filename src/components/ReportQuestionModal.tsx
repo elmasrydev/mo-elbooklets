@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Modal,
   View,
@@ -8,9 +8,10 @@ import {
   TextInput,
   ScrollView,
   ActivityIndicator,
+  Image,
+  Keyboard,
   Platform,
   Dimensions,
-  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
@@ -21,7 +22,6 @@ import { tryFetchWithFallback } from '../config/api';
 import AppButton from './AppButton';
 import { spacing as spacingConst } from '../config/spacing';
 
-const { width } = Dimensions.get('window');
 const logo = require('../../assets/logo-transparent.png');
 
 interface ReportType {
@@ -51,6 +51,19 @@ const ReportQuestionModal: React.FC<ReportQuestionModalProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    const showEv = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEv = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const onShow = Keyboard.addListener(showEv, (e) => setKeyboardHeight(e.endCoordinates.height));
+    const onHide = Keyboard.addListener(hideEv, () => setKeyboardHeight(0));
+    return () => {
+      onShow.remove();
+      onHide.remove();
+    };
+  }, []);
 
   const fetchReportTypes = useCallback(async () => {
     try {
@@ -136,6 +149,10 @@ const ReportQuestionModal: React.FC<ReportQuestionModalProps> = ({
 
   const s = styles(theme, borderRadius, typography, fontWeight);
 
+  // Modal height = 90% of the space above the keyboard (or 72% of full screen when keyboard hidden)
+  const availableHeight = SCREEN_HEIGHT - keyboardHeight;
+  const modalHeight = keyboardHeight > 0 ? availableHeight * 0.9 : SCREEN_HEIGHT * 0.72;
+
   return (
     <Modal
       visible={visible}
@@ -144,162 +161,184 @@ const ReportQuestionModal: React.FC<ReportQuestionModalProps> = ({
       onRequestClose={handleClose}
       statusBarTranslucent
     >
-      <TouchableOpacity activeOpacity={1} style={s.overlay} onPress={handleClose}>
-        <View
-          style={[s.container, { backgroundColor: theme.colors.card }]}
-          onStartShouldSetResponder={() => true}
+      <TouchableOpacity
+        activeOpacity={1}
+        style={s.overlay}
+        onPress={() => {
+          Keyboard.dismiss();
+          handleClose();
+        }}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => Keyboard.dismiss()}
+          style={[s.container, { marginBottom: keyboardHeight }]}
         >
-          {/* Close button */}
-          <TouchableOpacity
-            style={[s.closeBtn, { backgroundColor: theme.colors.bgGray }]}
-            onPress={handleClose}
-            activeOpacity={0.7}
+          <View
+            style={[s.containerInner, { backgroundColor: theme.colors.card, height: modalHeight }]}
           >
-            <Ionicons name="close" size={22} color={theme.colors.text} />
-          </TouchableOpacity>
+            {/* Close button */}
+            <TouchableOpacity
+              style={[s.closeBtn, { backgroundColor: theme.colors.bgGray }]}
+              onPress={handleClose}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="close" size={22} color={theme.colors.text} />
+            </TouchableOpacity>
 
-          {/* Header */}
-          <View style={s.header}>
-            <View style={s.logoWrap}>
-              <Image source={logo} style={s.logo} />
-            </View>
-            <Text style={[s.title, { color: theme.colors.text }]}>
-              {t('report_question.title')}
-            </Text>
-            <Text style={[s.subtitle, { color: theme.colors.textSecondary }]}>
-              {t('report_question.subtitle')}
-            </Text>
-          </View>
-
-          {submitted ? (
-            /* ── Success state ── */
-            <View style={s.successContainer}>
-              <View style={[s.successIcon, { backgroundColor: theme.colors.success + '1A' }]}>
-                <Ionicons name="checkmark-circle" size={48} color={theme.colors.success} />
+            {/* Header */}
+            <View style={s.header}>
+              <View style={s.logoWrap}>
+                <Image source={logo} style={s.logo} />
               </View>
-              <Text style={[s.successTitle, { color: theme.colors.text }]}>
-                {t('report_question.success_title')}
+              <Text style={[s.title, { color: theme.colors.text }]}>
+                {t('report_question.title')}
               </Text>
-              <Text style={[s.successMsg, { color: theme.colors.textSecondary }]}>
-                {t('report_question.success_message')}
+              <Text style={[s.subtitle, { color: theme.colors.textSecondary }]}>
+                {t('report_question.subtitle')}
               </Text>
-              <AppButton
-                title={t('common.done')}
-                onPress={handleClose}
-                variant="primary"
-                fullWidth
-              />
             </View>
-          ) : (
-            /* ── Form state ── */
-            <>
-              {loadingTypes ? (
-                <ActivityIndicator
-                  color={theme.colors.primary}
-                  size="small"
-                  style={{ marginVertical: spacingConst.lg }}
-                />
-              ) : error && reportTypes.length === 0 ? (
-                <View style={s.errorBox}>
-                  <Text style={[s.errorText, { color: theme.colors.error }]}>{error}</Text>
-                  <TouchableOpacity onPress={fetchReportTypes} style={s.retryBtn}>
-                    <Text style={[s.retryText, { color: theme.colors.primary }]}>
-                      {t('common.try_again', 'Try again')}
-                    </Text>
-                  </TouchableOpacity>
+
+            {submitted ? (
+              /* ── Success state ── */
+              <View style={s.successContainer}>
+                <View style={[s.successIcon, { backgroundColor: theme.colors.success + '1A' }]}>
+                  <Ionicons name="checkmark-circle" size={48} color={theme.colors.success} />
                 </View>
-              ) : (
-                <ScrollView
-                  style={s.scroll}
-                  contentContainerStyle={s.scrollContent}
-                  showsVerticalScrollIndicator={false}
-                  keyboardShouldPersistTaps="handled"
-                >
-                  {/* Report type chips (single select) */}
-                  <Text style={[s.sectionLabel, { color: theme.colors.textSecondary }]}>
-                    {t('report_question.select_reason')}
-                  </Text>
-                  {reportTypes.map((rt) => {
-                    const isSelected = selectedTypeId === rt.id;
-                    return (
-                      <TouchableOpacity
-                        key={rt.id}
-                        style={[
-                          s.typeRow,
-                          {
-                            borderColor: isSelected ? theme.colors.primary : theme.colors.border,
-                            backgroundColor: isSelected
-                              ? theme.colors.primary + '0D'
-                              : theme.colors.background,
-                          },
-                        ]}
-                        onPress={() => setSelectedTypeId(isSelected ? null : rt.id)}
-                        activeOpacity={0.75}
-                      >
-                        <View
+                <Text style={[s.successTitle, { color: theme.colors.text }]}>
+                  {t('report_question.success_title')}
+                </Text>
+                <Text style={[s.successMsg, { color: theme.colors.textSecondary }]}>
+                  {t('report_question.success_message')}
+                </Text>
+                <AppButton
+                  title={t('common.done')}
+                  onPress={handleClose}
+                  variant="primary"
+                  fullWidth
+                />
+              </View>
+            ) : (
+              /* ── Form state ── */
+              <View style={s.formBody}>
+                {loadingTypes ? (
+                  <ActivityIndicator
+                    color={theme.colors.primary}
+                    size="small"
+                    style={{ marginVertical: spacingConst.lg }}
+                  />
+                ) : error && reportTypes.length === 0 ? (
+                  <View style={s.errorBox}>
+                    <Text style={[s.errorText, { color: theme.colors.error }]}>{error}</Text>
+                    <TouchableOpacity onPress={fetchReportTypes} style={s.retryBtn}>
+                      <Text style={[s.retryText, { color: theme.colors.primary }]}>
+                        {t('common.try_again', 'Try again')}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <ScrollView
+                    ref={scrollViewRef}
+                    style={s.scroll}
+                    contentContainerStyle={s.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                  >
+                    {/* Report type chips (single select) */}
+                    <Text style={[s.sectionLabel, { color: theme.colors.textSecondary }]}>
+                      {t('report_question.select_reason')}
+                    </Text>
+                    {reportTypes.map((rt) => {
+                      const isSelected = selectedTypeId === rt.id;
+                      return (
+                        <TouchableOpacity
+                          key={rt.id}
                           style={[
-                            s.radioCircle,
+                            s.typeRow,
                             {
                               borderColor: isSelected ? theme.colors.primary : theme.colors.border,
+                              backgroundColor: isSelected
+                                ? theme.colors.primary + '0D'
+                                : theme.colors.background,
                             },
                           ]}
+                          onPress={() => setSelectedTypeId(isSelected ? null : rt.id)}
+                          activeOpacity={0.75}
                         >
-                          {isSelected && (
-                            <View style={[s.radioDot, { backgroundColor: theme.colors.primary }]} />
-                          )}
-                        </View>
-                        <Text
-                          style={[
-                            s.typeLabel,
-                            {
-                              color: isSelected ? theme.colors.primary : theme.colors.text,
-                            },
-                          ]}
-                        >
-                          {rt.name}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
+                          <View
+                            style={[
+                              s.radioCircle,
+                              {
+                                borderColor: isSelected
+                                  ? theme.colors.primary
+                                  : theme.colors.border,
+                              },
+                            ]}
+                          >
+                            {isSelected && (
+                              <View
+                                style={[s.radioDot, { backgroundColor: theme.colors.primary }]}
+                              />
+                            )}
+                          </View>
+                          <Text
+                            style={[
+                              s.typeLabel,
+                              {
+                                color: isSelected ? theme.colors.primary : theme.colors.text,
+                              },
+                            ]}
+                          >
+                            {rt.name}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
 
-                  {/* Comment field */}
-                  <Text
-                    style={[
-                      s.sectionLabel,
-                      { color: theme.colors.textSecondary, marginTop: spacingConst.md },
-                    ]}
-                  >
-                    {t('report_question.comment_label')}
-                  </Text>
-                  <TextInput
-                    style={[
-                      s.commentInput,
-                      {
-                        color: theme.colors.text,
-                        borderColor: theme.colors.border,
-                        backgroundColor: theme.colors.background,
-                      },
-                    ]}
-                    placeholder={t('report_question.comment_placeholder')}
-                    placeholderTextColor={theme.colors.textSecondary}
-                    value={comment}
-                    onChangeText={setComment}
-                    multiline
-                    textAlignVertical="top"
-                    maxLength={500}
-                  />
-                  <Text style={[s.charCount, { color: theme.colors.textSecondary }]}>
-                    {comment.length}/500
-                  </Text>
+                    {/* Comment field */}
+                    <Text
+                      style={[
+                        s.sectionLabel,
+                        { color: theme.colors.textSecondary, marginTop: spacingConst.md },
+                      ]}
+                    >
+                      {t('report_question.comment_label')}
+                    </Text>
+                    <TextInput
+                      style={[
+                        s.commentInput,
+                        {
+                          color: theme.colors.text,
+                          borderColor: theme.colors.border,
+                          backgroundColor: theme.colors.background,
+                        },
+                      ]}
+                      placeholder={t('report_question.comment_placeholder')}
+                      placeholderTextColor={theme.colors.textSecondary}
+                      value={comment}
+                      onChangeText={setComment}
+                      onFocus={() => {
+                        setTimeout(() => {
+                          scrollViewRef.current?.scrollToEnd({ animated: true });
+                        }, 100);
+                      }}
+                      multiline
+                      textAlignVertical="top"
+                      maxLength={500}
+                    />
+                    <Text style={[s.charCount, { color: theme.colors.textSecondary }]}>
+                      {comment.length}/500
+                    </Text>
+                  </ScrollView>
+                )}
 
-                  {/* Submission error */}
+                {/* Fixed bottom: error + submit */}
+                <View style={s.formFooter}>
                   {error && (
                     <Text style={[s.errorText, { color: theme.colors.error, marginBottom: 8 }]}>
                       {error}
                     </Text>
                   )}
-
-                  {/* Submit */}
                   <AppButton
                     title={t('report_question.submit')}
                     onPress={handleSubmit}
@@ -308,15 +347,17 @@ const ReportQuestionModal: React.FC<ReportQuestionModalProps> = ({
                     disabled={!selectedTypeId || submitting}
                     loading={submitting}
                   />
-                </ScrollView>
-              )}
-            </>
-          )}
-        </View>
+                </View>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
       </TouchableOpacity>
     </Modal>
   );
 };
+
+const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 const styles = (theme: any, borderRadius: any, typography: any, fontWeight: any) =>
   StyleSheet.create({
@@ -329,12 +370,15 @@ const styles = (theme: any, borderRadius: any, typography: any, fontWeight: any)
     },
     container: {
       width: '100%',
+    },
+    containerInner: {
+      width: '100%',
+      // height set dynamically via inline style
       borderRadius: borderRadius.xl,
       paddingTop: 40,
       paddingHorizontal: spacingConst.mdd,
       paddingBottom: spacingConst.mdd,
       position: 'relative',
-      maxHeight: '85%',
       ...Platform.select({
         ios: {
           shadowColor: '#000',
@@ -344,6 +388,12 @@ const styles = (theme: any, borderRadius: any, typography: any, fontWeight: any)
         },
         android: { elevation: 10 },
       }),
+    },
+    formBody: {
+      flex: 1,
+    },
+    formFooter: {
+      paddingTop: spacingConst.sm,
     },
     closeBtn: {
       position: 'absolute',
@@ -384,7 +434,7 @@ const styles = (theme: any, borderRadius: any, typography: any, fontWeight: any)
       lineHeight: 18,
     },
     scroll: {
-      flexGrow: 0,
+      flex: 1,
     },
     scrollContent: {
       paddingBottom: spacingConst.sm,
