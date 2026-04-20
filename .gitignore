@@ -45,3 +45,6 @@ yarn-error.*
 
 # AI agent skills (symlinks to global)
 .agents/
+
+package-lock.json
+yarn.lock
