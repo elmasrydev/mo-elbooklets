@@ -103,10 +103,11 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = (props: ConfirmModalPro
           style={[
             styles.container,
             {
-              backgroundColor: theme.colors.surface,
+              backgroundColor: theme.colors.card,
               borderRadius: borderRadius.xl,
             },
           ]}
+          onStartShouldSetResponder={() => true}
         >
           <TouchableOpacity
             style={[styles.closeButton, { backgroundColor: theme.colors.bgGray }]}

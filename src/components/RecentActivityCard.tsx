@@ -44,13 +44,33 @@ const RecentActivityCard: React.FC<ActivityCardProps> = ({ activity, onPress }) 
           {activity.name || activity.subject?.name || 'Quiz'}
         </Text>
         <Text style={s.subtitle}>
-          {activity.isPassed ? t('home_screen.completed') : t('common.completed')} •{' '}
-          {activity.subject?.name}
+          {activity.isPassed ? t('home_screen.completed') : t('common.completed')}
         </Text>
       </View>
 
-      {/* Time ago */}
-      <Text style={s.time}>{getTimeAgo(activity.completedAt, t, language)}</Text>
+      {/* Time and Score */}
+      <View style={s.rightColumn}>
+        <View
+          style={[
+            s.scoreBadge,
+            {
+              backgroundColor: activity.isPassed
+                ? theme.colors.success + '20'
+                : theme.colors.error + '20',
+            },
+          ]}
+        >
+          <Text
+            style={[
+              s.scoreText,
+              { color: activity.isPassed ? theme.colors.success : theme.colors.error },
+            ]}
+          >
+            {scorePercent}%
+          </Text>
+        </View>
+        <Text style={s.time}>{getTimeAgo(activity.completedAt, t, language)}</Text>
+      </View>
     </TouchableOpacity>
   );
 };
@@ -98,10 +118,23 @@ const styles = (
     },
     time: {
       ...typography('caption'),
-      fontSize: 11,
+      fontSize: 10,
       color: theme.colors.textTertiary,
       ...fontWeight('500'),
-      whiteSpace: 'nowrap',
+    },
+    rightColumn: {
+      alignItems: 'flex-end',
+      gap: 4,
+    },
+    scoreBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 12,
+    },
+    scoreText: {
+      ...typography('caption'),
+      ...fontWeight('bold'),
+      fontSize: 11,
     },
   });
 

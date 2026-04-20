@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,7 @@ import { tryFetchWithFallback } from '../../config/api';
 import { layout } from '../../config/layout';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import AppButton from '../../components/AppButton';
 import { GenericListSkeleton } from '../../components/SkeletonLoader';
@@ -46,6 +46,7 @@ interface Lesson {
   points?: string[];
   lessonPoints?: LessonPoint[];
   videoUrl?: string;
+  myInteraction?: 'LIKE' | 'DISLIKE' | null;
   chapter: {
     id: string;
     name: string;
@@ -76,11 +77,7 @@ const StudyChaptersScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchLessons();
-  }, [subject.id]);
-
-  const fetchLessons = async () => {
+  const fetchLessons = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -101,6 +98,7 @@ const StudyChaptersScreen: React.FC = () => {
               summary
               points
               videoUrl
+              myInteraction
               lessonPoints {
                 id
                 title
@@ -136,7 +134,15 @@ const StudyChaptersScreen: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [subject.id, t]);
+
+  // Re-fetch on every focus so myInteraction (like/dislike) is always fresh
+  // when the user navigates back from StudyLessonScreen.
+  useFocusEffect(
+    useCallback(() => {
+      fetchLessons();
+    }, [fetchLessons]),
+  );
 
   const handleLessonPress = (lesson: Lesson) => {
     if (!checkSubscription()) return;
@@ -349,7 +355,7 @@ const styles = (
       flexDirection: contentRowDirection,
       alignItems: 'center',
       padding: spacing.md,
-      backgroundColor: theme.colors.primary + '0D', // Very light tint of primary color
+      backgroundColor: theme.mode === 'dark' ? theme.colors.primary + '26' : theme.colors.primary + '0D',
       borderBottomWidth: 1.5,
       borderBottomColor: theme.colors.border,
     },
@@ -369,6 +375,8 @@ const styles = (
     },
     chapterName: {
       ...typography('h3'),
+      fontSize: 18,
+      fontWeight: '800',
       color: theme.colors.text,
       textAlign: contentAlign,
     },

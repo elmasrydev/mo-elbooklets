@@ -35,6 +35,7 @@ import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
 import { isRTL, textAlign } from '../lib/rtl';
 import { analytics } from '../lib/analytics';
 
+
 const { width } = Dimensions.get('window');
 
 // ─── Type Definitions ────────────────────────────────────────────────────────
@@ -224,6 +225,7 @@ const HomeScreen: React.FC = () => {
   const [leaderboardEntries, setLeaderboardEntries] = useState<LeaderboardEntry[]>([]);
   const [leaderboardUser, setLeaderboardUser] = useState<LeaderboardEntry | null>(null);
   const [socialFeed, setSocialFeed] = useState<SocialFeedItem[]>([]);
+
   const [todaySchedule, setTodaySchedule] = useState<TodayScheduleData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -820,7 +822,11 @@ const HomeScreen: React.FC = () => {
                 activity={a}
                 onPress={() => {
                   const isQuiz = a.name?.toLowerCase().includes('quiz') || a.totalQuestions > 0;
-                  navigation.navigate(isQuiz ? 'Quiz' : 'Study');
+                  if (isQuiz) {
+                    navigation.navigate('QuizResults', { quizId: a.id });
+                  } else {
+                    navigation.navigate('Study');
+                  }
                 }}
               />
             ))}

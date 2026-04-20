@@ -10,10 +10,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthProvider } from './src/context/AuthContext';
 import { ThemeProvider } from './src/context/ThemeContext';
 import apolloClient from './src/lib/apollo';
+import { ApiUriManager } from './src/config/api';
 import AppNavigator from './src/components/AppNavigator';
 import { AnalyticsProvider } from '@segment/analytics-react-native';
 import { segmentClient } from './src/lib/segmentClient';
 import { analytics } from './src/lib/analytics';
+import ErrorBoundary from './src/components/ErrorBoundary';
+import { logError } from './src/utils/logger';
 
 import { I18nextProvider } from 'react-i18next';
 import i18n, { getInitialLanguage, initI18n, LANGUAGE_KEY } from './src/i18n';
@@ -122,14 +125,17 @@ export default function App() {
         I18nManager.allowRTL(shouldBeRTL);
         I18nManager.forceRTL(shouldBeRTL);
 
-        // Step 4: Initialize i18next with the correct language
+        // Step 4: Initialize API URI Manager (check for custom URLs)
+        await ApiUriManager.init();
+
+        // Step 5: Initialize i18next with the correct language
         await initI18n(lang);
 
         // Step 5: Ready to render
         setInitialLanguage(lang);
         setAppReady(true);
       } catch (error) {
-        console.error('[App] Bootstrap error:', error);
+        logError('[App] Bootstrap error', error);
         // Fallback: try to show the app anyway
         await initI18n('en');
         setInitialLanguage('en');
@@ -178,7 +184,9 @@ export default function App() {
                         routeNameRef.current = currentRouteName;
                       }}
                     >
-                      <AppNavigator />
+                      <ErrorBoundary>
+                        <AppNavigator />
+                      </ErrorBoundary>
                     </NavigationContainer>
                     <ForceUpdateModal />
                     <MaintenanceModal />

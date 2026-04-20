@@ -10,7 +10,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "cover",
@@ -62,6 +62,7 @@
       "@react-native-firebase/crashlytics"
     ],
     "extra": {
+      "debugMode": true,
       "eas": {
         "projectId": "d4dcdf3d-7581-496d-96a9-c5acca79629d"
       }

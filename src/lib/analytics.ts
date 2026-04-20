@@ -29,12 +29,16 @@ export interface QuizAnalyticsParams {
  * Centralized Analytics Service
  * All analytics tracking should go through this service to maintain
  * a clean separation between the UI and the analytics provider.
+ * 
+ * NOTE: This service currently uses Segment SDK as a local router
+ * to send events natively to Firebase and other local plugins.
  */
 export const analytics = {
   /**
    * Identify a user and set their traits
    */
   identify: (userId: string, traits?: Record<string, any>) => {
+    if (__DEV__) console.log('👤 [Analytics] Identify:', userId, traits);
     segmentClient.identify(userId, traits);
   },
 
@@ -42,6 +46,7 @@ export const analytics = {
    * Track a general event
    */
   track: (event: string, properties?: Record<string, any>) => {
+    if (__DEV__) console.log(`📊 [Analytics] Track: ${event}`, properties);
     segmentClient.track(event, properties);
   },
 
@@ -49,6 +54,7 @@ export const analytics = {
    * Track a screen view
    */
   screen: (name: string, properties?: Record<string, any>) => {
+    if (__DEV__) console.log(`📱 [Analytics] Screen: ${name}`, properties);
     segmentClient.screen(name, properties);
   },
 
@@ -56,6 +62,7 @@ export const analytics = {
    * Reset analytics state (usually called on logout)
    */
   reset: () => {
+    if (__DEV__) console.log('🔄 [Analytics] Reset');
     segmentClient.reset();
   },
 
@@ -76,6 +83,10 @@ export const analytics = {
 
   trackOnboardingCompleted: () => {
     analytics.track('Onboarding Completed');
+  },
+
+  trackSubjectStarted: (subjectId: string, subjectName: string) => {
+    analytics.track('Subject Started', { subject_id: subjectId, subject_name: subjectName });
   },
 
   trackLessonStarted: (params: LessonAnalyticsParams) => {
@@ -104,12 +115,9 @@ export const analytics = {
 
   trackLanguageChanged: (language: 'ar' | 'en') => {
     analytics.track('Language Changed', { language });
-    segmentClient.setContext({
+    // Update local context for all subsequent events
+    segmentClient.context.set({
       locale: language
     });
-  },
-
-  trackSubjectStarted: (subjectId: string, subjectName: string) => {
-    analytics.track('Subject Started', { subject_id: subjectId, subject_name: subjectName });
   },
 };

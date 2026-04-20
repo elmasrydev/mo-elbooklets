@@ -59,3 +59,10 @@ mutation DeleteAccount {
     message
   }
 }
+
+mutation ForgotPassword($email: String!) {
+  forgotPassword(email: $email) {
+    success
+    message
+  }
+}
