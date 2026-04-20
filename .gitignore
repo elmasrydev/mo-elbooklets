@@ -45,6 +45,9 @@ yarn-error.*
 
 # AI agent skills (symlinks to global)
 .agents/
+<<<<<<< HEAD
 
 package-lock.json
 yarn.lock
+=======
+>>>>>>> main

@@ -198,12 +198,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setUser(authPayload.user);
           setUserRole('student');
           configureCrashlyticsStudent(authPayload.user);
+<<<<<<< HEAD
           analytics.identify(authPayload.user.id, {
             name: authPayload.user.name,
             mobile: authPayload.user.mobile,
             grade: authPayload.user.grade?.name,
           });
           return { success: true, user: authPayload.user };
+=======
+          return { success: true };
+>>>>>>> main
         }
 
         let errorMessage = result.errors?.[0]?.message || 'Login failed';
@@ -254,12 +258,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setUser(authPayload.user);
           setUserRole('student');
           configureCrashlyticsStudent(authPayload.user);
+<<<<<<< HEAD
           analytics.identify(authPayload.user.id, {
             name: authPayload.user.name,
             mobile: authPayload.user.mobile,
             grade: authPayload.user.grade?.name,
           });
           return { success: true, user: authPayload.user };
+=======
+          return { success: true };
+>>>>>>> main
         }
 
         let errorMessage = result.errors?.[0]?.message || 'Registration failed';

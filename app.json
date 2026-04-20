@@ -24,6 +24,7 @@
       },
       "bundleIdentifier": "com.elbooklets.app",
       "buildNumber": "11",
+      "appleTeamId": "XJAN9FLEYZ",
       "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
