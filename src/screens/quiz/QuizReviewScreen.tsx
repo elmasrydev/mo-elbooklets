@@ -25,6 +25,7 @@ import { textAlign } from '../../lib/rtl';
 import { QuizScreenSkeleton } from '../../components/SkeletonLoader';
 import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
 import RetryView from '../../components/RetryView';
+import ReportQuestionModal from '../../components/ReportQuestionModal';
 
 const QuizReviewScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -43,6 +44,8 @@ const QuizReviewScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
   const [published, setPublished] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [selectedReportQuestionId, setSelectedReportQuestionId] = useState<string | null>(null);
 
   const fetchResults = async () => {
     try {
@@ -352,6 +355,21 @@ const QuizReviewScreen: React.FC = () => {
                 {' '}
                 {ua.question.question}{' '}
               </Text>
+
+              {/* Report button */}
+              <TouchableOpacity
+                style={[currentStyles.reportBtn, { borderColor: theme.colors.border }]}
+                onPress={() => {
+                  setSelectedReportQuestionId(ua.question.id);
+                  setShowReportModal(true);
+                }}
+                activeOpacity={0.75}
+              >
+                <Ionicons name="flag" size={15} color={theme.colors.error} />
+                <Text style={[currentStyles.reportBtnText, { color: theme.colors.textSecondary }]}>
+                  {t('report_question.report_btn', 'Report')}
+                </Text>
+              </TouchableOpacity>
 
               {isDescriptive ? (
                 /* Descriptive review: clean comparison layout */
@@ -809,6 +827,18 @@ const QuizReviewScreen: React.FC = () => {
         </View>
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* Report Question Modal */}
+      {selectedReportQuestionId && (
+        <ReportQuestionModal
+          visible={showReportModal}
+          questionId={selectedReportQuestionId}
+          onClose={() => {
+            setShowReportModal(false);
+            setSelectedReportQuestionId(null);
+          }}
+        />
+      )}
     </View>
   );
 };
@@ -1033,6 +1063,21 @@ const styles = (
       textAlign: contentAlign,
       ...fontWeight('400'),
       lineHeight: 22,
+    },
+    reportBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      borderWidth: 1,
+      borderRadius: 20,
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      gap: 5,
+      marginBottom: 20,
+    },
+    reportBtnText: {
+      ...typography('caption'),
+      ...fontWeight('600'),
     },
   });
 
