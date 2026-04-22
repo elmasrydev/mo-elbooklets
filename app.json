@@ -23,7 +23,7 @@
         "ITSAppUsesNonExemptEncryption": false
       },
       "bundleIdentifier": "com.elbooklets.app",
-      "buildNumber": "8",
+      "buildNumber": "28",
       "appleTeamId": "XJAN9FLEYZ",
       "googleServicesFile": "./GoogleService-Info.plist"
     },
@@ -37,7 +37,10 @@
       "supportsRtl": true,
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "permissions": ["INTERNET", "ACCESS_NETWORK_STATE"],
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ],
       "googleServicesFile": "./google-services.json"
     },
     "web": {
@@ -57,7 +60,10 @@
       "./plugins/withAndroidExtraStrings.js",
       "expo-secure-store",
       "@react-native-firebase/app",
-      "@react-native-firebase/crashlytics"
+      "@react-native-firebase/crashlytics",
+      "@react-native-firebase/messaging",
+      "./plugins/withIosPushNotifications.js",
+      "./plugins/withAndroidNotificationIcon.js"
     ],
     "extra": {
       "debugMode": true,

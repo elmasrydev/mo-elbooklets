@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,8 +9,9 @@ import {
   Switch,
   Platform,
   ActivityIndicator,
+  AppState,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
 import { useTheme } from '../context/ThemeContext';
@@ -31,6 +32,7 @@ import {
 } from '../generated/graphql';
 import { isDebugMode } from '../config/debug';
 import crashlytics from '@react-native-firebase/crashlytics';
+import { checkNotificationPermission, requestNotificationPermission, openSettings } from '../services/notificationService';
 
 const APP_VERSION = `EL-Booklets v${DeviceInfo.getVersion()}`;
 
@@ -47,6 +49,51 @@ const ProfileScreen: React.FC = () => {
   const { isRTL, setLanguage, language } = useLanguage();
   const { typography, fontWeight } = useTypography();
   const { t } = useTranslation();
+
+  const [pushEnabled, setPushEnabled] = useState(false);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      checkNotificationPermission().then(setPushEnabled);
+    }, [])
+  );
+
+  // Re-check permission when returning from OS Settings
+  const appState = useRef(AppState.currentState);
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+        checkNotificationPermission().then(setPushEnabled);
+      }
+      appState.current = nextAppState;
+    });
+    return () => subscription.remove();
+  }, []);
+
+  const handlePushToggle = async (newValue: boolean) => {
+    if (newValue) {
+      const granted = await requestNotificationPermission();
+      if (granted) {
+        setPushEnabled(true);
+      } else {
+        showConfirm({
+          title: t('profile_screen.notifications'),
+          message: t('profile_screen.notifications_settings_msg'),
+          confirmLabel: t('common.settings') || 'Settings',
+          cancelLabel: t('common.cancel'),
+          onConfirm: openSettings
+        });
+      }
+    } else {
+      showConfirm({
+          title: t('profile_screen.notifications'),
+          message: t('profile_screen.notifications_disable_msg'),
+          confirmLabel: t('common.settings') || 'Settings',
+          cancelLabel: t('common.cancel'),
+          onConfirm: openSettings
+        });
+    }
+  };
 
   const [deleteAccountMutation, { loading: isDeletingAccount }] = useMutation<
     DeleteAccountMutation,
@@ -346,6 +393,24 @@ const ProfileScreen: React.FC = () => {
               />
             </TouchableOpacity>
           )}
+
+          {/* Push Notifications Toggle */}
+          <View style={currentStyles.settingItem}>
+            <View style={[currentStyles.settingIconBox, { backgroundColor: theme.colors.primary + '20' }]}>
+              <Ionicons name="notifications-outline" size={22} color={theme.colors.primary} />
+            </View>
+            <View style={currentStyles.settingContent}>
+              <Text style={currentStyles.settingTitle}>{t('profile_screen.notifications')}</Text>
+              <Text style={currentStyles.settingSubtitle}>{t('profile_screen.notifications_desc')}</Text>
+            </View>
+            <Switch
+              value={pushEnabled}
+              onValueChange={handlePushToggle}
+              trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
+              thumbColor={Platform.OS === 'ios' ? '#ffffff' : pushEnabled ? '#ffffff' : '#f4f3f4'}
+              ios_backgroundColor={theme.colors.border}
+            />
+          </View>
 
           {/* Dark Mode Toggle */}
           <View style={currentStyles.settingItem}>
