@@ -40,22 +40,29 @@ function withNotificationIconFiles(config) {
         }
       }
 
-      // Add notification_icon_color to colors.xml
-      const colorsPath = join(resDir, 'values', 'colors.xml');
-      if (fs.existsSync(colorsPath)) {
-        let content = fs.readFileSync(colorsPath, 'utf-8');
-        if (!content.includes('notification_icon_color')) {
-          content = content.replace(
-            '</resources>',
-            '  <color name="notification_icon_color">#1E40AF</color>\n</resources>'
-          );
-          fs.writeFileSync(colorsPath, content, 'utf-8');
-        }
-      }
-
       return mod;
     },
   ]);
+}
+
+const { withAndroidColors } = require('@expo/config-plugins');
+
+function withAndroidNotificationColor(config) {
+  return withAndroidColors(config, (mod) => {
+    if (!mod.modResults.resources) mod.modResults.resources = {};
+    if (!mod.modResults.resources.color) mod.modResults.resources.color = [];
+    
+    const colors = mod.modResults.resources.color;
+    const existingColor = colors.find(c => c.$?.name === 'notification_icon_color');
+    
+    if (existingColor) {
+      existingColor._ = '#023c69';
+    } else {
+      colors.push({ $: { name: 'notification_icon_color' }, _: '#023c69' });
+    }
+    
+    return mod;
+  });
 }
 
 module.exports = function withAndroidNotificationIcon(config) {
@@ -104,6 +111,9 @@ module.exports = function withAndroidNotificationIcon(config) {
 
   // 2. Copy icon files and add color resource
   config = withNotificationIconFiles(config);
+  
+  // 3. Set the color via withAndroidColors
+  config = withAndroidNotificationColor(config);
 
   return config;
 };
