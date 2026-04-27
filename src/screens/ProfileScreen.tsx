@@ -31,6 +31,7 @@ import {
 } from '../generated/graphql';
 import { isDebugMode } from '../config/debug';
 import crashlytics from '@react-native-firebase/crashlytics';
+import { logError } from '../utils/logger';
 
 const APP_VERSION = `EL-Booklets v${DeviceInfo.getVersion()}`;
 
