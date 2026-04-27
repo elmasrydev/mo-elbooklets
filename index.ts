@@ -1,3 +1,4 @@
+import './src/config/ReactotronConfig';
 import { registerRootComponent } from 'expo';
 
 import App from './App';

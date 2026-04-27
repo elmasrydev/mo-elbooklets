@@ -11,8 +11,8 @@
     "codegen:watch": "graphql-codegen --config codegen.yml --watch",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx}\"",
     "lint": "eslint \"src/**/*.{ts,tsx,js,jsx}\"",
-    "build:apk": "npx expo prebuild --platform android --clean && cd android && ./gradlew assembleRelease",
-    "build:aab": "npx expo prebuild --platform android --clean && cd android && ./gradlew bundleRelease"
+    "build:apk": "NODE_ENV=production npx expo prebuild --platform android && cd android && ./gradlew assembleRelease",
+    "build:aab": "NODE_ENV=production npx expo prebuild --platform android && cd android && ./gradlew bundleRelease"
   },
   "dependencies": {
     "@apollo/client": "^4.0.7",
@@ -26,6 +26,7 @@
     "@react-native-firebase/remote-config": "^23.8.8",
     "@react-native-picker/picker": "2.11.1",
     "@react-navigation/bottom-tabs": "^7.4.8",
+    "@react-navigation/drawer": "^7.9.8",
     "@react-navigation/native": "^7.1.18",
     "@react-navigation/native-stack": "^7.10.0",
     "@react-navigation/stack": "^7.4.9",
@@ -59,12 +60,14 @@
     "@graphql-codegen/typescript": "^5.0.2",
     "@graphql-codegen/typescript-operations": "^5.0.2",
     "@graphql-codegen/typescript-react-apollo": "^4.3.3",
+    "@react-native-community/cli": "latest",
     "@types/react": "~19.1.0",
     "eslint": "^9.39.2",
     "eslint-config-expo": "^10.0.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",
     "prettier": "^3.8.1",
+    "reactotron-react-native": "^5.1.18",
     "typescript": "~5.9.2"
   },
   "private": true
