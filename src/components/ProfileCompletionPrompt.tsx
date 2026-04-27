@@ -104,7 +104,7 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
         `query ProfileCompleteness { 
           profileCompleteness { 
             isComplete missingFields percentage needsGender needsSchool 
-            needsParentMobile needsEmail needsEducationalSystem 
+            needsParentMobile needsEmail needsEducationalSystem
           } 
         }`,
         undefined,

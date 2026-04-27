@@ -10,6 +10,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
@@ -26,10 +27,26 @@ import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAutoReset } from '../hooks/useAutoReset';
 import { useModal } from '../context/ModalContext';
+import SearchablePickerModal from '../components/SearchablePickerModal';
 
 interface EducationalSystem {
   id: string;
   name: string;
+}
+
+interface City {
+  id: string | number;
+  name: string;
+  name_ar?: string;
+  name_en?: string;
+  governorate_id?: string | number;
+}
+
+interface School {
+  id: string | number;
+  name: string;
+  name_en?: string;
+  is_verified?: boolean;
 }
 
 const EditProfileScreen: React.FC = () => {
@@ -37,7 +54,7 @@ const EditProfileScreen: React.FC = () => {
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, updateUser } = useAuth();
   const { typography, fontWeight } = useTypography();
   const common = useCommonStyles();
   const insets = useSafeAreaInsets();
@@ -54,7 +71,22 @@ const EditProfileScreen: React.FC = () => {
     gender: user?.gender || '',
     educational_system_id: user?.educational_system?.id || '',
     parent_mobile: user?.parent_mobile || '',
+    city_id: (user as any)?.city_id || '',
+    governorate_id: (user as any)?.governorate_id || '',
   });
+
+  const [governorates, setGovernorates] = useState<any[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
+  const [fetchingGov, setFetchingGov] = useState(false);
+  const [fetchingCities, setFetchingCities] = useState(false);
+
+  const [passwordState, setPasswordState] = useState({
+    oldPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+
+  const [showPasswordSection, setShowPasswordSection] = useState(false);
 
   const [touchedEmail, setTouchedEmail] = useAutoReset(false);
   const [touchedSchool, setTouchedSchool] = useAutoReset(false);
@@ -62,8 +94,13 @@ const EditProfileScreen: React.FC = () => {
 
   const [schoolSuggestions, setSchoolSuggestions] = useState<any[]>([]);
   const [loadingSchools, setLoadingSchools] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [schoolInputY, setSchoolInputY] = useState(0);
+
+  const [showGovModal, setShowGovModal] = useState(false);
+  const [showCityModal, setShowCityModal] = useState(false);
+  const [showSchoolModal, setShowSchoolModal] = useState(false);
+  const [govSearch, setGovSearch] = useState('');
+  const [citySearch, setCitySearch] = useState('');
+  const [schoolSearch, setSchoolSearch] = useState('');
 
   const scrollViewRef = useRef<ScrollView>(null);
   const schoolRef = useRef<TextInput>(null);
@@ -71,7 +108,84 @@ const EditProfileScreen: React.FC = () => {
 
   useEffect(() => {
     fetchEduSystems();
+    fetchGovernorates();
   }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (showSchoolModal && schoolSearch.length >= 2) {
+        fetchSchoolSuggestions(schoolSearch);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [schoolSearch, showSchoolModal]);
+
+  useEffect(() => {
+    if (formData.governorate_id) {
+      fetchCities(formData.governorate_id);
+    } else {
+      setCities([]);
+    }
+  }, [formData.governorate_id]);
+
+  const fetchGovernorates = async () => {
+    try {
+      setFetchingGov(true);
+      const result = await tryFetchWithFallback(
+        `query GetGovernorates { governorates { id name_ar name_en } }`,
+      );
+      if (result.data?.governorates) {
+        setGovernorates(result.data.governorates);
+      }
+    } catch (err) {
+      console.error('Fetch governorates error:', err);
+    } finally {
+      setFetchingGov(false);
+    }
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (showCityModal && formData.governorate_id && (citySearch.length === 0 || citySearch.length >= 2)) {
+        fetchCities(formData.governorate_id, citySearch);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [citySearch, showCityModal, formData.governorate_id]);
+
+  const fetchCities = async (governorateId: string, search: string = '') => {
+    try {
+      setFetchingCities(true);
+      const query = `
+        query SearchCities($governorate_id: ID, $query: String!) {
+          searchCities(governorate_id: $governorate_id, query: $query) {
+            id
+            name_ar
+            name_en
+            governorate_id
+          }
+        }
+      `;
+      
+      const result = await tryFetchWithFallback(query, {
+        governorate_id: governorateId,
+        query: search
+      });
+
+      if (result.data?.searchCities) {
+        // Map name_ar/name_en to name field based on locale
+        const mappedResults = result.data.searchCities.map((c: any) => ({
+          ...c,
+          name: isRTL ? (c.name_ar || c.name_en) : (c.name_en || c.name_ar)
+        }));
+        setCities(mappedResults);
+      }
+    } catch (err) {
+      console.error('Fetch cities error:', err);
+    } finally {
+      setFetchingCities(false);
+    }
+  };
 
   const fetchEduSystems = async () => {
     try {
@@ -90,26 +204,23 @@ const EditProfileScreen: React.FC = () => {
   };
 
   const fetchSchoolSuggestions = async (search: string) => {
-    if (!search || search.length < 2) {
-      setSchoolSuggestions([]);
-      setShowSuggestions(false);
-      return;
-    }
-
     try {
       setLoadingSchools(true);
-      const token = await SecureStore.getItemAsync('auth_token');
-      const result = await tryFetchWithFallback(
-        `query SearchSchools($search: String!) { 
-          searchSchools(search: $search) { id name name_en } 
-        }`,
-        { search },
-        token || undefined,
-      );
+      const query = `
+        query SearchSchools($search: String!) {
+          searchSchools(search: $search) {
+            id
+            name
+            name_en
+            is_verified
+          }
+        }
+      `;
+      
+      const result = await tryFetchWithFallback(query, { search });
 
       if (result.data?.searchSchools) {
         setSchoolSuggestions(result.data.searchSchools);
-        setShowSuggestions(result.data.searchSchools.length > 0);
       }
     } catch (err) {
       console.error('Search schools error:', err);
@@ -118,13 +229,6 @@ const EditProfileScreen: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    if (showSuggestions && schoolSuggestions.length > 0) {
-      setTimeout(() => {
-        scrollViewRef.current?.scrollTo({ y: Math.max(0, schoolInputY), animated: true });
-      }, 100);
-    }
-  }, [showSuggestions, schoolSuggestions.length, schoolInputY]);
 
   const currentStyles = useMemo(
     () =>
@@ -141,6 +245,31 @@ const EditProfileScreen: React.FC = () => {
       }),
     [theme, common, fontSizes, spacing, borderRadius, isRTL, typography, fontWeight, insets],
   );
+
+  const selectedGovName = useMemo(() => {
+    const gov = governorates.find(g => String(g.id) === String(formData.governorate_id));
+    if (gov) return isRTL ? (gov.name_ar || gov.name) : (gov.name_en || gov.name);
+    if (user?.governorate && String(user.governorate.id) === String(formData.governorate_id)) {
+      return isRTL ? user.governorate.name_ar : user.governorate.name_en;
+    }
+    return '';
+  }, [formData.governorate_id, governorates, user, isRTL]);
+
+  const selectedCityName = useMemo(() => {
+    const city = cities.find(c => String(c.id) === String(formData.city_id));
+    if (city) return city.name;
+    if (user?.city && String(user.city.id) === String(formData.city_id)) {
+      return isRTL ? user.city.name_ar : user.city.name_en;
+    }
+    return '';
+  }, [formData.city_id, cities, user, isRTL]);
+
+  const mappedSchools = useMemo(() => {
+    return schoolSuggestions.map(s => ({
+      ...s,
+      name: isRTL ? (s.name || s.name_en) : (s.name_en || s.name)
+    }));
+  }, [schoolSuggestions, isRTL]);
 
   const isEmailValid =
     formData.email.trim() === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email);
@@ -170,32 +299,68 @@ const EditProfileScreen: React.FC = () => {
       return;
     }
 
+    if (showPasswordSection) {
+      if (!passwordState.oldPassword || !passwordState.newPassword) {
+         showConfirm({
+           title: t('common.error'),
+           message: t('auth.fill_all_fields'),
+           showCancel: false,
+           onConfirm: () => {},
+         });
+         return;
+      }
+      if (passwordState.newPassword !== passwordState.confirmPassword) {
+         showConfirm({
+           title: t('common.error'),
+           message: t('profile.passwords_dont_match'),
+           showCancel: false,
+           onConfirm: () => {},
+         });
+         return;
+      }
+    }
+
     try {
       setLoading(true);
       const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
 
-      const result = await tryFetchWithFallback(
-        `mutation UpdateProfile($input: UpdateProfileInput!) { 
-          updateProfile(input: $input) { 
+      const input = {
+          ...formData,
+          ...(showPasswordSection ? {
+              old_password: passwordState.oldPassword,
+              password: passwordState.newPassword,
+              password_confirmation: passwordState.confirmPassword,
+          } : {})
+      };
+
+      const mutation = `
+        mutation UpdateProfile($input: UpdateProfileInput!) {
+          updateProfile(input: $input) {
             id 
             name 
             email 
             gender 
             school_name 
-            parent_mobile 
+            parent_mobile
+            governorate_id
+            governorate { id name_ar name_en }
+            city_id
+            city { id name_ar name_en }
             educational_system { id name } 
-          } 
-        }`,
-        { input: formData },
-        token,
-      );
+          }
+        }
+      `;
 
+      const result = await tryFetchWithFallback(mutation, { input }, token);
+      
       if (result.data?.updateProfile) {
-        await refreshUser();
+        await updateUser(result.data.updateProfile);
         showConfirm({
           title: t('common.success'),
-          message: t('profile.update_success', 'Profile updated successfully'),
+          message: showPasswordSection 
+            ? t('profile.password_changed_success') 
+            : t('profile.update_success'),
           showCancel: false,
           onConfirm: () => navigation.goBack(),
         });
@@ -240,10 +405,7 @@ const EditProfileScreen: React.FC = () => {
               keyboardShouldPersistTaps="handled"
             >
               <View
-                style={[
-                  currentStyles.form,
-                  showSuggestions && schoolSuggestions.length > 0 ? { paddingBottom: 250 } : null,
-                ]}
+                style={currentStyles.form}
               >
                 {/* Name (Readonly) */}
                 <View style={currentStyles.inputGroup}>
@@ -267,38 +429,6 @@ const EditProfileScreen: React.FC = () => {
                       style={[currentStyles.readonlyText, { textAlign: isRTL ? 'right' : 'left' }]}
                     >
                       {user?.name}
-                    </Text>
-                  </View>
-                  <Text style={currentStyles.hintText}>
-                    {t('profile.name_not_editable', 'Name cannot be changed manually')}
-                  </Text>
-                </View>
-
-                {/* Mobile (Readonly) */}
-                <View style={currentStyles.inputGroup}>
-                  <Text style={currentStyles.inputLabel}>{t('auth.mobile')}</Text>
-                  <View
-                    style={[
-                      currentStyles.inputWrapper,
-                      {
-                        backgroundColor: theme.colors.background,
-                        borderColor: theme.colors.border,
-                      },
-                    ]}
-                  >
-                    <Ionicons
-                      name="call-outline"
-                      size={20}
-                      color={theme.colors.textTertiary}
-                      style={currentStyles.inputIconLeft}
-                    />
-                    <Text
-                      style={[
-                        currentStyles.readonlyText,
-                        { textAlign: isRTL ? 'right' : 'left', direction: 'ltr' },
-                      ]}
-                    >
-                      {user?.country_code} {user?.mobile}
                     </Text>
                   </View>
                 </View>
@@ -331,134 +461,9 @@ const EditProfileScreen: React.FC = () => {
                       keyboardType="email-address"
                       autoCapitalize="none"
                       returnKeyType="next"
-                      onSubmitEditing={() => schoolRef.current?.focus()}
                       onBlur={() => setTouchedEmail(true)}
                     />
                   </View>
-                </View>
-
-                {/* School Name */}
-                <View
-                  style={[currentStyles.inputGroup, { zIndex: 10 }]}
-                  onLayout={(e) => setSchoolInputY(e.nativeEvent.layout.y)}
-                >
-                  <Text style={currentStyles.inputLabel}>
-                    {t('profile.school_name', 'School Name')}
-                  </Text>
-                  <View
-                    style={[
-                      currentStyles.inputWrapper,
-                      {
-                        borderColor: getBorderColor(
-                          touchedSchool,
-                          isSchoolValid,
-                          formData.school_name,
-                        ),
-                      },
-                    ]}
-                  >
-                    <Ionicons
-                      name="school-outline"
-                      size={20}
-                      color={
-                        formData.school_name.length > 0
-                          ? theme.colors.primary
-                          : theme.colors.textTertiary
-                      }
-                      style={currentStyles.inputIconLeft}
-                    />
-                    <TextInput
-                      ref={schoolRef}
-                      style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
-                      value={formData.school_name}
-                      onChangeText={(v) => {
-                        setFormData((p) => ({ ...p, school_name: v }));
-                        fetchSchoolSuggestions(v);
-                      }}
-                      placeholder={t('profile.school_placeholder')}
-                      placeholderTextColor={theme.colors.textTertiary}
-                      returnKeyType="next"
-                      onSubmitEditing={() => parentMobileRef.current?.focus()}
-                      onFocus={() => {
-                        if (formData.school_name.length >= 2) setShowSuggestions(true);
-                      }}
-                      onBlur={() => {
-                        setTouchedSchool(true);
-                        setTimeout(() => setShowSuggestions(false), 200);
-                      }}
-                    />
-                    {loadingSchools && (
-                      <ActivityIndicator
-                        size="small"
-                        color={theme.colors.primary}
-                        style={{ marginRight: spacing.md }}
-                      />
-                    )}
-                  </View>
-
-                  {/* Modal for suggestions to stay above keyboard */}
-                  <Modal
-                    visible={showSuggestions && schoolSuggestions.length > 0}
-                    transparent={true}
-                    animationType="fade"
-                    onRequestClose={() => setShowSuggestions(false)}
-                  >
-                    <TouchableOpacity 
-                      style={currentStyles.modalOverlay} 
-                      activeOpacity={1} 
-                      onPress={() => setShowSuggestions(false)}
-                    >
-                      <View 
-                        style={[
-                          currentStyles.floatingSuggestionsContainer,
-                          { 
-                            backgroundColor: theme.colors.card, 
-                            borderColor: theme.colors.border,
-                            top: schoolInputY + 130 // Position below the input box
-                          }
-                        ]}
-                      >
-                        <ScrollView
-                          style={{ maxHeight: 250 }}
-                          keyboardShouldPersistTaps="handled"
-                          nestedScrollEnabled
-                        >
-                          {schoolSuggestions.map((school) => (
-                            <TouchableOpacity
-                              key={school.id}
-                              style={[
-                                currentStyles.suggestionItem,
-                                { borderBottomColor: theme.colors.border },
-                              ]}
-                              onPress={() => {
-                                setFormData((p) => ({
-                                  ...p,
-                                  school_name: isRTL ? school.name : school.name_en || school.name,
-                                }));
-                                setShowSuggestions(false);
-                              }}
-                            >
-                              <Text
-                                style={[currentStyles.suggestionText, { color: theme.colors.text }]}
-                              >
-                                {school.name}
-                              </Text>
-                              {school.name_en && (
-                                <Text
-                                  style={[
-                                    currentStyles.suggestionTextEn,
-                                    { color: theme.colors.textTertiary },
-                                  ]}
-                                >
-                                  {school.name_en}
-                                </Text>
-                              )}
-                            </TouchableOpacity>
-                          ))}
-                        </ScrollView>
-                      </View>
-                    </TouchableOpacity>
-                  </Modal>
                 </View>
 
                 {/* Gender */}
@@ -521,105 +526,329 @@ const EditProfileScreen: React.FC = () => {
                   </View>
                 </View>
 
-                {/* Educational System */}
+                {/* Governorate selection */}
                 <View style={currentStyles.inputGroup}>
-                  <Text style={currentStyles.inputLabel}>{t('auth.educational_system')}</Text>
-                  {fetchingEdu ? (
-                    <ActivityIndicator size="small" color={theme.colors.primary} />
-                  ) : (
-                    <View style={currentStyles.gridContainerVertical}>
-                      {eduSystems.map((sys) => (
-                        <TouchableOpacity
-                          key={sys.id}
-                          style={[
-                            currentStyles.gridItemVertical,
-                            formData.educational_system_id === sys.id &&
-                              currentStyles.gridItemActive,
-                          ]}
-                          onPress={() =>
-                            setFormData((p) => ({ ...p, educational_system_id: sys.id }))
-                          }
-                        >
-                          <Text
-                            style={[
-                              currentStyles.gridItemText,
-                              formData.educational_system_id === sys.id &&
-                                currentStyles.gridItemTextActive,
-                            ]}
-                          >
-                            {sys.name}
-                          </Text>
-                          {formData.educational_system_id === sys.id && (
-                            <Ionicons
-                              name="checkmark-circle"
-                              size={18}
-                              color={theme.colors.primary}
-                            />
-                          )}
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  )}
+                  <Text style={currentStyles.inputLabel}>{t('profile.governorate')}</Text>
+                  <TouchableOpacity
+                    style={[
+                      currentStyles.inputWrapper,
+                      {
+                        borderColor: formData.governorate_id ? theme.colors.primary : theme.colors.border,
+                      },
+                    ]}
+                    onPress={() => setShowGovModal(true)}
+                  >
+                    <Ionicons
+                      name="location-outline"
+                      size={20}
+                      color={formData.governorate_id ? theme.colors.primary : theme.colors.textTertiary}
+                      style={currentStyles.inputIconLeft}
+                    />
+                    <Text
+                      style={[
+                        currentStyles.input,
+                        { 
+                          textAlign: isRTL ? 'right' : 'left', 
+                          color: formData.governorate_id ? theme.colors.text : theme.colors.textTertiary,
+                          paddingTop: 16 // To align with TextInput
+                        },
+                      ]}
+                    >
+                      {selectedGovName || t('profile.select_governorate', 'Select Governorate')}
+                    </Text>
+                    {fetchingGov && (
+                      <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginRight: spacing.md }} />
+                    )}
+                    <Ionicons
+                      name="chevron-down"
+                      size={20}
+                      color={theme.colors.textTertiary}
+                      style={{ paddingHorizontal: spacing.md }}
+                    />
+                  </TouchableOpacity>
+
+                  <SearchablePickerModal
+                    visible={showGovModal}
+                    onClose={() => {
+                        setShowGovModal(false);
+                        setGovSearch('');
+                    }}
+                    title={t('profile.select_governorate')}
+                    placeholder={t('common.search')}
+                    searchValue={govSearch}
+                    onSearchChange={setGovSearch}
+                    selectedId={formData.governorate_id}
+                    data={governorates
+                      .filter(g => {
+                        const name = isRTL ? (g.name_ar || g.name) : (g.name_en || g.name);
+                        return name.toLowerCase().includes(govSearch.toLowerCase());
+                      })
+                      .map(g => ({
+                        ...g,
+                        name: isRTL ? (g.name_ar || g.name) : (g.name_en || g.name)
+                      }))
+                    }
+                    onSelect={(gov) => {
+                      setFormData(p => ({ ...p, governorate_id: gov.id, city_id: '' }));
+                      setShowGovModal(false);
+                      setGovSearch('');
+                    }}
+                  />
                 </View>
 
-                {/* Parent Mobile */}
+                {/* City selection */}
                 <View style={currentStyles.inputGroup}>
+                  <Text style={currentStyles.inputLabel}>{t('profile.city')}</Text>
+                  <TouchableOpacity
+                    style={[
+                      currentStyles.inputWrapper,
+                      {
+                        borderColor: formData.city_id ? theme.colors.primary : theme.colors.border,
+                        opacity: !formData.governorate_id ? 0.6 : 1,
+                      },
+                    ]}
+                    onPress={() => formData.governorate_id && setShowCityModal(true)}
+                    disabled={!formData.governorate_id}
+                  >
+                    <Ionicons
+                      name="map-outline"
+                      size={20}
+                      color={formData.city_id ? theme.colors.primary : theme.colors.textTertiary}
+                      style={currentStyles.inputIconLeft}
+                    />
+                    <Text
+                      style={[
+                        currentStyles.input,
+                        { 
+                          textAlign: isRTL ? 'right' : 'left', 
+                          color: formData.city_id ? theme.colors.text : theme.colors.textTertiary,
+                          paddingTop: 16
+                        },
+                      ]}
+                    >
+                      {selectedCityName || (formData.governorate_id ? t('profile.select_city', 'Select City') : t('profile.select_gov_first', 'Select Governorate First'))}
+                    </Text>
+                    {fetchingCities && (
+                      <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginRight: spacing.md }} />
+                    )}
+                    <Ionicons
+                      name="chevron-down"
+                      size={20}
+                      color={theme.colors.textTertiary}
+                      style={{ paddingHorizontal: spacing.md }}
+                    />
+                  </TouchableOpacity>
+
+                  <SearchablePickerModal
+                    visible={showCityModal}
+                    onClose={() => {
+                        setShowCityModal(false);
+                        setCitySearch('');
+                    }}
+                    title={t('profile.select_city')}
+                    placeholder={t('common.search')}
+                    searchValue={citySearch}
+                    onSearchChange={setCitySearch}
+                    selectedId={formData.city_id}
+                    data={cities}
+                    loading={fetchingCities}
+                    onSelect={(city) => {
+                      setFormData(p => ({ ...p, city_id: city.id }));
+                      setShowCityModal(false);
+                      setCitySearch('');
+                    }}
+                  />
+                </View>
+
+                {/* School Name */}
+                <View
+                  style={[currentStyles.inputGroup]}
+                >
                   <Text style={currentStyles.inputLabel}>
-                    {t('profile_screen.parental_linking')}
+                    {t('profile.school_name', 'School Name')}
                   </Text>
-                  <View
+                  <TouchableOpacity
                     style={[
                       currentStyles.inputWrapper,
                       {
                         borderColor: getBorderColor(
-                          touchedParentMobile,
-                          isParentMobileValid,
-                          formData.parent_mobile,
+                          touchedSchool,
+                          isSchoolValid,
+                          formData.school_name,
                         ),
+                        height: 50,
+                        justifyContent: 'space-between',
+                        paddingHorizontal: spacing.md
+                      },
+                    ]}
+                    onPress={() => setShowSchoolModal(true)}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                      <Ionicons
+                        name="school-outline"
+                        size={20}
+                        color={
+                          formData.school_name.length > 0
+                            ? theme.colors.primary
+                            : theme.colors.textTertiary
+                        }
+                        style={{ marginRight: spacing.sm }}
+                      />
+                      <Text 
+                        style={{ 
+                          color: formData.school_name.length > 0 ? theme.colors.text : theme.colors.textTertiary,
+                          fontSize: 16,
+                          textAlign: isRTL ? 'right' : 'left',
+                          flex: 1
+                        }}
+                        numberOfLines={1}
+                      >
+                        {formData.school_name || t('profile.school_placeholder')}
+                      </Text>
+                    </View>
+                    <Ionicons
+                      name="chevron-down"
+                      size={20}
+                      color={theme.colors.textTertiary}
+                    />
+                  </TouchableOpacity>
+
+                  <SearchablePickerModal
+                    visible={showSchoolModal}
+                    onClose={() => {
+                        setShowSchoolModal(false);
+                        setSchoolSearch('');
+                    }}
+                    title={t('auth.select_school_title', 'Select School')}
+                    placeholder={t('auth.school_search_placeholder', 'Search school...')}
+                    searchValue={schoolSearch}
+                    onSearchChange={setSchoolSearch}
+                    selectedId={formData.school_name}
+                    data={mappedSchools}
+                    loading={loadingSchools}
+                    onSelect={(school) => {
+                      const selectedName = isRTL ? (school.name || school.name_en) : (school.name_en || school.name);
+                      setFormData(p => ({ ...p, school_name: selectedName }));
+                      setShowSchoolModal(false);
+                      setSchoolSearch('');
+                    }}
+                    emptyMessage={t('auth.no_schools_found')}
+                    searchHelperText={t('auth.start_typing_school')}
+                  />
+
+                  <TouchableOpacity 
+                    style={currentStyles.addSchoolTrigger}
+                    onPress={() => {
+                        showConfirm({
+                            title: t('profile.request_school_title'),
+                            message: t('profile.request_school_message'),
+                            onConfirm: () => {
+                                // Logic to request adding school if needed
+                            }
+                        })
+                    }}
+                  >
+                     <Text style={currentStyles.addSchoolText}>
+                        {t('profile.add_school_request')}
+                     </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Grade (Readonly) */}
+                <View style={currentStyles.inputGroup}>
+                  <Text style={currentStyles.inputLabel}>{t('profile.grade', 'Grade')}</Text>
+                  <View
+                    style={[
+                      currentStyles.inputWrapper,
+                      {
+                        backgroundColor: theme.colors.background,
+                        borderColor: theme.colors.border,
                       },
                     ]}
                   >
-                    <Ionicons
-                      name="phone-portrait-outline"
-                      size={20}
-                      color={
-                        formData.parent_mobile.length > 0 && isParentMobileValid
-                          ? theme.colors.primary
-                          : theme.colors.textTertiary
-                      }
-                      style={currentStyles.inputIconLeft}
-                    />
-                    <TextInput
-                      ref={parentMobileRef}
-                      style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
-                      value={formData.parent_mobile}
-                      onChangeText={(v) =>
-                        setFormData((p) => ({
-                          ...p,
-                          parent_mobile: v.replaceAll(/\D/g, '').slice(0, 11),
-                        }))
-                      }
-                      placeholder="01xxxxxxxxx"
-                      placeholderTextColor={theme.colors.textTertiary}
-                      keyboardType="phone-pad"
-                      onBlur={() => setTouchedParentMobile(true)}
-                    />
+                    <View style={currentStyles.inputIconLeft}>
+                       <Text style={{ fontSize: 18 }}>🎓</Text>
+                    </View>
+                    <Text
+                      style={[currentStyles.readonlyText, { textAlign: isRTL ? 'right' : 'left' }]}
+                    >
+                      {user?.grade?.name || user?.educational_system?.name || '---'}
+                    </Text>
                   </View>
+                  <Text style={currentStyles.hintText}>
+                    {t('profile.grade_not_editable', 'Grade cannot be changed')}
+                  </Text>
                 </View>
 
+                {/* Submit Button */}
                 <TouchableOpacity
                   style={currentStyles.submitButton}
                   onPress={handleSave}
                   disabled={loading}
                   activeOpacity={0.8}
                 >
-                  <Text style={currentStyles.submitButtonText}>{t('common.save')}</Text>
+                  <Text style={currentStyles.submitButtonText}>{t('profile.complete_profile', 'Complete Profile')}</Text>
                   {loading ? (
                     <ActivityIndicator size="small" color="#FFF" />
                   ) : (
-                    <Ionicons name="save-outline" size={20} color="#FFF" />
+                    <Ionicons name="checkmark-circle-outline" size={20} color="#FFF" />
                   )}
                 </TouchableOpacity>
+
+                {/* Change Password Section */}
+                <TouchableOpacity 
+                   style={[currentStyles.passwordToggle, { marginTop: spacing.xl }]}
+                   onPress={() => setShowPasswordSection(!showPasswordSection)}
+                >
+                   <View style={currentStyles.passwordToggleLeft}>
+                      <Ionicons name="lock-closed-outline" size={20} color={theme.colors.primary} />
+                      <Text style={currentStyles.passwordToggleText}>
+                        {t('profile.change_password')}
+                      </Text>
+                   </View>
+                   <Ionicons name={showPasswordSection ? "chevron-up" : "chevron-down"} size={20} color={theme.colors.primary} />
+                </TouchableOpacity>
+
+                {showPasswordSection && (
+                  <View style={currentStyles.passwordSection}>
+                    <View style={currentStyles.inputGroup}>
+                      <Text style={currentStyles.inputLabel}>{t('profile.old_password')}</Text>
+                      <View style={currentStyles.inputWrapper}>
+                         <TextInput 
+                            style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
+                            secureTextEntry
+                            value={passwordState.oldPassword}
+                            onChangeText={v => setPasswordState(p => ({ ...p, oldPassword: v }))}
+                            placeholder="••••••••"
+                         />
+                      </View>
+                    </View>
+                    <View style={currentStyles.inputGroup}>
+                      <Text style={currentStyles.inputLabel}>{t('profile.new_password')}</Text>
+                      <View style={currentStyles.inputWrapper}>
+                         <TextInput 
+                            style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
+                            secureTextEntry
+                            value={passwordState.newPassword}
+                            onChangeText={v => setPasswordState(p => ({ ...p, newPassword: v }))}
+                            placeholder="••••••••"
+                         />
+                      </View>
+                    </View>
+                    <View style={currentStyles.inputGroup}>
+                      <Text style={currentStyles.inputLabel}>{t('profile.confirm_new_password')}</Text>
+                      <View style={currentStyles.inputWrapper}>
+                         <TextInput 
+                            style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
+                            secureTextEntry
+                            value={passwordState.confirmPassword}
+                            onChangeText={v => setPasswordState(p => ({ ...p, confirmPassword: v }))}
+                            placeholder="••••••••"
+                         />
+                      </View>
+                    </View>
+                  </View>
+                )}
               </View>
             </ScrollView>
 
@@ -830,6 +1059,82 @@ const styles = (config: any) => {
     suggestionTextEn: {
       ...typography('caption'),
       marginTop: 2,
+    },
+    passwordToggle: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.border,
+      marginTop: spacing.md,
+    },
+    passwordToggleLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    passwordToggleText: {
+      ...typography('button'),
+      ...fontWeight('700'),
+    },
+    passwordSection: {
+      paddingTop: spacing.sm,
+    },
+    addSchoolTrigger: {
+      marginTop: spacing.sm,
+      padding: spacing.xs,
+    },
+    addSchoolText: {
+      ...typography('caption'),
+      color: theme.colors.primary,
+      textDecorationLine: 'underline',
+    },
+    bottomModal: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      padding: spacing.lg,
+      paddingBottom: spacing.xl * 2,
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.1,
+          shadowRadius: 10,
+        },
+        android: {
+          elevation: 20,
+        },
+      }),
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing.lg,
+    },
+    modalTitle: {
+      ...typography('h3'),
+      ...fontWeight('700'),
+    },
+    pickerItem: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: spacing.md,
+      borderBottomWidth: 1,
+    },
+    pickerItemText: {
+      ...typography('body'),
+      ...fontWeight('600'),
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.5)',
     },
   });
 };

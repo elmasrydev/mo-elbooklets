@@ -94,7 +94,8 @@
     "api_current_url": "Current API URL",
     "api_switch_demo": "Switch to Demo",
     "api_switch_production": "Switch to Production",
-    "api_switch_prs": "Switch to PRS"
+    "api_switch_prs": "Switch to PRS",
+    "search": "Search"
   },
   "subscription": {
     "required_title": "Subscription Required",
@@ -405,7 +406,11 @@
     "comment": "Comment",
     "scored_prefix": "Scored ",
     "on_quiz_prefix": " on a ",
-    "quiz_suffix": " Quiz"
+    "quiz_suffix": " Quiz",
+    "pymk_title": "People You May Know",
+    "pymk_subtitle": "Connect with your schoolmates",
+    "same_school": "Same School",
+    "same_city": "Same City"
   },
   "leaderboard_screen": {
     "header_title": "Leaderboard",
@@ -682,7 +687,23 @@
     "enter_parent_mobile": "Enter Parent's Mobile",
     "name_not_editable": "Name cannot be changed manually",
     "gender": "Gender",
-    "update_success": "Profile updated successfully"
+    "update_success": "Profile updated successfully",
+    "completeness": "Profile Completion",
+    "complete_to_unlock": "Complete your info to unlock more features",
+    "governorate": "Governorate",
+    "city": "City",
+    "select_governorate": "Select Governorate",
+    "select_city": "Select City",
+    "change_password": "Change Password",
+    "old_password": "Old Password",
+    "new_password": "New Password",
+    "confirm_new_password": "Confirm New Password",
+    "passwords_dont_match": "Passwords don't match",
+    "password_changed_success": "Password changed successfully",
+    "add_school_request": "Can't find your school? Request to add it",
+    "request_school_title": "Request New School",
+    "request_school_message": "Enter the name of the school you want to add",
+    "select_gov_first": "Select Governorate First"
   },
   "report_question": {
     "title": "Report Question",

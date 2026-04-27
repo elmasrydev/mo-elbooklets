@@ -168,7 +168,7 @@ const ProfileScreen: React.FC = () => {
         {/* Menu Section */}
         <View style={currentStyles.menuSection}>
           {/* Menu Items "TODO: we need to release and show it in next release"*/}
-          {/*<TouchableOpacity 
+          <TouchableOpacity 
             style={currentStyles.settingItem}
             onPress={() => navigation.navigate('EditProfile')}
           >
@@ -186,7 +186,7 @@ const ProfileScreen: React.FC = () => {
               size={20}
               color={theme.colors.textTertiary}
             />
-          </TouchableOpacity>*/}
+          </TouchableOpacity>
 
           {/* Change Language */}
           <TouchableOpacity style={currentStyles.settingItem} onPress={handleLanguagePress}>
