@@ -365,6 +365,9 @@
   "social_screen": {
     "header_title": "اجتماعي",
     "header_subtitle": "تواصل مع زملائك في التعلم",
+    "pymk_title": "أشخاص قد تعرفهم",
+    "same_school": "من نفس مدرستك",
+    "same_city": "من نفس مدينتك",
     "search_placeholder": "ابحث عن طلاب لمتابعتهم...",
     "search_results": "نتائج البحث",
     "searching": "جارٍ البحث...",

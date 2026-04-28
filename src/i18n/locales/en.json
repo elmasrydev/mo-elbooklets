@@ -375,6 +375,9 @@
   "social_screen": {
     "header_title": "Social",
     "header_subtitle": "Connect with fellow learners",
+    "pymk_title": "People You May Know",
+    "same_school": "Same School",
+    "same_city": "Same City",
     "search_placeholder": "Search for students to follow...",
     "search_results": "Search Results",
     "searching": "Searching...",

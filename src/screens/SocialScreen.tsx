@@ -19,9 +19,11 @@ import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
 import UnifiedHeader from '../components/UnifiedHeader';
+import { useAuth } from '../context/AuthContext';
 import { layout } from '../config/layout';
 import { tryFetchWithFallback } from '../config/api';
 import { QuizCompletionCard, ConnectionCard, RankChangeCard } from '../components/feed';
+import PeopleYouMayKnow from '../components/feed/PeopleYouMayKnow';
 import AppButton from '../components/AppButton';
 import { CardListSkeleton, GenericListSkeleton } from '../components/SkeletonLoader';
 import RetryView from '../components/RetryView';
@@ -82,6 +84,7 @@ const SocialScreen: React.FC = () => {
   const { showConfirm } = useModal();
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
+  const { user } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Student[]>([]);
@@ -410,8 +413,28 @@ const SocialScreen: React.FC = () => {
         </Text>
       );
     }
+    
+    if (!isSearchMode) {
+      const isProfileComplete = !!(user?.school_name && user?.governorate_id && user?.city_id);
+      return (
+        <View>
+          {isProfileComplete && (
+            <PeopleYouMayKnow 
+              onFollowSuccess={() => {
+                // Optionally refresh timeline if needed
+              }} 
+            />
+          )}
+          {feedItems.length > 0 && (
+            <Text style={currentStyles.sectionTitle}>
+              {t('social_screen.recent_activity')}
+            </Text>
+          )}
+        </View>
+      );
+    }
     return null;
-  }, [isSearchMode, searchResults.length, feedItems.length, currentStyles, t]);
+  }, [isSearchMode, searchResults.length, feedItems.length, currentStyles, t, user]);
 
   return (
     <View style={common.container}>

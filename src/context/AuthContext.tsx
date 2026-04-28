@@ -31,6 +31,10 @@ interface User {
   grade?: { id: string; name: string };
   educational_system_id?: string;
   educational_system?: { id: string; name: string };
+  governorate_id?: string;
+  governorate?: { id: string; name: string };
+  city_id?: string;
+  city?: { id: string; name: string };
   is_subscribed?: boolean;
   role?: 'student' | 'parent';
 }
