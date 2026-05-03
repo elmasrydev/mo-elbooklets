@@ -601,7 +601,13 @@
     "crashlytics_testing_desc": "اختبار تكامل Firebase Crashlytics. سيؤدي الانهيار إلى إغلاق التطبيق.",
     "test_crash": "اختبار انهيار",
     "test_log_error": "تسجيل خطأ",
-    "internal_settings": "إعدادات المطور"
+    "internal_settings": "إعدادات المطور",
+    "followers": "متابِع",
+    "following": "متابَع",
+    "follow_list_title_followers": "المتابِعون",
+    "follow_list_title_following": "الذين تتابعهم",
+    "no_followers": "لا يوجد متابعون بعد",
+    "no_following": "أنت لا تتابع أحداً بعد"
   },
   "faq": {
     "header_title": "الأسئلة الشائعة",

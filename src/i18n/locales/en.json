@@ -606,7 +606,13 @@
     "crashlytics_testing_desc": "Test Firebase Crashlytics integration. Crash will force-close the app.",
     "test_crash": "Test Crash",
     "test_log_error": "Log Error",
-    "internal_settings": "Internal Settings"
+    "internal_settings": "Internal Settings",
+    "followers": "Followers",
+    "following": "Following",
+    "follow_list_title_followers": "Followers",
+    "follow_list_title_following": "Following",
+    "no_followers": "No followers yet",
+    "no_following": "You are not following anyone yet"
   },
   "faq": {
     "header_title": "FAQs",
