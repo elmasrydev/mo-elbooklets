@@ -1,6 +1,6 @@
 import { gql } from '@apollo/client';
-import * as ApolloReactCommon from '../graphql/apollo-merged';
-import * as ApolloReactHooks from '../graphql/apollo-merged';
+import * as ApolloReactCommon from '@apollo/client';
+import * as ApolloReactHooks from '@apollo/client/react';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = T | null;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
@@ -767,6 +767,15 @@ export function useGetGradesLazyQuery(
     options,
   );
 }
+// @ts-ignore
+export function useGetGradesSuspenseQuery(
+  baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<GetGradesQuery, GetGradesQueryVariables>,
+): ApolloReactHooks.UseSuspenseQueryResult<GetGradesQuery, GetGradesQueryVariables>;
+export function useGetGradesSuspenseQuery(
+  baseOptions?:
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<GetGradesQuery, GetGradesQueryVariables>,
+): ApolloReactHooks.UseSuspenseQueryResult<GetGradesQuery | undefined, GetGradesQueryVariables>;
 export function useGetGradesSuspenseQuery(
   baseOptions?:
     | ApolloReactHooks.SkipToken
@@ -952,6 +961,21 @@ export function useGetAllBadgesLazyQuery(
     options,
   );
 }
+// @ts-ignore
+export function useGetAllBadgesSuspenseQuery(
+  baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<
+    GetAllBadgesQuery,
+    GetAllBadgesQueryVariables
+  >,
+): ApolloReactHooks.UseSuspenseQueryResult<GetAllBadgesQuery, GetAllBadgesQueryVariables>;
+export function useGetAllBadgesSuspenseQuery(
+  baseOptions?:
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<GetAllBadgesQuery, GetAllBadgesQueryVariables>,
+): ApolloReactHooks.UseSuspenseQueryResult<
+  GetAllBadgesQuery | undefined,
+  GetAllBadgesQueryVariables
+>;
 export function useGetAllBadgesSuspenseQuery(
   baseOptions?:
     | ApolloReactHooks.SkipToken
@@ -1025,6 +1049,27 @@ export function useGetBadgeCategoriesLazyQuery(
     options,
   );
 }
+// @ts-ignore
+export function useGetBadgeCategoriesSuspenseQuery(
+  baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<
+    GetBadgeCategoriesQuery,
+    GetBadgeCategoriesQueryVariables
+  >,
+): ApolloReactHooks.UseSuspenseQueryResult<
+  GetBadgeCategoriesQuery,
+  GetBadgeCategoriesQueryVariables
+>;
+export function useGetBadgeCategoriesSuspenseQuery(
+  baseOptions?:
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
+        GetBadgeCategoriesQuery,
+        GetBadgeCategoriesQueryVariables
+      >,
+): ApolloReactHooks.UseSuspenseQueryResult<
+  GetBadgeCategoriesQuery | undefined,
+  GetBadgeCategoriesQueryVariables
+>;
 export function useGetBadgeCategoriesSuspenseQuery(
   baseOptions?:
     | ApolloReactHooks.SkipToken
@@ -1106,6 +1151,21 @@ export function useStudyScheduleLazyQuery(
     options,
   );
 }
+// @ts-ignore
+export function useStudyScheduleSuspenseQuery(
+  baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<
+    StudyScheduleQuery,
+    StudyScheduleQueryVariables
+  >,
+): ApolloReactHooks.UseSuspenseQueryResult<StudyScheduleQuery, StudyScheduleQueryVariables>;
+export function useStudyScheduleSuspenseQuery(
+  baseOptions?:
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<StudyScheduleQuery, StudyScheduleQueryVariables>,
+): ApolloReactHooks.UseSuspenseQueryResult<
+  StudyScheduleQuery | undefined,
+  StudyScheduleQueryVariables
+>;
 export function useStudyScheduleSuspenseQuery(
   baseOptions?:
     | ApolloReactHooks.SkipToken
@@ -1188,6 +1248,21 @@ export function useTodayScheduleLazyQuery(
     options,
   );
 }
+// @ts-ignore
+export function useTodayScheduleSuspenseQuery(
+  baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<
+    TodayScheduleQuery,
+    TodayScheduleQueryVariables
+  >,
+): ApolloReactHooks.UseSuspenseQueryResult<TodayScheduleQuery, TodayScheduleQueryVariables>;
+export function useTodayScheduleSuspenseQuery(
+  baseOptions?:
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<TodayScheduleQuery, TodayScheduleQueryVariables>,
+): ApolloReactHooks.UseSuspenseQueryResult<
+  TodayScheduleQuery | undefined,
+  TodayScheduleQueryVariables
+>;
 export function useTodayScheduleSuspenseQuery(
   baseOptions?:
     | ApolloReactHooks.SkipToken
@@ -1322,6 +1397,24 @@ export function useUserQuizHistoryLazyQuery(
     options,
   );
 }
+// @ts-ignore
+export function useUserQuizHistorySuspenseQuery(
+  baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<
+    UserQuizHistoryQuery,
+    UserQuizHistoryQueryVariables
+  >,
+): ApolloReactHooks.UseSuspenseQueryResult<UserQuizHistoryQuery, UserQuizHistoryQueryVariables>;
+export function useUserQuizHistorySuspenseQuery(
+  baseOptions?:
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
+        UserQuizHistoryQuery,
+        UserQuizHistoryQueryVariables
+      >,
+): ApolloReactHooks.UseSuspenseQueryResult<
+  UserQuizHistoryQuery | undefined,
+  UserQuizHistoryQueryVariables
+>;
 export function useUserQuizHistorySuspenseQuery(
   baseOptions?:
     | ApolloReactHooks.SkipToken
@@ -1398,6 +1491,27 @@ export function useSubjectsForUserGradeLazyQuery(
     SubjectsForUserGradeQueryVariables
   >(SubjectsForUserGradeDocument, options);
 }
+// @ts-ignore
+export function useSubjectsForUserGradeSuspenseQuery(
+  baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<
+    SubjectsForUserGradeQuery,
+    SubjectsForUserGradeQueryVariables
+  >,
+): ApolloReactHooks.UseSuspenseQueryResult<
+  SubjectsForUserGradeQuery,
+  SubjectsForUserGradeQueryVariables
+>;
+export function useSubjectsForUserGradeSuspenseQuery(
+  baseOptions?:
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
+        SubjectsForUserGradeQuery,
+        SubjectsForUserGradeQueryVariables
+      >,
+): ApolloReactHooks.UseSuspenseQueryResult<
+  SubjectsForUserGradeQuery | undefined,
+  SubjectsForUserGradeQueryVariables
+>;
 export function useSubjectsForUserGradeSuspenseQuery(
   baseOptions?:
     | ApolloReactHooks.SkipToken
@@ -1482,6 +1596,24 @@ export function useLessonsForSubjectLazyQuery(
     options,
   );
 }
+// @ts-ignore
+export function useLessonsForSubjectSuspenseQuery(
+  baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<
+    LessonsForSubjectQuery,
+    LessonsForSubjectQueryVariables
+  >,
+): ApolloReactHooks.UseSuspenseQueryResult<LessonsForSubjectQuery, LessonsForSubjectQueryVariables>;
+export function useLessonsForSubjectSuspenseQuery(
+  baseOptions?:
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
+        LessonsForSubjectQuery,
+        LessonsForSubjectQueryVariables
+      >,
+): ApolloReactHooks.UseSuspenseQueryResult<
+  LessonsForSubjectQuery | undefined,
+  LessonsForSubjectQueryVariables
+>;
 export function useLessonsForSubjectSuspenseQuery(
   baseOptions?:
     | ApolloReactHooks.SkipToken
@@ -1552,6 +1684,15 @@ export function useQuizLazyQuery(
   const options = { ...defaultOptions, ...baseOptions };
   return ApolloReactHooks.useLazyQuery<QuizQuery, QuizQueryVariables>(QuizDocument, options);
 }
+// @ts-ignore
+export function useQuizSuspenseQuery(
+  baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<QuizQuery, QuizQueryVariables>,
+): ApolloReactHooks.UseSuspenseQueryResult<QuizQuery, QuizQueryVariables>;
+export function useQuizSuspenseQuery(
+  baseOptions?:
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<QuizQuery, QuizQueryVariables>,
+): ApolloReactHooks.UseSuspenseQueryResult<QuizQuery | undefined, QuizQueryVariables>;
 export function useQuizSuspenseQuery(
   baseOptions?:
     | ApolloReactHooks.SkipToken
@@ -1626,6 +1767,18 @@ export function useQuizResultsLazyQuery(
     options,
   );
 }
+// @ts-ignore
+export function useQuizResultsSuspenseQuery(
+  baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<
+    QuizResultsQuery,
+    QuizResultsQueryVariables
+  >,
+): ApolloReactHooks.UseSuspenseQueryResult<QuizResultsQuery, QuizResultsQueryVariables>;
+export function useQuizResultsSuspenseQuery(
+  baseOptions?:
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<QuizResultsQuery, QuizResultsQueryVariables>,
+): ApolloReactHooks.UseSuspenseQueryResult<QuizResultsQuery | undefined, QuizResultsQueryVariables>;
 export function useQuizResultsSuspenseQuery(
   baseOptions?:
     | ApolloReactHooks.SkipToken

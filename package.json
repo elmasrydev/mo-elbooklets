@@ -59,7 +59,7 @@
     "@graphql-codegen/cli": "^6.0.0",
     "@graphql-codegen/typescript": "^5.0.2",
     "@graphql-codegen/typescript-operations": "^5.0.2",
-    "@graphql-codegen/typescript-react-apollo": "^4.3.3",
+    "@graphql-codegen/typescript-react-apollo": "^4.4.2",
     "@types/react": "~19.1.0",
     "eslint": "^9.39.2",
     "eslint-config-expo": "^10.0.0",

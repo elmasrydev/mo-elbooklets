@@ -15,8 +15,8 @@ generates:
       withMutationFn: true
       skipTypename: false
       reactApolloVersion: 4
-      apolloReactCommonImportFrom: "../graphql/apollo-merged"
-      apolloReactHooksImportFrom: "../graphql/apollo-merged"
+      apolloReactCommonImportFrom: "@apollo/client"
+      apolloReactHooksImportFrom: "@apollo/client/react"
       withRefetchFn: false
       withResultType: true
       withMutationOptionsType: true
