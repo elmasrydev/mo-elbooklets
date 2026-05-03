@@ -33,6 +33,8 @@ import {
 import { isDebugMode } from '../config/debug';
 import crashlytics from '@react-native-firebase/crashlytics';
 import { checkNotificationPermission, requestNotificationPermission, openSettings } from '../services/notificationService';
+import { useNotificationPreferences } from '../hooks/useNotificationPreferences';
+
 
 const APP_VERSION = `EL-Booklets v${DeviceInfo.getVersion()}`;
 
@@ -50,7 +52,17 @@ const ProfileScreen: React.FC = () => {
   const { typography, fontWeight } = useTypography();
   const { t } = useTranslation();
 
+
   const [pushEnabled, setPushEnabled] = useState(false);
+  const { 
+    preferences, 
+    toggleAppNotifications, 
+    toggleSocialNotifications,
+    loading: prefsLoading,
+    updating
+  } = useNotificationPreferences('student');
+
+
 
   useFocusEffect(
     React.useCallback(() => {
@@ -394,7 +406,14 @@ const ProfileScreen: React.FC = () => {
             </TouchableOpacity>
           )}
 
-          {/* Push Notifications Toggle */}
+          {/* Notifications Control Section */}
+          <View style={currentStyles.sectionHeader}>
+            <Text style={currentStyles.sectionHeaderText}>
+              {t('profile_screen.notifications_control')}
+            </Text>
+          </View>
+
+          {/* 1. Main Push Notifications Toggle (OS Level) */}
           <View style={currentStyles.settingItem}>
             <View style={[currentStyles.settingIconBox, { backgroundColor: theme.colors.primary + '20' }]}>
               <Ionicons name="notifications-outline" size={22} color={theme.colors.primary} />
@@ -410,6 +429,56 @@ const ProfileScreen: React.FC = () => {
               thumbColor={Platform.OS === 'ios' ? '#ffffff' : pushEnabled ? '#ffffff' : '#f4f3f4'}
               ios_backgroundColor={theme.colors.border}
             />
+          </View>
+
+          {/* 2. App Notifications Toggle (API Level) */}
+          <View style={[currentStyles.settingItem, !pushEnabled && { opacity: 0.5 }]}>
+            <View style={[currentStyles.settingIconBox, { backgroundColor: theme.colors.secondary + '20' }]}>
+              <Ionicons name="apps-outline" size={22} color={theme.colors.secondary} />
+            </View>
+            <View style={currentStyles.settingContent}>
+              <Text style={currentStyles.settingTitle}>{t('profile_screen.app_notifications')}</Text>
+              <Text style={currentStyles.settingSubtitle}>{t('profile_screen.app_notifications_desc')}</Text>
+            </View>
+            {updating === 'app_notifications_enabled' || (prefsLoading && !pushEnabled) ? (
+              <View style={currentStyles.loaderContainer}>
+                <ActivityIndicator size="large" color={theme.colors.primary} />
+              </View>
+            ) : (
+              <Switch
+                value={preferences.app_notifications_enabled}
+                onValueChange={toggleAppNotifications}
+                disabled={!pushEnabled}
+                trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
+                thumbColor={Platform.OS === 'ios' ? '#ffffff' : preferences.app_notifications_enabled ? '#ffffff' : '#f4f3f4'}
+                ios_backgroundColor={theme.colors.border}
+              />
+            )}
+          </View>
+
+          {/* 3. Social Notifications Toggle (API Level) */}
+          <View style={[currentStyles.settingItem, !pushEnabled && { opacity: 0.5 }]}>
+            <View style={[currentStyles.settingIconBox, { backgroundColor: theme.colors.info + '20' }]}>
+              <Ionicons name="chatbubbles-outline" size={22} color={theme.colors.info} />
+            </View>
+            <View style={currentStyles.settingContent}>
+              <Text style={currentStyles.settingTitle}>{t('profile_screen.social_notifications')}</Text>
+              <Text style={currentStyles.settingSubtitle}>{t('profile_screen.social_notifications_desc')}</Text>
+            </View>
+            {updating === 'social_notifications_enabled' || (prefsLoading && !pushEnabled) ? (
+              <View style={currentStyles.loaderContainer}>
+                <ActivityIndicator size="large" color={theme.colors.primary} />
+              </View>
+            ) : (
+              <Switch
+                value={preferences.social_notifications_enabled ?? false}
+                onValueChange={toggleSocialNotifications}
+                disabled={!pushEnabled}
+                trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
+                thumbColor={Platform.OS === 'ios' ? '#ffffff' : preferences.social_notifications_enabled ? '#ffffff' : '#f4f3f4'}
+                ios_backgroundColor={theme.colors.border}
+              />
+            )}
           </View>
 
           {/* Dark Mode Toggle */}
@@ -562,6 +631,24 @@ const styles = (
     },
     menuSection: {
       marginTop: spacing.sm,
+    },
+    sectionHeader: {
+      marginTop: spacing.md,
+      marginBottom: spacing.xs,
+      ...common.marginStart(spacing.xs),
+    },
+    sectionHeaderText: {
+      ...typography('caption'),
+      ...fontWeight('bold'),
+      color: theme.colors.textTertiary,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+    },
+    loaderContainer: {
+      width: 50,
+      height: 30,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     settingItem: {
       flexDirection: common.rowDirection,
