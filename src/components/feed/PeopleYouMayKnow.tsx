@@ -92,10 +92,8 @@ const PeopleYouMayKnow: React.FC<PeopleYouMayKnowProps> = ({ onFollowSuccess }) 
       setIsFollowingId(user.id);
       const result = await toggleFollow(user.id);
       if (result?.success) {
-        // Update status instead of removing from list
-        setSuggestions((prev) => 
-          prev.map((s) => s.id === user.id ? { ...s, isFollowing: true } : s)
-        );
+        // Remove from list after successful follow as per requirements
+        setSuggestions((prev) => prev.filter((s) => s.id !== user.id));
         if (onFollowSuccess) onFollowSuccess();
       }
     } finally {
@@ -123,7 +121,7 @@ const PeopleYouMayKnow: React.FC<PeopleYouMayKnowProps> = ({ onFollowSuccess }) 
         <AppButton
           title={item.isFollowing ? t('common.following') : t('common.follow')}
           onPress={() => !item.isFollowing && handleFollow(item)}
-          size="xs"
+          size="sm"
           loading={isFollowingId === item.id}
           style={styles.followBtn}
           variant={item.isFollowing ? 'outline' : 'primary'}

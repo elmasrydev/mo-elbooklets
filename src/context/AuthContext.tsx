@@ -37,6 +37,8 @@ interface User {
   city?: { id: string; name: string };
   is_subscribed?: boolean;
   role?: 'student' | 'parent';
+  followers_count?: number;
+  following_count?: number;
 }
 
 interface Parent {
