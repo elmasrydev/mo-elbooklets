@@ -78,8 +78,7 @@ const ProfileScreen: React.FC = () => {
           if (result.data?.deleteAccount?.success) {
             logout();
           } else {
-            // Error handling can go here quietly
-            logError('Delete account server returned false', result.data?.deleteAccount?.message);
+            console.error('Delete account server returned false', result.data?.deleteAccount?.message);
           }
         } catch (error) {
           console.error('Error deleting account:', error);
@@ -282,9 +281,11 @@ const ProfileScreen: React.FC = () => {
             />
           </TouchableOpacity>
 
-          {/* Badges - Hidden */}
-          {/*
-          <TouchableOpacity style={currentStyles.settingItem}>
+          {/* Badges */}
+          <TouchableOpacity 
+            style={currentStyles.settingItem}
+            onPress={() => navigation.navigate('Badges')}
+          >
             <View style={currentStyles.settingIconBox}>
               <Image
                 source={require('../../assets/images/Badges.png')}
@@ -300,7 +301,6 @@ const ProfileScreen: React.FC = () => {
               color={theme.colors.textTertiary}
             />
           </TouchableOpacity>
-          */}
 
           {/* Help and Support - Hidden for now */}
           {/*
