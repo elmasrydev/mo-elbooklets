@@ -1200,10 +1200,6 @@ const styles = (config: any) => {
       ...typography('body'),
       ...fontWeight('600'),
     },
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-    },
   });
 };
 
