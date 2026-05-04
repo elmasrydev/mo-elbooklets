@@ -11,7 +11,8 @@ export interface ProfileCompleteness {
   needsSchool: boolean;
   needsParentMobile: boolean;
   needsEmail: boolean;
-  needsEducationalSystem: boolean;
+  needsGovernorate: boolean;
+  needsCity: boolean;
 }
 
 export const useProfileCompleteness = () => {
@@ -29,7 +30,7 @@ export const useProfileCompleteness = () => {
         `query ProfileCompleteness { 
           profileCompleteness { 
             isComplete missingFields percentage needsGender needsSchool 
-            needsParentMobile needsEmail needsEducationalSystem
+            needsParentMobile needsEmail needsGovernorate needsCity
           } 
         }`,
         undefined,
