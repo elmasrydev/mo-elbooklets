@@ -703,7 +703,13 @@
     "add_school_request": "Can't find your school? Request to add it",
     "request_school_title": "Request New School",
     "request_school_message": "Enter the name of the school you want to add",
-    "select_gov_first": "Select Governorate First"
+    "school_name_placeholder": "School name...",
+    "school_request_sent": "Your request has been sent successfully. We will review it soon.",
+    "select_gov_first": "Select Governorate First",
+    "grade": "Grade",
+    "grade_not_editable": "Grade cannot be changed",
+    "complete_profile": "Complete Profile",
+    "update_password": "Update Password"
   },
   "report_question": {
     "title": "Report Question",

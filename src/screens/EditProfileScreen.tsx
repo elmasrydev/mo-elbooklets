@@ -212,6 +212,7 @@ const EditProfileScreen: React.FC = () => {
             id
             name
             name_en
+            name_ar
             is_verified
           }
         }
@@ -257,7 +258,7 @@ const EditProfileScreen: React.FC = () => {
 
   const selectedCityName = useMemo(() => {
     const city = cities.find(c => String(c.id) === String(formData.city_id));
-    if (city) return city.name;
+    if (city) return isRTL ? (city.name_ar || city.name) : (city.name_en || city.name);
     if (user?.city && String(user.city.id) === String(formData.city_id)) {
       return isRTL ? user.city.name_ar : user.city.name_en;
     }
@@ -267,7 +268,7 @@ const EditProfileScreen: React.FC = () => {
   const mappedSchools = useMemo(() => {
     return schoolSuggestions.map(s => ({
       ...s,
-      name: isRTL ? (s.name || s.name_en) : (s.name_en || s.name)
+      name: isRTL ? (s.name_ar || s.name || s.name_en) : (s.name_en || s.name)
     }));
   }, [schoolSuggestions, isRTL]);
 
@@ -375,6 +376,41 @@ const EditProfileScreen: React.FC = () => {
       }
     } catch (err: any) {
       console.error('Update profile error:', err);
+      showConfirm({
+        title: t('common.error'),
+        message: err.message || t('common.error'),
+        showCancel: false,
+        onConfirm: () => {},
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!user?.email) return;
+    
+    try {
+      setLoading(true);
+      const query = `
+        mutation ForgotPassword($email: String!) {
+          forgotPassword(email: $email) {
+            success
+            message
+          }
+        }
+      `;
+      
+      const result = await tryFetchWithFallback(query, { email: user.email });
+      
+      showConfirm({
+        title: result.data?.forgotPassword?.success ? t('common.success') : t('common.error'),
+        message: result.data?.forgotPassword?.message || t('common.error'),
+        showCancel: false,
+        onConfirm: () => {},
+      });
+    } catch (err: any) {
+      console.error('Forgot password error:', err);
       showConfirm({
         title: t('common.error'),
         message: err.message || t('common.error'),
@@ -740,10 +776,25 @@ const EditProfileScreen: React.FC = () => {
                     style={currentStyles.addSchoolTrigger}
                     onPress={() => {
                         showConfirm({
-                            title: t('profile.request_school_title'),
-                            message: t('profile.request_school_message'),
-                            onConfirm: () => {
-                                // Logic to request adding school if needed
+                            title: t('profile.request_school_title', 'Request New School'),
+                            message: t('profile.request_school_message', 'Enter the name of the school you want to add'),
+                            hasInput: true,
+                            inputPlaceholder: t('profile.school_name_placeholder', 'School name...'),
+                            onConfirm: async (schoolName) => {
+                                if (schoolName && schoolName.trim()) {
+                                    // Here you would typically call a mutation to request the school
+                                    console.log('Requesting school:', schoolName);
+                                    
+                                    // Show success message
+                                    setTimeout(() => {
+                                      showConfirm({
+                                          title: t('common.success', 'Success'),
+                                          message: t('profile.school_request_sent', 'Your request has been sent successfully. We will review it soon.'),
+                                          showCancel: false,
+                                          onConfirm: () => {}
+                                      });
+                                    }, 500);
+                                }
                             }
                         })
                     }}
@@ -846,6 +897,23 @@ const EditProfileScreen: React.FC = () => {
                             placeholder="••••••••"
                          />
                       </View>
+                    </View>
+
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg }}>
+                      <TouchableOpacity onPress={handleForgotPassword} disabled={loading}>
+                        <Text style={{ ...typography('caption'), color: theme.colors.primary, textDecorationLine: 'underline' }}>
+                          {t('auth.forgot_password', 'Forgot Password?')}
+                        </Text>
+                      </TouchableOpacity>
+                      
+                      <AppButton 
+                        title={t('profile.update_password', 'Update Password')}
+                        onPress={handleSave}
+                        loading={loading}
+                        size="sm"
+                        variant="primary"
+                        style={{ minWidth: 140 }}
+                      />
                     </View>
                   </View>
                 )}

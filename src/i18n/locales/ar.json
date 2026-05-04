@@ -699,7 +699,13 @@
     "add_school_request": "لم تجد مدرستك؟ اطلب إضافتها",
     "request_school_title": "طلب إضافة مدرسة",
     "request_school_message": "أدخل اسم المدرسة التي تريد إضافتها",
-    "select_gov_first": "اختر المحافظة أولاً"
+    "school_name_placeholder": "اسم المدرسة...",
+    "school_request_sent": "لقد تم إرسال طلبك بنجاح. سنقوم بمراجعته قريباً.",
+    "select_gov_first": "اختر المحافظة أولاً",
+    "grade": "الصف الدراسي",
+    "grade_not_editable": "لا يمكن تغيير الصف الدراسي",
+    "complete_profile": "إكمال الملف الشخصي",
+    "update_password": "تحديث كلمة المرور"
   },
   "report_question": {
     "title": "الإبلاغ عن سؤال",
