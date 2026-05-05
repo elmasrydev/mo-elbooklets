@@ -29,7 +29,7 @@
     },
     "android": {
       "package": "com.elbooklets.app",
-      "versionCode": 5,
+      "versionCode": 6,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -52,7 +52,7 @@
       "checkAutomatically": "ON_LOAD",
       "fallbackToCacheTimeout": 0
     },
-    "runtimeVersion": "1.0.0",
+    "runtimeVersion": "1.0.1",
     "plugins": [
       "expo-font",
       "./plugins/withAndroidSigning.js",

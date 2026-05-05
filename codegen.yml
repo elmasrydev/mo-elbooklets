@@ -15,6 +15,8 @@ generates:
       withMutationFn: true
       skipTypename: false
       reactApolloVersion: 4
+      apolloReactCommonImportFrom: "@apollo/client"
+      apolloReactHooksImportFrom: "@apollo/client/react"
       withRefetchFn: false
       withResultType: true
       withMutationOptionsType: true

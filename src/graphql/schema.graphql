@@ -10,6 +10,40 @@ type Query {
   quizResults(quizId: ID!): QuizResult
   studySchedule: [StudySchedule!]!
   todaySchedule: DailySchedule!
+  allBadges: [Badge!]!
+  badgeCategories: [BadgeCategory!]!
+}
+
+type Badge {
+  id: ID!
+  name: String!
+  description: String
+  logoUrl: String
+  awardedAt: DateTime
+  rulesPreview: String
+  category: BadgeCategory!
+  rules: [BadgeRule!]!
+}
+
+type BadgeCategory {
+  id: ID!
+  name: String!
+  description: String
+  icon: String
+  color: String
+  badgeCount: Int
+}
+
+type BadgeRule {
+  id: ID!
+  conditionType: String!
+  operator: String!
+  value: String!
+  valueEnd: String
+  subject: Subject
+  timeframe: String
+  scoreThreshold: Float
+  description: String
 }
 
 type Mutation {
@@ -29,6 +63,7 @@ type Mutation {
   publishQuizToFeed(quizId: ID!): SocialActionResponse!
   deleteAccount: SocialActionResponse!
   saveStudySchedule(entries: [StudyScheduleInput!]!): [StudySchedule!]!
+  forgotPassword(email: String!): SocialActionResponse!
 }
 
 type SocialActionResponse {
@@ -59,7 +94,7 @@ type Subject {
   id: ID!
   name: String!
   description: String
-  chaptersCount: Int!
+  chaptersCount: Int
 }
 
 type Chapter {
