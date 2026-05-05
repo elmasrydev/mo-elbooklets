@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ViewStyle, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, DrawerActions } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useCommonStyles } from '../hooks/useCommonStyles';
@@ -12,7 +12,6 @@ interface UnifiedHeaderProps {
   title?: string | React.ReactNode;
   subtitle?: string | React.ReactNode;
   showBackButton?: boolean;
-  showMenuButton?: boolean;
   onBackPress?: () => void;
   leftContent?: React.ReactNode;
   rightContent?: React.ReactNode;
@@ -26,7 +25,6 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
   title,
   subtitle,
   showBackButton = false,
-  showMenuButton = false,
   onBackPress,
   leftContent,
   rightContent,
@@ -76,17 +74,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
       );
     }
 
-    if (showMenuButton) {
-      return (
-        <TouchableOpacity
-          style={currentStyles.iconButton}
-          onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
-          hitSlop={{ top: 13, bottom: 13, left: 13, right: 13 }}
-        >
-          <Ionicons name="menu-outline" size={30} color={theme.colors.headerText} />
-        </TouchableOpacity>
-      );
-    }
+
     return leftContent || null;
   };
 

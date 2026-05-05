@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import SplashScreen from '../screens/SplashScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
-import DrawerNavigator from './navigation/DrawerNavigator';
+import TabNavigator from './TabNavigator';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 
@@ -43,7 +43,7 @@ const AppNavigator: React.FC = () => {
           </RootStack.Group>
         ) : (
           <RootStack.Group>
-            <RootStack.Screen name="MainTabs" component={DrawerNavigator} />
+            <RootStack.Screen name="MainTabs" component={TabNavigator} />
             <RootStack.Screen name="InternalSettings" component={InternalSettingsScreen} />
           </RootStack.Group>
         )
