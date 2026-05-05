@@ -610,7 +610,13 @@
     "crashlytics_testing_desc": "Test Firebase Crashlytics integration. Crash will force-close the app.",
     "test_crash": "Test Crash",
     "test_log_error": "Log Error",
-    "internal_settings": "Internal Settings"
+    "internal_settings": "Internal Settings",
+    "notifications_control": "Notifications Control",
+    "app_notifications": "App Notifications",
+    "app_notifications_desc": "Receive app updates and announcements",
+    "social_notifications": "Social Notifications",
+    "social_notifications_desc": "Receive social activity notifications",
+    "notification_update_failed": "Failed to update notification preference"
   },
   "faq": {
     "header_title": "FAQs",

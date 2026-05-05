@@ -605,7 +605,13 @@
     "crashlytics_testing_desc": "اختبار تكامل Firebase Crashlytics. سيؤدي الانهيار إلى إغلاق التطبيق.",
     "test_crash": "اختبار انهيار",
     "test_log_error": "تسجيل خطأ",
-    "internal_settings": "إعدادات المطور"
+    "internal_settings": "إعدادات المطور",
+    "notifications_control": "التحكم في الإشعارات",
+    "app_notifications": "إشعارات التطبيق",
+    "app_notifications_desc": "استلام تحديثات وإعلانات التطبيق",
+    "social_notifications": "الإشعارات الاجتماعية",
+    "social_notifications_desc": "استلام إشعارات النشاط الاجتماعي",
+    "notification_update_failed": "فشل في تحديث تفضيلات الإشعارات"
   },
   "faq": {
     "header_title": "الأسئلة الشائعة",
