@@ -67,6 +67,13 @@ export type BadgeRule = {
   valueEnd?: Maybe<Scalars['String']['output']>;
 };
 
+export type BookmarkResponse = {
+  __typename?: 'BookmarkResponse';
+  isBookmarked: Scalars['Boolean']['output'];
+  message?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
 export type Chapter = {
   __typename?: 'Chapter';
   id: Scalars['ID']['output'];
@@ -99,10 +106,27 @@ export type Lesson = {
   summary?: Maybe<Scalars['String']['output']>;
 };
 
+export type LessonBookmark = {
+  __typename?: 'LessonBookmark';
+  createdAt: Scalars['DateTime']['output'];
+  id: Scalars['ID']['output'];
+  lessonPoint: LessonPoint;
+  note?: Maybe<Scalars['String']['output']>;
+};
+
+export type LessonNote = {
+  __typename?: 'LessonNote';
+  content: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  lessonPoint: LessonPoint;
+  updatedAt: Scalars['DateTime']['output'];
+};
+
 export type LessonPoint = {
   __typename?: 'LessonPoint';
   explanation?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
+  lesson?: Maybe<Lesson>;
   order: Scalars['Int']['output'];
   title: Scalars['String']['output'];
 };
@@ -110,13 +134,20 @@ export type LessonPoint = {
 export type Mutation = {
   __typename?: 'Mutation';
   deleteAccount: SocialActionResponse;
+  deleteLessonNote: NoteResponse;
   forgotPassword: SocialActionResponse;
   login: AuthPayload;
   publishQuizToFeed: SocialActionResponse;
   register: AuthPayload;
+  saveLessonNote: NoteResponse;
   saveStudySchedule: Array<StudySchedule>;
   startQuiz: Quiz;
   submitQuizAnswers: QuizSubmissionResult;
+  toggleLessonBookmark: BookmarkResponse;
+};
+
+export type MutationDeleteLessonNoteArgs = {
+  lessonPointId: Scalars['ID']['input'];
 };
 
 export type MutationForgotPasswordArgs = {
@@ -140,6 +171,11 @@ export type MutationRegisterArgs = {
   password_confirmation: Scalars['String']['input'];
 };
 
+export type MutationSaveLessonNoteArgs = {
+  lessonPointId: Scalars['ID']['input'];
+  note: Scalars['String']['input'];
+};
+
 export type MutationSaveStudyScheduleArgs = {
   entries: Array<StudyScheduleInput>;
 };
@@ -154,6 +190,17 @@ export type MutationSubmitQuizAnswersArgs = {
   quizId: Scalars['ID']['input'];
 };
 
+export type MutationToggleLessonBookmarkArgs = {
+  lessonPointId: Scalars['ID']['input'];
+};
+
+export type NoteResponse = {
+  __typename?: 'NoteResponse';
+  message?: Maybe<Scalars['String']['output']>;
+  note?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
 export type Query = {
   __typename?: 'Query';
   allBadges: Array<Badge>;
@@ -165,6 +212,8 @@ export type Query = {
   studySchedule: Array<StudySchedule>;
   subjectsForUserGrade: Array<Subject>;
   todaySchedule: DailySchedule;
+  userBookmarks: Array<LessonBookmark>;
+  userNotes: Array<LessonNote>;
   userQuizHistory: Array<UserQuizHistory>;
 };
 
@@ -470,6 +519,88 @@ export type SaveStudyScheduleMutation = {
   }>;
 };
 
+export type ToggleLessonBookmarkMutationVariables = Exact<{
+  lessonPointId: Scalars['ID']['input'];
+}>;
+
+export type ToggleLessonBookmarkMutation = {
+  __typename?: 'Mutation';
+  toggleLessonBookmark: {
+    __typename?: 'BookmarkResponse';
+    success: boolean;
+    isBookmarked: boolean;
+    message?: string | null;
+  };
+};
+
+export type SaveLessonNoteMutationVariables = Exact<{
+  lessonPointId: Scalars['ID']['input'];
+  note: Scalars['String']['input'];
+}>;
+
+export type SaveLessonNoteMutation = {
+  __typename?: 'Mutation';
+  saveLessonNote: {
+    __typename?: 'NoteResponse';
+    success: boolean;
+    note?: string | null;
+    message?: string | null;
+  };
+};
+
+export type DeleteLessonNoteMutationVariables = Exact<{
+  lessonPointId: Scalars['ID']['input'];
+}>;
+
+export type DeleteLessonNoteMutation = {
+  __typename?: 'Mutation';
+  deleteLessonNote: { __typename?: 'NoteResponse'; success: boolean; message?: string | null };
+};
+
+export type GetUserBookmarksQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetUserBookmarksQuery = {
+  __typename?: 'Query';
+  userBookmarks: Array<{
+    __typename?: 'LessonBookmark';
+    id: string;
+    note?: string | null;
+    createdAt: string;
+    lessonPoint: {
+      __typename?: 'LessonPoint';
+      id: string;
+      title: string;
+      explanation?: string | null;
+      order: number;
+      lesson?: {
+        __typename?: 'Lesson';
+        id: string;
+        name: string;
+        chapter: { __typename?: 'Chapter'; id: string; name: string };
+      } | null;
+    };
+  }>;
+};
+
+export type GetUserNotesQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetUserNotesQuery = {
+  __typename?: 'Query';
+  userNotes: Array<{
+    __typename?: 'LessonNote';
+    id: string;
+    content: string;
+    updatedAt: string;
+    lessonPoint: {
+      __typename?: 'LessonPoint';
+      id: string;
+      title: string;
+      explanation?: string | null;
+      lesson?: { __typename?: 'Lesson'; id: string; name: string } | null;
+    };
+  }>;
+};
+
 export type UserQuizHistoryQueryVariables = Exact<{ [key: string]: never }>;
 
 export type UserQuizHistoryQuery = {
@@ -767,15 +898,6 @@ export function useGetGradesLazyQuery(
     options,
   );
 }
-// @ts-ignore
-export function useGetGradesSuspenseQuery(
-  baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<GetGradesQuery, GetGradesQueryVariables>,
-): ApolloReactHooks.UseSuspenseQueryResult<GetGradesQuery, GetGradesQueryVariables>;
-export function useGetGradesSuspenseQuery(
-  baseOptions?:
-    | ApolloReactHooks.SkipToken
-    | ApolloReactHooks.SuspenseQueryHookOptions<GetGradesQuery, GetGradesQueryVariables>,
-): ApolloReactHooks.UseSuspenseQueryResult<GetGradesQuery | undefined, GetGradesQueryVariables>;
 export function useGetGradesSuspenseQuery(
   baseOptions?:
     | ApolloReactHooks.SkipToken
@@ -961,21 +1083,6 @@ export function useGetAllBadgesLazyQuery(
     options,
   );
 }
-// @ts-ignore
-export function useGetAllBadgesSuspenseQuery(
-  baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<
-    GetAllBadgesQuery,
-    GetAllBadgesQueryVariables
-  >,
-): ApolloReactHooks.UseSuspenseQueryResult<GetAllBadgesQuery, GetAllBadgesQueryVariables>;
-export function useGetAllBadgesSuspenseQuery(
-  baseOptions?:
-    | ApolloReactHooks.SkipToken
-    | ApolloReactHooks.SuspenseQueryHookOptions<GetAllBadgesQuery, GetAllBadgesQueryVariables>,
-): ApolloReactHooks.UseSuspenseQueryResult<
-  GetAllBadgesQuery | undefined,
-  GetAllBadgesQueryVariables
->;
 export function useGetAllBadgesSuspenseQuery(
   baseOptions?:
     | ApolloReactHooks.SkipToken
@@ -1049,27 +1156,6 @@ export function useGetBadgeCategoriesLazyQuery(
     options,
   );
 }
-// @ts-ignore
-export function useGetBadgeCategoriesSuspenseQuery(
-  baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<
-    GetBadgeCategoriesQuery,
-    GetBadgeCategoriesQueryVariables
-  >,
-): ApolloReactHooks.UseSuspenseQueryResult<
-  GetBadgeCategoriesQuery,
-  GetBadgeCategoriesQueryVariables
->;
-export function useGetBadgeCategoriesSuspenseQuery(
-  baseOptions?:
-    | ApolloReactHooks.SkipToken
-    | ApolloReactHooks.SuspenseQueryHookOptions<
-        GetBadgeCategoriesQuery,
-        GetBadgeCategoriesQueryVariables
-      >,
-): ApolloReactHooks.UseSuspenseQueryResult<
-  GetBadgeCategoriesQuery | undefined,
-  GetBadgeCategoriesQueryVariables
->;
 export function useGetBadgeCategoriesSuspenseQuery(
   baseOptions?:
     | ApolloReactHooks.SkipToken
@@ -1151,21 +1237,6 @@ export function useStudyScheduleLazyQuery(
     options,
   );
 }
-// @ts-ignore
-export function useStudyScheduleSuspenseQuery(
-  baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<
-    StudyScheduleQuery,
-    StudyScheduleQueryVariables
-  >,
-): ApolloReactHooks.UseSuspenseQueryResult<StudyScheduleQuery, StudyScheduleQueryVariables>;
-export function useStudyScheduleSuspenseQuery(
-  baseOptions?:
-    | ApolloReactHooks.SkipToken
-    | ApolloReactHooks.SuspenseQueryHookOptions<StudyScheduleQuery, StudyScheduleQueryVariables>,
-): ApolloReactHooks.UseSuspenseQueryResult<
-  StudyScheduleQuery | undefined,
-  StudyScheduleQueryVariables
->;
 export function useStudyScheduleSuspenseQuery(
   baseOptions?:
     | ApolloReactHooks.SkipToken
@@ -1248,21 +1319,6 @@ export function useTodayScheduleLazyQuery(
     options,
   );
 }
-// @ts-ignore
-export function useTodayScheduleSuspenseQuery(
-  baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<
-    TodayScheduleQuery,
-    TodayScheduleQueryVariables
-  >,
-): ApolloReactHooks.UseSuspenseQueryResult<TodayScheduleQuery, TodayScheduleQueryVariables>;
-export function useTodayScheduleSuspenseQuery(
-  baseOptions?:
-    | ApolloReactHooks.SkipToken
-    | ApolloReactHooks.SuspenseQueryHookOptions<TodayScheduleQuery, TodayScheduleQueryVariables>,
-): ApolloReactHooks.UseSuspenseQueryResult<
-  TodayScheduleQuery | undefined,
-  TodayScheduleQueryVariables
->;
 export function useTodayScheduleSuspenseQuery(
   baseOptions?:
     | ApolloReactHooks.SkipToken
@@ -1341,6 +1397,322 @@ export type SaveStudyScheduleMutationOptions = ApolloReactCommon.BaseMutationOpt
   SaveStudyScheduleMutation,
   SaveStudyScheduleMutationVariables
 >;
+export const ToggleLessonBookmarkDocument = gql`
+  mutation ToggleLessonBookmark($lessonPointId: ID!) {
+    toggleLessonBookmark(lessonPointId: $lessonPointId) {
+      success
+      isBookmarked
+      message
+    }
+  }
+`;
+export type ToggleLessonBookmarkMutationFn = ApolloReactCommon.MutationFunction<
+  ToggleLessonBookmarkMutation,
+  ToggleLessonBookmarkMutationVariables
+>;
+
+/**
+ * __useToggleLessonBookmarkMutation__
+ *
+ * To run a mutation, you first call `useToggleLessonBookmarkMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useToggleLessonBookmarkMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [toggleLessonBookmarkMutation, { data, loading, error }] = useToggleLessonBookmarkMutation({
+ *   variables: {
+ *      lessonPointId: // value for 'lessonPointId'
+ *   },
+ * });
+ */
+export function useToggleLessonBookmarkMutation(
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
+    ToggleLessonBookmarkMutation,
+    ToggleLessonBookmarkMutationVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useMutation<
+    ToggleLessonBookmarkMutation,
+    ToggleLessonBookmarkMutationVariables
+  >(ToggleLessonBookmarkDocument, options);
+}
+export type ToggleLessonBookmarkMutationHookResult = ReturnType<
+  typeof useToggleLessonBookmarkMutation
+>;
+export type ToggleLessonBookmarkMutationResult =
+  ApolloReactCommon.MutationResult<ToggleLessonBookmarkMutation>;
+export type ToggleLessonBookmarkMutationOptions = ApolloReactCommon.BaseMutationOptions<
+  ToggleLessonBookmarkMutation,
+  ToggleLessonBookmarkMutationVariables
+>;
+export const SaveLessonNoteDocument = gql`
+  mutation SaveLessonNote($lessonPointId: ID!, $note: String!) {
+    saveLessonNote(lessonPointId: $lessonPointId, note: $note) {
+      success
+      note
+      message
+    }
+  }
+`;
+export type SaveLessonNoteMutationFn = ApolloReactCommon.MutationFunction<
+  SaveLessonNoteMutation,
+  SaveLessonNoteMutationVariables
+>;
+
+/**
+ * __useSaveLessonNoteMutation__
+ *
+ * To run a mutation, you first call `useSaveLessonNoteMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useSaveLessonNoteMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [saveLessonNoteMutation, { data, loading, error }] = useSaveLessonNoteMutation({
+ *   variables: {
+ *      lessonPointId: // value for 'lessonPointId'
+ *      note: // value for 'note'
+ *   },
+ * });
+ */
+export function useSaveLessonNoteMutation(
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
+    SaveLessonNoteMutation,
+    SaveLessonNoteMutationVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useMutation<SaveLessonNoteMutation, SaveLessonNoteMutationVariables>(
+    SaveLessonNoteDocument,
+    options,
+  );
+}
+export type SaveLessonNoteMutationHookResult = ReturnType<typeof useSaveLessonNoteMutation>;
+export type SaveLessonNoteMutationResult = ApolloReactCommon.MutationResult<SaveLessonNoteMutation>;
+export type SaveLessonNoteMutationOptions = ApolloReactCommon.BaseMutationOptions<
+  SaveLessonNoteMutation,
+  SaveLessonNoteMutationVariables
+>;
+export const DeleteLessonNoteDocument = gql`
+  mutation DeleteLessonNote($lessonPointId: ID!) {
+    deleteLessonNote(lessonPointId: $lessonPointId) {
+      success
+      message
+    }
+  }
+`;
+export type DeleteLessonNoteMutationFn = ApolloReactCommon.MutationFunction<
+  DeleteLessonNoteMutation,
+  DeleteLessonNoteMutationVariables
+>;
+
+/**
+ * __useDeleteLessonNoteMutation__
+ *
+ * To run a mutation, you first call `useDeleteLessonNoteMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteLessonNoteMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteLessonNoteMutation, { data, loading, error }] = useDeleteLessonNoteMutation({
+ *   variables: {
+ *      lessonPointId: // value for 'lessonPointId'
+ *   },
+ * });
+ */
+export function useDeleteLessonNoteMutation(
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
+    DeleteLessonNoteMutation,
+    DeleteLessonNoteMutationVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useMutation<DeleteLessonNoteMutation, DeleteLessonNoteMutationVariables>(
+    DeleteLessonNoteDocument,
+    options,
+  );
+}
+export type DeleteLessonNoteMutationHookResult = ReturnType<typeof useDeleteLessonNoteMutation>;
+export type DeleteLessonNoteMutationResult =
+  ApolloReactCommon.MutationResult<DeleteLessonNoteMutation>;
+export type DeleteLessonNoteMutationOptions = ApolloReactCommon.BaseMutationOptions<
+  DeleteLessonNoteMutation,
+  DeleteLessonNoteMutationVariables
+>;
+export const GetUserBookmarksDocument = gql`
+  query GetUserBookmarks {
+    userBookmarks {
+      id
+      lessonPoint {
+        id
+        title
+        explanation
+        order
+        lesson {
+          id
+          name
+          chapter {
+            id
+            name
+          }
+        }
+      }
+      note
+      createdAt
+    }
+  }
+`;
+
+/**
+ * __useGetUserBookmarksQuery__
+ *
+ * To run a query within a React component, call `useGetUserBookmarksQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetUserBookmarksQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetUserBookmarksQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useGetUserBookmarksQuery(
+  baseOptions?: ApolloReactHooks.QueryHookOptions<
+    GetUserBookmarksQuery,
+    GetUserBookmarksQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useQuery<GetUserBookmarksQuery, GetUserBookmarksQueryVariables>(
+    GetUserBookmarksDocument,
+    options,
+  );
+}
+export function useGetUserBookmarksLazyQuery(
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
+    GetUserBookmarksQuery,
+    GetUserBookmarksQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useLazyQuery<GetUserBookmarksQuery, GetUserBookmarksQueryVariables>(
+    GetUserBookmarksDocument,
+    options,
+  );
+}
+export function useGetUserBookmarksSuspenseQuery(
+  baseOptions?:
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
+        GetUserBookmarksQuery,
+        GetUserBookmarksQueryVariables
+      >,
+) {
+  const options =
+    baseOptions === ApolloReactHooks.skipToken
+      ? baseOptions
+      : { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useSuspenseQuery<GetUserBookmarksQuery, GetUserBookmarksQueryVariables>(
+    GetUserBookmarksDocument,
+    options,
+  );
+}
+export type GetUserBookmarksQueryHookResult = ReturnType<typeof useGetUserBookmarksQuery>;
+export type GetUserBookmarksLazyQueryHookResult = ReturnType<typeof useGetUserBookmarksLazyQuery>;
+export type GetUserBookmarksSuspenseQueryHookResult = ReturnType<
+  typeof useGetUserBookmarksSuspenseQuery
+>;
+export type GetUserBookmarksQueryResult = ApolloReactCommon.QueryResult<
+  GetUserBookmarksQuery,
+  GetUserBookmarksQueryVariables
+>;
+export const GetUserNotesDocument = gql`
+  query GetUserNotes {
+    userNotes {
+      id
+      lessonPoint {
+        id
+        title
+        explanation
+        lesson {
+          id
+          name
+        }
+      }
+      content
+      updatedAt
+    }
+  }
+`;
+
+/**
+ * __useGetUserNotesQuery__
+ *
+ * To run a query within a React component, call `useGetUserNotesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetUserNotesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetUserNotesQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useGetUserNotesQuery(
+  baseOptions?: ApolloReactHooks.QueryHookOptions<GetUserNotesQuery, GetUserNotesQueryVariables>,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useQuery<GetUserNotesQuery, GetUserNotesQueryVariables>(
+    GetUserNotesDocument,
+    options,
+  );
+}
+export function useGetUserNotesLazyQuery(
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
+    GetUserNotesQuery,
+    GetUserNotesQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useLazyQuery<GetUserNotesQuery, GetUserNotesQueryVariables>(
+    GetUserNotesDocument,
+    options,
+  );
+}
+export function useGetUserNotesSuspenseQuery(
+  baseOptions?:
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<GetUserNotesQuery, GetUserNotesQueryVariables>,
+) {
+  const options =
+    baseOptions === ApolloReactHooks.skipToken
+      ? baseOptions
+      : { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useSuspenseQuery<GetUserNotesQuery, GetUserNotesQueryVariables>(
+    GetUserNotesDocument,
+    options,
+  );
+}
+export type GetUserNotesQueryHookResult = ReturnType<typeof useGetUserNotesQuery>;
+export type GetUserNotesLazyQueryHookResult = ReturnType<typeof useGetUserNotesLazyQuery>;
+export type GetUserNotesSuspenseQueryHookResult = ReturnType<typeof useGetUserNotesSuspenseQuery>;
+export type GetUserNotesQueryResult = ApolloReactCommon.QueryResult<
+  GetUserNotesQuery,
+  GetUserNotesQueryVariables
+>;
 export const UserQuizHistoryDocument = gql`
   query UserQuizHistory {
     userQuizHistory {
@@ -1397,24 +1769,6 @@ export function useUserQuizHistoryLazyQuery(
     options,
   );
 }
-// @ts-ignore
-export function useUserQuizHistorySuspenseQuery(
-  baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<
-    UserQuizHistoryQuery,
-    UserQuizHistoryQueryVariables
-  >,
-): ApolloReactHooks.UseSuspenseQueryResult<UserQuizHistoryQuery, UserQuizHistoryQueryVariables>;
-export function useUserQuizHistorySuspenseQuery(
-  baseOptions?:
-    | ApolloReactHooks.SkipToken
-    | ApolloReactHooks.SuspenseQueryHookOptions<
-        UserQuizHistoryQuery,
-        UserQuizHistoryQueryVariables
-      >,
-): ApolloReactHooks.UseSuspenseQueryResult<
-  UserQuizHistoryQuery | undefined,
-  UserQuizHistoryQueryVariables
->;
 export function useUserQuizHistorySuspenseQuery(
   baseOptions?:
     | ApolloReactHooks.SkipToken
@@ -1491,27 +1845,6 @@ export function useSubjectsForUserGradeLazyQuery(
     SubjectsForUserGradeQueryVariables
   >(SubjectsForUserGradeDocument, options);
 }
-// @ts-ignore
-export function useSubjectsForUserGradeSuspenseQuery(
-  baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<
-    SubjectsForUserGradeQuery,
-    SubjectsForUserGradeQueryVariables
-  >,
-): ApolloReactHooks.UseSuspenseQueryResult<
-  SubjectsForUserGradeQuery,
-  SubjectsForUserGradeQueryVariables
->;
-export function useSubjectsForUserGradeSuspenseQuery(
-  baseOptions?:
-    | ApolloReactHooks.SkipToken
-    | ApolloReactHooks.SuspenseQueryHookOptions<
-        SubjectsForUserGradeQuery,
-        SubjectsForUserGradeQueryVariables
-      >,
-): ApolloReactHooks.UseSuspenseQueryResult<
-  SubjectsForUserGradeQuery | undefined,
-  SubjectsForUserGradeQueryVariables
->;
 export function useSubjectsForUserGradeSuspenseQuery(
   baseOptions?:
     | ApolloReactHooks.SkipToken
@@ -1596,24 +1929,6 @@ export function useLessonsForSubjectLazyQuery(
     options,
   );
 }
-// @ts-ignore
-export function useLessonsForSubjectSuspenseQuery(
-  baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<
-    LessonsForSubjectQuery,
-    LessonsForSubjectQueryVariables
-  >,
-): ApolloReactHooks.UseSuspenseQueryResult<LessonsForSubjectQuery, LessonsForSubjectQueryVariables>;
-export function useLessonsForSubjectSuspenseQuery(
-  baseOptions?:
-    | ApolloReactHooks.SkipToken
-    | ApolloReactHooks.SuspenseQueryHookOptions<
-        LessonsForSubjectQuery,
-        LessonsForSubjectQueryVariables
-      >,
-): ApolloReactHooks.UseSuspenseQueryResult<
-  LessonsForSubjectQuery | undefined,
-  LessonsForSubjectQueryVariables
->;
 export function useLessonsForSubjectSuspenseQuery(
   baseOptions?:
     | ApolloReactHooks.SkipToken
@@ -1684,15 +1999,6 @@ export function useQuizLazyQuery(
   const options = { ...defaultOptions, ...baseOptions };
   return ApolloReactHooks.useLazyQuery<QuizQuery, QuizQueryVariables>(QuizDocument, options);
 }
-// @ts-ignore
-export function useQuizSuspenseQuery(
-  baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<QuizQuery, QuizQueryVariables>,
-): ApolloReactHooks.UseSuspenseQueryResult<QuizQuery, QuizQueryVariables>;
-export function useQuizSuspenseQuery(
-  baseOptions?:
-    | ApolloReactHooks.SkipToken
-    | ApolloReactHooks.SuspenseQueryHookOptions<QuizQuery, QuizQueryVariables>,
-): ApolloReactHooks.UseSuspenseQueryResult<QuizQuery | undefined, QuizQueryVariables>;
 export function useQuizSuspenseQuery(
   baseOptions?:
     | ApolloReactHooks.SkipToken
@@ -1767,18 +2073,6 @@ export function useQuizResultsLazyQuery(
     options,
   );
 }
-// @ts-ignore
-export function useQuizResultsSuspenseQuery(
-  baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<
-    QuizResultsQuery,
-    QuizResultsQueryVariables
-  >,
-): ApolloReactHooks.UseSuspenseQueryResult<QuizResultsQuery, QuizResultsQueryVariables>;
-export function useQuizResultsSuspenseQuery(
-  baseOptions?:
-    | ApolloReactHooks.SkipToken
-    | ApolloReactHooks.SuspenseQueryHookOptions<QuizResultsQuery, QuizResultsQueryVariables>,
-): ApolloReactHooks.UseSuspenseQueryResult<QuizResultsQuery | undefined, QuizResultsQueryVariables>;
 export function useQuizResultsSuspenseQuery(
   baseOptions?:
     | ApolloReactHooks.SkipToken

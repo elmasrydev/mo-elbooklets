@@ -1,0 +1,61 @@
+mutation ToggleLessonBookmark($lessonPointId: ID!) {
+  toggleLessonBookmark(lessonPointId: $lessonPointId) {
+    success
+    isBookmarked
+    message
+  }
+}
+
+mutation SaveLessonNote($lessonPointId: ID!, $note: String!) {
+  saveLessonNote(lessonPointId: $lessonPointId, note: $note) {
+    success
+    note
+    message
+  }
+}
+
+mutation DeleteLessonNote($lessonPointId: ID!) {
+  deleteLessonNote(lessonPointId: $lessonPointId) {
+    success
+    message
+  }
+}
+
+query GetUserBookmarks {
+  userBookmarks {
+    id
+    lessonPoint {
+      id
+      title
+      explanation
+      order
+      lesson {
+        id
+        name
+        chapter {
+          id
+          name
+        }
+      }
+    }
+    note
+    createdAt
+  }
+}
+
+query GetUserNotes {
+  userNotes {
+    id
+    lessonPoint {
+      id
+      title
+      explanation
+      lesson {
+        id
+        name
+      }
+    }
+    content
+    updatedAt
+  }
+}

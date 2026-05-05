@@ -12,6 +12,8 @@ type Query {
   todaySchedule: DailySchedule!
   allBadges: [Badge!]!
   badgeCategories: [BadgeCategory!]!
+  userBookmarks: [LessonBookmark!]!
+  userNotes: [LessonNote!]!
 }
 
 type Badge {
@@ -64,6 +66,9 @@ type Mutation {
   deleteAccount: SocialActionResponse!
   saveStudySchedule(entries: [StudyScheduleInput!]!): [StudySchedule!]!
   forgotPassword(email: String!): SocialActionResponse!
+  toggleLessonBookmark(lessonPointId: ID!): BookmarkResponse!
+  saveLessonNote(lessonPointId: ID!, note: String!): NoteResponse!
+  deleteLessonNote(lessonPointId: ID!): NoteResponse!
 }
 
 type SocialActionResponse {
@@ -118,6 +123,33 @@ type LessonPoint {
   title: String!
   explanation: String
   order: Int!
+  lesson: Lesson
+}
+
+type LessonBookmark {
+  id: ID!
+  lessonPoint: LessonPoint!
+  note: String
+  createdAt: DateTime!
+}
+
+type LessonNote {
+  id: ID!
+  lessonPoint: LessonPoint!
+  content: String!
+  updatedAt: DateTime!
+}
+
+type BookmarkResponse {
+  success: Boolean!
+  isBookmarked: Boolean!
+  message: String
+}
+
+type NoteResponse {
+  success: Boolean!
+  note: String
+  message: String
 }
 
 type Quiz {
