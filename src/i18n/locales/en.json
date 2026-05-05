@@ -95,7 +95,8 @@
     "api_switch_demo": "Switch to Demo",
     "api_switch_production": "Switch to Production",
     "api_switch_prs": "Switch to PRS",
-    "search": "Search"
+    "search": "Search",
+    "no_results": "No results found"
   },
   "subscription": {
     "required_title": "Subscription Required",
@@ -709,7 +710,8 @@
     "grade": "Grade",
     "grade_not_editable": "Grade cannot be changed",
     "complete_profile": "Complete Profile",
-    "update_password": "Update Password"
+    "update_password": "Update Password",
+    "start_typing_to_search": "Start typing to search..."
   },
   "report_question": {
     "title": "Report Question",

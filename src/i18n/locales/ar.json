@@ -93,7 +93,8 @@
     "api_switch_prs": "التبديل إلى PRS",
     "like": "إعجاب",
     "dislike": "عدم إعجاب",
-    "search": "بحث"
+    "search": "بحث",
+    "no_results": "لا توجد نتائج"
   },
   "subscription": {
     "required_title": "اشتراك مطلوب",
@@ -705,7 +706,8 @@
     "grade": "الصف الدراسي",
     "grade_not_editable": "لا يمكن تغيير الصف الدراسي",
     "complete_profile": "إكمال الملف الشخصي",
-    "update_password": "تحديث كلمة المرور"
+    "update_password": "تحديث كلمة المرور",
+    "start_typing_to_search": "ابدأ الكتابة للبحث..."
   },
   "report_question": {
     "title": "الإبلاغ عن سؤال",

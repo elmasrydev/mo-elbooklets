@@ -212,7 +212,6 @@ const EditProfileScreen: React.FC = () => {
             id
             name
             name_en
-            name_ar
             is_verified
           }
         }
@@ -268,7 +267,7 @@ const EditProfileScreen: React.FC = () => {
   const mappedSchools = useMemo(() => {
     return schoolSuggestions.map(s => ({
       ...s,
-      name: isRTL ? (s.name_ar || s.name || s.name_en) : (s.name_en || s.name)
+      name: isRTL ? (s.name || s.name_en) : (s.name_en || s.name)
     }));
   }, [schoolSuggestions, isRTL]);
 
@@ -847,7 +846,7 @@ const EditProfileScreen: React.FC = () => {
                 </TouchableOpacity>
 
                 {/* Change Password Section */}
-                <TouchableOpacity 
+                {/* <TouchableOpacity 
                    style={[currentStyles.passwordToggle, { marginTop: spacing.xl }]}
                    onPress={() => setShowPasswordSection(!showPasswordSection)}
                 >
@@ -858,9 +857,9 @@ const EditProfileScreen: React.FC = () => {
                       </Text>
                    </View>
                    <Ionicons name={showPasswordSection ? "chevron-up" : "chevron-down"} size={20} color={theme.colors.primary} />
-                </TouchableOpacity>
+                </TouchableOpacity> */}
 
-                {showPasswordSection && (
+                {/* {showPasswordSection && (
                   <View style={currentStyles.passwordSection}>
                     <View style={currentStyles.inputGroup}>
                       <Text style={currentStyles.inputLabel}>{t('profile.old_password')}</Text>
@@ -899,24 +898,27 @@ const EditProfileScreen: React.FC = () => {
                       </View>
                     </View>
 
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg }}>
-                      <TouchableOpacity onPress={handleForgotPassword} disabled={loading}>
-                        <Text style={{ ...typography('caption'), color: theme.colors.primary, textDecorationLine: 'underline' }}>
-                          {t('auth.forgot_password', 'Forgot Password?')}
-                        </Text>
-                      </TouchableOpacity>
-                      
+                    <View style={{ marginTop: spacing.md }}>
                       <AppButton 
                         title={t('profile.update_password', 'Update Password')}
                         onPress={handleSave}
                         loading={loading}
-                        size="sm"
                         variant="primary"
-                        style={{ minWidth: 140 }}
+                        fullWidth={true}
                       />
+                      
+                      <TouchableOpacity 
+                        onPress={handleForgotPassword} 
+                        disabled={loading}
+                        style={{ marginTop: spacing.md, alignItems: 'center' }}
+                      >
+                        <Text style={{ ...typography('caption'), color: theme.colors.primary, textDecorationLine: 'underline' }}>
+                          {t('auth.forgot_password', 'Forgot Password?')}
+                        </Text>
+                      </TouchableOpacity>
                     </View>
                   </View>
-                )}
+                )} */}
               </View>
             </ScrollView>
 

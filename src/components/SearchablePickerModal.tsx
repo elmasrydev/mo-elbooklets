@@ -9,6 +9,7 @@ import {
   Modal,
   ActivityIndicator,
   Platform,
+  FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
@@ -89,32 +90,35 @@ const SearchablePickerModal: React.FC<SearchablePickerModalProps> = ({
             </View>
           </View>
 
-          <ScrollView 
-            style={styles.list} 
+          <FlatList
+            style={styles.list}
+            data={data}
+            keyExtractor={(item) => String(item.id)}
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={styles.listContent}
-          >
-            {loading && (
-              <ActivityIndicator 
-                size="large" 
-                color={theme.colors.primary} 
-                style={styles.loader} 
-              />
-            )}
-            
-            {!loading && data.length === 0 && (
-              <View style={styles.emptyContainer}>
-                <Text style={[styles.emptyText, { color: theme.colors.textTertiary }]}>
-                  {searchValue.length > 0 
-                    ? (emptyMessage || t('common.no_results')) 
-                    : (searchHelperText || t('profile.start_typing_to_search', 'Start typing to search...'))}
-                </Text>
-              </View>
-            )}
-
-            {!loading && data.map((item) => (
+            ListHeaderComponent={
+              <>
+                {loading && (
+                  <ActivityIndicator 
+                    size="large" 
+                    color={theme.colors.primary} 
+                    style={styles.loader} 
+                  />
+                )}
+                
+                {!loading && data.length === 0 && (
+                  <View style={styles.emptyContainer}>
+                    <Text style={[styles.emptyText, { color: theme.colors.textTertiary }]}>
+                      {searchValue.length > 0 
+                        ? (emptyMessage || t('common.no_results')) 
+                        : (searchHelperText || t('profile.start_typing_to_search', 'Start typing to search...'))}
+                    </Text>
+                  </View>
+                )}
+              </>
+            }
+            renderItem={({ item }) => (
               <TouchableOpacity
-                key={item.id}
                 style={[
                   styles.pickerItem,
                   { borderBottomColor: theme.colors.border },
@@ -135,8 +139,8 @@ const SearchablePickerModal: React.FC<SearchablePickerModalProps> = ({
                   <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
                 )}
               </TouchableOpacity>
-            ))}
-          </ScrollView>
+            )}
+          />
         </View>
       </TouchableOpacity>
     </Modal>
