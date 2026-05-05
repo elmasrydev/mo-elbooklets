@@ -23,7 +23,7 @@ const logo = require('../../assets/logo-transparent.png');
 export interface ConfirmModalProps {
   visible: boolean;
   title: string;
-  message: string;
+  message?: string;
   onConfirm: () => void;
   onCancel: () => void;
   confirmLabel?: string;
@@ -34,6 +34,7 @@ export interface ConfirmModalProps {
   dismissible?: boolean;
   backButtonCloseDisabled?: boolean;
   countdown?: number;
+  children?: React.ReactNode;
 }
 
 export const ConfirmModal: React.FC<ConfirmModalProps> = (props: ConfirmModalProps) => {
@@ -51,6 +52,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = (props: ConfirmModalPro
     dismissible = true,
     backButtonCloseDisabled = true,
     countdown = 0,
+    children,
   } = props;
 
   const { theme, borderRadius } = useTheme();
@@ -142,6 +144,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = (props: ConfirmModalPro
           >
             {message}
           </Text>
+          {children}
 
           <View style={styles.buttonContainer}>
             <AppButton
