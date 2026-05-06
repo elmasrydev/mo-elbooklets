@@ -23,21 +23,13 @@
         "ITSAppUsesNonExemptEncryption": false
       },
       "bundleIdentifier": "com.elbooklets.app",
-<<<<<<< HEAD
       "buildNumber": "35",
-=======
-      "buildNumber": "21",
->>>>>>> main
       "appleTeamId": "XJAN9FLEYZ",
       "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "package": "com.elbooklets.app",
-<<<<<<< HEAD
       "versionCode": 35,
-=======
-      "versionCode": 6,
->>>>>>> main
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
