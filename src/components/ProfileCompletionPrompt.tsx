@@ -21,7 +21,10 @@ import { tryFetchWithFallback } from '../config/api';
 import * as SecureStore from 'expo-secure-store';
 import AppButton from './AppButton';
 import { useTypography } from '../hooks/useTypography';
-import { useIsFocused } from '@react-navigation/native';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
+import SearchablePickerModal from './SearchablePickerModal';
+
+const EGYPTIAN_PHONE_REGEX = /^01[0125]\d{8}$/;
 
 interface ProfileCompleteness {
   isComplete: boolean;
@@ -31,9 +34,15 @@ interface ProfileCompleteness {
   needsSchool: boolean;
   needsParentMobile: boolean;
   needsEmail: boolean;
+  needsEducationalSystem: boolean;
+  needsGovernorate: boolean;
+  needsCity: boolean;
 }
 
-
+interface EducationalSystem {
+  id: string;
+  name: string;
+}
 
 interface School {
   id: string;
@@ -41,16 +50,29 @@ interface School {
   name_en?: string;
 }
 
+interface Location {
+  id: string;
+  name: string;
+  name_ar?: string;
+  name_en?: string;
+}
+
 interface ProfileCompletionPromptProps {
-  context?: 'study' | 'quiz' | 'more' | 'community' | 'parental';
+  context?: 'study' | 'quiz' | 'more' | 'community' | 'parental' | 'profile';
   isVisible?: boolean;
   onClose?: () => void;
+  autoShow?: boolean;
+  oneTimeAutoShow?: boolean;
 }
+
+let hasShownAutoInSession = false;
 
 const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({ 
   context, 
   isVisible, 
-  onClose 
+  onClose,
+  autoShow = false,
+  oneTimeAutoShow = false
 }) => {
   const { theme, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
@@ -58,15 +80,27 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
   const { user, refreshUser } = useAuth();
   const { typography, fontWeight } = useTypography();
   const isFocused = useIsFocused();
+  const navigation = useNavigation<any>();
 
   const [completeness, setCompleteness] = useState<ProfileCompleteness | null>(null);
 
   useEffect(() => {
     if (isVisible !== undefined) {
+      if (isVisible && completeness?.isComplete) {
+        setVisible(false);
+        if (onClose) onClose();
+        return;
+      }
+
       setVisible(isVisible);
       if (isVisible && completeness) {
         const nextField = determineNextField(completeness);
-        setCurrentField(nextField);
+        if (nextField) {
+          setCurrentField(nextField);
+        } else if (completeness.isComplete) {
+          setVisible(false);
+          if (onClose) onClose();
+        }
       }
     }
   }, [isVisible, completeness]);
@@ -74,33 +108,75 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [updating, setUpdating] = useState(false);
-
+  const [error, setError] = useState<string | null>(null);
 
   // Form states
   const [gender, setGender] = useState<string>('');
   const [email, setEmail] = useState('');
   const [schoolName, setSchoolName] = useState('');
   const [parentMobile, setParentMobile] = useState('');
+  const [educationalSystemId, setEducationalSystemId] = useState('');
+  const [governorateId, setGovernorateId] = useState('');
+  const [cityId, setCityId] = useState('');
 
-  
   const [schoolSuggestions, setSchoolSuggestions] = useState<School[]>([]);
+  const [eduSystems, setEduSystems] = useState<EducationalSystem[]>([]);
+  const [governorates, setGovernorates] = useState<Location[]>([]);
+  const [cities, setCities] = useState<Location[]>([]);
   const [loadingSchools, setLoadingSchools] = useState(false);
+  const [fetchingEdu, setFetchingEdu] = useState(false);
+  const [fetchingGov, setFetchingGov] = useState(false);
+  const [fetchingCities, setFetchingCities] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  
+  const [showGovModal, setShowGovModal] = useState(false);
+  const [showCityModal, setShowCityModal] = useState(false);
+  const [showSchoolModal, setShowSchoolModal] = useState(false);
+  const [govSearch, setGovSearch] = useState('');
+  const [citySearch, setCitySearch] = useState('');
+  const [schoolSearch, setSchoolSearch] = useState('');
 
   const [currentField, setCurrentField] = useState<string | null>(null);
 
+  const [lastUserId, setLastUserId] = useState<string | null>(null);
+
   useEffect(() => {
-    if (user?.id && isFocused) {
-      // Delay slightly to ensure screen transitions are complete before showing modal
-      const timer = setTimeout(() => {
-        checkCompleteness();
-      }, 100);
-      return () => clearTimeout(timer);
+    // Reset session flag if user changes (e.g. logout/login or register)
+    if (user?.id && user.id !== lastUserId) {
+      hasShownAutoInSession = false;
+      setLastUserId(user.id);
     }
-  }, [user?.id, isFocused]);
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (user?.id) {
+      const shouldTriggerOneTime = oneTimeAutoShow && !hasShownAutoInSession;
+      const shouldTriggerAuto = autoShow && isFocused;
+      
+      if (shouldTriggerOneTime || shouldTriggerAuto || isVisible) {
+        // Sync local state with user object if available
+        const gId = (user as any)?.governorate_id || user?.governorate?.id;
+        const cId = (user as any)?.city_id || user?.city?.id;
+        if (gId) setGovernorateId(String(gId));
+        if (cId) setCityId(String(cId));
+
+        const timer = setTimeout(() => {
+          checkCompleteness();
+          if (shouldTriggerOneTime) {
+            hasShownAutoInSession = true;
+          }
+        }, 150);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [user?.id, isFocused, isVisible, autoShow, oneTimeAutoShow]);
 
   const checkCompleteness = async () => {
-    if (!isFocused && isVisible === undefined) return;
+    // If we're not focused AND it's not a manual visibility trigger AND it's not a one-time global trigger, exit
+    if (!isFocused && isVisible === undefined && !oneTimeAutoShow) return;
+    
+    // If we ARE focused but auto-show is disabled AND it's not a manual/one-time trigger, exit
+    if (isFocused && !autoShow && isVisible === undefined && !oneTimeAutoShow) return;
     
     try {
       const token = await SecureStore.getItemAsync('auth_token');
@@ -110,7 +186,7 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
         `query ProfileCompleteness { 
           profileCompleteness { 
             isComplete missingFields percentage needsGender needsSchool 
-            needsParentMobile needsEmail needsEducationalSystem
+            needsParentMobile needsEmail
           } 
         }`,
         undefined,
@@ -126,25 +202,15 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
           
           if (nextField) {
             setCurrentField(nextField);
-            // Only show automatically if not parentally triggered or if context matches
-            if (isVisible === undefined) {
-               setVisible(true);
-            } else if (isVisible) {
+            if (isVisible === undefined || isVisible) {
                setVisible(true);
             }
           } else {
-            // No field matches current context, or all handled fields are complete.
-            // Hide the modal and notify parent.
-            if (isVisible === undefined) {
-              setVisible(false);
-            }
+            setVisible(false);
             if (onClose) onClose();
           }
         } else {
-          // Profile is completely done on the backend
-          if (isVisible === undefined) {
-            setVisible(false);
-          }
+          setVisible(false);
           if (onClose) onClose();
         }
       }
@@ -153,14 +219,103 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
     }
   };
 
-  const determineNextField = (data: ProfileCompleteness): string | null => {
-
-
-    // 2. Tab-specific filtering
-    if (context === 'study' || context === 'quiz') {
-      if (data.needsEmail) {
-        return 'email';
+  const fetchEduSystems = async () => {
+    try {
+      setFetchingEdu(true);
+      const token = await SecureStore.getItemAsync('auth_token');
+      const result = await tryFetchWithFallback(
+        `query GetEduSystems { educationalSystems { id name } }`,
+        undefined,
+        token || undefined
+      );
+      if (result.data?.educationalSystems) {
+        setEduSystems(result.data.educationalSystems);
       }
+    } catch (err) {
+      console.error('Fetch edu systems error:', err);
+    } finally {
+      setFetchingEdu(false);
+    }
+  };
+
+  const fetchGovernorates = async () => {
+    try {
+      setFetchingGov(true);
+      const query = `query GetGovernorates { governorates { id name_ar name_en } }`;
+      const result = await tryFetchWithFallback(query);
+      if (result.data?.governorates) {
+        const mapped = result.data.governorates.map((g: any) => ({
+          ...g,
+          name: isRTL ? (g.name_ar || g.name_en) : (g.name_en || g.name_ar)
+        }));
+        setGovernorates(mapped);
+      }
+    } catch (err) {
+      console.error('Fetch governorates error:', err);
+    } finally {
+      setFetchingGov(false);
+    }
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const gId = governorateId || (user as any)?.governorate_id || user?.governorate?.id;
+      if (showCityModal && gId && (citySearch.length === 0 || citySearch.length >= 2)) {
+        fetchCities(String(gId), citySearch);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [citySearch, showCityModal, governorateId, user]);
+
+  const fetchCities = async (govId: string, search: string = '') => {
+    try {
+      setFetchingCities(true);
+      const query = `
+        query SearchCities($governorate_id: ID, $query: String!) {
+          searchCities(governorate_id: $governorate_id, query: $query) {
+            id name_ar name_en governorate_id
+          }
+        }
+      `;
+      const result = await tryFetchWithFallback(query, { governorate_id: govId, query: search });
+      if (result.data?.searchCities) {
+        const mapped = result.data.searchCities.map((c: any) => ({
+          ...c,
+          name: isRTL ? (c.name_ar || c.name_en) : (c.name_en || c.name_ar)
+        }));
+        setCities(mapped);
+      }
+    } catch (err) {
+      console.error('Fetch cities error:', err);
+    } finally {
+      setFetchingCities(false);
+    }
+  };
+
+  useEffect(() => {
+    if (visible && currentField === 'educational_system_id' && eduSystems.length === 0) {
+      fetchEduSystems();
+    }
+    if (visible && currentField === 'governorate_id' && governorates.length === 0) {
+      fetchGovernorates();
+    }
+    if (visible && currentField === 'city_id' && governorateId && cities.length === 0) {
+      fetchCities(governorateId);
+    }
+  }, [visible, currentField, governorateId]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (showSchoolModal && schoolSearch.length >= 2) {
+        fetchSchoolSuggestions(schoolSearch);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [schoolSearch, showSchoolModal]);
+
+  const determineNextField = (data: ProfileCompleteness): string | null => {
+    if (context === 'study' || context === 'quiz') {
+      if (data.needsEmail) return 'email';
     }
 
     if (context === 'more') {
@@ -171,25 +326,27 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
     }
 
     if (context === 'community') {
-      if (data.needsGender) {
-        return 'gender';
-      }
-      if (data.needsSchool) {
-        return 'school_name';
-      }
+      if (data.needsGender) return 'gender';
+      if (data.needsSchool) return 'school_name';
     }
 
     if (context === 'parental') {
-      if (data.needsParentMobile) {
-        return 'parent_mobile';
-      }
+      if (data.needsParentMobile) return 'parent_mobile';
     }
 
-    // Default: if no context or no needs match context, stop
+    if (data.needsEmail) return 'email';
+    if (data.needsGender) return 'gender';
+    if (data.needsSchool) return 'school_name';
+    if (data.needsParentMobile) return 'parent_mobile';
+
+    if (data.missingFields) {
+      if (data.missingFields.includes('educational_system_id') || data.missingFields.includes('educational_system')) return 'educational_system_id';
+      if (data.missingFields.includes('governorate_id') || data.missingFields.includes('governorate')) return 'governorate_id';
+      if (data.missingFields.includes('city_id') || data.missingFields.includes('city')) return 'city_id';
+    }
+
     return null;
   };
-
-
 
   const fetchSchoolSuggestions = async (search: string) => {
     if (!search || search.length < 2) {
@@ -210,8 +367,11 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
       );
 
       if (result.data?.searchSchools) {
-        setSchoolSuggestions(result.data.searchSchools);
-        setShowSuggestions(result.data.searchSchools.length > 0);
+        const mapped = result.data.searchSchools.map((s: any) => ({
+          ...s,
+          name: isRTL ? (s.name || s.name_en) : (s.name_en || s.name)
+        }));
+        setSchoolSuggestions(mapped);
       }
     } catch (err) {
       console.error('Search schools error:', err);
@@ -224,16 +384,19 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
     if (!currentField) return;
 
     let value: any = null;
-
     if (currentField === 'gender') value = gender;
     if (currentField === 'email') value = email;
     if (currentField === 'school_name') value = schoolName;
     if (currentField === 'parent_mobile') value = parentMobile;
+    if (currentField === 'educational_system_id') value = educationalSystemId;
+    if (currentField === 'governorate_id') value = governorateId;
+    if (currentField === 'city_id') value = cityId;
 
     if (!value) return;
 
     try {
       setUpdating(true);
+      setError(null);
       const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
 
@@ -248,15 +411,18 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
       if (result.data?.updateProfile) {
         Keyboard.dismiss();
         await refreshUser();
-        
-        // Add a small delay to allow keyboard to dismiss before checking completeness
-        // which might close the modal. This prevents the modal unmount freeze bug.
         setTimeout(() => {
           checkCompleteness();
         }, 150);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Update profile error:', err);
+      const msg = err?.message || err?.toString() || '';
+      if (msg.includes('parent mobile')) {
+        setError(t('auth.invalid_egyptian_mobile'));
+      } else {
+        setError(t('common.error_updating_profile', 'Failed to update profile'));
+      }
     } finally {
       setUpdating(false);
     }
@@ -268,6 +434,11 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
       setVisible(false);
       if (onClose) onClose();
     }, 150);
+  };
+
+  const goToSettings = () => {
+    skipField();
+    navigation.navigate('EditProfile');
   };
 
   return (
@@ -311,7 +482,6 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
             {!currentField && (
                <ActivityIndicator color={theme.colors.primary} style={{ marginVertical: 40 }} />
             )}
-
 
             {currentField === 'gender' && (
               <View>
@@ -373,46 +543,41 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
                  <Text style={[styles.fieldLabel, typography('body'), fontWeight('600'), { color: theme.colors.text }]}>
                    {t('profile.enter_school', 'Enter School Name')}
                  </Text>
-                 <View style={[styles.inputContainer, { borderColor: theme.colors.border }]}>
+                 <TouchableOpacity
+                    style={[styles.inputContainer, { borderColor: theme.colors.border }]}
+                    onPress={() => setShowSchoolModal(true)}
+                 >
                    <Ionicons name="business-outline" size={20} color={theme.colors.textTertiary} />
-                   <TextInput
-                      style={[styles.input, { color: theme.colors.text, textAlign: isRTL ? 'right' : 'left' }]}
-                      value={schoolName}
-                      onChangeText={(val) => {
-                        setSchoolName(val);
-                        fetchSchoolSuggestions(val);
-                      }}
-                      onFocus={() => schoolName.length >= 2 && setShowSuggestions(true)}
-                      placeholder={t('profile.school_placeholder', 'Your school name')}
-                   />
+                   <Text style={[styles.input, { 
+                     color: schoolName ? theme.colors.text : theme.colors.textTertiary,
+                     textAlign: isRTL ? 'right' : 'left',
+                     paddingTop: Platform.OS === 'ios' ? 0 : 12
+                   }]}>
+                     {schoolName || t('profile.school_placeholder', 'Your school name')}
+                   </Text>
                    {loadingSchools && <ActivityIndicator size="small" color={theme.colors.primary} />}
-                 </View>
-                 
-                 {showSuggestions && schoolSuggestions.length > 0 && (
-                   <View style={[styles.suggestionsContainer, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-                     <ScrollView style={{ maxHeight: 200 }} keyboardShouldPersistTaps="handled">
-                       {schoolSuggestions.map((school) => (
-                         <TouchableOpacity
-                           key={school.id}
-                           style={[styles.suggestionItem, { borderBottomColor: theme.colors.border }]}
-                           onPress={() => {
-                             setSchoolName(isRTL ? school.name : (school.name_en || school.name));
-                             setShowSuggestions(false);
-                           }}
-                         >
-                           <Text style={[styles.suggestionText, { color: theme.colors.text }]}>
-                             {school.name}
-                           </Text>
-                           {school.name_en && (
-                             <Text style={[styles.suggestionTextEn, { color: theme.colors.textTertiary }]}>
-                               {school.name_en}
-                             </Text>
-                           )}
-                         </TouchableOpacity>
-                       ))}
-                     </ScrollView>
-                   </View>
-                 )}
+                   <Ionicons name="chevron-down" size={20} color={theme.colors.textTertiary} />
+                 </TouchableOpacity>
+
+                 <SearchablePickerModal
+                   visible={showSchoolModal}
+                   onClose={() => {
+                     setShowSchoolModal(false);
+                     setSchoolSearch('');
+                   }}
+                   title={t('profile.school_name')}
+                   placeholder={t('profile.school_placeholder')}
+                   searchValue={schoolSearch}
+                   onSearchChange={setSchoolSearch}
+                   selectedId={schoolName}
+                   data={schoolSuggestions}
+                   loading={loadingSchools}
+                   onSelect={(school) => {
+                     setSchoolName(school.name);
+                     setShowSchoolModal(false);
+                     setSchoolSearch('');
+                   }}
+                 />
                </View>
             )}
 
@@ -426,12 +591,156 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
                    <TextInput
                       style={[styles.input, { color: theme.colors.text, textAlign: isRTL ? 'right' : 'left' }]}
                       value={parentMobile}
-                      onChangeText={setParentMobile}
+                      onChangeText={(val) => setParentMobile(val.replaceAll(/\D/g, '').slice(0, 11))}
                       placeholder="01xxxxxxxxx"
                       keyboardType="phone-pad"
+                      maxLength={11}
                    />
                  </View>
+                 {parentMobile.length > 0 && !EGYPTIAN_PHONE_REGEX.test(parentMobile) && (
+                   <Text style={[styles.errorText, typography('caption'), { color: theme.colors.error }]}>
+                     {t('auth.invalid_egyptian_mobile')}
+                   </Text>
+                 )}
                </View>
+            )}
+
+            {currentField === 'educational_system_id' && (
+              <View>
+                <Text style={[styles.fieldLabel, typography('body'), fontWeight('600'), { color: theme.colors.text }]}>
+                  {t('profile.select_educational_system', 'Select Educational System')}
+                </Text>
+                <ScrollView style={{ maxHeight: 240 }} showsVerticalScrollIndicator={false}>
+                   <View style={styles.optionsList}>
+                     {fetchingEdu && <ActivityIndicator color={theme.colors.primary} style={{ marginVertical: 20 }} />}
+                     {eduSystems.map((system) => (
+                       <TouchableOpacity
+                         key={system.id}
+                         style={[
+                           styles.optionItem,
+                           { borderColor: theme.colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' },
+                           educationalSystemId === system.id && { borderColor: theme.colors.primary, backgroundColor: theme.colors.primary + '0A' }
+                         ]}
+                         onPress={() => setEducationalSystemId(system.id)}
+                       >
+                         <Text style={[styles.optionText, { textAlign: isRTL ? 'right' : 'left' }, educationalSystemId === system.id ? { color: theme.colors.primary, ...fontWeight('bold') } : { color: theme.colors.text }]}>
+                           {system.name}
+                         </Text>
+                         {educationalSystemId === system.id && (
+                           <Ionicons name="checkmark-circle" size={20} color={theme.colors.primary} />
+                         )}
+                       </TouchableOpacity>
+                     ))}
+                   </View>
+                </ScrollView>
+              </View>
+            )}
+
+            {currentField === 'governorate_id' && (
+               <View>
+                 <Text style={[styles.fieldLabel, typography('body'), fontWeight('600'), { color: theme.colors.text }]}>
+                   {t('profile.select_governorate', 'Select Governorate')}
+                 </Text>
+                 <TouchableOpacity
+                   style={[
+                     styles.inputContainer, 
+                     { 
+                       borderColor: theme.colors.border,
+                       backgroundColor: theme.colors.background 
+                     }
+                   ]}
+                   onPress={() => setShowGovModal(true)}
+                 >
+                   <Ionicons name="location-outline" size={20} color={governorateId ? theme.colors.primary : theme.colors.textTertiary} />
+                   <Text style={[styles.input, { 
+                     color: governorateId ? theme.colors.text : theme.colors.textTertiary,
+                     textAlign: isRTL ? 'right' : 'left',
+                     paddingTop: Platform.OS === 'ios' ? 0 : 12,
+                     flex: 1
+                   }]}>
+                     {governorates.find(g => String(g.id) === String(governorateId))?.name || 
+                      (user?.governorate ? (isRTL ? user.governorate.name_ar : user.governorate.name_en) : t('profile.select_governorate'))}
+                   </Text>
+                   {fetchingGov && <ActivityIndicator size="small" color={theme.colors.primary} />}
+                   <Ionicons name="chevron-down" size={20} color={theme.colors.textTertiary} />
+                 </TouchableOpacity>
+
+                 <SearchablePickerModal
+                   visible={showGovModal}
+                   onClose={() => setShowGovModal(false)}
+                   title={t('profile.select_governorate')}
+                   placeholder={t('common.search')}
+                   searchValue={govSearch}
+                   onSearchChange={setGovSearch}
+                   selectedId={governorateId}
+                   data={governorates.filter(g => 
+                     g.name.toLowerCase().includes(govSearch.toLowerCase())
+                   )}
+                   onSelect={(gov) => {
+                     setGovernorateId(String(gov.id));
+                     setCityId('');
+                     setShowGovModal(false);
+                     setGovSearch('');
+                     fetchCities(String(gov.id));
+                   }}
+                 />
+               </View>
+            )}
+
+            {currentField === 'city_id' && (
+               <View>
+                 <Text style={[styles.fieldLabel, typography('body'), fontWeight('600'), { color: theme.colors.text }]}>
+                   {t('profile.select_city', 'Select City')}
+                 </Text>
+                 <TouchableOpacity
+                   style={[
+                     styles.inputContainer, 
+                     { 
+                       borderColor: theme.colors.border,
+                       backgroundColor: theme.colors.background,
+                       opacity: !(governorateId || user?.governorate?.id) ? 0.6 : 1
+                     }
+                   ]}
+                   onPress={() => (governorateId || user?.governorate?.id) && setShowCityModal(true)}
+                 >
+                   <Ionicons name="map-outline" size={20} color={cityId ? theme.colors.primary : theme.colors.textTertiary} />
+                   <Text style={[styles.input, { 
+                     color: cityId ? theme.colors.text : theme.colors.textTertiary,
+                     textAlign: isRTL ? 'right' : 'left',
+                     paddingTop: Platform.OS === 'ios' ? 0 : 12,
+                     flex: 1
+                   }]}>
+                     {cities.find(c => String(c.id) === String(cityId))?.name || 
+                      (user?.city ? (isRTL ? user.city.name_ar : user.city.name_en) : 
+                       (governorateId || user?.governorate?.id ? t('profile.select_city') : t('profile.select_gov_first', 'Select Governorate First')))}
+                   </Text>
+                   {fetchingCities && <ActivityIndicator size="small" color={theme.colors.primary} />}
+                   <Ionicons name="chevron-down" size={20} color={theme.colors.textTertiary} />
+                 </TouchableOpacity>
+
+                 <SearchablePickerModal
+                   visible={showCityModal}
+                   onClose={() => setShowCityModal(false)}
+                   title={t('profile.select_city')}
+                   placeholder={t('common.search')}
+                   searchValue={citySearch}
+                   onSearchChange={setCitySearch}
+                   selectedId={cityId}
+                   data={cities}
+                   loading={fetchingCities}
+                   onSelect={(city) => {
+                     setCityId(String(city.id));
+                     setShowCityModal(false);
+                     setCitySearch('');
+                   }}
+                 />
+               </View>
+            )}
+            
+            {error && (
+              <Text style={[styles.errorText, typography('caption'), { color: theme.colors.error, marginTop: 12, textAlign: 'center' }]}>
+                {error}
+              </Text>
             )}
           </View>
 
@@ -444,14 +753,24 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
                 (currentField === 'gender' && !gender) ||
                 (currentField === 'email' && !email) ||
                 (currentField === 'school_name' && !schoolName) ||
-                (currentField === 'parent_mobile' && !parentMobile)
+                (currentField === 'educational_system_id' && !educationalSystemId) ||
+                (currentField === 'governorate_id' && !governorateId) ||
+                (currentField === 'city_id' && !cityId) ||
+                (currentField === 'parent_mobile' && (!parentMobile || !EGYPTIAN_PHONE_REGEX.test(parentMobile)))
               }
             />
-               <TouchableOpacity onPress={skipField} style={styles.skipButton}>
-                 <Text style={[styles.skipText, typography('caption'), { color: theme.colors.textTertiary }]}>
-                   {t('common.skip_for_now', 'Skip for now')}
-                 </Text>
-               </TouchableOpacity>
+               <View style={styles.secondaryActions}>
+                  <TouchableOpacity onPress={skipField} style={styles.skipButton}>
+                    <Text style={[styles.skipText, typography('caption'), { color: theme.colors.textTertiary }]}>
+                      {t('common.skip_for_now', 'Skip for now')}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={goToSettings} style={styles.settingsButton}>
+                    <Text style={[styles.settingsText, typography('caption'), { color: theme.colors.primary, ...fontWeight('bold') }]}>
+                      {t('profile.complete_in_settings', 'Complete in Settings')}
+                    </Text>
+                  </TouchableOpacity>
+               </View>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -460,6 +779,10 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
 };
 
 const styles = StyleSheet.create({
+  errorText: {
+    marginTop: 8,
+    marginStart: 4,
+  },
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -515,10 +838,9 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    borderRadius: 3,
   },
   progressText: {
-    width: 40,
+    minWidth: 35,
     textAlign: 'right',
   },
   content: {
@@ -527,17 +849,17 @@ const styles = StyleSheet.create({
   fieldLabel: {
     marginBottom: 12,
   },
-
   genderRow: {
     flexDirection: 'row',
     gap: 16,
   },
   genderItem: {
     flex: 1,
-    alignItems: 'center',
-    padding: 16,
-    borderWidth: 1,
+    height: 100,
+    borderWidth: 2,
     borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
     gap: 8,
   },
   genderText: {
@@ -548,41 +870,50 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderRadius: 12,
-    paddingHorizontal: 12,
-    height: 52,
-    gap: 8,
+    paddingHorizontal: 16,
+    height: 56,
+    gap: 12,
   },
   input: {
     flex: 1,
     fontSize: 16,
-    height: '100%',
+    // height: '100%',
   },
   footer: {
-    gap: 12,
+    gap: 16,
+  },
+  secondaryActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 4,
   },
   skipButton: {
-    alignItems: 'center',
-    padding: 8,
+    paddingVertical: 8,
+  },
+  settingsButton: {
+    paddingVertical: 8,
   },
   skipText: {
     textDecorationLine: 'underline',
   },
+  settingsText: {
+    // textDecorationLine: 'underline',
+  },
   suggestionsContainer: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
     position: 'absolute',
     top: 85,
     left: 0,
     right: 0,
     zIndex: 1000,
-    borderWidth: 1,
-    borderRadius: 12,
     elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
   },
   suggestionItem: {
-    padding: 12,
+    padding: 16,
     borderBottomWidth: 1,
   },
   suggestionText: {
@@ -592,6 +923,21 @@ const styles = StyleSheet.create({
   suggestionTextEn: {
     fontSize: 12,
     marginTop: 2,
+  },
+  optionsList: {
+    gap: 12,
+  },
+  optionItem: {
+    padding: 16,
+    borderWidth: 1,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  optionText: {
+    fontSize: 14,
+    flex: 1,
   },
 });
 

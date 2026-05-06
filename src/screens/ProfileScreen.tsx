@@ -57,6 +57,7 @@ const ProfileScreen: React.FC = () => {
   >(DeleteAccountDocument);
 
   const { completeness } = useProfileCompleteness();
+  const [showPrompt, setShowPrompt] = useState(false);
 
   const handleLogout = () => {
     showConfirm({
@@ -135,7 +136,11 @@ const ProfileScreen: React.FC = () => {
       >
         {/* Profile Section */}
         <View style={currentStyles.profileSection}>
-          <View style={currentStyles.avatarRingWrapper}>
+          <TouchableOpacity 
+            style={currentStyles.avatarRingWrapper}
+            activeOpacity={0.8}
+            onPress={() => setShowPrompt(true)}
+          >
             <CircularProgress
               size={130}
               strokeWidth={6}
@@ -149,11 +154,7 @@ const ProfileScreen: React.FC = () => {
                 </Text>
               </View>
             </CircularProgress>
-            {/* Hide edit avatar button for now */}
-            {/* <TouchableOpacity style={currentStyles.editAvatarButton}>
-              <Ionicons name="pencil" size={14} color="#ffffff" />
-            </TouchableOpacity> */}
-          </View>
+          </TouchableOpacity>
 
           <View style={currentStyles.userInfoTextContainer}>
             <Text style={currentStyles.userName}>{user?.name || 'User'}</Text>
@@ -414,7 +415,12 @@ const ProfileScreen: React.FC = () => {
         </TouchableOpacity>
       </ScrollView>
 
-      <ProfileCompletionPrompt context="more" />
+      <ProfileCompletionPrompt 
+        context="more" 
+        isVisible={showPrompt}
+        onClose={() => setShowPrompt(false)}
+        autoShow={true}
+      />
     </View>
   );
 };
