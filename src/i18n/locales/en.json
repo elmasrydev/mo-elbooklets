@@ -728,7 +728,9 @@
     "grade_not_editable": "Grade cannot be changed",
     "complete_profile": "Complete Profile",
     "update_password": "Update Password",
-    "start_typing_to_search": "Start typing to search..."
+    "start_typing_to_search": "Start typing to search...",
+    "select_educational_system": "Select Educational System",
+    "complete_in_settings": "Complete in Settings"
   },
   "report_question": {
     "title": "Report Question",

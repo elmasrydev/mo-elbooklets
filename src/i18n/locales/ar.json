@@ -724,7 +724,9 @@
     "grade_not_editable": "لا يمكن تغيير الصف الدراسي",
     "complete_profile": "إكمال الملف الشخصي",
     "update_password": "تحديث كلمة المرور",
-    "start_typing_to_search": "ابدأ الكتابة للبحث..."
+    "start_typing_to_search": "ابدأ الكتابة للبحث...",
+    "select_educational_system": "اختر النظام التعليمي",
+    "complete_in_settings": "إكمال في الإعدادات"
   },
   "report_question": {
     "title": "الإبلاغ عن سؤال",
