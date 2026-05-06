@@ -10,6 +10,7 @@ import {
   ScrollView,
   Platform,
   KeyboardAvoidingView,
+  Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
@@ -20,6 +21,7 @@ import { tryFetchWithFallback } from '../config/api';
 import * as SecureStore from 'expo-secure-store';
 import AppButton from './AppButton';
 import { useTypography } from '../hooks/useTypography';
+import { useIsFocused } from '@react-navigation/native';
 
 interface ProfileCompleteness {
   isComplete: boolean;
@@ -29,13 +31,9 @@ interface ProfileCompleteness {
   needsSchool: boolean;
   needsParentMobile: boolean;
   needsEmail: boolean;
-  needsEducationalSystem: boolean;
 }
 
-interface EducationalSystem {
-  id: string;
-  name: string;
-}
+
 
 interface School {
   id: string;
@@ -59,6 +57,7 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
   const { t } = useTranslation();
   const { user, refreshUser } = useAuth();
   const { typography, fontWeight } = useTypography();
+  const isFocused = useIsFocused();
 
   const [completeness, setCompleteness] = useState<ProfileCompleteness | null>(null);
 
@@ -66,7 +65,8 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
     if (isVisible !== undefined) {
       setVisible(isVisible);
       if (isVisible && completeness) {
-        determineNextField(completeness);
+        const nextField = determineNextField(completeness);
+        setCurrentField(nextField);
       }
     }
   }, [isVisible, completeness]);
@@ -74,14 +74,14 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [updating, setUpdating] = useState(false);
-  const [eduSystems, setEduSystems] = useState<EducationalSystem[]>([]);
+
 
   // Form states
   const [gender, setGender] = useState<string>('');
   const [email, setEmail] = useState('');
   const [schoolName, setSchoolName] = useState('');
   const [parentMobile, setParentMobile] = useState('');
-  const [selectedEduSystem, setSelectedEduSystem] = useState<string>('');
+
   
   const [schoolSuggestions, setSchoolSuggestions] = useState<School[]>([]);
   const [loadingSchools, setLoadingSchools] = useState(false);
@@ -90,12 +90,18 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
   const [currentField, setCurrentField] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user) {
-      checkCompleteness();
+    if (user?.id && isFocused) {
+      // Delay slightly to ensure screen transitions are complete before showing modal
+      const timer = setTimeout(() => {
+        checkCompleteness();
+      }, 100);
+      return () => clearTimeout(timer);
     }
-  }, [user]);
+  }, [user?.id, isFocused]);
 
   const checkCompleteness = async () => {
+    if (!isFocused && isVisible === undefined) return;
+    
     try {
       const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
@@ -104,7 +110,11 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
         `query ProfileCompleteness { 
           profileCompleteness { 
             isComplete missingFields percentage needsGender needsSchool 
+<<<<<<< HEAD
             needsParentMobile needsEmail needsEducationalSystem
+=======
+            needsParentMobile needsEmail 
+>>>>>>> main
           } 
         }`,
         undefined,
@@ -116,18 +126,30 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
         setCompleteness(data);
         
         if (!data.isComplete) {
-          // Only show automatically if not parentally triggered or if context matches
-          // For 'parental' context from ProfileScreen, we rely on isVisible prop
-          if (isVisible === undefined) {
-             setVisible(true);
-             determineNextField(data);
-          } else if (isVisible) {
-             determineNextField(data);
+          const nextField = determineNextField(data);
+          
+          if (nextField) {
+            setCurrentField(nextField);
+            // Only show automatically if not parentally triggered or if context matches
+            if (isVisible === undefined) {
+               setVisible(true);
+            } else if (isVisible) {
+               setVisible(true);
+            }
+          } else {
+            // No field matches current context, or all handled fields are complete.
+            // Hide the modal and notify parent.
+            if (isVisible === undefined) {
+              setVisible(false);
+            }
+            if (onClose) onClose();
           }
         } else {
+          // Profile is completely done on the backend
           if (isVisible === undefined) {
             setVisible(false);
           }
+          if (onClose) onClose();
         }
       }
     } catch (err) {
@@ -135,57 +157,43 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
     }
   };
 
-  const determineNextField = (data: ProfileCompleteness) => {
-    // 1. Critical: Educational System (always first if missing)
-    if (data.needsEducationalSystem) {
-      setCurrentField('educational_system_id');
-      fetchEduSystems();
-      return;
-    }
+  const determineNextField = (data: ProfileCompleteness): string | null => {
+
 
     // 2. Tab-specific filtering
-    if (context === 'study' || context === 'quiz' || context === 'more') {
+    if (context === 'study' || context === 'quiz') {
       if (data.needsEmail) {
-        setCurrentField('email');
-        return;
+        return 'email';
       }
+    }
+
+    if (context === 'more') {
+      if (data.needsEmail) return 'email';
+      if (data.needsGender) return 'gender';
+      if (data.needsSchool) return 'school_name';
+      if (data.needsParentMobile) return 'parent_mobile';
     }
 
     if (context === 'community') {
       if (data.needsGender) {
-        setCurrentField('gender');
-        return;
+        return 'gender';
       }
       if (data.needsSchool) {
-        setCurrentField('school_name');
-        return;
+        return 'school_name';
       }
     }
 
     if (context === 'parental') {
       if (data.needsParentMobile) {
-        setCurrentField('parent_mobile');
-        return;
+        return 'parent_mobile';
       }
     }
 
     // Default: if no context or no needs match context, stop
-    setCurrentField(null);
+    return null;
   };
 
-  const fetchEduSystems = async () => {
-    try {
-      setLoading(true);
-      const result = await tryFetchWithFallback(`query GetEduSystems { educationalSystems { id name } }`);
-      if (result.data?.educationalSystems) {
-        setEduSystems(result.data.educationalSystems);
-      }
-    } catch (err) {
-      console.error('Fetch edu systems error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+
 
   const fetchSchoolSuggestions = async (search: string) => {
     if (!search || search.length < 2) {
@@ -220,7 +228,7 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
     if (!currentField) return;
 
     let value: any = null;
-    if (currentField === 'educational_system_id') value = selectedEduSystem;
+
     if (currentField === 'gender') value = gender;
     if (currentField === 'email') value = email;
     if (currentField === 'school_name') value = schoolName;
@@ -242,8 +250,14 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
       );
 
       if (result.data?.updateProfile) {
+        Keyboard.dismiss();
         await refreshUser();
-        await checkCompleteness();
+        
+        // Add a small delay to allow keyboard to dismiss before checking completeness
+        // which might close the modal. This prevents the modal unmount freeze bug.
+        setTimeout(() => {
+          checkCompleteness();
+        }, 150);
       }
     } catch (err) {
       console.error('Update profile error:', err);
@@ -253,20 +267,23 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
   };
 
   const skipField = () => {
-    // In a real app we might allow skipping some fields, 
-    // but if Ed System is missing, Subjects query will crash, 
-    // so we should probably enforce it.
-    if (currentField === 'educational_system_id') return;
-    setVisible(false);
-    if (onClose) onClose();
+    Keyboard.dismiss();
+    setTimeout(() => {
+      setVisible(false);
+      if (onClose) onClose();
+    }, 150);
   };
 
-  if (!visible || !currentField) return null;
-
   return (
-    <Modal visible={visible} transparent animationType="slide">
+    <Modal 
+      visible={visible} 
+      transparent 
+      animationType="slide"
+      statusBarTranslucent
+      onRequestClose={skipField}
+    >
       <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
         style={styles.overlay}
       >
         <View
@@ -295,41 +312,10 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
           </View>
 
           <View style={styles.content}>
-            {currentField === 'educational_system_id' && (
-              <View>
-                <Text style={[styles.fieldLabel, typography('body'), fontWeight('600'), { color: theme.colors.text }]}>
-                  {t('auth.select_edu_system', 'Select Educational System')}
-                </Text>
-                {loading ? (
-                  <ActivityIndicator color={theme.colors.primary} style={{ marginVertical: 20 }} />
-                ) : (
-                  <ScrollView style={[styles.optionsList, { maxHeight: 200 }]}>
-                    {eduSystems.map((sys) => (
-                      <TouchableOpacity
-                        key={sys.id}
-                        style={[
-                          styles.optionItem,
-                          { borderColor: theme.colors.border },
-                          selectedEduSystem === sys.id && { borderColor: theme.colors.primary, backgroundColor: theme.colors.primary + '0A' }
-                        ]}
-                        onPress={() => setSelectedEduSystem(sys.id)}
-                      >
-                        <Text style={[
-                          styles.optionText,
-                          { color: theme.colors.text },
-                          selectedEduSystem === sys.id && { color: theme.colors.primary, ...fontWeight('bold') }
-                        ]}>
-                          {sys.name}
-                        </Text>
-                        {selectedEduSystem === sys.id && (
-                          <Ionicons name="checkmark-circle" size={20} color={theme.colors.primary} />
-                        )}
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                )}
-              </View>
+            {!currentField && (
+               <ActivityIndicator color={theme.colors.primary} style={{ marginVertical: 40 }} />
             )}
+
 
             {currentField === 'gender' && (
               <View>
@@ -459,20 +445,17 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
               onPress={handleUpdate}
               loading={updating}
               disabled={
-                (currentField === 'educational_system_id' && !selectedEduSystem) ||
                 (currentField === 'gender' && !gender) ||
                 (currentField === 'email' && !email) ||
                 (currentField === 'school_name' && !schoolName) ||
                 (currentField === 'parent_mobile' && !parentMobile)
               }
             />
-            {currentField !== 'educational_system_id' && (
                <TouchableOpacity onPress={skipField} style={styles.skipButton}>
                  <Text style={[styles.skipText, typography('caption'), { color: theme.colors.textTertiary }]}>
                    {t('common.skip_for_now', 'Skip for now')}
                  </Text>
                </TouchableOpacity>
-            )}
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -548,21 +531,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     marginBottom: 12,
   },
-  optionsList: {
-    gap: 8,
-  },
-  optionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 14,
-    borderWidth: 1,
-    borderRadius: 12,
-    marginBottom: 8,
-  },
-  optionText: {
-    fontSize: 15,
-  },
+
   genderRow: {
     flexDirection: 'row',
     gap: 16,
