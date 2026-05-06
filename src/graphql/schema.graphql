@@ -14,6 +14,7 @@ type Query {
   badgeCategories: [BadgeCategory!]!
   userBookmarks: [LessonBookmark!]!
   userNotes: [LessonNote!]!
+  mySavedPoints(lessonId: ID): [UserSavedPoint!]!
 }
 
 type Badge {
@@ -69,6 +70,10 @@ type Mutation {
   toggleLessonBookmark(lessonPointId: ID!): BookmarkResponse!
   saveLessonNote(lessonPointId: ID!, note: String!): NoteResponse!
   deleteLessonNote(lessonPointId: ID!): NoteResponse!
+  toggleSavedPointBookmark(lessonId: ID!, lessonPointId: ID!): SavedPointResult!
+  savePointNote(lessonId: ID!, lessonPointId: ID!, noteContent: String!): SavedPointResult!
+  deletePointNote(lessonPointId: ID!): SavedPointResult!
+  removeSavedPoint(lessonPointId: ID!): SavedPointResult!
 }
 
 type SocialActionResponse {
@@ -149,6 +154,21 @@ type BookmarkResponse {
 type NoteResponse {
   success: Boolean!
   note: String
+  message: String
+}
+
+type UserSavedPoint {
+  id: ID!
+  lessonPoint: LessonPoint!
+  isBookmarked: Boolean!
+  note: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type SavedPointResult {
+  success: Boolean!
+  savedPoint: UserSavedPoint
   message: String
 }
 

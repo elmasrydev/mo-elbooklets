@@ -1,29 +1,53 @@
-mutation ToggleLessonBookmark($lessonPointId: ID!) {
-  toggleLessonBookmark(lessonPointId: $lessonPointId) {
+mutation ToggleSavedPointBookmark($lessonId: ID!, $lessonPointId: ID!) {
+  toggleSavedPointBookmark(lessonId: $lessonId, lessonPointId: $lessonPointId) {
     success
-    isBookmarked
+    message
+    savedPoint {
+      id
+      isBookmarked
+      note
+    }
+  }
+}
+
+mutation SavePointNote($lessonId: ID!, $lessonPointId: ID!, $noteContent: String!) {
+  savePointNote(lessonId: $lessonId, lessonPointId: $lessonPointId, noteContent: $noteContent) {
+    success
+    message
+    savedPoint {
+      id
+      isBookmarked
+      note
+    }
+  }
+}
+
+mutation DeletePointNote($lessonPointId: ID!) {
+  deletePointNote(lessonPointId: $lessonPointId) {
+    success
+    message
+    savedPoint {
+      id
+      isBookmarked
+      note
+    }
+  }
+}
+
+mutation RemoveSavedPoint($lessonPointId: ID!) {
+  removeSavedPoint(lessonPointId: $lessonPointId) {
+    success
     message
   }
 }
 
-mutation SaveLessonNote($lessonPointId: ID!, $note: String!) {
-  saveLessonNote(lessonPointId: $lessonPointId, note: $note) {
-    success
-    note
-    message
-  }
-}
-
-mutation DeleteLessonNote($lessonPointId: ID!) {
-  deleteLessonNote(lessonPointId: $lessonPointId) {
-    success
-    message
-  }
-}
-
-query GetUserBookmarks {
-  userBookmarks {
+query MySavedPoints($lessonId: ID) {
+  mySavedPoints(lessonId: $lessonId) {
     id
+    isBookmarked
+    note
+    createdAt
+    updatedAt
     lessonPoint {
       id
       title
@@ -38,24 +62,5 @@ query GetUserBookmarks {
         }
       }
     }
-    note
-    createdAt
-  }
-}
-
-query GetUserNotes {
-  userNotes {
-    id
-    lessonPoint {
-      id
-      title
-      explanation
-      lesson {
-        id
-        name
-      }
-    }
-    content
-    updatedAt
   }
 }
