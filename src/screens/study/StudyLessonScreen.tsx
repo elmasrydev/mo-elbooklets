@@ -43,8 +43,13 @@ interface LessonPoint {
   explanation?: string;
   order: number;
   is_viewed?: boolean;
-  is_bookmarked?: boolean;
-  user_note?: string;
+}
+
+interface UserSavedPoint {
+  id: string;
+  isBookmarked: boolean;
+  note?: string;
+  lessonPoint: { id: string };
 }
 
 interface Lesson {
@@ -212,11 +217,11 @@ const NoteModal: React.FC<{
   onSave: (note: string) => void;
   theme: any;
   spacing: any;
-  borderRadius: any;
   t: any;
   isRTL: boolean;
   typography: any;
-}> = ({ visible, initialNote, title, onClose, onSave, theme, spacing, borderRadius, t, isRTL, typography }) => {
+  onDelete?: () => void;
+}> = ({ visible, initialNote, title, onClose, onSave, theme, spacing, borderRadius, t, isRTL, typography, onDelete }) => {
   const [note, setNote] = useState(initialNote);
 
   useEffect(() => {
@@ -255,6 +260,25 @@ const NoteModal: React.FC<{
           onChangeText={setNote}
           autoFocus
         />
+        {onDelete && initialNote && (
+          <TouchableOpacity 
+            onPress={onDelete}
+            style={{ 
+              marginTop: spacing.md, 
+              flexDirection: 'row', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              padding: spacing.sm,
+              backgroundColor: theme.colors.error + '10',
+              borderRadius: borderRadius.md
+            }}
+          >
+            <Ionicons name="trash-outline" size={18} color={theme.colors.error} style={{ marginRight: 8 }} />
+            <Text style={{ ...typography('caption'), color: theme.colors.error, fontWeight: '700' }}>
+              {t('common.delete', 'Delete')}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     </ConfirmModal>
   );
@@ -294,12 +318,13 @@ const StudyLessonScreen: React.FC = () => {
     new Map(allLessons.map((l) => [l.id, l.myInteraction ?? null])),
   );
   
-  const [bookmarkedPoints, setBookmarkedPoints] = useState<Set<string>>(new Set());
-  const [pointNotes, setPointNotes] = useState<Map<string, string>>(new Map());
+  const [savedPoints, setSavedPoints] = useState<Map<string, UserSavedPoint>>(new Map());
   const [noteModalVisible, setNoteModalVisible] = useState(false);
   const [selectedPointId, setSelectedPointId] = useState<string | null>(null);
+  const [highlightedPointId, setHighlightedPointId] = useState<string | null>(null);
 
   const mutationInFlightRef = useRef(false);
+  const pointLayoutsRef = useRef<Map<string, number>>(new Map());
 
   // Re-seed when the user navigates to a different lesson
   useEffect(() => {
@@ -467,28 +492,24 @@ const StudyLessonScreen: React.FC = () => {
       if (!token) return;
 
       const result = await tryFetchWithFallback(
-        `query GetLessonMetadata($lessonId: ID!) {
-          userBookmarks {
+        `query MySavedPoints($lessonId: ID) {
+          mySavedPoints(lessonId: $lessonId) {
             id
-            lessonPoint { id lesson { id } }
+            isBookmarked
             note
+            lessonPoint { id }
           }
         }`,
         { lessonId },
         token,
       );
 
-      if (result.data?.userBookmarks) {
-        const bookmarks = new Set<string>();
-        const notes = new Map<string, string>();
-        result.data.userBookmarks.forEach((b: any) => {
-          if (b.lessonPoint.lesson.id === lessonId) {
-            bookmarks.add(b.lessonPoint.id);
-            if (b.note) notes.set(b.lessonPoint.id, b.note);
-          }
+      if (result.data?.mySavedPoints) {
+        const pointsMap = new Map<string, UserSavedPoint>();
+        result.data.mySavedPoints.forEach((p: UserSavedPoint) => {
+          pointsMap.set(p.lessonPoint.id, p);
         });
-        setBookmarkedPoints(bookmarks);
-        setPointNotes(notes);
+        setSavedPoints(pointsMap);
       }
     } catch (err) {
       console.error('Fetch metadata error:', err);
@@ -501,22 +522,28 @@ const StudyLessonScreen: React.FC = () => {
       if (!token) return;
 
       const result = await tryFetchWithFallback(
-        `mutation ToggleBookmark($lessonPointId: ID!) {
-          toggleLessonBookmark(lessonPointId: $lessonPointId) {
+        `mutation ToggleSavedPointBookmark($lessonId: ID!, $lessonPointId: ID!) {
+          toggleSavedPointBookmark(lessonId: $lessonId, lessonPointId: $lessonPointId) {
             success
-            isBookmarked
             message
+            savedPoint {
+              id
+              isBookmarked
+              note
+              lessonPoint { id }
+            }
           }
         }`,
-        { lessonPointId: pointId },
+        { lessonId: currentLesson.id, lessonPointId: pointId },
         token,
       );
 
-      if (result.data?.toggleLessonBookmark?.success) {
-        setBookmarkedPoints(prev => {
-          const next = new Set(prev);
-          if (result.data.toggleLessonBookmark.isBookmarked) {
-            next.add(pointId);
+      if (result.data?.toggleSavedPointBookmark?.success) {
+        const sp = result.data.toggleSavedPointBookmark.savedPoint;
+        setSavedPoints(prev => {
+          const next = new Map(prev);
+          if (sp) {
+            next.set(pointId, sp);
           } else {
             next.delete(pointId);
           }
@@ -534,24 +561,41 @@ const StudyLessonScreen: React.FC = () => {
       if (!token) return;
 
       const result = await tryFetchWithFallback(
-        `mutation SaveNote($lessonPointId: ID!, $note: String!) {
-          saveLessonNote(lessonPointId: $lessonPointId, note: $note) {
+        `mutation SavePointNote($lessonId: ID!, $lessonPointId: ID!, $noteContent: String!) {
+          savePointNote(lessonId: $lessonId, lessonPointId: $lessonPointId, noteContent: $noteContent) {
             success
-            note
             message
+            savedPoint {
+              id
+              isBookmarked
+              note
+              lessonPoint { id }
+            }
           }
         }`,
-        { lessonPointId: pointId, note },
+        { lessonId: currentLesson.id, lessonPointId: pointId, noteContent: note },
         token,
       );
 
-      if (result.data?.saveLessonNote?.success) {
-        setPointNotes(prev => {
+      if (result.data?.savePointNote?.success) {
+        const sp = result.data.savePointNote.savedPoint;
+        setSavedPoints(prev => {
           const next = new Map(prev);
-          next.set(pointId, note);
+          if (sp) {
+            next.set(pointId, sp);
+          }
           return next;
         });
         setNoteModalVisible(false);
+        // Show confirmation
+        setTimeout(() => {
+          showConfirm({
+            title: t('common.success'),
+            message: t('study_lesson.note_saved_success', 'Note saved successfully'),
+            showCancel: false,
+            onConfirm: () => {},
+          });
+        }, 500);
       }
     } catch (err) {
       console.error('Save note error:', err);
@@ -564,22 +608,43 @@ const StudyLessonScreen: React.FC = () => {
       if (!token) return;
 
       const result = await tryFetchWithFallback(
-        `mutation DeleteNote($lessonPointId: ID!) {
-          deleteLessonNote(lessonPointId: $lessonPointId) {
+        `mutation DeletePointNote($lessonPointId: ID!) {
+          deletePointNote(lessonPointId: $lessonPointId) {
             success
             message
+            savedPoint {
+              id
+              isBookmarked
+              note
+              lessonPoint { id }
+            }
           }
         }`,
         { lessonPointId: pointId },
         token,
       );
 
-      if (result.data?.deleteLessonNote?.success) {
-        setPointNotes(prev => {
+      if (result.data?.deletePointNote?.success) {
+        const sp = result.data.deletePointNote.savedPoint;
+        setSavedPoints(prev => {
           const next = new Map(prev);
-          next.delete(pointId);
+          if (sp) {
+            next.set(pointId, sp);
+          } else {
+            next.delete(pointId);
+          }
           return next;
         });
+        setNoteModalVisible(false);
+        // Show confirmation
+        setTimeout(() => {
+          showConfirm({
+            title: t('common.success'),
+            message: t('study_lesson.note_deleted_success', 'Note deleted successfully'),
+            showCancel: false,
+            onConfirm: () => {},
+          });
+        }, 500);
       }
     } catch (err) {
       console.error('Delete note error:', err);
@@ -590,6 +655,25 @@ const StudyLessonScreen: React.FC = () => {
     fetchDodProgress(currentLesson.id);
     fetchLessonMetadata(currentLesson.id);
   }, [currentLesson.id]);
+
+  useEffect(() => {
+    if (route.params?.initialPointId) {
+      const pointId = route.params.initialPointId;
+      setExpandedPoints(prev => new Set(prev).add(pointId));
+      setHighlightedPointId(pointId);
+      
+      // Give some time for LayoutAnimation and rendering
+      setTimeout(() => {
+        const y = pointLayoutsRef.current.get(pointId);
+        if (y !== undefined) {
+          scrollViewRef.current?.scrollTo({ y, animated: true });
+        }
+      }, 500);
+
+      // Remove highlight after a few seconds
+      setTimeout(() => setHighlightedPointId(null), 3000);
+    }
+  }, [route.params?.initialPointId, currentLesson.id]);
 
   const handleNavigateLesson = (lesson: Lesson) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -768,7 +852,15 @@ const StudyLessonScreen: React.FC = () => {
                 return (
                   <TouchableOpacity
                     key={point.id}
-                    style={currentStyles.pointItem}
+                    onLayout={(e) => pointLayoutsRef.current.set(point.id, e.nativeEvent.layout.y)}
+                    style={[
+                      currentStyles.pointItem,
+                      highlightedPointId === point.id && {
+                        borderColor: theme.colors.primary,
+                        borderWidth: 2,
+                        backgroundColor: theme.colors.primary + '10'
+                      }
+                    ]}
                     onPress={() => point.explanation && togglePoint(point.id)}
                     activeOpacity={point.explanation ? 0.7 : 1}
                   >
@@ -791,9 +883,9 @@ const StudyLessonScreen: React.FC = () => {
                           style={{ padding: 4 }}
                         >
                           <Ionicons 
-                            name={bookmarkedPoints.has(point.id) ? 'bookmark' : 'bookmark-outline'} 
+                            name={savedPoints.get(point.id)?.isBookmarked ? 'bookmark' : 'bookmark-outline'} 
                             size={20} 
-                            color={bookmarkedPoints.has(point.id) ? theme.colors.primary : theme.colors.textTertiary} 
+                            color={savedPoints.get(point.id)?.isBookmarked ? theme.colors.primary : theme.colors.textTertiary} 
                           />
                         </TouchableOpacity>
                         <TouchableOpacity 
@@ -804,9 +896,9 @@ const StudyLessonScreen: React.FC = () => {
                           style={{ padding: 4 }}
                         >
                           <Ionicons 
-                            name={pointNotes.has(point.id) ? 'document-text' : 'document-text-outline'} 
+                            name={savedPoints.get(point.id)?.note ? 'document-text' : 'document-text-outline'} 
                             size={20} 
-                            color={pointNotes.has(point.id) ? theme.colors.primary : theme.colors.textTertiary} 
+                            color={savedPoints.get(point.id)?.note ? theme.colors.primary : theme.colors.textTertiary} 
                           />
                         </TouchableOpacity>
                         {point.explanation && (
@@ -818,11 +910,11 @@ const StudyLessonScreen: React.FC = () => {
                         )}
                       </View>
                     </View>
-                    {pointNotes.has(point.id) && (
+                    {savedPoints.get(point.id)?.note && (
                       <View style={currentStyles.notePreviewContainer}>
                          <Ionicons name="pencil" size={12} color={theme.colors.primary} />
                          <Text style={currentStyles.notePreviewText} numberOfLines={2}>
-                           {pointNotes.get(point.id)}
+                           {savedPoints.get(point.id)?.note}
                          </Text>
                       </View>
                     )}
@@ -996,9 +1088,10 @@ const StudyLessonScreen: React.FC = () => {
       <NoteModal
         visible={noteModalVisible}
         title={t('study_lesson.add_note')}
-        initialNote={selectedPointId ? pointNotes.get(selectedPointId) || '' : ''}
+        initialNote={selectedPointId ? savedPoints.get(selectedPointId)?.note || '' : ''}
         onClose={() => setNoteModalVisible(false)}
         onSave={(note) => selectedPointId && handleSaveNote(selectedPointId, note)}
+        onDelete={() => selectedPointId && handleDeleteNote(selectedPointId)}
         theme={theme}
         spacing={spacing}
         borderRadius={borderRadius}
