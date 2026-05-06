@@ -142,7 +142,9 @@
     "leave_title": "مغادرة الدرس؟",
     "leave_message": "تقدمك في القراءة محفوظ. هل أنت متأكد من أنك تريد المغادرة؟",
     "add_note": "إضافة ملاحظة",
-    "notes_placeholder": "أضف ملاحظتك هنا..."
+    "notes_placeholder": "أضف ملاحظتك هنا...",
+    "note_saved_success": "تم حفظ الملاحظة بنجاح",
+    "note_deleted_success": "تم حذف الملاحظة بنجاح"
   },
   "more_screen": {
     "header_title": "المزيد",

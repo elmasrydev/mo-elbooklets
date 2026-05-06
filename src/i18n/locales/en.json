@@ -144,7 +144,9 @@
     "leave_title": "Leave Lesson?",
     "leave_message": "Your reading progress is saved. Are you sure you want to leave?",
     "add_note": "Add Note",
-    "notes_placeholder": "Add your note here..."
+    "notes_placeholder": "Add your note here...",
+    "note_saved_success": "Note saved successfully",
+    "note_deleted_success": "Note deleted successfully"
   },
   "more_screen": {
     "header_title": "More",
