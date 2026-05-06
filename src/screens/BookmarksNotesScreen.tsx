@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   FlatList,
-  ActivityIndicator,
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,12 +20,17 @@ import * as SecureStore from 'expo-secure-store';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { GenericListSkeleton } from '../components/SkeletonLoader';
 
-interface Bookmark {
+interface SavedPoint {
   id: string;
+  isBookmarked: boolean;
+  note?: string;
+  createdAt: string;
+  updatedAt: string;
   lessonPoint: {
     id: string;
     title: string;
     explanation?: string;
+    order: number;
     lesson: {
       id: string;
       name: string;
@@ -36,22 +40,6 @@ interface Bookmark {
       };
     };
   };
-  note?: string;
-  createdAt: string;
-}
-
-interface Note {
-  id: string;
-  lessonPoint: {
-    id: string;
-    title: string;
-    lesson: {
-      id: string;
-      name: string;
-    };
-  };
-  content: string;
-  updatedAt: string;
 }
 
 const BookmarksNotesScreen: React.FC = () => {
@@ -63,8 +51,7 @@ const BookmarksNotesScreen: React.FC = () => {
   const navigation = useNavigation<any>();
 
   const [activeTab, setActiveTab] = useState<'bookmarks' | 'notes'>('bookmarks');
-  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
-  const [notes, setNotes] = useState<Note[]>([]);
+  const [savedPoints, setSavedPoints] = useState<SavedPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -75,13 +62,18 @@ const BookmarksNotesScreen: React.FC = () => {
       if (!token) return;
 
       const result = await tryFetchWithFallback(
-        `query GetUserBookmarksAndNotes {
-          userBookmarks {
+        `query MySavedPoints {
+          mySavedPoints {
             id
+            isBookmarked
+            note
+            createdAt
+            updatedAt
             lessonPoint {
               id
               title
               explanation
+              order
               lesson {
                 id
                 name
@@ -91,33 +83,17 @@ const BookmarksNotesScreen: React.FC = () => {
                 }
               }
             }
-            note
-            createdAt
-          }
-          userNotes {
-            id
-            lessonPoint {
-              id
-              title
-              lesson {
-                id
-                name
-              }
-            }
-            content
-            updatedAt
           }
         }`,
         undefined,
         token,
       );
 
-      if (result.data) {
-        setBookmarks(result.data.userBookmarks || []);
-        setNotes(result.data.userNotes || []);
+      if (result.data?.mySavedPoints) {
+        setSavedPoints(result.data.mySavedPoints);
       }
     } catch (err) {
-      console.error('Fetch bookmarks/notes error:', err);
+      console.error('Fetch saved points error:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -135,22 +111,31 @@ const BookmarksNotesScreen: React.FC = () => {
     fetchData();
   };
 
+  const filteredData = useMemo(() => {
+    if (activeTab === 'bookmarks') {
+      return savedPoints.filter(p => p.isBookmarked);
+    } else {
+      return savedPoints.filter(p => !!p.note);
+    }
+  }, [savedPoints, activeTab]);
+
   const currentStyles = useMemo(
     () => styles(theme, spacing, borderRadius, isRTL, typography, fontWeight),
     [theme, spacing, borderRadius, isRTL, typography, fontWeight]
   );
 
-  const handleBookmarkPress = (bookmark: Bookmark) => {
+  const handleItemPress = (item: SavedPoint) => {
     navigation.navigate('StudyLesson', { 
-      lesson: bookmark.lessonPoint.lesson,
-      // We don't have allLessons here easily, but StudyLesson handles it
+      lesson: item.lessonPoint.lesson,
+      // Pass the point ID to scroll to it
+      initialPointId: item.lessonPoint.id
     });
   };
 
-  const renderBookmarkItem = ({ item }: { item: Bookmark }) => (
+  const renderItem = ({ item }: { item: SavedPoint }) => (
     <TouchableOpacity
       style={currentStyles.card}
-      onPress={() => handleBookmarkPress(item)}
+      onPress={() => handleItemPress(item)}
       activeOpacity={0.7}
     >
       <View style={currentStyles.cardHeader}>
@@ -162,7 +147,11 @@ const BookmarksNotesScreen: React.FC = () => {
             {item.lessonPoint.lesson.name}
           </Text>
         </View>
-        <Ionicons name="bookmark" size={20} color={theme.colors.primary} />
+        <Ionicons 
+          name={activeTab === 'bookmarks' ? 'bookmark' : 'document-text'} 
+          size={20} 
+          color={theme.colors.primary} 
+        />
       </View>
       
       <View style={currentStyles.pointContainer}>
@@ -182,40 +171,10 @@ const BookmarksNotesScreen: React.FC = () => {
       )}
 
       <Text style={currentStyles.dateText}>
-        {new Date(item.createdAt).toLocaleDateString()}
+        {new Date(activeTab === 'bookmarks' ? item.createdAt : item.updatedAt).toLocaleDateString()}
       </Text>
     </TouchableOpacity>
   );
-
-  const renderNoteItem = ({ item }: { item: Note }) => (
-    <TouchableOpacity
-      style={currentStyles.card}
-      onPress={() => navigation.navigate('StudyLesson', { lesson: item.lessonPoint.lesson })}
-      activeOpacity={0.7}
-    >
-      <View style={currentStyles.cardHeader}>
-        <View style={currentStyles.lessonInfo}>
-          <Text style={currentStyles.lessonName} numberOfLines={1}>
-            {item.lessonPoint.lesson.name}
-          </Text>
-          <Text style={currentStyles.pointTitle} numberOfLines={1}>
-            {item.lessonPoint.title}
-          </Text>
-        </View>
-        <Ionicons name="document-text" size={20} color={theme.colors.primary} />
-      </View>
-
-      <View style={currentStyles.noteContentContainer}>
-        <Text style={currentStyles.noteContentText}>{item.content}</Text>
-      </View>
-
-      <Text style={currentStyles.dateText}>
-        {new Date(item.updatedAt).toLocaleDateString()}
-      </Text>
-    </TouchableOpacity>
-  );
-
-
 
   return (
     <View style={common.container}>
@@ -246,9 +205,9 @@ const BookmarksNotesScreen: React.FC = () => {
         </View>
       ) : (
         <FlatList
-          data={(activeTab === 'bookmarks' ? bookmarks : notes) as any}
+          data={filteredData}
           keyExtractor={(item) => item.id}
-          renderItem={activeTab === 'bookmarks' ? renderBookmarkItem as any : renderNoteItem as any}
+          renderItem={renderItem}
           contentContainerStyle={currentStyles.listContent}
           onRefresh={handleRefresh}
           refreshing={refreshing}
@@ -384,15 +343,6 @@ const styles = (
       color: theme.colors.primary,
       fontStyle: 'italic',
       flex: 1,
-      textAlign: isRTL ? 'right' : 'left',
-    },
-    noteContentContainer: {
-      marginBottom: 12,
-    },
-    noteContentText: {
-      ...typography('body'),
-      color: theme.colors.text,
-      lineHeight: 20,
       textAlign: isRTL ? 'right' : 'left',
     },
     dateText: {
