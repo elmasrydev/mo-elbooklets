@@ -32,6 +32,7 @@ import AppButton from '../../components/AppButton';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
 import { isRTL, textAlign } from '../../lib/rtl';
+import { useModal } from '../../context/ModalContext';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -217,6 +218,7 @@ const NoteModal: React.FC<{
   onSave: (note: string) => void;
   theme: any;
   spacing: any;
+  borderRadius: any;
   t: any;
   isRTL: boolean;
   typography: any;
@@ -292,6 +294,7 @@ const StudyLessonScreen: React.FC = () => {
   const route = useRoute<any>();
   const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
+  const { showConfirm } = useModal();
 
   const [currentLesson, setCurrentLesson] = useState<Lesson>(route.params?.lesson);
   const allLessons: Lesson[] = route.params?.allLessons || [];
