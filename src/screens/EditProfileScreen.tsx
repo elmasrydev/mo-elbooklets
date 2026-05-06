@@ -299,40 +299,14 @@ const EditProfileScreen: React.FC = () => {
       return;
     }
 
-    if (showPasswordSection) {
-      if (!passwordState.oldPassword || !passwordState.newPassword) {
-         showConfirm({
-           title: t('common.error'),
-           message: t('auth.fill_all_fields'),
-           showCancel: false,
-           onConfirm: () => {},
-         });
-         return;
-      }
-      if (passwordState.newPassword !== passwordState.confirmPassword) {
-         showConfirm({
-           title: t('common.error'),
-           message: t('profile.passwords_dont_match'),
-           showCancel: false,
-           onConfirm: () => {},
-         });
-         return;
-      }
-    }
+
 
     try {
       setLoading(true);
       const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
 
-      const input = {
-          ...formData,
-          ...(showPasswordSection ? {
-              old_password: passwordState.oldPassword,
-              password: passwordState.newPassword,
-              password_confirmation: passwordState.confirmPassword,
-          } : {})
-      };
+      const input = { ...formData };
 
       const mutation = `
         mutation UpdateProfile($input: UpdateProfileInput!) {
@@ -358,9 +332,7 @@ const EditProfileScreen: React.FC = () => {
         await updateUser(result.data.updateProfile);
         showConfirm({
           title: t('common.success'),
-          message: showPasswordSection 
-            ? t('profile.password_changed_success') 
-            : t('profile.update_success'),
+          message: t('profile.update_success'),
           showCancel: false,
           onConfirm: () => navigation.goBack(),
         });
@@ -375,6 +347,81 @@ const EditProfileScreen: React.FC = () => {
       }
     } catch (err: any) {
       console.error('Update profile error:', err);
+      showConfirm({
+        title: t('common.error'),
+        message: err.message || t('common.error'),
+        showCancel: false,
+        onConfirm: () => {},
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdatePassword = async () => {
+    if (!passwordState.oldPassword || !passwordState.newPassword) {
+      showConfirm({
+        title: t('common.error'),
+        message: t('auth.fill_all_fields'),
+        showCancel: false,
+        onConfirm: () => {},
+      });
+      return;
+    }
+
+    if (passwordState.newPassword !== passwordState.confirmPassword) {
+      showConfirm({
+        title: t('common.error'),
+        message: t('profile.passwords_dont_match'),
+        showCancel: false,
+        onConfirm: () => {},
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const token = await SecureStore.getItemAsync('auth_token');
+      if (!token) return;
+
+      const input = {
+        current_password: passwordState.oldPassword,
+        password: passwordState.newPassword,
+        password_confirmation: passwordState.confirmPassword,
+      };
+
+      const mutation = `
+        mutation UpdatePassword($input: UpdatePasswordInput!) {
+          updatePassword(input: $input) {
+            success
+            message
+          }
+        }
+      `;
+
+      const result = await tryFetchWithFallback(mutation, { input }, token);
+
+      if (result.data?.updatePassword?.success) {
+        showConfirm({
+          title: t('common.success'),
+          message: result.data.updatePassword.message || t('profile.password_changed_success'),
+          showCancel: false,
+          onConfirm: () => {
+            setShowPasswordSection(false);
+            setPasswordState({ oldPassword: '', newPassword: '', confirmPassword: '' });
+          },
+        });
+      } else {
+        const errorMsg = result.errors?.[0]?.message || result.data?.updatePassword?.message || t('common.error');
+        showConfirm({
+          title: t('common.error'),
+          message: errorMsg,
+          showCancel: false,
+          onConfirm: () => {},
+        });
+      }
+    } catch (err: any) {
+      console.error('Update password error:', err);
       showConfirm({
         title: t('common.error'),
         message: err.message || t('common.error'),
@@ -402,12 +449,22 @@ const EditProfileScreen: React.FC = () => {
       
       const result = await tryFetchWithFallback(query, { email: user.email });
       
-      showConfirm({
-        title: result.data?.forgotPassword?.success ? t('common.success') : t('common.error'),
-        message: result.data?.forgotPassword?.message || t('common.error'),
-        showCancel: false,
-        onConfirm: () => {},
-      });
+      if (result.data?.forgotPassword?.success) {
+        showConfirm({
+          title: t('common.success'),
+          message: result.data.forgotPassword.message || t('common.success'),
+          showCancel: false,
+          onConfirm: () => {},
+        });
+      } else {
+        const errorMsg = result.errors?.[0]?.message || result.data?.forgotPassword?.message || t('common.error');
+        showConfirm({
+          title: t('common.error'),
+          message: errorMsg,
+          showCancel: false,
+          onConfirm: () => {},
+        });
+      }
     } catch (err: any) {
       console.error('Forgot password error:', err);
       showConfirm({
@@ -846,7 +903,7 @@ const EditProfileScreen: React.FC = () => {
                 </TouchableOpacity>
 
                 {/* Change Password Section */}
-                {/* <TouchableOpacity 
+                <TouchableOpacity 
                    style={[currentStyles.passwordToggle, { marginTop: spacing.xl }]}
                    onPress={() => setShowPasswordSection(!showPasswordSection)}
                 >
@@ -857,9 +914,9 @@ const EditProfileScreen: React.FC = () => {
                       </Text>
                    </View>
                    <Ionicons name={showPasswordSection ? "chevron-up" : "chevron-down"} size={20} color={theme.colors.primary} />
-                </TouchableOpacity> */}
+                </TouchableOpacity>
 
-                {/* {showPasswordSection && (
+                {showPasswordSection && (
                   <View style={currentStyles.passwordSection}>
                     <View style={currentStyles.inputGroup}>
                       <Text style={currentStyles.inputLabel}>{t('profile.old_password')}</Text>
@@ -901,7 +958,7 @@ const EditProfileScreen: React.FC = () => {
                     <View style={{ marginTop: spacing.md }}>
                       <AppButton 
                         title={t('profile.update_password', 'Update Password')}
-                        onPress={handleSave}
+                        onPress={handleUpdatePassword}
                         loading={loading}
                         variant="primary"
                         fullWidth={true}
@@ -918,7 +975,7 @@ const EditProfileScreen: React.FC = () => {
                       </TouchableOpacity>
                     </View>
                   </View>
-                )} */}
+                )}
               </View>
             </ScrollView>
 
