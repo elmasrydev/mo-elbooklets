@@ -144,7 +144,9 @@
     "add_note": "إضافة ملاحظة",
     "notes_placeholder": "أضف ملاحظتك هنا...",
     "note_saved_success": "تم حفظ الملاحظة بنجاح",
-    "note_deleted_success": "تم حذف الملاحظة بنجاح"
+    "note_deleted_success": "تم حذف الملاحظة بنجاح",
+    "bookmark_added": "تم إضافة الإشارة المرجعية بنجاح",
+    "bookmark_removed": "تم إزالة الإشارة المرجعية"
   },
   "more_screen": {
     "header_title": "المزيد",

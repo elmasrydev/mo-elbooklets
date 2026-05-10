@@ -48,8 +48,8 @@ interface LessonPoint {
 
 interface UserSavedPoint {
   id: string;
-  isBookmarked: boolean;
-  note?: string;
+  is_bookmarked: boolean;
+  note_content?: string;
   lessonPoint: { id: string };
 }
 
@@ -498,8 +498,8 @@ const StudyLessonScreen: React.FC = () => {
         `query MySavedPoints($lessonId: ID) {
           mySavedPoints(lessonId: $lessonId) {
             id
-            isBookmarked
-            note
+            is_bookmarked
+            note_content
             lessonPoint { id }
           }
         }`,
@@ -531,8 +531,8 @@ const StudyLessonScreen: React.FC = () => {
             message
             savedPoint {
               id
-              isBookmarked
-              note
+              is_bookmarked
+              note_content
               lessonPoint { id }
             }
           }
@@ -543,6 +543,8 @@ const StudyLessonScreen: React.FC = () => {
 
       if (result.data?.toggleSavedPointBookmark?.success) {
         const sp = result.data.toggleSavedPointBookmark.savedPoint;
+        const isBookmarked = sp?.is_bookmarked;
+        
         setSavedPoints(prev => {
           const next = new Map(prev);
           if (sp) {
@@ -551,6 +553,16 @@ const StudyLessonScreen: React.FC = () => {
             next.delete(pointId);
           }
           return next;
+        });
+
+        // Show confirmation
+        showConfirm({
+          title: t('common.success'),
+          message: isBookmarked 
+            ? t('study_lesson.bookmark_added', 'Bookmark added successfully')
+            : t('study_lesson.bookmark_removed', 'Bookmark removed'),
+          showCancel: false,
+          onConfirm: () => {},
         });
       }
     } catch (err) {
@@ -570,8 +582,8 @@ const StudyLessonScreen: React.FC = () => {
             message
             savedPoint {
               id
-              isBookmarked
-              note
+              is_bookmarked
+              note_content
               lessonPoint { id }
             }
           }
@@ -617,8 +629,8 @@ const StudyLessonScreen: React.FC = () => {
             message
             savedPoint {
               id
-              isBookmarked
-              note
+              is_bookmarked
+              note_content
               lessonPoint { id }
             }
           }
@@ -886,9 +898,9 @@ const StudyLessonScreen: React.FC = () => {
                           style={{ padding: 4 }}
                         >
                           <Ionicons 
-                            name={savedPoints.get(point.id)?.isBookmarked ? 'bookmark' : 'bookmark-outline'} 
+                            name={savedPoints.get(point.id)?.is_bookmarked ? 'bookmark' : 'bookmark-outline'} 
                             size={20} 
-                            color={savedPoints.get(point.id)?.isBookmarked ? theme.colors.primary : theme.colors.textTertiary} 
+                            color={savedPoints.get(point.id)?.is_bookmarked ? theme.colors.primary : theme.colors.textTertiary} 
                           />
                         </TouchableOpacity>
                         <TouchableOpacity 
@@ -899,9 +911,9 @@ const StudyLessonScreen: React.FC = () => {
                           style={{ padding: 4 }}
                         >
                           <Ionicons 
-                            name={savedPoints.get(point.id)?.note ? 'document-text' : 'document-text-outline'} 
+                            name={savedPoints.get(point.id)?.note_content ? 'document-text' : 'document-text-outline'} 
                             size={20} 
-                            color={savedPoints.get(point.id)?.note ? theme.colors.primary : theme.colors.textTertiary} 
+                            color={savedPoints.get(point.id)?.note_content ? theme.colors.primary : theme.colors.textTertiary} 
                           />
                         </TouchableOpacity>
                         {point.explanation && (
@@ -913,11 +925,11 @@ const StudyLessonScreen: React.FC = () => {
                         )}
                       </View>
                     </View>
-                    {savedPoints.get(point.id)?.note && (
+                    {savedPoints.get(point.id)?.note_content && (
                       <View style={currentStyles.notePreviewContainer}>
                          <Ionicons name="pencil" size={12} color={theme.colors.primary} />
                          <Text style={currentStyles.notePreviewText} numberOfLines={2}>
-                           {savedPoints.get(point.id)?.note}
+                           {savedPoints.get(point.id)?.note_content}
                          </Text>
                       </View>
                     )}
@@ -1091,7 +1103,7 @@ const StudyLessonScreen: React.FC = () => {
       <NoteModal
         visible={noteModalVisible}
         title={t('study_lesson.add_note')}
-        initialNote={selectedPointId ? savedPoints.get(selectedPointId)?.note || '' : ''}
+        initialNote={selectedPointId ? savedPoints.get(selectedPointId)?.note_content || '' : ''}
         onClose={() => setNoteModalVisible(false)}
         onSave={(note) => selectedPointId && handleSaveNote(selectedPointId, note)}
         onDelete={() => selectedPointId && handleDeleteNote(selectedPointId)}
@@ -1192,8 +1204,8 @@ const styles = (
     sectionTitle: {
       ...typography('h3'),
       ...fontWeight('700'),
-      marginLeft: spacing.sm,
-      marginRight: spacing.sm,
+      marginStart: spacing.sm,
+      marginEnd: spacing.sm,
       color: theme.colors.text,
     },
     videoSection: {
@@ -1275,8 +1287,7 @@ const styles = (
     pointText: {
       flex: 1,
       ...typography('body'),
-      marginLeft: spacing.sm,
-      marginRight: 0,
+      marginStart: spacing.sm,
       color: theme.colors.text,
       textAlign: contentAlign,
       fontWeight: '600',
@@ -1286,8 +1297,8 @@ const styles = (
       paddingTop: spacing.sm,
       borderTopWidth: 1,
       borderTopColor: theme.colors.border,
-      marginLeft: 28,
-      marginRight: 28,
+      marginStart: 28,
+      marginEnd: 28,
     },
     explanationText: {
       ...typography('caption'),

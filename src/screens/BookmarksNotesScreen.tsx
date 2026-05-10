@@ -22,23 +22,23 @@ import { GenericListSkeleton } from '../components/SkeletonLoader';
 
 interface SavedPoint {
   id: string;
-  isBookmarked: boolean;
-  note?: string;
-  createdAt: string;
-  updatedAt: string;
+  is_bookmarked: boolean;
+  note_content?: string;
+  created_at: string;
+  updated_at: string;
+  lesson: {
+    id: string;
+    name: string;
+    chapter: {
+      id: string;
+      name: string;
+    };
+  };
   lessonPoint: {
     id: string;
     title: string;
     explanation?: string;
     order: number;
-    lesson: {
-      id: string;
-      name: string;
-      chapter: {
-        id: string;
-        name: string;
-      };
-    };
   };
 }
 
@@ -65,23 +65,23 @@ const BookmarksNotesScreen: React.FC = () => {
         `query MySavedPoints {
           mySavedPoints {
             id
-            isBookmarked
-            note
-            createdAt
-            updatedAt
+            is_bookmarked
+            note_content
+            created_at
+            updated_at
+            lesson {
+              id
+              name
+              chapter {
+                id
+                name
+              }
+            }
             lessonPoint {
               id
               title
               explanation
               order
-              lesson {
-                id
-                name
-                chapter {
-                  id
-                  name
-                }
-              }
             }
           }
         }`,
@@ -113,9 +113,9 @@ const BookmarksNotesScreen: React.FC = () => {
 
   const filteredData = useMemo(() => {
     if (activeTab === 'bookmarks') {
-      return savedPoints.filter(p => p.isBookmarked);
+      return savedPoints.filter(p => p.is_bookmarked);
     } else {
-      return savedPoints.filter(p => !!p.note);
+      return savedPoints.filter(p => !!p.note_content);
     }
   }, [savedPoints, activeTab]);
 
@@ -126,7 +126,7 @@ const BookmarksNotesScreen: React.FC = () => {
 
   const handleItemPress = (item: SavedPoint) => {
     navigation.navigate('StudyLesson', { 
-      lesson: item.lessonPoint.lesson,
+      lesson: item.lesson,
       // Pass the point ID to scroll to it
       initialPointId: item.lessonPoint.id
     });
@@ -141,10 +141,10 @@ const BookmarksNotesScreen: React.FC = () => {
       <View style={currentStyles.cardHeader}>
         <View style={currentStyles.lessonInfo}>
           <Text style={currentStyles.chapterName} numberOfLines={1}>
-            {item.lessonPoint.lesson.chapter.name}
+            {item.lesson?.chapter?.name}
           </Text>
           <Text style={currentStyles.lessonName} numberOfLines={1}>
-            {item.lessonPoint.lesson.name}
+            {item.lesson?.name}
           </Text>
         </View>
         <Ionicons 
@@ -163,15 +163,15 @@ const BookmarksNotesScreen: React.FC = () => {
         )}
       </View>
 
-      {item.note && (
+      {item.note_content && (
         <View style={currentStyles.noteContainer}>
           <Ionicons name="pencil" size={14} color={theme.colors.primary} />
-          <Text style={currentStyles.noteText}>{item.note}</Text>
+          <Text style={currentStyles.noteText}>{item.note_content}</Text>
         </View>
       )}
 
       <Text style={currentStyles.dateText}>
-        {new Date(activeTab === 'bookmarks' ? item.createdAt : item.updatedAt).toLocaleDateString()}
+        {new Date(item.created_at).toLocaleDateString()}
       </Text>
     </TouchableOpacity>
   );
@@ -213,11 +213,13 @@ const BookmarksNotesScreen: React.FC = () => {
           refreshing={refreshing}
           ListEmptyComponent={
             <View style={currentStyles.emptyContainer}>
-              <Ionicons
-                name={activeTab === 'bookmarks' ? 'bookmark-outline' : 'document-text-outline'}
-                size={64}
-                color={theme.colors.textTertiary}
-              />
+              <View style={currentStyles.emptyIconContainer}>
+                <Ionicons
+                  name={activeTab === 'bookmarks' ? 'bookmark-outline' : 'document-text-outline'}
+                  size={80}
+                  color={theme.colors.primary + '33'}
+                />
+              </View>
               <Text style={currentStyles.emptyTitle}>
                 {activeTab === 'bookmarks' 
                   ? t('bookmarks.empty_title', 'No bookmarks yet')
@@ -228,6 +230,20 @@ const BookmarksNotesScreen: React.FC = () => {
                   ? t('bookmarks.empty_subtitle', 'Bookmark key points to find them here later.')
                   : t('notes.empty_subtitle', 'Add notes to key points while studying.')}
               </Text>
+              
+              <TouchableOpacity
+                style={currentStyles.studyButton}
+                onPress={() => navigation.navigate('Study')}
+              >
+                <Text style={currentStyles.studyButtonText}>
+                  {t('home_screen.my_subjects', 'Start Studying')}
+                </Text>
+                <Ionicons 
+                  name={isRTL ? 'arrow-back' : 'arrow-forward'} 
+                  size={18} 
+                  color="#fff" 
+                />
+              </TouchableOpacity>
             </View>
           }
         />
@@ -295,20 +311,19 @@ const styles = (
     },
     lessonInfo: {
       flex: 1,
-      marginRight: isRTL ? 0 : 12,
-      marginLeft: isRTL ? 12 : 0,
+      marginEnd: 12,
     },
     chapterName: {
       ...typography('caption'),
       color: theme.colors.textTertiary,
       marginBottom: 2,
-      textAlign: isRTL ? 'right' : 'left',
+      textAlign: 'left',
     },
     lessonName: {
       ...typography('body'),
       ...fontWeight('700'),
       color: theme.colors.text,
-      textAlign: isRTL ? 'right' : 'left',
+      textAlign: 'left',
     },
     pointContainer: {
       backgroundColor: theme.colors.background,
@@ -321,16 +336,16 @@ const styles = (
       ...fontWeight('600'),
       color: theme.colors.text,
       marginBottom: 4,
-      textAlign: isRTL ? 'right' : 'left',
+      textAlign: 'left',
     },
     pointExplanation: {
       ...typography('caption'),
       color: theme.colors.textSecondary,
       lineHeight: 18,
-      textAlign: isRTL ? 'right' : 'left',
+      textAlign: 'left',
     },
     noteContainer: {
-      flexDirection: isRTL ? 'row-reverse' : 'row',
+      flexDirection: 'row',
       alignItems: 'flex-start',
       gap: 8,
       backgroundColor: theme.colors.primary + '0D',
@@ -343,12 +358,12 @@ const styles = (
       color: theme.colors.primary,
       fontStyle: 'italic',
       flex: 1,
-      textAlign: isRTL ? 'right' : 'left',
+      textAlign: 'left',
     },
     dateText: {
       ...typography('tiny'),
       color: theme.colors.textTertiary,
-      textAlign: isRTL ? 'left' : 'right',
+      textAlign: 'right',
     },
     emptyContainer: {
       flex: 1,
@@ -370,6 +385,31 @@ const styles = (
       color: theme.colors.textSecondary,
       textAlign: 'center',
       lineHeight: 20,
+      marginBottom: 32,
+    },
+    emptyIconContainer: {
+      width: 120,
+      height: 120,
+      borderRadius: 60,
+      backgroundColor: theme.colors.primary + '0D',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 24,
+    },
+    studyButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.primary,
+      paddingHorizontal: 24,
+      paddingVertical: 12,
+      borderRadius: borderRadius.full,
+      gap: 8,
+      ...layout.shadow,
+    },
+    studyButtonText: {
+      ...typography('body'),
+      ...fontWeight('700'),
+      color: '#fff',
     },
   });
 

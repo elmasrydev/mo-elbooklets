@@ -146,7 +146,9 @@
     "add_note": "Add Note",
     "notes_placeholder": "Add your note here...",
     "note_saved_success": "Note saved successfully",
-    "note_deleted_success": "Note deleted successfully"
+    "note_deleted_success": "Note deleted successfully",
+    "bookmark_added": "Bookmark added successfully",
+    "bookmark_removed": "Bookmark removed"
   },
   "more_screen": {
     "header_title": "More",
