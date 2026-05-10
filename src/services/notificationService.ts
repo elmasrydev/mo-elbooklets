@@ -262,47 +262,52 @@ export const triggerNotificationPrompt = () => {
   notificationPromptHandler?.();
 };
 
-export const setupNotificationHandlers = (showConfirm: (config: any) => void) => {
+export const setupNotificationHandlers = (
+  showConfirm: (config: any) => void,
+  onNavigate?: (slug: string, actionUrl?: string) => void,
+) => {
   const handleNotification = (
     remoteMessage: FirebaseMessagingTypes.RemoteMessage,
-    delay: number = 0,
+    isInitial: boolean = false,
   ) => {
-    if (!remoteMessage.notification) return;
+    if (!remoteMessage.notification && !remoteMessage.data) return;
 
-    const title = remoteMessage.notification.title || 'Notification';
-    const body = remoteMessage.notification.body || '';
+    const title = remoteMessage.notification?.title || 'Notification';
+    const body = remoteMessage.notification?.body || '';
+    const slug = remoteMessage.data?.event_slug as string | undefined;
+    const actionUrl = remoteMessage.data?.action_url as string | undefined;
 
-    if (delay > 0) {
-      setTimeout(() => {
-        showConfirm({
-          title,
-          message: body,
-          confirmLabel: 'OK',
-          showCancel: false,
-          onConfirm: () => {},
-        });
-      }, delay);
-    } else {
-      showConfirm({
-        title,
-        message: body,
-        confirmLabel: 'OK',
-        showCancel: false,
-        onConfirm: () => {},
-      });
+    // If app opened from notification, prioritize navigation
+    if (isInitial && slug && onNavigate) {
+      onNavigate(slug, actionUrl);
+      return;
     }
+
+    // Show modal if in foreground or if no slug
+    showConfirm({
+      title,
+      message: body,
+      confirmLabel: slug ? 'View' : 'OK',
+      cancelLabel: slug ? 'Dismiss' : undefined,
+      showCancel: !!slug,
+      onConfirm: () => {
+        if (slug && onNavigate) {
+          onNavigate(slug, actionUrl);
+        }
+      },
+    });
   };
 
   // Foreground
   const unsubscribeOnMessage = messaging().onMessage(async (remoteMessage) => {
     logInfo('FCM Message received in foreground');
-    handleNotification(remoteMessage, 0);
+    handleNotification(remoteMessage, false);
   });
 
   // Background / Quit -> Foreground (Clicked)
   const unsubscribeOnOpened = messaging().onNotificationOpenedApp((remoteMessage) => {
     logInfo('FCM Message caused app to open from background');
-    handleNotification(remoteMessage, 3000); // 3 sec delay
+    handleNotification(remoteMessage, true);
   });
 
   // Quit -> Foreground (Clicked Initial)
@@ -311,7 +316,7 @@ export const setupNotificationHandlers = (showConfirm: (config: any) => void) =>
     .then((remoteMessage) => {
       if (remoteMessage) {
         logInfo('FCM Message caused app to open from quit state');
-        handleNotification(remoteMessage, 3000); // 3 sec delay
+        handleNotification(remoteMessage, true);
       }
     });
 

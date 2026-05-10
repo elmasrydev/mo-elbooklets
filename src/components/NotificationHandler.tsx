@@ -11,18 +11,27 @@ import {
   openSettings,
 } from '../services/notificationService';
 
+import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../context/AuthContext';
+import { handleNotificationRoute } from '../utils/notificationRouter';
+
 export const NotificationHandler: React.FC = () => {
   const { showConfirm } = useModal();
   const { t } = useTranslation();
+  const navigation = useNavigation<any>();
+  const { userRole } = useAuth();
 
   useEffect(() => {
-    const unsubscribe = setupNotificationHandlers(showConfirm);
+    const unsubscribe = setupNotificationHandlers(
+      showConfirm,
+      (slug, actionUrl) => handleNotificationRoute(navigation, slug, actionUrl, userRole)
+    );
     return () => {
       if (unsubscribe) {
         unsubscribe();
       }
     };
-  }, [showConfirm]);
+  }, [showConfirm, navigation, userRole]);
 
   // Listen for FCM token refresh and re-register with backend
   useEffect(() => {

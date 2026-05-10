@@ -197,6 +197,7 @@ const TabNavigator: React.FC = () => {
       <Stack.Screen name="ContactUs" component={ContactUsScreen} />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       <Stack.Screen name="ParentLinking" component={ParentLinkingScreen} />
+      <Stack.Screen name="Notifications" component={require('../screens/NotificationsScreen').default} />
       <Stack.Screen name="Badges" component={BadgesScreen} />
       <Stack.Group screenOptions={{ presentation: 'fullScreenModal' }}>
         <Stack.Screen name="QuizFlowSubjects" component={QuizSubjectsScreen} />

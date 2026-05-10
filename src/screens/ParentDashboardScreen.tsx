@@ -20,6 +20,7 @@ import { useTypography } from '../hooks/useTypography';
 import { layout } from '../config/layout';
 import UnifiedHeader from '../components/UnifiedHeader';
 import { useAuth } from '../context/AuthContext';
+import NotificationBell from '../components/NotificationBell';
 
 const ParentDashboardScreen: React.FC = () => {
   const { t } = useTranslation();
@@ -229,12 +230,15 @@ const ParentDashboardScreen: React.FC = () => {
         title={t('parent_dashboard.header_title')}
         showBackButton={false}
         rightContent={
-          <TouchableOpacity
-            style={currentStyles.settingsBtn}
-            onPress={() => navigation.navigate('ParentSettings')}
-          >
-            <Ionicons name="settings-outline" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <NotificationBell />
+            <TouchableOpacity
+              style={[currentStyles.settingsBtn, { marginStart: 12 }]}
+              onPress={() => navigation.navigate('ParentSettings')}
+            >
+              <Ionicons name="settings-outline" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
         }
       />
 

@@ -714,6 +714,20 @@
     "gender": "Gender",
     "update_success": "Profile updated successfully"
   },
+  "notifications_center": {
+    "title": "Notifications",
+    "mark_all_read": "Mark all as read",
+    "unread_count": "unread notifications",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "this_week": "This Week",
+    "earlier": "Earlier",
+    "empty_title": "No Notifications Yet",
+    "empty_subtitle": "We'll notify you when something important happens.",
+    "unread_only": "Unread only",
+    "delete_confirm": "Delete this notification?",
+    "delete_all_confirm": "Clear all notifications?"
+  },
   "report_question": {
     "title": "Report Question",
     "subtitle": "Help us improve by flagging incorrect or unclear questions.",

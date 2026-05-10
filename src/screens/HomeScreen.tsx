@@ -33,6 +33,7 @@ import ConnectionCard from '../components/feed/ConnectionCard';
 import { CardListSkeleton } from '../components/SkeletonLoader';
 import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
 import { isRTL, textAlign } from '../lib/rtl';
+import NotificationBell from '../components/NotificationBell';
 
 
 const { width } = Dimensions.get('window');
@@ -360,7 +361,10 @@ const HomeScreen: React.FC = () => {
 
   return (
     <View style={common.container}>
-      <UnifiedHeader leftContent={<AnimatedNavbarLogo isRTL={isRTL} />} />
+      <UnifiedHeader 
+        leftContent={<AnimatedNavbarLogo isRTL={isRTL} />} 
+        rightContent={<NotificationBell />}
+      />
 
       <ScrollView
         style={s.scrollFlex}
