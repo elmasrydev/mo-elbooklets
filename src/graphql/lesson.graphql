@@ -4,8 +4,8 @@ mutation ToggleSavedPointBookmark($lessonId: ID!, $lessonPointId: ID!) {
     message
     savedPoint {
       id
-      isBookmarked
-      note
+      is_bookmarked
+      note_content
     }
   }
 }
@@ -16,8 +16,8 @@ mutation SavePointNote($lessonId: ID!, $lessonPointId: ID!, $noteContent: String
     message
     savedPoint {
       id
-      isBookmarked
-      note
+      is_bookmarked
+      note_content
     }
   }
 }
@@ -28,8 +28,8 @@ mutation DeletePointNote($lessonPointId: ID!) {
     message
     savedPoint {
       id
-      isBookmarked
-      note
+      is_bookmarked
+      note_content
     }
   }
 }
@@ -44,23 +44,23 @@ mutation RemoveSavedPoint($lessonPointId: ID!) {
 query MySavedPoints($lessonId: ID) {
   mySavedPoints(lessonId: $lessonId) {
     id
-    isBookmarked
-    note
-    createdAt
-    updatedAt
+    is_bookmarked
+    note_content
+    created_at
+    updated_at
+    lesson {
+      id
+      name
+      chapter {
+        id
+        name
+      }
+    }
     lessonPoint {
       id
       title
       explanation
       order
-      lesson {
-        id
-        name
-        chapter {
-          id
-          name
-        }
-      }
     }
   }
 }

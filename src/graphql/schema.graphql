@@ -128,7 +128,6 @@ type LessonPoint {
   title: String!
   explanation: String
   order: Int!
-  lesson: Lesson
 }
 
 type LessonBookmark {
@@ -147,7 +146,7 @@ type LessonNote {
 
 type BookmarkResponse {
   success: Boolean!
-  isBookmarked: Boolean!
+  is_bookmarked: Boolean!
   message: String
 }
 
@@ -160,10 +159,11 @@ type NoteResponse {
 type UserSavedPoint {
   id: ID!
   lessonPoint: LessonPoint!
-  isBookmarked: Boolean!
-  note: String
-  createdAt: DateTime!
-  updatedAt: DateTime!
+  lesson: Lesson!
+  is_bookmarked: Boolean!
+  note_content: String
+  created_at: DateTime!
+  updated_at: DateTime!
 }
 
 type SavedPointResult {
