@@ -92,7 +92,9 @@
     "api_switch_production": "التبديل إلى Production",
     "api_switch_prs": "التبديل إلى PRS",
     "like": "إعجاب",
-    "dislike": "عدم إعجاب"
+    "dislike": "عدم إعجاب",
+    "search": "بحث",
+    "no_results": "لا توجد نتائج"
   },
   "subscription": {
     "required_title": "اشتراك مطلوب",
@@ -398,7 +400,11 @@
     "comment": "تعليق",
     "scored_prefix": "حصل على ",
     "on_quiz_prefix": " في اختبار ",
-    "quiz_suffix": ""
+    "quiz_suffix": "",
+    "pymk_title": "أشخاص قد تعرفهم",
+    "pymk_subtitle": "تواصل مع زملائك في المدرسة",
+    "same_school": "نفس المدرسة",
+    "same_city": "نفس المدينة"
   },
   "leaderboard_screen": {
     "header_title": "لوحة المتصدرين",
@@ -704,7 +710,32 @@
     "enter_parent_mobile": "أدخل رقم هاتف ولي الأمر",
     "name_not_editable": "لا يمكن تغيير الاسم يدوياً",
     "gender": "الجنس",
-    "update_success": "تم تحديث الملف الشخصي بنجاح"
+    "update_success": "تم تحديث الملف الشخصي بنجاح",
+    "completeness": "اكتمال الملف الشخصي",
+    "complete_to_unlock": "أكمل بياناتك لاستكشاف المزيد",
+    "governorate": "المحافظة",
+    "city": "المدينة",
+    "select_governorate": "اختر المحافظة",
+    "select_city": "اختر المدينة",
+    "change_password": "تغيير كلمة المرور",
+    "old_password": "كلمة المرور القديمة",
+    "new_password": "كلمة المرور الجديدة",
+    "confirm_new_password": "تأكيد كلمة المرور الجديدة",
+    "passwords_dont_match": "كلمات المرور غير متطابقة",
+    "password_changed_success": "تم تغيير كلمة المرور بنجاح",
+    "add_school_request": "لم تجد مدرستك؟ اطلب إضافتها",
+    "request_school_title": "طلب إضافة مدرسة",
+    "request_school_message": "أدخل اسم المدرسة التي تريد إضافتها",
+    "school_name_placeholder": "اسم المدرسة...",
+    "school_request_sent": "لقد تم إرسال طلبك بنجاح. سنقوم بمراجعته قريباً.",
+    "select_gov_first": "اختر المحافظة أولاً",
+    "grade": "الصف الدراسي",
+    "grade_not_editable": "لا يمكن تغيير الصف الدراسي",
+    "complete_profile": "إكمال الملف الشخصي",
+    "update_password": "تحديث كلمة المرور",
+    "start_typing_to_search": "ابدأ الكتابة للبحث...",
+    "select_educational_system": "اختر النظام التعليمي",
+    "complete_in_settings": "إكمال في الإعدادات"
   },
   "report_question": {
     "title": "الإبلاغ عن سؤال",

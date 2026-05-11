@@ -45,3 +45,4 @@ yarn-error.*
 
 # AI agent skills (symlinks to global)
 .agents/
+yarn.lock

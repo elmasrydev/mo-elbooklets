@@ -350,7 +350,7 @@ const HomeScreen: React.FC = () => {
   if (loading && !activitiesData) {
     return (
       <View style={common.container}>
-        <UnifiedHeader leftContent={<AnimatedNavbarLogo isRTL={isRTL} />} />
+        <UnifiedHeader showMenuButton={true} />
         <View style={{ flex: 1, paddingTop: 16 }}>
           <CardListSkeleton numItems={4} />
         </View>
@@ -360,7 +360,7 @@ const HomeScreen: React.FC = () => {
 
   return (
     <View style={common.container}>
-      <UnifiedHeader leftContent={<AnimatedNavbarLogo isRTL={isRTL} />} />
+      <UnifiedHeader showMenuButton={true} />
 
       <ScrollView
         style={s.scrollFlex}

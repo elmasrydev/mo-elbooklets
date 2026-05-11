@@ -31,10 +31,10 @@ interface User {
   grade?: { id: string; name: string };
   educational_system_id?: string;
   educational_system?: { id: string; name: string };
-  governorate_id?: string;
-  governorate?: { id: string; name: string };
-  city_id?: string;
-  city?: { id: string; name: string };
+  governorate_id?: string | number;
+  governorate?: { id: string; name_ar: string; name_en: string };
+  city_id?: string | number;
+  city?: { id: string; name_ar: string; name_en: string };
   is_subscribed?: boolean;
   role?: 'student' | 'parent';
   followers_count?: number;
@@ -97,6 +97,7 @@ interface AuthContextType {
   parentForgotPassword: (email: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  updateUser: (userData: User) => Promise<void>;
   onAuthStateChange?: (isAuthenticated: boolean) => void;
 }
 
@@ -351,7 +352,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           parentRegister(input: {
             name: $name,
             mobile: $mobile,
-            email: $email,
             password: $password
           }) {
             access_token
@@ -436,6 +436,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
+  const updateUser = useCallback(
+    async (userData: User) => {
+      try {
+        const updatedUser = { ...user, ...userData };
+        await AsyncStorage.setItem('user_data', JSON.stringify(updatedUser));
+        setUser(updatedUser);
+        configureCrashlyticsStudent(updatedUser);
+        analytics.identify(updatedUser.id, {
+          name: updatedUser.name,
+          email: updatedUser.email,
+          mobile: updatedUser.mobile,
+          grade: updatedUser.grade?.name,
+        });
+      } catch (error) {
+        logError('Update user local data error', error);
+      }
+    },
+    [user],
+  );
+
   const refreshUser = useCallback(async () => {
     try {
       const token = await SecureStore.getItemAsync('auth_token');
@@ -446,13 +466,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const result = await tryFetchWithFallback(
           `query Me { 
             me { 
-              id name email mobile country_code gender school_id 
+              id name email mobile country_code gender school_name parent_mobile
               grade_id grade { id name } educational_system_id educational_system { id name } 
+              governorate_id governorate { id name_ar name_en }
+              city_id city { id name_ar name_en }
               is_subscribed
             } 
           }`,
           undefined,
-          token
+          token,
         );
         if (result.data?.me) {
           await AsyncStorage.setItem('user_data', JSON.stringify(result.data.me));
@@ -467,7 +489,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             } 
           }`,
           undefined,
-          token
+          token,
         );
         if (result.data?.parentMe) {
           await AsyncStorage.setItem('parent_data', JSON.stringify(result.data.parentMe));
@@ -495,8 +517,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       parentForgotPassword,
       logout,
       refreshUser,
+      updateUser,
     }),
-    [user, parentUser, userRole, isLoading, login, register, forgotPassword, parentLogin, parentRegister, parentForgotPassword, logout, refreshUser],
+    [
+      user,
+      parentUser,
+      userRole,
+      isLoading,
+      login,
+      register,
+      forgotPassword,
+      parentLogin,
+      parentRegister,
+      parentForgotPassword,
+      logout,
+      refreshUser,
+      updateUser,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -509,4 +546,3 @@ export const useAuth = (): AuthContextType => {
   }
   return context;
 };
-

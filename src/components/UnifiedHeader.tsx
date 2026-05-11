@@ -73,6 +73,8 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
         </TouchableOpacity>
       );
     }
+
+
     return leftContent || null;
   };
 

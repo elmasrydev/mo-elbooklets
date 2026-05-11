@@ -10,6 +10,8 @@ interface CircularProgressProps {
   percentage: number;
   color: string;
   showText?: boolean;
+  children?: React.ReactNode;
+  containerStyle?: any;
 }
 
 const CircularProgress: React.FC<CircularProgressProps> = ({
@@ -18,6 +20,8 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
   percentage,
   color,
   showText = true,
+  children,
+  containerStyle,
 }) => {
   const { typography, fontWeight } = useTypography();
   const { theme } = useTheme();
@@ -26,7 +30,7 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
   return (
-    <View style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }}>
+    <View style={[{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }, containerStyle]}>
       <Svg width={size} height={size}>
         <Circle
           cx={size / 2}
@@ -51,22 +55,26 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
           origin={`${size / 2}, ${size / 2}`}
         />
       </Svg>
-      {showText && (
-        <View style={{ position: 'absolute' }}>
-          <Text
-            style={[
-              typography('label'),
-              {
-                fontSize: size * 0.22,
-                ...fontWeight('bold'),
-                color: theme.colors.text,
-              },
-            ]}
-          >
-            {percentage} %
-          </Text>
-        </View>
-      )}
+      <View style={{ position: 'absolute', justifyContent: 'center', alignItems: 'center' }}>
+        {children ? (
+          children
+        ) : (
+          showText && (
+            <Text
+              style={[
+                typography('label'),
+                {
+                  fontSize: size * 0.22,
+                  ...fontWeight('bold'),
+                  color: theme.colors.text,
+                },
+              ]}
+            >
+              {percentage} %
+            </Text>
+          )
+        )}
+      </View>
     </View>
   );
 };
