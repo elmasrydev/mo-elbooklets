@@ -33,6 +33,7 @@ import { ConfirmModal } from '../../components/ConfirmModal';
 import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
 import { isRTL, textAlign } from '../../lib/rtl';
 import { useModal } from '../../context/ModalContext';
+import { useSubscriptionGate } from '../../hooks/useSubscriptionGate';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -297,8 +298,9 @@ const StudyLessonScreen: React.FC = () => {
   const { showConfirm } = useModal();
 
   const [currentLesson, setCurrentLesson] = useState<Lesson>(route.params?.lesson);
-  const allLessons: Lesson[] = route.params?.allLessons || [];
-  const subject = route.params?.subject;
+  const [allLessons, setAllLessons] = useState<Lesson[]>(route.params?.allLessons || []);
+  const [subject, setSubject] = useState(route.params?.subject);
+  const { checkSubscription } = useSubscriptionGate();
   const [expandedPoints, setExpandedPoints] = useState<Set<string>>(new Set());
   const [dodProgress, setDodProgress] = useState<LessonDODProgress | null>(null);
   const [loadingDod, setLoadingDod] = useState(false);
@@ -325,9 +327,11 @@ const StudyLessonScreen: React.FC = () => {
   const [noteModalVisible, setNoteModalVisible] = useState(false);
   const [selectedPointId, setSelectedPointId] = useState<string | null>(null);
   const [highlightedPointId, setHighlightedPointId] = useState<string | null>(null);
+  const [fetchingDetails, setFetchingDetails] = useState(false);
 
   const mutationInFlightRef = useRef(false);
   const pointLayoutsRef = useRef<Map<string, number>>(new Map());
+  const pointsSectionLayoutY = useRef<number>(0);
 
   // Re-seed when the user navigates to a different lesson
   useEffect(() => {
@@ -489,13 +493,67 @@ const StudyLessonScreen: React.FC = () => {
     }
   };
 
+  const fetchLessonDetails = async (lessonId: string) => {
+    try {
+      setFetchingDetails(true);
+      const token = await SecureStore.getItemAsync('auth_token');
+      if (!token) return;
+
+      // We use mySavedPoints because it's guaranteed to return the lesson object
+      // if we're navigating from a bookmark.
+      const result = await tryFetchWithFallback(
+        `query GetLessonDetails($lessonId: ID) {
+          mySavedPoints(lessonId: $lessonId) {
+            lesson {
+              id
+              name
+              summary
+              videoUrl
+              lessonPoints {
+                id
+                title
+                explanation
+                order
+                is_viewed
+              }
+              chapter {
+                id
+                name
+                order
+              }
+            }
+          }
+        }`,
+        { lessonId },
+        token,
+      );
+
+      if (result.data?.mySavedPoints?.[0]?.lesson) {
+        const fullLesson = result.data.mySavedPoints[0].lesson;
+        setCurrentLesson(prev => ({
+          ...prev,
+          ...fullLesson,
+          lessonPoints: fullLesson.lessonPoints || []
+        }));
+
+        if (fullLesson.lessonPoints) {
+           setViewedPoints(new Set(fullLesson.lessonPoints.filter((p: any) => p.is_viewed).map((p: any) => p.id)));
+        }
+      }
+    } catch (err) {
+      console.error('Fetch lesson details error:', err);
+    } finally {
+      setFetchingDetails(false);
+    }
+  };
+
   const fetchLessonMetadata = async (lessonId: string) => {
     try {
       const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
 
       const result = await tryFetchWithFallback(
-        `query MySavedPoints($lessonId: ID) {
+        `query MySavedPointsMetadata($lessonId: ID) {
           mySavedPoints(lessonId: $lessonId) {
             id
             is_bookmarked
@@ -669,26 +727,39 @@ const StudyLessonScreen: React.FC = () => {
   React.useEffect(() => {
     fetchDodProgress(currentLesson.id);
     fetchLessonMetadata(currentLesson.id);
+    
+    // If lesson points are missing, fetch them
+    if (!currentLesson.lessonPoints || currentLesson.lessonPoints.length === 0) {
+      fetchLessonDetails(currentLesson.id);
+    }
   }, [currentLesson.id]);
 
   useEffect(() => {
-    if (route.params?.initialPointId) {
+    if (route.params?.initialPointId && currentLesson.lessonPoints?.length) {
       const pointId = route.params.initialPointId;
+      
+      // Ensure the point is expanded
       setExpandedPoints(prev => new Set(prev).add(pointId));
       setHighlightedPointId(pointId);
       
-      // Give some time for LayoutAnimation and rendering
-      setTimeout(() => {
-        const y = pointLayoutsRef.current.get(pointId);
-        if (y !== undefined) {
-          scrollViewRef.current?.scrollTo({ y, animated: true });
+      // Delay slightly to allow layout to be captured
+      const timer = setTimeout(() => {
+        const pointY = pointLayoutsRef.current.get(pointId);
+        if (pointY !== undefined && scrollViewRef.current) {
+          // Absolute Y = Section Y + Point Y - Header Offset (optional)
+          const absoluteY = pointsSectionLayoutY.current + pointY - 20; 
+          scrollViewRef.current.scrollTo({ y: absoluteY, animated: true });
         }
-      }, 500);
+      }, 800);
 
-      // Remove highlight after a few seconds
-      setTimeout(() => setHighlightedPointId(null), 3000);
+      const highlightTimer = setTimeout(() => setHighlightedPointId(null), 4000);
+      
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(highlightTimer);
+      };
     }
-  }, [route.params?.initialPointId, currentLesson.id]);
+  }, [route.params?.initialPointId, currentLesson.lessonPoints]);
 
   const handleNavigateLesson = (lesson: Lesson) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -850,7 +921,12 @@ const StudyLessonScreen: React.FC = () => {
           )}
         </View>
 
-        <View style={currentStyles.section}>
+        <View 
+          style={currentStyles.section}
+          onLayout={(e) => {
+            pointsSectionLayoutY.current = e.nativeEvent.layout.y;
+          }}
+        >
           <View style={currentStyles.sectionHeader}>
             <View
               style={[currentStyles.sectionIcon, { backgroundColor: theme.colors.primary + '1A' }]}
@@ -858,6 +934,9 @@ const StudyLessonScreen: React.FC = () => {
               <Ionicons name="star-outline" size={20} color={theme.colors.primary} />
             </View>
             <Text style={currentStyles.sectionTitle}> {t('study_lesson.key_points')} </Text>
+            {fetchingDetails && (
+               <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginLeft: 'auto' }} />
+            )}
           </View>
 
           {hasNewPoints ? (

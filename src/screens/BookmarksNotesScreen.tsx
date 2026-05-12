@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   FlatList,
   Platform,
+  TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
@@ -14,6 +15,8 @@ import { useTranslation } from 'react-i18next';
 import { useTypography } from '../hooks/useTypography';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import UnifiedHeader from '../components/UnifiedHeader';
+import { ConfirmModal } from '../components/ConfirmModal';
+import { useModal } from '../context/ModalContext';
 import { layout } from '../config/layout';
 import { tryFetchWithFallback } from '../config/api';
 import * as SecureStore from 'expo-secure-store';
@@ -29,9 +32,21 @@ interface SavedPoint {
   lesson: {
     id: string;
     name: string;
+    summary?: string;
+    points?: string[];
+    videoUrl?: string;
+    myInteraction?: 'LIKE' | 'DISLIKE' | null;
+    lessonPoints?: {
+      id: string;
+      title: string;
+      explanation?: string;
+      order: number;
+      is_viewed: boolean;
+    }[];
     chapter: {
       id: string;
       name: string;
+      order?: number;
     };
   };
   lessonPoint: {
@@ -42,6 +57,82 @@ interface SavedPoint {
   };
 }
 
+const NoteModal: React.FC<{
+  visible: boolean;
+  initialNote: string;
+  title: string;
+  onClose: () => void;
+  onSave: (note: string) => void;
+  theme: any;
+  spacing: any;
+  borderRadius: any;
+  t: any;
+  isRTL: boolean;
+  typography: any;
+  onDelete?: () => void;
+}> = ({ visible, initialNote, title, onClose, onSave, theme, spacing, borderRadius, t, isRTL, typography, onDelete }) => {
+  const [note, setNote] = useState(initialNote);
+
+  React.useEffect(() => {
+    setNote(initialNote);
+  }, [initialNote, visible]);
+
+  if (!visible) return null;
+
+  return (
+    <ConfirmModal
+      visible={visible}
+      title={title}
+      confirmLabel={t('common.save')}
+      cancelLabel={t('common.cancel')}
+      onConfirm={() => onSave(note)}
+      onCancel={onClose}
+    >
+      <View style={{ marginTop: spacing.md }}>
+        <TextInput
+          style={{
+            backgroundColor: theme.colors.background,
+            borderWidth: 1,
+            borderColor: theme.colors.border,
+            borderRadius: borderRadius.md,
+            padding: spacing.md,
+            height: 120,
+            textAlignVertical: 'top',
+            color: theme.colors.text,
+            ...typography('body'),
+            textAlign: isRTL ? 'right' : 'left',
+          }}
+          placeholder={t('study_lesson.notes_placeholder', 'Add your note here...')}
+          placeholderTextColor={theme.colors.textTertiary}
+          multiline
+          value={note}
+          onChangeText={setNote}
+          autoFocus
+        />
+        {onDelete && initialNote && (
+          <TouchableOpacity 
+            onPress={onDelete}
+            style={{ 
+              marginTop: spacing.md, 
+              flexDirection: 'row', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              padding: spacing.sm,
+              backgroundColor: theme.colors.error + '10',
+              borderRadius: borderRadius.md
+            }}
+          >
+            <Ionicons name="trash-outline" size={18} color={theme.colors.error} style={{ marginRight: 8 }} />
+            <Text style={{ ...typography('caption'), color: theme.colors.error, fontWeight: '700' }}>
+              {t('common.delete', 'Delete')}
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </ConfirmModal>
+  );
+};
+
 const BookmarksNotesScreen: React.FC = () => {
   const { theme, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
@@ -49,11 +140,14 @@ const BookmarksNotesScreen: React.FC = () => {
   const { typography, fontWeight } = useTypography();
   const common = useCommonStyles();
   const navigation = useNavigation<any>();
+  const { showConfirm } = useModal();
 
   const [activeTab, setActiveTab] = useState<'bookmarks' | 'notes'>('bookmarks');
   const [savedPoints, setSavedPoints] = useState<SavedPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [noteModalVisible, setNoteModalVisible] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<SavedPoint | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -72,6 +166,17 @@ const BookmarksNotesScreen: React.FC = () => {
             lesson {
               id
               name
+              summary
+              points
+              videoUrl
+              myInteraction
+              lessonPoints {
+                id
+                title
+                explanation
+                order
+                is_viewed
+              }
               chapter {
                 id
                 name
@@ -132,6 +237,113 @@ const BookmarksNotesScreen: React.FC = () => {
     });
   };
 
+  const handleEditNote = (item: SavedPoint) => {
+    setSelectedItem(item);
+    setNoteModalVisible(true);
+  };
+
+  const handleSaveNote = async (note: string) => {
+    if (!selectedItem) return;
+    try {
+      const token = await SecureStore.getItemAsync('auth_token');
+      if (!token) return;
+
+      const result = await tryFetchWithFallback(
+        `mutation SavePointNote($lessonId: ID!, $lessonPointId: ID!, $noteContent: String!) {
+          savePointNote(lessonId: $lessonId, lessonPointId: $lessonPointId, noteContent: $noteContent) {
+            success
+            message
+            savedPoint {
+              id
+              is_bookmarked
+              note_content
+              created_at
+              updated_at
+              lesson {
+                id
+                name
+                chapter { id name }
+              }
+              lessonPoint { id title explanation order }
+            }
+          }
+        }`,
+        { 
+          lessonId: selectedItem.lesson.id, 
+          lessonPointId: selectedItem.lessonPoint.id, 
+          noteContent: note 
+        },
+        token,
+      );
+
+      if (result.data?.savePointNote?.success) {
+        const updatedPoint = result.data.savePointNote.savedPoint;
+        setSavedPoints(prev => prev.map(p => p.id === updatedPoint.id ? { ...p, ...updatedPoint } : p));
+        setNoteModalVisible(false);
+        setSelectedItem(null);
+        
+        setTimeout(() => {
+          showConfirm({
+            title: t('common.success'),
+            message: t('study_lesson.note_saved_success', 'Note saved successfully'),
+            showCancel: false,
+            onConfirm: () => {},
+          });
+        }, 500);
+      }
+    } catch (err) {
+      console.error('Save note error:', err);
+    }
+  };
+
+  const handleDeleteNote = async () => {
+    if (!selectedItem) return;
+    try {
+      const token = await SecureStore.getItemAsync('auth_token');
+      if (!token) return;
+
+      const result = await tryFetchWithFallback(
+        `mutation DeletePointNote($lessonPointId: ID!) {
+          deletePointNote(lessonPointId: $lessonPointId) {
+            success
+            message
+            savedPoint {
+              id
+              is_bookmarked
+              note_content
+            }
+          }
+        }`,
+        { lessonPointId: selectedItem.lessonPoint.id },
+        token,
+      );
+
+      if (result.data?.deletePointNote?.success) {
+        const sp = result.data.deletePointNote.savedPoint;
+        setSavedPoints(prev => {
+          if (sp && (sp.is_bookmarked || sp.note_content)) {
+            return prev.map(p => p.id === sp.id ? { ...p, ...sp } : p);
+          } else {
+            return prev.filter(p => p.id !== selectedItem.id);
+          }
+        });
+        setNoteModalVisible(false);
+        setSelectedItem(null);
+        
+        setTimeout(() => {
+          showConfirm({
+            title: t('common.success'),
+            message: t('study_lesson.note_deleted_success', 'Note deleted successfully'),
+            showCancel: false,
+            onConfirm: () => {},
+          });
+        }, 500);
+      }
+    } catch (err) {
+      console.error('Delete note error:', err);
+    }
+  };
+
   const renderItem = ({ item }: { item: SavedPoint }) => (
     <TouchableOpacity
       style={currentStyles.card}
@@ -147,11 +359,16 @@ const BookmarksNotesScreen: React.FC = () => {
             {item.lesson?.name}
           </Text>
         </View>
-        <Ionicons 
-          name={activeTab === 'bookmarks' ? 'bookmark' : 'document-text'} 
-          size={20} 
-          color={theme.colors.primary} 
-        />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <TouchableOpacity onPress={() => handleEditNote(item)}>
+            <Ionicons name="pencil-outline" size={18} color={theme.colors.textSecondary} />
+          </TouchableOpacity>
+          <Ionicons 
+            name={activeTab === 'bookmarks' ? 'bookmark' : 'document-text'} 
+            size={20} 
+            color={theme.colors.primary} 
+          />
+        </View>
       </View>
       
       <View style={currentStyles.pointContainer}>
@@ -248,6 +465,24 @@ const BookmarksNotesScreen: React.FC = () => {
           }
         />
       )}
+
+      <NoteModal
+        visible={noteModalVisible}
+        initialNote={selectedItem?.note_content || ''}
+        title={selectedItem?.lessonPoint.title || ''}
+        onClose={() => {
+          setNoteModalVisible(false);
+          setSelectedItem(null);
+        }}
+        onSave={handleSaveNote}
+        onDelete={handleDeleteNote}
+        theme={theme}
+        spacing={spacing}
+        borderRadius={borderRadius}
+        t={t}
+        isRTL={isRTL}
+        typography={typography}
+      />
     </View>
   );
 };
