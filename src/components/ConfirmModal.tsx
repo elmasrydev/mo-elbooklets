@@ -9,6 +9,8 @@ import {
   Dimensions,
   Platform,
   TextInput,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useTypography } from '../hooks/useTypography';
@@ -110,16 +112,17 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = (props: ConfirmModalPro
         style={styles.overlay}
         onPress={handleBackdropPress}
       >
-        <View
-          style={[
-            styles.container,
-            {
-              backgroundColor: theme.colors.card,
-              borderRadius: borderRadius.xl,
-            },
-          ]}
-          onStartShouldSetResponder={() => true}
-        >
+        <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+          <View
+            style={[
+              styles.container,
+              {
+                backgroundColor: theme.colors.card,
+                borderRadius: borderRadius.xl,
+              },
+            ]}
+            onStartShouldSetResponder={() => true}
+          >
           <TouchableOpacity
             style={[styles.closeButton, { backgroundColor: theme.colors.bgGray }]}
             onPress={onCancel}
@@ -193,7 +196,8 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = (props: ConfirmModalPro
               />
             )}
           </View>
-        </View>
+          </View>
+        </TouchableWithoutFeedback>
       </TouchableOpacity>
     </Modal>
   );
