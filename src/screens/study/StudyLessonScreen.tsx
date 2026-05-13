@@ -29,6 +29,7 @@ import AppButton from '../../components/AppButton';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
 import { isRTL, textAlign } from '../../lib/rtl';
+import { analytics } from '../../lib/analytics';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -382,9 +383,25 @@ const StudyLessonScreen: React.FC = () => {
 
   React.useEffect(() => {
     fetchDodProgress(currentLesson.id);
+    analytics.trackLessonStarted({
+      lesson_id: currentLesson.id,
+      lesson_title: currentLesson.name,
+      chapter_id: currentLesson.chapter?.id,
+      chapter_title: currentLesson.chapter?.name,
+      subject_id: subject?.id,
+      subject_title: subject?.name,
+    });
   }, [currentLesson.id]);
 
   const handleNavigateLesson = (lesson: Lesson) => {
+    analytics.trackLessonCompleted({
+      lesson_id: currentLesson.id,
+      lesson_title: currentLesson.name,
+      chapter_id: currentLesson.chapter?.id,
+      chapter_title: currentLesson.chapter?.name,
+      subject_id: subject?.id,
+      subject_title: subject?.name,
+    });
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setCurrentLesson(lesson);
     setExpandedPoints(new Set());
@@ -736,7 +753,17 @@ const StudyLessonScreen: React.FC = () => {
         totalCount={allLessons.length}
         onPrevious={previousLesson ? () => handleNavigateLesson(previousLesson as Lesson) : null}
         onNext={nextLesson ? () => handleNavigateLesson(nextLesson as Lesson) : null}
-        onFinish={() => navigation.goBack()}
+        onFinish={() => {
+          analytics.trackLessonCompleted({
+            lesson_id: currentLesson.id,
+            lesson_title: currentLesson.name,
+            chapter_id: currentLesson.chapter?.id,
+            chapter_title: currentLesson.chapter?.name,
+            subject_id: subject?.id,
+            subject_title: subject?.name,
+          });
+          navigation.goBack();
+        }}
       />
 
       {/* Leave-lesson confirmation — rendered locally so it works inside iOS fullScreenModal */}

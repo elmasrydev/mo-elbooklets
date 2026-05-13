@@ -10,6 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { tryFetchWithFallback, setAuthErrorHandler } from '../config/api';
 import { setLogoutHandler } from '../lib/apollo';
+import { analytics } from '../lib/analytics';
 import {
   configureCrashlyticsStudent,
   configureCrashlyticsParent,
@@ -89,8 +90,8 @@ interface AuthContextType {
   userRole: 'student' | 'parent' | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (input: LoginInput) => Promise<{ success: boolean; error?: string }>;
-  register: (input: RegisterInput) => Promise<{ success: boolean; error?: string }>;
+  login: (input: LoginInput) => Promise<{ success: boolean; user?: User; error?: string }>;
+  register: (input: RegisterInput) => Promise<{ success: boolean; user?: User; error?: string }>;
   forgotPassword: (email: string) => Promise<{ success: boolean; message?: string }>;
   parentLogin: (input: ParentLoginInput) => Promise<{ success: boolean; error?: string }>;
   parentRegister: (input: ParentRegisterInput) => Promise<{ success: boolean; error?: string }>;
@@ -145,6 +146,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const parsedUser = JSON.parse(userData);
             setUser(parsedUser);
             configureCrashlyticsStudent(parsedUser);
+            analytics.identify(parsedUser.id, {
+              name: parsedUser.name,
+              mobile: parsedUser.mobile,
+              grade: parsedUser.grade?.name,
+            });
           }
         } else {
           const parentData = await AsyncStorage.getItem('parent_data');
@@ -166,7 +172,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const login = useCallback(
-    async (input: LoginInput): Promise<{ success: boolean; error?: string }> => {
+    async (input: LoginInput): Promise<{ success: boolean; user?: User; error?: string }> => {
       try {
         const result = await tryFetchWithFallback(
           `
@@ -199,7 +205,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setUser(authPayload.user);
           setUserRole('student');
           configureCrashlyticsStudent(authPayload.user);
-          return { success: true };
+          analytics.identify(authPayload.user.id, {
+            name: authPayload.user.name,
+            mobile: authPayload.user.mobile,
+            grade: authPayload.user.grade?.name,
+          });
+          return { success: true, user: authPayload.user };
         }
 
         let errorMessage = result.errors?.[0]?.message || 'Login failed';
@@ -217,7 +228,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   );
 
   const register = useCallback(
-    async (input: RegisterInput): Promise<{ success: boolean; error?: string }> => {
+    async (input: RegisterInput): Promise<{ success: boolean; user?: User; error?: string }> => {
       try {
         const result = await tryFetchWithFallback(
           `
@@ -250,7 +261,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setUser(authPayload.user);
           setUserRole('student');
           configureCrashlyticsStudent(authPayload.user);
-          return { success: true };
+          analytics.identify(authPayload.user.id, {
+            name: authPayload.user.name,
+            mobile: authPayload.user.mobile,
+            grade: authPayload.user.grade?.name,
+          });
+          return { success: true, user: authPayload.user };
         }
 
         let errorMessage = result.errors?.[0]?.message || 'Registration failed';
@@ -431,6 +447,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setParentUser(null);
       setUserRole(null);
       configureCrashlyticsGuest();
+      analytics.trackLogout();
     } catch (error) {
       logError('Logout error', error);
     }
@@ -480,6 +497,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           await AsyncStorage.setItem('user_data', JSON.stringify(result.data.me));
           setUser(result.data.me);
           configureCrashlyticsStudent(result.data.me);
+          analytics.identify(result.data.me.id, {
+            name: result.data.me.name,
+            mobile: result.data.me.mobile,
+            grade: result.data.me.grade?.name,
+          });
         }
       } else {
         const result = await tryFetchWithFallback(
