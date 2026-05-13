@@ -459,7 +459,6 @@ const SocialScreen: React.FC = () => {
             onChangeText={setSearchQuery}
             textAlign={isRTL() ? 'right' : 'left'}
             returnKeyType="search"
-            clearButtonMode="while-editing"
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity
