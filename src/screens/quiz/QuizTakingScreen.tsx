@@ -27,6 +27,7 @@ import AppButton from '../../components/AppButton';
 import RetryView from '../../components/RetryView';
 import { QuizScreenSkeleton } from '../../components/SkeletonLoader';
 import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
+import { analytics } from '../../lib/analytics';
 import ReportQuestionModal from '../../components/ReportQuestionModal';
 
 const DESCRIPTIVE_TYPES = ['what_happens', 'give_a_reason'];
@@ -164,6 +165,12 @@ const QuizTakingScreen: React.FC = () => {
 
       if (result.data?.quiz) {
         setQuiz(result.data.quiz);
+        analytics.trackQuizStarted({
+          quiz_id: result.data.quiz.id,
+          quiz_title: result.data.quiz.name,
+          subject_id: result.data.quiz.subject?.id,
+          lesson_count: result.data.quiz.questions.length,
+        });
       } else {
         setError(result.errors?.[0]?.message || t('quiz_taking.error_loading_quiz'));
       }

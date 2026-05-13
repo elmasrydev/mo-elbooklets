@@ -66,3 +66,10 @@ mutation ForgotPassword($email: String!) {
     message
   }
 }
+
+mutation UpdatePassword($input: UpdatePasswordInput!) {
+  updatePassword(input: $input) {
+    success
+    message
+  }
+}

@@ -26,6 +26,7 @@ import AppButton from '../../components/AppButton';
 import RetryView from '../../components/RetryView';
 import { GenericListSkeleton } from '../../components/SkeletonLoader';
 import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
+import { analytics } from '../../lib/analytics';
 
 interface UserQuizAnswer {
   question: {
@@ -175,6 +176,14 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
       if (result.data?.quizResults) {
         setQuizResult(result.data.quizResults);
         setPublished(!!result.data.quizResults.isPublished);
+        analytics.trackQuizCompleted({
+          quiz_id: result.data.quizResults.quiz?.id,
+          quiz_title: result.data.quizResults.quiz?.name,
+          subject_id: result.data.quizResults.quiz?.subject?.id,
+          score: result.data.quizResults.score,
+          total_questions: result.data.quizResults.totalQuestions,
+          passed: result.data.quizResults.isPassed,
+        });
       } else {
         setError(result.errors?.[0]?.message || t('quiz_results.error_loading_results'));
       }

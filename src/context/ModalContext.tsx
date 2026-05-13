@@ -10,8 +10,11 @@ export interface ConfirmModalConfig {
   dismissible?: boolean;
   backButtonCloseDisabled?: boolean;
   countdown?: number;
-  onConfirm: () => void | Promise<void>;
+  onConfirm: (inputValue?: string) => void | Promise<void>;
   onCancel?: () => void;
+  hasInput?: boolean;
+  inputPlaceholder?: string;
+  initialInputValue?: string;
 }
 
 interface ModalContextType {
@@ -19,6 +22,8 @@ interface ModalContextType {
   hideModal: () => void;
   isModalVisible: boolean;
   modalConfig: ConfirmModalConfig | null;
+  inputValue: string;
+  setInputValue: (value: string) => void;
 }
 
 const ModalContext = createContext<ModalContextType | undefined>(undefined);
@@ -30,9 +35,11 @@ interface ModalProviderProps {
 export const ModalProvider: React.FC<ModalProviderProps> = ({ children }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [modalConfig, setModalConfig] = useState<ConfirmModalConfig | null>(null);
+  const [inputValue, setInputValue] = useState('');
 
   const showConfirm = useCallback((config: ConfirmModalConfig) => {
     setModalConfig(config);
+    setInputValue(config.initialInputValue || '');
     setIsModalVisible(true);
   }, []);
 
@@ -40,6 +47,7 @@ export const ModalProvider: React.FC<ModalProviderProps> = ({ children }) => {
     setIsModalVisible(false);
     setTimeout(() => {
       setModalConfig(null);
+      setInputValue('');
     }, 200);
   }, []);
 
@@ -47,8 +55,10 @@ export const ModalProvider: React.FC<ModalProviderProps> = ({ children }) => {
     showConfirm,
     hideModal,
     isModalVisible,
-    modalConfig
-  }), [showConfirm, hideModal, isModalVisible, modalConfig]);
+    modalConfig,
+    inputValue,
+    setInputValue
+  }), [showConfirm, hideModal, isModalVisible, modalConfig, inputValue]);
 
   return (
     <ModalContext.Provider value={value}>

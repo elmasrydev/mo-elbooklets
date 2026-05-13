@@ -16,6 +16,7 @@ import { layout } from '../config/layout';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
+import { analytics } from '../lib/analytics';
 import { isDebugMode } from '../config/debug';
 import ApiUrlSwitcherModal from '../components/ApiUrlSwitcherModal';
 
@@ -27,6 +28,8 @@ const OnboardingScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { theme, spacing } = useTheme();
 
+
+
   const currentStyles = styles(typography, fontWeight, insets, isRTL, theme);
 
   const toggleLanguage = () => {
@@ -37,6 +40,7 @@ const OnboardingScreen: React.FC = () => {
   const [activeRole, setActiveRole] = useState<'student' | 'parent'>('student');
 
   const handleGetStarted = () => {
+    analytics.trackOnboardingCompleted();
     if (activeRole === 'student') {
       navigation.navigate('Register');
     } else {
