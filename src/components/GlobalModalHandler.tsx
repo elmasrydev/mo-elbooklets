@@ -3,7 +3,7 @@ import { useModal } from '../context/ModalContext';
 import { ConfirmModal } from './ConfirmModal';
 
 export const GlobalModalHandler: React.FC = () => {
-  const { isModalVisible, modalConfig, hideModal } = useModal();
+  const { isModalVisible, modalConfig, hideModal, inputValue, setInputValue } = useModal();
   const [isLoading, setIsLoading] = useState(false);
 
   if (!modalConfig) {
@@ -14,7 +14,7 @@ export const GlobalModalHandler: React.FC = () => {
     try {
       setIsLoading(true);
       if (modalConfig.onConfirm) {
-        await modalConfig.onConfirm();
+        await modalConfig.onConfirm(inputValue);
       }
     } catch (error) {
       console.error('❌ [GlobalModalHandler] Error in onConfirm:', error);
@@ -46,6 +46,10 @@ export const GlobalModalHandler: React.FC = () => {
       dismissible={modalConfig.dismissible}
       backButtonCloseDisabled={modalConfig.backButtonCloseDisabled}
       countdown={modalConfig.countdown}
+      hasInput={modalConfig.hasInput}
+      inputPlaceholder={modalConfig.inputPlaceholder}
+      inputValue={inputValue}
+      onInputChange={setInputValue}
     />
   );
 };

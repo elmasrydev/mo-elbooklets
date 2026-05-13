@@ -8,6 +8,7 @@ import {
   Image,
   Dimensions,
   Platform,
+  TextInput,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useTypography } from '../hooks/useTypography';
@@ -34,6 +35,10 @@ export interface ConfirmModalProps {
   dismissible?: boolean;
   backButtonCloseDisabled?: boolean;
   countdown?: number;
+  hasInput?: boolean;
+  inputPlaceholder?: string;
+  onInputChange?: (text: string) => void;
+  inputValue?: string;
 }
 
 export const ConfirmModal: React.FC<ConfirmModalProps> = (props: ConfirmModalProps) => {
@@ -51,6 +56,10 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = (props: ConfirmModalPro
     dismissible = true,
     backButtonCloseDisabled = true,
     countdown = 0,
+    hasInput = false,
+    inputPlaceholder = '',
+    onInputChange,
+    inputValue = '',
   } = props;
 
   const { theme, borderRadius } = useTheme();
@@ -142,6 +151,25 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = (props: ConfirmModalPro
           >
             {message}
           </Text>
+          
+          {hasInput && (
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: theme.colors.bgGray,
+                  color: theme.colors.text,
+                  borderColor: theme.colors.border,
+                  borderRadius: borderRadius.md,
+                }
+              ]}
+              placeholder={inputPlaceholder}
+              placeholderTextColor={theme.colors.textTertiary}
+              value={inputValue}
+              onChangeText={onInputChange}
+              autoFocus={true}
+            />
+          )}
 
           <View style={styles.buttonContainer}>
             <AppButton
@@ -231,5 +259,13 @@ const styles = StyleSheet.create({
   buttonContainer: {
     width: '100%',
     gap: 12,
+  },
+  input: {
+    width: '100%',
+    height: 50,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    marginBottom: 20,
+    fontSize: 16,
   },
 });

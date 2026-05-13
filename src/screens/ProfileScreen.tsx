@@ -23,6 +23,8 @@ import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import DeviceInfo from 'react-native-device-info';
 import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
+import CircularProgress from '../components/CircularProgress';
+import { useProfileCompleteness } from '../hooks/useProfileCompleteness';
 import { useMutation } from '@apollo/client/react';
 import {
   DeleteAccountDocument,
@@ -31,6 +33,7 @@ import {
 } from '../generated/graphql';
 import { isDebugMode } from '../config/debug';
 import crashlytics from '@react-native-firebase/crashlytics';
+import { logError } from '../utils/logger';
 
 const APP_VERSION = `EL-Booklets v${DeviceInfo.getVersion()}`;
 
@@ -52,6 +55,9 @@ const ProfileScreen: React.FC = () => {
     DeleteAccountMutation,
     DeleteAccountMutationVariables
   >(DeleteAccountDocument);
+
+  const { completeness } = useProfileCompleteness();
+  const [showPrompt, setShowPrompt] = useState(false);
 
   const handleLogout = () => {
     showConfirm({
@@ -130,19 +136,25 @@ const ProfileScreen: React.FC = () => {
       >
         {/* Profile Section */}
         <View style={currentStyles.profileSection}>
-          <View style={currentStyles.avatarRingWrapper}>
-            <View style={currentStyles.avatarOuterRing}>
+          <TouchableOpacity 
+            style={currentStyles.avatarRingWrapper}
+            activeOpacity={0.8}
+            onPress={() => setShowPrompt(true)}
+          >
+            <CircularProgress
+              size={130}
+              strokeWidth={6}
+              percentage={completeness?.percentage || 0}
+              color={theme.colors.primary}
+              containerStyle={currentStyles.avatarProgress}
+            >
               <View style={[currentStyles.avatarImage, currentStyles.avatarFallback]}>
                 <Text style={currentStyles.avatarFallbackText}>
                   {user?.name?.charAt(0).toUpperCase() || 'U'}
                 </Text>
               </View>
-            </View>
-            {/* Hide edit avatar button for now */}
-            {/* <TouchableOpacity style={currentStyles.editAvatarButton}>
-              <Ionicons name="pencil" size={14} color="#ffffff" />
-            </TouchableOpacity> */}
-          </View>
+            </CircularProgress>
+          </TouchableOpacity>
 
           <View style={currentStyles.userInfoTextContainer}>
             <Text style={currentStyles.userName}>{user?.name || 'User'}</Text>
@@ -167,7 +179,7 @@ const ProfileScreen: React.FC = () => {
         {/* Menu Section */}
         <View style={currentStyles.menuSection}>
           {/* Menu Items "TODO: we need to release and show it in next release"*/}
-          {/*<TouchableOpacity 
+          <TouchableOpacity 
             style={currentStyles.settingItem}
             onPress={() => navigation.navigate('EditProfile')}
           >
@@ -185,7 +197,7 @@ const ProfileScreen: React.FC = () => {
               size={20}
               color={theme.colors.textTertiary}
             />
-          </TouchableOpacity>*/}
+          </TouchableOpacity>
 
           {/* Change Language */}
           <TouchableOpacity style={currentStyles.settingItem} onPress={handleLanguagePress}>
@@ -403,7 +415,12 @@ const ProfileScreen: React.FC = () => {
         </TouchableOpacity>
       </ScrollView>
 
-      <ProfileCompletionPrompt context="more" />
+      <ProfileCompletionPrompt 
+        context="more" 
+        isVisible={showPrompt}
+        onClose={() => setShowPrompt(false)}
+        autoShow={true}
+      />
     </View>
   );
 };
@@ -447,11 +464,14 @@ const styles = (
       borderColor: theme.colors.primary + '33', // 20% opacity
     },
     avatarImage: {
-      width: 110,
-      height: 110,
-      borderRadius: 55,
-      borderWidth: 4,
+      width: 100,
+      height: 100,
+      borderRadius: 50,
+      borderWidth: 2,
       borderColor: theme.colors.card,
+    },
+    avatarProgress: {
+      padding: 4,
     },
     avatarFallback: {
       backgroundColor: theme.colors.primary,
