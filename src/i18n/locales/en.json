@@ -140,6 +140,8 @@
     "key_points_progress": "View all key points ({{current}}/{{total}})",
     "quizzes_progress": "Pass required quizzes ({{current}}/{{total}})",
     "no_dod_data": "No progress data available",
+    "view_mind_map": "View Mind Map",
+    "mind_map_title": "Lesson Mind Map",
     "leave_title": "Leave Lesson?",
     "leave_message": "Your reading progress is saved. Are you sure you want to leave?"
   },

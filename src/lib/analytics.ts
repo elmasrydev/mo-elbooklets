@@ -113,6 +113,10 @@ export const analytics = {
     analytics.track('Contact Support', { subject });
   },
 
+  trackLessonMindMapViewed: (params: LessonAnalyticsParams) => {
+    analytics.track('Lesson Mind Map Viewed', params);
+  },
+
   trackLanguageChanged: (language: 'ar' | 'en') => {
     analytics.track('Language Changed', { language });
     // Update local context for all subsequent events

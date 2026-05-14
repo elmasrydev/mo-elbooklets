@@ -9,6 +9,10 @@ import {
   Platform,
   UIManager,
   ActivityIndicator,
+  Modal,
+  Image,
+  Dimensions,
+  Pressable,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -56,7 +60,8 @@ interface Lesson {
     name: string;
     order: number;
   };
-  isLocked?: boolean;
+   isLocked?: boolean;
+  mind_map_url?: string;
 }
 
 interface LessonDODProgress {
@@ -221,7 +226,8 @@ const StudyLessonScreen: React.FC = () => {
   const scrollViewRef = useRef<ScrollView>(null);
   // Local state for the leave-lesson confirmation — must be rendered here
   // because GlobalModalHandler (root-level) cannot pierce iOS native fullScreenModal.
-  const [showLeaveModal, setShowLeaveModal] = useState(false);
+   const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [showMindMapModal, setShowMindMapModal] = useState(false);
 
   // Like / Dislike — seeded from the lesson list query (myInteraction)
   const [interaction, setInteraction] = useState<'LIKE' | 'DISLIKE' | null>(
@@ -414,6 +420,18 @@ const StudyLessonScreen: React.FC = () => {
 
     scrollViewRef.current?.scrollTo({ y: 0, animated: false });
   };
+  
+  const handleViewMindMap = () => {
+    setShowMindMapModal(true);
+    analytics.trackLessonMindMapViewed({
+      lesson_id: currentLesson.id,
+      lesson_title: currentLesson.name,
+      chapter_id: currentLesson.chapter?.id,
+      chapter_title: currentLesson.chapter?.name,
+      subject_id: subject?.id,
+      subject_title: subject?.name,
+    });
+  };
 
   const handleTakeQuiz = () => {
     const selectedUnits = [
@@ -560,6 +578,38 @@ const StudyLessonScreen: React.FC = () => {
             <Text style={currentStyles.noContentText}>{t('study_lesson.no_summary')}</Text>
           )}
         </View>
+
+        {currentLesson.mind_map_url && (
+          <View style={currentStyles.section}>
+            <View style={currentStyles.sectionHeader}>
+              <View
+                style={[currentStyles.sectionIcon, { backgroundColor: theme.colors.secondary + '1A' }]}
+              >
+                <Ionicons name="map-outline" size={20} color={theme.colors.secondary} />
+              </View>
+              <Text style={[currentStyles.sectionTitle, { color: theme.colors.secondary }]}>
+                {t('study_lesson.mind_map_title')}
+              </Text>
+            </View>
+            <TouchableOpacity 
+              onPress={handleViewMindMap}
+              activeOpacity={0.9}
+              style={currentStyles.mindMapPreviewContainer}
+            >
+              <Image 
+                source={{ uri: currentLesson.mind_map_url }} 
+                style={currentStyles.mindMapPreviewImage}
+                resizeMode="cover"
+              />
+              <View style={currentStyles.mindMapOverlay}>
+                <View style={currentStyles.mindMapBadge}>
+                  <Ionicons name="expand-outline" size={16} color="#fff" />
+                  <Text style={currentStyles.mindMapBadgeText}>{t('study_lesson.view_mind_map')}</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <View style={currentStyles.section}>
           <View style={currentStyles.sectionHeader}>
@@ -779,6 +829,36 @@ const StudyLessonScreen: React.FC = () => {
         }}
         onCancel={() => setShowLeaveModal(false)}
       />
+      
+      {/* Fullscreen Mind Map Modal */}
+      <Modal
+        visible={showMindMapModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowMindMapModal(false)}
+      >
+        <View style={currentStyles.fullScreenOverlay}>
+          <TouchableOpacity 
+            style={currentStyles.fullScreenCloseBtn} 
+            onPress={() => setShowMindMapModal(false)}
+          >
+            <Ionicons name="close" size={30} color="#fff" />
+          </TouchableOpacity>
+          
+          {currentLesson.mind_map_url && (
+            <Image 
+              source={{ uri: currentLesson.mind_map_url }} 
+              style={currentStyles.fullScreenImage}
+              resizeMode="contain"
+            />
+          )}
+          
+          <View style={currentStyles.fullScreenHeader}>
+            <Text style={currentStyles.fullScreenTitle}>{currentLesson.name}</Text>
+            <Text style={currentStyles.fullScreenSubtitle}>{t('study_lesson.mind_map_title')}</Text>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -1036,6 +1116,83 @@ const styles = (
       width: 45,
       textAlign: 'center',
       marginBottom: 3,
+    },
+    // Mind Map Styles
+    mindMapPreviewContainer: {
+      width: '100%',
+      height: 180,
+      borderRadius: borderRadius.md,
+      overflow: 'hidden',
+      backgroundColor: theme.colors.background,
+      marginTop: spacing.xs,
+    },
+    mindMapPreviewImage: {
+      width: '100%',
+      height: '100%',
+      opacity: 0.8,
+    },
+    mindMapOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(0,0,0,0.1)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    mindMapBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.secondary,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderRadius: borderRadius.full,
+      gap: 8,
+      ...layout.shadow,
+    },
+    mindMapBadgeText: {
+      ...typography('caption'),
+      ...fontWeight('bold'),
+      color: '#fff',
+    },
+    fullScreenOverlay: {
+      flex: 1,
+      backgroundColor: '#000',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    fullScreenImage: {
+      width: Dimensions.get('window').width,
+      height: Dimensions.get('window').height * 0.8,
+    },
+    fullScreenCloseBtn: {
+      position: 'absolute',
+      top: 50,
+      right: 20,
+      zIndex: 10,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    fullScreenHeader: {
+      position: 'absolute',
+      bottom: 40,
+      left: 0,
+      right: 0,
+      alignItems: 'center',
+      paddingHorizontal: 20,
+    },
+    fullScreenTitle: {
+      ...typography('h3'),
+      color: '#fff',
+      textAlign: 'center',
+      ...fontWeight('bold'),
+    },
+    fullScreenSubtitle: {
+      ...typography('caption'),
+      color: 'rgba(255,255,255,0.7)',
+      textAlign: 'center',
+      marginTop: 4,
     },
   });
 
