@@ -16,7 +16,7 @@ import { useTypography } from '../hooks/useTypography';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import UnifiedHeader from '../components/UnifiedHeader';
 import { ConfirmModal } from '../components/ConfirmModal';
-import { useModal } from '../context/ModalContext';
+
 import { layout } from '../config/layout';
 import { tryFetchWithFallback } from '../config/api';
 import * as SecureStore from 'expo-secure-store';
@@ -140,9 +140,13 @@ const BookmarksNotesScreen: React.FC = () => {
   const { typography, fontWeight } = useTypography();
   const common = useCommonStyles();
   const navigation = useNavigation<any>();
-  const { showConfirm } = useModal();
 
   const [activeTab, setActiveTab] = useState<'bookmarks' | 'notes'>('bookmarks');
+  const [localAlert, setLocalAlert] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+  } | null>(null);
   const [savedPoints, setSavedPoints] = useState<SavedPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -282,14 +286,11 @@ const BookmarksNotesScreen: React.FC = () => {
         setNoteModalVisible(false);
         setSelectedItem(null);
         
-        setTimeout(() => {
-          showConfirm({
-            title: t('common.success'),
-            message: t('study_lesson.note_saved_success', 'Note saved successfully'),
-            showCancel: false,
-            onConfirm: () => {},
-          });
-        }, 500);
+        setLocalAlert({
+          visible: true,
+          title: t('common.success'),
+          message: t('study_lesson.note_saved_success', 'Note saved successfully'),
+        });
       }
     } catch (err) {
       console.error('Save note error:', err);
@@ -330,14 +331,11 @@ const BookmarksNotesScreen: React.FC = () => {
         setNoteModalVisible(false);
         setSelectedItem(null);
         
-        setTimeout(() => {
-          showConfirm({
-            title: t('common.success'),
-            message: t('study_lesson.note_deleted_success', 'Note deleted successfully'),
-            showCancel: false,
-            onConfirm: () => {},
-          });
-        }, 500);
+        setLocalAlert({
+          visible: true,
+          title: t('common.success'),
+          message: t('study_lesson.note_deleted_success', 'Note deleted successfully'),
+        });
       }
     } catch (err) {
       console.error('Delete note error:', err);
@@ -483,6 +481,18 @@ const BookmarksNotesScreen: React.FC = () => {
         isRTL={isRTL}
         typography={typography}
       />
+
+      {localAlert && (
+        <ConfirmModal
+          visible={localAlert.visible}
+          title={localAlert.title}
+          message={localAlert.message}
+          confirmLabel={t('common.ok', 'OK')}
+          showCancel={false}
+          onConfirm={() => setLocalAlert(null)}
+          onCancel={() => setLocalAlert(null)}
+        />
+      )}
     </View>
   );
 };

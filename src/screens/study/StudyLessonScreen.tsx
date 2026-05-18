@@ -32,7 +32,7 @@ import AppButton from '../../components/AppButton';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
 import { isRTL, textAlign } from '../../lib/rtl';
-import { useModal } from '../../context/ModalContext';
+
 import { useSubscriptionGate } from '../../hooks/useSubscriptionGate';
 import { analytics } from '../../lib/analytics';
 
@@ -296,7 +296,6 @@ const StudyLessonScreen: React.FC = () => {
   const route = useRoute<any>();
   const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
-  const { showConfirm } = useModal();
 
   const [currentLesson, setCurrentLesson] = useState<Lesson>(route.params?.lesson);
   const [allLessons, setAllLessons] = useState<Lesson[]>(route.params?.allLessons || []);
@@ -312,6 +311,12 @@ const StudyLessonScreen: React.FC = () => {
   // Local state for the leave-lesson confirmation — must be rendered here
   // because GlobalModalHandler (root-level) cannot pierce iOS native fullScreenModal.
   const [showLeaveModal, setShowLeaveModal] = useState(false);
+
+  const [localAlert, setLocalAlert] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+  } | null>(null);
 
   // Like / Dislike — seeded from the lesson list query (myInteraction)
   const [interaction, setInteraction] = useState<'LIKE' | 'DISLIKE' | null>(
@@ -615,13 +620,12 @@ const StudyLessonScreen: React.FC = () => {
         });
 
         // Show confirmation
-        showConfirm({
+        setLocalAlert({
+          visible: true,
           title: t('common.success'),
           message: isBookmarked 
             ? t('study_lesson.bookmark_added', 'Bookmark added successfully')
             : t('study_lesson.bookmark_removed', 'Bookmark removed'),
-          showCancel: false,
-          onConfirm: () => {},
         });
       }
     } catch (err) {
@@ -662,14 +666,11 @@ const StudyLessonScreen: React.FC = () => {
         });
         setNoteModalVisible(false);
         // Show confirmation
-        setTimeout(() => {
-          showConfirm({
-            title: t('common.success'),
-            message: t('study_lesson.note_saved_success', 'Note saved successfully'),
-            showCancel: false,
-            onConfirm: () => {},
-          });
-        }, 500);
+        setLocalAlert({
+          visible: true,
+          title: t('common.success'),
+          message: t('study_lesson.note_saved_success', 'Note saved successfully'),
+        });
       }
     } catch (err) {
       console.error('Save note error:', err);
@@ -711,14 +712,11 @@ const StudyLessonScreen: React.FC = () => {
         });
         setNoteModalVisible(false);
         // Show confirmation
-        setTimeout(() => {
-          showConfirm({
-            title: t('common.success'),
-            message: t('study_lesson.note_deleted_success', 'Note deleted successfully'),
-            showCancel: false,
-            onConfirm: () => {},
-          });
-        }, 500);
+        setLocalAlert({
+          visible: true,
+          title: t('common.success'),
+          message: t('study_lesson.note_deleted_success', 'Note deleted successfully'),
+        });
       }
     } catch (err) {
       console.error('Delete note error:', err);
@@ -1220,6 +1218,18 @@ const StudyLessonScreen: React.FC = () => {
         isRTL={isRTL}
         typography={typography}
       />
+
+      {localAlert && (
+        <ConfirmModal
+          visible={localAlert.visible}
+          title={localAlert.title}
+          message={localAlert.message}
+          confirmLabel={t('common.ok', 'OK')}
+          showCancel={false}
+          onConfirm={() => setLocalAlert(null)}
+          onCancel={() => setLocalAlert(null)}
+        />
+      )}
     </View>
   );
 };
