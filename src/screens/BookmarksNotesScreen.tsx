@@ -119,7 +119,8 @@ const NoteModal: React.FC<{
               justifyContent: 'center',
               padding: spacing.sm,
               backgroundColor: theme.colors.error + '10',
-              borderRadius: borderRadius.md
+              borderRadius: borderRadius.md,
+              marginBottom: 14
             }}
           >
             <Ionicons name="trash-outline" size={18} color={theme.colors.error} style={{ marginRight: 8 }} />
