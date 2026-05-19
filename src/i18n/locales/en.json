@@ -43,6 +43,7 @@
     "error_boundary_retry": "Try Again",
     "error_boundary_desc": "If the problem persists, please contact support.",
     "test_react_crash": "React Crash",
+    "delete": "Delete",
     "cancel": "Cancel",
     "accept": "Accept",
     "decline": "Decline",
@@ -95,6 +96,8 @@
     "api_switch_demo": "Switch to Demo",
     "api_switch_production": "Switch to Production",
     "api_switch_prs": "Switch to PRS",
+    "bookmarks": "Bookmarks",
+    "notes": "Notes",
     "search": "Search",
     "no_results": "No results found"
   },
@@ -141,7 +144,13 @@
     "quizzes_progress": "Pass required quizzes ({{current}}/{{total}})",
     "no_dod_data": "No progress data available",
     "leave_title": "Leave Lesson?",
-    "leave_message": "Your reading progress is saved. Are you sure you want to leave?"
+    "leave_message": "Your reading progress is saved. Are you sure you want to leave?",
+    "add_note": "Add Note",
+    "notes_placeholder": "Add your note here...",
+    "note_saved_success": "Note saved successfully",
+    "note_deleted_success": "Note deleted successfully",
+    "bookmark_added": "Bookmark added successfully",
+    "bookmark_removed": "Bookmark removed"
   },
   "more_screen": {
     "header_title": "More",
@@ -167,7 +176,9 @@
     "about_content": "ElBooklets Mobile App\nVersion 1.0.0\n\nYour digital learning companion for interactive education.",
     "grade": "Grade",
     "not_specified": "Not specified",
-    "logout": "Logout"
+    "logout": "Logout",
+    "bookmarks_notes": "Bookmarks & Notes",
+    "bookmarks_notes_desc": "View your saved points and notes"
   },
   "quiz_types": {
     "default": "Default",
@@ -753,5 +764,13 @@
     "success_message": "Thank you! Our team will review the question and take action.",
     "submit_error": "Failed to submit the report. Please try again.",
     "error_loading_types": "Could not load report types. Tap to retry."
+  },
+  "bookmarks": {
+    "empty_title": "No bookmarks yet",
+    "empty_subtitle": "Bookmark key points to find them here later."
+  },
+  "notes": {
+    "empty_title": "No notes yet",
+    "empty_subtitle": "Add notes to key points while studying."
   }
 }
