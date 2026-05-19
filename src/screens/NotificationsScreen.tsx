@@ -47,9 +47,14 @@ const NotificationsScreen: React.FC = () => {
       if (!notification.is_read) {
         markAsRead(notification.id);
       }
-      handleNotificationRoute(navigation, notification.event_slug, notification.action_url, userRole);
+      handleNotificationRoute(
+        navigation,
+        notification.event_slug,
+        notification.action_url,
+        userRole,
+      );
     },
-    [markAsRead, navigation, userRole]
+    [markAsRead, navigation, userRole],
   );
 
   // Group notifications by time
@@ -80,9 +85,12 @@ const NotificationsScreen: React.FC = () => {
 
     const sections = [];
     if (today.length > 0) sections.push({ title: t('notifications_center.today'), data: today });
-    if (yesterday.length > 0) sections.push({ title: t('notifications_center.yesterday'), data: yesterday });
-    if (thisWeek.length > 0) sections.push({ title: t('notifications_center.this_week'), data: thisWeek });
-    if (earlier.length > 0) sections.push({ title: t('notifications_center.earlier'), data: earlier });
+    if (yesterday.length > 0)
+      sections.push({ title: t('notifications_center.yesterday'), data: yesterday });
+    if (thisWeek.length > 0)
+      sections.push({ title: t('notifications_center.this_week'), data: thisWeek });
+    if (earlier.length > 0)
+      sections.push({ title: t('notifications_center.earlier'), data: earlier });
 
     return sections;
   }, [notifications, t]);
@@ -113,18 +121,30 @@ const NotificationsScreen: React.FC = () => {
         <View style={[styles.emptyIconContainer, { backgroundColor: `${theme.colors.primary}10` }]}>
           <Ionicons name="notifications-off-outline" size={48} color={theme.colors.primary} />
         </View>
-        <Text style={[typography('h3'), fontWeight('700'), { color: theme.colors.text, marginTop: 24 }]}>
+        <Text
+          style={[typography('h3'), fontWeight('700'), { color: theme.colors.text, marginTop: 24 }]}
+        >
           {t('notifications_center.empty_title')}
         </Text>
-        <Text style={[typography('body'), { color: theme.colors.textSecondary, marginTop: 8, textAlign: 'center', paddingHorizontal: 40 }]}>
+        <Text
+          style={[
+            typography('body'),
+            {
+              color: theme.colors.textSecondary,
+              marginTop: 8,
+              textAlign: 'center',
+              paddingHorizontal: 40,
+            },
+          ]}
+        >
           {t('notifications_center.empty_subtitle')}
         </Text>
       </View>
     );
   }, [loading, refreshing, theme, typography, fontWeight, t]);
 
-  // Flatten for FlatList but we want headers. 
-  // FlatList doesn't support section headers as well as SectionList, 
+  // Flatten for FlatList but we want headers.
+  // FlatList doesn't support section headers as well as SectionList,
   // but let's use a trick or just use SectionList.
   // Actually, project usually uses FlatList. I'll use a flattened array with headers as items.
 
@@ -159,28 +179,35 @@ const NotificationsScreen: React.FC = () => {
 
   return (
     <View style={common.container}>
-      <UnifiedHeader
-        title={t('notifications_center.title')}
-        showBackButton
-      />
+      <UnifiedHeader title={t('notifications_center.title')} showBackButton />
 
       {notifications.length > 0 && (
         <View style={styles.actionHeader}>
           <Text style={[typography('caption'), { color: theme.colors.textSecondary }]}>
             {unreadCount} {t('notifications_center.unread_count')}
           </Text>
-          <TouchableOpacity 
-            onPress={markAllAsRead} 
+          <TouchableOpacity
+            onPress={markAllAsRead}
             style={[styles.markAllPill, { backgroundColor: `${theme.colors.primary}10` }]}
             activeOpacity={0.7}
             disabled={markingAllRead}
           >
             {markingAllRead ? (
-              <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginRight: 4 }} />
+              <ActivityIndicator
+                size="small"
+                color={theme.colors.primary}
+                style={{ marginRight: 4 }}
+              />
             ) : (
               <Ionicons name="checkmark-done" size={14} color={theme.colors.primary} />
             )}
-            <Text style={[typography('caption'), fontWeight('600'), { color: theme.colors.primary, marginStart: 4 }]}>
+            <Text
+              style={[
+                typography('caption'),
+                fontWeight('600'),
+                { color: theme.colors.primary, marginStart: 4 },
+              ]}
+            >
               {t('notifications_center.mark_all_read')}
             </Text>
           </TouchableOpacity>

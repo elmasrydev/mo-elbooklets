@@ -27,9 +27,13 @@ export const handleNotificationRoute = (
     // ------------------------------------------------------------------
 
     case 'link_request_received':
-      // A parent received a new link request from a student.
-      // Always sent to a parent → open their dashboard where they can accept/decline.
-      navigation.navigate('ParentDashboard');
+      if (userRole === 'student') {
+        // A student received a link request from a parent.
+        navigation.navigate('ParentLinking');
+      } else {
+        // A parent received a new link request from a student.
+        navigation.navigate('ParentDashboard');
+      }
       return true;
 
     case 'link_request_accepted':

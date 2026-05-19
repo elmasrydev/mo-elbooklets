@@ -23,8 +23,10 @@ import { isDebugMode } from '../config/debug';
 import ApiUrlSwitcherModal from '../components/ApiUrlSwitcherModal';
 import crashlytics from '@react-native-firebase/crashlytics';
 import messaging from '@react-native-firebase/messaging';
+import { lastFcmPayload } from '../services/notificationService';
 import * as Clipboard from 'expo-clipboard';
 import DeviceInfo from 'react-native-device-info';
+import Constants from 'expo-constants';
 
 const CrashTrigger = () => {
   throw new Error('Test React Render Error for ErrorBoundary');
@@ -177,6 +179,19 @@ const InternalSettingsScreen: React.FC = () => {
             <Ionicons name="copy-outline" size={20} color={theme.colors.textTertiary} />
           </TouchableOpacity>
         </View>
+
+        {Constants.expoConfig?.extra?.debugMode && (
+          <View style={currentStyles.section}>
+            <Text style={currentStyles.sectionTitle}>Last Received FCM Payload</Text>
+            <View style={currentStyles.jsonViewerContainer}>
+              <Text style={currentStyles.jsonText}>
+                {lastFcmPayload
+                  ? JSON.stringify(lastFcmPayload, null, 2)
+                  : 'No payload received in this session.'}
+              </Text>
+            </View>
+          </View>
+        )}
 
         <View style={currentStyles.section}>
           <View style={currentStyles.crashTestContainer}>
@@ -338,6 +353,19 @@ const styles = (
       ...typography('caption'),
       ...fontWeight('bold'),
       color: '#ffffff',
+    },
+    jsonViewerContainer: {
+      backgroundColor: isDark ? '#1E1E1E' : '#F3F4F6',
+      padding: spacing.md,
+      borderRadius: borderRadius.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    jsonText: {
+      ...typography('caption'),
+      fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+      color: theme.colors.textSecondary,
+      textAlign: 'left',
     },
   });
 
