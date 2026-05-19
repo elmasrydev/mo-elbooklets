@@ -14,6 +14,7 @@ import ParentForgotPasswordScreen from '../screens/ParentForgotPasswordScreen';
 import ParentDashboardScreen from '../screens/ParentDashboardScreen';
 import ParentSettingsScreen from '../screens/ParentSettingsScreen';
 import InternalSettingsScreen from '../screens/InternalSettingsScreen';
+import ProfileCompletionPrompt from './ProfileCompletionPrompt';
 
 const RootStack = createNativeStackNavigator();
 
@@ -31,35 +32,42 @@ const AppNavigator: React.FC = () => {
   }
 
   return (
-    <RootStack.Navigator screenOptions={{ headerShown: false }}>
-      {isAuthenticated ? (
-        userRole === 'parent' ? (
-          <RootStack.Group>
-            <RootStack.Screen name="ParentDashboard" component={ParentDashboardScreen} />
-            <RootStack.Screen name="ParentSettings" component={ParentSettingsScreen} />
-            <RootStack.Screen name="InternalSettings" component={InternalSettingsScreen} />
-            <RootStack.Screen name="Notifications" component={require('../screens/NotificationsScreen').default} />
-            <RootStack.Screen name="FAQs" component={require('../screens/FAQScreen').default} />
-            <RootStack.Screen name="ContactUs" component={require('../screens/ContactUsScreen').default} />
-          </RootStack.Group>
+    <>
+      <RootStack.Navigator screenOptions={{ headerShown: false }}>
+        {isAuthenticated ? (
+          userRole === 'parent' ? (
+            <RootStack.Group>
+              <RootStack.Screen name="ParentDashboard" component={ParentDashboardScreen} />
+              <RootStack.Screen name="ParentSettings" component={ParentSettingsScreen} />
+              <RootStack.Screen name="InternalSettings" component={InternalSettingsScreen} />
+              <RootStack.Screen name="Notifications" component={require('../screens/NotificationsScreen').default} />
+              <RootStack.Screen name="FAQs" component={require('../screens/FAQScreen').default} />
+              <RootStack.Screen name="ContactUs" component={require('../screens/ContactUsScreen').default} />
+            </RootStack.Group>
+          ) : (
+            <RootStack.Group>
+              <RootStack.Screen name="MainTabs" component={TabNavigator} />
+              <RootStack.Screen name="InternalSettings" component={InternalSettingsScreen} />
+            </RootStack.Group>
+          )
         ) : (
           <RootStack.Group>
-            <RootStack.Screen name="MainTabs" component={TabNavigator} />
-            <RootStack.Screen name="InternalSettings" component={InternalSettingsScreen} />
+            <RootStack.Screen name="Onboarding" component={OnboardingScreen} />
+            <RootStack.Screen name="Login" component={LoginScreen} />
+            <RootStack.Screen name="Register" component={RegisterScreen} />
+            <RootStack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+            <RootStack.Screen name="ParentLogin" component={ParentLoginScreen} />
+            <RootStack.Screen name="ParentRegister" component={ParentRegisterScreen} />
+            <RootStack.Screen name="ParentForgotPassword" component={ParentForgotPasswordScreen} />
           </RootStack.Group>
-        )
-      ) : (
-        <RootStack.Group>
-          <RootStack.Screen name="Onboarding" component={OnboardingScreen} />
-          <RootStack.Screen name="Login" component={LoginScreen} />
-          <RootStack.Screen name="Register" component={RegisterScreen} />
-          <RootStack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-          <RootStack.Screen name="ParentLogin" component={ParentLoginScreen} />
-          <RootStack.Screen name="ParentRegister" component={ParentRegisterScreen} />
-          <RootStack.Screen name="ParentForgotPassword" component={ParentForgotPasswordScreen} />
-        </RootStack.Group>
+        )}
+      </RootStack.Navigator>
+      
+      {/* Global one-time check for profile completion */}
+      {isAuthenticated && userRole !== 'parent' && (
+        <ProfileCompletionPrompt oneTimeAutoShow={true} />
       )}
-    </RootStack.Navigator>
+    </>
   );
 };
 

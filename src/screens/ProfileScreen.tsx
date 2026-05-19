@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,8 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
+import * as SecureStore from 'expo-secure-store';
+import { tryFetchWithFallback } from '../config/api';
 import { useTheme } from '../context/ThemeContext';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useLanguage } from '../context/LanguageContext';
@@ -24,6 +26,8 @@ import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import DeviceInfo from 'react-native-device-info';
 import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
+import CircularProgress from '../components/CircularProgress';
+import { useProfileCompleteness } from '../hooks/useProfileCompleteness';
 import { useMutation } from '@apollo/client/react';
 import {
   DeleteAccountDocument,
@@ -34,7 +38,7 @@ import { isDebugMode } from '../config/debug';
 import crashlytics from '@react-native-firebase/crashlytics';
 import { checkNotificationPermission, requestNotificationPermission, openSettings } from '../services/notificationService';
 import { useNotificationPreferences } from '../hooks/useNotificationPreferences';
-
+import { logError } from '../utils/logger';
 
 const APP_VERSION = `EL-Booklets v${DeviceInfo.getVersion()}`;
 
@@ -111,6 +115,39 @@ const ProfileScreen: React.FC = () => {
     DeleteAccountMutation,
     DeleteAccountMutationVariables
   >(DeleteAccountDocument);
+
+  const [followStats, setFollowStats] = useState({ followers: 0, following: 0 });
+  const [loadingStats, setLoadingStats] = useState(false);
+
+  const fetchFollowStats = useCallback(async () => {
+    try {
+      setLoadingStats(true);
+      const token = await SecureStore.getItemAsync('auth_token');
+      if (!token) return;
+
+      const [followingRes, followersRes] = await Promise.all([
+        tryFetchWithFallback(`query { myFollowing { id } }`, undefined, token),
+        tryFetchWithFallback(`query { myFollowers { id } }`, undefined, token),
+      ]);
+
+      setFollowStats({
+        following: followingRes.data?.myFollowing?.length || 0,
+        followers: followersRes.data?.myFollowers?.length || 0,
+      });
+    } catch (err) {
+      console.error('Fetch follow stats error:', err);
+    } finally {
+      setLoadingStats(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchFollowStats();
+    }, [fetchFollowStats])
+  );
+  const { completeness } = useProfileCompleteness();
+  const [showPrompt, setShowPrompt] = useState(false);
 
   const handleLogout = () => {
     showConfirm({
@@ -189,19 +226,25 @@ const ProfileScreen: React.FC = () => {
       >
         {/* Profile Section */}
         <View style={currentStyles.profileSection}>
-          <View style={currentStyles.avatarRingWrapper}>
-            <View style={currentStyles.avatarOuterRing}>
+          <TouchableOpacity 
+            style={currentStyles.avatarRingWrapper}
+            activeOpacity={0.8}
+            onPress={() => setShowPrompt(true)}
+          >
+            <CircularProgress
+              size={130}
+              strokeWidth={6}
+              percentage={completeness?.percentage || 0}
+              color={theme.colors.primary}
+              containerStyle={currentStyles.avatarProgress}
+            >
               <View style={[currentStyles.avatarImage, currentStyles.avatarFallback]}>
                 <Text style={currentStyles.avatarFallbackText}>
                   {user?.name?.charAt(0).toUpperCase() || 'U'}
                 </Text>
               </View>
-            </View>
-            {/* Hide edit avatar button for now */}
-            {/* <TouchableOpacity style={currentStyles.editAvatarButton}>
-              <Ionicons name="pencil" size={14} color="#ffffff" />
-            </TouchableOpacity> */}
-          </View>
+            </CircularProgress>
+          </TouchableOpacity>
 
           <View style={currentStyles.userInfoTextContainer}>
             <Text style={currentStyles.userName}>{user?.name || 'User'}</Text>
@@ -223,10 +266,29 @@ const ProfileScreen: React.FC = () => {
           </View>
         </View>
 
+        {/* Follow Stats */}
+        <View style={currentStyles.followStatsContainer}>
+          <TouchableOpacity
+            style={currentStyles.statItem}
+            onPress={() => navigation.navigate('FollowList', { type: 'followers' })}
+          >
+            <Text style={currentStyles.statCount}>{followStats.followers}</Text>
+            <Text style={currentStyles.statLabel}>{t('profile_screen.followers')}</Text>
+          </TouchableOpacity>
+          <View style={currentStyles.statDivider} />
+          <TouchableOpacity
+            style={currentStyles.statItem}
+            onPress={() => navigation.navigate('FollowList', { type: 'following' })}
+          >
+            <Text style={currentStyles.statCount}>{followStats.following}</Text>
+            <Text style={currentStyles.statLabel}>{t('profile_screen.following')}</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Menu Section */}
         <View style={currentStyles.menuSection}>
           {/* Menu Items "TODO: we need to release and show it in next release"*/}
-          {/*<TouchableOpacity 
+          <TouchableOpacity 
             style={currentStyles.settingItem}
             onPress={() => navigation.navigate('EditProfile')}
           >
@@ -244,7 +306,7 @@ const ProfileScreen: React.FC = () => {
               size={20}
               color={theme.colors.textTertiary}
             />
-          </TouchableOpacity>*/}
+          </TouchableOpacity>
 
           {/* Change Language */}
           <TouchableOpacity style={currentStyles.settingItem} onPress={handleLanguagePress}>
@@ -537,7 +599,12 @@ const ProfileScreen: React.FC = () => {
         </TouchableOpacity>
       </ScrollView>
 
-      <ProfileCompletionPrompt context="more" />
+      <ProfileCompletionPrompt 
+        context="more" 
+        isVisible={showPrompt}
+        onClose={() => setShowPrompt(false)}
+        autoShow={true}
+      />
     </View>
   );
 };
@@ -581,11 +648,14 @@ const styles = (
       borderColor: theme.colors.primary + '33', // 20% opacity
     },
     avatarImage: {
-      width: 110,
-      height: 110,
-      borderRadius: 55,
-      borderWidth: 4,
+      width: 100,
+      height: 100,
+      borderRadius: 50,
+      borderWidth: 2,
       borderColor: theme.colors.card,
+    },
+    avatarProgress: {
+      padding: 4,
     },
     avatarFallback: {
       backgroundColor: theme.colors.primary,
@@ -630,7 +700,38 @@ const styles = (
       textAlign: 'center',
     },
     menuSection: {
-      marginTop: spacing.sm,
+      marginTop: spacing.lg,
+    },
+    followStatsContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.card,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.lg,
+      borderRadius: borderRadius.xl,
+      marginTop: spacing.md,
+      marginHorizontal: spacing.md,
+      ...layout.shadow,
+    },
+    statItem: {
+      alignItems: 'center',
+      paddingHorizontal: spacing.lg,
+    },
+    statCount: {
+      ...typography('h3'),
+      ...fontWeight('bold'),
+      color: theme.colors.primary,
+    },
+    statLabel: {
+      ...typography('caption'),
+      color: theme.colors.textSecondary,
+      marginTop: 2,
+    },
+    statDivider: {
+      width: 1,
+      height: 30,
+      backgroundColor: theme.colors.border,
     },
     sectionHeader: {
       marginTop: spacing.md,

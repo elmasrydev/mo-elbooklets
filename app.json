@@ -29,7 +29,7 @@
     },
     "android": {
       "package": "com.elbooklets.app",
-      "versionCode": 6,
+      "versionCode": 35,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"

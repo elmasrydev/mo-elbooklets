@@ -27,6 +27,7 @@ import FAQScreen from '../screens/FAQScreen';
 import ContactUsScreen from '../screens/ContactUsScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import ParentLinkingScreen from '../screens/ParentLinkingScreen';
+import FollowListScreen from '../screens/FollowListScreen';
 import BadgesScreen from '../screens/BadgesScreen';
 
 const Tab = createBottomTabNavigator();
@@ -198,6 +199,7 @@ const TabNavigator: React.FC = () => {
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       <Stack.Screen name="ParentLinking" component={ParentLinkingScreen} />
       <Stack.Screen name="Notifications" component={require('../screens/NotificationsScreen').default} />
+      <Stack.Screen name="FollowList" component={FollowListScreen} />
       <Stack.Screen name="Badges" component={BadgesScreen} />
       <Stack.Group screenOptions={{ presentation: 'fullScreenModal' }}>
         <Stack.Screen name="QuizFlowSubjects" component={QuizSubjectsScreen} />
