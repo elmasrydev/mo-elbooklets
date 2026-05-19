@@ -10,6 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { tryFetchWithFallback, setAuthErrorHandler } from '../config/api';
 import { setLogoutHandler } from '../lib/apollo';
+import { analytics } from '../lib/analytics';
 import {
   configureCrashlyticsStudent,
   configureCrashlyticsParent,
@@ -38,8 +39,14 @@ interface User {
   grade?: { id: string; name: string };
   educational_system_id?: string;
   educational_system?: { id: string; name: string };
+  governorate_id?: string | number;
+  governorate?: { id: string; name_ar: string; name_en: string };
+  city_id?: string | number;
+  city?: { id: string; name_ar: string; name_en: string };
   is_subscribed?: boolean;
   role?: 'student' | 'parent';
+  followers_count?: number;
+  following_count?: number;
 }
 
 interface Parent {
@@ -90,14 +97,15 @@ interface AuthContextType {
   userRole: 'student' | 'parent' | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (input: LoginInput) => Promise<{ success: boolean; error?: string }>;
-  register: (input: RegisterInput) => Promise<{ success: boolean; error?: string }>;
+  login: (input: LoginInput) => Promise<{ success: boolean; user?: User; error?: string }>;
+  register: (input: RegisterInput) => Promise<{ success: boolean; user?: User; error?: string }>;
   forgotPassword: (email: string) => Promise<{ success: boolean; message?: string }>;
   parentLogin: (input: ParentLoginInput) => Promise<{ success: boolean; error?: string }>;
   parentRegister: (input: ParentRegisterInput) => Promise<{ success: boolean; error?: string }>;
   parentForgotPassword: (email: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  updateUser: (userData: User) => Promise<void>;
   onAuthStateChange?: (isAuthenticated: boolean) => void;
 }
 
@@ -147,7 +155,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const parsedUser = JSON.parse(userData);
             setUser(parsedUser);
             configureCrashlyticsStudent(parsedUser);
-
+            analytics.identify(parsedUser.id, {
+              name: parsedUser.name,
+              mobile: parsedUser.mobile,
+              grade: parsedUser.grade?.name,
+            });
           }
         } else {
           const parentData = await AsyncStorage.getItem('parent_data');
@@ -174,7 +186,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const login = useCallback(
-    async (input: LoginInput): Promise<{ success: boolean; error?: string }> => {
+    async (input: LoginInput): Promise<{ success: boolean; user?: User; error?: string }> => {
       try {
         const result = await tryFetchWithFallback(
           `
@@ -207,11 +219,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setUser(authPayload.user);
           setUserRole('student');
           configureCrashlyticsStudent(authPayload.user);
-          
+          analytics.identify(authPayload.user.id, {
+            name: authPayload.user.name,
+            mobile: authPayload.user.mobile,
+            grade: authPayload.user.grade?.name,
+          });
+
           registerDeviceToken('student');
           setTimeout(() => triggerNotificationPrompt(), 10000);
-          
-          return { success: true };
+
+          return { success: true, user: authPayload.user };
         }
 
         let errorMessage = result.errors?.[0]?.message || 'Login failed';
@@ -229,7 +246,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   );
 
   const register = useCallback(
-    async (input: RegisterInput): Promise<{ success: boolean; error?: string }> => {
+    async (input: RegisterInput): Promise<{ success: boolean; user?: User; error?: string }> => {
       try {
         const result = await tryFetchWithFallback(
           `
@@ -262,11 +279,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setUser(authPayload.user);
           setUserRole('student');
           configureCrashlyticsStudent(authPayload.user);
-          
+          analytics.identify(authPayload.user.id, {
+            name: authPayload.user.name,
+            mobile: authPayload.user.mobile,
+            grade: authPayload.user.grade?.name,
+          });
+
           registerDeviceToken('student');
           setTimeout(() => triggerNotificationPrompt(), 10000);
-          
-          return { success: true };
+
+          return { success: true, user: authPayload.user };
         }
 
         let errorMessage = result.errors?.[0]?.message || 'Registration failed';
@@ -372,7 +394,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           parentRegister(input: {
             name: $name,
             mobile: $mobile,
-            email: $email,
             password: $password
           }) {
             access_token
@@ -458,10 +479,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setParentUser(null);
       setUserRole(null);
       configureCrashlyticsGuest();
+      analytics.trackLogout();
     } catch (error) {
       logError('Logout error', error);
     }
   }, []);
+
+  const updateUser = useCallback(
+    async (userData: User) => {
+      try {
+        const updatedUser = { ...user, ...userData };
+        await AsyncStorage.setItem('user_data', JSON.stringify(updatedUser));
+        setUser(updatedUser);
+        configureCrashlyticsStudent(updatedUser);
+        analytics.identify(updatedUser.id, {
+          name: updatedUser.name,
+          email: updatedUser.email,
+          mobile: updatedUser.mobile,
+          grade: updatedUser.grade?.name,
+        });
+      } catch (error) {
+        logError('Update user local data error', error);
+      }
+    },
+    [user],
+  );
 
   const refreshUser = useCallback(async () => {
     try {
@@ -473,18 +515,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const result = await tryFetchWithFallback(
           `query Me { 
             me { 
-              id name email mobile country_code gender school_id 
+              id name email mobile country_code gender school_name parent_mobile
               grade_id grade { id name } educational_system_id educational_system { id name } 
+              governorate_id governorate { id name_ar name_en }
+              city_id city { id name_ar name_en }
               is_subscribed
             } 
           }`,
           undefined,
-          token
+          token,
         );
         if (result.data?.me) {
           await AsyncStorage.setItem('user_data', JSON.stringify(result.data.me));
           setUser(result.data.me);
           configureCrashlyticsStudent(result.data.me);
+          analytics.identify(result.data.me.id, {
+            name: result.data.me.name,
+            mobile: result.data.me.mobile,
+            grade: result.data.me.grade?.name,
+          });
         }
       } else {
         const result = await tryFetchWithFallback(
@@ -494,7 +543,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             } 
           }`,
           undefined,
-          token
+          token,
         );
         if (result.data?.parentMe) {
           await AsyncStorage.setItem('parent_data', JSON.stringify(result.data.parentMe));
@@ -522,8 +571,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       parentForgotPassword,
       logout,
       refreshUser,
+      updateUser,
     }),
-    [user, parentUser, userRole, isLoading, login, register, forgotPassword, parentLogin, parentRegister, parentForgotPassword, logout, refreshUser],
+    [
+      user,
+      parentUser,
+      userRole,
+      isLoading,
+      login,
+      register,
+      forgotPassword,
+      parentLogin,
+      parentRegister,
+      parentForgotPassword,
+      logout,
+      refreshUser,
+      updateUser,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -536,4 +600,3 @@ export const useAuth = (): AuthContextType => {
   }
   return context;
 };
-
