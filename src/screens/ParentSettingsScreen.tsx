@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -23,7 +23,7 @@ import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import DeviceInfo from 'react-native-device-info';
 import { useMutation } from '@apollo/client/react';
-import { AppState, useRef, useEffect } from 'react-native';
+import { AppState } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { checkNotificationPermission, requestNotificationPermission, openSettings } from '../services/notificationService';
 import {

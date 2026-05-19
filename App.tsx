@@ -189,12 +189,12 @@ export default function App() {
                       >
                       <ErrorBoundary>
                         <AppNavigator />
+                        <NotificationHandler />
                       </ErrorBoundary>
                     </NavigationContainer>
                     <ForceUpdateModal />
                     <MaintenanceModal />
                     <GlobalModalHandler />
-                    <NotificationHandler />
                     <ApiDomainChecker />
                   </AuthProvider>
                 </I18nextProvider>

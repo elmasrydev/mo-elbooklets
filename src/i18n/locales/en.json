@@ -47,6 +47,7 @@
     "accept": "Accept",
     "decline": "Decline",
     "ok": "OK",
+    "open": "Open",
     "version": "Version",
     "language": "Language",
     "english": "English",
@@ -754,6 +755,20 @@
     "select_educational_system": "Select Educational System",
     "complete_in_settings": "Complete in Settings"
   },
+  "notifications_center": {
+    "title": "Notifications",
+    "mark_all_read": "Mark all as read",
+    "unread_count": "unread notifications",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "this_week": "This Week",
+    "earlier": "Earlier",
+    "empty_title": "No Notifications Yet",
+    "empty_subtitle": "We'll notify you when something important happens.",
+    "unread_only": "Unread only",
+    "delete_confirm": "Delete this notification?",
+    "delete_all_confirm": "Clear all notifications?"
+  },
   "report_question": {
     "title": "Report Question",
     "subtitle": "Help us improve by flagging incorrect or unclear questions.",
@@ -766,5 +781,11 @@
     "success_message": "Thank you! Our team will review the question and take action.",
     "submit_error": "Failed to submit the report. Please try again.",
     "error_loading_types": "Could not load report types. Tap to retry."
+  },
+  "notification_actions": {
+    "open_invitation": "Open invitation",
+    "show_me": "Show me",
+    "view_profile": "View profile",
+    "view_details": "View details"
   }
 }

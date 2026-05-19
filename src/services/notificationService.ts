@@ -1,9 +1,11 @@
 import messaging, { FirebaseMessagingTypes } from '@react-native-firebase/messaging';
+import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform, Linking, PermissionsAndroid } from 'react-native';
 import DeviceInfo from 'react-native-device-info';
 import { logError, logInfo } from '../utils/logger';
 import { tryFetchWithFallback } from '../config/api';
+import i18n from '../i18n';
 
 const NOTIFICATION_PROMPTED_KEY = 'notification_permission_prompted';
 
@@ -262,47 +264,72 @@ export const triggerNotificationPrompt = () => {
   notificationPromptHandler?.();
 };
 
-export const setupNotificationHandlers = (showConfirm: (config: any) => void) => {
+export let lastFcmPayload: any = null;
+
+export const setupNotificationHandlers = (
+  showConfirm: (config: any) => void,
+  onNavigate?: (slug: string, actionUrl?: string) => void,
+) => {
   const handleNotification = (
     remoteMessage: FirebaseMessagingTypes.RemoteMessage,
-    delay: number = 0,
+    isInitial: boolean = false,
   ) => {
-    if (!remoteMessage.notification) return;
-
-    const title = remoteMessage.notification.title || 'Notification';
-    const body = remoteMessage.notification.body || '';
-
-    if (delay > 0) {
-      setTimeout(() => {
-        showConfirm({
-          title,
-          message: body,
-          confirmLabel: 'OK',
-          showCancel: false,
-          onConfirm: () => {},
-        });
-      }, delay);
-    } else {
-      showConfirm({
-        title,
-        message: body,
-        confirmLabel: 'OK',
-        showCancel: false,
-        onConfirm: () => {},
-      });
+    // Save last payload for debug internal settings
+    if (Constants.expoConfig?.extra?.debugMode) {
+      lastFcmPayload = remoteMessage;
     }
+
+    if (!remoteMessage.notification && !remoteMessage.data) return;
+
+    const title = remoteMessage.notification?.title || 'Notification';
+    const body = remoteMessage.notification?.body || '';
+    const slug = remoteMessage.data?.event_slug as string | undefined;
+    const actionUrl = remoteMessage.data?.action_url as string | undefined;
+
+    // If app opened from notification, prioritize navigation
+    if (isInitial && slug && onNavigate) {
+      onNavigate(slug, actionUrl);
+      return;
+    }
+
+    let confirmLabelStr = i18n.t('common.open');
+    if (slug) {
+      if (slug === 'link_request_received') {
+        confirmLabelStr = i18n.t('notification_actions.open_invitation');
+      } else if (slug === 'post_liked') {
+        confirmLabelStr = i18n.t('notification_actions.show_me');
+      } else if (slug === 'new_follower') {
+        confirmLabelStr = i18n.t('notification_actions.view_profile');
+      } else if (slug.startsWith('link_request')) {
+        confirmLabelStr = i18n.t('notification_actions.view_details');
+      }
+    }
+
+    // Show modal if in foreground or if no slug
+    showConfirm({
+      title,
+      message: body,
+      confirmLabel: slug ? confirmLabelStr : i18n.t('common.ok'),
+      cancelLabel: slug ? i18n.t('common.ok') : undefined,
+      showCancel: !!slug,
+      onConfirm: () => {
+        if (slug && onNavigate) {
+          onNavigate(slug, actionUrl);
+        }
+      },
+    });
   };
 
   // Foreground
   const unsubscribeOnMessage = messaging().onMessage(async (remoteMessage) => {
     logInfo('FCM Message received in foreground');
-    handleNotification(remoteMessage, 0);
+    handleNotification(remoteMessage, false);
   });
 
   // Background / Quit -> Foreground (Clicked)
   const unsubscribeOnOpened = messaging().onNotificationOpenedApp((remoteMessage) => {
     logInfo('FCM Message caused app to open from background');
-    handleNotification(remoteMessage, 3000); // 3 sec delay
+    handleNotification(remoteMessage, true);
   });
 
   // Quit -> Foreground (Clicked Initial)
@@ -311,7 +338,7 @@ export const setupNotificationHandlers = (showConfirm: (config: any) => void) =>
     .then((remoteMessage) => {
       if (remoteMessage) {
         logInfo('FCM Message caused app to open from quit state');
-        handleNotification(remoteMessage, 3000); // 3 sec delay
+        handleNotification(remoteMessage, true);
       }
     });
 
