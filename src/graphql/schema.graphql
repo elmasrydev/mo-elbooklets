@@ -12,6 +12,9 @@ type Query {
   todaySchedule: DailySchedule!
   allBadges: [Badge!]!
   badgeCategories: [BadgeCategory!]!
+  userBookmarks: [LessonBookmark!]!
+  userNotes: [LessonNote!]!
+  mySavedPoints(lessonId: ID): [UserSavedPoint!]!
 }
 
 type Badge {
@@ -64,6 +67,13 @@ type Mutation {
   deleteAccount: SocialActionResponse!
   saveStudySchedule(entries: [StudyScheduleInput!]!): [StudySchedule!]!
   forgotPassword(email: String!): SocialActionResponse!
+  toggleLessonBookmark(lessonPointId: ID!): BookmarkResponse!
+  saveLessonNote(lessonPointId: ID!, note: String!): NoteResponse!
+  deleteLessonNote(lessonPointId: ID!): NoteResponse!
+  toggleSavedPointBookmark(lessonId: ID!, lessonPointId: ID!): SavedPointResult!
+  savePointNote(lessonId: ID!, lessonPointId: ID!, noteContent: String!): SavedPointResult!
+  deletePointNote(lessonPointId: ID!): SavedPointResult!
+  removeSavedPoint(lessonPointId: ID!): SavedPointResult!
 }
 
 type SocialActionResponse {
@@ -118,6 +128,48 @@ type LessonPoint {
   title: String!
   explanation: String
   order: Int!
+}
+
+type LessonBookmark {
+  id: ID!
+  lessonPoint: LessonPoint!
+  note: String
+  createdAt: DateTime!
+}
+
+type LessonNote {
+  id: ID!
+  lessonPoint: LessonPoint!
+  content: String!
+  updatedAt: DateTime!
+}
+
+type BookmarkResponse {
+  success: Boolean!
+  is_bookmarked: Boolean!
+  message: String
+}
+
+type NoteResponse {
+  success: Boolean!
+  note: String
+  message: String
+}
+
+type UserSavedPoint {
+  id: ID!
+  lessonPoint: LessonPoint!
+  lesson: Lesson!
+  is_bookmarked: Boolean!
+  note_content: String
+  created_at: DateTime!
+  updated_at: DateTime!
+}
+
+type SavedPointResult {
+  success: Boolean!
+  savedPoint: UserSavedPoint
+  message: String
 }
 
 type Quiz {
