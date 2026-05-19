@@ -155,9 +155,9 @@ export type Mutation = {
   saveStudySchedule: Array<StudySchedule>;
   startQuiz: Quiz;
   submitQuizAnswers: QuizSubmissionResult;
-  updatePassword: SocialActionResponse;
   toggleLessonBookmark: BookmarkResponse;
   toggleSavedPointBookmark: SavedPointResult;
+  updatePassword: SocialActionResponse;
 };
 
 export type MutationDeleteLessonNoteArgs = {
@@ -218,8 +218,6 @@ export type MutationSubmitQuizAnswersArgs = {
   quizId: Scalars['ID']['input'];
 };
 
-export type MutationUpdatePasswordArgs = {
-  input: UpdatePasswordInput;
 export type MutationToggleLessonBookmarkArgs = {
   lessonPointId: Scalars['ID']['input'];
 };
@@ -227,6 +225,10 @@ export type MutationToggleLessonBookmarkArgs = {
 export type MutationToggleSavedPointBookmarkArgs = {
   lessonId: Scalars['ID']['input'];
   lessonPointId: Scalars['ID']['input'];
+};
+
+export type MutationUpdatePasswordArgs = {
+  input: UpdatePasswordInput;
 };
 
 export type NoteResponse = {
