@@ -10,13 +10,13 @@ import {
   ActivityIndicator,
   Modal,
 } from 'react-native';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTypography } from '../hooks/useTypography';
 import UnifiedHeader from '../components/UnifiedHeader';
-import { useGetAllBadgesQuery, Badge } from '../generated/graphql';
+import { useGetBadgesScreenDataQuery, Badge } from '../generated/graphql';
 
 const BadgesScreen: React.FC = () => {
   const { t } = useTranslation();
@@ -31,54 +31,58 @@ const BadgesScreen: React.FC = () => {
     setModalImageError(false);
   }, [selectedBadge]);
 
-  // Helper to validate if an icon name is likely a valid MaterialIcon
-  const getValidIcon = (iconName: string | null | undefined): any => {
-    if (!iconName) return 'stars';
+  const parseServerIcon = (iconStr?: string | null) => {
+    if (!iconStr) return { family: 'MaterialIcons' as const, name: 'stars' };
+    
+    // Extract icon name from class list (e.g. "fas fa-rocket" -> "rocket")
+    const parts = iconStr.split(' ');
+    const faPart = parts.find(p => p.startsWith('fa-') && p !== 'fa-solid' && p !== 'fa-regular' && p !== 'fa-brands');
+    let iconName = faPart ? faPart.replace('fa-', '') : iconStr.replace(/_/g, '-');
 
-    // Curated list of design-approved icons from code.html and common ones
-    const DESIGN_ICONS = [
-      'rocket_launch', 'edit_note', 'calendar_month', 'star', 'trending_up',
-      'menu_book', 'workspace_premium', 'stars', 'ribbon', 'school', 'psychology',
-      'quiz', 'emoji_events', 'military_tech', 'diamond', 'local_fire_department',
-      'wb_sunny', 'event_available', 'shield', 'lightbulb', 'speed', 'volunteer_activism',
-      'show_chart', 'bolt', 'calculate', 'functions', 'science', 'biotech', 'public'
-    ];
-
-    // If it's in our design list, use it
-    if (DESIGN_ICONS.includes(iconName)) return iconName;
-
-    // Basic format check: no spaces, lowercase (Material icon style)
-    const isValidFormat = /^[a-z_0-9]+$/.test(iconName);
-    if (isValidFormat) return iconName;
-
-    return 'stars';
+    // Specific overrides
+    if (iconName === 'rocket') {
+      return { family: 'Ionicons' as const, name: 'rocket-outline' };
+    }
+    if (iconName === 'sliders') {
+      return { family: 'FontAwesome5' as const, name: 'sliders-h' };
+    }
+    
+    // Choose FontAwesome5 for web classes, default to MaterialIcons for others
+    const isFA = iconStr.includes('fa-') || iconStr.includes('fas ') || iconStr.includes('far ');
+    return {
+      family: isFA ? ('FontAwesome5' as const) : ('MaterialIcons' as const),
+      name: iconName
+    };
   };
 
-  const { data, loading, error, refetch } = useGetAllBadgesQuery();
+  interface DynamicIconProps {
+    iconStr?: string | null;
+    size: number;
+    color: string;
+    style?: any;
+  }
 
+  const DynamicIcon: React.FC<DynamicIconProps> = ({ iconStr, size, color, style }) => {
+    const { family, name } = parseServerIcon(iconStr);
+    if (family === 'Ionicons') {
+      return <Ionicons name={name as any} size={size} color={color} style={style} />;
+    }
+    if (family === 'FontAwesome5') {
+      return <FontAwesome5 name={name as any} size={size} color={color} style={style} />;
+    }
+    return <MaterialIcons name={name as any} size={size} color={color} style={style} />;
+  };
+
+  const { data, loading, error, refetch } = useGetBadgesScreenDataQuery();
+
+  const categories = data?.badgeCategories || [];
   const badges = data?.allBadges || [];
-  const earnedBadgesCount = badges.filter((b: Badge) => !!b.awardedAt).length;
+
+  const earnedBadgesCount = badges.filter((b) => !!b.awardedAt).length;
   const progress = badges.length > 0 ? (earnedBadgesCount / badges.length) * 100 : 0;
 
-  // Group badges by category DYNAMICALLY from fetched data
-  const groupedBadges = badges.reduce((acc: Record<string, { category: any; badges: Badge[] }>, badge) => {
-    if (!badge || !badge.category) return acc;
-
-    const catId = badge.category.id;
-
-    if (!acc[catId]) {
-      acc[catId] = {
-        category: badge.category,
-        badges: []
-      };
-    }
-    acc[catId].badges.push(badge);
-    return acc;
-  }, {});
-
-  const finalCategories = Object.values(groupedBadges).sort((a: any, b: any) => {
-    return (a.category.name || '').localeCompare(b.category.name || '');
-  });
+  // Sort categories by displayOrder
+  const sortedCategories = [...categories].sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
 
   if (loading) {
     return (
@@ -150,22 +154,29 @@ const BadgesScreen: React.FC = () => {
         </View>
 
         {/* Categories Sections */}
-        {finalCategories.map((group: any) => {
-          const catEarned = group.badges.filter((b: any) => !!b.awardedAt).length;
-          const catTotal = group.badges.length;
-          const catPercentage = (catEarned / catTotal) * 100;
-          const catColor = group.category.color || theme.colors.primary;
+        {sortedCategories.map((category) => {
+          const catBadges = badges.filter((b) => b.category?.id === category.id);
+          // If no badges in category, skip rendering it
+          if (catBadges.length === 0) return null;
+
+          const catEarned = catBadges.filter((b) => !!b.awardedAt).length;
+          const catTotal = category.badgeCount || catBadges.length; // Use server's count, fallback to local
+          const catPercentage = catTotal > 0 ? (catEarned / catTotal) * 100 : 0;
+          
+          const catColor = category.color || theme.colors.primary;
+          const catIcon = category.icon;
+          const catName = isRTL ? (category.nameAr || category.name) : (category.nameEn || category.name);
 
           return (
             <View
-              key={group.category.id}
+              key={category.id}
               style={[styles.categorySection, { backgroundColor: theme.colors.surface, borderRadius: borderRadius.lg }]}
             >
               <View style={styles.categoryHeader}>
                 <View style={styles.categoryTitleRow}>
-                  <MaterialIcons name={getValidIcon(group.category.icon)} size={18} color={catColor} />
+                  <DynamicIcon iconStr={catIcon} size={18} color={catColor} />
                   <Text style={[typography('body'), fontWeight('700'), { color: catColor, marginStart: 8 }]}>
-                    {group.category.name}
+                    {catName}
                   </Text>
                 </View>
 
@@ -180,66 +191,70 @@ const BadgesScreen: React.FC = () => {
               </View>
 
               <View style={styles.badgeGrid}>
-                {group.badges.map((badge: Badge) => (
-                  <TouchableOpacity
-                    key={badge.id}
-                    style={styles.badgeWrapper}
-                    onPress={() => setSelectedBadge(badge as Badge)}
-                  >
-                    <View
-                      style={[
-                        styles.badgeIconOuter,
-                        { backgroundColor: theme.colors.background + '80' }
-                      ]}
+                {catBadges.map((badge: any) => {
+                  const badgeName = isRTL ? (badge.nameAr || badge.name) : (badge.nameEn || badge.name);
+
+                  return (
+                    <TouchableOpacity
+                      key={badge.id}
+                      style={styles.badgeWrapper}
+                      onPress={() => setSelectedBadge(badge as Badge)}
                     >
-                      <View style={[
-                        styles.badgeIconInner,
-                        {
-                          backgroundColor: badge.awardedAt ? catColor + '15' : theme.colors.border + '30',
-                          borderColor: badge.awardedAt ? catColor : 'transparent',
-                          borderWidth: badge.awardedAt ? 1.5 : 0
-                        }
-                      ]}>
-                        {badge.logoUrl ? (
-                          <Image
-                            source={{
-                              uri: badge.logoUrl.startsWith('/')
-                                ? `https://prs.elbooklets.com${badge.logoUrl}`
-                                : badge.logoUrl
-                            }}
-                            style={[
-                              styles.badgeImage,
-                              !badge.awardedAt && styles.grayscaleImage
-                            ]}
-                          />
-                        ) : (
-                          <MaterialIcons
-                            name={getValidIcon(group.category.icon)}
-                            size={24}
-                            color={badge.awardedAt ? catColor : theme.colors.textTertiary}
-                            style={!badge.awardedAt && { opacity: 0.3 }}
-                          />
-                        )}
-                        {!badge.awardedAt && (
-                          <View style={styles.lockOverlay}>
-                            <Ionicons name="lock-closed" size={14} color={theme.colors.textSecondary} opacity={0.5} />
-                          </View>
-                        )}
+                      <View
+                        style={[
+                          styles.badgeIconOuter,
+                          { backgroundColor: theme.colors.background + '80' }
+                        ]}
+                      >
+                        <View style={[
+                          styles.badgeIconInner,
+                          {
+                            backgroundColor: badge.awardedAt ? catColor + '15' : theme.colors.border + '30',
+                            borderColor: badge.awardedAt ? catColor : 'transparent',
+                            borderWidth: badge.awardedAt ? 1.5 : 0
+                          }
+                        ]}>
+                          {badge.logoUrl ? (
+                            <Image
+                              source={{
+                                uri: badge.logoUrl.startsWith('/')
+                                  ? `https://prs.elbooklets.com${badge.logoUrl}`
+                                  : badge.logoUrl
+                              }}
+                              style={[
+                                styles.badgeImage,
+                                !badge.awardedAt && styles.grayscaleImage
+                              ]}
+                            />
+                          ) : (
+                            <DynamicIcon
+                              iconStr={catIcon}
+                              size={24}
+                              color={badge.awardedAt ? catColor : theme.colors.textTertiary}
+                              style={!badge.awardedAt ? { opacity: 0.3 } : undefined}
+                            />
+                          )}
+                          {!badge.awardedAt && (
+                            <View style={styles.lockOverlay}>
+                              <Ionicons name="lock-closed" size={14} color={theme.colors.textSecondary} style={{ opacity: 0.5 }} />
+                            </View>
+                          )}
+                        </View>
                       </View>
-                    </View>
-                    <Text
-                      style={[
-                        typography('caption'),
-                        fontWeight(badge.awardedAt ? '600' : 'normal'),
-                        styles.badgeName,
-                        { color: badge.awardedAt ? theme.colors.text : theme.colors.textSecondary }
-                      ]}
-                      numberOfLines={2}
-                    >
-                      {badge.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                      <Text
+                        style={[
+                          typography('caption'),
+                          fontWeight(badge.awardedAt ? '600' : 'normal'),
+                          styles.badgeName,
+                          { color: badge.awardedAt ? theme.colors.text : theme.colors.textSecondary }
+                        ]}
+                        numberOfLines={2}
+                      >
+                        {badgeName}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </View>
           );
@@ -268,92 +283,102 @@ const BadgesScreen: React.FC = () => {
           onPress={() => setSelectedBadge(null)}
         >
           <View style={[styles.modalContent, { backgroundColor: theme.colors.surface, borderRadius: borderRadius.xl }]}>
-            {selectedBadge && (
-              <>
-                <View style={[styles.modalHeader, { backgroundColor: (selectedBadge.category?.color || theme.colors.primary) + '10' }]}>
-                  <View style={[styles.modalImageContainer, {
-                    backgroundColor: theme.colors.surface,
-                    borderRadius: borderRadius.lg,
-                    padding: 20,
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 10,
-                    elevation: 5
-                  }]}>
-                    {selectedBadge.logoUrl && !modalImageError ? (
-                      <Image
-                        source={{
-                          uri: selectedBadge.logoUrl.startsWith('/')
-                            ? `https://prs.elbooklets.com${selectedBadge.logoUrl}`
-                            : selectedBadge.logoUrl
-                        }}
-                        style={styles.modalBadgeImage}
-                        onError={() => setModalImageError(true)}
+            {selectedBadge && (() => {
+              const selectedCat = categories.find((c) => c.id === selectedBadge.category?.id);
+              const catColor = selectedCat?.color || theme.colors.primary;
+              const catIcon = selectedCat?.icon;
+              
+              const badgeName = isRTL ? (selectedBadge.nameAr || selectedBadge.name) : (selectedBadge.nameEn || selectedBadge.name);
+              const badgeDesc = isRTL ? (selectedBadge.descriptionAr || selectedBadge.description) : (selectedBadge.descriptionEn || selectedBadge.description);
+
+              return (
+                <>
+                  <View style={[styles.modalHeader, { backgroundColor: catColor + '10' }]}>
+                    <View style={[styles.modalImageContainer, {
+                      backgroundColor: theme.colors.surface,
+                      borderRadius: borderRadius.lg,
+                      padding: 20,
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 10,
+                      elevation: 5,
+                      marginBottom: 10,
+                    }]}>
+                      {selectedBadge.logoUrl && !modalImageError ? (
+                        <Image
+                          source={{
+                            uri: selectedBadge.logoUrl.startsWith('/')
+                              ? `https://prs.elbooklets.com${selectedBadge.logoUrl}`
+                              : selectedBadge.logoUrl
+                          }}
+                          style={styles.modalBadgeImage}
+                          onError={() => setModalImageError(true)}
+                        />
+                      ) : (
+                        <DynamicIcon
+                          iconStr={catIcon}
+                          size={60}
+                          color={selectedBadge.awardedAt ? catColor : theme.colors.textTertiary}
+                        />
+                      )}
+                    </View>
+                    <TouchableOpacity
+                      style={styles.closeButton}
+                      onPress={() => setSelectedBadge(null)}
+                    >
+                      <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={styles.modalBody}>
+                    <Text style={[typography('h2'), fontWeight('700'), { color: theme.colors.text, marginBottom: 8, textAlign: 'center' }]}>
+                      {badgeName}
+                    </Text>
+
+                    <View style={[
+                      styles.statusBadge,
+                      { backgroundColor: selectedBadge.awardedAt ? theme.colors.success + '15' : theme.colors.border + '40' }
+                    ]}>
+                      <Ionicons
+                        name={selectedBadge.awardedAt ? "checkmark-circle" : "lock-closed"}
+                        size={14}
+                        color={selectedBadge.awardedAt ? theme.colors.success : theme.colors.textSecondary}
                       />
-                    ) : (
-                      <MaterialIcons
-                        name={getValidIcon(selectedBadge.category?.icon)}
-                        size={60}
-                        color={selectedBadge.awardedAt ? (selectedBadge.category?.color || theme.colors.primary) : theme.colors.textTertiary}
-                      />
+                      <Text style={[
+                        typography('caption'),
+                        fontWeight('700'),
+                        {
+                          color: selectedBadge.awardedAt ? theme.colors.success : theme.colors.textSecondary,
+                          marginStart: 4
+                        }
+                      ]}>
+                        {selectedBadge.awardedAt ? t('badges_screen.earned', 'Earned') : t('badges_screen.locked', 'Locked')}
+                      </Text>
+                    </View>
+
+                    <Text style={[typography('body'), { color: theme.colors.textSecondary, marginVertical: spacing.md, textAlign: 'center' }]}>
+                      {badgeDesc || t('badges_screen.no_description', 'Complete challenges to earn this badge!')}
+                    </Text>
+
+                    <View style={[styles.criteriaBox, { backgroundColor: theme.colors.background, borderRadius: borderRadius.md, padding: spacing.md }]}>
+                      <Text style={[typography('caption'), fontWeight('700'), { color: theme.colors.textTertiary, marginBottom: 8, textTransform: 'uppercase', textAlign: isRTL ? 'right' : 'left' }]}>
+                        {t('badges_screen.requirement', 'REQUIREMENT')}
+                      </Text>
+                      <Text style={[typography('body'), { color: theme.colors.text, textAlign: isRTL ? 'right' : 'left' }]}>
+                        {selectedBadge.rulesPreview}
+                      </Text>
+                    </View>
+
+                    {selectedBadge.awardedAt && (
+                      <Text style={[typography('caption'), { color: theme.colors.textTertiary, marginTop: spacing.md, textAlign: 'center' }]}>
+                        {t('badges_screen.awarded_at', 'Awarded on {{date}}', { date: new Date(selectedBadge.awardedAt).toLocaleDateString() })}
+                      </Text>
                     )}
                   </View>
-                  <TouchableOpacity
-                    style={styles.closeButton}
-                    onPress={() => setSelectedBadge(null)}
-                  >
-                    <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
-                  </TouchableOpacity>
-                </View>
-
-                <View style={styles.modalBody}>
-                  <Text style={[typography('h2'), fontWeight('700'), { color: theme.colors.text, marginBottom: 8, textAlign: 'center' }]}>
-                    {selectedBadge.name}
-                  </Text>
-
-                  <View style={[
-                    styles.statusBadge,
-                    { backgroundColor: selectedBadge.awardedAt ? theme.colors.success + '15' : theme.colors.border + '40' }
-                  ]}>
-                    <Ionicons
-                      name={selectedBadge.awardedAt ? "checkmark-circle" : "lock-closed"}
-                      size={14}
-                      color={selectedBadge.awardedAt ? theme.colors.success : theme.colors.textSecondary}
-                    />
-                    <Text style={[
-                      typography('caption'),
-                      fontWeight('700'),
-                      {
-                        color: selectedBadge.awardedAt ? theme.colors.success : theme.colors.textSecondary,
-                        marginStart: 4
-                      }
-                    ]}>
-                      {selectedBadge.awardedAt ? t('badges_screen.earned', 'Earned') : t('badges_screen.locked', 'Locked')}
-                    </Text>
-                  </View>
-
-                  <Text style={[typography('body'), { color: theme.colors.textSecondary, marginVertical: spacing.md, textAlign: 'center' }]}>
-                    {selectedBadge.description || t('badges_screen.no_description', 'Complete challenges to earn this badge!')}
-                  </Text>
-
-                  <View style={[styles.criteriaBox, { backgroundColor: theme.colors.background, borderRadius: borderRadius.md, padding: spacing.md }]}>
-                    <Text style={[typography('caption'), fontWeight('700'), { color: theme.colors.textTertiary, marginBottom: 8, textTransform: 'uppercase', textAlign: isRTL ? 'right' : 'left' }]}>
-                      {t('badges_screen.requirement', 'REQUIREMENT')}
-                    </Text>
-                    <Text style={[typography('body'), { color: theme.colors.text, textAlign: isRTL ? 'right' : 'left' }]}>
-                      {selectedBadge.rulesPreview}
-                    </Text>
-                  </View>
-
-                  {selectedBadge.awardedAt && (
-                    <Text style={[typography('caption'), { color: theme.colors.textTertiary, marginTop: spacing.md, textAlign: 'center' }]}>
-                      {t('badges_screen.awarded_at', 'Awarded on {{date}}', { date: new Date(selectedBadge.awardedAt).toLocaleDateString() })}
-                    </Text>
-                  )}
-                </View>
-              </>
-            )}
+                </>
+              );
+            })()}
           </View>
         </TouchableOpacity>
       </Modal>
@@ -485,7 +510,7 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
   grayscaleImage: {
-    opacity: 0.3,
+    opacity: 1,
     tintColor: '#9CA3AF',
   },
   lockOverlay: {

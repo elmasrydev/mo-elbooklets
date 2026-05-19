@@ -37,21 +37,31 @@ export type Badge = {
   awardedAt?: Maybe<Scalars['DateTime']['output']>;
   category: BadgeCategory;
   description?: Maybe<Scalars['String']['output']>;
+  descriptionAr?: Maybe<Scalars['String']['output']>;
+  descriptionEn?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   logoUrl?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
+  nameAr?: Maybe<Scalars['String']['output']>;
+  nameEn?: Maybe<Scalars['String']['output']>;
   rules: Array<BadgeRule>;
-  rulesPreview?: Maybe<Scalars['String']['output']>;
+  rulesPreview: Scalars['String']['output'];
 };
 
 export type BadgeCategory = {
   __typename?: 'BadgeCategory';
-  badgeCount?: Maybe<Scalars['Int']['output']>;
+  activeBadgeCount: Scalars['Int']['output'];
+  badgeCount: Scalars['Int']['output'];
   color?: Maybe<Scalars['String']['output']>;
   description?: Maybe<Scalars['String']['output']>;
+  descriptionAr?: Maybe<Scalars['String']['output']>;
+  descriptionEn?: Maybe<Scalars['String']['output']>;
+  displayOrder: Scalars['Int']['output'];
   icon?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
+  nameAr?: Maybe<Scalars['String']['output']>;
+  nameEn?: Maybe<Scalars['String']['output']>;
 };
 
 export type BadgeRule = {
@@ -117,6 +127,7 @@ export type Mutation = {
   saveStudySchedule: Array<StudySchedule>;
   startQuiz: Quiz;
   submitQuizAnswers: QuizSubmissionResult;
+  updatePassword: SocialActionResponse;
 };
 
 export type MutationForgotPasswordArgs = {
@@ -152,6 +163,10 @@ export type MutationStartQuizArgs = {
 export type MutationSubmitQuizAnswersArgs = {
   answers: Array<QuestionAnswerInput>;
   quizId: Scalars['ID']['input'];
+};
+
+export type MutationUpdatePasswordArgs = {
+  input: UpdatePasswordInput;
 };
 
 export type Query = {
@@ -262,6 +277,12 @@ export type Subject = {
   name: Scalars['String']['output'];
 };
 
+export type UpdatePasswordInput = {
+  newPassword: Scalars['String']['input'];
+  newPasswordConfirmation: Scalars['String']['input'];
+  oldPassword: Scalars['String']['input'];
+};
+
 export type User = {
   __typename?: 'User';
   email: Scalars['String']['output'];
@@ -362,52 +383,47 @@ export type ForgotPasswordMutation = {
   };
 };
 
-export type GetAllBadgesQueryVariables = Exact<{ [key: string]: never }>;
+export type UpdatePasswordMutationVariables = Exact<{
+  input: UpdatePasswordInput;
+}>;
 
-export type GetAllBadgesQuery = {
-  __typename?: 'Query';
-  allBadges: Array<{
-    __typename?: 'Badge';
-    id: string;
-    name: string;
-    description?: string | null;
-    logoUrl?: string | null;
-    awardedAt?: string | null;
-    rulesPreview?: string | null;
-    category: {
-      __typename?: 'BadgeCategory';
-      id: string;
-      name: string;
-      icon?: string | null;
-      color?: string | null;
-    };
-    rules: Array<{
-      __typename?: 'BadgeRule';
-      id: string;
-      conditionType: string;
-      operator: string;
-      value: string;
-      valueEnd?: string | null;
-      timeframe?: string | null;
-      scoreThreshold?: number | null;
-      description?: string | null;
-      subject?: { __typename?: 'Subject'; id: string; name: string } | null;
-    }>;
-  }>;
+export type UpdatePasswordMutation = {
+  __typename?: 'Mutation';
+  updatePassword: {
+    __typename?: 'SocialActionResponse';
+    success: boolean;
+    message?: string | null;
+  };
 };
 
-export type GetBadgeCategoriesQueryVariables = Exact<{ [key: string]: never }>;
+export type GetBadgesScreenDataQueryVariables = Exact<{ [key: string]: never }>;
 
-export type GetBadgeCategoriesQuery = {
+export type GetBadgesScreenDataQuery = {
   __typename?: 'Query';
   badgeCategories: Array<{
     __typename?: 'BadgeCategory';
     id: string;
     name: string;
-    description?: string | null;
+    nameAr?: string | null;
+    nameEn?: string | null;
     icon?: string | null;
     color?: string | null;
-    badgeCount?: number | null;
+    displayOrder: number;
+    badgeCount: number;
+  }>;
+  allBadges: Array<{
+    __typename?: 'Badge';
+    id: string;
+    name: string;
+    nameAr?: string | null;
+    nameEn?: string | null;
+    description?: string | null;
+    descriptionAr?: string | null;
+    descriptionEn?: string | null;
+    logoUrl?: string | null;
+    awardedAt?: string | null;
+    rulesPreview: string;
+    category: { __typename?: 'BadgeCategory'; id: string };
   }>;
 };
 
@@ -892,190 +908,150 @@ export type ForgotPasswordMutationOptions = ApolloReactCommon.BaseMutationOption
   ForgotPasswordMutation,
   ForgotPasswordMutationVariables
 >;
-export const GetAllBadgesDocument = gql`
-  query getAllBadges {
+export const UpdatePasswordDocument = gql`
+  mutation UpdatePassword($input: UpdatePasswordInput!) {
+    updatePassword(input: $input) {
+      success
+      message
+    }
+  }
+`;
+export type UpdatePasswordMutationFn = ApolloReactCommon.MutationFunction<
+  UpdatePasswordMutation,
+  UpdatePasswordMutationVariables
+>;
+
+/**
+ * __useUpdatePasswordMutation__
+ *
+ * To run a mutation, you first call `useUpdatePasswordMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdatePasswordMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updatePasswordMutation, { data, loading, error }] = useUpdatePasswordMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdatePasswordMutation(
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
+    UpdatePasswordMutation,
+    UpdatePasswordMutationVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useMutation<UpdatePasswordMutation, UpdatePasswordMutationVariables>(
+    UpdatePasswordDocument,
+    options,
+  );
+}
+export type UpdatePasswordMutationHookResult = ReturnType<typeof useUpdatePasswordMutation>;
+export type UpdatePasswordMutationResult = ApolloReactCommon.MutationResult<UpdatePasswordMutation>;
+export type UpdatePasswordMutationOptions = ApolloReactCommon.BaseMutationOptions<
+  UpdatePasswordMutation,
+  UpdatePasswordMutationVariables
+>;
+export const GetBadgesScreenDataDocument = gql`
+  query GetBadgesScreenData {
+    badgeCategories {
+      id
+      name
+      nameAr
+      nameEn
+      icon
+      color
+      displayOrder
+      badgeCount
+    }
     allBadges {
       id
       name
+      nameAr
+      nameEn
       description
+      descriptionAr
+      descriptionEn
       logoUrl
       awardedAt
       rulesPreview
       category {
         id
-        name
-        icon
-        color
-      }
-      rules {
-        id
-        conditionType
-        operator
-        value
-        valueEnd
-        subject {
-          id
-          name
-        }
-        timeframe
-        scoreThreshold
-        description
       }
     }
   }
 `;
 
 /**
- * __useGetAllBadgesQuery__
+ * __useGetBadgesScreenDataQuery__
  *
- * To run a query within a React component, call `useGetAllBadgesQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetAllBadgesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `useGetBadgesScreenDataQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetBadgesScreenDataQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = useGetAllBadgesQuery({
+ * const { data, loading, error } = useGetBadgesScreenDataQuery({
  *   variables: {
  *   },
  * });
  */
-export function useGetAllBadgesQuery(
-  baseOptions?: ApolloReactHooks.QueryHookOptions<GetAllBadgesQuery, GetAllBadgesQueryVariables>,
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useQuery<GetAllBadgesQuery, GetAllBadgesQueryVariables>(
-    GetAllBadgesDocument,
-    options,
-  );
-}
-export function useGetAllBadgesLazyQuery(
-  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
-    GetAllBadgesQuery,
-    GetAllBadgesQueryVariables
-  >,
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useLazyQuery<GetAllBadgesQuery, GetAllBadgesQueryVariables>(
-    GetAllBadgesDocument,
-    options,
-  );
-}
-// @ts-ignore
-export function useGetAllBadgesSuspenseQuery(
-  baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<
-    GetAllBadgesQuery,
-    GetAllBadgesQueryVariables
-  >,
-): ApolloReactHooks.UseSuspenseQueryResult<GetAllBadgesQuery, GetAllBadgesQueryVariables>;
-export function useGetAllBadgesSuspenseQuery(
-  baseOptions?:
-    | ApolloReactHooks.SkipToken
-    | ApolloReactHooks.SuspenseQueryHookOptions<GetAllBadgesQuery, GetAllBadgesQueryVariables>,
-): ApolloReactHooks.UseSuspenseQueryResult<
-  GetAllBadgesQuery | undefined,
-  GetAllBadgesQueryVariables
->;
-export function useGetAllBadgesSuspenseQuery(
-  baseOptions?:
-    | ApolloReactHooks.SkipToken
-    | ApolloReactHooks.SuspenseQueryHookOptions<GetAllBadgesQuery, GetAllBadgesQueryVariables>,
-) {
-  const options =
-    baseOptions === ApolloReactHooks.skipToken
-      ? baseOptions
-      : { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useSuspenseQuery<GetAllBadgesQuery, GetAllBadgesQueryVariables>(
-    GetAllBadgesDocument,
-    options,
-  );
-}
-export type GetAllBadgesQueryHookResult = ReturnType<typeof useGetAllBadgesQuery>;
-export type GetAllBadgesLazyQueryHookResult = ReturnType<typeof useGetAllBadgesLazyQuery>;
-export type GetAllBadgesSuspenseQueryHookResult = ReturnType<typeof useGetAllBadgesSuspenseQuery>;
-export type GetAllBadgesQueryResult = ApolloReactCommon.QueryResult<
-  GetAllBadgesQuery,
-  GetAllBadgesQueryVariables
->;
-export const GetBadgeCategoriesDocument = gql`
-  query getBadgeCategories {
-    badgeCategories {
-      id
-      name
-      description
-      icon
-      color
-      badgeCount
-    }
-  }
-`;
-
-/**
- * __useGetBadgeCategoriesQuery__
- *
- * To run a query within a React component, call `useGetBadgeCategoriesQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetBadgeCategoriesQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGetBadgeCategoriesQuery({
- *   variables: {
- *   },
- * });
- */
-export function useGetBadgeCategoriesQuery(
+export function useGetBadgesScreenDataQuery(
   baseOptions?: ApolloReactHooks.QueryHookOptions<
-    GetBadgeCategoriesQuery,
-    GetBadgeCategoriesQueryVariables
+    GetBadgesScreenDataQuery,
+    GetBadgesScreenDataQueryVariables
   >,
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useQuery<GetBadgeCategoriesQuery, GetBadgeCategoriesQueryVariables>(
-    GetBadgeCategoriesDocument,
+  return ApolloReactHooks.useQuery<GetBadgesScreenDataQuery, GetBadgesScreenDataQueryVariables>(
+    GetBadgesScreenDataDocument,
     options,
   );
 }
-export function useGetBadgeCategoriesLazyQuery(
+export function useGetBadgesScreenDataLazyQuery(
   baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
-    GetBadgeCategoriesQuery,
-    GetBadgeCategoriesQueryVariables
+    GetBadgesScreenDataQuery,
+    GetBadgesScreenDataQueryVariables
   >,
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useLazyQuery<GetBadgeCategoriesQuery, GetBadgeCategoriesQueryVariables>(
-    GetBadgeCategoriesDocument,
+  return ApolloReactHooks.useLazyQuery<GetBadgesScreenDataQuery, GetBadgesScreenDataQueryVariables>(
+    GetBadgesScreenDataDocument,
     options,
   );
 }
 // @ts-ignore
-export function useGetBadgeCategoriesSuspenseQuery(
+export function useGetBadgesScreenDataSuspenseQuery(
   baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<
-    GetBadgeCategoriesQuery,
-    GetBadgeCategoriesQueryVariables
+    GetBadgesScreenDataQuery,
+    GetBadgesScreenDataQueryVariables
   >,
 ): ApolloReactHooks.UseSuspenseQueryResult<
-  GetBadgeCategoriesQuery,
-  GetBadgeCategoriesQueryVariables
+  GetBadgesScreenDataQuery,
+  GetBadgesScreenDataQueryVariables
 >;
-export function useGetBadgeCategoriesSuspenseQuery(
+export function useGetBadgesScreenDataSuspenseQuery(
   baseOptions?:
     | ApolloReactHooks.SkipToken
     | ApolloReactHooks.SuspenseQueryHookOptions<
-        GetBadgeCategoriesQuery,
-        GetBadgeCategoriesQueryVariables
+        GetBadgesScreenDataQuery,
+        GetBadgesScreenDataQueryVariables
       >,
 ): ApolloReactHooks.UseSuspenseQueryResult<
-  GetBadgeCategoriesQuery | undefined,
-  GetBadgeCategoriesQueryVariables
+  GetBadgesScreenDataQuery | undefined,
+  GetBadgesScreenDataQueryVariables
 >;
-export function useGetBadgeCategoriesSuspenseQuery(
+export function useGetBadgesScreenDataSuspenseQuery(
   baseOptions?:
     | ApolloReactHooks.SkipToken
     | ApolloReactHooks.SuspenseQueryHookOptions<
-        GetBadgeCategoriesQuery,
-        GetBadgeCategoriesQueryVariables
+        GetBadgesScreenDataQuery,
+        GetBadgesScreenDataQueryVariables
       >,
 ) {
   const options =
@@ -1083,20 +1059,20 @@ export function useGetBadgeCategoriesSuspenseQuery(
       ? baseOptions
       : { ...defaultOptions, ...baseOptions };
   return ApolloReactHooks.useSuspenseQuery<
-    GetBadgeCategoriesQuery,
-    GetBadgeCategoriesQueryVariables
-  >(GetBadgeCategoriesDocument, options);
+    GetBadgesScreenDataQuery,
+    GetBadgesScreenDataQueryVariables
+  >(GetBadgesScreenDataDocument, options);
 }
-export type GetBadgeCategoriesQueryHookResult = ReturnType<typeof useGetBadgeCategoriesQuery>;
-export type GetBadgeCategoriesLazyQueryHookResult = ReturnType<
-  typeof useGetBadgeCategoriesLazyQuery
+export type GetBadgesScreenDataQueryHookResult = ReturnType<typeof useGetBadgesScreenDataQuery>;
+export type GetBadgesScreenDataLazyQueryHookResult = ReturnType<
+  typeof useGetBadgesScreenDataLazyQuery
 >;
-export type GetBadgeCategoriesSuspenseQueryHookResult = ReturnType<
-  typeof useGetBadgeCategoriesSuspenseQuery
+export type GetBadgesScreenDataSuspenseQueryHookResult = ReturnType<
+  typeof useGetBadgesScreenDataSuspenseQuery
 >;
-export type GetBadgeCategoriesQueryResult = ApolloReactCommon.QueryResult<
-  GetBadgeCategoriesQuery,
-  GetBadgeCategoriesQueryVariables
+export type GetBadgesScreenDataQueryResult = ApolloReactCommon.QueryResult<
+  GetBadgesScreenDataQuery,
+  GetBadgesScreenDataQueryVariables
 >;
 export const StudyScheduleDocument = gql`
   query StudySchedule {

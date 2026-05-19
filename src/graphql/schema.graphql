@@ -17,10 +17,14 @@ type Query {
 type Badge {
   id: ID!
   name: String!
+  nameAr: String
+  nameEn: String
   description: String
+  descriptionAr: String
+  descriptionEn: String
   logoUrl: String
   awardedAt: DateTime
-  rulesPreview: String
+  rulesPreview: String!
   category: BadgeCategory!
   rules: [BadgeRule!]!
 }
@@ -28,10 +32,16 @@ type Badge {
 type BadgeCategory {
   id: ID!
   name: String!
+  nameAr: String
+  nameEn: String
   description: String
+  descriptionAr: String
+  descriptionEn: String
   icon: String
   color: String
-  badgeCount: Int
+  displayOrder: Int!
+  badgeCount: Int!
+  activeBadgeCount: Int!
 }
 
 type BadgeRule {
@@ -64,6 +74,13 @@ type Mutation {
   deleteAccount: SocialActionResponse!
   saveStudySchedule(entries: [StudyScheduleInput!]!): [StudySchedule!]!
   forgotPassword(email: String!): SocialActionResponse!
+  updatePassword(input: UpdatePasswordInput!): SocialActionResponse!
+}
+
+input UpdatePasswordInput {
+  oldPassword: String!
+  newPassword: String!
+  newPasswordConfirmation: String!
 }
 
 type SocialActionResponse {
