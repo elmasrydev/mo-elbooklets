@@ -1,41 +1,27 @@
-query getAllBadges {
+query GetBadgesScreenData {
+  badgeCategories {
+    id
+    name
+    nameAr
+    nameEn
+    icon
+    color
+    displayOrder
+    badgeCount
+  }
   allBadges {
     id
     name
+    nameAr
+    nameEn
     description
+    descriptionAr
+    descriptionEn
     logoUrl
     awardedAt
     rulesPreview
     category {
       id
-      name
-      icon
-      color
     }
-    rules {
-      id
-      conditionType
-      operator
-      value
-      valueEnd
-      subject {
-        id
-        name
-      }
-      timeframe
-      scoreThreshold
-      description
-    }
-  }
-}
-
-query getBadgeCategories {
-  badgeCategories {
-    id
-    name
-    description
-    icon
-    color
-    badgeCount
   }
 }

@@ -422,6 +422,34 @@ const ProfileScreen: React.FC = () => {
               color={theme.colors.textTertiary}
             />
           </TouchableOpacity>
+          
+          {/* Bookmarks & Notes */}
+          <TouchableOpacity 
+            style={currentStyles.settingItem}
+            onPress={() => navigation.navigate('BookmarksNotes')}
+          >
+            <View
+              style={[
+                currentStyles.settingIconBox,
+                { backgroundColor: theme.colors.primary + '20' },
+              ]}
+            >
+              <Ionicons name="bookmark-outline" size={22} color={theme.colors.primary} />
+            </View>
+            <View style={currentStyles.settingContent}>
+              <Text style={currentStyles.settingTitle}>
+                {t('more_screen.bookmarks_notes', 'Bookmarks & Notes')}
+              </Text>
+              <Text style={currentStyles.settingSubtitle}>
+                {t('more_screen.bookmarks_notes_desc', 'View your saved points and notes')}
+              </Text>
+            </View>
+            <Ionicons
+              name={isRTL ? 'chevron-back' : 'chevron-forward'}
+              size={20}
+              color={theme.colors.textTertiary}
+            />
+          </TouchableOpacity>
 
           {/* Help and Support - Hidden for now */}
           {/*

@@ -23,7 +23,7 @@
         "ITSAppUsesNonExemptEncryption": false
       },
       "bundleIdentifier": "com.elbooklets.app",
-      "buildNumber": "47",
+      "buildNumber": "52",
       "appleTeamId": "XJAN9FLEYZ",
       "googleServicesFile": "./GoogleService-Info.plist"
     },
