@@ -74,5 +74,8 @@
     "reactotron-react-native": "^5.1.18",
     "typescript": "~5.9.2"
   },
+  "overrides": {
+    "react-native-get-random-values": "$react-native-get-random-values"
+  },
   "private": true
 }
