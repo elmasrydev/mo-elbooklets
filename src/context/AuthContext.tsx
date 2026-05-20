@@ -103,6 +103,9 @@ interface AuthContextType {
   updateParentUser: (data: Partial<Parent>) => Promise<void>;
   isVerificationSkipped: boolean;
   skipVerification: () => void;
+  otpWasAutoSent: boolean;
+  markOtpAutoSent: () => void;
+  clearOtpAutoSent: () => void;
   onAuthStateChange?: (isAuthenticated: boolean) => void;
 }
 
@@ -118,6 +121,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [userRole, setUserRole] = useState<'student' | 'parent' | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isVerificationSkipped, setIsVerificationSkipped] = useState(false);
+  const [otpWasAutoSent, setOtpWasAutoSent] = useState(false);
 
   // Check if user is already logged in on app start
   useEffect(() => {
@@ -216,6 +220,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             mobile: authPayload.user.mobile,
             grade: authPayload.user.grade?.name,
           });
+          if (!authPayload.user.mobile_verified_at) {
+            setOtpWasAutoSent(true);
+          }
           return { success: true, user: authPayload.user };
         }
 
@@ -273,6 +280,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             mobile: authPayload.user.mobile,
             grade: authPayload.user.grade?.name,
           });
+          if (!authPayload.user.mobile_verified_at) {
+            setOtpWasAutoSent(true);
+          }
           return { success: true, user: authPayload.user };
         }
 
@@ -560,6 +570,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       updateParentUser,
       isVerificationSkipped,
       skipVerification,
+      otpWasAutoSent,
+      markOtpAutoSent: () => setOtpWasAutoSent(true),
+      clearOtpAutoSent: () => setOtpWasAutoSent(false),
     }),
     [
       user,
@@ -578,6 +591,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       updateParentUser,
       isVerificationSkipped,
       skipVerification,
+      otpWasAutoSent,
     ],
   );
 

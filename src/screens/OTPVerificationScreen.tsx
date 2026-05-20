@@ -35,7 +35,7 @@ const OTPVerificationScreen: React.FC = () => {
   const { typography, fontWeight } = useTypography();
   const { t } = useTranslation();
   const navigation = useNavigation();
-  const { user, refreshUser, logout, skipVerification } = useAuth();
+  const { user, refreshUser, logout, skipVerification, otpWasAutoSent, clearOtpAutoSent } = useAuth();
   const { showConfirm } = useModal();
   const { timeLeft, isActive, formattedTime, startTimer, clearTimer } = useOtpTimer();
 
@@ -45,6 +45,19 @@ const OTPVerificationScreen: React.FC = () => {
   const [otpCode, setOtpCode] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const inputRef = useRef<TextInput>(null);
+
+  // On mount: determine initial state based on how user arrived
+  useEffect(() => {
+    if (otpWasAutoSent) {
+      // Fresh login/register — backend already sent the OTP automatically
+      clearOtpAutoSent();   // consume the flag (one-shot)
+      startTimer(120);      // start 2-min countdown
+      setPhase('verify');   // jump straight to code entry
+    }
+    // If NOT otpWasAutoSent, useOtpTimer's loadTimer() already restored
+    // any persisted timer state — existing unverified user path stays on 'send'
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Auto-focus logic when entering verify phase
   useEffect(() => {
