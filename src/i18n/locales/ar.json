@@ -41,6 +41,7 @@
     "test_react_crash": "React عطل",
     "about": "حول",
     "logout": "تسجيل الخروج",
+    "delete": "حذف",
     "cancel": "إلغاء",
     "accept": "قبول",
     "decline": "رفض",
@@ -91,6 +92,9 @@
     "api_switch_demo": "التبديل إلى Demo",
     "api_switch_production": "التبديل إلى Production",
     "api_switch_prs": "التبديل إلى PRS",
+    "bookmarks": "الإشارات",
+    "notes": "الملاحظات",
+    "no_results": "لا توجد نتائج",
     "like": "إعجاب",
     "dislike": "عدم إعجاب",
     "search": "بحث",
@@ -139,7 +143,13 @@
     "quizzes_progress": "اجتياز الاختبارات المطلوبة ({{current}}/{{total}})",
     "no_dod_data": "لا توجد بيانات تقدم متاحة",
     "leave_title": "مغادرة الدرس؟",
-    "leave_message": "تقدمك في القراءة محفوظ. هل أنت متأكد من أنك تريد المغادرة؟"
+    "leave_message": "تقدمك في القراءة محفوظ. هل أنت متأكد من أنك تريد المغادرة؟",
+    "add_note": "إضافة ملاحظة",
+    "notes_placeholder": "أضف ملاحظتك هنا...",
+    "note_saved_success": "تم حفظ الملاحظة بنجاح",
+    "note_deleted_success": "تم حذف الملاحظة بنجاح",
+    "bookmark_added": "تم إضافة الإشارة المرجعية بنجاح",
+    "bookmark_removed": "تم إزالة الإشارة المرجعية"
   },
   "more_screen": {
     "header_title": "المزيد",
@@ -165,7 +175,9 @@
     "about_content": "تطبيق ElBooklets للجوال\nالإصدار 1.0.0\n\nرفيقك في التعلم الرقمي للتعليم التفاعلي.",
     "grade": "السنة الدراسية",
     "not_specified": "غير محدد",
-    "logout": "تسجيل الخروج"
+    "logout": "تسجيل الخروج",
+    "bookmarks_notes": "الإشارات المرجعية والملاحظات",
+    "bookmarks_notes_desc": "عرض النقاط والملاحظات المحفوظة"
   },
   "home_screen": {
     "hi": "مرحباً",
@@ -749,5 +761,13 @@
     "success_message": "شكراً لك! سيقوم فريقنا بمراجعة السؤال واتخاذ الإجراء المناسب.",
     "submit_error": "فشل إرسال البلاغ. يرجى المحاولة مرة أخرى.",
     "error_loading_types": "تعذر تحميل أنواع البلاغات. اضغط للمحاولة مجدداً."
+  },
+  "bookmarks": {
+    "empty_title": "لا توجد إشارات مرجعية بعد",
+    "empty_subtitle": "ضع إشارة مرجعية على النقاط الرئيسية لتجدها هنا لاحقاً."
+  },
+  "notes": {
+    "empty_title": "لا توجد ملاحظات بعد",
+    "empty_subtitle": "أضف ملاحظات إلى النقاط الرئيسية أثناء المذاكرة."
   }
 }
