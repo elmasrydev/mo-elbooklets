@@ -25,6 +25,7 @@ interface User {
   email?: string;
   mobile: string;
   country_code?: string;
+  mobile_verified_at?: string;
   gender?: string;
   school_name?: string;
   parent_mobile?: string;
@@ -185,6 +186,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               email
               mobile
               country_code
+              mobile_verified_at
               grade_id
               grade { id name }
               educational_system_id
@@ -241,6 +243,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               email
               mobile
               country_code
+              mobile_verified_at
               grade_id
               grade { id name }
               educational_system_id
@@ -483,7 +486,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const result = await tryFetchWithFallback(
           `query Me { 
             me { 
-              id name email mobile country_code gender school_name parent_mobile
+              id name email mobile country_code mobile_verified_at gender school_name parent_mobile
               grade_id grade { id name } educational_system_id educational_system { id name } 
               governorate_id governorate { id name_ar name_en }
               city_id city { id name_ar name_en }

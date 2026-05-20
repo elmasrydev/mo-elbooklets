@@ -30,6 +30,7 @@ import ParentLinkingScreen from '../screens/ParentLinkingScreen';
 import FollowListScreen from '../screens/FollowListScreen';
 import BadgesScreen from '../screens/BadgesScreen';
 import BookmarksNotesScreen from '../screens/BookmarksNotesScreen';
+import OTPVerificationScreen from '../screens/OTPVerificationScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -202,6 +203,7 @@ const TabNavigator: React.FC = () => {
       <Stack.Screen name="FollowList" component={FollowListScreen} />
       <Stack.Screen name="Badges" component={BadgesScreen} />
       <Stack.Screen name="BookmarksNotes" component={BookmarksNotesScreen} />
+      <Stack.Screen name="OTPVerification" component={OTPVerificationScreen} />
       <Stack.Group screenOptions={{ presentation: 'fullScreenModal' }}>
         <Stack.Screen name="QuizFlowSubjects" component={QuizSubjectsScreen} />
         <Stack.Screen name="QuizFlowLessons" component={QuizLessonsScreen} />

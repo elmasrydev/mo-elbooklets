@@ -205,6 +205,22 @@ const ProfileScreen: React.FC = () => {
                 {user.mobile}
               </Text>
             ) : null}
+
+            {!user?.mobile_verified_at ? (
+              <TouchableOpacity onPress={() => navigation.navigate('OTPVerification')} style={currentStyles.verifyBanner}>
+                <View style={{ width: 16 }} />
+                <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
+                  <Ionicons name="logo-whatsapp" size={18} color="#25D366" style={{ marginEnd: spacing.xs }} />
+                  <Text style={[typography('caption'), currentStyles.verifyText, { flex: 0 }]}>{t('otp.verify_mobile', 'Verify your mobile via WhatsApp')}</Text>
+                </View>
+                <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={16} color={theme.colors.primary} />
+              </TouchableOpacity>
+            ) : (
+              <View style={currentStyles.verifiedBadge}>
+                <Ionicons name="checkmark-circle" size={16} color={theme.colors.success} style={{ marginEnd: spacing.xs }} />
+                <Text style={[typography('caption'), currentStyles.verifiedText]}>{t('otp.mobile_verified', 'Mobile verified')}</Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -593,6 +609,38 @@ const styles = (
       ...fontWeight('bold'),
       color: theme.colors.textSecondary,
       textAlign: 'center',
+    },
+    verifyBanner: {
+      flexDirection: 'row',
+      justifyContent:'space-around',
+      alignItems: 'center',
+      height:44,
+      backgroundColor: theme.colors.primary + '15',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: borderRadius.lg,
+      marginTop: spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.primary + '30',
+    },
+    verifyText: {
+      ...fontWeight('600'),
+      color: theme.colors.primary,
+      flex: 1,
+      textAlign: 'center',
+    },
+    verifiedBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.success + '15',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: borderRadius.lg,
+      marginTop: spacing.md,
+    },
+    verifiedText: {
+      ...fontWeight('600'),
+      color: theme.colors.success,
     },
     menuSection: {
       marginTop: spacing.lg,
