@@ -207,14 +207,14 @@ const ProfileScreen: React.FC = () => {
             ) : null}
 
             {!user?.mobile_verified_at ? (
-              <TouchableOpacity onPress={() => navigation.navigate('OTPVerification')} style={currentStyles.verifyBanner}>
+              <View style={currentStyles.verifyBanner}>
                 <View style={{ width: 16 }} />
                 <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
                   <Ionicons name="logo-whatsapp" size={18} color="#25D366" style={{ marginEnd: spacing.xs }} />
                   <Text style={[typography('caption'), currentStyles.verifyText, { flex: 0 }]}>{t('otp.verify_mobile', 'Verify your mobile via WhatsApp')}</Text>
                 </View>
-                <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={16} color={theme.colors.primary} />
-              </TouchableOpacity>
+                <View style={{ width: 16 }} />
+              </View>
             ) : (
               <View style={currentStyles.verifiedBadge}>
                 <Ionicons name="checkmark-circle" size={16} color={theme.colors.success} style={{ marginEnd: spacing.xs }} />

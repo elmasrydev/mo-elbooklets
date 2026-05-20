@@ -100,6 +100,9 @@ interface AuthContextType {
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   updateUser: (userData: User) => Promise<void>;
+  updateParentUser: (data: Partial<Parent>) => Promise<void>;
+  isVerificationSkipped: boolean;
+  skipVerification: () => void;
   onAuthStateChange?: (isAuthenticated: boolean) => void;
 }
 
@@ -114,6 +117,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [parentUser, setParentUser] = useState<Parent | null>(null);
   const [userRole, setUserRole] = useState<'student' | 'parent' | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isVerificationSkipped, setIsVerificationSkipped] = useState(false);
 
   // Check if user is already logged in on app start
   useEffect(() => {
@@ -476,6 +480,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     [user],
   );
 
+  const updateParentUser = useCallback(async (data: Partial<Parent>) => {
+    const updatedParent = { ...parentUser, ...data } as Parent;
+    await AsyncStorage.setItem('parent_data', JSON.stringify(updatedParent));
+    setParentUser(updatedParent);
+  }, [parentUser]);
+
+  const skipVerification = useCallback(() => {
+    setIsVerificationSkipped(true);
+  }, []);
+
   const refreshUser = useCallback(async () => {
     try {
       const token = await SecureStore.getItemAsync('auth_token');
@@ -543,6 +557,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       logout,
       refreshUser,
       updateUser,
+      updateParentUser,
+      isVerificationSkipped,
+      skipVerification,
     }),
     [
       user,
@@ -558,6 +575,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       logout,
       refreshUser,
       updateUser,
+      updateParentUser,
+      isVerificationSkipped,
+      skipVerification,
     ],
   );
 

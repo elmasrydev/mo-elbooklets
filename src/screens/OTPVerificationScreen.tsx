@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,8 +9,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  BackHandler,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import UnifiedHeader from '../components/UnifiedHeader';
@@ -24,6 +25,7 @@ import { SEND_MOBILE_OTP_MUTATION, VERIFY_MOBILE_OTP_MUTATION } from '../graphql
 import { useOtpTimer } from '../hooks/useOtpTimer';
 import * as SecureStore from 'expo-secure-store';
 import { layout } from '../config/layout';
+import { isDebugMode } from '../config/debug';
 
 const OTP_LENGTH = 6;
 
@@ -33,7 +35,7 @@ const OTPVerificationScreen: React.FC = () => {
   const { typography, fontWeight } = useTypography();
   const { t } = useTranslation();
   const navigation = useNavigation();
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, logout, skipVerification } = useAuth();
   const { showConfirm } = useModal();
   const { timeLeft, isActive, formattedTime, startTimer, clearTimer } = useOtpTimer();
 
@@ -53,12 +55,46 @@ const OTPVerificationScreen: React.FC = () => {
     }
   }, [phase]);
 
+  const canGoBack = navigation.canGoBack();
+
+  // Intercept Android hardware back button
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        if (phase === 'verify') {
+          // Go back to send phase
+          setPhase('send');
+          return true; // consumed
+        }
+        if (!canGoBack) {
+          // Mandatory mode — block back entirely
+          return true; // consumed, do nothing
+        }
+        return false; // let system handle it (canGoBack === true)
+      };
+
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => subscription.remove();
+    }, [phase, canGoBack])
+  );
+
   const handleBack = () => {
     if (phase === 'verify') {
       setPhase('send');
-    } else {
+    } else if (canGoBack) {
       navigation.goBack();
     }
+  };
+
+  const handleLogout = () => {
+    showConfirm({
+      title: t('common.logout_title', 'Log Out'),
+      message: t('common.logout_desc', 'Are you sure you want to log out?'),
+      confirmLabel: t('common.logout', 'Log Out'),
+      onConfirm: async () => {
+        await logout();
+      },
+    });
   };
 
   const handleSendCode = async () => {
@@ -235,11 +271,47 @@ const OTPVerificationScreen: React.FC = () => {
       
       {isActive && (
         <TouchableOpacity
-          style={{ marginTop: spacing.xl, padding: spacing.sm }}
+          style={[
+            styles.primaryButton, 
+            { 
+              backgroundColor: theme.colors.primary, 
+              borderRadius: borderRadius.xl,
+              marginTop: spacing.md
+            }
+          ]}
           onPress={() => setPhase('verify')}
         >
-          <Text style={[typography('body'), fontWeight('bold'), { color: theme.colors.primary }]}>
+          <Text style={[typography('body'), fontWeight('bold'), { color: '#fff' }]}>
             {t('otp.enter_code')}
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Trapped User Log Out Option */}
+      <TouchableOpacity
+        style={{ marginTop: spacing.xl, padding: spacing.sm }}
+        onPress={handleLogout}
+      >
+        <Text style={[typography('body'), fontWeight('bold'), { color: theme.colors.error }]}>
+          {t('common.logout', 'Log Out')}
+        </Text>
+      </TouchableOpacity>
+
+      {/* Debug Skip Button */}
+      {isDebugMode() && (
+        <TouchableOpacity
+          style={[
+            styles.primaryButton, 
+            { 
+              backgroundColor: '#8B5CF6', 
+              borderRadius: borderRadius.xl,
+              marginTop: spacing.xl
+            }
+          ]}
+          onPress={skipVerification}
+        >
+          <Text style={[typography('body'), fontWeight('bold'), { color: '#fff' }]}>
+            Skip OTP (Debug)
           </Text>
         </TouchableOpacity>
       )}
@@ -319,7 +391,7 @@ const OTPVerificationScreen: React.FC = () => {
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <UnifiedHeader 
         title={t('otp.title')} 
-        showBackButton={true} 
+        showBackButton={canGoBack || phase === 'verify'} 
         onBackPress={handleBack} 
       />
       <KeyboardAvoidingView 
