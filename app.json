@@ -23,13 +23,13 @@
         "ITSAppUsesNonExemptEncryption": false
       },
       "bundleIdentifier": "com.elbooklets.app",
-      "buildNumber": "54",
+      "buildNumber": "52",
       "appleTeamId": "XJAN9FLEYZ",
       "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "package": "com.elbooklets.app",
-      "versionCode": 7,
+      "versionCode": 35,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -63,7 +63,7 @@
       "@react-native-firebase/crashlytics"
     ],
     "extra": {
-      "debugMode": false,
+      "debugMode": true,
       "eas": {
         "projectId": "d4dcdf3d-7581-496d-96a9-c5acca79629d"
       }
