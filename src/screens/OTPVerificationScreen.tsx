@@ -35,7 +35,7 @@ const OTPVerificationScreen: React.FC = () => {
   const { typography, fontWeight } = useTypography();
   const { t } = useTranslation();
   const navigation = useNavigation();
-  const { user, refreshUser, logout, skipVerification, otpWasAutoSent, clearOtpAutoSent } = useAuth();
+  const { user, refreshUser, logout, skipVerification, otpWasAutoSent, clearOtpAutoSent, otpShouldAutoRequest, clearOtpShouldAutoRequest } = useAuth();
   const { showConfirm } = useModal();
   const { timeLeft, isActive, formattedTime, startTimer, clearTimer } = useOtpTimer();
 
@@ -49,13 +49,16 @@ const OTPVerificationScreen: React.FC = () => {
   // On mount: determine initial state based on how user arrived
   useEffect(() => {
     if (otpWasAutoSent) {
-      // Fresh login/register — backend already sent the OTP automatically
-      clearOtpAutoSent();   // consume the flag (one-shot)
-      startTimer(120);      // start 2-min countdown
-      setPhase('verify');   // jump straight to code entry
+      // Register: backend already sent OTP automatically
+      clearOtpAutoSent();
+      startTimer(120);
+      setPhase('verify');
+    } else if (otpShouldAutoRequest) {
+      // Login: backend did NOT auto-fire OTP — we must request it now
+      clearOtpShouldAutoRequest();
+      handleSendCode(); // fires mutation → startTimer(120) + setPhase('verify') on success
     }
-    // If NOT otpWasAutoSent, useOtpTimer's loadTimer() already restored
-    // any persisted timer state — existing unverified user path stays on 'send'
+    // Otherwise: existing unverified user re-opens app — useOtpTimer restores persisted timer
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -397,6 +400,25 @@ const OTPVerificationScreen: React.FC = () => {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Debug Skip Button */}
+      {isDebugMode() && (
+        <TouchableOpacity
+          style={[
+            styles.primaryButton,
+            {
+              backgroundColor: '#8B5CF6',
+              borderRadius: borderRadius.xl,
+              marginTop: spacing.xl,
+            },
+          ]}
+          onPress={skipVerification}
+        >
+          <Text style={[typography('body'), fontWeight('bold'), { color: '#fff' }]}>
+            Skip OTP (Debug)
+          </Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 

@@ -106,6 +106,8 @@ interface AuthContextType {
   otpWasAutoSent: boolean;
   markOtpAutoSent: () => void;
   clearOtpAutoSent: () => void;
+  otpShouldAutoRequest: boolean;
+  clearOtpShouldAutoRequest: () => void;
   onAuthStateChange?: (isAuthenticated: boolean) => void;
 }
 
@@ -122,6 +124,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isVerificationSkipped, setIsVerificationSkipped] = useState(false);
   const [otpWasAutoSent, setOtpWasAutoSent] = useState(false);
+  const [otpShouldAutoRequest, setOtpShouldAutoRequest] = useState(false);
 
   // Check if user is already logged in on app start
   useEffect(() => {
@@ -221,7 +224,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             grade: authPayload.user.grade?.name,
           });
           if (!authPayload.user.mobile_verified_at) {
-            setOtpWasAutoSent(true);
+            // Login: backend does NOT auto-fire OTP — screen must request it on mount
+            setOtpShouldAutoRequest(true);
           }
           return { success: true, user: authPayload.user };
         }
@@ -573,6 +577,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       otpWasAutoSent,
       markOtpAutoSent: () => setOtpWasAutoSent(true),
       clearOtpAutoSent: () => setOtpWasAutoSent(false),
+      otpShouldAutoRequest,
+      clearOtpShouldAutoRequest: () => setOtpShouldAutoRequest(false),
     }),
     [
       user,
@@ -592,6 +598,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       isVerificationSkipped,
       skipVerification,
       otpWasAutoSent,
+      otpShouldAutoRequest,
     ],
   );
 
