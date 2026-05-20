@@ -21,8 +21,7 @@ import { useGetBadgesScreenDataQuery, Badge } from '../generated/graphql';
 const BadgesScreen: React.FC = () => {
   const { t } = useTranslation();
   const { theme, spacing, borderRadius } = useTheme();
-  const { language } = useLanguage();
-  const isArabic = language === 'ar';
+  const { isRTL } = useLanguage();
   const { typography, fontWeight } = useTypography();
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
   const [modalImageError, setModalImageError] = useState(false);
@@ -166,7 +165,7 @@ const BadgesScreen: React.FC = () => {
           
           const catColor = category.color || theme.colors.primary;
           const catIcon = category.icon;
-          const catName = isArabic ? (category.nameAr || category.name) : (category.nameEn || category.name);
+          const catName = isRTL ? (category.nameAr || category.name) : (category.nameEn || category.name);
 
           return (
             <View
@@ -193,7 +192,7 @@ const BadgesScreen: React.FC = () => {
 
               <View style={styles.badgeGrid}>
                 {catBadges.map((badge: any) => {
-                  const badgeName = isArabic ? (badge.nameAr || badge.name) : (badge.nameEn || badge.name);
+                  const badgeName = isRTL ? (badge.nameAr || badge.name) : (badge.nameEn || badge.name);
 
                   return (
                     <TouchableOpacity
@@ -289,8 +288,8 @@ const BadgesScreen: React.FC = () => {
               const catColor = selectedCat?.color || theme.colors.primary;
               const catIcon = selectedCat?.icon;
               
-              const badgeName = isArabic ? (selectedBadge.nameAr || selectedBadge.name) : (selectedBadge.nameEn || selectedBadge.name);
-              const badgeDesc = isArabic ? (selectedBadge.descriptionAr || selectedBadge.description) : (selectedBadge.descriptionEn || selectedBadge.description);
+              const badgeName = isRTL ? (selectedBadge.nameAr || selectedBadge.name) : (selectedBadge.nameEn || selectedBadge.name);
+              const badgeDesc = isRTL ? (selectedBadge.descriptionAr || selectedBadge.description) : (selectedBadge.descriptionEn || selectedBadge.description);
 
               return (
                 <>
@@ -363,10 +362,10 @@ const BadgesScreen: React.FC = () => {
                     </Text>
 
                     <View style={[styles.criteriaBox, { backgroundColor: theme.colors.background, borderRadius: borderRadius.md, padding: spacing.md }]}>
-                      <Text style={[typography('caption'), fontWeight('700'), { color: theme.colors.textTertiary, marginBottom: 8, textTransform: 'uppercase', textAlign: 'left' }]}>
+                      <Text style={[typography('caption'), fontWeight('700'), { color: theme.colors.textTertiary, marginBottom: 8, textTransform: 'uppercase', textAlign: isRTL ? 'right' : 'left' }]}>
                         {t('badges_screen.requirement', 'REQUIREMENT')}
                       </Text>
-                      <Text style={[typography('body'), { color: theme.colors.text, textAlign: 'left' }]}>
+                      <Text style={[typography('body'), { color: theme.colors.text, textAlign: isRTL ? 'right' : 'left' }]}>
                         {selectedBadge.rulesPreview}
                       </Text>
                     </View>
@@ -431,7 +430,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    marginEnd: 10,
+    marginRight: 10,
   },
   progressBarBg: {
     height: 16,
@@ -517,7 +516,7 @@ const styles = StyleSheet.create({
   lockOverlay: {
     position: 'absolute',
     top: -2,
-    end: -2,
+    right: -2,
     backgroundColor: 'rgba(255,255,255,0.8)',
     borderRadius: 10,
     padding: 2,
@@ -564,7 +563,7 @@ const styles = StyleSheet.create({
   closeButton: {
     position: 'absolute',
     top: 16,
-    end: 16,
+    right: 16,
     padding: 4,
   },
   modalBody: {

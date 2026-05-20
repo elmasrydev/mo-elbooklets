@@ -23,7 +23,6 @@ const httpLink = createHttpLink({
 const authLink = setContext(async (_, { headers }) => {
   // Get the authentication token from AsyncStorage
   const token = await SecureStore.getItemAsync('auth_token');
-  const lang = (await AsyncStorage.getItem('user_language')) || 'en';
 
   return {
     headers: {
@@ -31,7 +30,6 @@ const authLink = setContext(async (_, { headers }) => {
       authorization: token ? `Bearer ${token}` : '',
       'Content-Type': 'application/json',
       Accept: 'application/json',
-      'Accept-Language': lang,
     },
   };
 });
