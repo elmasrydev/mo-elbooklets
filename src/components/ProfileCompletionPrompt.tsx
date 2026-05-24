@@ -461,10 +461,10 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
             <View style={[styles.iconContainer, { backgroundColor: theme.colors.primary + '1A' }]}>
               <Ionicons name="person-circle-outline" size={32} color={theme.colors.primary} />
             </View>
-            <Text style={[styles.title, { ...typography('h3'), ...fontWeight('bold'), color: theme.colors.text }]}>
+            <Text style={[styles.title, typography('h3', 'bold'), { color: theme.colors.text }]}>
               {t('profile.complete_your_profile', 'Complete Your Profile')}
             </Text>
-            <Text style={[styles.subtitle, { ...typography('caption'), color: theme.colors.textSecondary }]}>
+            <Text style={[styles.subtitle, typography('caption'), { color: theme.colors.textSecondary }]}>
               {t('profile.completeness_incentive', 'Help us personalize your learning experience')}
             </Text>
           </View>
@@ -473,7 +473,7 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
              <View style={[styles.progressBar, { backgroundColor: theme.colors.border }]}>
                 <View style={[styles.progressFill, { width: `${completeness?.percentage || 0}%`, backgroundColor: theme.colors.primary }]} />
              </View>
-             <Text style={[styles.progressText, { ...typography('caption'), color: theme.colors.textSecondary }]}>
+             <Text style={[styles.progressText, typography('caption'), { color: theme.colors.textSecondary }]}>
                 {Math.round(completeness?.percentage || 0)}%
              </Text>
           </View>
@@ -485,7 +485,7 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
 
             {currentField === 'gender' && (
               <View>
-                <Text style={[styles.fieldLabel, typography('body'), fontWeight('600'), { color: theme.colors.text }]}>
+                <Text style={[styles.fieldLabel, typography('body', '600'), { color: theme.colors.text }]}>
                   {t('profile.select_gender', 'Select Gender')}
                 </Text>
                 <View style={styles.genderRow}>
@@ -498,7 +498,7 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
                     onPress={() => setGender('male')}
                   >
                     <Ionicons name="man-outline" size={40} color={gender === 'male' ? theme.colors.primary : theme.colors.textTertiary} />
-                    <Text style={[styles.genderText, gender === 'male' ? { color: theme.colors.primary, ...fontWeight('bold') } : { color: theme.colors.text }]}>
+                    <Text style={[styles.genderText, gender === 'male' ? typography('body', 'bold') : typography('body'), gender === 'male' ? { color: theme.colors.primary } : { color: theme.colors.text }]}>
                       {t('profile.male', 'Male')}
                     </Text>
                   </TouchableOpacity>
@@ -511,7 +511,7 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
                     onPress={() => setGender('female')}
                   >
                     <Ionicons name="woman-outline" size={40} color={gender === 'female' ? theme.colors.primary : theme.colors.textTertiary} />
-                    <Text style={[styles.genderText, gender === 'female' ? { color: theme.colors.primary, ...fontWeight('bold') } : { color: theme.colors.text }]}>
+                    <Text style={[styles.genderText, gender === 'female' ? typography('body', 'bold') : typography('body'), gender === 'female' ? { color: theme.colors.primary } : { color: theme.colors.text }]}>
                       {t('profile.female', 'Female')}
                     </Text>
                   </TouchableOpacity>
@@ -521,13 +521,13 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
 
             {currentField === 'email' && (
                <View>
-                 <Text style={[styles.fieldLabel, typography('body'), fontWeight('600'), { color: theme.colors.text }]}>
+                 <Text style={[styles.fieldLabel, typography('body', '600'), { color: theme.colors.text }]}>
                    {t('profile.enter_email', 'Enter Email Address')}
                  </Text>
                  <View style={[styles.inputContainer, { borderColor: theme.colors.border }]}>
                    <Ionicons name="mail-outline" size={20} color={theme.colors.textTertiary} />
                    <TextInput
-                      style={[styles.input, { color: theme.colors.text, textAlign: isRTL ? 'right' : 'left' }]}
+                      style={[styles.input, typography('body'), { color: theme.colors.text, textAlign: 'left' }]}
                       value={email}
                       onChangeText={setEmail}
                       placeholder="example@email.com"
@@ -540,7 +540,7 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
 
             {currentField === 'school_name' && (
                <View>
-                 <Text style={[styles.fieldLabel, typography('body'), fontWeight('600'), { color: theme.colors.text }]}>
+                 <Text style={[styles.fieldLabel, typography('body', '600'), { color: theme.colors.text }]}>
                    {t('profile.enter_school', 'Enter School Name')}
                  </Text>
                  <TouchableOpacity
@@ -548,9 +548,9 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
                     onPress={() => setShowSchoolModal(true)}
                  >
                    <Ionicons name="business-outline" size={20} color={theme.colors.textTertiary} />
-                   <Text style={[styles.input, { 
+                   <Text style={[styles.input, typography('body'), { 
                      color: schoolName ? theme.colors.text : theme.colors.textTertiary,
-                     textAlign: isRTL ? 'right' : 'left',
+                     textAlign: 'left',
                      paddingTop: Platform.OS === 'ios' ? 0 : 12
                    }]}>
                      {schoolName || t('profile.school_placeholder', 'Your school name')}
@@ -583,13 +583,13 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
 
             {currentField === 'parent_mobile' && (
                <View>
-                 <Text style={[styles.fieldLabel, typography('body'), fontWeight('600'), { color: theme.colors.text }]}>
+                 <Text style={[styles.fieldLabel, typography('body', '600'), { color: theme.colors.text }]}>
                    {t('profile.enter_parent_mobile', "Enter Parent's Mobile")}
                  </Text>
                  <View style={[styles.inputContainer, { borderColor: theme.colors.border }]}>
                    <Ionicons name="call-outline" size={20} color={theme.colors.textTertiary} />
                    <TextInput
-                      style={[styles.input, { color: theme.colors.text, textAlign: isRTL ? 'right' : 'left' }]}
+                      style={[styles.input, typography('body'), { color: theme.colors.text, textAlign: 'left' }]}
                       value={parentMobile}
                       onChangeText={(val) => setParentMobile(val.replaceAll(/\D/g, '').slice(0, 11))}
                       placeholder="01xxxxxxxxx"
@@ -607,7 +607,7 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
 
             {currentField === 'educational_system_id' && (
               <View>
-                <Text style={[styles.fieldLabel, typography('body'), fontWeight('600'), { color: theme.colors.text }]}>
+                <Text style={[styles.fieldLabel, typography('body', '600'), { color: theme.colors.text }]}>
                   {t('profile.select_educational_system', 'Select Educational System')}
                 </Text>
                 <ScrollView style={{ maxHeight: 240 }} showsVerticalScrollIndicator={false}>
@@ -618,12 +618,12 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
                          key={system.id}
                          style={[
                            styles.optionItem,
-                           { borderColor: theme.colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' },
+                           { borderColor: theme.colors.border, flexDirection: 'row' },
                            educationalSystemId === system.id && { borderColor: theme.colors.primary, backgroundColor: theme.colors.primary + '0A' }
                          ]}
                          onPress={() => setEducationalSystemId(system.id)}
                        >
-                         <Text style={[styles.optionText, { textAlign: isRTL ? 'right' : 'left' }, educationalSystemId === system.id ? { color: theme.colors.primary, ...fontWeight('bold') } : { color: theme.colors.text }]}>
+                         <Text style={[styles.optionText, educationalSystemId === system.id ? typography('body', 'bold') : typography('body'), { textAlign: 'left' }, educationalSystemId === system.id ? { color: theme.colors.primary } : { color: theme.colors.text }]}>
                            {system.name}
                          </Text>
                          {educationalSystemId === system.id && (
@@ -638,7 +638,7 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
 
             {currentField === 'governorate_id' && (
                <View>
-                 <Text style={[styles.fieldLabel, typography('body'), fontWeight('600'), { color: theme.colors.text }]}>
+                 <Text style={[styles.fieldLabel, typography('body', '600'), { color: theme.colors.text }]}>
                    {t('profile.select_governorate', 'Select Governorate')}
                  </Text>
                  <TouchableOpacity
@@ -652,9 +652,9 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
                    onPress={() => setShowGovModal(true)}
                  >
                    <Ionicons name="location-outline" size={20} color={governorateId ? theme.colors.primary : theme.colors.textTertiary} />
-                   <Text style={[styles.input, { 
+                   <Text style={[styles.input, typography('body'), { 
                      color: governorateId ? theme.colors.text : theme.colors.textTertiary,
-                     textAlign: isRTL ? 'right' : 'left',
+                     textAlign: 'left',
                      paddingTop: Platform.OS === 'ios' ? 0 : 12,
                      flex: 1
                    }]}>
@@ -689,7 +689,7 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
 
             {currentField === 'city_id' && (
                <View>
-                 <Text style={[styles.fieldLabel, typography('body'), fontWeight('600'), { color: theme.colors.text }]}>
+                 <Text style={[styles.fieldLabel, typography('body', '600'), { color: theme.colors.text }]}>
                    {t('profile.select_city', 'Select City')}
                  </Text>
                  <TouchableOpacity
@@ -704,9 +704,9 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
                    onPress={() => (governorateId || user?.governorate?.id) && setShowCityModal(true)}
                  >
                    <Ionicons name="map-outline" size={20} color={cityId ? theme.colors.primary : theme.colors.textTertiary} />
-                   <Text style={[styles.input, { 
+                   <Text style={[styles.input, typography('body'), { 
                      color: cityId ? theme.colors.text : theme.colors.textTertiary,
-                     textAlign: isRTL ? 'right' : 'left',
+                     textAlign: 'left',
                      paddingTop: Platform.OS === 'ios' ? 0 : 12,
                      flex: 1
                    }]}>
@@ -766,7 +766,7 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={goToSettings} style={styles.settingsButton}>
-                    <Text style={[styles.settingsText, typography('caption'), { color: theme.colors.primary, ...fontWeight('bold') }]}>
+                    <Text style={[styles.settingsText, typography('caption', 'bold'), { color: theme.colors.primary }]}>
                       {t('profile.complete_in_settings', 'Complete in Settings')}
                     </Text>
                   </TouchableOpacity>
@@ -863,7 +863,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   genderText: {
-    fontSize: 14,
+    // fontSize handled by typography('body')
   },
   inputContainer: {
     flexDirection: 'row',
@@ -876,8 +876,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    fontSize: 16,
-    // height: '100%',
+    // fontSize handled by typography('body')
   },
   footer: {
     gap: 16,
@@ -936,7 +935,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   optionText: {
-    fontSize: 14,
+    // fontSize handled by typography('body')
     flex: 1,
   },
 });

@@ -104,7 +104,7 @@ const AppButton: React.FC<AppButtonProps> = ({
       case 'sm':
         return {
           button: { height: 44, paddingHorizontal: spacing.md },
-          text: { ...typography('caption'), ...fontWeight('700') },
+          text: typography('caption', '700'),
           subtitle: typography('caption'),
         };
       case 'lg':
@@ -204,8 +204,8 @@ const AppButton: React.FC<AppButtonProps> = ({
             <View style={{ marginEnd: spacing.xs }}> {icon} </View>
           )}
           <View style={styles.textContainer}>
-            <Text style={titleStyles}> {title} </Text>
-            {subtitle && <Text style={subStyles}> {subtitle} </Text>}
+            <Text style={titleStyles}>{title}</Text>
+            {subtitle && <Text style={subStyles}>{subtitle}</Text>}
           </View>
           {icon && iconPosition === 'right' && (
             <View style={{ marginStart: spacing.xs }}> {icon} </View>
