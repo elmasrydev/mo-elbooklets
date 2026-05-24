@@ -342,10 +342,15 @@ const StudyLessonScreen: React.FC = () => {
 
   // Re-seed when the user navigates to a different lesson
   useEffect(() => {
-    const cachedInteraction = interactionCacheRef.current.get(currentLesson.id) ?? null;
+    let cachedInteraction = interactionCacheRef.current.get(currentLesson.id);
+    if (cachedInteraction === undefined) {
+      // Seed cache with the lesson's own interaction state
+      cachedInteraction = currentLesson.myInteraction ?? null;
+      interactionCacheRef.current.set(currentLesson.id, cachedInteraction);
+    }
     setInteraction(cachedInteraction);
     confirmedInteractionRef.current = cachedInteraction;
-  }, [currentLesson.id]);
+  }, [currentLesson.id, currentLesson.myInteraction]);
 
   const handleVideoInteraction = useCallback(
     async (type: 'LIKE' | 'DISLIKE') => {
@@ -527,6 +532,7 @@ const StudyLessonScreen: React.FC = () => {
               name
               summary
               videoUrl
+              myInteraction
               lessonPoints {
                 id
                 title
