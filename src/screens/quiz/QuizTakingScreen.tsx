@@ -535,14 +535,11 @@ const QuizTakingScreen: React.FC = () => {
                           isSelected && currentStyles.selectedAnswerTitle,
                         ]}
                       >
-                        {parts[0].toLowerCase() === 'true'
-                          ? quiz?.subject?.language === 'ar'
-                            ? 'صح'
-                            : 'True'
-                          : parts[0].toLowerCase() === 'false'
-                            ? quiz?.subject?.language === 'ar'
-                              ? 'خطأ'
-                              : 'False'
+                        {currentQuestion.type === 'true_false' && parts[0].toLowerCase() === 'true'
+                          ? t('common.true')
+                          : currentQuestion.type === 'true_false' &&
+                              parts[0].toLowerCase() === 'false'
+                            ? t('common.false')
                             : parts[0]}
                       </Text>
                       {hasSubtitle && (
