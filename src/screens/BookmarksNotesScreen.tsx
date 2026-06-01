@@ -602,7 +602,6 @@ const styles = (
     noteText: {
       ...typography('caption'),
       color: theme.colors.primary,
-      fontStyle: 'italic',
       flex: 1,
       textAlign: 'left',
     },

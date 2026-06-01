@@ -99,9 +99,11 @@ export const getTextStyle = (style: keyof typeof textStyles, isArabic: boolean =
     }
   }
 
-  // Keep the fontWeight value on Android alongside the weight-specific fontFamily.
-  // Setting undefined strips the weight and causes bold fonts to render as normal.
-  const resolvedWeight = weight;
+  // On Android with static named font files, fontWeight MUST be 'normal'.
+  // The weight is already encoded in the fontFamily (e.g. 'Cairo-Bold').
+  // Setting fontWeight:'bold' causes Android to apply synthetic bold on top,
+  // distorting the glyph or silently falling back to the system font.
+  const resolvedWeight = Platform.OS === 'android' ? ('normal' as const) : weight;
 
   if (isArabic) {
     return {

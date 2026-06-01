@@ -299,10 +299,18 @@ const QuizTakingScreen: React.FC = () => {
       );
 
       if (result.data?.submitQuizAnswers) {
-        // Navigate back to the main tabs with completion param
-        navigation.navigate('MainTabs', {
-          screen: 'Quiz',
-          params: { completedQuizId: quiz.id, timeTaken: isTimed ? elapsedSeconds : undefined },
+        // Reset navigation stack to MainTabs, focusing on the Quiz tab with completed params
+        navigation.reset({
+          index: 0,
+          routes: [
+            {
+              name: 'MainTabs',
+              params: {
+                screen: 'Quiz',
+                params: { completedQuizId: quiz.id, timeTaken: isTimed ? elapsedSeconds : undefined },
+              },
+            },
+          ],
         });
       } else {
         const errorMessage = result.errors?.[0]?.message || t('common.unexpected_error');
@@ -527,14 +535,11 @@ const QuizTakingScreen: React.FC = () => {
                           isSelected && currentStyles.selectedAnswerTitle,
                         ]}
                       >
-                        {parts[0].toLowerCase() === 'true'
-                          ? quiz?.subject?.language === 'ar'
-                            ? 'صح'
-                            : 'True'
-                          : parts[0].toLowerCase() === 'false'
-                            ? quiz?.subject?.language === 'ar'
-                              ? 'خطأ'
-                              : 'False'
+                        {currentQuestion.type === 'true_false' && parts[0].toLowerCase() === 'true'
+                          ? t('common.true')
+                          : currentQuestion.type === 'true_false' &&
+                              parts[0].toLowerCase() === 'false'
+                            ? t('common.false')
                             : parts[0]}
                       </Text>
                       {hasSubtitle && (

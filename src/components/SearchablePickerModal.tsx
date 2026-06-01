@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
+import { useTypography } from '../hooks/useTypography';
 
 interface SearchablePickerModalProps {
   visible: boolean;
@@ -48,6 +49,7 @@ const SearchablePickerModal: React.FC<SearchablePickerModalProps> = ({
   const { theme, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
+  const { typography, fontWeight } = useTypography();
 
   return (
     <Modal
@@ -63,7 +65,7 @@ const SearchablePickerModal: React.FC<SearchablePickerModalProps> = ({
       >
         <View style={[styles.bottomModal, { backgroundColor: theme.colors.card, height: '75%' }]}>
           <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
-            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>
+            <Text style={[styles.modalTitle, typography('h3'), fontWeight('700'), { color: theme.colors.text }]}>
               {title}
             </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -75,7 +77,7 @@ const SearchablePickerModal: React.FC<SearchablePickerModalProps> = ({
             <View style={[styles.inputWrapper, { backgroundColor: theme.colors.background, borderColor: theme.colors.border }]}>
               <Ionicons name="search" size={20} color={theme.colors.textTertiary} style={styles.inputIconLeft} />
               <TextInput
-                style={[styles.input, { color: theme.colors.text, textAlign: isRTL ? 'right' : 'left' }]}
+                style={[styles.input, typography('body'), { color: theme.colors.text, textAlign: 'left' }]}
                 placeholder={placeholder}
                 placeholderTextColor={theme.colors.textTertiary}
                 value={searchValue}
@@ -108,7 +110,7 @@ const SearchablePickerModal: React.FC<SearchablePickerModalProps> = ({
                 
                 {!loading && data.length === 0 && (
                   <View style={styles.emptyContainer}>
-                    <Text style={[styles.emptyText, { color: theme.colors.textTertiary }]}>
+                    <Text style={[styles.emptyText, typography('body'), { color: theme.colors.textTertiary }]}>
                       {searchValue.length > 0 
                         ? (emptyMessage || t('common.no_results')) 
                         : (searchHelperText || t('profile.start_typing_to_search', 'Start typing to search...'))}
@@ -128,9 +130,10 @@ const SearchablePickerModal: React.FC<SearchablePickerModalProps> = ({
               >
                 <Text style={[
                   styles.pickerItemText,
+                  typography('body'),
                   { 
                     color: String(selectedId) === String(item.id) ? theme.colors.primary : theme.colors.text,
-                    textAlign: isRTL ? 'right' : 'left'
+                    textAlign: 'left'
                   }
                 ]}>
                   {item.name}
@@ -168,12 +171,11 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    // fontSize and fontFamily handled by typography('h3')
   },
   closeButton: {
     position: 'absolute',
-    right: 20,
+    end: 20,
     top: 0,
   },
   searchContainer: {
@@ -188,11 +190,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   inputIconLeft: {
-    marginRight: 8,
+    marginEnd: 8,
   },
   input: {
     flex: 1,
-    fontSize: 16,
+    // fontSize handled by typography('body')
     height: '100%',
   },
   clearButton: {
@@ -212,7 +214,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 16,
+    // fontSize handled by typography('body')
     textAlign: 'center',
   },
   pickerItem: {
@@ -224,7 +226,7 @@ const styles = StyleSheet.create({
   },
   pickerItemText: {
     flex: 1,
-    fontSize: 16,
+    // fontSize handled by typography('body')
   },
 });
 

@@ -162,6 +162,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = (props: ConfirmModalPro
             <TextInput
               style={[
                 styles.input,
+                typography('body'),
                 {
                   backgroundColor: theme.colors.bgGray,
                   color: theme.colors.text,
@@ -231,7 +232,7 @@ const styles = StyleSheet.create({
   closeButton: {
     position: 'absolute',
     top: 12,
-    right: 12,
+    end: 12,
     width: 36,
     height: 36,
     borderRadius: 18,
@@ -273,6 +274,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 16,
     marginBottom: 20,
-    fontSize: 16,
+    // fontSize handled by typography('body')
   },
 });
