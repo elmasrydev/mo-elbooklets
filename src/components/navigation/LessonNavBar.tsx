@@ -61,11 +61,13 @@ const LessonNavBar: React.FC<LessonNavBarProps> = ({
         <View style={currentStyles.placeholder} />
       )}
 
-      <View style={currentStyles.counterBadge}>
-        <Text style={[typography('label'), currentStyles.counterText]}>
-          {currentIndex + 1} / {totalCount}
-        </Text>
-      </View>
+      {totalCount > 0 && (
+        <View style={currentStyles.counterBadge}>
+          <Text style={[typography('label'), currentStyles.counterText]}>
+            {currentIndex + 1} / {totalCount}
+          </Text>
+        </View>
+      )}
 
       {onNext ? (
         <AppButton

@@ -3,6 +3,8 @@ import { Platform } from 'react-native';
 import { useLanguage } from '../context/LanguageContext';
 import { getTextStyle, textStyles, TextStyleType } from '../config/fonts';
 
+type FontWeightValue = 'normal' | '500' | '600' | '700' | '800' | '900' | 'bold' | 'black';
+
 /**
  * Maps a fontWeight value to the correct static font-family name on Android.
  * On iOS, variable fonts handle fontWeight natively, so we return the base family.
@@ -16,6 +18,7 @@ const resolveWeightFamily = (weight: string, isArabic: boolean): string => {
     case '800':
     case '900':
     case 'bold':
+    case 'black':
       return `${base}-Bold`;
     case '600':
       return `${base}-SemiBold`;
@@ -28,26 +31,45 @@ const resolveWeightFamily = (weight: string, isArabic: boolean): string => {
 
 /**
  * A hook that provides language-aware typography styles.
- * It automatically selects the correct font family (Lexend for LTR, Cairo for RTL).
+ *
+ * `typography(style, weight?)` — returns the full resolved text style including
+ * fontFamily, fontSize, fontWeight. Pass an optional weight to override the
+ * base style's weight in one atomic call (no need to spread fontWeight() separately).
+ *
+ * `fontWeight(weight)` — for standalone weight-only overrides with no base style.
  */
 export const useTypography = () => {
   const { language } = useLanguage();
   const isArabic = language === 'ar';
 
   const typography = useCallback(
-    (style: TextStyleType) => getTextStyle(style, isArabic),
+    (style: TextStyleType, weight?: FontWeightValue) => {
+      const base = getTextStyle(style, isArabic);
+      if (!weight) return base;
+
+      // Resolve the correct fontFamily for the overridden weight atomically
+      const resolvedFamily = resolveWeightFamily(weight, isArabic);
+      return {
+        ...base,
+        fontFamily: resolvedFamily,
+        // On Android, fontWeight MUST be 'normal' — the weight is encoded in fontFamily.
+        // Any other value causes Android to synthesize bold on top of the named font file.
+        fontWeight: Platform.OS === 'android' ? ('normal' as const) : (weight === 'black' ? ('900' as const) : weight),
+      };
+    },
     [isArabic],
   );
 
   const fontWeight = useCallback(
-    (weight: 'normal' | '500' | '600' | '700' | '800' | '900' | 'bold') => {
+    (weight: FontWeightValue) => {
       if (Platform.OS === 'android') {
         return {
           fontFamily: resolveWeightFamily(weight, isArabic),
-          fontWeight: weight,
+          // fontWeight 'normal' — weight is encoded in fontFamily, avoid synthetic bold.
+          fontWeight: 'normal' as const,
         };
       }
-      return { fontWeight: weight };
+      return { fontWeight: weight === 'black' ? ('900' as const) : weight };
     },
     [isArabic],
   );

@@ -106,10 +106,8 @@ const QuizReviewScreen: React.FC = () => {
             const isDescriptive = ['what_happens', 'give_a_reason'].includes(q.type);
             
             // Check if it's a True/False question
-            const isTrueFalse = 
-              q.type === 'true_false' || 
-              (q.answer_1?.trim().toLowerCase() === 'true' && q.answer_2?.trim().toLowerCase() === 'false') ||
-              (q.answer_1?.trim().toLowerCase() === 'false' && q.answer_2?.trim().toLowerCase() === 'true');
+            const isTrueFalse = q.type === 'true_false';
+
 
             let answers = isDescriptive
               ? [] // No MCQ options for descriptive
@@ -282,6 +280,7 @@ const QuizReviewScreen: React.FC = () => {
         )}
         {wrongAnswers.map((ua: any) => {
           const isDescriptive = isDescriptiveType(ua.question.type);
+          const isTrueFalse = ua.question.type === 'true_false';
           // Find the original index in the full result list
           const originalIndex = result.userAnswers.findIndex(
             (ans: any) => ans.question.id === ua.question.id,
@@ -753,14 +752,10 @@ const QuizReviewScreen: React.FC = () => {
                         </View>
                         <Text style={[currentStyles.optionText, textStyle]}>
                           {' '}
-                          {opt.toLowerCase() === 'true'
-                            ? result?.quiz?.subject?.language === 'ar'
-                              ? 'صح'
-                              : 'True'
-                            : opt.toLowerCase() === 'false'
-                              ? result?.quiz?.subject?.language === 'ar'
-                                ? 'خطأ'
-                                : 'False'
+                          {isTrueFalse && opt.toLowerCase() === 'true'
+                            ? t('common.true')
+                            : isTrueFalse && opt.toLowerCase() === 'false'
+                              ? t('common.false')
                               : opt}{' '}
                         </Text>
                         <View style={currentStyles.dotIconContainer}>

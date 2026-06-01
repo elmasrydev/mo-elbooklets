@@ -40,7 +40,18 @@ const AnimatedNavbarLogo: React.FC<AnimatedNavbarLogoProps> = () => {
   return (
     <Animated.View style={[styles.container, logoStyle]}>
       <Ionicons name="home-sharp" size={24} color="#FFF" />
-      <Text style={[styles.brandName, { marginLeft: 8 }]}>{t('common.brand_name')}</Text>
+      <Text
+        style={[
+          typography('h2', 'bold'),
+          {
+            color: '#FFF',
+            letterSpacing: 0.5,
+            marginStart: 8,
+          },
+        ]}
+      >
+        {t('common.brand_name')}
+      </Text>
     </Animated.View>
   );
 };
@@ -50,12 +61,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  brandName: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#FFF',
-    letterSpacing: 0.5,
   },
 });
 
