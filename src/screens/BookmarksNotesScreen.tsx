@@ -449,7 +449,7 @@ const BookmarksNotesScreen: React.FC = () => {
               
               <TouchableOpacity
                 style={currentStyles.studyButton}
-                onPress={() => navigation.navigate('Study')}
+                onPress={() => navigation.navigate('MainTabs', { screen: 'Study' })}
               >
                 <Text style={currentStyles.studyButtonText}>
                   {t('home_screen.my_subjects', 'Start Studying')}
@@ -602,7 +602,6 @@ const styles = (
     noteText: {
       ...typography('caption'),
       color: theme.colors.primary,
-      fontStyle: 'italic',
       flex: 1,
       textAlign: 'left',
     },
