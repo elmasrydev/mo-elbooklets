@@ -428,7 +428,10 @@ const HomeScreen: React.FC = () => {
             <Text style={s.quizCTASubtitle}>{t('home_screen.test_knowledge_subtitle')}</Text>
             <TouchableOpacity
               activeOpacity={0.85}
-              onPress={() => navigation.navigate('Quiz')}
+              onPress={() => {
+                navigation.navigate('MainTabs', { screen: 'Quiz' });
+                navigation.navigate('QuizFlowSubjects');
+              }}
               style={s.quizCTAButton}
             >
               <Ionicons name="play" size={14} color={theme.colors.primary} />

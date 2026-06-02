@@ -248,7 +248,8 @@ const ParentSettingsScreen: React.FC = () => {
             </TouchableOpacity>
           )}
 
-          {/* Dark Mode Toggle */}
+          {/* Dark Mode Toggle - Locked to Light Mode */}
+          {/* 
           <View style={currentStyles.settingItem}>
             <View style={currentStyles.settingIconBox}>
               <Image
@@ -267,6 +268,7 @@ const ParentSettingsScreen: React.FC = () => {
               ios_backgroundColor={theme.colors.border}
             />
           </View>
+          */}
 
           {/* Log Out */}
           <View style={currentStyles.logoutContainer}>
