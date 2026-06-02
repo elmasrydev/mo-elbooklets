@@ -806,5 +806,24 @@
   "notes": {
     "empty_title": "No notes yet",
     "empty_subtitle": "Add notes to key points while studying."
+  },
+  "otp": {
+    "title": "Verify Mobile Number",
+    "verify_mobile": "Verify your mobile via WhatsApp",
+    "mobile_verified": "Mobile verified",
+    "send_code": "Send Verification Code",
+    "sending_code": "Sending...",
+    "code_sent": "Code sent via WhatsApp",
+    "enter_code": "Enter the verification code",
+    "verify": "Verify",
+    "verifying": "Verifying...",
+    "resend_code": "Resend Code",
+    "resend_in": "Resend available in {{time}}",
+    "verification_success": "Mobile number verified successfully!",
+    "invalid_code": "Invalid code. Please try again.",
+    "code_expired": "Code expired. Please request a new one.",
+    "whatsapp_failed": "Failed to send via WhatsApp. Please try again later.",
+    "no_whatsapp": "WhatsApp verification is unavailable for this number.",
+    "otp_sent_to": "Enter the 6-digit code sent via WhatsApp to"
   }
 }

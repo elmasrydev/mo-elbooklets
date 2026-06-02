@@ -14,12 +14,13 @@ import ParentForgotPasswordScreen from '../screens/ParentForgotPasswordScreen';
 import ParentDashboardScreen from '../screens/ParentDashboardScreen';
 import ParentSettingsScreen from '../screens/ParentSettingsScreen';
 import InternalSettingsScreen from '../screens/InternalSettingsScreen';
+import OTPVerificationScreen from '../screens/OTPVerificationScreen';
 import ProfileCompletionPrompt from './ProfileCompletionPrompt';
 
 const RootStack = createNativeStackNavigator();
 
 const AppNavigator: React.FC = () => {
-  const { isLoading, isAuthenticated, userRole } = useAuth();
+  const { isLoading, isAuthenticated, userRole, user, isVerificationSkipped } = useAuth();
   const [showSplash, setShowSplash] = useState(true);
 
   const handleSplashFinish = (authenticated: boolean) => {
@@ -45,10 +46,16 @@ const AppNavigator: React.FC = () => {
               <RootStack.Screen name="ContactUs" component={require('../screens/ContactUsScreen').default} />
             </RootStack.Group>
           ) : (
-            <RootStack.Group>
-              <RootStack.Screen name="MainTabs" component={TabNavigator} />
-              <RootStack.Screen name="InternalSettings" component={InternalSettingsScreen} />
-            </RootStack.Group>
+            !user?.mobile_verified_at && !isVerificationSkipped ? (
+              <RootStack.Group>
+                <RootStack.Screen name="OTPVerification" component={OTPVerificationScreen} />
+              </RootStack.Group>
+            ) : (
+              <RootStack.Group>
+                <RootStack.Screen name="MainTabs" component={TabNavigator} />
+                <RootStack.Screen name="InternalSettings" component={InternalSettingsScreen} />
+              </RootStack.Group>
+            )
           )
         ) : (
           <RootStack.Group>
@@ -63,8 +70,8 @@ const AppNavigator: React.FC = () => {
         )}
       </RootStack.Navigator>
       
-      {/* Global one-time check for profile completion */}
-      {isAuthenticated && userRole !== 'parent' && (
+      {/* Global one-time check for profile completion — only after mobile is verified */}
+      {isAuthenticated && userRole !== 'parent' && (user?.mobile_verified_at || isVerificationSkipped) && (
         <ProfileCompletionPrompt oneTimeAutoShow={true} />
       )}
     </>
