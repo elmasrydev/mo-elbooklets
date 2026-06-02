@@ -73,7 +73,7 @@ interface Lesson {
     order: number;
   };
    isLocked?: boolean;
-  mind_map_url?: string;
+  mindMapUrl?: string;
 }
 
 interface LessonDODProgress {
@@ -972,7 +972,7 @@ const StudyLessonScreen: React.FC = () => {
           )}
         </View>
 
-        {!!currentLesson.mind_map_url && (
+        {!!currentLesson.mindMapUrl && (
           <View style={currentStyles.section}>
             <View style={currentStyles.sectionHeader}>
               <View
@@ -990,7 +990,7 @@ const StudyLessonScreen: React.FC = () => {
               style={currentStyles.mindMapPreviewContainer}
             >
               <Image 
-                source={{ uri: currentLesson.mind_map_url }} 
+                source={{ uri: currentLesson.mindMapUrl }} 
                 style={currentStyles.mindMapPreviewImage}
                 resizeMode="cover"
               />
@@ -1286,8 +1286,8 @@ const StudyLessonScreen: React.FC = () => {
             <Ionicons name="close" size={30} color="#fff" />
           </TouchableOpacity>
           
-          {!!currentLesson.mind_map_url && (
-            <ZoomableImage uri={currentLesson.mind_map_url} />
+          {!!currentLesson.mindMapUrl && (
+            <ZoomableImage uri={currentLesson.mindMapUrl} />
           )}
           
           <View style={currentStyles.fullScreenHeader}>
