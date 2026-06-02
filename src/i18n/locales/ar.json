@@ -46,6 +46,7 @@
     "accept": "قبول",
     "decline": "رفض",
     "ok": "موافق",
+    "open": "فتح",
     "version": "الإصدار",
     "language": "اللغة",
     "english": "الإنجليزية",
@@ -602,6 +603,13 @@
     "edit_profile": "تعديل الملف الشخصي",
     "change_language": "تغيير اللغة",
     "change_language_desc": "العربية",
+    "notifications": "الإشعارات",
+    "notifications_desc": "استلام التحديثات والتنبيهات",
+    "notifications_settings_msg": "يرجى تفعيل الإشعارات من إعدادات الجهاز",
+    "notifications_disable_msg": "يرجى إيقاف الإشعارات من إعدادات الجهاز",
+    "notifications_prompt_msg": "ابقَ على اطلاع بالتنبيهات والإعلانات المهمة. يمكنك تغيير هذا لاحقاً من إعدادات الملف الشخصي.",
+    "enable_now": "تفعيل الآن",
+    "enable_later": "لاحقاً",
     "badges": "الشارات",
     "help_support": "المساعدة والدعم",
     "dark_mode": "الوضع الداكن",
@@ -620,6 +628,12 @@
     "test_crash": "اختبار انهيار",
     "test_log_error": "تسجيل خطأ",
     "internal_settings": "إعدادات المطور",
+    "notifications_control": "التحكم في الإشعارات",
+    "app_notifications": "إشعارات التطبيق",
+    "app_notifications_desc": "استلام تحديثات وإعلانات التطبيق",
+    "social_notifications": "الإشعارات الاجتماعية",
+    "social_notifications_desc": "استلام إشعارات النشاط الاجتماعي",
+    "notification_update_failed": "فشل في تحديث تفضيلات الإشعارات",
     "followers": "متابِع",
     "following": "متابَع",
     "follow_list_title_followers": "المتابِعون",
@@ -749,6 +763,20 @@
     "select_educational_system": "اختر النظام التعليمي",
     "complete_in_settings": "إكمال في الإعدادات"
   },
+  "notifications_center": {
+    "title": "التنبيهات",
+    "mark_all_read": "تحديد الكل كمقروء",
+    "unread_count": "تنبيهات غير مقروءة",
+    "today": "اليوم",
+    "yesterday": "أمس",
+    "this_week": "هذا الأسبوع",
+    "earlier": "في وقت سابق",
+    "empty_title": "لا يوجد تنبيهات بعد",
+    "empty_subtitle": "سنقوم بتنبيهك عندما يحدث شيء مهم.",
+    "unread_only": "غير المقروءة فقط",
+    "delete_confirm": "حذف هذا التنبيه؟",
+    "delete_all_confirm": "مسح جميع التنبيهات؟"
+  },
   "report_question": {
     "title": "الإبلاغ عن سؤال",
     "subtitle": "ساعدنا في التحسين من خلال الإبلاغ عن الأسئلة الخاطئة أو غير الواضحة.",
@@ -761,6 +789,12 @@
     "success_message": "شكراً لك! سيقوم فريقنا بمراجعة السؤال واتخاذ الإجراء المناسب.",
     "submit_error": "فشل إرسال البلاغ. يرجى المحاولة مرة أخرى.",
     "error_loading_types": "تعذر تحميل أنواع البلاغات. اضغط للمحاولة مجدداً."
+  },
+  "notification_actions": {
+    "open_invitation": "فتح الدعوة",
+    "show_me": "عرض",
+    "view_profile": "عرض الحساب",
+    "view_details": "عرض التفاصيل"
   },
   "bookmarks": {
     "empty_title": "لا توجد إشارات مرجعية بعد",

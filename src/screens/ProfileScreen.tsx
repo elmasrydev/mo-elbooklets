@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Switch,
   Platform,
   ActivityIndicator,
+  AppState,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
@@ -35,6 +36,8 @@ import {
 } from '../generated/graphql';
 import { isDebugMode } from '../config/debug';
 import crashlytics from '@react-native-firebase/crashlytics';
+import { checkNotificationPermission, requestNotificationPermission, openSettings } from '../services/notificationService';
+import { useNotificationPreferences } from '../hooks/useNotificationPreferences';
 import { logError } from '../utils/logger';
 
 const APP_VERSION = `EL-Booklets v${DeviceInfo.getVersion()}`;
@@ -52,6 +55,61 @@ const ProfileScreen: React.FC = () => {
   const { isRTL, setLanguage, language } = useLanguage();
   const { typography, fontWeight } = useTypography();
   const { t } = useTranslation();
+
+
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const { 
+    preferences, 
+    toggleAppNotifications, 
+    toggleSocialNotifications,
+    loading: prefsLoading,
+    updating
+  } = useNotificationPreferences('student');
+
+
+
+  useFocusEffect(
+    React.useCallback(() => {
+      checkNotificationPermission().then(setPushEnabled);
+    }, [])
+  );
+
+  // Re-check permission when returning from OS Settings
+  const appState = useRef(AppState.currentState);
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+        checkNotificationPermission().then(setPushEnabled);
+      }
+      appState.current = nextAppState;
+    });
+    return () => subscription.remove();
+  }, []);
+
+  const handlePushToggle = async (newValue: boolean) => {
+    if (newValue) {
+      const granted = await requestNotificationPermission();
+      if (granted) {
+        setPushEnabled(true);
+      } else {
+        showConfirm({
+          title: t('profile_screen.notifications'),
+          message: t('profile_screen.notifications_settings_msg'),
+          confirmLabel: t('common.settings') || 'Settings',
+          cancelLabel: t('common.cancel'),
+          onConfirm: openSettings
+        });
+      }
+    } else {
+      showConfirm({
+          title: t('profile_screen.notifications'),
+          message: t('profile_screen.notifications_disable_msg'),
+          confirmLabel: t('common.settings') || 'Settings',
+          cancelLabel: t('common.cancel'),
+          onConfirm: openSettings
+        });
+    }
+  };
 
   const [deleteAccountMutation, { loading: isDeletingAccount }] = useMutation<
     DeleteAccountMutation,
@@ -454,6 +512,81 @@ const ProfileScreen: React.FC = () => {
             </TouchableOpacity>
           )}
 
+          {/* Notifications Control Section */}
+          <View style={currentStyles.sectionHeader}>
+            <Text style={currentStyles.sectionHeaderText}>
+              {t('profile_screen.notifications_control')}
+            </Text>
+          </View>
+
+          {/* 1. Main Push Notifications Toggle (OS Level) */}
+          <View style={currentStyles.settingItem}>
+            <View style={[currentStyles.settingIconBox, { backgroundColor: theme.colors.primary + '20' }]}>
+              <Ionicons name="notifications-outline" size={22} color={theme.colors.primary} />
+            </View>
+            <View style={currentStyles.settingContent}>
+              <Text style={currentStyles.settingTitle}>{t('profile_screen.notifications')}</Text>
+              <Text style={currentStyles.settingSubtitle}>{t('profile_screen.notifications_desc')}</Text>
+            </View>
+            <Switch
+              value={pushEnabled}
+              onValueChange={handlePushToggle}
+              trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
+              thumbColor={Platform.OS === 'ios' ? '#ffffff' : pushEnabled ? '#ffffff' : '#f4f3f4'}
+              ios_backgroundColor={theme.colors.border}
+            />
+          </View>
+
+          {/* 2. App Notifications Toggle (API Level) */}
+          <View style={[currentStyles.settingItem, !pushEnabled && { opacity: 0.5 }]}>
+            <View style={[currentStyles.settingIconBox, { backgroundColor: theme.colors.secondary + '20' }]}>
+              <Ionicons name="apps-outline" size={22} color={theme.colors.secondary} />
+            </View>
+            <View style={currentStyles.settingContent}>
+              <Text style={currentStyles.settingTitle}>{t('profile_screen.app_notifications')}</Text>
+              <Text style={currentStyles.settingSubtitle}>{t('profile_screen.app_notifications_desc')}</Text>
+            </View>
+            {updating === 'app_notifications_enabled' || (prefsLoading && !pushEnabled) ? (
+              <View style={currentStyles.loaderContainer}>
+                <ActivityIndicator size="large" color={theme.colors.primary} />
+              </View>
+            ) : (
+              <Switch
+                value={preferences.app_notifications_enabled}
+                onValueChange={toggleAppNotifications}
+                disabled={!pushEnabled}
+                trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
+                thumbColor={Platform.OS === 'ios' ? '#ffffff' : preferences.app_notifications_enabled ? '#ffffff' : '#f4f3f4'}
+                ios_backgroundColor={theme.colors.border}
+              />
+            )}
+          </View>
+
+          {/* 3. Social Notifications Toggle (API Level) */}
+          <View style={[currentStyles.settingItem, !pushEnabled && { opacity: 0.5 }]}>
+            <View style={[currentStyles.settingIconBox, { backgroundColor: theme.colors.info + '20' }]}>
+              <Ionicons name="chatbubbles-outline" size={22} color={theme.colors.info} />
+            </View>
+            <View style={currentStyles.settingContent}>
+              <Text style={currentStyles.settingTitle}>{t('profile_screen.social_notifications')}</Text>
+              <Text style={currentStyles.settingSubtitle}>{t('profile_screen.social_notifications_desc')}</Text>
+            </View>
+            {updating === 'social_notifications_enabled' || (prefsLoading && !pushEnabled) ? (
+              <View style={currentStyles.loaderContainer}>
+                <ActivityIndicator size="large" color={theme.colors.primary} />
+              </View>
+            ) : (
+              <Switch
+                value={preferences.social_notifications_enabled ?? false}
+                onValueChange={toggleSocialNotifications}
+                disabled={!pushEnabled}
+                trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
+                thumbColor={Platform.OS === 'ios' ? '#ffffff' : preferences.social_notifications_enabled ? '#ffffff' : '#f4f3f4'}
+                ios_backgroundColor={theme.colors.border}
+              />
+            )}
+          </View>
+
           {/* Dark Mode Toggle */}
           <View style={currentStyles.settingItem}>
             <View style={currentStyles.settingIconBox}>
@@ -675,6 +808,24 @@ const styles = (
       width: 1,
       height: 30,
       backgroundColor: theme.colors.border,
+    },
+    sectionHeader: {
+      marginTop: spacing.md,
+      marginBottom: spacing.xs,
+      ...common.marginStart(spacing.xs),
+    },
+    sectionHeaderText: {
+      ...typography('caption'),
+      ...fontWeight('bold'),
+      color: theme.colors.textTertiary,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+    },
+    loaderContainer: {
+      width: 50,
+      height: 30,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     settingItem: {
       flexDirection: common.rowDirection,

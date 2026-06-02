@@ -60,7 +60,10 @@
       "./plugins/withAndroidExtraStrings.js",
       "expo-secure-store",
       "@react-native-firebase/app",
-      "@react-native-firebase/crashlytics"
+      "@react-native-firebase/crashlytics",
+      "@react-native-firebase/messaging",
+      "./plugins/withIosPushNotifications.js",
+      "./plugins/withAndroidNotificationIcon.js"
     ],
     "extra": {
       "debugMode": true,
