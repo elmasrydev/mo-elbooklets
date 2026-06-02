@@ -107,7 +107,7 @@ const StudyChaptersScreen: React.FC = () => {
                 is_viewed
               }
               isLocked
-              mind_map_url
+              mindMapUrl
             }
           }
         }

@@ -32,12 +32,14 @@ interface User {
   grade?: { id: string; name: string };
   educational_system_id?: string;
   educational_system?: { id: string; name: string };
-  is_subscribed?: boolean;
   governorate_id?: string | number;
   governorate?: { id: string; name_ar: string; name_en: string };
   city_id?: string | number;
   city?: { id: string; name_ar: string; name_en: string };
+  is_subscribed?: boolean;
   role?: 'student' | 'parent';
+  followers_count?: number;
+  following_count?: number;
 }
 
 interface Parent {

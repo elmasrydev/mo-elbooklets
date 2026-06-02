@@ -27,7 +27,9 @@ import FAQScreen from '../screens/FAQScreen';
 import ContactUsScreen from '../screens/ContactUsScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import ParentLinkingScreen from '../screens/ParentLinkingScreen';
+import FollowListScreen from '../screens/FollowListScreen';
 import BadgesScreen from '../screens/BadgesScreen';
+import BookmarksNotesScreen from '../screens/BookmarksNotesScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -197,7 +199,9 @@ const TabNavigator: React.FC = () => {
       <Stack.Screen name="ContactUs" component={ContactUsScreen} />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       <Stack.Screen name="ParentLinking" component={ParentLinkingScreen} />
+      <Stack.Screen name="FollowList" component={FollowListScreen} />
       <Stack.Screen name="Badges" component={BadgesScreen} />
+      <Stack.Screen name="BookmarksNotes" component={BookmarksNotesScreen} />
       <Stack.Group screenOptions={{ presentation: 'fullScreenModal' }}>
         <Stack.Screen name="QuizFlowSubjects" component={QuizSubjectsScreen} />
         <Stack.Screen name="QuizFlowLessons" component={QuizLessonsScreen} />

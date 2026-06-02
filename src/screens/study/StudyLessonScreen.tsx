@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,8 @@ import {
   Modal,
   Image,
   Dimensions,
+  TextInput,
+  KeyboardAvoidingView,
   Pressable,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -31,8 +33,11 @@ import { useTypography } from '../../hooks/useTypography';
 import useAndroidBack from '../../hooks/useAndroidBack';
 import AppButton from '../../components/AppButton';
 import { ConfirmModal } from '../../components/ConfirmModal';
+import ZoomableImage from '../../components/ZoomableImage';
 import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
 import { isRTL, textAlign } from '../../lib/rtl';
+
+import { useSubscriptionGate } from '../../hooks/useSubscriptionGate';
 import { analytics } from '../../lib/analytics';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -45,6 +50,13 @@ interface LessonPoint {
   explanation?: string;
   order: number;
   is_viewed?: boolean;
+}
+
+interface UserSavedPoint {
+  id: string;
+  is_bookmarked: boolean;
+  note_content?: string;
+  lessonPoint: { id: string };
 }
 
 interface Lesson {
@@ -205,6 +217,83 @@ const LessonVideoPlayer: React.FC<{ url: string; theme: any; spacing: any; borde
   );
 };
 
+const NoteModal: React.FC<{
+  visible: boolean;
+  initialNote: string;
+  title: string;
+  onClose: () => void;
+  onSave: (note: string) => void;
+  theme: any;
+  spacing: any;
+  borderRadius: any;
+  t: any;
+  isRTL: boolean;
+  typography: any;
+  onDelete?: () => void;
+}> = ({ visible, initialNote, title, onClose, onSave, theme, spacing, borderRadius, t, isRTL, typography, onDelete }) => {
+  const [note, setNote] = useState(initialNote);
+
+  useEffect(() => {
+    setNote(initialNote);
+  }, [initialNote, visible]);
+
+  if (!visible) return null;
+
+  return (
+    <ConfirmModal
+      visible={visible}
+      title={title}
+      confirmLabel={t('common.save')}
+      cancelLabel={t('common.cancel')}
+      onConfirm={() => onSave(note)}
+      onCancel={onClose}
+    >
+      <View style={{ marginTop: spacing.md }}>
+        <TextInput
+          style={{
+            backgroundColor: theme.colors.background,
+            borderWidth: 1,
+            borderColor: theme.colors.border,
+            borderRadius: borderRadius.md,
+            padding: spacing.md,
+            height: 120,
+            textAlignVertical: 'top',
+            color: theme.colors.text,
+            ...typography('body'),
+            textAlign: isRTL ? 'right' : 'left',
+          }}
+          placeholder={t('study_lesson.notes_placeholder', 'Add your note here...')}
+          placeholderTextColor={theme.colors.textTertiary}
+          multiline
+          value={note}
+          onChangeText={setNote}
+          autoFocus
+        />
+        {onDelete && initialNote && (
+          <TouchableOpacity 
+            onPress={onDelete}
+            style={{ 
+              marginTop: spacing.md, 
+              flexDirection: 'row', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              padding: spacing.sm,
+              backgroundColor: theme.colors.error + '10',
+              borderRadius: borderRadius.md,
+              marginBottom: 14
+            }}
+          >
+            <Ionicons name="trash-outline" size={18} color={theme.colors.error} style={{ marginRight: 8 }} />
+            <Text style={{ ...typography('caption'), color: theme.colors.error, fontWeight: '700' }}>
+              {t('common.delete', 'Delete')}
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </ConfirmModal>
+  );
+};
+
 const StudyLessonScreen: React.FC = () => {
   const { theme, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
@@ -215,8 +304,9 @@ const StudyLessonScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
 
   const [currentLesson, setCurrentLesson] = useState<Lesson>(route.params?.lesson);
-  const allLessons: Lesson[] = route.params?.allLessons || [];
-  const subject = route.params?.subject;
+  const [allLessons, setAllLessons] = useState<Lesson[]>(route.params?.allLessons || []);
+  const [subject, setSubject] = useState(route.params?.subject);
+  const { checkSubscription } = useSubscriptionGate();
   const [expandedPoints, setExpandedPoints] = useState<Set<string>>(new Set());
   const [dodProgress, setDodProgress] = useState<LessonDODProgress | null>(null);
   const [loadingDod, setLoadingDod] = useState(false);
@@ -229,6 +319,12 @@ const StudyLessonScreen: React.FC = () => {
    const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [showMindMapModal, setShowMindMapModal] = useState(false);
 
+  const [localAlert, setLocalAlert] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+  } | null>(null);
+
   // Like / Dislike — seeded from the lesson list query (myInteraction)
   const [interaction, setInteraction] = useState<'LIKE' | 'DISLIKE' | null>(
     currentLesson.myInteraction ?? null,
@@ -239,14 +335,28 @@ const StudyLessonScreen: React.FC = () => {
   const interactionCacheRef = useRef<Map<string, 'LIKE' | 'DISLIKE' | null>>(
     new Map(allLessons.map((l) => [l.id, l.myInteraction ?? null])),
   );
+  
+  const [savedPoints, setSavedPoints] = useState<Map<string, UserSavedPoint>>(new Map());
+  const [noteModalVisible, setNoteModalVisible] = useState(false);
+  const [selectedPointId, setSelectedPointId] = useState<string | null>(null);
+  const [highlightedPointId, setHighlightedPointId] = useState<string | null>(null);
+  const [fetchingDetails, setFetchingDetails] = useState(false);
+
   const mutationInFlightRef = useRef(false);
+  const pointLayoutsRef = useRef<Map<string, number>>(new Map());
+  const pointsSectionLayoutY = useRef<number>(0);
 
   // Re-seed when the user navigates to a different lesson
   useEffect(() => {
-    const cachedInteraction = interactionCacheRef.current.get(currentLesson.id) ?? null;
+    let cachedInteraction = interactionCacheRef.current.get(currentLesson.id);
+    if (cachedInteraction === undefined) {
+      // Seed cache with the lesson's own interaction state
+      cachedInteraction = currentLesson.myInteraction ?? null;
+      interactionCacheRef.current.set(currentLesson.id, cachedInteraction);
+    }
     setInteraction(cachedInteraction);
     confirmedInteractionRef.current = cachedInteraction;
-  }, [currentLesson.id]);
+  }, [currentLesson.id, currentLesson.myInteraction]);
 
   const handleVideoInteraction = useCallback(
     async (type: 'LIKE' | 'DISLIKE') => {
@@ -300,17 +410,42 @@ const StudyLessonScreen: React.FC = () => {
   const previousLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
   const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
 
-  const { contentAlign, contentRowDirection } = useSubjectTextAlign(subject?.language);
-  const currentStyles = styles(
-    theme,
-    isRTL,
-    typography,
-    fontWeight,
-    insets,
-    spacing,
-    borderRadius,
-    contentAlign,
-    contentRowDirection,
+  const inferredLanguage = useMemo(() => {
+    if (subject?.language) return subject.language;
+    // Fall back to detecting Arabic in currentLesson name or chapter name
+    const hasArabic = (text?: string) => text ? /[\u0600-\u06FF]/.test(text) : false;
+    if (hasArabic(currentLesson?.name) || hasArabic(currentLesson?.chapter?.name)) {
+      return 'ar';
+    }
+    // As a final fallback, check the app's current language/direction
+    return isRTL ? 'ar' : 'en';
+  }, [subject?.language, currentLesson?.name, currentLesson?.chapter?.name, isRTL]);
+
+  const { contentAlign, contentRowDirection } = useSubjectTextAlign(inferredLanguage);
+  const currentStyles = useMemo(
+    () =>
+      styles(
+        theme,
+        isRTL,
+        typography,
+        fontWeight,
+        insets,
+        spacing,
+        borderRadius,
+        contentAlign,
+        contentRowDirection,
+      ),
+    [
+      theme,
+      isRTL,
+      typography,
+      fontWeight,
+      insets,
+      spacing,
+      borderRadius,
+      contentAlign,
+      contentRowDirection,
+    ],
   );
 
   // Open local leave-disclaimer (works inside iOS native fullScreenModal).
@@ -387,8 +522,239 @@ const StudyLessonScreen: React.FC = () => {
     }
   };
 
+  const fetchLessonDetails = async (lessonId: string) => {
+    try {
+      setFetchingDetails(true);
+      const token = await SecureStore.getItemAsync('auth_token');
+      if (!token) return;
+
+      // We use mySavedPoints because it's guaranteed to return the lesson object
+      // if we're navigating from a bookmark.
+      const result = await tryFetchWithFallback(
+        `query GetLessonDetails($lessonId: ID) {
+          mySavedPoints(lessonId: $lessonId) {
+            lesson {
+              id
+              name
+              summary
+              videoUrl
+              myInteraction
+              lessonPoints {
+                id
+                title
+                explanation
+                order
+                is_viewed
+              }
+              chapter {
+                id
+                name
+                order
+              }
+            }
+          }
+        }`,
+        { lessonId },
+        token,
+      );
+
+      if (result.data?.mySavedPoints?.[0]?.lesson) {
+        const fullLesson = result.data.mySavedPoints[0].lesson;
+        setCurrentLesson(prev => ({
+          ...prev,
+          ...fullLesson,
+          lessonPoints: fullLesson.lessonPoints || []
+        }));
+
+        if (fullLesson.lessonPoints) {
+           setViewedPoints(new Set(fullLesson.lessonPoints.filter((p: any) => p.is_viewed).map((p: any) => p.id)));
+        }
+      }
+    } catch (err) {
+      console.error('Fetch lesson details error:', err);
+    } finally {
+      setFetchingDetails(false);
+    }
+  };
+
+  const fetchLessonMetadata = async (lessonId: string) => {
+    try {
+      const token = await SecureStore.getItemAsync('auth_token');
+      if (!token) return;
+
+      const result = await tryFetchWithFallback(
+        `query MySavedPointsMetadata($lessonId: ID) {
+          mySavedPoints(lessonId: $lessonId) {
+            id
+            is_bookmarked
+            note_content
+            lessonPoint { id }
+          }
+        }`,
+        { lessonId },
+        token,
+      );
+
+      if (result.data?.mySavedPoints) {
+        const pointsMap = new Map<string, UserSavedPoint>();
+        result.data.mySavedPoints.forEach((p: UserSavedPoint) => {
+          pointsMap.set(p.lessonPoint.id, p);
+        });
+        setSavedPoints(pointsMap);
+      }
+    } catch (err) {
+      console.error('Fetch metadata error:', err);
+    }
+  };
+
+  const handleToggleBookmark = async (pointId: string) => {
+    try {
+      const token = await SecureStore.getItemAsync('auth_token');
+      if (!token) return;
+
+      const result = await tryFetchWithFallback(
+        `mutation ToggleSavedPointBookmark($lessonId: ID!, $lessonPointId: ID!) {
+          toggleSavedPointBookmark(lessonId: $lessonId, lessonPointId: $lessonPointId) {
+            success
+            message
+            savedPoint {
+              id
+              is_bookmarked
+              note_content
+              lessonPoint { id }
+            }
+          }
+        }`,
+        { lessonId: currentLesson.id, lessonPointId: pointId },
+        token,
+      );
+
+      if (result.data?.toggleSavedPointBookmark?.success) {
+        const sp = result.data.toggleSavedPointBookmark.savedPoint;
+        const isBookmarked = sp?.is_bookmarked;
+        
+        setSavedPoints(prev => {
+          const next = new Map(prev);
+          if (sp) {
+            next.set(pointId, sp);
+          } else {
+            next.delete(pointId);
+          }
+          return next;
+        });
+
+        // Show confirmation
+        setLocalAlert({
+          visible: true,
+          title: t('common.success'),
+          message: isBookmarked 
+            ? t('study_lesson.bookmark_added', 'Bookmark added successfully')
+            : t('study_lesson.bookmark_removed', 'Bookmark removed'),
+        });
+      }
+    } catch (err) {
+      console.error('Toggle bookmark error:', err);
+    }
+  };
+
+  const handleSaveNote = async (pointId: string, note: string) => {
+    try {
+      const token = await SecureStore.getItemAsync('auth_token');
+      if (!token) return;
+
+      const result = await tryFetchWithFallback(
+        `mutation SavePointNote($lessonId: ID!, $lessonPointId: ID!, $noteContent: String!) {
+          savePointNote(lessonId: $lessonId, lessonPointId: $lessonPointId, noteContent: $noteContent) {
+            success
+            message
+            savedPoint {
+              id
+              is_bookmarked
+              note_content
+              lessonPoint { id }
+            }
+          }
+        }`,
+        { lessonId: currentLesson.id, lessonPointId: pointId, noteContent: note },
+        token,
+      );
+
+      if (result.data?.savePointNote?.success) {
+        const sp = result.data.savePointNote.savedPoint;
+        setSavedPoints(prev => {
+          const next = new Map(prev);
+          if (sp) {
+            next.set(pointId, sp);
+          }
+          return next;
+        });
+        setNoteModalVisible(false);
+        // Show confirmation
+        setLocalAlert({
+          visible: true,
+          title: t('common.success'),
+          message: t('study_lesson.note_saved_success', 'Note saved successfully'),
+        });
+      }
+    } catch (err) {
+      console.error('Save note error:', err);
+    }
+  };
+
+  const handleDeleteNote = async (pointId: string) => {
+    try {
+      const token = await SecureStore.getItemAsync('auth_token');
+      if (!token) return;
+
+      const result = await tryFetchWithFallback(
+        `mutation DeletePointNote($lessonPointId: ID!) {
+          deletePointNote(lessonPointId: $lessonPointId) {
+            success
+            message
+            savedPoint {
+              id
+              is_bookmarked
+              note_content
+              lessonPoint { id }
+            }
+          }
+        }`,
+        { lessonPointId: pointId },
+        token,
+      );
+
+      if (result.data?.deletePointNote?.success) {
+        const sp = result.data.deletePointNote.savedPoint;
+        setSavedPoints(prev => {
+          const next = new Map(prev);
+          if (sp) {
+            next.set(pointId, sp);
+          } else {
+            next.delete(pointId);
+          }
+          return next;
+        });
+        setNoteModalVisible(false);
+        // Show confirmation
+        setLocalAlert({
+          visible: true,
+          title: t('common.success'),
+          message: t('study_lesson.note_deleted_success', 'Note deleted successfully'),
+        });
+      }
+    } catch (err) {
+      console.error('Delete note error:', err);
+    }
+  };
+
   React.useEffect(() => {
     fetchDodProgress(currentLesson.id);
+    fetchLessonMetadata(currentLesson.id);
+    
+    // If lesson points are missing, fetch them
+    if (!currentLesson.lessonPoints || currentLesson.lessonPoints.length === 0) {
+      fetchLessonDetails(currentLesson.id);
+    }
     analytics.trackLessonStarted({
       lesson_id: currentLesson.id,
       lesson_title: currentLesson.name,
@@ -398,6 +764,33 @@ const StudyLessonScreen: React.FC = () => {
       subject_title: subject?.name,
     });
   }, [currentLesson.id]);
+
+  useEffect(() => {
+    if (route.params?.initialPointId && currentLesson.lessonPoints?.length) {
+      const pointId = route.params.initialPointId;
+      
+      // Ensure the point is expanded
+      setExpandedPoints(prev => new Set(prev).add(pointId));
+      setHighlightedPointId(pointId);
+      
+      // Delay slightly to allow layout to be captured
+      const timer = setTimeout(() => {
+        const pointY = pointLayoutsRef.current.get(pointId);
+        if (pointY !== undefined && scrollViewRef.current) {
+          // Absolute Y = Section Y + Point Y - Header Offset (optional)
+          const absoluteY = pointsSectionLayoutY.current + pointY - 20; 
+          scrollViewRef.current.scrollTo({ y: absoluteY, animated: true });
+        }
+      }, 800);
+
+      const highlightTimer = setTimeout(() => setHighlightedPointId(null), 4000);
+      
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(highlightTimer);
+      };
+    }
+  }, [route.params?.initialPointId, currentLesson.lessonPoints]);
 
   const handleNavigateLesson = (lesson: Lesson) => {
     analytics.trackLessonCompleted({
@@ -579,7 +972,7 @@ const StudyLessonScreen: React.FC = () => {
           )}
         </View>
 
-        {currentLesson.mind_map_url && (
+        {!!currentLesson.mind_map_url && (
           <View style={currentStyles.section}>
             <View style={currentStyles.sectionHeader}>
               <View
@@ -611,7 +1004,12 @@ const StudyLessonScreen: React.FC = () => {
           </View>
         )}
 
-        <View style={currentStyles.section}>
+        <View 
+          style={currentStyles.section}
+          onLayout={(e) => {
+            pointsSectionLayoutY.current = e.nativeEvent.layout.y;
+          }}
+        >
           <View style={currentStyles.sectionHeader}>
             <View
               style={[currentStyles.sectionIcon, { backgroundColor: theme.colors.primary + '1A' }]}
@@ -619,6 +1017,9 @@ const StudyLessonScreen: React.FC = () => {
               <Ionicons name="star-outline" size={20} color={theme.colors.primary} />
             </View>
             <Text style={currentStyles.sectionTitle}> {t('study_lesson.key_points')} </Text>
+            {fetchingDetails && (
+               <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginLeft: 'auto' }} />
+            )}
           </View>
 
           {hasNewPoints ? (
@@ -628,7 +1029,15 @@ const StudyLessonScreen: React.FC = () => {
                 return (
                   <TouchableOpacity
                     key={point.id}
-                    style={currentStyles.pointItem}
+                    onLayout={(e) => pointLayoutsRef.current.set(point.id, e.nativeEvent.layout.y)}
+                    style={[
+                      currentStyles.pointItem,
+                      highlightedPointId === point.id && {
+                        borderColor: theme.colors.primary,
+                        borderWidth: 2,
+                        backgroundColor: theme.colors.primary + '10'
+                      }
+                    ]}
                     onPress={() => point.explanation && togglePoint(point.id)}
                     activeOpacity={point.explanation ? 0.7 : 1}
                   >
@@ -645,14 +1054,47 @@ const StudyLessonScreen: React.FC = () => {
                         />
                       </View>
                       <Text style={currentStyles.pointText}>{point.title}</Text>
-                      {point.explanation && (
-                        <Ionicons
-                          name={isExpanded ? 'chevron-up' : 'chevron-down'}
-                          size={16}
-                          color={theme.colors.textSecondary}
-                        />
-                      )}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                        <TouchableOpacity 
+                          onPress={() => handleToggleBookmark(point.id)}
+                          style={{ padding: 4 }}
+                        >
+                          <Ionicons 
+                            name={savedPoints.get(point.id)?.is_bookmarked ? 'bookmark' : 'bookmark-outline'} 
+                            size={20} 
+                            color={savedPoints.get(point.id)?.is_bookmarked ? theme.colors.primary : theme.colors.textTertiary} 
+                          />
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                          onPress={() => {
+                            setSelectedPointId(point.id);
+                            setNoteModalVisible(true);
+                          }}
+                          style={{ padding: 4 }}
+                        >
+                          <Ionicons 
+                            name={savedPoints.get(point.id)?.note_content ? 'document-text' : 'document-text-outline'} 
+                            size={20} 
+                            color={savedPoints.get(point.id)?.note_content ? theme.colors.primary : theme.colors.textTertiary} 
+                          />
+                        </TouchableOpacity>
+                        {point.explanation && (
+                          <Ionicons
+                            name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                            size={16}
+                            color={theme.colors.textSecondary}
+                          />
+                        )}
+                      </View>
                     </View>
+                    {savedPoints.get(point.id)?.note_content && (
+                      <View style={currentStyles.notePreviewContainer}>
+                         <Ionicons name="pencil" size={12} color={theme.colors.primary} />
+                         <Text style={currentStyles.notePreviewText} numberOfLines={2}>
+                           {savedPoints.get(point.id)?.note_content}
+                         </Text>
+                      </View>
+                    )}
                     {isExpanded && point.explanation && (
                       <View style={currentStyles.explanationContainer}>
                         <Text style={currentStyles.explanationText}>{point.explanation}</Text>
@@ -829,7 +1271,6 @@ const StudyLessonScreen: React.FC = () => {
         }}
         onCancel={() => setShowLeaveModal(false)}
       />
-      
       {/* Fullscreen Mind Map Modal */}
       <Modal
         visible={showMindMapModal}
@@ -845,12 +1286,8 @@ const StudyLessonScreen: React.FC = () => {
             <Ionicons name="close" size={30} color="#fff" />
           </TouchableOpacity>
           
-          {currentLesson.mind_map_url && (
-            <Image 
-              source={{ uri: currentLesson.mind_map_url }} 
-              style={currentStyles.fullScreenImage}
-              resizeMode="contain"
-            />
+          {!!currentLesson.mind_map_url && (
+            <ZoomableImage uri={currentLesson.mind_map_url} />
           )}
           
           <View style={currentStyles.fullScreenHeader}>
@@ -859,6 +1296,33 @@ const StudyLessonScreen: React.FC = () => {
           </View>
         </View>
       </Modal>
+
+      <NoteModal
+        visible={noteModalVisible}
+        title={t('study_lesson.add_note')}
+        initialNote={selectedPointId ? savedPoints.get(selectedPointId)?.note_content || '' : ''}
+        onClose={() => setNoteModalVisible(false)}
+        onSave={(note) => selectedPointId && handleSaveNote(selectedPointId, note)}
+        onDelete={() => selectedPointId && handleDeleteNote(selectedPointId)}
+        theme={theme}
+        spacing={spacing}
+        borderRadius={borderRadius}
+        t={t}
+        isRTL={isRTL}
+        typography={typography}
+      />
+
+      {localAlert && (
+        <ConfirmModal
+          visible={localAlert.visible}
+          title={localAlert.title}
+          message={localAlert.message}
+          confirmLabel={t('common.ok', 'OK')}
+          showCancel={false}
+          onConfirm={() => setLocalAlert(null)}
+          onCancel={() => setLocalAlert(null)}
+        />
+      )}
     </View>
   );
 };
@@ -949,8 +1413,8 @@ const styles = (
     sectionTitle: {
       ...typography('h3'),
       ...fontWeight('700'),
-      marginLeft: spacing.sm,
-      marginRight: spacing.sm,
+      marginStart: spacing.sm,
+      marginEnd: spacing.sm,
       color: theme.colors.text,
     },
     videoSection: {
@@ -1000,7 +1464,6 @@ const styles = (
     },
     noContentText: {
       ...typography('caption'),
-      fontStyle: 'italic',
       color: theme.colors.textSecondary,
       textAlign: contentAlign,
     },
@@ -1032,8 +1495,7 @@ const styles = (
     pointText: {
       flex: 1,
       ...typography('body'),
-      marginLeft: spacing.sm,
-      marginRight: 0,
+      marginStart: spacing.sm,
       color: theme.colors.text,
       textAlign: contentAlign,
       fontWeight: '600',
@@ -1043,8 +1505,8 @@ const styles = (
       paddingTop: spacing.sm,
       borderTopWidth: 1,
       borderTopColor: theme.colors.border,
-      marginLeft: 28,
-      marginRight: 28,
+      marginStart: 28,
+      marginEnd: 28,
     },
     explanationText: {
       ...typography('caption'),
@@ -1165,7 +1627,7 @@ const styles = (
     fullScreenCloseBtn: {
       position: 'absolute',
       top: 50,
-      right: 20,
+      end: 20,
       zIndex: 10,
       width: 44,
       height: 44,
@@ -1193,6 +1655,24 @@ const styles = (
       color: 'rgba(255,255,255,0.7)',
       textAlign: 'center',
       marginTop: 4,
+    },
+    notePreviewContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginTop: spacing.xs,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 6,
+      backgroundColor: theme.colors.primary + '0D',
+      borderRadius: borderRadius.sm,
+      marginHorizontal: spacing.md,
+      marginBottom: spacing.xs,
+    },
+    notePreviewText: {
+      ...typography('caption'),
+      color: theme.colors.textSecondary,
+      fontStyle: '',
+      flex: 1,
     },
   });
 

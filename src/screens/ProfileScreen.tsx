@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,9 +10,11 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
+import * as SecureStore from 'expo-secure-store';
+import { tryFetchWithFallback } from '../config/api';
 import { useTheme } from '../context/ThemeContext';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useLanguage } from '../context/LanguageContext';
@@ -56,6 +58,36 @@ const ProfileScreen: React.FC = () => {
     DeleteAccountMutationVariables
   >(DeleteAccountDocument);
 
+  const [followStats, setFollowStats] = useState({ followers: 0, following: 0 });
+  const [loadingStats, setLoadingStats] = useState(false);
+
+  const fetchFollowStats = useCallback(async () => {
+    try {
+      setLoadingStats(true);
+      const token = await SecureStore.getItemAsync('auth_token');
+      if (!token) return;
+
+      const [followingRes, followersRes] = await Promise.all([
+        tryFetchWithFallback(`query { myFollowing { id } }`, undefined, token),
+        tryFetchWithFallback(`query { myFollowers { id } }`, undefined, token),
+      ]);
+
+      setFollowStats({
+        following: followingRes.data?.myFollowing?.length || 0,
+        followers: followersRes.data?.myFollowers?.length || 0,
+      });
+    } catch (err) {
+      console.error('Fetch follow stats error:', err);
+    } finally {
+      setLoadingStats(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchFollowStats();
+    }, [fetchFollowStats])
+  );
   const { completeness } = useProfileCompleteness();
   const [showPrompt, setShowPrompt] = useState(false);
 
@@ -174,6 +206,25 @@ const ProfileScreen: React.FC = () => {
               </Text>
             ) : null}
           </View>
+        </View>
+
+        {/* Follow Stats */}
+        <View style={currentStyles.followStatsContainer}>
+          <TouchableOpacity
+            style={currentStyles.statItem}
+            onPress={() => navigation.navigate('FollowList', { type: 'followers' })}
+          >
+            <Text style={currentStyles.statCount}>{followStats.followers}</Text>
+            <Text style={currentStyles.statLabel}>{t('profile_screen.followers')}</Text>
+          </TouchableOpacity>
+          <View style={currentStyles.statDivider} />
+          <TouchableOpacity
+            style={currentStyles.statItem}
+            onPress={() => navigation.navigate('FollowList', { type: 'following' })}
+          >
+            <Text style={currentStyles.statCount}>{followStats.following}</Text>
+            <Text style={currentStyles.statLabel}>{t('profile_screen.following')}</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Menu Section */}
@@ -306,6 +357,34 @@ const ProfileScreen: React.FC = () => {
             </View>
             <View style={currentStyles.settingContent}>
               <Text style={currentStyles.settingTitle}>{t('profile_screen.badges')}</Text>
+            </View>
+            <Ionicons
+              name={isRTL ? 'chevron-back' : 'chevron-forward'}
+              size={20}
+              color={theme.colors.textTertiary}
+            />
+          </TouchableOpacity>
+          
+          {/* Bookmarks & Notes */}
+          <TouchableOpacity 
+            style={currentStyles.settingItem}
+            onPress={() => navigation.navigate('BookmarksNotes')}
+          >
+            <View
+              style={[
+                currentStyles.settingIconBox,
+                { backgroundColor: theme.colors.primary + '20' },
+              ]}
+            >
+              <Ionicons name="bookmark-outline" size={22} color={theme.colors.primary} />
+            </View>
+            <View style={currentStyles.settingContent}>
+              <Text style={currentStyles.settingTitle}>
+                {t('more_screen.bookmarks_notes', 'Bookmarks & Notes')}
+              </Text>
+              <Text style={currentStyles.settingSubtitle}>
+                {t('more_screen.bookmarks_notes_desc', 'View your saved points and notes')}
+              </Text>
             </View>
             <Ionicons
               name={isRTL ? 'chevron-back' : 'chevron-forward'}
@@ -516,7 +595,38 @@ const styles = (
       textAlign: 'center',
     },
     menuSection: {
-      marginTop: spacing.sm,
+      marginTop: spacing.lg,
+    },
+    followStatsContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.card,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.lg,
+      borderRadius: borderRadius.xl,
+      marginTop: spacing.md,
+      marginHorizontal: spacing.md,
+      ...layout.shadow,
+    },
+    statItem: {
+      alignItems: 'center',
+      paddingHorizontal: spacing.lg,
+    },
+    statCount: {
+      ...typography('h3'),
+      ...fontWeight('bold'),
+      color: theme.colors.primary,
+    },
+    statLabel: {
+      ...typography('caption'),
+      color: theme.colors.textSecondary,
+      marginTop: 2,
+    },
+    statDivider: {
+      width: 1,
+      height: 30,
+      backgroundColor: theme.colors.border,
     },
     settingItem: {
       flexDirection: common.rowDirection,

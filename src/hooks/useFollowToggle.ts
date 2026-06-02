@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import * as Haptics from 'expo-haptics';
 import * as SecureStore from 'expo-secure-store';
 import { tryFetchWithFallback } from '../config/api';
+import { useAuth } from '../context/AuthContext';
 
 interface FollowResult {
   success: boolean;
@@ -11,6 +12,7 @@ interface FollowResult {
 
 export const useFollowToggle = () => {
   const [isToggling, setIsToggling] = useState(false);
+  const { refreshUser } = useAuth();
 
   const toggleFollow = useCallback(async (userId: string): Promise<FollowResult | null> => {
     try {
@@ -30,6 +32,10 @@ export const useFollowToggle = () => {
         token,
       );
 
+      if (result.data?.followUser?.success) {
+        await refreshUser();
+      }
+
       return result.data?.followUser || null;
     } catch (err) {
       console.error('Follow toggle error:', err);
@@ -37,7 +43,7 @@ export const useFollowToggle = () => {
     } finally {
       setIsToggling(false);
     }
-  }, []);
+  }, [refreshUser]);
 
   return { toggleFollow, isToggling };
 };

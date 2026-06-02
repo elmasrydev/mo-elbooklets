@@ -9,6 +9,8 @@ import {
   Dimensions,
   Platform,
   TextInput,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useTypography } from '../hooks/useTypography';
@@ -24,7 +26,7 @@ const logo = require('../../assets/logo-transparent.png');
 export interface ConfirmModalProps {
   visible: boolean;
   title: string;
-  message: string;
+  message?: string;
   onConfirm: () => void;
   onCancel: () => void;
   confirmLabel?: string;
@@ -35,6 +37,7 @@ export interface ConfirmModalProps {
   dismissible?: boolean;
   backButtonCloseDisabled?: boolean;
   countdown?: number;
+  children?: React.ReactNode;
   hasInput?: boolean;
   inputPlaceholder?: string;
   onInputChange?: (text: string) => void;
@@ -56,6 +59,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = (props: ConfirmModalPro
     dismissible = true,
     backButtonCloseDisabled = true,
     countdown = 0,
+    children,
     hasInput = false,
     inputPlaceholder = '',
     onInputChange,
@@ -108,16 +112,17 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = (props: ConfirmModalPro
         style={styles.overlay}
         onPress={handleBackdropPress}
       >
-        <View
-          style={[
-            styles.container,
-            {
-              backgroundColor: theme.colors.card,
-              borderRadius: borderRadius.xl,
-            },
-          ]}
-          onStartShouldSetResponder={() => true}
-        >
+        <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+          <View
+            style={[
+              styles.container,
+              {
+                backgroundColor: theme.colors.card,
+                borderRadius: borderRadius.xl,
+              },
+            ]}
+            onStartShouldSetResponder={() => true}
+          >
           <TouchableOpacity
             style={[styles.closeButton, { backgroundColor: theme.colors.bgGray }]}
             onPress={onCancel}
@@ -151,11 +156,13 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = (props: ConfirmModalPro
           >
             {message}
           </Text>
+          {children}
           
           {hasInput && (
             <TextInput
               style={[
                 styles.input,
+                typography('body'),
                 {
                   backgroundColor: theme.colors.bgGray,
                   color: theme.colors.text,
@@ -190,7 +197,8 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = (props: ConfirmModalPro
               />
             )}
           </View>
-        </View>
+          </View>
+        </TouchableWithoutFeedback>
       </TouchableOpacity>
     </Modal>
   );
@@ -224,7 +232,7 @@ const styles = StyleSheet.create({
   closeButton: {
     position: 'absolute',
     top: 12,
-    right: 12,
+    end: 12,
     width: 36,
     height: 36,
     borderRadius: 18,
@@ -266,6 +274,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 16,
     marginBottom: 20,
-    fontSize: 16,
+    // fontSize handled by typography('body')
   },
 });

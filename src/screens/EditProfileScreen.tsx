@@ -1077,7 +1077,6 @@ const styles = (config: any) => {
       ...typography('caption'),
       color: theme.colors.textTertiary,
       marginTop: spacing.xs,
-      fontStyle: 'italic',
       textAlign: isRTL ? 'right' : 'left',
     },
     gridContainer: {
