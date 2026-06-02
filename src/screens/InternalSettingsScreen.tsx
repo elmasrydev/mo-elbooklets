@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Switch,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
@@ -22,6 +23,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { isDebugMode } from '../config/debug';
 import ApiUrlSwitcherModal from '../components/ApiUrlSwitcherModal';
 import crashlytics from '@react-native-firebase/crashlytics';
+import { tryFetchWithFallback } from '../config/api';
+import * as SecureStore from 'expo-secure-store';
 
 const CrashTrigger = () => {
   throw new Error('Test React Render Error for ErrorBoundary');
@@ -34,8 +37,43 @@ const InternalSettingsScreen: React.FC = () => {
   const { isRTL } = useLanguage();
   const { typography, fontWeight } = useTypography();
   const { t } = useTranslation();
+  const { user, updateUser } = useAuth();
   const [showApiModal, setShowApiModal] = useState(false);
   const [triggerReactCrash, setTriggerReactCrash] = useState(false);
+  const [isUnverifying, setIsUnverifying] = useState(false);
+
+  const handleUnverifyMobile = async () => {
+    try {
+      setIsUnverifying(true);
+      const token = await SecureStore.getItemAsync('auth_token');
+      const input = {
+        name: user?.name,
+        email: user?.email,
+        mobile: user?.mobile,
+        mobile_verified_at: 'reset',
+      };
+      
+      const result = await tryFetchWithFallback(
+        `mutation UpdateProfile($input: UpdateProfileInput!) {
+          updateProfile(input: $input) {
+            id
+            mobile_verified_at
+          }
+        }`,
+        { input },
+        token || undefined
+      );
+      
+      if (result.data?.updateProfile) {
+        await updateUser({ ...user, mobile_verified_at: null });
+        alert('Unverified! Restart app or log out to see OTP screen.');
+      }
+    } catch (e: any) {
+      alert('Failed to unverify: ' + e.message);
+    } finally {
+      setIsUnverifying(false);
+    }
+  };
 
   const handleTestCrash = () => {
     crashlytics().crash();
@@ -137,6 +175,36 @@ const InternalSettingsScreen: React.FC = () => {
             </View>
           </View>
         </View>
+
+        {isDebugMode() && (
+          <View style={currentStyles.section}>
+            <View style={currentStyles.crashTestContainer}>
+              <View style={currentStyles.crashTestHeader}>
+                <Ionicons name="construct-outline" size={18} color={theme.colors.primary} />
+                <Text style={[currentStyles.crashTestTitle, { color: theme.colors.primary }]}>
+                  Developer Tools
+                </Text>
+              </View>
+              <Text style={currentStyles.crashTestSubtitle}>
+                Reset verification to test the OTP flow again.
+              </Text>
+              <TouchableOpacity
+                style={[currentStyles.crashButton, { backgroundColor: '#8B5CF6' }]}
+                onPress={handleUnverifyMobile}
+                disabled={isUnverifying}
+              >
+                {isUnverifying ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <>
+                    <Ionicons name="phone-portrait-outline" size={16} color="#fff" />
+                    <Text style={currentStyles.crashButtonText}>Unverify Mobile Number</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </ScrollView>
 
       <ApiUrlSwitcherModal isVisible={showApiModal} onClose={() => setShowApiModal(false)} />

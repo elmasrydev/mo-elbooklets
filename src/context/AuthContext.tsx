@@ -25,6 +25,7 @@ interface User {
   email?: string;
   mobile: string;
   country_code?: string;
+  mobile_verified_at?: string;
   gender?: string;
   school_name?: string;
   parent_mobile?: string;
@@ -99,6 +100,14 @@ interface AuthContextType {
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   updateUser: (userData: User) => Promise<void>;
+  updateParentUser: (data: Partial<Parent>) => Promise<void>;
+  isVerificationSkipped: boolean;
+  skipVerification: () => void;
+  otpWasAutoSent: boolean;
+  markOtpAutoSent: () => void;
+  clearOtpAutoSent: () => void;
+  otpShouldAutoRequest: boolean;
+  clearOtpShouldAutoRequest: () => void;
   onAuthStateChange?: (isAuthenticated: boolean) => void;
 }
 
@@ -113,6 +122,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [parentUser, setParentUser] = useState<Parent | null>(null);
   const [userRole, setUserRole] = useState<'student' | 'parent' | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isVerificationSkipped, setIsVerificationSkipped] = useState(false);
+  const [otpWasAutoSent, setOtpWasAutoSent] = useState(false);
+  const [otpShouldAutoRequest, setOtpShouldAutoRequest] = useState(false);
 
   // Check if user is already logged in on app start
   useEffect(() => {
@@ -185,6 +197,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               email
               mobile
               country_code
+              mobile_verified_at
               grade_id
               grade { id name }
               educational_system_id
@@ -210,6 +223,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             mobile: authPayload.user.mobile,
             grade: authPayload.user.grade?.name,
           });
+          if (!authPayload.user.mobile_verified_at) {
+            // Login: backend does NOT auto-fire OTP — screen must request it on mount
+            setOtpShouldAutoRequest(true);
+          }
           return { success: true, user: authPayload.user };
         }
 
@@ -241,6 +258,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               email
               mobile
               country_code
+              mobile_verified_at
               grade_id
               grade { id name }
               educational_system_id
@@ -266,6 +284,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             mobile: authPayload.user.mobile,
             grade: authPayload.user.grade?.name,
           });
+          if (!authPayload.user.mobile_verified_at) {
+            setOtpWasAutoSent(true);
+          }
           return { success: true, user: authPayload.user };
         }
 
@@ -473,6 +494,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     [user],
   );
 
+  const updateParentUser = useCallback(async (data: Partial<Parent>) => {
+    const updatedParent = { ...parentUser, ...data } as Parent;
+    await AsyncStorage.setItem('parent_data', JSON.stringify(updatedParent));
+    setParentUser(updatedParent);
+  }, [parentUser]);
+
+  const skipVerification = useCallback(() => {
+    setIsVerificationSkipped(true);
+  }, []);
+
   const refreshUser = useCallback(async () => {
     try {
       const token = await SecureStore.getItemAsync('auth_token');
@@ -483,7 +514,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const result = await tryFetchWithFallback(
           `query Me { 
             me { 
-              id name email mobile country_code gender school_name parent_mobile
+              id name email mobile country_code mobile_verified_at gender school_name parent_mobile
               grade_id grade { id name } educational_system_id educational_system { id name } 
               governorate_id governorate { id name_ar name_en }
               city_id city { id name_ar name_en }
@@ -540,6 +571,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       logout,
       refreshUser,
       updateUser,
+      updateParentUser,
+      isVerificationSkipped,
+      skipVerification,
+      otpWasAutoSent,
+      markOtpAutoSent: () => setOtpWasAutoSent(true),
+      clearOtpAutoSent: () => setOtpWasAutoSent(false),
+      otpShouldAutoRequest,
+      clearOtpShouldAutoRequest: () => setOtpShouldAutoRequest(false),
     }),
     [
       user,
@@ -555,6 +594,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       logout,
       refreshUser,
       updateUser,
+      updateParentUser,
+      isVerificationSkipped,
+      skipVerification,
+      otpWasAutoSent,
+      otpShouldAutoRequest,
     ],
   );
 
