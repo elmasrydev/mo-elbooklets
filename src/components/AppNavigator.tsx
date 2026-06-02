@@ -41,6 +41,7 @@ const AppNavigator: React.FC = () => {
               <RootStack.Screen name="ParentDashboard" component={ParentDashboardScreen} />
               <RootStack.Screen name="ParentSettings" component={ParentSettingsScreen} />
               <RootStack.Screen name="InternalSettings" component={InternalSettingsScreen} />
+              <RootStack.Screen name="Notifications" component={require('../screens/NotificationsScreen').default} />
               <RootStack.Screen name="FAQs" component={require('../screens/FAQScreen').default} />
               <RootStack.Screen name="ContactUs" component={require('../screens/ContactUsScreen').default} />
             </RootStack.Group>

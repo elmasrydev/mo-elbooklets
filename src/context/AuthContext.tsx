@@ -17,6 +17,13 @@ import {
   configureCrashlyticsGuest,
 } from '../utils/crashlyticsHelper';
 import { logError, logInfo } from '../utils/logger';
+import {
+  triggerNotificationPrompt,
+  clearNotificationPromptedFlag,
+  registerDeviceToken,
+  unregisterDeviceToken,
+} from '../services/notificationService';
+import i18n from '../i18n';
 
 // Temporary types for testing
 interface User {
@@ -133,6 +140,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Create logout function to share between handlers
     const handleSessionExpired = () => {
       logInfo('Session expired - logging out');
+      unregisterDeviceToken();
+      clearNotificationPromptedFlag();
       setUser(null);
       setParentUser(null);
       setUserRole(null);
@@ -170,8 +179,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const parsedParent = JSON.parse(parentData);
             setParentUser(parsedParent);
             configureCrashlyticsParent(parsedParent);
+
           }
         }
+
+        // Register FCM token with backend and trigger notification prompt
+        registerDeviceToken(role);
+        setTimeout(() => triggerNotificationPrompt(), 10000);
       } else {
         configureCrashlyticsGuest();
       }
@@ -223,6 +237,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             mobile: authPayload.user.mobile,
             grade: authPayload.user.grade?.name,
           });
+
+          registerDeviceToken('student');
+          setTimeout(() => triggerNotificationPrompt(), 10000);
+
           if (!authPayload.user.mobile_verified_at) {
             // Login: backend does NOT auto-fire OTP — screen must request it on mount
             setOtpShouldAutoRequest(true);
@@ -284,6 +302,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             mobile: authPayload.user.mobile,
             grade: authPayload.user.grade?.name,
           });
+
+          registerDeviceToken('student');
+          setTimeout(() => triggerNotificationPrompt(), 10000);
+
           if (!authPayload.user.mobile_verified_at) {
             setOtpWasAutoSent(true);
           }
@@ -368,6 +390,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setParentUser(authPayload.parent);
           setUserRole('parent');
           configureCrashlyticsParent(authPayload.parent);
+          
+          registerDeviceToken('parent');
+          setTimeout(() => triggerNotificationPrompt(), 10000);
+          
           return { success: true };
         }
 
@@ -412,6 +438,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setParentUser(authPayload.parent);
           setUserRole('parent');
           configureCrashlyticsParent(authPayload.parent);
+          
+          registerDeviceToken('parent');
+          setTimeout(() => triggerNotificationPrompt(), 10000);
+          
           return { success: true };
         }
 
@@ -464,6 +494,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await AsyncStorage.removeItem('user_data');
       await AsyncStorage.removeItem('parent_data');
       await AsyncStorage.removeItem('user_role');
+      await unregisterDeviceToken();
+      await clearNotificationPromptedFlag();
       setUser(null);
       setParentUser(null);
       setUserRole(null);
