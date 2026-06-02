@@ -269,20 +269,19 @@ interface ThemeProviderProps {
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const [themeMode, setThemeMode] = useState<ThemeMode>('light'); // Default to light
+  const [themeMode, setThemeMode] = useState<ThemeMode>('light'); // Force light mode
   const [currentColorTheme, setCurrentColorTheme] = useState<ColorTheme>(DEFAULT_COLOR_THEME);
 
   useEffect(() => {
     const loadPreferences = async () => {
       try {
-        const [savedTheme, savedColorTheme] = await Promise.all([
+        const [_, savedColorTheme] = await Promise.all([
           AsyncStorage.getItem('theme_mode'),
           AsyncStorage.getItem('color_theme'),
         ]);
 
-        if (savedTheme === 'light' || savedTheme === 'dark') {
-          setThemeMode(savedTheme);
-        }
+        // Force 'light' theme mode regardless of saved preference
+        setThemeMode('light');
 
         if (savedColorTheme && ['green', 'purple', 'blue', 'orange'].includes(savedColorTheme)) {
           setCurrentColorTheme(savedColorTheme as ColorTheme);
@@ -296,13 +295,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   }, []);
 
   const toggleTheme = useCallback(() => {
-    setThemeMode((prevMode) => {
-      const newMode: ThemeMode = prevMode === 'light' ? 'dark' : 'light';
-      AsyncStorage.setItem('theme_mode', newMode).catch((error) => {
-        console.error('Error saving theme mode:', error);
-      });
-      return newMode;
-    });
+    // Theme switching is disabled to force Light Mode
   }, []);
 
   const setColorTheme = useCallback((newColorTheme: ColorTheme) => {
@@ -315,18 +308,18 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   // Generate theme based on current mode and color theme
   const theme = useMemo<Theme>(() => {
     const palette = getColorPalette(currentColorTheme);
-    const themeColors = generateThemeColors(themeMode, palette);
+    const themeColors = generateThemeColors('light', palette); // Force light colors
     return {
-      mode: themeMode,
+      mode: 'light',
       colors: themeColors,
     };
-  }, [themeMode, currentColorTheme]);
+  }, [currentColorTheme]);
 
   const contextValue = useMemo<ThemeContextType>(
     () => ({
       theme,
       toggleTheme,
-      isDark: themeMode === 'dark',
+      isDark: false, // Always false
       colorTheme: currentColorTheme,
       setColorTheme,
       fonts: fontFamilies,
@@ -334,7 +327,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       spacing,
       borderRadius,
     }),
-    [theme, toggleTheme, themeMode, currentColorTheme, setColorTheme],
+    [theme, toggleTheme, currentColorTheme, setColorTheme],
   );
 
   return <ThemeContext.Provider value={contextValue}> {children} </ThemeContext.Provider>;

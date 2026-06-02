@@ -587,7 +587,8 @@ const ProfileScreen: React.FC = () => {
             )}
           </View>
 
-          {/* Dark Mode Toggle */}
+          {/* Dark Mode Toggle - Locked to Light Mode */}
+          {/* 
           <View style={currentStyles.settingItem}>
             <View style={currentStyles.settingIconBox}>
               <Image
@@ -606,6 +607,7 @@ const ProfileScreen: React.FC = () => {
               ios_backgroundColor={theme.colors.border}
             />
           </View>
+          */}
 
           {/* Log Out */}
           <View style={currentStyles.logoutContainer}>

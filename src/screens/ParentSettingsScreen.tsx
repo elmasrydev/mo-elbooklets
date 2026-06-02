@@ -28,14 +28,12 @@ import { useFocusEffect } from '@react-navigation/native';
 import { checkNotificationPermission, requestNotificationPermission, openSettings } from '../services/notificationService';
 import {
   DeleteAccountDocument,
-
   DeleteAccountMutation,
   DeleteAccountMutationVariables,
 } from '../generated/graphql';
 import { isDebugMode } from '../config/debug';
 import crashlytics from '@react-native-firebase/crashlytics';
 import { useNotificationPreferences } from '../hooks/useNotificationPreferences';
-
 
 const APP_VERSION = `EL-Booklets v${DeviceInfo.getVersion()}`;
 
@@ -110,8 +108,6 @@ const ParentSettingsScreen: React.FC = () => {
     }
   };
 
-
-
   const handleLogout = () => {
     showConfirm({
       title: t('profile_screen.log_out'),
@@ -137,10 +133,10 @@ const ParentSettingsScreen: React.FC = () => {
           if (result.data?.deleteAccount?.success) {
             logout();
           } else {
-            logError('Delete account server returned false', result.data?.deleteAccount?.message);
+            console.error('Delete account server returned false', result.data?.deleteAccount?.message);
           }
         } catch (error) {
-          logError('Error deleting account', error);
+          console.error('Error deleting account', error);
         }
       },
     });
@@ -358,8 +354,8 @@ const ParentSettingsScreen: React.FC = () => {
             )}
           </View>
 
-          {/* Dark Mode Toggle */}
-
+          {/* Dark Mode Toggle - Locked to Light Mode */}
+          {/* 
           <View style={currentStyles.settingItem}>
             <View style={currentStyles.settingIconBox}>
               <Image
@@ -378,6 +374,7 @@ const ParentSettingsScreen: React.FC = () => {
               ios_backgroundColor={theme.colors.border}
             />
           </View>
+          */}
 
           {/* Log Out */}
           <View style={currentStyles.logoutContainer}>
