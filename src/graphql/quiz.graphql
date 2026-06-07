@@ -20,7 +20,6 @@ query SubjectsForUserGrade {
     id
     name
     description
-    chaptersCount
   }
 }
 

@@ -146,7 +146,11 @@ const EditProfileScreen: React.FC = () => {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (showCityModal && formData.governorate_id && (citySearch.length === 0 || citySearch.length >= 2)) {
+      if (
+        showCityModal &&
+        formData.governorate_id &&
+        (citySearch.length === 0 || citySearch.length >= 2)
+      ) {
         fetchCities(formData.governorate_id, citySearch);
       }
     }, 400);
@@ -166,17 +170,17 @@ const EditProfileScreen: React.FC = () => {
           }
         }
       `;
-      
+
       const result = await tryFetchWithFallback(query, {
         governorate_id: governorateId,
-        query: search
+        query: search,
       });
 
       if (result.data?.searchCities) {
         // Map name_ar/name_en to name field based on locale
         const mappedResults = result.data.searchCities.map((c: any) => ({
           ...c,
-          name: isRTL ? (c.name_ar || c.name_en) : (c.name_en || c.name_ar)
+          name: isRTL ? c.name_ar || c.name_en : c.name_en || c.name_ar,
         }));
         setCities(mappedResults);
       }
@@ -216,7 +220,7 @@ const EditProfileScreen: React.FC = () => {
           }
         }
       `;
-      
+
       const result = await tryFetchWithFallback(query, { search });
 
       if (result.data?.searchSchools) {
@@ -228,7 +232,6 @@ const EditProfileScreen: React.FC = () => {
       setLoadingSchools(false);
     }
   };
-
 
   const currentStyles = useMemo(
     () =>
@@ -247,8 +250,8 @@ const EditProfileScreen: React.FC = () => {
   );
 
   const selectedGovName = useMemo(() => {
-    const gov = governorates.find(g => String(g.id) === String(formData.governorate_id));
-    if (gov) return isRTL ? (gov.name_ar || gov.name) : (gov.name_en || gov.name);
+    const gov = governorates.find((g) => String(g.id) === String(formData.governorate_id));
+    if (gov) return isRTL ? gov.name_ar || gov.name : gov.name_en || gov.name;
     if (user?.governorate && String(user.governorate.id) === String(formData.governorate_id)) {
       return isRTL ? user.governorate.name_ar : user.governorate.name_en;
     }
@@ -256,8 +259,8 @@ const EditProfileScreen: React.FC = () => {
   }, [formData.governorate_id, governorates, user, isRTL]);
 
   const selectedCityName = useMemo(() => {
-    const city = cities.find(c => String(c.id) === String(formData.city_id));
-    if (city) return isRTL ? (city.name_ar || city.name) : (city.name_en || city.name);
+    const city = cities.find((c) => String(c.id) === String(formData.city_id));
+    if (city) return isRTL ? city.name_ar || city.name : city.name_en || city.name;
     if (user?.city && String(user.city.id) === String(formData.city_id)) {
       return isRTL ? user.city.name_ar : user.city.name_en;
     }
@@ -265,9 +268,9 @@ const EditProfileScreen: React.FC = () => {
   }, [formData.city_id, cities, user, isRTL]);
 
   const mappedSchools = useMemo(() => {
-    return schoolSuggestions.map(s => ({
+    return schoolSuggestions.map((s) => ({
       ...s,
-      name: isRTL ? (s.name || s.name_en) : (s.name_en || s.name)
+      name: isRTL ? s.name || s.name_en : s.name_en || s.name,
     }));
   }, [schoolSuggestions, isRTL]);
 
@@ -299,8 +302,6 @@ const EditProfileScreen: React.FC = () => {
       return;
     }
 
-
-
     try {
       setLoading(true);
       const token = await SecureStore.getItemAsync('auth_token');
@@ -327,7 +328,7 @@ const EditProfileScreen: React.FC = () => {
       `;
 
       const result = await tryFetchWithFallback(mutation, { input }, token);
-      
+
       if (result.data?.updateProfile) {
         await updateUser(result.data.updateProfile);
         showConfirm({
@@ -412,7 +413,8 @@ const EditProfileScreen: React.FC = () => {
           },
         });
       } else {
-        const errorMsg = result.errors?.[0]?.message || result.data?.updatePassword?.message || t('common.error');
+        const errorMsg =
+          result.errors?.[0]?.message || result.data?.updatePassword?.message || t('common.error');
         showConfirm({
           title: t('common.error'),
           message: errorMsg,
@@ -435,7 +437,7 @@ const EditProfileScreen: React.FC = () => {
 
   const handleForgotPassword = async () => {
     if (!user?.email) return;
-    
+
     try {
       setLoading(true);
       const query = `
@@ -446,9 +448,9 @@ const EditProfileScreen: React.FC = () => {
           }
         }
       `;
-      
+
       const result = await tryFetchWithFallback(query, { email: user.email });
-      
+
       if (result.data?.forgotPassword?.success) {
         showConfirm({
           title: t('common.success'),
@@ -457,7 +459,8 @@ const EditProfileScreen: React.FC = () => {
           onConfirm: () => {},
         });
       } else {
-        const errorMsg = result.errors?.[0]?.message || result.data?.forgotPassword?.message || t('common.error');
+        const errorMsg =
+          result.errors?.[0]?.message || result.data?.forgotPassword?.message || t('common.error');
         showConfirm({
           title: t('common.error'),
           message: errorMsg,
@@ -496,9 +499,7 @@ const EditProfileScreen: React.FC = () => {
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
             >
-              <View
-                style={currentStyles.form}
-              >
+              <View style={currentStyles.form}>
                 {/* Name (Readonly) */}
                 <View style={currentStyles.inputGroup}>
                   <Text style={currentStyles.inputLabel}>{t('auth.name')}</Text>
@@ -625,7 +626,9 @@ const EditProfileScreen: React.FC = () => {
                     style={[
                       currentStyles.inputWrapper,
                       {
-                        borderColor: formData.governorate_id ? theme.colors.primary : theme.colors.border,
+                        borderColor: formData.governorate_id
+                          ? theme.colors.primary
+                          : theme.colors.border,
                       },
                     ]}
                     onPress={() => setShowGovModal(true)}
@@ -633,23 +636,31 @@ const EditProfileScreen: React.FC = () => {
                     <Ionicons
                       name="location-outline"
                       size={20}
-                      color={formData.governorate_id ? theme.colors.primary : theme.colors.textTertiary}
+                      color={
+                        formData.governorate_id ? theme.colors.primary : theme.colors.textTertiary
+                      }
                       style={currentStyles.inputIconLeft}
                     />
                     <Text
                       style={[
                         currentStyles.input,
-                        { 
-                          textAlign: isRTL ? 'right' : 'left', 
-                          color: formData.governorate_id ? theme.colors.text : theme.colors.textTertiary,
-                          paddingTop: 16 // To align with TextInput
+                        {
+                          textAlign: isRTL ? 'right' : 'left',
+                          color: formData.governorate_id
+                            ? theme.colors.text
+                            : theme.colors.textTertiary,
+                          paddingTop: 16, // To align with TextInput
                         },
                       ]}
                     >
                       {selectedGovName || t('profile.select_governorate', 'Select Governorate')}
                     </Text>
                     {fetchingGov && (
-                      <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginRight: spacing.md }} />
+                      <ActivityIndicator
+                        size="small"
+                        color={theme.colors.primary}
+                        style={{ marginRight: spacing.md }}
+                      />
                     )}
                     <Ionicons
                       name="chevron-down"
@@ -662,8 +673,8 @@ const EditProfileScreen: React.FC = () => {
                   <SearchablePickerModal
                     visible={showGovModal}
                     onClose={() => {
-                        setShowGovModal(false);
-                        setGovSearch('');
+                      setShowGovModal(false);
+                      setGovSearch('');
                     }}
                     title={t('profile.select_governorate')}
                     placeholder={t('common.search')}
@@ -671,17 +682,16 @@ const EditProfileScreen: React.FC = () => {
                     onSearchChange={setGovSearch}
                     selectedId={formData.governorate_id}
                     data={governorates
-                      .filter(g => {
-                        const name = isRTL ? (g.name_ar || g.name) : (g.name_en || g.name);
+                      .filter((g) => {
+                        const name = isRTL ? g.name_ar || g.name : g.name_en || g.name;
                         return name.toLowerCase().includes(govSearch.toLowerCase());
                       })
-                      .map(g => ({
+                      .map((g) => ({
                         ...g,
-                        name: isRTL ? (g.name_ar || g.name) : (g.name_en || g.name)
-                      }))
-                    }
+                        name: isRTL ? g.name_ar || g.name : g.name_en || g.name,
+                      }))}
                     onSelect={(gov) => {
-                      setFormData(p => ({ ...p, governorate_id: gov.id, city_id: '' }));
+                      setFormData((p) => ({ ...p, governorate_id: gov.id, city_id: '' }));
                       setShowGovModal(false);
                       setGovSearch('');
                     }}
@@ -711,17 +721,24 @@ const EditProfileScreen: React.FC = () => {
                     <Text
                       style={[
                         currentStyles.input,
-                        { 
-                          textAlign: isRTL ? 'right' : 'left', 
+                        {
+                          textAlign: isRTL ? 'right' : 'left',
                           color: formData.city_id ? theme.colors.text : theme.colors.textTertiary,
-                          paddingTop: 16
+                          paddingTop: 16,
                         },
                       ]}
                     >
-                      {selectedCityName || (formData.governorate_id ? t('profile.select_city', 'Select City') : t('profile.select_gov_first', 'Select Governorate First'))}
+                      {selectedCityName ||
+                        (formData.governorate_id
+                          ? t('profile.select_city', 'Select City')
+                          : t('profile.select_gov_first', 'Select Governorate First'))}
                     </Text>
                     {fetchingCities && (
-                      <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginRight: spacing.md }} />
+                      <ActivityIndicator
+                        size="small"
+                        color={theme.colors.primary}
+                        style={{ marginRight: spacing.md }}
+                      />
                     )}
                     <Ionicons
                       name="chevron-down"
@@ -734,8 +751,8 @@ const EditProfileScreen: React.FC = () => {
                   <SearchablePickerModal
                     visible={showCityModal}
                     onClose={() => {
-                        setShowCityModal(false);
-                        setCitySearch('');
+                      setShowCityModal(false);
+                      setCitySearch('');
                     }}
                     title={t('profile.select_city')}
                     placeholder={t('common.search')}
@@ -745,7 +762,7 @@ const EditProfileScreen: React.FC = () => {
                     data={cities}
                     loading={fetchingCities}
                     onSelect={(city) => {
-                      setFormData(p => ({ ...p, city_id: city.id }));
+                      setFormData((p) => ({ ...p, city_id: city.id }));
                       setShowCityModal(false);
                       setCitySearch('');
                     }}
@@ -753,9 +770,7 @@ const EditProfileScreen: React.FC = () => {
                 </View>
 
                 {/* School Name */}
-                <View
-                  style={[currentStyles.inputGroup]}
-                >
+                <View style={[currentStyles.inputGroup]}>
                   <Text style={currentStyles.inputLabel}>
                     {t('profile.school_name', 'School Name')}
                   </Text>
@@ -770,7 +785,7 @@ const EditProfileScreen: React.FC = () => {
                         ),
                         height: 50,
                         justifyContent: 'space-between',
-                        paddingHorizontal: spacing.md
+                        paddingHorizontal: spacing.md,
                       },
                     ]}
                     onPress={() => setShowSchoolModal(true)}
@@ -786,30 +801,29 @@ const EditProfileScreen: React.FC = () => {
                         }
                         style={{ marginRight: spacing.sm }}
                       />
-                      <Text 
-                        style={{ 
-                          color: formData.school_name.length > 0 ? theme.colors.text : theme.colors.textTertiary,
+                      <Text
+                        style={{
+                          color:
+                            formData.school_name.length > 0
+                              ? theme.colors.text
+                              : theme.colors.textTertiary,
                           fontSize: 16,
                           textAlign: isRTL ? 'right' : 'left',
-                          flex: 1
+                          flex: 1,
                         }}
                         numberOfLines={1}
                       >
                         {formData.school_name || t('profile.school_placeholder')}
                       </Text>
                     </View>
-                    <Ionicons
-                      name="chevron-down"
-                      size={20}
-                      color={theme.colors.textTertiary}
-                    />
+                    <Ionicons name="chevron-down" size={20} color={theme.colors.textTertiary} />
                   </TouchableOpacity>
 
                   <SearchablePickerModal
                     visible={showSchoolModal}
                     onClose={() => {
-                        setShowSchoolModal(false);
-                        setSchoolSearch('');
+                      setShowSchoolModal(false);
+                      setSchoolSearch('');
                     }}
                     title={t('auth.select_school_title', 'Select School')}
                     placeholder={t('auth.school_search_placeholder', 'Search school...')}
@@ -819,8 +833,10 @@ const EditProfileScreen: React.FC = () => {
                     data={mappedSchools}
                     loading={loadingSchools}
                     onSelect={(school) => {
-                      const selectedName = isRTL ? (school.name || school.name_en) : (school.name_en || school.name);
-                      setFormData(p => ({ ...p, school_name: selectedName }));
+                      const selectedName = isRTL
+                        ? school.name || school.name_en
+                        : school.name_en || school.name;
+                      setFormData((p) => ({ ...p, school_name: selectedName }));
                       setShowSchoolModal(false);
                       setSchoolSearch('');
                     }}
@@ -828,36 +844,42 @@ const EditProfileScreen: React.FC = () => {
                     searchHelperText={t('auth.start_typing_school')}
                   />
 
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={currentStyles.addSchoolTrigger}
                     onPress={() => {
-                        showConfirm({
-                            title: t('profile.request_school_title', 'Request New School'),
-                            message: t('profile.request_school_message', 'Enter the name of the school you want to add'),
-                            hasInput: true,
-                            inputPlaceholder: t('profile.school_name_placeholder', 'School name...'),
-                            onConfirm: async (schoolName) => {
-                                if (schoolName && schoolName.trim()) {
-                                    // Here you would typically call a mutation to request the school
-                                    console.log('Requesting school:', schoolName);
-                                    
-                                    // Show success message
-                                    setTimeout(() => {
-                                      showConfirm({
-                                          title: t('common.success', 'Success'),
-                                          message: t('profile.school_request_sent', 'Your request has been sent successfully. We will review it soon.'),
-                                          showCancel: false,
-                                          onConfirm: () => {}
-                                      });
-                                    }, 500);
-                                }
-                            }
-                        })
+                      showConfirm({
+                        title: t('profile.request_school_title', 'Request New School'),
+                        message: t(
+                          'profile.request_school_message',
+                          'Enter the name of the school you want to add',
+                        ),
+                        hasInput: true,
+                        inputPlaceholder: t('profile.school_name_placeholder', 'School name...'),
+                        onConfirm: async (schoolName) => {
+                          if (schoolName && schoolName.trim()) {
+                            // Here you would typically call a mutation to request the school
+                            console.log('Requesting school:', schoolName);
+
+                            // Show success message
+                            setTimeout(() => {
+                              showConfirm({
+                                title: t('common.success', 'Success'),
+                                message: t(
+                                  'profile.school_request_sent',
+                                  'Your request has been sent successfully. We will review it soon.',
+                                ),
+                                showCancel: false,
+                                onConfirm: () => {},
+                              });
+                            }, 500);
+                          }
+                        },
+                      });
                     }}
                   >
-                     <Text style={currentStyles.addSchoolText}>
-                        {t('profile.add_school_request')}
-                     </Text>
+                    <Text style={currentStyles.addSchoolText}>
+                      {t('profile.add_school_request')}
+                    </Text>
                   </TouchableOpacity>
                 </View>
 
@@ -874,7 +896,7 @@ const EditProfileScreen: React.FC = () => {
                     ]}
                   >
                     <View style={currentStyles.inputIconLeft}>
-                       <Text style={{ fontSize: 18 }}>🎓</Text>
+                      <Text style={{ fontSize: 18 }}>🎓</Text>
                     </View>
                     <Text
                       style={[currentStyles.readonlyText, { textAlign: isRTL ? 'right' : 'left' }]}
@@ -894,7 +916,9 @@ const EditProfileScreen: React.FC = () => {
                   disabled={loading}
                   activeOpacity={0.8}
                 >
-                  <Text style={currentStyles.submitButtonText}>{t('profile.complete_profile', 'Complete Profile')}</Text>
+                  <Text style={currentStyles.submitButtonText}>
+                    {t('profile.complete_profile', 'Complete Profile')}
+                  </Text>
                   {loading ? (
                     <ActivityIndicator size="small" color="#FFF" />
                   ) : (
@@ -903,17 +927,21 @@ const EditProfileScreen: React.FC = () => {
                 </TouchableOpacity>
 
                 {/* Change Password Section */}
-                <TouchableOpacity 
-                   style={[currentStyles.passwordToggle, { marginTop: spacing.xl }]}
-                   onPress={() => setShowPasswordSection(!showPasswordSection)}
+                <TouchableOpacity
+                  style={[currentStyles.passwordToggle, { marginTop: spacing.xl }]}
+                  onPress={() => setShowPasswordSection(!showPasswordSection)}
                 >
-                   <View style={currentStyles.passwordToggleLeft}>
-                      <Ionicons name="lock-closed-outline" size={20} color={theme.colors.primary} />
-                      <Text style={currentStyles.passwordToggleText}>
-                        {t('profile.change_password')}
-                      </Text>
-                   </View>
-                   <Ionicons name={showPasswordSection ? "chevron-up" : "chevron-down"} size={20} color={theme.colors.primary} />
+                  <View style={currentStyles.passwordToggleLeft}>
+                    <Ionicons name="lock-closed-outline" size={20} color={theme.colors.primary} />
+                    <Text style={currentStyles.passwordToggleText}>
+                      {t('profile.change_password')}
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name={showPasswordSection ? 'chevron-up' : 'chevron-down'}
+                    size={20}
+                    color={theme.colors.primary}
+                  />
                 </TouchableOpacity>
 
                 {showPasswordSection && (
@@ -921,55 +949,65 @@ const EditProfileScreen: React.FC = () => {
                     <View style={currentStyles.inputGroup}>
                       <Text style={currentStyles.inputLabel}>{t('profile.old_password')}</Text>
                       <View style={currentStyles.inputWrapper}>
-                         <TextInput 
-                            style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
-                            secureTextEntry
-                            value={passwordState.oldPassword}
-                            onChangeText={v => setPasswordState(p => ({ ...p, oldPassword: v }))}
-                            placeholder="••••••••"
-                         />
+                        <TextInput
+                          style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
+                          secureTextEntry
+                          value={passwordState.oldPassword}
+                          onChangeText={(v) => setPasswordState((p) => ({ ...p, oldPassword: v }))}
+                          placeholder="••••••••"
+                        />
                       </View>
                     </View>
                     <View style={currentStyles.inputGroup}>
                       <Text style={currentStyles.inputLabel}>{t('profile.new_password')}</Text>
                       <View style={currentStyles.inputWrapper}>
-                         <TextInput 
-                            style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
-                            secureTextEntry
-                            value={passwordState.newPassword}
-                            onChangeText={v => setPasswordState(p => ({ ...p, newPassword: v }))}
-                            placeholder="••••••••"
-                         />
+                        <TextInput
+                          style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
+                          secureTextEntry
+                          value={passwordState.newPassword}
+                          onChangeText={(v) => setPasswordState((p) => ({ ...p, newPassword: v }))}
+                          placeholder="••••••••"
+                        />
                       </View>
                     </View>
                     <View style={currentStyles.inputGroup}>
-                      <Text style={currentStyles.inputLabel}>{t('profile.confirm_new_password')}</Text>
+                      <Text style={currentStyles.inputLabel}>
+                        {t('profile.confirm_new_password')}
+                      </Text>
                       <View style={currentStyles.inputWrapper}>
-                         <TextInput 
-                            style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
-                            secureTextEntry
-                            value={passwordState.confirmPassword}
-                            onChangeText={v => setPasswordState(p => ({ ...p, confirmPassword: v }))}
-                            placeholder="••••••••"
-                         />
+                        <TextInput
+                          style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
+                          secureTextEntry
+                          value={passwordState.confirmPassword}
+                          onChangeText={(v) =>
+                            setPasswordState((p) => ({ ...p, confirmPassword: v }))
+                          }
+                          placeholder="••••••••"
+                        />
                       </View>
                     </View>
 
                     <View style={{ marginTop: spacing.md }}>
-                      <AppButton 
+                      <AppButton
                         title={t('profile.update_password', 'Update Password')}
                         onPress={handleUpdatePassword}
                         loading={loading}
                         variant="primary"
                         fullWidth={true}
                       />
-                      
-                      <TouchableOpacity 
-                        onPress={handleForgotPassword} 
+
+                      <TouchableOpacity
+                        onPress={handleForgotPassword}
                         disabled={loading}
                         style={{ marginTop: spacing.md, alignItems: 'center' }}
                       >
-                        <Text style={{ ...typography('caption'), color: theme.colors.primary, textDecorationLine: 'underline' }}>
+                        <Text
+                          style={{
+                            ...typography('caption'),
+                            color: theme.colors.primary,
+                            textDecorationLine: 'underline',
+                          }}
+                        >
                           {t('auth.forgot_password', 'Forgot Password?')}
                         </Text>
                       </TouchableOpacity>
@@ -978,9 +1016,6 @@ const EditProfileScreen: React.FC = () => {
                 )}
               </View>
             </ScrollView>
-
-            {/* Bottom Primary Border */}
-            <View style={currentStyles.bottomBorder} />
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -1151,11 +1186,6 @@ const styles = (config: any) => {
       color: '#FFFFFF',
       marginRight: spacing.sm,
       marginLeft: isRTL ? spacing.sm : 0,
-    },
-    bottomBorder: {
-      height: 8,
-      backgroundColor: theme.colors.primary,
-      width: '100%',
     },
     modalOverlay: {
       flex: 1,

@@ -54,20 +54,42 @@ const RankChangeCard: React.FC<RankChangeCardProps> = ({ item, onLike, onComment
     return `${rank}${t('social_screen.rank_th', 'th')}`;
   };
 
-  const getInitials = (name: string) => name.split(' ').map((n) => n[0]).join('').toUpperCase().substring(0, 2);
+  const getInitials = (name: string) =>
+    name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
 
-  const currentStyles = createStyles(theme, common, spacing, borderRadius, typography, fontWeight, rankColor, rankBg, rankBorder);
+  const currentStyles = createStyles(
+    theme,
+    common,
+    spacing,
+    borderRadius,
+    typography,
+    fontWeight,
+    rankColor,
+    rankBg,
+    rankBorder,
+  );
 
   return (
     <View style={currentStyles.cardContainer}>
       {/* Top Header: Avatar + User Info */}
       <View style={currentStyles.headerRow}>
         <View style={currentStyles.headerLeft}>
-          <View style={[currentStyles.avatar, { borderColor: rankBorder, backgroundColor: rankBg }]}>
-            <Text style={[currentStyles.avatarText, { color: rankColor }]}>{getInitials(item.user.name)}</Text>
+          <View
+            style={[currentStyles.avatar, { borderColor: rankBorder, backgroundColor: rankBg }]}
+          >
+            <Text style={[currentStyles.avatarText, { color: rankColor }]}>
+              {getInitials(item.user.name)}
+            </Text>
           </View>
           <View style={currentStyles.userInfo}>
-            <Text style={[currentStyles.userName, { textAlign: common.textAlign }]}>{item.user.name}</Text>
+            <Text style={[currentStyles.userName, { textAlign: common.textAlign }]}>
+              {item.user.name}
+            </Text>
             <Text style={[currentStyles.userSubtitle, { textAlign: common.textAlign }]}>
               {item.user.grade.name} • {getTimeAgo(item.createdAt, t, language)}
             </Text>
@@ -85,10 +107,19 @@ const RankChangeCard: React.FC<RankChangeCardProps> = ({ item, onLike, onComment
             <Text style={[currentStyles.badgeTitle, { textAlign: common.textAlign }]}>
               {t('social_screen.new_rank_achieved', 'New Badge Earned!')}
             </Text>
-            <Text style={[currentStyles.badgeSubtitle, { textAlign: common.textAlign, color: rankColor }]}>
+            <Text
+              style={[
+                currentStyles.badgeSubtitle,
+                { textAlign: common.textAlign, color: rankColor },
+              ]}
+            >
               {item.rankData.previousRank
-                ? t('social_screen.moved_to_rank', { from: item.rankData.previousRank, to: getRankLabel(item.rankData.newRank) })
-                : `Rank #${item.rankData.newRank} ${item.rankData.isOverall ? t('social_screen.overall_ranking', 'Overall') : item.rankData.subject?.name}`} 🏆
+                ? t('social_screen.moved_to_rank', {
+                    from: item.rankData.previousRank,
+                    to: getRankLabel(item.rankData.newRank),
+                  })
+                : `Rank #${item.rankData.newRank} ${item.rankData.isOverall ? t('social_screen.overall_ranking', 'Overall') : item.rankData.subject?.name}`}{' '}
+              🏆
             </Text>
           </View>
         </View>
@@ -105,8 +136,16 @@ const RankChangeCard: React.FC<RankChangeCardProps> = ({ item, onLike, onComment
 
         <View style={currentStyles.actionButtons}>
           <TouchableOpacity style={currentStyles.likeBtn} onPress={onLike}>
-            <MaterialIcons name="thumb-up" size={14} color={item.isLiked ? theme.colors.primary : theme.colors.textSecondary} />
-            <Text style={[currentStyles.likeBtnText, item.isLiked && { color: theme.colors.primary }]}>{t('common.like', 'Like')}</Text>
+            <MaterialIcons
+              name="thumb-up"
+              size={14}
+              color={item.isLiked ? theme.colors.primary : theme.colors.textSecondary}
+            />
+            <Text
+              style={[currentStyles.likeBtnText, item.isLiked && { color: theme.colors.primary }]}
+            >
+              {t('common.like', 'Like')}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -114,7 +153,17 @@ const RankChangeCard: React.FC<RankChangeCardProps> = ({ item, onLike, onComment
   );
 };
 
-const createStyles = (theme: any, common: any, spacing: any, borderRadius: any, typography: any, fontWeight: any, rankColor: string, rankBg: string, rankBorder: string) =>
+const createStyles = (
+  theme: any,
+  common: any,
+  spacing: any,
+  borderRadius: any,
+  typography: any,
+  fontWeight: any,
+  rankColor: string,
+  rankBg: string,
+  rankBorder: string,
+) =>
   StyleSheet.create({
     cardContainer: {
       backgroundColor: theme.mode === 'light' ? theme.colors.surface : theme.colors.card,

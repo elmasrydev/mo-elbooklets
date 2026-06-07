@@ -25,7 +25,11 @@ import DeviceInfo from 'react-native-device-info';
 import { useMutation } from '@apollo/client/react';
 import { AppState } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { checkNotificationPermission, requestNotificationPermission, openSettings } from '../services/notificationService';
+import {
+  checkNotificationPermission,
+  requestNotificationPermission,
+  openSettings,
+} from '../services/notificationService';
 import {
   DeleteAccountDocument,
   DeleteAccountMutation,
@@ -56,11 +60,11 @@ const ParentSettingsScreen: React.FC = () => {
     DeleteAccountMutationVariables
   >(DeleteAccountDocument);
 
-  const { 
-    preferences, 
-    toggleAppNotifications, 
+  const {
+    preferences,
+    toggleAppNotifications,
     loading: prefsLoading,
-    updating 
+    updating,
   } = useNotificationPreferences('parent');
 
   const [pushEnabled, setPushEnabled] = useState(false);
@@ -68,7 +72,7 @@ const ParentSettingsScreen: React.FC = () => {
   useFocusEffect(
     React.useCallback(() => {
       checkNotificationPermission().then(setPushEnabled);
-    }, [])
+    }, []),
   );
 
   // Re-check permission when returning from OS Settings
@@ -94,17 +98,17 @@ const ParentSettingsScreen: React.FC = () => {
           message: t('profile_screen.notifications_settings_msg'),
           confirmLabel: t('common.settings') || 'Settings',
           cancelLabel: t('common.cancel'),
-          onConfirm: openSettings
+          onConfirm: openSettings,
         });
       }
     } else {
       showConfirm({
-          title: t('profile_screen.notifications'),
-          message: t('profile_screen.notifications_disable_msg'),
-          confirmLabel: t('common.settings') || 'Settings',
-          cancelLabel: t('common.cancel'),
-          onConfirm: openSettings
-        });
+        title: t('profile_screen.notifications'),
+        message: t('profile_screen.notifications_disable_msg'),
+        confirmLabel: t('common.settings') || 'Settings',
+        cancelLabel: t('common.cancel'),
+        onConfirm: openSettings,
+      });
     }
   };
 
@@ -133,7 +137,10 @@ const ParentSettingsScreen: React.FC = () => {
           if (result.data?.deleteAccount?.success) {
             logout();
           } else {
-            console.error('Delete account server returned false', result.data?.deleteAccount?.message);
+            console.error(
+              'Delete account server returned false',
+              result.data?.deleteAccount?.message,
+            );
           }
         } catch (error) {
           console.error('Error deleting account', error);
@@ -170,11 +177,7 @@ const ParentSettingsScreen: React.FC = () => {
 
   return (
     <View style={currentStyles.mainContainer}>
-      <UnifiedHeader
-        title={t('profile_screen.header_title')}
-        showBackButton={true}
-        style={currentStyles.headerOverride}
-      />
+      <UnifiedHeader title={t('profile_screen.header_title')} showBackButton={true} />
 
       <ScrollView
         style={currentStyles.scrollView}
@@ -294,7 +297,9 @@ const ParentSettingsScreen: React.FC = () => {
                 <Ionicons name="settings-outline" size={22} color={theme.colors.warning} />
               </View>
               <View style={currentStyles.settingContent}>
-                <Text style={currentStyles.settingTitle}>{t('profile_screen.internal_settings')}</Text>
+                <Text style={currentStyles.settingTitle}>
+                  {t('profile_screen.internal_settings')}
+                </Text>
               </View>
               <Ionicons
                 name={isRTL ? 'chevron-back' : 'chevron-forward'}
@@ -313,12 +318,19 @@ const ParentSettingsScreen: React.FC = () => {
 
           {/* 1. Main Push Notifications Toggle (OS Level) */}
           <View style={currentStyles.settingItem}>
-            <View style={[currentStyles.settingIconBox, { backgroundColor: theme.colors.primary + '20' }]}>
+            <View
+              style={[
+                currentStyles.settingIconBox,
+                { backgroundColor: theme.colors.primary + '20' },
+              ]}
+            >
               <Ionicons name="notifications-outline" size={22} color={theme.colors.primary} />
             </View>
             <View style={currentStyles.settingContent}>
               <Text style={currentStyles.settingTitle}>{t('profile_screen.notifications')}</Text>
-              <Text style={currentStyles.settingSubtitle}>{t('profile_screen.notifications_desc')}</Text>
+              <Text style={currentStyles.settingSubtitle}>
+                {t('profile_screen.notifications_desc')}
+              </Text>
             </View>
             <Switch
               value={pushEnabled}
@@ -331,12 +343,21 @@ const ParentSettingsScreen: React.FC = () => {
 
           {/* 2. App Notifications Toggle (API Level) */}
           <View style={[currentStyles.settingItem, !pushEnabled && { opacity: 0.5 }]}>
-            <View style={[currentStyles.settingIconBox, { backgroundColor: theme.colors.primary + '20' }]}>
+            <View
+              style={[
+                currentStyles.settingIconBox,
+                { backgroundColor: theme.colors.primary + '20' },
+              ]}
+            >
               <Ionicons name="notifications-outline" size={22} color={theme.colors.primary} />
             </View>
             <View style={currentStyles.settingContent}>
-              <Text style={currentStyles.settingTitle}>{t('profile_screen.app_notifications')}</Text>
-              <Text style={currentStyles.settingSubtitle}>{t('profile_screen.app_notifications_desc')}</Text>
+              <Text style={currentStyles.settingTitle}>
+                {t('profile_screen.app_notifications')}
+              </Text>
+              <Text style={currentStyles.settingSubtitle}>
+                {t('profile_screen.app_notifications_desc')}
+              </Text>
             </View>
             {updating === 'app_notifications_enabled' || (prefsLoading && !pushEnabled) ? (
               <View style={currentStyles.loaderContainer}>
@@ -348,7 +369,13 @@ const ParentSettingsScreen: React.FC = () => {
                 onValueChange={toggleAppNotifications}
                 disabled={!pushEnabled}
                 trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
-                thumbColor={Platform.OS === 'ios' ? '#ffffff' : preferences.app_notifications_enabled ? '#ffffff' : '#f4f3f4'}
+                thumbColor={
+                  Platform.OS === 'ios'
+                    ? '#ffffff'
+                    : preferences.app_notifications_enabled
+                      ? '#ffffff'
+                      : '#f4f3f4'
+                }
                 ios_backgroundColor={theme.colors.border}
               />
             )}
@@ -413,7 +440,6 @@ const ParentSettingsScreen: React.FC = () => {
           )}
         </TouchableOpacity>
       </ScrollView>
-
     </View>
   );
 };
@@ -434,10 +460,7 @@ const styles = (
       flex: 1,
       backgroundColor: theme.colors.background,
     },
-    headerOverride: {
-      backgroundColor: '#1E40AF',
-      borderBottomWidth: 0,
-    },
+
     scrollView: {
       flex: 1,
     },

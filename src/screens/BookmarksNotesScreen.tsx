@@ -70,14 +70,25 @@ const NoteModal: React.FC<{
   isRTL: boolean;
   typography: any;
   onDelete?: () => void;
-}> = ({ visible, initialNote, title, onClose, onSave, theme, spacing, borderRadius, t, isRTL, typography, onDelete }) => {
+}> = ({
+  visible,
+  initialNote,
+  title,
+  onClose,
+  onSave,
+  theme,
+  spacing,
+  borderRadius,
+  t,
+  isRTL,
+  typography,
+  onDelete,
+}) => {
   const [note, setNote] = useState(initialNote);
 
   React.useEffect(() => {
     setNote(initialNote);
   }, [initialNote, visible]);
-
-  if (!visible) return null;
 
   return (
     <ConfirmModal
@@ -110,21 +121,28 @@ const NoteModal: React.FC<{
           autoFocus
         />
         {onDelete && initialNote && (
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={onDelete}
-            style={{ 
-              marginTop: spacing.md, 
-              flexDirection: 'row', 
-              alignItems: 'center', 
+            style={{
+              marginTop: spacing.md,
+              flexDirection: 'row',
+              alignItems: 'center',
               justifyContent: 'center',
               padding: spacing.sm,
               backgroundColor: theme.colors.error + '10',
               borderRadius: borderRadius.md,
-              marginBottom: 14
+              marginBottom: 14,
             }}
           >
-            <Ionicons name="trash-outline" size={18} color={theme.colors.error} style={{ marginRight: 8 }} />
-            <Text style={{ ...typography('caption'), color: theme.colors.error, fontWeight: '700' }}>
+            <Ionicons
+              name="trash-outline"
+              size={18}
+              color={theme.colors.error}
+              style={{ marginRight: 8 }}
+            />
+            <Text
+              style={{ ...typography('caption'), color: theme.colors.error, fontWeight: '700' }}
+            >
               {t('common.delete', 'Delete')}
             </Text>
           </TouchableOpacity>
@@ -213,7 +231,7 @@ const BookmarksNotesScreen: React.FC = () => {
   useFocusEffect(
     useCallback(() => {
       fetchData();
-    }, [fetchData])
+    }, [fetchData]),
   );
 
   const handleRefresh = () => {
@@ -223,22 +241,22 @@ const BookmarksNotesScreen: React.FC = () => {
 
   const filteredData = useMemo(() => {
     if (activeTab === 'bookmarks') {
-      return savedPoints.filter(p => p.is_bookmarked);
+      return savedPoints.filter((p) => p.is_bookmarked);
     } else {
-      return savedPoints.filter(p => !!p.note_content);
+      return savedPoints.filter((p) => !!p.note_content);
     }
   }, [savedPoints, activeTab]);
 
   const currentStyles = useMemo(
     () => styles(theme, spacing, borderRadius, isRTL, typography, fontWeight),
-    [theme, spacing, borderRadius, isRTL, typography, fontWeight]
+    [theme, spacing, borderRadius, isRTL, typography, fontWeight],
   );
 
   const handleItemPress = (item: SavedPoint) => {
-    navigation.navigate('StudyLesson', { 
+    navigation.navigate('StudyLesson', {
       lesson: item.lesson,
       // Pass the point ID to scroll to it
-      initialPointId: item.lessonPoint.id
+      initialPointId: item.lessonPoint.id,
     });
   };
 
@@ -273,20 +291,22 @@ const BookmarksNotesScreen: React.FC = () => {
             }
           }
         }`,
-        { 
-          lessonId: selectedItem.lesson.id, 
-          lessonPointId: selectedItem.lessonPoint.id, 
-          noteContent: note 
+        {
+          lessonId: selectedItem.lesson.id,
+          lessonPointId: selectedItem.lessonPoint.id,
+          noteContent: note,
         },
         token,
       );
 
       if (result.data?.savePointNote?.success) {
         const updatedPoint = result.data.savePointNote.savedPoint;
-        setSavedPoints(prev => prev.map(p => p.id === updatedPoint.id ? { ...p, ...updatedPoint } : p));
+        setSavedPoints((prev) =>
+          prev.map((p) => (p.id === updatedPoint.id ? { ...p, ...updatedPoint } : p)),
+        );
         setNoteModalVisible(false);
         setSelectedItem(null);
-        
+
         setLocalAlert({
           visible: true,
           title: t('common.success'),
@@ -322,16 +342,16 @@ const BookmarksNotesScreen: React.FC = () => {
 
       if (result.data?.deletePointNote?.success) {
         const sp = result.data.deletePointNote.savedPoint;
-        setSavedPoints(prev => {
+        setSavedPoints((prev) => {
           if (sp && (sp.is_bookmarked || sp.note_content)) {
-            return prev.map(p => p.id === sp.id ? { ...p, ...sp } : p);
+            return prev.map((p) => (p.id === sp.id ? { ...p, ...sp } : p));
           } else {
-            return prev.filter(p => p.id !== selectedItem.id);
+            return prev.filter((p) => p.id !== selectedItem.id);
           }
         });
         setNoteModalVisible(false);
         setSelectedItem(null);
-        
+
         setLocalAlert({
           visible: true,
           title: t('common.success'),
@@ -362,14 +382,14 @@ const BookmarksNotesScreen: React.FC = () => {
           <TouchableOpacity onPress={() => handleEditNote(item)}>
             <Ionicons name="pencil-outline" size={18} color={theme.colors.textSecondary} />
           </TouchableOpacity>
-          <Ionicons 
-            name={activeTab === 'bookmarks' ? 'bookmark' : 'document-text'} 
-            size={20} 
-            color={theme.colors.primary} 
+          <Ionicons
+            name={activeTab === 'bookmarks' ? 'bookmark' : 'document-text'}
+            size={20}
+            color={theme.colors.primary}
           />
         </View>
       </View>
-      
+
       <View style={currentStyles.pointContainer}>
         <Text style={currentStyles.pointTitle}>{item.lessonPoint.title}</Text>
         {item.lessonPoint.explanation && (
@@ -386,22 +406,25 @@ const BookmarksNotesScreen: React.FC = () => {
         </View>
       )}
 
-      <Text style={currentStyles.dateText}>
-        {new Date(item.created_at).toLocaleDateString()}
-      </Text>
+      <Text style={currentStyles.dateText}>{new Date(item.created_at).toLocaleDateString()}</Text>
     </TouchableOpacity>
   );
 
   return (
     <View style={common.container}>
       <UnifiedHeader showBackButton title={t('more_screen.bookmarks_notes', 'Bookmarks & Notes')} />
-      
+
       <View style={currentStyles.tabContainer}>
         <TouchableOpacity
           style={[currentStyles.tab, activeTab === 'bookmarks' && currentStyles.activeTab]}
           onPress={() => setActiveTab('bookmarks')}
         >
-          <Text style={[currentStyles.tabText, activeTab === 'bookmarks' && currentStyles.activeTabText]}>
+          <Text
+            style={[
+              currentStyles.tabText,
+              activeTab === 'bookmarks' && currentStyles.activeTabText,
+            ]}
+          >
             {t('common.bookmarks', 'Bookmarks')}
           </Text>
         </TouchableOpacity>
@@ -409,7 +432,9 @@ const BookmarksNotesScreen: React.FC = () => {
           style={[currentStyles.tab, activeTab === 'notes' && currentStyles.activeTab]}
           onPress={() => setActiveTab('notes')}
         >
-          <Text style={[currentStyles.tabText, activeTab === 'notes' && currentStyles.activeTabText]}>
+          <Text
+            style={[currentStyles.tabText, activeTab === 'notes' && currentStyles.activeTabText]}
+          >
             {t('common.notes', 'Notes')}
           </Text>
         </TouchableOpacity>
@@ -437,7 +462,7 @@ const BookmarksNotesScreen: React.FC = () => {
                 />
               </View>
               <Text style={currentStyles.emptyTitle}>
-                {activeTab === 'bookmarks' 
+                {activeTab === 'bookmarks'
                   ? t('bookmarks.empty_title', 'No bookmarks yet')
                   : t('notes.empty_title', 'No notes yet')}
               </Text>
@@ -446,7 +471,7 @@ const BookmarksNotesScreen: React.FC = () => {
                   ? t('bookmarks.empty_subtitle', 'Bookmark key points to find them here later.')
                   : t('notes.empty_subtitle', 'Add notes to key points while studying.')}
               </Text>
-              
+
               <TouchableOpacity
                 style={currentStyles.studyButton}
                 onPress={() => navigation.navigate('MainTabs', { screen: 'Study' })}
@@ -454,11 +479,7 @@ const BookmarksNotesScreen: React.FC = () => {
                 <Text style={currentStyles.studyButtonText}>
                   {t('home_screen.my_subjects', 'Start Revising')}
                 </Text>
-                <Ionicons 
-                  name={isRTL ? 'arrow-back' : 'arrow-forward'} 
-                  size={18} 
-                  color="#fff" 
-                />
+                <Ionicons name={isRTL ? 'arrow-back' : 'arrow-forward'} size={18} color="#fff" />
               </TouchableOpacity>
             </View>
           }
@@ -483,17 +504,29 @@ const BookmarksNotesScreen: React.FC = () => {
         typography={typography}
       />
 
-      {localAlert && (
-        <ConfirmModal
-          visible={localAlert.visible}
-          title={localAlert.title}
-          message={localAlert.message}
-          confirmLabel={t('common.ok', 'OK')}
-          showCancel={false}
-          onConfirm={() => setLocalAlert(null)}
-          onCancel={() => setLocalAlert(null)}
-        />
-      )}
+      <ConfirmModal
+        visible={!!localAlert?.visible}
+        title={localAlert?.title || ''}
+        message={localAlert?.message || ''}
+        confirmLabel={t('common.ok', 'OK')}
+        showCancel={false}
+        onConfirm={() => {
+          if (localAlert) {
+            setLocalAlert((prev) => (prev ? { ...prev, visible: false } : null));
+            setTimeout(() => {
+              setLocalAlert(null);
+            }, 500);
+          }
+        }}
+        onCancel={() => {
+          if (localAlert) {
+            setLocalAlert((prev) => (prev ? { ...prev, visible: false } : null));
+            setTimeout(() => {
+              setLocalAlert(null);
+            }, 500);
+          }
+        }}
+      />
     </View>
   );
 };

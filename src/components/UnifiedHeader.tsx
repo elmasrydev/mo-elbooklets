@@ -107,8 +107,8 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
     currentStyles.container,
     {
       backgroundColor: theme.colors.headerBackground,
-      borderBottomColor: theme.colors.border,
-      borderBottomWidth: showBorder ? 1 : 0,
+      borderBottomColor: 'rgba(0, 74, 154, 0.06)',
+      borderBottomWidth: 1,
       height: totalHeight,
       paddingTop: headerTop,
       paddingHorizontal: sidePadding,

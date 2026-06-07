@@ -159,7 +159,13 @@ const ParentDashboardScreen: React.FC = () => {
 
             {!isStudentInitiated && (
               <View style={currentStyles.pendingBadge}>
-                <Text style={[typography('caption'), fontWeight('600'), { color: theme.colors.primary }]}>
+                <Text
+                  style={[
+                    typography('caption'),
+                    fontWeight('600'),
+                    { color: theme.colors.primary },
+                  ]}
+                >
                   {t('parent_dashboard.status_pending')}
                 </Text>
               </View>
@@ -174,7 +180,13 @@ const ParentDashboardScreen: React.FC = () => {
                   onPress={() => handleRespondToLink(req.id, 'DECLINED')}
                   disabled={isResponding}
                 >
-                  <Text style={[typography('caption'), fontWeight('600'), { color: theme.colors.error }]}>
+                  <Text
+                    style={[
+                      typography('caption'),
+                      fontWeight('600'),
+                      { color: theme.colors.error },
+                    ]}
+                  >
                     {t('common.decline')}
                   </Text>
                 </TouchableOpacity>
@@ -202,7 +214,13 @@ const ParentDashboardScreen: React.FC = () => {
                 {isResponding ? (
                   <ActivityIndicator color={theme.colors.error} size="small" />
                 ) : (
-                  <Text style={[typography('caption'), fontWeight('600'), { color: theme.colors.error }]}>
+                  <Text
+                    style={[
+                      typography('caption'),
+                      fontWeight('600'),
+                      { color: theme.colors.error },
+                    ]}
+                  >
                     {t('parent_dashboard.cancel_request')}
                   </Text>
                 )}
@@ -236,7 +254,7 @@ const ParentDashboardScreen: React.FC = () => {
               style={[currentStyles.settingsBtn, { marginStart: 12 }]}
               onPress={() => navigation.navigate('ParentSettings')}
             >
-              <Ionicons name="settings-outline" size={24} color="#FFFFFF" />
+              <Ionicons name="settings-outline" size={24} color={theme.colors.headerText} />
             </TouchableOpacity>
           </View>
         }
@@ -310,10 +328,7 @@ const ParentDashboardScreen: React.FC = () => {
         animationType="fade"
         onRequestClose={() => setIsAddModalVisible(false)}
       >
-        <View
-          style={currentStyles.modalOverlay}
-          onStartShouldSetResponder={() => true}
-        >
+        <View style={currentStyles.modalOverlay} onStartShouldSetResponder={() => true}>
           <View style={currentStyles.modalContent}>
             <Text style={currentStyles.modalTitle}>{t('parent_dashboard.add_child')}</Text>
             <Text style={currentStyles.modalSubtitle}>

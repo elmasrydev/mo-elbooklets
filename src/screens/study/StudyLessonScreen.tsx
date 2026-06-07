@@ -225,14 +225,25 @@ const NoteModal: React.FC<{
   isRTL: boolean;
   typography: any;
   onDelete?: () => void;
-}> = ({ visible, initialNote, title, onClose, onSave, theme, spacing, borderRadius, t, isRTL, typography, onDelete }) => {
+}> = ({
+  visible,
+  initialNote,
+  title,
+  onClose,
+  onSave,
+  theme,
+  spacing,
+  borderRadius,
+  t,
+  isRTL,
+  typography,
+  onDelete,
+}) => {
   const [note, setNote] = useState(initialNote);
 
   useEffect(() => {
     setNote(initialNote);
   }, [initialNote, visible]);
-
-  if (!visible) return null;
 
   return (
     <ConfirmModal
@@ -265,21 +276,28 @@ const NoteModal: React.FC<{
           autoFocus
         />
         {onDelete && initialNote && (
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={onDelete}
-            style={{ 
-              marginTop: spacing.md, 
-              flexDirection: 'row', 
-              alignItems: 'center', 
+            style={{
+              marginTop: spacing.md,
+              flexDirection: 'row',
+              alignItems: 'center',
               justifyContent: 'center',
               padding: spacing.sm,
               backgroundColor: theme.colors.error + '10',
               borderRadius: borderRadius.md,
-              marginBottom: 14
+              marginBottom: 14,
             }}
           >
-            <Ionicons name="trash-outline" size={18} color={theme.colors.error} style={{ marginRight: 8 }} />
-            <Text style={{ ...typography('caption'), color: theme.colors.error, fontWeight: '700' }}>
+            <Ionicons
+              name="trash-outline"
+              size={18}
+              color={theme.colors.error}
+              style={{ marginRight: 8 }}
+            />
+            <Text
+              style={{ ...typography('caption'), color: theme.colors.error, fontWeight: '700' }}
+            >
               {t('common.delete', 'Delete')}
             </Text>
           </TouchableOpacity>
@@ -329,7 +347,7 @@ const StudyLessonScreen: React.FC = () => {
   const interactionCacheRef = useRef<Map<string, 'LIKE' | 'DISLIKE' | null>>(
     new Map(allLessons.map((l) => [l.id, l.myInteraction ?? null])),
   );
-  
+
   const [savedPoints, setSavedPoints] = useState<Map<string, UserSavedPoint>>(new Map());
   const [noteModalVisible, setNoteModalVisible] = useState(false);
   const [selectedPointId, setSelectedPointId] = useState<string | null>(null);
@@ -407,7 +425,7 @@ const StudyLessonScreen: React.FC = () => {
   const inferredLanguage = useMemo(() => {
     if (subject?.language) return subject.language;
     // Fall back to detecting Arabic in currentLesson name or chapter name
-    const hasArabic = (text?: string) => text ? /[\u0600-\u06FF]/.test(text) : false;
+    const hasArabic = (text?: string) => (text ? /[\u0600-\u06FF]/.test(text) : false);
     if (hasArabic(currentLesson?.name) || hasArabic(currentLesson?.chapter?.name)) {
       return 'ar';
     }
@@ -554,14 +572,16 @@ const StudyLessonScreen: React.FC = () => {
 
       if (result.data?.mySavedPoints?.[0]?.lesson) {
         const fullLesson = result.data.mySavedPoints[0].lesson;
-        setCurrentLesson(prev => ({
+        setCurrentLesson((prev) => ({
           ...prev,
           ...fullLesson,
-          lessonPoints: fullLesson.lessonPoints || []
+          lessonPoints: fullLesson.lessonPoints || [],
         }));
 
         if (fullLesson.lessonPoints) {
-           setViewedPoints(new Set(fullLesson.lessonPoints.filter((p: any) => p.is_viewed).map((p: any) => p.id)));
+          setViewedPoints(
+            new Set(fullLesson.lessonPoints.filter((p: any) => p.is_viewed).map((p: any) => p.id)),
+          );
         }
       }
     } catch (err) {
@@ -626,8 +646,8 @@ const StudyLessonScreen: React.FC = () => {
       if (result.data?.toggleSavedPointBookmark?.success) {
         const sp = result.data.toggleSavedPointBookmark.savedPoint;
         const isBookmarked = sp?.is_bookmarked;
-        
-        setSavedPoints(prev => {
+
+        setSavedPoints((prev) => {
           const next = new Map(prev);
           if (sp) {
             next.set(pointId, sp);
@@ -641,7 +661,7 @@ const StudyLessonScreen: React.FC = () => {
         setLocalAlert({
           visible: true,
           title: t('common.success'),
-          message: isBookmarked 
+          message: isBookmarked
             ? t('study_lesson.bookmark_added', 'Bookmark added successfully')
             : t('study_lesson.bookmark_removed', 'Bookmark removed'),
         });
@@ -675,7 +695,7 @@ const StudyLessonScreen: React.FC = () => {
 
       if (result.data?.savePointNote?.success) {
         const sp = result.data.savePointNote.savedPoint;
-        setSavedPoints(prev => {
+        setSavedPoints((prev) => {
           const next = new Map(prev);
           if (sp) {
             next.set(pointId, sp);
@@ -719,7 +739,7 @@ const StudyLessonScreen: React.FC = () => {
 
       if (result.data?.deletePointNote?.success) {
         const sp = result.data.deletePointNote.savedPoint;
-        setSavedPoints(prev => {
+        setSavedPoints((prev) => {
           const next = new Map(prev);
           if (sp) {
             next.set(pointId, sp);
@@ -744,7 +764,7 @@ const StudyLessonScreen: React.FC = () => {
   React.useEffect(() => {
     fetchDodProgress(currentLesson.id);
     fetchLessonMetadata(currentLesson.id);
-    
+
     // If lesson points are missing, fetch them
     if (!currentLesson.lessonPoints || currentLesson.lessonPoints.length === 0) {
       fetchLessonDetails(currentLesson.id);
@@ -762,23 +782,23 @@ const StudyLessonScreen: React.FC = () => {
   useEffect(() => {
     if (route.params?.initialPointId && currentLesson.lessonPoints?.length) {
       const pointId = route.params.initialPointId;
-      
+
       // Ensure the point is expanded
-      setExpandedPoints(prev => new Set(prev).add(pointId));
+      setExpandedPoints((prev) => new Set(prev).add(pointId));
       setHighlightedPointId(pointId);
-      
+
       // Delay slightly to allow layout to be captured
       const timer = setTimeout(() => {
         const pointY = pointLayoutsRef.current.get(pointId);
         if (pointY !== undefined && scrollViewRef.current) {
           // Absolute Y = Section Y + Point Y - Header Offset (optional)
-          const absoluteY = pointsSectionLayoutY.current + pointY - 20; 
+          const absoluteY = pointsSectionLayoutY.current + pointY - 20;
           scrollViewRef.current.scrollTo({ y: absoluteY, animated: true });
         }
       }, 800);
 
       const highlightTimer = setTimeout(() => setHighlightedPointId(null), 4000);
-      
+
       return () => {
         clearTimeout(timer);
         clearTimeout(highlightTimer);
@@ -798,7 +818,9 @@ const StudyLessonScreen: React.FC = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setCurrentLesson(lesson);
     setExpandedPoints(new Set());
-    setViewedPoints(new Set(lesson.lessonPoints?.filter((p) => p.is_viewed).map((p) => p.id) || []));
+    setViewedPoints(
+      new Set(lesson.lessonPoints?.filter((p) => p.is_viewed).map((p) => p.id) || []),
+    );
 
     // Restore persisted interaction from cache instead of stale lesson object
     const cachedInteraction = interactionCacheRef.current.get(lesson.id) ?? null;
@@ -954,7 +976,7 @@ const StudyLessonScreen: React.FC = () => {
           )}
         </View>
 
-        <View 
+        <View
           style={currentStyles.section}
           onLayout={(e) => {
             pointsSectionLayoutY.current = e.nativeEvent.layout.y;
@@ -968,7 +990,11 @@ const StudyLessonScreen: React.FC = () => {
             </View>
             <Text style={currentStyles.sectionTitle}> {t('study_lesson.key_points')} </Text>
             {fetchingDetails && (
-               <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginLeft: 'auto' }} />
+              <ActivityIndicator
+                size="small"
+                color={theme.colors.primary}
+                style={{ marginLeft: 'auto' }}
+              />
             )}
           </View>
 
@@ -985,8 +1011,8 @@ const StudyLessonScreen: React.FC = () => {
                       highlightedPointId === point.id && {
                         borderColor: theme.colors.primary,
                         borderWidth: 2,
-                        backgroundColor: theme.colors.primary + '10'
-                      }
+                        backgroundColor: theme.colors.primary + '10',
+                      },
                     ]}
                     onPress={() => point.explanation && togglePoint(point.id)}
                     activeOpacity={point.explanation ? 0.7 : 1}
@@ -1005,27 +1031,43 @@ const StudyLessonScreen: React.FC = () => {
                       </View>
                       <Text style={currentStyles.pointText}>{point.title}</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                           onPress={() => handleToggleBookmark(point.id)}
                           style={{ padding: 4 }}
                         >
-                          <Ionicons 
-                            name={savedPoints.get(point.id)?.is_bookmarked ? 'bookmark' : 'bookmark-outline'} 
-                            size={20} 
-                            color={savedPoints.get(point.id)?.is_bookmarked ? theme.colors.primary : theme.colors.textTertiary} 
+                          <Ionicons
+                            name={
+                              savedPoints.get(point.id)?.is_bookmarked
+                                ? 'bookmark'
+                                : 'bookmark-outline'
+                            }
+                            size={20}
+                            color={
+                              savedPoints.get(point.id)?.is_bookmarked
+                                ? theme.colors.primary
+                                : theme.colors.textTertiary
+                            }
                           />
                         </TouchableOpacity>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                           onPress={() => {
                             setSelectedPointId(point.id);
                             setNoteModalVisible(true);
                           }}
                           style={{ padding: 4 }}
                         >
-                          <Ionicons 
-                            name={savedPoints.get(point.id)?.note_content ? 'document-text' : 'document-text-outline'} 
-                            size={20} 
-                            color={savedPoints.get(point.id)?.note_content ? theme.colors.primary : theme.colors.textTertiary} 
+                          <Ionicons
+                            name={
+                              savedPoints.get(point.id)?.note_content
+                                ? 'document-text'
+                                : 'document-text-outline'
+                            }
+                            size={20}
+                            color={
+                              savedPoints.get(point.id)?.note_content
+                                ? theme.colors.primary
+                                : theme.colors.textTertiary
+                            }
                           />
                         </TouchableOpacity>
                         {point.explanation && (
@@ -1039,10 +1081,10 @@ const StudyLessonScreen: React.FC = () => {
                     </View>
                     {savedPoints.get(point.id)?.note_content && (
                       <View style={currentStyles.notePreviewContainer}>
-                         <Ionicons name="pencil" size={12} color={theme.colors.primary} />
-                         <Text style={currentStyles.notePreviewText} numberOfLines={2}>
-                           {savedPoints.get(point.id)?.note_content}
-                         </Text>
+                        <Ionicons name="pencil" size={12} color={theme.colors.primary} />
+                        <Text style={currentStyles.notePreviewText} numberOfLines={2}>
+                          {savedPoints.get(point.id)?.note_content}
+                        </Text>
                       </View>
                     )}
                     {isExpanded && point.explanation && (
@@ -1237,17 +1279,29 @@ const StudyLessonScreen: React.FC = () => {
         typography={typography}
       />
 
-      {localAlert && (
-        <ConfirmModal
-          visible={localAlert.visible}
-          title={localAlert.title}
-          message={localAlert.message}
-          confirmLabel={t('common.ok', 'OK')}
-          showCancel={false}
-          onConfirm={() => setLocalAlert(null)}
-          onCancel={() => setLocalAlert(null)}
-        />
-      )}
+      <ConfirmModal
+        visible={!!localAlert?.visible}
+        title={localAlert?.title || ''}
+        message={localAlert?.message || ''}
+        confirmLabel={t('common.ok', 'OK')}
+        showCancel={false}
+        onConfirm={() => {
+          if (localAlert) {
+            setLocalAlert((prev) => (prev ? { ...prev, visible: false } : null));
+            setTimeout(() => {
+              setLocalAlert(null);
+            }, 500);
+          }
+        }}
+        onCancel={() => {
+          if (localAlert) {
+            setLocalAlert((prev) => (prev ? { ...prev, visible: false } : null));
+            setTimeout(() => {
+              setLocalAlert(null);
+            }, 500);
+          }
+        }}
+      />
     </View>
   );
 };
@@ -1282,13 +1336,15 @@ const styles = (
       flexDirection: 'row',
       alignItems: 'center',
       alignSelf: 'flex-start',
-      backgroundColor: theme.mode === 'dark' ? theme.colors.primary + '33' : theme.colors.primary + '1A',
+      backgroundColor:
+        theme.mode === 'dark' ? theme.colors.primary + '33' : theme.colors.primary + '1A',
       paddingHorizontal: spacing.md,
       paddingVertical: 6,
       borderRadius: borderRadius.full,
       marginBottom: spacing.sm,
       borderWidth: 1,
-      borderColor: theme.mode === 'dark' ? theme.colors.primary + '4D' : theme.colors.primary + '33',
+      borderColor:
+        theme.mode === 'dark' ? theme.colors.primary + '4D' : theme.colors.primary + '33',
       maxWidth: '100%',
     },
     breadcrumbIcon: {

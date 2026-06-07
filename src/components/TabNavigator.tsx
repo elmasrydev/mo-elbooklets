@@ -22,6 +22,7 @@ import QuizResultsScreen from '../screens/quiz/QuizResultsScreen';
 import QuizSubjectsScreen from '../screens/quiz/QuizSubjectsScreen';
 import QuizLessonsScreen from '../screens/quiz/QuizLessonsScreen';
 import QuizSettingsScreen from '../screens/quiz/QuizSettingsScreen';
+import QuizGeneratingScreen from '../screens/quiz/QuizGeneratingScreen';
 import { useTranslation } from 'react-i18next';
 import FAQScreen from '../screens/FAQScreen';
 import ContactUsScreen from '../screens/ContactUsScreen';
@@ -194,12 +195,19 @@ const TabNavigator: React.FC = () => {
       />
       <Stack.Screen name="QuizTaking" component={QuizTakingScreen} options={{}} />
       <Stack.Screen name="QuizResults" component={QuizResultsScreen as any} options={{}} />
-      <Stack.Screen name="QuizReview" component={QuizReviewScreen} options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+      <Stack.Screen
+        name="QuizReview"
+        component={QuizReviewScreen}
+        options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+      />
       <Stack.Screen name="FAQs" component={FAQScreen} />
       <Stack.Screen name="ContactUs" component={ContactUsScreen} />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       <Stack.Screen name="ParentLinking" component={ParentLinkingScreen} />
-      <Stack.Screen name="Notifications" component={require('../screens/NotificationsScreen').default} />
+      <Stack.Screen
+        name="Notifications"
+        component={require('../screens/NotificationsScreen').default}
+      />
       <Stack.Screen name="FollowList" component={FollowListScreen} />
       <Stack.Screen name="Badges" component={BadgesScreen} />
       <Stack.Screen name="BookmarksNotes" component={BookmarksNotesScreen} />
@@ -207,6 +215,7 @@ const TabNavigator: React.FC = () => {
         <Stack.Screen name="QuizFlowSubjects" component={QuizSubjectsScreen} />
         <Stack.Screen name="QuizFlowLessons" component={QuizLessonsScreen} />
         <Stack.Screen name="QuizFlowSettings" component={QuizSettingsScreen} />
+        <Stack.Screen name="QuizGenerating" component={QuizGeneratingScreen} />
       </Stack.Group>
     </Stack.Navigator>
   );

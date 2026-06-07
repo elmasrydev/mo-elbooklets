@@ -52,32 +52,44 @@ const SearchablePickerModal: React.FC<SearchablePickerModalProps> = ({
   const { typography, fontWeight } = useTypography();
 
   return (
-    <Modal
-      visible={visible}
-      transparent={true}
-      animationType="slide"
-      onRequestClose={onClose}
-    >
-      <TouchableOpacity 
-        style={styles.modalOverlay} 
-        activeOpacity={1} 
-        onPress={onClose}
-      >
+    <Modal visible={visible} transparent={true} animationType="slide" onRequestClose={onClose}>
+      <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={onClose}>
         <View style={[styles.bottomModal, { backgroundColor: theme.colors.card, height: '75%' }]}>
           <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
-            <Text style={[styles.modalTitle, typography('h3'), fontWeight('700'), { color: theme.colors.text }]}>
+            <Text
+              style={[
+                styles.modalTitle,
+                typography('h3'),
+                fontWeight('700'),
+                { color: theme.colors.text },
+              ]}
+            >
               {title}
             </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color={theme.colors.text} />
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.searchContainer}>
-            <View style={[styles.inputWrapper, { backgroundColor: theme.colors.background, borderColor: theme.colors.border }]}>
-              <Ionicons name="search" size={20} color={theme.colors.textTertiary} style={styles.inputIconLeft} />
+            <View
+              style={[
+                styles.inputWrapper,
+                { backgroundColor: theme.colors.background, borderColor: theme.colors.border },
+              ]}
+            >
+              <Ionicons
+                name="search"
+                size={20}
+                color={theme.colors.textTertiary}
+                style={styles.inputIconLeft}
+              />
               <TextInput
-                style={[styles.input, typography('body'), { color: theme.colors.text, textAlign: 'left' }]}
+                style={[
+                  styles.input,
+                  typography('body'),
+                  { color: theme.colors.text, textAlign: 'left' },
+                ]}
                 placeholder={placeholder}
                 placeholderTextColor={theme.colors.textTertiary}
                 value={searchValue}
@@ -101,19 +113,26 @@ const SearchablePickerModal: React.FC<SearchablePickerModalProps> = ({
             ListHeaderComponent={
               <>
                 {loading && (
-                  <ActivityIndicator 
-                    size="large" 
-                    color={theme.colors.primary} 
-                    style={styles.loader} 
+                  <ActivityIndicator
+                    size="large"
+                    color={theme.colors.primary}
+                    style={styles.loader}
                   />
                 )}
-                
+
                 {!loading && data.length === 0 && (
                   <View style={styles.emptyContainer}>
-                    <Text style={[styles.emptyText, typography('body'), { color: theme.colors.textTertiary }]}>
-                      {searchValue.length > 0 
-                        ? (emptyMessage || t('common.no_results')) 
-                        : (searchHelperText || t('profile.start_typing_to_search', 'Start typing to search...'))}
+                    <Text
+                      style={[
+                        styles.emptyText,
+                        typography('body'),
+                        { color: theme.colors.textTertiary },
+                      ]}
+                    >
+                      {searchValue.length > 0
+                        ? emptyMessage || t('common.no_results')
+                        : searchHelperText ||
+                          t('profile.start_typing_to_search', 'Start typing to search...')}
                     </Text>
                   </View>
                 )}
@@ -124,18 +143,25 @@ const SearchablePickerModal: React.FC<SearchablePickerModalProps> = ({
                 style={[
                   styles.pickerItem,
                   { borderBottomColor: theme.colors.border },
-                  String(selectedId) === String(item.id) && { backgroundColor: theme.colors.primary + '15' }
+                  String(selectedId) === String(item.id) && {
+                    backgroundColor: theme.colors.primary + '15',
+                  },
                 ]}
                 onPress={() => onSelect(item)}
               >
-                <Text style={[
-                  styles.pickerItemText,
-                  typography('body'),
-                  { 
-                    color: String(selectedId) === String(item.id) ? theme.colors.primary : theme.colors.text,
-                    textAlign: 'left'
-                  }
-                ]}>
+                <Text
+                  style={[
+                    styles.pickerItemText,
+                    typography('body'),
+                    {
+                      color:
+                        String(selectedId) === String(item.id)
+                          ? theme.colors.primary
+                          : theme.colors.text,
+                      textAlign: 'left',
+                    },
+                  ]}
+                >
                   {item.name}
                 </Text>
                 {String(selectedId) === String(item.id) && (

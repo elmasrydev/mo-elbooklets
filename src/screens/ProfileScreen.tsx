@@ -36,7 +36,11 @@ import {
 } from '../generated/graphql';
 import { isDebugMode } from '../config/debug';
 import crashlytics from '@react-native-firebase/crashlytics';
-import { checkNotificationPermission, requestNotificationPermission, openSettings } from '../services/notificationService';
+import {
+  checkNotificationPermission,
+  requestNotificationPermission,
+  openSettings,
+} from '../services/notificationService';
 import { useNotificationPreferences } from '../hooks/useNotificationPreferences';
 import { logError } from '../utils/logger';
 
@@ -56,22 +60,19 @@ const ProfileScreen: React.FC = () => {
   const { typography, fontWeight } = useTypography();
   const { t } = useTranslation();
 
-
   const [pushEnabled, setPushEnabled] = useState(false);
-  const { 
-    preferences, 
-    toggleAppNotifications, 
+  const {
+    preferences,
+    toggleAppNotifications,
     toggleSocialNotifications,
     loading: prefsLoading,
-    updating
+    updating,
   } = useNotificationPreferences('student');
-
-
 
   useFocusEffect(
     React.useCallback(() => {
       checkNotificationPermission().then(setPushEnabled);
-    }, [])
+    }, []),
   );
 
   // Re-check permission when returning from OS Settings
@@ -97,17 +98,17 @@ const ProfileScreen: React.FC = () => {
           message: t('profile_screen.notifications_settings_msg'),
           confirmLabel: t('common.settings') || 'Settings',
           cancelLabel: t('common.cancel'),
-          onConfirm: openSettings
+          onConfirm: openSettings,
         });
       }
     } else {
       showConfirm({
-          title: t('profile_screen.notifications'),
-          message: t('profile_screen.notifications_disable_msg'),
-          confirmLabel: t('common.settings') || 'Settings',
-          cancelLabel: t('common.cancel'),
-          onConfirm: openSettings
-        });
+        title: t('profile_screen.notifications'),
+        message: t('profile_screen.notifications_disable_msg'),
+        confirmLabel: t('common.settings') || 'Settings',
+        cancelLabel: t('common.cancel'),
+        onConfirm: openSettings,
+      });
     }
   };
 
@@ -144,7 +145,7 @@ const ProfileScreen: React.FC = () => {
   useFocusEffect(
     useCallback(() => {
       fetchFollowStats();
-    }, [fetchFollowStats])
+    }, [fetchFollowStats]),
   );
   const { completeness } = useProfileCompleteness();
   const [showPrompt, setShowPrompt] = useState(false);
@@ -174,7 +175,10 @@ const ProfileScreen: React.FC = () => {
           if (result.data?.deleteAccount?.success) {
             logout();
           } else {
-            console.error('Delete account server returned false', result.data?.deleteAccount?.message);
+            console.error(
+              'Delete account server returned false',
+              result.data?.deleteAccount?.message,
+            );
           }
         } catch (error) {
           console.error('Error deleting account:', error);
@@ -211,10 +215,7 @@ const ProfileScreen: React.FC = () => {
 
   return (
     <View style={currentStyles.mainContainer}>
-      <UnifiedHeader
-        title={t('profile_screen.header_title')}
-        style={currentStyles.headerOverride}
-      />
+      <UnifiedHeader title={t('profile_screen.header_title')} />
 
       <ScrollView
         style={currentStyles.scrollView}
@@ -226,7 +227,7 @@ const ProfileScreen: React.FC = () => {
       >
         {/* Profile Section */}
         <View style={currentStyles.profileSection}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={currentStyles.avatarRingWrapper}
             activeOpacity={0.8}
             onPress={() => setShowPrompt(true)}
@@ -267,16 +268,37 @@ const ProfileScreen: React.FC = () => {
             {!user?.mobile_verified_at ? (
               <View style={currentStyles.verifyBanner}>
                 <View style={{ width: 16 }} />
-                <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
-                  <Ionicons name="logo-whatsapp" size={18} color="#25D366" style={{ marginEnd: spacing.xs }} />
-                  <Text style={[typography('caption'), currentStyles.verifyText, { flex: 0 }]}>{t('otp.verify_mobile', 'Verify your mobile via WhatsApp')}</Text>
+                <View
+                  style={{
+                    flex: 1,
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Ionicons
+                    name="logo-whatsapp"
+                    size={18}
+                    color="#25D366"
+                    style={{ marginEnd: spacing.xs }}
+                  />
+                  <Text style={[typography('caption'), currentStyles.verifyText, { flex: 0 }]}>
+                    {t('otp.verify_mobile', 'Verify your mobile via WhatsApp')}
+                  </Text>
                 </View>
                 <View style={{ width: 16 }} />
               </View>
             ) : (
               <View style={currentStyles.verifiedBadge}>
-                <Ionicons name="checkmark-circle" size={16} color={theme.colors.success} style={{ marginEnd: spacing.xs }} />
-                <Text style={[typography('caption'), currentStyles.verifiedText]}>{t('otp.mobile_verified', 'Mobile verified')}</Text>
+                <Ionicons
+                  name="checkmark-circle"
+                  size={16}
+                  color={theme.colors.success}
+                  style={{ marginEnd: spacing.xs }}
+                />
+                <Text style={[typography('caption'), currentStyles.verifiedText]}>
+                  {t('otp.mobile_verified', 'Mobile verified')}
+                </Text>
               </View>
             )}
           </View>
@@ -304,7 +326,7 @@ const ProfileScreen: React.FC = () => {
         {/* Menu Section */}
         <View style={currentStyles.menuSection}>
           {/* Menu Items "TODO: we need to release and show it in next release"*/}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={currentStyles.settingItem}
             onPress={() => navigation.navigate('EditProfile')}
           >
@@ -419,7 +441,7 @@ const ProfileScreen: React.FC = () => {
           </TouchableOpacity>
 
           {/* Badges */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={currentStyles.settingItem}
             onPress={() => navigation.navigate('Badges')}
           >
@@ -438,9 +460,9 @@ const ProfileScreen: React.FC = () => {
               color={theme.colors.textTertiary}
             />
           </TouchableOpacity>
-          
+
           {/* Bookmarks & Notes */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={currentStyles.settingItem}
             onPress={() => navigation.navigate('BookmarksNotes')}
           >
@@ -502,7 +524,9 @@ const ProfileScreen: React.FC = () => {
                 <Ionicons name="settings-outline" size={22} color={theme.colors.warning} />
               </View>
               <View style={currentStyles.settingContent}>
-                <Text style={currentStyles.settingTitle}>{t('profile_screen.internal_settings')}</Text>
+                <Text style={currentStyles.settingTitle}>
+                  {t('profile_screen.internal_settings')}
+                </Text>
               </View>
               <Ionicons
                 name={isRTL ? 'chevron-back' : 'chevron-forward'}
@@ -521,12 +545,19 @@ const ProfileScreen: React.FC = () => {
 
           {/* 1. Main Push Notifications Toggle (OS Level) */}
           <View style={currentStyles.settingItem}>
-            <View style={[currentStyles.settingIconBox, { backgroundColor: theme.colors.primary + '20' }]}>
+            <View
+              style={[
+                currentStyles.settingIconBox,
+                { backgroundColor: theme.colors.primary + '20' },
+              ]}
+            >
               <Ionicons name="notifications-outline" size={22} color={theme.colors.primary} />
             </View>
             <View style={currentStyles.settingContent}>
               <Text style={currentStyles.settingTitle}>{t('profile_screen.notifications')}</Text>
-              <Text style={currentStyles.settingSubtitle}>{t('profile_screen.notifications_desc')}</Text>
+              <Text style={currentStyles.settingSubtitle}>
+                {t('profile_screen.notifications_desc')}
+              </Text>
             </View>
             <Switch
               value={pushEnabled}
@@ -539,12 +570,21 @@ const ProfileScreen: React.FC = () => {
 
           {/* 2. App Notifications Toggle (API Level) */}
           <View style={[currentStyles.settingItem, !pushEnabled && { opacity: 0.5 }]}>
-            <View style={[currentStyles.settingIconBox, { backgroundColor: theme.colors.secondary + '20' }]}>
+            <View
+              style={[
+                currentStyles.settingIconBox,
+                { backgroundColor: theme.colors.secondary + '20' },
+              ]}
+            >
               <Ionicons name="apps-outline" size={22} color={theme.colors.secondary} />
             </View>
             <View style={currentStyles.settingContent}>
-              <Text style={currentStyles.settingTitle}>{t('profile_screen.app_notifications')}</Text>
-              <Text style={currentStyles.settingSubtitle}>{t('profile_screen.app_notifications_desc')}</Text>
+              <Text style={currentStyles.settingTitle}>
+                {t('profile_screen.app_notifications')}
+              </Text>
+              <Text style={currentStyles.settingSubtitle}>
+                {t('profile_screen.app_notifications_desc')}
+              </Text>
             </View>
             {updating === 'app_notifications_enabled' || (prefsLoading && !pushEnabled) ? (
               <View style={currentStyles.loaderContainer}>
@@ -556,7 +596,13 @@ const ProfileScreen: React.FC = () => {
                 onValueChange={toggleAppNotifications}
                 disabled={!pushEnabled}
                 trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
-                thumbColor={Platform.OS === 'ios' ? '#ffffff' : preferences.app_notifications_enabled ? '#ffffff' : '#f4f3f4'}
+                thumbColor={
+                  Platform.OS === 'ios'
+                    ? '#ffffff'
+                    : preferences.app_notifications_enabled
+                      ? '#ffffff'
+                      : '#f4f3f4'
+                }
                 ios_backgroundColor={theme.colors.border}
               />
             )}
@@ -564,12 +610,18 @@ const ProfileScreen: React.FC = () => {
 
           {/* 3. Social Notifications Toggle (API Level) */}
           <View style={[currentStyles.settingItem, !pushEnabled && { opacity: 0.5 }]}>
-            <View style={[currentStyles.settingIconBox, { backgroundColor: theme.colors.info + '20' }]}>
+            <View
+              style={[currentStyles.settingIconBox, { backgroundColor: theme.colors.info + '20' }]}
+            >
               <Ionicons name="chatbubbles-outline" size={22} color={theme.colors.info} />
             </View>
             <View style={currentStyles.settingContent}>
-              <Text style={currentStyles.settingTitle}>{t('profile_screen.social_notifications')}</Text>
-              <Text style={currentStyles.settingSubtitle}>{t('profile_screen.social_notifications_desc')}</Text>
+              <Text style={currentStyles.settingTitle}>
+                {t('profile_screen.social_notifications')}
+              </Text>
+              <Text style={currentStyles.settingSubtitle}>
+                {t('profile_screen.social_notifications_desc')}
+              </Text>
             </View>
             {updating === 'social_notifications_enabled' || (prefsLoading && !pushEnabled) ? (
               <View style={currentStyles.loaderContainer}>
@@ -581,7 +633,13 @@ const ProfileScreen: React.FC = () => {
                 onValueChange={toggleSocialNotifications}
                 disabled={!pushEnabled}
                 trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
-                thumbColor={Platform.OS === 'ios' ? '#ffffff' : preferences.social_notifications_enabled ? '#ffffff' : '#f4f3f4'}
+                thumbColor={
+                  Platform.OS === 'ios'
+                    ? '#ffffff'
+                    : preferences.social_notifications_enabled
+                      ? '#ffffff'
+                      : '#f4f3f4'
+                }
                 ios_backgroundColor={theme.colors.border}
               />
             )}
@@ -671,10 +729,7 @@ const styles = (
       flex: 1,
       backgroundColor: theme.colors.background,
     },
-    headerOverride: {
-      backgroundColor: '#1E40AF', // Enforce specific blue from HTML design
-      borderBottomWidth: 0,
-    },
+
     scrollView: {
       flex: 1,
     },

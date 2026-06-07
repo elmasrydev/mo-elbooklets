@@ -67,12 +67,12 @@ interface ProfileCompletionPromptProps {
 
 let hasShownAutoInSession = false;
 
-const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({ 
-  context, 
-  isVisible, 
+const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
+  context,
+  isVisible,
   onClose,
   autoShow = false,
-  oneTimeAutoShow = false
+  oneTimeAutoShow = false,
 }) => {
   const { theme, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
@@ -128,7 +128,7 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
   const [fetchingGov, setFetchingGov] = useState(false);
   const [fetchingCities, setFetchingCities] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  
+
   const [showGovModal, setShowGovModal] = useState(false);
   const [showCityModal, setShowCityModal] = useState(false);
   const [showSchoolModal, setShowSchoolModal] = useState(false);
@@ -152,7 +152,7 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
     if (user?.id) {
       const shouldTriggerOneTime = oneTimeAutoShow && !hasShownAutoInSession;
       const shouldTriggerAuto = autoShow && isFocused;
-      
+
       if (shouldTriggerOneTime || shouldTriggerAuto || isVisible) {
         // Sync local state with user object if available
         const gId = (user as any)?.governorate_id || user?.governorate?.id;
@@ -160,12 +160,15 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
         if (gId) setGovernorateId(String(gId));
         if (cId) setCityId(String(cId));
 
-        const timer = setTimeout(() => {
-          checkCompleteness();
-          if (shouldTriggerOneTime) {
-            hasShownAutoInSession = true;
-          }
-        }, 150);
+        const timer = setTimeout(
+          () => {
+            checkCompleteness();
+            if (shouldTriggerOneTime) {
+              hasShownAutoInSession = true;
+            }
+          },
+          shouldTriggerOneTime ? 5000 : 150,
+        );
         return () => clearTimeout(timer);
       }
     }
@@ -174,10 +177,10 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
   const checkCompleteness = async () => {
     // If we're not focused AND it's not a manual visibility trigger AND it's not a one-time global trigger, exit
     if (!isFocused && isVisible === undefined && !oneTimeAutoShow) return;
-    
+
     // If we ARE focused but auto-show is disabled AND it's not a manual/one-time trigger, exit
     if (isFocused && !autoShow && isVisible === undefined && !oneTimeAutoShow) return;
-    
+
     try {
       const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
@@ -190,20 +193,20 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
           } 
         }`,
         undefined,
-        token
+        token,
       );
 
       if (result.data?.profileCompleteness) {
         const data = result.data.profileCompleteness;
         setCompleteness(data);
-        
+
         if (!data.isComplete) {
           const nextField = determineNextField(data);
-          
+
           if (nextField) {
             setCurrentField(nextField);
             if (isVisible === undefined || isVisible) {
-               setVisible(true);
+              setVisible(true);
             }
           } else {
             setVisible(false);
@@ -226,7 +229,7 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
       const result = await tryFetchWithFallback(
         `query GetEduSystems { educationalSystems { id name } }`,
         undefined,
-        token || undefined
+        token || undefined,
       );
       if (result.data?.educationalSystems) {
         setEduSystems(result.data.educationalSystems);
@@ -246,7 +249,7 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
       if (result.data?.governorates) {
         const mapped = result.data.governorates.map((g: any) => ({
           ...g,
-          name: isRTL ? (g.name_ar || g.name_en) : (g.name_en || g.name_ar)
+          name: isRTL ? g.name_ar || g.name_en : g.name_en || g.name_ar,
         }));
         setGovernorates(mapped);
       }
@@ -281,7 +284,7 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
       if (result.data?.searchCities) {
         const mapped = result.data.searchCities.map((c: any) => ({
           ...c,
-          name: isRTL ? (c.name_ar || c.name_en) : (c.name_en || c.name_ar)
+          name: isRTL ? c.name_ar || c.name_en : c.name_en || c.name_ar,
         }));
         setCities(mapped);
       }
@@ -340,9 +343,18 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
     if (data.needsParentMobile) return 'parent_mobile';
 
     if (data.missingFields) {
-      if (data.missingFields.includes('educational_system_id') || data.missingFields.includes('educational_system')) return 'educational_system_id';
-      if (data.missingFields.includes('governorate_id') || data.missingFields.includes('governorate')) return 'governorate_id';
-      if (data.missingFields.includes('city_id') || data.missingFields.includes('city')) return 'city_id';
+      if (
+        data.missingFields.includes('educational_system_id') ||
+        data.missingFields.includes('educational_system')
+      )
+        return 'educational_system_id';
+      if (
+        data.missingFields.includes('governorate_id') ||
+        data.missingFields.includes('governorate')
+      )
+        return 'governorate_id';
+      if (data.missingFields.includes('city_id') || data.missingFields.includes('city'))
+        return 'city_id';
     }
 
     return null;
@@ -363,13 +375,13 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
           searchSchools(search: $search) { id name name_en } 
         }`,
         { search },
-        token || undefined
+        token || undefined,
       );
 
       if (result.data?.searchSchools) {
         const mapped = result.data.searchSchools.map((s: any) => ({
           ...s,
-          name: isRTL ? (s.name || s.name_en) : (s.name_en || s.name)
+          name: isRTL ? s.name || s.name_en : s.name_en || s.name,
         }));
         setSchoolSuggestions(mapped);
       }
@@ -405,7 +417,7 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
           updateProfile(input: $input) { id name } 
         }`,
         { input: { [currentField]: value } },
-        token
+        token,
       );
 
       if (result.data?.updateProfile) {
@@ -442,19 +454,22 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
   };
 
   return (
-    <Modal 
-      visible={visible} 
-      transparent 
+    <Modal
+      visible={visible}
+      transparent
       animationType="slide"
       statusBarTranslucent
       onRequestClose={skipField}
     >
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.overlay}
       >
         <View
-          style={[styles.card, { backgroundColor: theme.colors.card, borderRadius: borderRadius.xl }]}
+          style={[
+            styles.card,
+            { backgroundColor: theme.colors.card, borderRadius: borderRadius.xl },
+          ]}
           onStartShouldSetResponder={() => true}
         >
           <View style={styles.header}>
@@ -464,28 +479,54 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
             <Text style={[styles.title, typography('h3', 'bold'), { color: theme.colors.text }]}>
               {t('profile.complete_your_profile', 'Complete Your Profile')}
             </Text>
-            <Text style={[styles.subtitle, typography('caption'), { color: theme.colors.textSecondary }]}>
+            <Text
+              style={[
+                styles.subtitle,
+                typography('caption'),
+                { color: theme.colors.textSecondary },
+              ]}
+            >
               {t('profile.completeness_incentive', 'Help us personalize your learning experience')}
             </Text>
           </View>
 
           <View style={styles.progressContainer}>
-             <View style={[styles.progressBar, { backgroundColor: theme.colors.border }]}>
-                <View style={[styles.progressFill, { width: `${completeness?.percentage || 0}%`, backgroundColor: theme.colors.primary }]} />
-             </View>
-             <Text style={[styles.progressText, typography('caption'), { color: theme.colors.textSecondary }]}>
-                {Math.round(completeness?.percentage || 0)}%
-             </Text>
+            <View style={[styles.progressBar, { backgroundColor: theme.colors.border }]}>
+              <View
+                style={[
+                  styles.progressFill,
+                  {
+                    width: `${completeness?.percentage || 0}%`,
+                    backgroundColor: theme.colors.primary,
+                  },
+                ]}
+              />
+            </View>
+            <Text
+              style={[
+                styles.progressText,
+                typography('caption'),
+                { color: theme.colors.textSecondary },
+              ]}
+            >
+              {Math.round(completeness?.percentage || 0)}%
+            </Text>
           </View>
 
           <View style={styles.content}>
             {!currentField && (
-               <ActivityIndicator color={theme.colors.primary} style={{ marginVertical: 40 }} />
+              <ActivityIndicator color={theme.colors.primary} style={{ marginVertical: 40 }} />
             )}
 
             {currentField === 'gender' && (
               <View>
-                <Text style={[styles.fieldLabel, typography('body', '600'), { color: theme.colors.text }]}>
+                <Text
+                  style={[
+                    styles.fieldLabel,
+                    typography('body', '600'),
+                    { color: theme.colors.text },
+                  ]}
+                >
                   {t('profile.select_gender', 'Select Gender')}
                 </Text>
                 <View style={styles.genderRow}>
@@ -493,12 +534,27 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
                     style={[
                       styles.genderItem,
                       { borderColor: theme.colors.border },
-                      gender === 'male' && { borderColor: theme.colors.primary, backgroundColor: theme.colors.primary + '0A' }
+                      gender === 'male' && {
+                        borderColor: theme.colors.primary,
+                        backgroundColor: theme.colors.primary + '0A',
+                      },
                     ]}
                     onPress={() => setGender('male')}
                   >
-                    <Ionicons name="man-outline" size={40} color={gender === 'male' ? theme.colors.primary : theme.colors.textTertiary} />
-                    <Text style={[styles.genderText, gender === 'male' ? typography('body', 'bold') : typography('body'), gender === 'male' ? { color: theme.colors.primary } : { color: theme.colors.text }]}>
+                    <Ionicons
+                      name="man-outline"
+                      size={40}
+                      color={gender === 'male' ? theme.colors.primary : theme.colors.textTertiary}
+                    />
+                    <Text
+                      style={[
+                        styles.genderText,
+                        gender === 'male' ? typography('body', 'bold') : typography('body'),
+                        gender === 'male'
+                          ? { color: theme.colors.primary }
+                          : { color: theme.colors.text },
+                      ]}
+                    >
                       {t('profile.male', 'Male')}
                     </Text>
                   </TouchableOpacity>
@@ -506,12 +562,27 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
                     style={[
                       styles.genderItem,
                       { borderColor: theme.colors.border },
-                      gender === 'female' && { borderColor: theme.colors.primary, backgroundColor: theme.colors.primary + '0A' }
+                      gender === 'female' && {
+                        borderColor: theme.colors.primary,
+                        backgroundColor: theme.colors.primary + '0A',
+                      },
                     ]}
                     onPress={() => setGender('female')}
                   >
-                    <Ionicons name="woman-outline" size={40} color={gender === 'female' ? theme.colors.primary : theme.colors.textTertiary} />
-                    <Text style={[styles.genderText, gender === 'female' ? typography('body', 'bold') : typography('body'), gender === 'female' ? { color: theme.colors.primary } : { color: theme.colors.text }]}>
+                    <Ionicons
+                      name="woman-outline"
+                      size={40}
+                      color={gender === 'female' ? theme.colors.primary : theme.colors.textTertiary}
+                    />
+                    <Text
+                      style={[
+                        styles.genderText,
+                        gender === 'female' ? typography('body', 'bold') : typography('body'),
+                        gender === 'female'
+                          ? { color: theme.colors.primary }
+                          : { color: theme.colors.text },
+                      ]}
+                    >
                       {t('profile.female', 'Female')}
                     </Text>
                   </TouchableOpacity>
@@ -520,225 +591,339 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
             )}
 
             {currentField === 'email' && (
-               <View>
-                 <Text style={[styles.fieldLabel, typography('body', '600'), { color: theme.colors.text }]}>
-                   {t('profile.enter_email', 'Enter Email Address')}
-                 </Text>
-                 <View style={[styles.inputContainer, { borderColor: theme.colors.border }]}>
-                   <Ionicons name="mail-outline" size={20} color={theme.colors.textTertiary} />
-                   <TextInput
-                      style={[styles.input, typography('body'), { color: theme.colors.text, textAlign: 'left' }]}
-                      value={email}
-                      onChangeText={setEmail}
-                      placeholder="example@email.com"
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                   />
-                 </View>
-               </View>
+              <View>
+                <Text
+                  style={[
+                    styles.fieldLabel,
+                    typography('body', '600'),
+                    { color: theme.colors.text },
+                  ]}
+                >
+                  {t('profile.enter_email', 'Enter Email Address')}
+                </Text>
+                <View style={[styles.inputContainer, { borderColor: theme.colors.border }]}>
+                  <Ionicons name="mail-outline" size={20} color={theme.colors.textTertiary} />
+                  <TextInput
+                    style={[
+                      styles.input,
+                      typography('body'),
+                      { color: theme.colors.text, textAlign: 'left' },
+                    ]}
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="example@email.com"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                </View>
+              </View>
             )}
 
             {currentField === 'school_name' && (
-               <View>
-                 <Text style={[styles.fieldLabel, typography('body', '600'), { color: theme.colors.text }]}>
-                   {t('profile.enter_school', 'Enter School Name')}
-                 </Text>
-                 <TouchableOpacity
-                    style={[styles.inputContainer, { borderColor: theme.colors.border }]}
-                    onPress={() => setShowSchoolModal(true)}
-                 >
-                   <Ionicons name="business-outline" size={20} color={theme.colors.textTertiary} />
-                   <Text style={[styles.input, typography('body'), { 
-                     color: schoolName ? theme.colors.text : theme.colors.textTertiary,
-                     textAlign: 'left',
-                     paddingTop: Platform.OS === 'ios' ? 0 : 12
-                   }]}>
-                     {schoolName || t('profile.school_placeholder', 'Your school name')}
-                   </Text>
-                   {loadingSchools && <ActivityIndicator size="small" color={theme.colors.primary} />}
-                   <Ionicons name="chevron-down" size={20} color={theme.colors.textTertiary} />
-                 </TouchableOpacity>
+              <View>
+                <Text
+                  style={[
+                    styles.fieldLabel,
+                    typography('body', '600'),
+                    { color: theme.colors.text },
+                  ]}
+                >
+                  {t('profile.enter_school', 'Enter School Name')}
+                </Text>
+                <TouchableOpacity
+                  style={[styles.inputContainer, { borderColor: theme.colors.border }]}
+                  onPress={() => setShowSchoolModal(true)}
+                >
+                  <Ionicons name="business-outline" size={20} color={theme.colors.textTertiary} />
+                  <Text
+                    style={[
+                      styles.input,
+                      typography('body'),
+                      {
+                        color: schoolName ? theme.colors.text : theme.colors.textTertiary,
+                        textAlign: 'left',
+                        paddingTop: Platform.OS === 'ios' ? 0 : 12,
+                      },
+                    ]}
+                  >
+                    {schoolName || t('profile.school_placeholder', 'Your school name')}
+                  </Text>
+                  {loadingSchools && (
+                    <ActivityIndicator size="small" color={theme.colors.primary} />
+                  )}
+                  <Ionicons name="chevron-down" size={20} color={theme.colors.textTertiary} />
+                </TouchableOpacity>
 
-                 <SearchablePickerModal
-                   visible={showSchoolModal}
-                   onClose={() => {
-                     setShowSchoolModal(false);
-                     setSchoolSearch('');
-                   }}
-                   title={t('profile.school_name')}
-                   placeholder={t('profile.school_placeholder')}
-                   searchValue={schoolSearch}
-                   onSearchChange={setSchoolSearch}
-                   selectedId={schoolName}
-                   data={schoolSuggestions}
-                   loading={loadingSchools}
-                   onSelect={(school) => {
-                     setSchoolName(school.name);
-                     setShowSchoolModal(false);
-                     setSchoolSearch('');
-                   }}
-                 />
-               </View>
+                <SearchablePickerModal
+                  visible={showSchoolModal}
+                  onClose={() => {
+                    setShowSchoolModal(false);
+                    setSchoolSearch('');
+                  }}
+                  title={t('profile.school_name')}
+                  placeholder={t('profile.school_placeholder')}
+                  searchValue={schoolSearch}
+                  onSearchChange={setSchoolSearch}
+                  selectedId={schoolName}
+                  data={schoolSuggestions}
+                  loading={loadingSchools}
+                  onSelect={(school) => {
+                    setSchoolName(school.name);
+                    setShowSchoolModal(false);
+                    setSchoolSearch('');
+                  }}
+                />
+              </View>
             )}
 
             {currentField === 'parent_mobile' && (
-               <View>
-                 <Text style={[styles.fieldLabel, typography('body', '600'), { color: theme.colors.text }]}>
-                   {t('profile.enter_parent_mobile', "Enter Parent's Mobile")}
-                 </Text>
-                 <View style={[styles.inputContainer, { borderColor: theme.colors.border }]}>
-                   <Ionicons name="call-outline" size={20} color={theme.colors.textTertiary} />
-                   <TextInput
-                      style={[styles.input, typography('body'), { color: theme.colors.text, textAlign: 'left' }]}
-                      value={parentMobile}
-                      onChangeText={(val) => setParentMobile(val.replaceAll(/\D/g, '').slice(0, 11))}
-                      placeholder="01xxxxxxxxx"
-                      keyboardType="phone-pad"
-                      maxLength={11}
-                   />
-                 </View>
-                 {parentMobile.length > 0 && !EGYPTIAN_PHONE_REGEX.test(parentMobile) && (
-                   <Text style={[styles.errorText, typography('caption'), { color: theme.colors.error }]}>
-                     {t('auth.invalid_egyptian_mobile')}
-                   </Text>
-                 )}
-               </View>
+              <View>
+                <Text
+                  style={[
+                    styles.fieldLabel,
+                    typography('body', '600'),
+                    { color: theme.colors.text },
+                  ]}
+                >
+                  {t('profile.enter_parent_mobile', "Enter Parent's Mobile")}
+                </Text>
+                <View style={[styles.inputContainer, { borderColor: theme.colors.border }]}>
+                  <Ionicons name="call-outline" size={20} color={theme.colors.textTertiary} />
+                  <TextInput
+                    style={[
+                      styles.input,
+                      typography('body'),
+                      { color: theme.colors.text, textAlign: 'left' },
+                    ]}
+                    value={parentMobile}
+                    onChangeText={(val) => setParentMobile(val.replaceAll(/\D/g, '').slice(0, 11))}
+                    placeholder="01xxxxxxxxx"
+                    keyboardType="phone-pad"
+                    maxLength={11}
+                  />
+                </View>
+                {parentMobile.length > 0 && !EGYPTIAN_PHONE_REGEX.test(parentMobile) && (
+                  <Text
+                    style={[styles.errorText, typography('caption'), { color: theme.colors.error }]}
+                  >
+                    {t('auth.invalid_egyptian_mobile')}
+                  </Text>
+                )}
+              </View>
             )}
 
             {currentField === 'educational_system_id' && (
               <View>
-                <Text style={[styles.fieldLabel, typography('body', '600'), { color: theme.colors.text }]}>
+                <Text
+                  style={[
+                    styles.fieldLabel,
+                    typography('body', '600'),
+                    { color: theme.colors.text },
+                  ]}
+                >
                   {t('profile.select_educational_system', 'Select Educational System')}
                 </Text>
                 <ScrollView style={{ maxHeight: 240 }} showsVerticalScrollIndicator={false}>
-                   <View style={styles.optionsList}>
-                     {fetchingEdu && <ActivityIndicator color={theme.colors.primary} style={{ marginVertical: 20 }} />}
-                     {eduSystems.map((system) => (
-                       <TouchableOpacity
-                         key={system.id}
-                         style={[
-                           styles.optionItem,
-                           { borderColor: theme.colors.border, flexDirection: 'row' },
-                           educationalSystemId === system.id && { borderColor: theme.colors.primary, backgroundColor: theme.colors.primary + '0A' }
-                         ]}
-                         onPress={() => setEducationalSystemId(system.id)}
-                       >
-                         <Text style={[styles.optionText, educationalSystemId === system.id ? typography('body', 'bold') : typography('body'), { textAlign: 'left' }, educationalSystemId === system.id ? { color: theme.colors.primary } : { color: theme.colors.text }]}>
-                           {system.name}
-                         </Text>
-                         {educationalSystemId === system.id && (
-                           <Ionicons name="checkmark-circle" size={20} color={theme.colors.primary} />
-                         )}
-                       </TouchableOpacity>
-                     ))}
-                   </View>
+                  <View style={styles.optionsList}>
+                    {fetchingEdu && (
+                      <ActivityIndicator
+                        color={theme.colors.primary}
+                        style={{ marginVertical: 20 }}
+                      />
+                    )}
+                    {eduSystems.map((system) => (
+                      <TouchableOpacity
+                        key={system.id}
+                        style={[
+                          styles.optionItem,
+                          { borderColor: theme.colors.border, flexDirection: 'row' },
+                          educationalSystemId === system.id && {
+                            borderColor: theme.colors.primary,
+                            backgroundColor: theme.colors.primary + '0A',
+                          },
+                        ]}
+                        onPress={() => setEducationalSystemId(system.id)}
+                      >
+                        <Text
+                          style={[
+                            styles.optionText,
+                            educationalSystemId === system.id
+                              ? typography('body', 'bold')
+                              : typography('body'),
+                            { textAlign: 'left' },
+                            educationalSystemId === system.id
+                              ? { color: theme.colors.primary }
+                              : { color: theme.colors.text },
+                          ]}
+                        >
+                          {system.name}
+                        </Text>
+                        {educationalSystemId === system.id && (
+                          <Ionicons
+                            name="checkmark-circle"
+                            size={20}
+                            color={theme.colors.primary}
+                          />
+                        )}
+                      </TouchableOpacity>
+                    ))}
+                  </View>
                 </ScrollView>
               </View>
             )}
 
             {currentField === 'governorate_id' && (
-               <View>
-                 <Text style={[styles.fieldLabel, typography('body', '600'), { color: theme.colors.text }]}>
-                   {t('profile.select_governorate', 'Select Governorate')}
-                 </Text>
-                 <TouchableOpacity
-                   style={[
-                     styles.inputContainer, 
-                     { 
-                       borderColor: theme.colors.border,
-                       backgroundColor: theme.colors.background 
-                     }
-                   ]}
-                   onPress={() => setShowGovModal(true)}
-                 >
-                   <Ionicons name="location-outline" size={20} color={governorateId ? theme.colors.primary : theme.colors.textTertiary} />
-                   <Text style={[styles.input, typography('body'), { 
-                     color: governorateId ? theme.colors.text : theme.colors.textTertiary,
-                     textAlign: 'left',
-                     paddingTop: Platform.OS === 'ios' ? 0 : 12,
-                     flex: 1
-                   }]}>
-                     {governorates.find(g => String(g.id) === String(governorateId))?.name || 
-                      (user?.governorate ? (isRTL ? user.governorate.name_ar : user.governorate.name_en) : t('profile.select_governorate'))}
-                   </Text>
-                   {fetchingGov && <ActivityIndicator size="small" color={theme.colors.primary} />}
-                   <Ionicons name="chevron-down" size={20} color={theme.colors.textTertiary} />
-                 </TouchableOpacity>
+              <View>
+                <Text
+                  style={[
+                    styles.fieldLabel,
+                    typography('body', '600'),
+                    { color: theme.colors.text },
+                  ]}
+                >
+                  {t('profile.select_governorate', 'Select Governorate')}
+                </Text>
+                <TouchableOpacity
+                  style={[
+                    styles.inputContainer,
+                    {
+                      borderColor: theme.colors.border,
+                      backgroundColor: theme.colors.background,
+                    },
+                  ]}
+                  onPress={() => setShowGovModal(true)}
+                >
+                  <Ionicons
+                    name="location-outline"
+                    size={20}
+                    color={governorateId ? theme.colors.primary : theme.colors.textTertiary}
+                  />
+                  <Text
+                    style={[
+                      styles.input,
+                      typography('body'),
+                      {
+                        color: governorateId ? theme.colors.text : theme.colors.textTertiary,
+                        textAlign: 'left',
+                        paddingTop: Platform.OS === 'ios' ? 0 : 12,
+                        flex: 1,
+                      },
+                    ]}
+                  >
+                    {governorates.find((g) => String(g.id) === String(governorateId))?.name ||
+                      (user?.governorate
+                        ? isRTL
+                          ? user.governorate.name_ar
+                          : user.governorate.name_en
+                        : t('profile.select_governorate'))}
+                  </Text>
+                  {fetchingGov && <ActivityIndicator size="small" color={theme.colors.primary} />}
+                  <Ionicons name="chevron-down" size={20} color={theme.colors.textTertiary} />
+                </TouchableOpacity>
 
-                 <SearchablePickerModal
-                   visible={showGovModal}
-                   onClose={() => setShowGovModal(false)}
-                   title={t('profile.select_governorate')}
-                   placeholder={t('common.search')}
-                   searchValue={govSearch}
-                   onSearchChange={setGovSearch}
-                   selectedId={governorateId}
-                   data={governorates.filter(g => 
-                     g.name.toLowerCase().includes(govSearch.toLowerCase())
-                   )}
-                   onSelect={(gov) => {
-                     setGovernorateId(String(gov.id));
-                     setCityId('');
-                     setShowGovModal(false);
-                     setGovSearch('');
-                     fetchCities(String(gov.id));
-                   }}
-                 />
-               </View>
+                <SearchablePickerModal
+                  visible={showGovModal}
+                  onClose={() => setShowGovModal(false)}
+                  title={t('profile.select_governorate')}
+                  placeholder={t('common.search')}
+                  searchValue={govSearch}
+                  onSearchChange={setGovSearch}
+                  selectedId={governorateId}
+                  data={governorates.filter((g) =>
+                    g.name.toLowerCase().includes(govSearch.toLowerCase()),
+                  )}
+                  onSelect={(gov) => {
+                    setGovernorateId(String(gov.id));
+                    setCityId('');
+                    setShowGovModal(false);
+                    setGovSearch('');
+                    fetchCities(String(gov.id));
+                  }}
+                />
+              </View>
             )}
 
             {currentField === 'city_id' && (
-               <View>
-                 <Text style={[styles.fieldLabel, typography('body', '600'), { color: theme.colors.text }]}>
-                   {t('profile.select_city', 'Select City')}
-                 </Text>
-                 <TouchableOpacity
-                   style={[
-                     styles.inputContainer, 
-                     { 
-                       borderColor: theme.colors.border,
-                       backgroundColor: theme.colors.background,
-                       opacity: !(governorateId || user?.governorate?.id) ? 0.6 : 1
-                     }
-                   ]}
-                   onPress={() => (governorateId || user?.governorate?.id) && setShowCityModal(true)}
-                 >
-                   <Ionicons name="map-outline" size={20} color={cityId ? theme.colors.primary : theme.colors.textTertiary} />
-                   <Text style={[styles.input, typography('body'), { 
-                     color: cityId ? theme.colors.text : theme.colors.textTertiary,
-                     textAlign: 'left',
-                     paddingTop: Platform.OS === 'ios' ? 0 : 12,
-                     flex: 1
-                   }]}>
-                     {cities.find(c => String(c.id) === String(cityId))?.name || 
-                      (user?.city ? (isRTL ? user.city.name_ar : user.city.name_en) : 
-                       (governorateId || user?.governorate?.id ? t('profile.select_city') : t('profile.select_gov_first', 'Select Governorate First')))}
-                   </Text>
-                   {fetchingCities && <ActivityIndicator size="small" color={theme.colors.primary} />}
-                   <Ionicons name="chevron-down" size={20} color={theme.colors.textTertiary} />
-                 </TouchableOpacity>
+              <View>
+                <Text
+                  style={[
+                    styles.fieldLabel,
+                    typography('body', '600'),
+                    { color: theme.colors.text },
+                  ]}
+                >
+                  {t('profile.select_city', 'Select City')}
+                </Text>
+                <TouchableOpacity
+                  style={[
+                    styles.inputContainer,
+                    {
+                      borderColor: theme.colors.border,
+                      backgroundColor: theme.colors.background,
+                      opacity: !(governorateId || user?.governorate?.id) ? 0.6 : 1,
+                    },
+                  ]}
+                  onPress={() => (governorateId || user?.governorate?.id) && setShowCityModal(true)}
+                >
+                  <Ionicons
+                    name="map-outline"
+                    size={20}
+                    color={cityId ? theme.colors.primary : theme.colors.textTertiary}
+                  />
+                  <Text
+                    style={[
+                      styles.input,
+                      typography('body'),
+                      {
+                        color: cityId ? theme.colors.text : theme.colors.textTertiary,
+                        textAlign: 'left',
+                        paddingTop: Platform.OS === 'ios' ? 0 : 12,
+                        flex: 1,
+                      },
+                    ]}
+                  >
+                    {cities.find((c) => String(c.id) === String(cityId))?.name ||
+                      (user?.city
+                        ? isRTL
+                          ? user.city.name_ar
+                          : user.city.name_en
+                        : governorateId || user?.governorate?.id
+                          ? t('profile.select_city')
+                          : t('profile.select_gov_first', 'Select Governorate First'))}
+                  </Text>
+                  {fetchingCities && (
+                    <ActivityIndicator size="small" color={theme.colors.primary} />
+                  )}
+                  <Ionicons name="chevron-down" size={20} color={theme.colors.textTertiary} />
+                </TouchableOpacity>
 
-                 <SearchablePickerModal
-                   visible={showCityModal}
-                   onClose={() => setShowCityModal(false)}
-                   title={t('profile.select_city')}
-                   placeholder={t('common.search')}
-                   searchValue={citySearch}
-                   onSearchChange={setCitySearch}
-                   selectedId={cityId}
-                   data={cities}
-                   loading={fetchingCities}
-                   onSelect={(city) => {
-                     setCityId(String(city.id));
-                     setShowCityModal(false);
-                     setCitySearch('');
-                   }}
-                 />
-               </View>
+                <SearchablePickerModal
+                  visible={showCityModal}
+                  onClose={() => setShowCityModal(false)}
+                  title={t('profile.select_city')}
+                  placeholder={t('common.search')}
+                  searchValue={citySearch}
+                  onSearchChange={setCitySearch}
+                  selectedId={cityId}
+                  data={cities}
+                  loading={fetchingCities}
+                  onSelect={(city) => {
+                    setCityId(String(city.id));
+                    setShowCityModal(false);
+                    setCitySearch('');
+                  }}
+                />
+              </View>
             )}
-            
+
             {error && (
-              <Text style={[styles.errorText, typography('caption'), { color: theme.colors.error, marginTop: 12, textAlign: 'center' }]}>
+              <Text
+                style={[
+                  styles.errorText,
+                  typography('caption'),
+                  { color: theme.colors.error, marginTop: 12, textAlign: 'center' },
+                ]}
+              >
                 {error}
               </Text>
             )}
@@ -756,21 +941,34 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
                 (currentField === 'educational_system_id' && !educationalSystemId) ||
                 (currentField === 'governorate_id' && !governorateId) ||
                 (currentField === 'city_id' && !cityId) ||
-                (currentField === 'parent_mobile' && (!parentMobile || !EGYPTIAN_PHONE_REGEX.test(parentMobile)))
+                (currentField === 'parent_mobile' &&
+                  (!parentMobile || !EGYPTIAN_PHONE_REGEX.test(parentMobile)))
               }
             />
-               <View style={styles.secondaryActions}>
-                  <TouchableOpacity onPress={skipField} style={styles.skipButton}>
-                    <Text style={[styles.skipText, typography('caption'), { color: theme.colors.textTertiary }]}>
-                      {t('common.skip_for_now', 'Skip for now')}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={goToSettings} style={styles.settingsButton}>
-                    <Text style={[styles.settingsText, typography('caption', 'bold'), { color: theme.colors.primary }]}>
-                      {t('profile.complete_in_settings', 'Complete in Settings')}
-                    </Text>
-                  </TouchableOpacity>
-               </View>
+            <View style={styles.secondaryActions}>
+              <TouchableOpacity onPress={skipField} style={styles.skipButton}>
+                <Text
+                  style={[
+                    styles.skipText,
+                    typography('caption'),
+                    { color: theme.colors.textTertiary },
+                  ]}
+                >
+                  {t('common.skip_for_now', 'Skip for now')}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={goToSettings} style={styles.settingsButton}>
+                <Text
+                  style={[
+                    styles.settingsText,
+                    typography('caption', 'bold'),
+                    { color: theme.colors.primary },
+                  ]}
+                >
+                  {t('profile.complete_in_settings', 'Complete in Settings')}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </KeyboardAvoidingView>

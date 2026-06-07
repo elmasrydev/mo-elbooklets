@@ -54,7 +54,12 @@ export const useTypography = () => {
         fontFamily: resolvedFamily,
         // On Android, fontWeight MUST be 'normal' — the weight is encoded in fontFamily.
         // Any other value causes Android to synthesize bold on top of the named font file.
-        fontWeight: Platform.OS === 'android' ? ('normal' as const) : (weight === 'black' ? ('900' as const) : weight),
+        fontWeight:
+          Platform.OS === 'android'
+            ? ('normal' as const)
+            : weight === 'black'
+              ? ('900' as const)
+              : weight,
       };
     },
     [isArabic],

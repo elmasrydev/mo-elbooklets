@@ -1,14 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
 import * as SecureStore from 'expo-secure-store';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTheme } from '../../context/ThemeContext';
@@ -19,10 +11,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { layout } from '../../config/layout';
 import { useTypography } from '../../hooks/useTypography';
-import UnifiedHeader from '../../components/UnifiedHeader';
+import QuizFlowHeader from '../../components/QuizFlowHeader';
 import AppButton from '../../components/AppButton';
 import { GenericListSkeleton } from '../../components/SkeletonLoader';
 import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
+import { getSubjectConfig } from '../../utils/subjectTheme';
+import { useSubscriptionGate } from '../../hooks/useSubscriptionGate';
+import { useModal } from '../../context/ModalContext';
+import { ConfirmModal } from '../../components/ConfirmModal';
+import SubjectIcon from '../../components/SubjectIcon';
 
 interface Subject {
   id: string;
@@ -34,6 +31,7 @@ interface Lesson {
   id: string;
   name: string;
   description?: string;
+  isLocked?: boolean;
 }
 interface Chapter {
   id: string;
@@ -58,25 +56,52 @@ const QuizLessonsScreen: React.FC = () => {
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
+  const { checkSubscription } = useSubscriptionGate();
+  const { showConfirm } = useModal();
+
+  const showLockedDisclaimer = () => {
+    setShowSubModal(true);
+  };
+
+  const [showSubModal, setShowSubModal] = useState(false);
   const [selectedLessons, setSelectedLessons] = useState<Set<string>>(new Set());
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [quizTypes, setQuizTypes] = useState<QuizType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Custom states for the new design
+  const [activeTab, setActiveTab] = useState<'specific' | 'all'>('specific');
+  const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
+
   useEffect(() => {
+    if (!subject) {
+      navigation.navigate('QuizFlowSubjects');
+      return;
+    }
     fetchData();
-  }, [subject?.id]);
+  }, [subject]);
+
+  const allLessonIds = useMemo(() => {
+    const ids: string[] = [];
+    chapters.forEach((chapter) => {
+      chapter.lessons.forEach((lesson) => {
+        if (!lesson.isLocked) ids.push(lesson.id);
+      });
+    });
+    return ids;
+  }, [chapters]);
 
   const fetchData = async () => {
     try {
+      if (!subject?.id) return;
       setLoading(true);
       setError(null);
       const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
       const [lessonsResult, quizTypesResult] = await Promise.all([
         tryFetchWithFallback(
-          `query LessonsForSubject($subjectId: ID!) { lessonsForSubject(subjectId: $subjectId) { id name description lessons { id name description } } }`,
+          `query LessonsForSubject($subjectId: ID!) { lessonsForSubject(subjectId: $subjectId) { id name description lessons { id name description isLocked } } }`,
           { subjectId: subject.id },
           token,
         ),
@@ -86,8 +111,11 @@ const QuizLessonsScreen: React.FC = () => {
           token,
         ),
       ]);
-      if (lessonsResult.data?.lessonsForSubject) setChapters(lessonsResult.data.lessonsForSubject);
-      else setError(lessonsResult.errors?.[0]?.message || t('quiz_lessons.error_loading_lessons'));
+      if (lessonsResult.data?.lessonsForSubject) {
+        setChapters(lessonsResult.data.lessonsForSubject);
+      } else {
+        setError(lessonsResult.errors?.[0]?.message || t('quiz_lessons.error_loading_lessons'));
+      }
       if (quizTypesResult.data?.quizTypes) {
         setQuizTypes(
           quizTypesResult.data.quizTypes.map((qt: any) => ({
@@ -107,12 +135,50 @@ const QuizLessonsScreen: React.FC = () => {
   };
 
   const handleChapterToggle = (chapter: Chapter) => {
-    const chapterLessonIds = chapter.lessons.map((lesson) => lesson.id);
+    if (activeTab === 'all') return;
+    const isFreePlan = !checkSubscription({ skipModal: true });
+    const hasLocked = chapter.lessons.some((l) => l.isLocked);
+    if (isFreePlan && hasLocked) {
+      showLockedDisclaimer();
+      return;
+    }
+    const unlockedLessonIds = chapter.lessons.filter((l) => !l.isLocked).map((l) => l.id);
+    if (unlockedLessonIds.length === 0) return;
     const newSelected = new Set(selectedLessons);
-    const allSelected = chapterLessonIds.every((id) => newSelected.has(id));
-    if (allSelected) chapterLessonIds.forEach((id) => newSelected.delete(id));
-    else chapterLessonIds.forEach((id) => newSelected.add(id));
+    const allSelected = unlockedLessonIds.every((id) => newSelected.has(id));
+    if (allSelected) {
+      unlockedLessonIds.forEach((id) => newSelected.delete(id));
+    } else {
+      unlockedLessonIds.forEach((id) => newSelected.add(id));
+    }
     setSelectedLessons(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    if (activeTab === 'all') return;
+    const isFreePlan = !checkSubscription({ skipModal: true });
+    const hasLocked = chapters.some((c) => c.lessons.some((l) => l.isLocked));
+    if (isFreePlan && hasLocked) {
+      showLockedDisclaimer();
+      return;
+    }
+    const newSelected = new Set(selectedLessons);
+    const allSelected = allLessonIds.every((id) => newSelected.has(id));
+    if (allSelected) {
+      setSelectedLessons(new Set());
+    } else {
+      setSelectedLessons(new Set(allLessonIds));
+    }
+  };
+
+  const toggleChapterExpanded = (chapterId: string) => {
+    const newExpanded = new Set(expandedChapters);
+    if (newExpanded.has(chapterId)) {
+      newExpanded.delete(chapterId);
+    } else {
+      newExpanded.add(chapterId);
+    }
+    setExpandedChapters(newExpanded);
   };
 
   const handlePrepareQuiz = () => {
@@ -138,6 +204,8 @@ const QuizLessonsScreen: React.FC = () => {
     subject?.language,
   );
 
+  const subjectConfig = getSubjectConfig(subject?.name || '', theme);
+
   const currentStyles = styles(
     theme,
     common,
@@ -151,160 +219,349 @@ const QuizLessonsScreen: React.FC = () => {
     contentFlexAlign,
     contentRowDirection,
     !!isContentRTL,
+    subjectConfig,
   );
 
-  if (loading)
+  // Sync "All units" mode selection
+  useEffect(() => {
+    if (activeTab === 'all') {
+      setSelectedLessons(new Set(allLessonIds));
+    }
+  }, [activeTab, allLessonIds]);
+
+  if (loading) {
     return (
       <View style={common.container}>
-        <UnifiedHeader title={t('quiz_lessons.header_title')} />
+        <QuizFlowHeader currentStep={2} />
         <View style={{ paddingTop: 16 }}>
           <GenericListSkeleton numItems={6} />
         </View>
       </View>
     );
+  }
+
+  const allSelected =
+    allLessonIds.length > 0 && allLessonIds.every((id) => selectedLessons.has(id));
+
+  const unitsText =
+    selectedUnits.length === 1
+      ? t('quiz_flow.units_count')
+      : t('quiz_flow.units_count_plural', { count: selectedUnits.length });
+
+  const lessonsText =
+    selectedLessons.size === 1
+      ? t('quiz_flow.x_lessons')
+      : t('quiz_flow.x_lessons_plural', { count: selectedLessons.size });
+
+  const selectionText = isRTL ? `${unitsText}، ${lessonsText}` : `${unitsText}, ${lessonsText}`;
 
   return (
     <View style={common.container}>
-      <UnifiedHeader
-        showBackButton
-        onBackPress={() => navigation.goBack()}
-        title={t('quiz_lessons.header_title')}
-        subtitle={subject?.name}
-      />
+      <QuizFlowHeader currentStep={2} />
 
       <ScrollView
         style={currentStyles.content}
         contentContainerStyle={{
-          padding: layout.screenPadding,
-          paddingBottom: Math.max(insets.bottom + 100, spacing.xl),
+          paddingHorizontal: layout.screenPadding,
+          paddingTop: spacing.lg,
+          paddingBottom: Math.max(insets.bottom + 150, spacing.xl),
         }}
         showsVerticalScrollIndicator={false}
       >
-        {chapters.map((chapter: Chapter) => {
-          const chapterLessonIds = chapter.lessons.map((lesson) => lesson.id);
-          const selectedInChapter = chapterLessonIds.filter((id) => selectedLessons.has(id)).length;
-          const allSelected =
-            selectedInChapter === chapterLessonIds.length && chapterLessonIds.length > 0;
-          const someSelected = selectedInChapter > 0;
-          const progressPercentage =
-            chapterLessonIds.length > 0 ? (selectedInChapter / chapterLessonIds.length) * 100 : 0;
+        {/* Subject context & title */}
+        <View style={currentStyles.titleSection}>
+          <View style={currentStyles.subjectHeaderRow}>
+            <SubjectIcon
+              subjectName={subject?.name || ''}
+              size={24}
+              style={{ marginRight: isContentRTL ? 0 : 8, marginLeft: isContentRTL ? 8 : 0 }}
+            />
+            <Text style={currentStyles.subjectHeaderName}>{subject?.name}</Text>
+          </View>
+          <Text style={currentStyles.pageTitle}>{t('quiz_flow.select_units')}</Text>
+          <Text style={currentStyles.pageSubtitle}>{t('quiz_flow.select_units_subtitle')}</Text>
+        </View>
 
-          return (
-            <View key={chapter.id} style={currentStyles.chapterGroup}>
-              {/* Unit Card */}
-              <TouchableOpacity
-                style={currentStyles.unitCard}
-                onPress={() => handleChapterToggle(chapter)}
-                activeOpacity={0.7}
-              >
-                <View style={currentStyles.unitContent}>
-                  <Text style={currentStyles.unitName}>{chapter.name}</Text>
-                  <View style={currentStyles.unitStatsRow}>
-                    <Text style={currentStyles.unitStatsText}>
-                      {selectedInChapter}/{chapterLessonIds.length}{' '}
-                      {t('quiz_lessons.lessons_selected', 'lessons selected')}
-                    </Text>
-                    <View
-                      style={[
-                        currentStyles.progressBarBackground,
-                        { transform: [{ scaleX: contentAlign === 'right' ? -1 : 1 }] },
-                      ]}
-                    >
-                      <View
-                        style={[
-                          currentStyles.progressBarFill,
-                          {
-                            width: `${progressPercentage}%`,
-                          },
-                        ]}
-                      />
-                    </View>
-                  </View>
-                </View>
-                <View
+        {/* Segmented Toggle: Specific vs All */}
+        <View style={currentStyles.toggleContainer}>
+          <TouchableOpacity
+            style={[
+              currentStyles.toggleButton,
+              activeTab === 'specific' && currentStyles.toggleButtonActive,
+            ]}
+            onPress={() => setActiveTab('specific')}
+            activeOpacity={0.8}
+          >
+            <Text
+              style={[
+                currentStyles.toggleText,
+                activeTab === 'specific' && currentStyles.toggleTextActive,
+              ]}
+            >
+              {t('quiz_flow.specific_units')}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              currentStyles.toggleButton,
+              activeTab === 'all' && currentStyles.toggleButtonActive,
+            ]}
+            onPress={() => {
+              const isFreePlan = !checkSubscription({ skipModal: true });
+              if (isFreePlan && chapters.some((c) => c.lessons.some((l) => l.isLocked))) {
+                showLockedDisclaimer();
+                return;
+              }
+              setActiveTab('all');
+            }}
+            activeOpacity={0.8}
+          >
+            <Text
+              style={[
+                currentStyles.toggleText,
+                activeTab === 'all' && currentStyles.toggleTextActive,
+              ]}
+            >
+              {t('quiz_flow.all_units')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Quick Helper Row (only in Specific mode) */}
+        {activeTab === 'specific' && chapters.length > 0 && (
+          <View style={currentStyles.helperRow}>
+            <TouchableOpacity
+              onPress={handleSelectAll}
+              style={currentStyles.selectAllBtn}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="checkbox-outline"
+                size={16}
+                color="#004A9A"
+                style={{ marginRight: 4 }}
+              />
+              <Text style={currentStyles.selectAllText}>
+                {allSelected ? t('quiz_flow.deselect_all') : t('quiz_flow.select_all')}
+              </Text>
+            </TouchableOpacity>
+            <Text style={currentStyles.selectedCounter}>
+              {t('quiz_flow.x_selected', { count: selectedUnits.length })}
+            </Text>
+          </View>
+        )}
+
+        {/* Unit & Lesson list */}
+        <View style={currentStyles.listContainer}>
+          {chapters.map((chapter: Chapter) => {
+            const chapterLessonIds = chapter.lessons.map((lesson) => lesson.id);
+            const unlockedLessonIds = chapter.lessons.filter((l) => !l.isLocked).map((l) => l.id);
+            const isChapterLocked = chapter.lessons.length > 0 && unlockedLessonIds.length === 0;
+            const selectedInChapter = chapter.lessons.filter((l) =>
+              selectedLessons.has(l.id),
+            ).length;
+            const isUnitSelected = selectedInChapter > 0;
+            const isAllUnitSelected =
+              selectedInChapter === unlockedLessonIds.length && unlockedLessonIds.length > 0;
+            const isExpanded = expandedChapters.has(chapter.id);
+
+            return (
+              <View key={chapter.id} style={currentStyles.chapterContainer}>
+                {/* Unit Card */}
+                <TouchableOpacity
                   style={[
-                    currentStyles.checkboxBase,
-                    someSelected || allSelected ? currentStyles.checkboxSelected : null,
+                    currentStyles.unitCard,
+                    isUnitSelected && currentStyles.unitCardSelected,
+                    isChapterLocked && currentStyles.unitCardLocked,
                   ]}
+                  onPress={() => {
+                    if (isChapterLocked) {
+                      showLockedDisclaimer();
+                      return;
+                    }
+                    const isFreePlan = !checkSubscription({ skipModal: true });
+                    if (isFreePlan && chapter.lessons.some((l) => l.isLocked)) {
+                      showLockedDisclaimer();
+                      return;
+                    }
+                    if (activeTab === 'all') {
+                      toggleChapterExpanded(chapter.id);
+                    } else {
+                      handleChapterToggle(chapter);
+                    }
+                  }}
+                  activeOpacity={0.7}
                 >
-                  {(someSelected || allSelected) && (
-                    <Ionicons name={allSelected ? 'checkmark' : 'remove'} size={16} color="#fff" />
-                  )}
-                </View>
-              </TouchableOpacity>
+                  {/* Custom Checkbox */}
+                  <View
+                    style={[
+                      currentStyles.checkbox,
+                      isUnitSelected && currentStyles.checkboxSelected,
+                      (activeTab === 'all' || isChapterLocked) && currentStyles.checkboxDisabled,
+                      isChapterLocked && currentStyles.checkboxLocked,
+                    ]}
+                  >
+                    {isChapterLocked ? (
+                      <Ionicons name="lock-closed" size={12} color="#94A3B8" />
+                    ) : (
+                      isUnitSelected && (
+                        <Ionicons
+                          name={isAllUnitSelected ? 'checkmark' : 'remove'}
+                          size={14}
+                          color="#ffffff"
+                        />
+                      )
+                    )}
+                  </View>
 
-              {/* Lesson Cards */}
-              <View style={currentStyles.lessonsList}>
-                {chapter.lessons.map((lesson: Lesson) => {
-                  const isSelected = selectedLessons.has(lesson.id);
-                  return (
-                    <TouchableOpacity
-                      key={lesson.id}
-                      style={currentStyles.lessonCard}
-                      onPress={() => {
-                        const newSelected = new Set(selectedLessons);
-                        isSelected ? newSelected.delete(lesson.id) : newSelected.add(lesson.id);
-                        setSelectedLessons(newSelected);
-                      }}
-                      activeOpacity={0.7}
+                  <View style={currentStyles.unitInfo}>
+                    <Text
+                      style={[
+                        currentStyles.unitName,
+                        isChapterLocked && currentStyles.unitNameLocked,
+                      ]}
+                      numberOfLines={2}
                     >
-                      <View style={currentStyles.lessonContent}>
-                        <Text style={currentStyles.lessonName}>{lesson.name}</Text>
-                      </View>
-                      <View
-                        style={[
-                          currentStyles.checkboxBase,
-                          isSelected ? currentStyles.checkboxSelected : null,
-                        ]}
-                      >
-                        {isSelected && <Ionicons name="checkmark" size={16} color="#fff" />}
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+                      {chapter.name}
+                    </Text>
+                    {activeTab === 'specific' && !isChapterLocked && (
+                      <Text style={currentStyles.unitStats}>
+                        {selectedInChapter}/{chapterLessonIds.length}{' '}
+                        {t('quiz_lessons.lessons_selected')}
+                      </Text>
+                    )}
+                    {isChapterLocked && (
+                      <Text style={[currentStyles.unitStats, { color: '#94A3B8' }]}>
+                        {t('quiz_flow.unit_locked')}
+                      </Text>
+                    )}
+                  </View>
 
-              {/* Divider between Units */}
-              <View style={currentStyles.unitDivider} />
-            </View>
-          );
-        })}
+                  {/* Expand Chevron */}
+                  <TouchableOpacity
+                    style={currentStyles.expandBtn}
+                    onPress={() => toggleChapterExpanded(chapter.id)}
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  >
+                    <Ionicons
+                      name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                      size={18}
+                      color="#64748B"
+                    />
+                  </TouchableOpacity>
+                </TouchableOpacity>
+
+                {/* Lessons Nested Accordion */}
+                {isExpanded && (
+                  <View style={currentStyles.lessonsContainer}>
+                    {chapter.lessons.map((lesson: Lesson) => {
+                      const isLessonSelected = selectedLessons.has(lesson.id);
+                      return (
+                        <TouchableOpacity
+                          key={lesson.id}
+                          style={currentStyles.lessonRow}
+                          onPress={() => {
+                            if (lesson.isLocked) {
+                              showLockedDisclaimer();
+                              return;
+                            }
+                            if (activeTab === 'all') return;
+                            const newSelected = new Set(selectedLessons);
+                            if (isLessonSelected) {
+                              newSelected.delete(lesson.id);
+                            } else {
+                              newSelected.add(lesson.id);
+                            }
+                            setSelectedLessons(newSelected);
+                          }}
+                          activeOpacity={0.7}
+                          disabled={activeTab === 'all' && !lesson.isLocked}
+                        >
+                          {lesson.isLocked ? (
+                            <Ionicons
+                              name="lock-closed"
+                              size={16}
+                              color="#94A3B8"
+                              style={{ marginEnd: 10 }}
+                            />
+                          ) : (
+                            <View
+                              style={[
+                                currentStyles.lessonRadio,
+                                isLessonSelected && currentStyles.lessonRadioSelected,
+                                activeTab === 'all' && currentStyles.lessonRadioDisabled,
+                              ]}
+                            >
+                              {isLessonSelected && <View style={currentStyles.lessonRadioInner} />}
+                            </View>
+                          )}
+                          <Text
+                            style={[
+                              currentStyles.lessonName,
+                              lesson.isLocked && currentStyles.lessonNameLocked,
+                            ]}
+                            numberOfLines={2}
+                          >
+                            {lesson.name}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                )}
+              </View>
+            );
+          })}
+        </View>
 
         {chapters.length === 0 && (
           <View style={currentStyles.emptyState}>
-            <Ionicons
-              name="book-outline"
-              size={spacing.icon.xl}
-              color={theme.colors.textTertiary}
-            />
+            <Ionicons name="book-outline" size={32} color={theme.colors.textTertiary} />
             <Text style={currentStyles.emptyStateTitle}>
-              {' '}
-              {t('quiz_lessons.no_lessons_available')}{' '}
+              {t('quiz_lessons.no_lessons_available')}
             </Text>
             <Text style={currentStyles.emptyStateSubtitle}>
-              {' '}
-              {t('quiz_lessons.no_lessons_for_subject')}{' '}
+              {t('quiz_lessons.no_lessons_for_subject')}
             </Text>
           </View>
         )}
       </ScrollView>
 
+      {/* Sticky Footer */}
       {selectedLessons.size > 0 && (
         <View style={currentStyles.footer}>
+          <View style={currentStyles.footerTextContainer}>
+            <Text style={currentStyles.footerTitle}>{selectionText}</Text>
+          </View>
           <AppButton
-            title={`${t('quiz_lessons.prepare_quiz')} (${selectedLessons.size})`}
-            onPress={() => handlePrepareQuiz()}
+            title={t('common.continue', 'Continue')}
+            onPress={handlePrepareQuiz}
+            style={currentStyles.continueBtn}
+            textStyle={currentStyles.continueBtnText}
             icon={
-              <Ionicons
-                name={isRTL ? 'arrow-back' : 'arrow-forward'}
-                size={spacing.icon.sm}
-                color={theme.colors.textOnDark}
-              />
+              <Ionicons name={isRTL ? 'arrow-back' : 'arrow-forward'} size={16} color="#ffffff" />
             }
             iconPosition="right"
           />
         </View>
       )}
+
+      {/* Local Confirm Modal to bypass iOS fullScreenModal backdrop issues */}
+      <ConfirmModal
+        visible={showSubModal}
+        icon={<Ionicons name="lock-closed" size={50} color={theme.colors.primary} />}
+        title={t('quiz_flow.locked_lessons_title', 'Upgrade to Pro')}
+        message={t(
+          'quiz_flow.locked_lessons_message',
+          'Some lessons in this unit are locked. Upgrade to the Pro Plan to unlock all content!',
+        )}
+        confirmLabel={t('common.ok', 'OK')}
+        onConfirm={() => {
+          setShowSubModal(false);
+        }}
+        showCancel={false}
+        onCancel={() => setShowSubModal(false)}
+      />
     </View>
   );
 };
@@ -322,116 +579,244 @@ const styles = (
   contentFlexAlign: 'flex-start' | 'flex-end',
   contentRowDirection: 'row' | 'row-reverse',
   isContentRTL: boolean,
+  subjectConfig: any,
 ) =>
   StyleSheet.create({
-    container: { flex: 1, backgroundColor: theme.colors.background },
-    loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    loadingText: {
-      marginTop: spacing.md,
-      ...typography('body'),
-      color: theme.colors.textSecondary,
+    content: {
+      flex: 1,
     },
-    content: { flex: 1 },
-    chapterGroup: {
+    titleSection: {
+      marginBottom: spacing.md,
+      alignItems: common.alignStart,
+    },
+    subjectHeaderRow: {
+      flexDirection: contentRowDirection,
+      alignItems: 'center',
+      alignSelf: 'center',
+      marginBottom: spacing.xs,
+    },
+    subjectHeaderName: {
+      ...typography('bodyLarge'),
+      ...fontWeight('900'),
+      color: subjectConfig.color || '#004A9A',
+      textAlign: 'center',
+    },
+    pageTitle: {
+      fontSize: 24,
+      ...fontWeight('900'),
+      color: theme.colors.text || '#0F172A',
+      marginBottom: spacing.xs,
+      textAlign: common.textAlign,
+    },
+    pageSubtitle: {
+      ...typography('body'),
+      color: theme.colors.textSecondary || '#475569',
+      textAlign: common.textAlign,
+    },
+    toggleContainer: {
+      flexDirection: 'row',
+      backgroundColor: '#E2E8F0',
+      borderRadius: 14,
+      padding: 3,
+      marginBottom: spacing.md,
+    },
+    toggleButton: {
+      flex: 1,
+      paddingVertical: 10,
+      alignItems: 'center',
+      borderRadius: 11,
+    },
+    toggleButtonActive: {
+      backgroundColor: '#FFFFFF',
+      ...layout.shadow,
+    },
+    toggleText: {
+      fontSize: 13,
+      ...fontWeight('700'),
+      color: '#64748B',
+    },
+    toggleTextActive: {
+      color: '#004A9A',
+    },
+    helperRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing.md,
+    },
+    selectAllBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    selectAllText: {
+      fontSize: 12,
+      ...fontWeight('800'),
+      color: '#004A9A',
+    },
+    selectedCounter: {
+      fontSize: 12,
+      ...fontWeight('700'),
+      color: '#94A3B8',
+    },
+    listContainer: {
+      gap: spacing.sm,
+    },
+    chapterContainer: {
       marginBottom: spacing.xs,
     },
     unitCard: {
-      flexDirection: contentRowDirection,
+      flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
+      backgroundColor: theme.colors.card || '#FFFFFF',
+      borderRadius: 20,
       padding: spacing.md,
-      marginBottom: spacing.sm,
-      backgroundColor: theme.colors.card,
-      borderRadius: borderRadius.xl || 16,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
+      borderWidth: 2,
+      borderColor: 'transparent',
       ...layout.shadow,
     },
-    unitContent: {
+    unitCardSelected: {
+      borderColor: '#004A9A',
+      backgroundColor: '#EFF6FF',
+    },
+    unitCardLocked: {
+      backgroundColor: '#F8FAFC',
+      borderColor: 'transparent',
+    },
+    unitNameLocked: {
+      color: '#94A3B8',
+    },
+    checkboxLocked: {
+      backgroundColor: '#F1F5F9',
+      borderColor: '#E2E8F0',
+    },
+    checkbox: {
+      width: 22,
+      height: 22,
+      borderRadius: 7,
+      borderWidth: 2,
+      borderColor: '#cbd5e1',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#FFFFFF',
+      marginEnd: 12,
+    },
+    checkboxSelected: {
+      backgroundColor: '#004A9A',
+      borderColor: '#004A9A',
+    },
+    checkboxDisabled: {
+      backgroundColor: '#E2E8F0',
+      borderColor: '#CBD5E1',
+    },
+    unitInfo: {
       flex: 1,
-      marginRight: isContentRTL ? 0 : spacing.md,
-      marginLeft: isContentRTL ? spacing.md : 0,
+      justifyContent: 'center',
       alignItems: contentFlexAlign,
     },
     unitName: {
-      ...typography('h3'),
-      ...fontWeight('bold'),
-      color: theme.colors.text,
-      marginBottom: spacing.xs,
+      fontSize: 14,
+      ...fontWeight('900'),
+      color: theme.colors.text || '#0F172A',
       textAlign: contentAlign,
     },
-    unitStatsRow: {
-      flexDirection: contentRowDirection,
-      alignItems: 'center',
+    unitStats: {
+      fontSize: 11,
+      ...fontWeight('700'),
+      color: '#004A9A',
+      marginTop: 2,
     },
-    unitStatsText: {
-      ...typography('caption'),
-      color: theme.colors.primary,
-      opacity: 0.8,
-      marginRight: isContentRTL ? 0 : spacing.sm,
-      marginLeft: isContentRTL ? spacing.sm : 0,
-      fontSize: 12,
-    },
-    progressBarBackground: {
-      height: 6,
-      width: 96,
-      backgroundColor: theme.colors.border,
-      borderRadius: borderRadius.full,
-      overflow: 'hidden',
-    },
-    progressBarFill: {
-      height: '100%',
-      backgroundColor: theme.colors.primary,
-    },
-    lessonsList: {
-      flexDirection: 'column',
-      gap: spacing.sm,
-      marginBottom: spacing.md,
-    },
-    lessonCard: {
-      flexDirection: contentRowDirection,
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: spacing.md,
-      backgroundColor: theme.colors.card,
-      borderRadius: borderRadius.xl || 16,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      ...layout.shadow,
-    },
-    lessonContent: {
-      flex: 1,
-      marginRight: isContentRTL ? 0 : spacing.md,
-      marginLeft: isContentRTL ? spacing.md : 0,
-      alignItems: contentFlexAlign,
-    },
-    lessonName: {
-      ...typography('button'),
-      ...fontWeight('500'),
-      color: theme.colors.text,
-      textAlign: contentAlign,
-    },
-    checkboxBase: {
-      height: 24,
-      width: 24,
-      borderRadius: borderRadius.md || 8,
-      borderWidth: 1.5,
-      borderColor: theme.colors.border,
+    expandBtn: {
+      width: 32,
+      height: 32,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: theme.colors.background,
+      marginStart: 8,
     },
-    checkboxSelected: {
-      backgroundColor: theme.colors.primary,
-      borderColor: theme.colors.primary,
+    lessonsContainer: {
+      backgroundColor: 'transparent',
+      marginTop: 4,
+      paddingStart: 12,
+      gap: 2,
     },
-    unitDivider: {
-      height: 1,
-      backgroundColor: theme.colors.border,
-      opacity: 0.5,
-      marginVertical: spacing.md,
+    lessonRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 10,
+      paddingHorizontal: spacing.md,
     },
-    emptyState: { padding: spacing.xl, alignItems: 'center', marginTop: spacing.xl },
+    lessonRadio: {
+      width: 16,
+      height: 16,
+      borderRadius: 8,
+      borderWidth: 1.5,
+      borderColor: '#cbd5e1',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginEnd: 10,
+      backgroundColor: '#FFFFFF',
+    },
+    lessonRadioSelected: {
+      borderColor: '#004A9A',
+    },
+    lessonRadioDisabled: {
+      borderColor: '#E2E8F0',
+    },
+    lessonRadioInner: {
+      width: 7,
+      height: 7,
+      borderRadius: 99,
+      backgroundColor: '#004A9A',
+    },
+    lessonName: {
+      fontSize: 12,
+      ...fontWeight('600'),
+      color: '#475569',
+      flex: 1,
+      textAlign: contentAlign,
+    },
+    lessonNameLocked: {
+      color: '#94A3B8',
+    },
+    footer: {
+      position: 'absolute',
+      bottom: 0,
+      start: 0,
+      end: 0,
+      flexDirection: 'column',
+      alignItems: 'stretch',
+      padding: spacing.md,
+      paddingBottom: Math.max(insets.bottom, spacing.md),
+      backgroundColor: theme.colors.card || '#FFFFFF',
+      borderTopWidth: 1,
+      borderTopColor: 'rgba(0, 74, 154, 0.06)',
+      ...layout.shadow,
+    },
+    footerTextContainer: {
+      flexDirection: 'column',
+      marginBottom: spacing.sm,
+      alignItems: common.alignStart,
+    },
+    footerTitle: {
+      ...typography('body'),
+      ...fontWeight('900'),
+      color: '#004A9A',
+      textAlign: common.textAlign,
+    },
+    continueBtn: {
+      height: 44,
+      paddingHorizontal: spacing.lg,
+      borderRadius: 16,
+      backgroundColor: '#004A9A',
+    },
+    continueBtnText: {
+      fontSize: 13,
+      ...fontWeight('900'),
+    },
+    emptyState: {
+      padding: spacing.xl,
+      alignItems: 'center',
+      marginTop: spacing.xl,
+    },
     emptyStateTitle: {
       ...typography('h3'),
       marginTop: spacing.md,
@@ -442,18 +827,6 @@ const styles = (
       ...typography('caption'),
       textAlign: 'center',
       color: theme.colors.textSecondary,
-    },
-    footer: {
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      padding: spacing.md,
-      paddingBottom: Math.max(insets.bottom, spacing.md),
-      backgroundColor: theme.colors.card,
-      borderTopWidth: 1,
-      borderTopColor: theme.colors.border,
-      ...layout.shadow,
     },
   });
 

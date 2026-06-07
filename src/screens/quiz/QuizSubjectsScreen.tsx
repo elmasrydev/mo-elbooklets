@@ -1,34 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import { Ionicons } from '@expo/vector-icons';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  ActivityIndicator,
 } from 'react-native';
-
 import * as SecureStore from 'expo-secure-store';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../../context/LanguageContext';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
+import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
 import { layout } from '../../config/layout';
 import { useNavigation } from '@react-navigation/native';
 import { tryFetchWithFallback } from '../../config/api';
-import UnifiedHeader from '../../components/UnifiedHeader';
-import AppButton from '../../components/AppButton';
+import QuizFlowHeader from '../../components/QuizFlowHeader';
 import SubjectIcon from '../../components/SubjectIcon';
 import { GenericListSkeleton } from '../../components/SkeletonLoader';
 import RetryView from '../../components/RetryView';
+import { getSubjectConfig } from '../../utils/subjectTheme';
 
 interface Subject {
   id: string;
   name: string;
   description?: string;
   language?: string;
+  chapters?: { id: string }[];
 }
 
 const QuizSubjectsScreen: React.FC = () => {
@@ -51,15 +50,25 @@ const QuizSubjectsScreen: React.FC = () => {
       setLoading(true);
       setError(null);
       const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
+      if (!token) {
+        if (__DEV__) console.warn('[QuizSubjectsScreen] No auth token found');
+        return;
+      }
       const result = await tryFetchWithFallback(
-        `query SubjectsForUserGrade { subjectsForUserGrade { id name description language } }`,
+        `query SubjectsForUserGrade { subjectsForUserGrade { id name description language chapters { id } } }`,
         undefined,
         token,
       );
-      if (result.data?.subjectsForUserGrade) setSubjects(result.data.subjectsForUserGrade);
-      else setError(t('quiz_subjects.error_loading_subjects'));
+      if (__DEV__) console.log('[QuizSubjectsScreen] fetchSubjects result:', JSON.stringify(result));
+      
+      if (result.data?.subjectsForUserGrade) {
+        setSubjects(result.data.subjectsForUserGrade);
+      } else {
+        if (__DEV__) console.warn('[QuizSubjectsScreen] No subjectsForUserGrade in response:', result);
+        setError(t('quiz_subjects.error_loading_subjects'));
+      }
     } catch (err: any) {
+      if (__DEV__) console.error('[QuizSubjectsScreen] fetchSubjects error:', err);
       setError(t('quiz_subjects.error_loading_subjects'));
     } finally {
       setLoading(false);
@@ -76,107 +85,125 @@ const QuizSubjectsScreen: React.FC = () => {
     borderRadius,
   );
 
-  if (loading)
+  if (loading) {
     return (
       <View style={currentStyles.container}>
-        <UnifiedHeader
-          showBackButton
-          onBackPress={() => navigation.goBack()}
-          title={t('quiz_subjects.header_title')}
-        />
+        <QuizFlowHeader currentStep={1} />
         <View style={{ paddingTop: 16 }}>
           <GenericListSkeleton numItems={5} />
         </View>
       </View>
     );
+  }
 
-  if (error)
+  if (error) {
     return (
       <View style={currentStyles.container}>
-        <UnifiedHeader
-          showBackButton
-          onBackPress={() => navigation.goBack()}
-          title={t('quiz_subjects.header_title')}
-        />
-        <RetryView 
+        <QuizFlowHeader currentStep={1} />
+        <RetryView
           message={t('quiz_subjects.error_loading_subjects')}
           onRetry={fetchSubjects}
         />
       </View>
     );
+  }
 
   return (
     <View style={currentStyles.container}>
-      <UnifiedHeader
-        showBackButton
-        onBackPress={() => navigation.goBack()}
-        title={t('quiz_subjects.header_title')}
-        subtitle={t('quiz_subjects.header_subtitle')}
-      />
+      <QuizFlowHeader currentStep={1} />
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
-          padding: layout.screenPadding,
+          paddingHorizontal: layout.screenPadding,
+          paddingTop: spacing.lg,
           paddingBottom: Math.max(common.insets.bottom, spacing.xl),
         }}
         showsVerticalScrollIndicator={false}
       >
         <View style={currentStyles.pageHeader}>
-          <Text style={currentStyles.pageTitle}>{t('quiz_subjects.page_title')}</Text>
-          <Text style={currentStyles.pageSubtitle}>{t('quiz_subjects.page_subtitle')}</Text>
+          <Text style={currentStyles.pageTitle}>
+            {t('quiz_flow.choose_subject')}
+          </Text>
+          <Text style={currentStyles.pageSubtitle}>
+            {t('quiz_flow.choose_subject_subtitle')}
+          </Text>
         </View>
 
-        <View style={currentStyles.subjectsContainer}>
+        <View style={currentStyles.subjectsGrid}>
           {subjects.map((subject: Subject) => (
-            <TouchableOpacity
+            <SubjectCard
               key={subject.id}
-              style={currentStyles.subjectCard}
+              subject={subject}
+              currentStyles={currentStyles}
+              theme={theme}
               onPress={() => navigation.navigate('QuizFlowLessons', { subject })}
-              activeOpacity={0.7}
-            >
-              <View style={currentStyles.subjectMain}>
-                <SubjectIcon
-                  subjectName={subject.name}
-                  size={48}
-                  style={currentStyles.iconBoxOverride}
-                />
-                <View style={currentStyles.subjectInfo}>
-                  <Text style={currentStyles.subjectName} numberOfLines={1}>
-                    {subject.name}
-                  </Text>
-                  <Text style={currentStyles.subjectStatsText}>
-                    {t('quiz_subjects.tap_to_start')}
-                  </Text>
-                </View>
-              </View>
-
-              <Ionicons
-                name={isRTL ? 'chevron-back' : 'chevron-forward'}
-                size={24}
-                color={theme.colors.textTertiary || '#E2E8F0'}
-              />
-            </TouchableOpacity>
+            />
           ))}
         </View>
+
         {subjects.length === 0 && (
           <View style={currentStyles.emptyState}>
-            <Ionicons
-              name="library-outline"
-              size={spacing.icon.xl}
-              color={theme.colors.textTertiary}
-            />
             <Text style={currentStyles.emptyStateTitle}>
-              {' '}
-              {t('quiz_subjects.no_subjects_available')}{' '}
+              {t('quiz_subjects.no_subjects_available')}
             </Text>
             <Text style={currentStyles.emptyStateSubtitle}>
-              {' '}
-              {t('quiz_subjects.no_subjects_for_grade')}{' '}
+              {t('quiz_subjects.no_subjects_for_grade')}
             </Text>
           </View>
         )}
       </ScrollView>
     </View>
+  );
+};
+
+interface SubjectCardProps {
+  subject: Subject;
+  currentStyles: ReturnType<typeof styles>;
+  theme: any;
+  onPress: () => void;
+}
+
+const SubjectCard: React.FC<SubjectCardProps> = ({ subject, currentStyles, theme, onPress }) => {
+  const { t } = useTranslation();
+  const { contentAlign } = useSubjectTextAlign(subject.language);
+  const subjectConfig = getSubjectConfig(subject.name, theme);
+
+  return (
+    <TouchableOpacity
+      style={[
+        currentStyles.subjectCard,
+        { borderColor: 'transparent' },
+      ]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View style={currentStyles.cardHeader}>
+        <View
+          style={[
+            currentStyles.iconContainer,
+            { backgroundColor: subjectConfig.bg || '#F3F5FB' },
+          ]}
+        >
+          <SubjectIcon
+            subjectName={subject.name}
+            size={48}
+            style={{}}
+          />
+        </View>
+      </View>
+
+      <Text style={[currentStyles.subjectName, { textAlign: contentAlign }]} numberOfLines={1}>
+        {subject.name}
+      </Text>
+
+      <Text style={currentStyles.subjectUnitsCount}>
+        {subject.chapters?.length === 1
+          ? t('quiz_flow.units_count')
+          : t('quiz_flow.units_count_plural', {
+              count: subject.chapters?.length || 0,
+            })}
+      </Text>
+    </TouchableOpacity>
   );
 };
 
@@ -190,80 +217,66 @@ const styles = (
   borderRadius: any,
 ) =>
   StyleSheet.create({
-    container: { flex: 1, backgroundColor: theme.colors.background },
-    loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    loadingText: {
-      marginTop: spacing.md,
-      ...typography('body'),
-      color: theme.colors.textSecondary,
-    },
-    errorContainer: {
+    container: {
       flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: spacing.xl,
-    },
-    errorTitle: {
-      ...typography('h3'),
-      ...fontWeight('bold'),
-      marginTop: spacing.md,
-      marginBottom: spacing.md,
-      color: theme.colors.text,
+      backgroundColor: theme.colors.background,
     },
     pageHeader: {
-      paddingTop: spacing.lg,
-      paddingBottom: spacing.xl,
+      marginBottom: spacing.md,
     },
     pageTitle: {
-      fontSize: Math.max(24, fontSizes.xl),
-      ...fontWeight('700'),
-      color: theme.colors.text,
+      fontSize: 24,
+      ...fontWeight('900'),
+      color: theme.colors.text || '#0F172A',
       marginBottom: spacing.xs,
       textAlign: common.textAlign,
     },
     pageSubtitle: {
       ...typography('body'),
-      color: theme.colors.textSecondary,
+      color: theme.colors.textSecondary || '#475569',
       textAlign: common.textAlign,
     },
-    subjectsContainer: {
-      flexDirection: 'column',
-      gap: spacing.sm,
+    subjectsGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+      gap: spacing.md,
+      paddingTop: spacing.sm,
     },
     subjectCard: {
-      flexDirection: common.rowDirection,
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: spacing.lg,
-      marginBottom: spacing.sm,
-      backgroundColor: theme.colors.card,
-      borderRadius: borderRadius.xl || 16,
-      borderWidth: 0,
+      width: '47.5%',
+      backgroundColor: theme.colors.card || '#FFFFFF',
+      borderRadius: 20,
+      padding: spacing.md,
+      marginBottom: spacing.xs,
+      borderWidth: 2,
       ...layout.shadow,
-    },
-    subjectMain: {
-      flexDirection: common.rowDirection,
-      alignItems: 'center',
-      flex: 1,
-    },
-    iconBoxOverride: {
-      ...common.marginEnd(spacing.md),
-    },
-    subjectInfo: {
-      flex: 1,
-      justifyContent: 'center',
       alignItems: common.alignStart,
     },
+    cardHeader: {
+      width: '100%',
+      flexDirection: common.rowDirection,
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing.md,
+    },
+    iconContainer: {
+      width: 48,
+      height: 48,
+      borderRadius: 12,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
     subjectName: {
-      fontSize: Math.max(18, fontSizes.lg),
-      ...fontWeight('700'),
-      color: theme.colors.text,
+      fontSize: 16,
+      ...fontWeight('900'),
+      color: theme.colors.text || '#0F172A',
       marginBottom: 2,
       textAlign: common.textAlign,
     },
-    subjectStatsText: {
+    subjectUnitsCount: {
       ...typography('caption'),
-      color: theme.colors.textSecondary,
+      color: theme.colors.textSecondary || '#94A3B8',
       textAlign: common.textAlign,
     },
     emptyState: {

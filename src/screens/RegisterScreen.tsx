@@ -93,7 +93,9 @@ const RegisterScreen: React.FC = () => {
 
   const fetchAppConfig = async () => {
     try {
-      const result = await tryFetchWithFallback(`query GetAppConfig { appConfig { campaignFreeAccess } }`);
+      const result = await tryFetchWithFallback(
+        `query GetAppConfig { appConfig { campaignFreeAccess } }`,
+      );
       if (result.data?.appConfig) {
         setCampaignFreeAccess(result.data.appConfig.campaignFreeAccess);
       }
@@ -113,7 +115,9 @@ const RegisterScreen: React.FC = () => {
 
   const fetchEduSystems = async () => {
     try {
-      const result = await tryFetchWithFallback(`query GetEduSystems { educationalSystems { id name } }`);
+      const result = await tryFetchWithFallback(
+        `query GetEduSystems { educationalSystems { id name } }`,
+      );
       if (result.data?.educationalSystems) {
         setEduSystems(result.data.educationalSystems);
       }
@@ -258,158 +262,156 @@ const RegisterScreen: React.FC = () => {
     return rtl ? 'arrow-back-outline' : 'arrow-forward-outline';
   };
 
-
-
   return (
     <>
       <KeyboardAvoidingView
         style={currentStyles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={currentStyles.cardContainer}>
-          <View style={currentStyles.card}>
-            {/* Fixed Header Area */}
-            <View style={currentStyles.headerTop}>
-              <BackButton
-                onPress={handleBack}
-                style={currentStyles.backButton}
-                color={theme.colors.text}
+        <ScrollView
+          style={currentStyles.scrollView}
+          contentContainerStyle={currentStyles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Header Area */}
+          <View style={currentStyles.headerTop}>
+            <BackButton
+              onPress={handleBack}
+              style={currentStyles.backButton}
+              color={theme.colors.text}
+            />
+            <Text style={currentStyles.headerTitle}>{t('auth.register', 'Create Account')}</Text>
+            <View style={{ width: 40 }} />
+          </View>
+
+          <View style={currentStyles.header}>
+            <Image
+              source={require('../../assets/logo-transparent.png')}
+              style={currentStyles.logo}
+              resizeMode="contain"
+            />
+            <View style={{ marginTop: spacing.md }}>
+              <StepIndicator
+                currentStep={currentStep}
+                theme={theme}
+                t={t}
+                currentStyles={currentStyles}
               />
-              <Text style={currentStyles.headerTitle}>{t('auth.register', 'Create Account')}</Text>
-              <View style={{ width: 40 }} />
+            </View>
+            <Text style={currentStyles.title}>
+              {currentStep === 1 && t('auth.account_details', 'Account Details')}
+              {currentStep === 2 && t('auth.school_info', 'School Info')}
+            </Text>
+          </View>
+
+          {/* Form Card */}
+          <View style={currentStyles.card}>
+            <View style={currentStyles.form}>
+              {currentStep === 1 && (
+                <StepOne
+                  name={name}
+                  setName={setName}
+                  mobile={mobile}
+                  setMobile={setMobile}
+                  touchedName={touchedName}
+                  setTouchedName={setTouchedName}
+                  isNameValid={isNameValid}
+                  touchedMobile={touchedMobile}
+                  setTouchedMobile={setTouchedMobile}
+                  isMobileValid={isMobileValid}
+                  password={password}
+                  setPassword={setPassword}
+                  confirmPassword={confirmPassword}
+                  setConfirmPassword={setConfirmPassword}
+                  showPassword={showPassword}
+                  setShowPassword={setShowPassword}
+                  touchedPassword={touchedPassword}
+                  setTouchedPassword={setTouchedPassword}
+                  isPasswordValid={isPasswordValid}
+                  touchedConfirm={touchedConfirm}
+                  setTouchedConfirm={setTouchedConfirm}
+                  isConfirmValid={isConfirmValid}
+                  confirmPasswordRef={confirmPasswordRef}
+                  isLoading={isLoading}
+                  theme={theme}
+                  t={t}
+                  isRTL={isRTL}
+                  currentStyles={currentStyles}
+                  getBorderColor={getBorderColor}
+                  spacing={spacing}
+                />
+              )}
+
+              {currentStep === 2 && (
+                <StepTwo
+                  selectedGrade={selectedGrade}
+                  setSelectedGrade={setSelectedGrade}
+                  selectedEduSystem={selectedEduSystem}
+                  setSelectedEduSystem={setSelectedEduSystem}
+                  gradesData={gradesData}
+                  eduSystems={eduSystems}
+                  promoCode={promoCode}
+                  setPromoCode={setPromoCode}
+                  promoCodeRef={promoCodeRef}
+                  handleNext={handleNext}
+                  isLoading={isLoading}
+                  theme={theme}
+                  t={t}
+                  isRTL={isRTL}
+                  currentStyles={currentStyles}
+                  campaignFreeAccess={campaignFreeAccess}
+                  spacing={spacing}
+                />
+              )}
+
+              <TouchableOpacity
+                style={currentStyles.submitButton}
+                onPress={handleNext}
+                disabled={isLoading}
+                activeOpacity={0.8}
+              >
+                <Text style={currentStyles.submitButtonText}>
+                  {currentStep === 2 ? t('auth.sign_up') : t('common.continue')}
+                </Text>
+                {isLoading ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <Ionicons name={getSubmitIcon(currentStep, isRTL)} size={20} color="#FFF" />
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Footer Area */}
+          <View style={currentStyles.footerContainer}>
+            <View style={currentStyles.dividerRow}>
+              <View style={currentStyles.dividerLine} />
+              <Text style={currentStyles.dividerText}>{'        '}</Text>
+              <View style={currentStyles.dividerLine} />
             </View>
 
-            <ScrollView
-              style={currentStyles.cardScrollView}
-              contentContainerStyle={currentStyles.cardContent}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-            >
-              {/* Scrollable Header Area */}
-              <View style={currentStyles.header}>
-                <Image
-                  source={require('../../assets/logo-transparent.png')}
-                  style={currentStyles.logo}
-                  resizeMode="contain"
-                />
-                <View style={{ marginTop: spacing.md }}>
-                  <StepIndicator
-                    currentStep={currentStep}
-                    theme={theme}
-                    t={t}
-                    currentStyles={currentStyles}
-                  />
-                </View>
-                <Text style={currentStyles.title}>
-                  {currentStep === 1 && t('auth.account_details', 'Account Details')}
-                  {currentStep === 2 && t('auth.school_info', 'School Info')}
+            {currentStep === 1 && (
+              <TouchableOpacity
+                style={currentStyles.languageButtonBottom}
+                onPress={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="language-outline" size={20} color={theme.colors.primary} />
+                <Text style={currentStyles.languageButtonText}>
+                  {language === 'ar' ? 'English' : 'عربي'}
                 </Text>
-              </View>
+              </TouchableOpacity>
+            )}
 
-              <View style={currentStyles.form}>
-                {currentStep === 1 && (
-                  <StepOne
-                    name={name}
-                    setName={setName}
-                    mobile={mobile}
-                    setMobile={setMobile}
-                    touchedName={touchedName}
-                    setTouchedName={setTouchedName}
-                    isNameValid={isNameValid}
-                    touchedMobile={touchedMobile}
-                    setTouchedMobile={setTouchedMobile}
-                    isMobileValid={isMobileValid}
-                    password={password}
-                    setPassword={setPassword}
-                    confirmPassword={confirmPassword}
-                    setConfirmPassword={setConfirmPassword}
-                    showPassword={showPassword}
-                    setShowPassword={setShowPassword}
-                    touchedPassword={touchedPassword}
-                    setTouchedPassword={setTouchedPassword}
-                    isPasswordValid={isPasswordValid}
-                    touchedConfirm={touchedConfirm}
-                    setTouchedConfirm={setTouchedConfirm}
-                    isConfirmValid={isConfirmValid}
-                    confirmPasswordRef={confirmPasswordRef}
-                    isLoading={isLoading}
-                    theme={theme}
-                    t={t}
-                    isRTL={isRTL}
-                    currentStyles={currentStyles}
-                    getBorderColor={getBorderColor}
-                    spacing={spacing}
-                  />
-                )}
-
-                {currentStep === 2 && (
-                  <StepTwo
-                    selectedGrade={selectedGrade}
-                    setSelectedGrade={setSelectedGrade}
-                    selectedEduSystem={selectedEduSystem}
-                    setSelectedEduSystem={setSelectedEduSystem}
-                    gradesData={gradesData}
-                    eduSystems={eduSystems}
-                    promoCode={promoCode}
-                    setPromoCode={setPromoCode}
-                    promoCodeRef={promoCodeRef}
-                    handleNext={handleNext}
-                    isLoading={isLoading}
-                    theme={theme}
-                    t={t}
-                    isRTL={isRTL}
-                    currentStyles={currentStyles}
-                    campaignFreeAccess={campaignFreeAccess}
-                    spacing={spacing}
-                  />
-                )}
-
-                <TouchableOpacity
-                  style={currentStyles.submitButton}
-                  onPress={handleNext}
-                  disabled={isLoading}
-                  activeOpacity={0.8}
-                >
-                  <Text style={currentStyles.submitButtonText}>
-                    {currentStep === 2 ? t('auth.sign_up') : t('common.continue')}
-                  </Text>
-                  {isLoading ? (
-                    <ActivityIndicator size="small" color="#FFF" />
-                  ) : (
-                    <Ionicons name={getSubmitIcon(currentStep, isRTL)} size={20} color="#FFF" />
-                  )}
-                </TouchableOpacity>
-
-                <View style={currentStyles.dividerRow}>
-                  <View style={currentStyles.dividerLine} />
-                  <Text style={currentStyles.dividerText}>{'        '}</Text>
-                  <View style={currentStyles.dividerLine} />
-                </View>
-
-                {currentStep === 1 && (
-                  <TouchableOpacity
-                    style={currentStyles.languageButtonBottom}
-                    onPress={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons name="language-outline" size={20} color={theme.colors.primary} />
-                    <Text style={currentStyles.languageButtonText}>
-                      {language === 'ar' ? 'English' : 'عربي'}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              <View style={currentStyles.footer}>
-                <Text style={currentStyles.footerText}>{t('auth.already_have_account')}</Text>
-                <TouchableOpacity onPress={() => navigation.goBack()} disabled={isLoading}>
-                  <Text style={currentStyles.linkText}> {t('auth.sign_in')} </Text>
-                </TouchableOpacity>
-              </View>
-            </ScrollView>
-            <View style={currentStyles.cardAccent} />
+            <View style={currentStyles.footer}>
+              <Text style={currentStyles.footerText}>{t('auth.already_have_account')}</Text>
+              <TouchableOpacity onPress={() => navigation.goBack()} disabled={isLoading}>
+                <Text style={currentStyles.linkText}> {t('auth.sign_in')} </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
 
       {/* Registration Disclaimer Modal */}
@@ -483,7 +485,10 @@ const StepOne = ({
   return (
     <>
       <View
-        style={[currentStyles.inputWrapper, { borderColor: getBorderColor(touchedName, isNameValid) }]}
+        style={[
+          currentStyles.inputWrapper,
+          { borderColor: getBorderColor(touchedName, isNameValid) },
+        ]}
       >
         <Ionicons
           name="person-outline"
@@ -526,7 +531,10 @@ const StepOne = ({
           <Text style={currentStyles.countryCodeText}>🇪🇬 +2 </Text>
         </View>
         <TextInput
-          style={[currentStyles.input, { flex: 1, textAlign: isRTL ? 'right' : 'left', paddingHorizontal: 16 }]}
+          style={[
+            currentStyles.input,
+            { flex: 1, textAlign: isRTL ? 'right' : 'left', paddingHorizontal: 16 },
+          ]}
           value={mobile}
           onChangeText={(val) => setMobile(val.replaceAll(/\D/g, '').slice(0, 11))}
           maxLength={11}
@@ -542,7 +550,10 @@ const StepOne = ({
       </View>
 
       <View
-        style={[currentStyles.inputWrapper, { borderColor: getBorderColor(touchedPassword, isPasswordValid) }]}
+        style={[
+          currentStyles.inputWrapper,
+          { borderColor: getBorderColor(touchedPassword, isPasswordValid) },
+        ]}
       >
         <Ionicons
           name="lock-closed-outline"
@@ -564,7 +575,10 @@ const StepOne = ({
           onSubmitEditing={() => confirmPasswordRef.current?.focus()}
           onBlur={() => setTouchedPassword(true)}
         />
-        <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={{ marginHorizontal: 8 }}>
+        <TouchableOpacity
+          onPress={() => setShowPassword(!showPassword)}
+          style={{ marginHorizontal: 8 }}
+        >
           <Ionicons
             name={showPassword ? 'eye-off-outline' : 'eye-outline'}
             size={20}
@@ -574,7 +588,10 @@ const StepOne = ({
       </View>
 
       <View
-        style={[currentStyles.inputWrapper, { borderColor: getBorderColor(touchedConfirm, isConfirmValid) }]}
+        style={[
+          currentStyles.inputWrapper,
+          { borderColor: getBorderColor(touchedConfirm, isConfirmValid) },
+        ]}
       >
         <Ionicons
           name="shield-checkmark-outline"
@@ -630,7 +647,10 @@ const StepTwo = ({
         {gradesData?.grades?.map((grade: any) => (
           <TouchableOpacity
             key={grade.id}
-            style={[currentStyles.gridItem, selectedGrade === grade.id && currentStyles.gridItemActive]}
+            style={[
+              currentStyles.gridItem,
+              selectedGrade === grade.id && currentStyles.gridItemActive,
+            ]}
             onPress={() => setSelectedGrade(grade.id)}
           >
             <Text
@@ -645,14 +665,19 @@ const StepTwo = ({
         ))}
       </View>
 
-      <Text style={[currentStyles.sectionLabel, { marginTop: spacing.md, marginBottom: spacing.sm }]}>
+      <Text
+        style={[currentStyles.sectionLabel, { marginTop: spacing.md, marginBottom: spacing.sm }]}
+      >
         {t('auth.select_edu_system', 'Select Educational System')}
       </Text>
       <View style={currentStyles.gridContainer}>
         {eduSystems.map((sys: any) => (
           <TouchableOpacity
             key={sys.id}
-            style={[currentStyles.gridItem, selectedEduSystem === sys.id && currentStyles.gridItemActive]}
+            style={[
+              currentStyles.gridItem,
+              selectedEduSystem === sys.id && currentStyles.gridItemActive,
+            ]}
             onPress={() => setSelectedEduSystem(sys.id)}
           >
             <Text
@@ -749,23 +774,21 @@ const styles = (config: any) => {
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: theme.colors.background,
+      backgroundColor: '#F3F5FB',
     },
-    cardContainer: {
+    scrollView: {
       flex: 1,
-      padding: spacing.md,
-      paddingTop: insets.top + spacing.md,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      paddingHorizontal: spacing.md,
+      paddingTop: insets.top + spacing.sm,
       paddingBottom: insets.bottom + spacing.md,
-      alignItems: 'center',
-      justifyContent: 'center',
     },
     card: {
-      flex: 1,
       width: '100%',
       backgroundColor: theme.colors.card,
       borderRadius: borderRadius.xl || 24,
-      overflow: 'hidden',
-      position: 'relative',
       borderWidth: 1,
       borderColor: theme.colors.border,
       ...Platform.select({
@@ -780,19 +803,8 @@ const styles = (config: any) => {
         },
       }),
     },
-    cardScrollView: {
-      flex: 1,
-    },
-    cardContent: {
-      flexGrow: 1,
-    },
-    cardAccent: {
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      height: 8,
-      backgroundColor: theme.colors.primary,
+    footerContainer: {
+      marginTop: spacing.md,
     },
     headerTop: {
       flexDirection: 'row',
@@ -842,20 +854,20 @@ const styles = (config: any) => {
     },
     form: {
       paddingHorizontal: spacing.md,
-      paddingTop: spacing.sm,
-      paddingBottom: spacing.xs,
+      paddingTop: spacing.xl,
+      paddingBottom: spacing.xl,
     },
 
     inputWrapper: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: theme.colors.background,
+      backgroundColor: '#f2f3fd',
       borderWidth: 1,
-      borderColor: theme.colors.border,
-      borderRadius: 16,
+      borderColor: 'rgba(193, 198, 213, 0.4)',
+      borderRadius: 12,
       paddingHorizontal: spacing.md,
       marginBottom: spacing.md,
-      height: 56,
+      height: 52,
       gap: 8,
     },
     inputIcon: {
@@ -864,14 +876,14 @@ const styles = (config: any) => {
     },
     input: {
       flex: 1,
-      fontSize: fontSizes.base,
-      color: theme.colors.text,
+      fontSize: 15,
+      color: '#181c22',
       height: '100%',
     },
     inputText: {
       flex: 1,
-      fontSize: fontSizes.base,
-      color: theme.colors.text,
+      fontSize: 15,
+      color: '#181c22',
       textAlign: isRTL ? 'right' : 'left',
     },
     footer: {
@@ -883,12 +895,12 @@ const styles = (config: any) => {
     },
     footerText: {
       fontSize: 14,
-      color: theme.colors.textSecondary,
+      color: '#444653',
     },
     linkText: {
       fontSize: 14,
       ...fontWeight('700'),
-      color: theme.colors.primary,
+      color: '#005ab4',
     },
     languageButtonBottom: {
       flexDirection: 'row',
@@ -928,14 +940,14 @@ const styles = (config: any) => {
     submitButton: {
       flexDirection: 'row',
       height: 56,
-      backgroundColor: theme.colors.primary,
-      borderRadius: 16,
+      backgroundColor: '#005ab4',
+      borderRadius: 14,
       alignItems: 'center',
       justifyContent: 'center',
       marginTop: spacing.sm,
       ...Platform.select({
         ios: {
-          shadowColor: theme.colors.primary,
+          shadowColor: '#005ab4',
           shadowOffset: { width: 0, height: 8 },
           shadowOpacity: 0.3,
           shadowRadius: 16,
@@ -965,14 +977,14 @@ const styles = (config: any) => {
       width: 10,
       height: 10,
       borderRadius: 5,
-      backgroundColor: theme.colors.border,
+      backgroundColor: 'rgba(193, 198, 213, 0.4)',
     },
     stepDotActive: {
-      backgroundColor: theme.colors.primary,
+      backgroundColor: '#005ab4',
       width: 24,
     },
     stepDotCompleted: {
-      backgroundColor: theme.colors.primary,
+      backgroundColor: '#005ab4',
       opacity: 0.5,
     },
     stepText: {
@@ -989,17 +1001,17 @@ const styles = (config: any) => {
     },
     gridItem: {
       minWidth: '31%',
-      backgroundColor: theme.colors.background,
-      borderWidth: 1.5,
-      borderColor: theme.colors.border,
-      borderRadius: borderRadius.lg || 16,
+      backgroundColor: '#f2f3fd',
+      borderWidth: 1,
+      borderColor: 'rgba(193, 198, 213, 0.4)',
+      borderRadius: 12,
       height: 50,
       paddingHorizontal: spacing.sm,
       alignItems: 'center',
       justifyContent: 'center',
       ...Platform.select({
         ios: {
-          shadowColor: '#000',
+          shadowColor: '#01174B',
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.05,
           shadowRadius: 4,
@@ -1010,8 +1022,8 @@ const styles = (config: any) => {
       }),
     },
     gridItemActive: {
-      borderColor: theme.colors.primary,
-      backgroundColor: theme.colors.primary + '08',
+      borderColor: '#005ab4',
+      backgroundColor: '#005ab40d',
       ...Platform.select({
         ios: { shadowOpacity: 0 },
         android: { elevation: 0 },
@@ -1020,10 +1032,10 @@ const styles = (config: any) => {
     gridItemText: {
       fontSize: 12,
       ...fontWeight('700'),
-      color: theme.colors.textSecondary,
+      color: '#444653',
     },
     gridItemTextActive: {
-      color: theme.colors.primary,
+      color: '#005ab4',
     },
     sectionTitle: {
       ...typography('h3'),
@@ -1043,26 +1055,26 @@ const styles = (config: any) => {
       flexDirection: 'row',
       alignItems: 'center',
       padding: spacing.md,
-      backgroundColor: theme.colors.background,
-      borderWidth: 1.5,
-      borderColor: theme.colors.border,
-      borderRadius: borderRadius.lg || 16,
+      backgroundColor: '#f2f3fd',
+      borderWidth: 1,
+      borderColor: 'rgba(193, 198, 213, 0.4)',
+      borderRadius: 12,
       height: 56,
       justifyContent: 'center',
       position: 'relative',
     },
     systemCardActive: {
-      borderColor: theme.colors.primary,
-      backgroundColor: theme.colors.primary + '08',
+      borderColor: '#005ab4',
+      backgroundColor: '#005ab40d',
     },
     systemCardText: {
       fontSize: 12,
       ...fontWeight('700'),
-      color: theme.colors.textSecondary,
+      color: '#444653',
       textAlign: 'center',
     },
     systemCardTextActive: {
-      color: theme.colors.primary,
+      color: '#005ab4',
     },
     checkIcon: {
       position: 'absolute',
@@ -1226,26 +1238,26 @@ const styles = (config: any) => {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: theme.colors.surface,
-      borderWidth: 1.5,
-      borderColor: theme.colors.border,
-      borderRadius: 16,
+      backgroundColor: '#f2f3fd',
+      borderWidth: 1,
+      borderColor: 'rgba(193, 198, 213, 0.4)',
+      borderRadius: 12,
       height: 56,
       gap: spacing.xs,
     },
     genderButtonActive: {
-      borderColor: theme.colors.primary,
-      backgroundColor: theme.colors.primary + '08',
+      borderColor: '#005ab4',
+      backgroundColor: '#005ab40d',
     },
     genderEmoji: {
       fontSize: 20,
     },
     genderText: {
       ...typography('button'),
-      color: theme.colors.textSecondary,
+      color: '#444653',
     },
     genderTextActive: {
-      color: theme.colors.primary,
+      color: '#005ab4',
     },
     disclaimerOverlay: {
       flex: 1,

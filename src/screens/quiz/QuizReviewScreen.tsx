@@ -306,7 +306,7 @@ const QuizReviewScreen: React.FC = () => {
                       { backgroundColor: '#EFF6FF', marginHorizontal: 8 },
                     ]}
                   >
-                    <Text style={[currentStyles.badgeText, { color: '#1E40AF' }]}>
+                    <Text style={[currentStyles.badgeText, { color: theme.colors.primary }]}>
                       {ua.question.type === 'what_happens'
                         ? t('quiz_taking.what_happens', 'What Happens?')
                         : t('quiz_taking.give_a_reason', 'Give a Reason')}
@@ -699,7 +699,7 @@ const QuizReviewScreen: React.FC = () => {
                           style={{
                             ...typography('bodySmall'),
                             ...fontWeight('700'),
-                            color: '#1E40AF',
+                            color: theme.colors.primary,
                             textAlign: common.textAlign as any,
                           }}
                         >
@@ -914,7 +914,7 @@ const styles = (
     summaryScore: {
       fontSize: 18,
       ...fontWeight('900'),
-      color: '#1E40AF', // Blue 800
+      color: theme.colors.primary, // Blue 800
     },
     summaryProgressBarBg: {
       height: 12,

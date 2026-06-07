@@ -89,9 +89,13 @@ const ContactUsScreen = ({ navigation }: any) => {
           }
         }
       `;
-      
-      const response = await tryFetchWithFallback(mutation, { name, email, subject, message }, token || undefined);
-      
+
+      const response = await tryFetchWithFallback(
+        mutation,
+        { name, email, subject, message },
+        token || undefined,
+      );
+
       if (response.data?.sendContactMessage?.success) {
         analytics.trackContactSupport(subject);
         showConfirm({
@@ -101,7 +105,10 @@ const ContactUsScreen = ({ navigation }: any) => {
           onConfirm: () => navigation.goBack(),
         });
       } else {
-        const errMsg = response.data?.sendContactMessage?.message || response.errors?.[0]?.message || t('common.error');
+        const errMsg =
+          response.data?.sendContactMessage?.message ||
+          response.errors?.[0]?.message ||
+          t('common.error');
         showConfirm({
           title: t('common.error'),
           message: errMsg,
@@ -319,7 +326,6 @@ const ContactUsScreen = ({ navigation }: any) => {
               </TouchableOpacity>
             </View>
           </ScrollView>
-          <View style={currentStyles.cardAccent} />
         </View>
       </View>
     </KeyboardAvoidingView>
@@ -366,15 +372,7 @@ const styles = (config: any) => {
     },
     cardContent: {
       flexGrow: 1,
-      paddingBottom: spacing.xl * 2,
-    },
-    cardAccent: {
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      height: 8,
-      backgroundColor: theme.colors.primary,
+      paddingBottom: spacing.xl,
     },
     headerInfo: {
       alignItems: 'center',

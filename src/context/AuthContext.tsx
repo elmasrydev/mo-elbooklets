@@ -115,6 +115,8 @@ interface AuthContextType {
   clearOtpAutoSent: () => void;
   otpShouldAutoRequest: boolean;
   clearOtpShouldAutoRequest: () => void;
+  showRegistrationSuccess: boolean;
+  setRegistrationSuccessPending: (pending: boolean) => Promise<void>;
   onAuthStateChange?: (isAuthenticated: boolean) => void;
 }
 
@@ -132,6 +134,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isVerificationSkipped, setIsVerificationSkipped] = useState(false);
   const [otpWasAutoSent, setOtpWasAutoSent] = useState(false);
   const [otpShouldAutoRequest, setOtpShouldAutoRequest] = useState(false);
+  const [showRegistrationSuccess, setShowRegistrationSuccess] = useState(false);
 
   // Check if user is already logged in on app start
   useEffect(() => {
@@ -173,13 +176,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               grade: parsedUser.grade?.name,
             });
           }
+
+          // Check if registration success screen is pending
+          const justRegistered = await AsyncStorage.getItem('just_registered_pending_success');
+          const hasSeenSuccess = await AsyncStorage.getItem('has_seen_success_screen');
+          if (justRegistered === 'true' && hasSeenSuccess !== 'true') {
+            setShowRegistrationSuccess(true);
+          }
         } else {
           const parentData = await AsyncStorage.getItem('parent_data');
           if (parentData) {
             const parsedParent = JSON.parse(parentData);
             setParentUser(parsedParent);
             configureCrashlyticsParent(parsedParent);
-
           }
         }
 
@@ -391,10 +400,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setParentUser(authPayload.parent);
           setUserRole('parent');
           configureCrashlyticsParent(authPayload.parent);
-          
+
           registerDeviceToken('parent');
           setTimeout(() => triggerNotificationPrompt(), 10000);
-          
+
           return { success: true };
         }
 
@@ -439,17 +448,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setParentUser(authPayload.parent);
           setUserRole('parent');
           configureCrashlyticsParent(authPayload.parent);
-          
+
           registerDeviceToken('parent');
           setTimeout(() => triggerNotificationPrompt(), 10000);
-          
+
           return { success: true };
         }
 
         return { success: false, error: result.errors?.[0]?.message || 'Registration failed' };
       } catch (error: any) {
         logError('Parent registration error', error);
-        return { success: false, error: error.message || 'An error occurred during parent registration' };
+        return {
+          success: false,
+          error: error.message || 'An error occurred during parent registration',
+        };
       }
     },
     [],
@@ -527,14 +539,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     [user],
   );
 
-  const updateParentUser = useCallback(async (data: Partial<Parent>) => {
-    const updatedParent = { ...parentUser, ...data } as Parent;
-    await AsyncStorage.setItem('parent_data', JSON.stringify(updatedParent));
-    setParentUser(updatedParent);
-  }, [parentUser]);
+  const updateParentUser = useCallback(
+    async (data: Partial<Parent>) => {
+      const updatedParent = { ...parentUser, ...data } as Parent;
+      await AsyncStorage.setItem('parent_data', JSON.stringify(updatedParent));
+      setParentUser(updatedParent);
+    },
+    [parentUser],
+  );
 
   const skipVerification = useCallback(() => {
     setIsVerificationSkipped(true);
+  }, []);
+
+  const setRegistrationSuccessPending = useCallback(async (pending: boolean) => {
+    setShowRegistrationSuccess(pending);
+    if (pending) {
+      await AsyncStorage.setItem('just_registered_pending_success', 'true');
+      await AsyncStorage.removeItem('has_seen_success_screen');
+    } else {
+      await AsyncStorage.setItem('has_seen_success_screen', 'true');
+      await AsyncStorage.removeItem('just_registered_pending_success');
+    }
   }, []);
 
   const refreshUser = useCallback(async () => {
@@ -612,6 +638,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       clearOtpAutoSent: () => setOtpWasAutoSent(false),
       otpShouldAutoRequest,
       clearOtpShouldAutoRequest: () => setOtpShouldAutoRequest(false),
+      showRegistrationSuccess,
+      setRegistrationSuccessPending,
     }),
     [
       user,
@@ -632,6 +660,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       skipVerification,
       otpWasAutoSent,
       otpShouldAutoRequest,
+      showRegistrationSuccess,
+      setRegistrationSuccessPending,
     ],
   );
 

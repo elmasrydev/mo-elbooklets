@@ -38,6 +38,7 @@ export const getInitialLanguage = async (): Promise<'ar' | 'en'> => {
 export const initI18n = async (lang: 'ar' | 'en'): Promise<void> => {
   if (!i18n.isInitialized) {
     await i18n.use(initReactI18next).init({
+      compatibilityJSON: 'v3' as any,
       resources,
       lng: lang,
       fallbackLng: 'en',

@@ -14,7 +14,7 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "cover",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#F3F5FB"
     },
     "ios": {
       "supportsTablet": true,
@@ -23,7 +23,7 @@
         "ITSAppUsesNonExemptEncryption": false
       },
       "bundleIdentifier": "com.elbooklets.app",
-      "buildNumber": "59",
+      "buildNumber": "68",
       "appleTeamId": "XJAN9FLEYZ",
       "googleServicesFile": "./GoogleService-Info.plist"
     },
@@ -32,12 +32,15 @@
       "versionCode": 8,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#F3F5FB"
       },
       "supportsRtl": true,
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "permissions": ["INTERNET", "ACCESS_NETWORK_STATE"],
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ],
       "googleServicesFile": "./google-services.json"
     },
     "web": {

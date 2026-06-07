@@ -108,14 +108,30 @@ const PeopleYouMayKnow: React.FC<PeopleYouMayKnowProps> = ({ onFollowSuccess }) 
         : t('social_screen.same_city');
 
     return (
-      <View style={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+      <View
+        style={[
+          styles.card,
+          { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+        ]}
+      >
         <View style={styles.avatarPlaceholder}>
           <Text style={styles.avatarText}>{item.name.charAt(0).toUpperCase()}</Text>
         </View>
-        <Text style={[styles.name, typography('bodySmall'), fontWeight('bold'), { color: theme.colors.text }]} numberOfLines={1}>
+        <Text
+          style={[
+            styles.name,
+            typography('bodySmall'),
+            fontWeight('bold'),
+            { color: theme.colors.text },
+          ]}
+          numberOfLines={1}
+        >
           {item.name}
         </Text>
-        <Text style={[styles.context, typography('caption'), { color: theme.colors.textSecondary }]} numberOfLines={1}>
+        <Text
+          style={[styles.context, typography('caption'), { color: theme.colors.textSecondary }]}
+          numberOfLines={1}
+        >
           {reasonLabel}
         </Text>
         <AppButton
@@ -143,7 +159,14 @@ const PeopleYouMayKnow: React.FC<PeopleYouMayKnowProps> = ({ onFollowSuccess }) 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={[styles.title, typography('label'), fontWeight('bold'), { color: theme.colors.textSecondary }]}>
+        <Text
+          style={[
+            styles.title,
+            typography('label'),
+            fontWeight('bold'),
+            { color: theme.colors.textSecondary },
+          ]}
+        >
           {t('social_screen.pymk_title')}
         </Text>
       </View>

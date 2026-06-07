@@ -9,7 +9,7 @@ export type ColorTheme = 'blue';
 // Brand & Palette Colors from UI Guide
 export const COLORS = {
   // Brand Colors
-  primaryBlue: '#1E40AF',
+  primaryBlue: '#005ab4',
   secondaryGreen: '#10B981',
   warningOrange: '#F59E0B',
 
@@ -18,7 +18,8 @@ export const COLORS = {
   darkGray: '#1F2937',
   mediumGray: '#6B7280',
   lightGray: '#E5E7EB',
-  backgroundGray: '#F5F5F5',
+  backgroundGray: '#F3F5FB',
+  navbarBackground: '#F3F5FB',
   white: '#FFFFFF',
   black: '#000000',
 
@@ -31,7 +32,7 @@ export const COLORS = {
   textPrimary: '#0F172A',
   textSecondary: '#6B7280',
   textTertiary: '#9CA3AF',
-  textLink: '#1E40AF',
+  textLink: '#005ab4',
   textOnDark: '#FFFFFF',
 } as const;
 
@@ -49,7 +50,7 @@ export interface ColorPalette {
   secondary: string;
 }
 
-// Blue theme palette (hue: 226) - Based on #1E40AF
+// Blue theme palette (hue: 226) - Based on #005ab4
 const bluePalette: ColorPalette = {
   primary50: '#eff6ff',
   primary100: '#dbeafe',
@@ -59,7 +60,7 @@ const bluePalette: ColorPalette = {
   primary500: COLORS.primaryBlue,
   primary600: '#2563eb',
   primary700: '#1d4ed8',
-  primary800: '#1e40af',
+  primary800: '#005ab4',
   primary900: '#1e3a8a',
   secondary: COLORS.secondaryGreen,
 };

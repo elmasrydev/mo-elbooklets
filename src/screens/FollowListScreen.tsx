@@ -103,28 +103,74 @@ const FollowListScreen: React.FC = () => {
     <View style={[common.card, { marginBottom: spacing.md }]}>
       <View style={currentStyles.studentCardContent}>
         <View style={currentStyles.studentInfo}>
-          <View style={[currentStyles.avatarPlaceholder, { backgroundColor: `${theme.colors.primary}15`, borderColor: `${theme.colors.primary}30` }]}>
-            <Text style={[currentStyles.avatarText, typography('h3'), fontWeight('bold'), { color: theme.colors.primary }]}>
+          <View
+            style={[
+              currentStyles.avatarPlaceholder,
+              {
+                backgroundColor: `${theme.colors.primary}15`,
+                borderColor: `${theme.colors.primary}30`,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                currentStyles.avatarText,
+                typography('h3'),
+                fontWeight('bold'),
+                { color: theme.colors.primary },
+              ]}
+            >
               {student.name.charAt(0).toUpperCase()}
             </Text>
           </View>
           <View style={currentStyles.studentDetails}>
-            <Text style={[currentStyles.studentName, typography('body'), fontWeight('bold'), { color: theme.colors.text }]}>
+            <Text
+              style={[
+                currentStyles.studentName,
+                typography('body'),
+                fontWeight('bold'),
+                { color: theme.colors.text },
+              ]}
+            >
               {student.name}
             </Text>
-            <Text style={[currentStyles.studentGrade, typography('caption'), { color: theme.colors.textSecondary }]}>
+            <Text
+              style={[
+                currentStyles.studentGrade,
+                typography('caption'),
+                { color: theme.colors.textSecondary },
+              ]}
+            >
               {student.grade.name}
             </Text>
             <View style={currentStyles.studentStats}>
-              <View style={[currentStyles.statBadge, { backgroundColor: `${theme.colors.primary}10` }]}>
+              <View
+                style={[currentStyles.statBadge, { backgroundColor: `${theme.colors.primary}10` }]}
+              >
                 <Ionicons name="book-outline" size={12} color={theme.colors.primary} />
-                <Text style={[currentStyles.studentStat, typography('label'), fontWeight('bold'), { color: theme.colors.primary }]}>
+                <Text
+                  style={[
+                    currentStyles.studentStat,
+                    typography('label'),
+                    fontWeight('bold'),
+                    { color: theme.colors.primary },
+                  ]}
+                >
                   {student.totalQuizzes} {t('common.quizzes')}
                 </Text>
               </View>
-              <View style={[currentStyles.statBadge, { backgroundColor: `${theme.colors.success}10` }]}>
+              <View
+                style={[currentStyles.statBadge, { backgroundColor: `${theme.colors.success}10` }]}
+              >
                 <Ionicons name="star-outline" size={12} color={theme.colors.success} />
-                <Text style={[currentStyles.studentStat, typography('label'), fontWeight('bold'), { color: theme.colors.success }]}>
+                <Text
+                  style={[
+                    currentStyles.studentStat,
+                    typography('label'),
+                    fontWeight('bold'),
+                    { color: theme.colors.success },
+                  ]}
+                >
                   {student.avgScore}% {t('common.avg')}
                 </Text>
               </View>
@@ -143,14 +189,15 @@ const FollowListScreen: React.FC = () => {
     </View>
   );
 
-  const headerTitle = type === 'following' 
-    ? t('profile_screen.follow_list_title_following') 
-    : t('profile_screen.follow_list_title_followers');
+  const headerTitle =
+    type === 'following'
+      ? t('profile_screen.follow_list_title_following')
+      : t('profile_screen.follow_list_title_followers');
 
   return (
     <View style={common.container}>
       <UnifiedHeader title={headerTitle} showBackButton />
-      
+
       {loading && !refreshing ? (
         <View style={currentStyles.loadingContainer}>
           <GenericListSkeleton numItems={6} />
@@ -166,8 +213,16 @@ const FollowListScreen: React.FC = () => {
           ListEmptyComponent={
             <View style={currentStyles.emptyState}>
               <Ionicons name="people-outline" size={60} color={theme.colors.textTertiary} />
-              <Text style={[currentStyles.emptyText, typography('body'), { color: theme.colors.textSecondary }]}>
-                {type === 'following' ? t('profile_screen.no_following') : t('profile_screen.no_followers')}
+              <Text
+                style={[
+                  currentStyles.emptyText,
+                  typography('body'),
+                  { color: theme.colors.textSecondary },
+                ]}
+              >
+                {type === 'following'
+                  ? t('profile_screen.no_following')
+                  : t('profile_screen.no_followers')}
               </Text>
             </View>
           }
@@ -177,75 +232,76 @@ const FollowListScreen: React.FC = () => {
   );
 };
 
-const styles = (common: any) => StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    padding: layout.screenPadding,
-  },
-  listContent: {
-    padding: layout.screenPadding,
-    paddingBottom: 40,
-  },
-  studentCardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  studentInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  avatarPlaceholder: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-  },
-  avatarText: {
-    textAlign: 'center',
-  },
-  studentDetails: {
-    flex: 1,
-    ...common.marginStart(12),
-  },
-  studentName: {
-    marginBottom: 2,
-  },
-  studentGrade: {
-    marginBottom: 4,
-  },
-  studentStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  statBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  studentStat: {
-    fontSize: 10,
-  },
-  followButton: {
-    minWidth: 90,
-    ...common.marginStart(8),
-  },
-  emptyState: {
-    marginTop: 100,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyText: {
-    marginTop: 16,
-    textAlign: 'center',
-  },
-});
+const styles = (common: any) =>
+  StyleSheet.create({
+    loadingContainer: {
+      flex: 1,
+      padding: layout.screenPadding,
+    },
+    listContent: {
+      padding: layout.screenPadding,
+      paddingBottom: 40,
+    },
+    studentCardContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    studentInfo: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+    },
+    avatarPlaceholder: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 1,
+    },
+    avatarText: {
+      textAlign: 'center',
+    },
+    studentDetails: {
+      flex: 1,
+      ...common.marginStart(12),
+    },
+    studentName: {
+      marginBottom: 2,
+    },
+    studentGrade: {
+      marginBottom: 4,
+    },
+    studentStats: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    statBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 6,
+    },
+    studentStat: {
+      fontSize: 10,
+    },
+    followButton: {
+      minWidth: 90,
+      ...common.marginStart(8),
+    },
+    emptyState: {
+      marginTop: 100,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    emptyText: {
+      marginTop: 16,
+      textAlign: 'center',
+    },
+  });
 
 export default FollowListScreen;

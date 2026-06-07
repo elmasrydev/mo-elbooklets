@@ -33,7 +33,16 @@ interface QuizCompletionCardProps {
   isCurrentUser?: boolean;
 }
 
-const CONFETTI_COLORS = ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#ff9ff3', '#feca57', '#5f27cd'];
+const CONFETTI_COLORS = [
+  '#FFD700',
+  '#FF6B6B',
+  '#4ECDC4',
+  '#45B7D1',
+  '#96CEB4',
+  '#ff9ff3',
+  '#feca57',
+  '#5f27cd',
+];
 const CONFETTI_PIECES = CONFETTI_COLORS.flatMap((color, ci) =>
   [0, 1, 2].map((i) => {
     const index = ci * 3 + i;
@@ -50,52 +59,72 @@ const CONFETTI_PIECES = CONFETTI_COLORS.flatMap((color, ci) =>
   }),
 );
 
-const ConfettiPiece = React.memo<{ delay: number; color: string; endX: number; endY: number; rotateDeg: string }>(
-  ({ delay, color, endX, endY, rotateDeg }) => {
-    const anim = useRef(new Animated.Value(0)).current;
+const ConfettiPiece = React.memo<{
+  delay: number;
+  color: string;
+  endX: number;
+  endY: number;
+  rotateDeg: string;
+}>(({ delay, color, endX, endY, rotateDeg }) => {
+  const anim = useRef(new Animated.Value(0)).current;
 
-    useEffect(() => {
-      const run = () => {
-        anim.setValue(0);
-        Animated.timing(anim, {
-          toValue: 1,
-          duration: 2000,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        }).start(() => {
-          setTimeout(run, delay + 500);
-        });
-      };
-      const initialTimeout = setTimeout(run, delay);
-      return () => clearTimeout(initialTimeout);
-    }, []);
+  useEffect(() => {
+    const run = () => {
+      anim.setValue(0);
+      Animated.timing(anim, {
+        toValue: 1,
+        duration: 2000,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }).start(() => {
+        setTimeout(run, delay + 500);
+      });
+    };
+    const initialTimeout = setTimeout(run, delay);
+    return () => clearTimeout(initialTimeout);
+  }, []);
 
-    const driftY = 20; // visual gravity over time
+  const driftY = 20; // visual gravity over time
 
-    return (
-      <Animated.View
-        style={[
-          styles.confettiPiece,
-          {
-            backgroundColor: color,
-            opacity: anim.interpolate({
-              inputRange: [0, 0.1, 0.7, 1],
-              outputRange: [0, 1, 0.9, 0],
-            }),
-            transform: [
-              { translateX: anim.interpolate({ inputRange: [0, 1], outputRange: [0, endX] }) },
-              { translateY: anim.interpolate({ inputRange: [0, 0.7, 1], outputRange: [0, endY, endY + driftY] }) },
-              { scale: anim.interpolate({ inputRange: [0, 0.1, 0.7, 1], outputRange: [0, 1, 1, 0.2] }) },
-              { rotate: anim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', rotateDeg] }) },
-            ],
-          },
-        ]}
-      />
-    );
-  }
-);
+  return (
+    <Animated.View
+      style={[
+        styles.confettiPiece,
+        {
+          backgroundColor: color,
+          opacity: anim.interpolate({
+            inputRange: [0, 0.1, 0.7, 1],
+            outputRange: [0, 1, 0.9, 0],
+          }),
+          transform: [
+            { translateX: anim.interpolate({ inputRange: [0, 1], outputRange: [0, endX] }) },
+            {
+              translateY: anim.interpolate({
+                inputRange: [0, 0.7, 1],
+                outputRange: [0, endY, endY + driftY],
+              }),
+            },
+            {
+              scale: anim.interpolate({
+                inputRange: [0, 0.1, 0.7, 1],
+                outputRange: [0, 1, 1, 0.2],
+              }),
+            },
+            { rotate: anim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', rotateDeg] }) },
+          ],
+        },
+      ]}
+    />
+  );
+});
 
-const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({ item, onLike, onComment, onReview, isCurrentUser = false }) => {
+const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
+  item,
+  onLike,
+  onComment,
+  onReview,
+  isCurrentUser = false,
+}) => {
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { language } = useLanguage();
   const { t } = useTranslation();
@@ -104,15 +133,31 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({ item, onLike, o
 
   const scorePercent = Math.round((item.quizData.score / item.quizData.totalQuestions) * 100);
   const isPerfect = scorePercent >= 95 || item.quizData.score === item.quizData.totalQuestions;
-  
+
   // Theme colors based on perfect score or regular
   const primaryColor = isPerfect ? theme.colors.success : theme.colors.primary;
   const primaryBg = isPerfect ? `${theme.colors.success}10` : `${theme.colors.primary}10`;
   const primaryBorder = isPerfect ? `${theme.colors.success}20` : `${theme.colors.border}`;
 
-  const getInitials = (name: string) => name.split(' ').map((n) => n[0]).join('').toUpperCase().substring(0, 2);
+  const getInitials = (name: string) =>
+    name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
 
-  const currentStyles = createStyles(theme, common, spacing, borderRadius, typography, fontWeight, primaryColor, primaryBg, primaryBorder);
+  const currentStyles = createStyles(
+    theme,
+    common,
+    spacing,
+    borderRadius,
+    typography,
+    fontWeight,
+    primaryColor,
+    primaryBg,
+    primaryBorder,
+  );
 
   return (
     <View style={[currentStyles.cardContainer, isPerfect && currentStyles.perfectCardContainer]}>
@@ -126,24 +171,45 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({ item, onLike, o
       {/* Top Header: Avatar + User Info + Score Progress */}
       <View style={currentStyles.headerRow}>
         <View style={currentStyles.headerLeft}>
-          <View style={[currentStyles.avatar, { borderColor: primaryBorder, backgroundColor: primaryBg }]}>
-            <Text style={[currentStyles.avatarText, { color: primaryColor }]}>{getInitials(item.user.name)}</Text>
+          <View
+            style={[
+              currentStyles.avatar,
+              { borderColor: primaryBorder, backgroundColor: primaryBg },
+            ]}
+          >
+            <Text style={[currentStyles.avatarText, { color: primaryColor }]}>
+              {getInitials(item.user.name)}
+            </Text>
           </View>
           <View style={currentStyles.userInfo}>
-            <Text style={[currentStyles.userName, { textAlign: common.textAlign }]}>{item.user.name}</Text>
+            <Text style={[currentStyles.userName, { textAlign: common.textAlign }]}>
+              {item.user.name}
+            </Text>
             <Text style={[currentStyles.userSubtitle, { textAlign: common.textAlign }]}>
               {item.user.grade.name} • {getTimeAgo(item.createdAt, t, language)}
             </Text>
           </View>
         </View>
-        
+
         <View style={currentStyles.progressContainer}>
-          <CircularProgress size={56} strokeWidth={4} percentage={scorePercent} color={primaryColor} />
+          <CircularProgress
+            size={56}
+            strokeWidth={4}
+            percentage={scorePercent}
+            color={primaryColor}
+          />
           {isPerfect && (
             <>
               <View style={currentStyles.confettiWrapper} pointerEvents="none">
                 {CONFETTI_PIECES.map((p) => (
-                  <ConfettiPiece key={p.key} delay={p.delay} color={p.color} endX={p.endX} endY={p.endY} rotateDeg={p.rotateDeg} />
+                  <ConfettiPiece
+                    key={p.key}
+                    delay={p.delay}
+                    color={p.color}
+                    endX={p.endX}
+                    endY={p.endY}
+                    rotateDeg={p.rotateDeg}
+                  />
                 ))}
               </View>
               <View style={currentStyles.starBadge}>
@@ -162,22 +228,39 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({ item, onLike, o
               {`${item.user.name.split(' ')[0]} ${t('social_screen.aced_quiz', { subject: item.quizData.quiz.subject.name, defaultValue: 'Aced the quiz!' })} ✨`}
             </Text>
             <View style={currentStyles.perfectInnerCard}>
-              <MaterialIcons name="military-tech" size={24} color={theme.colors.success} style={currentStyles.perfectIcon} />
+              <MaterialIcons
+                name="military-tech"
+                size={24}
+                color={theme.colors.success}
+                style={currentStyles.perfectIcon}
+              />
               <View style={currentStyles.perfectInnerContent}>
-                <Text style={currentStyles.perfectInnerTitle}>{t('social_screen.perfect_score', 'Perfect Score! 🎯')}</Text>
+                <Text style={currentStyles.perfectInnerTitle}>
+                  {t('social_screen.perfect_score', 'Perfect Score! 🎯')}
+                </Text>
                 <Text style={currentStyles.perfectInnerSubtitle}>
-                  {item.quizData.score}/{item.quizData.totalQuestions} {t('social_screen.questions_correct_in', 'Questions Correct in')} {item.quizData.quiz.subject.name}
+                  {item.quizData.score}/{item.quizData.totalQuestions}{' '}
+                  {t('social_screen.questions_correct_in', 'Questions Correct in')}{' '}
+                  {item.quizData.quiz.subject.name}
                 </Text>
               </View>
             </View>
           </>
         ) : (
           <Text style={[currentStyles.regularText, { textAlign: common.textAlign }]}>
-            {t('social_screen.scored_prefix', 'Scored ')} 
-            <Text style={[currentStyles.highlightText, { color: theme.colors.primary }]}>{scorePercent}%</Text> 
-            {t('social_screen.on_quiz_prefix', ' on a ')} 
-            <Text style={[currentStyles.highlightText, { color: theme.colors.primary, textDecorationLine: 'underline' }]}>
-              {item.quizData.quiz.subject.name}{t('social_screen.quiz_suffix', ' Quiz')}
+            {t('social_screen.scored_prefix', 'Scored ')}
+            <Text style={[currentStyles.highlightText, { color: theme.colors.primary }]}>
+              {scorePercent}%
+            </Text>
+            {t('social_screen.on_quiz_prefix', ' on a ')}
+            <Text
+              style={[
+                currentStyles.highlightText,
+                { color: theme.colors.primary, textDecorationLine: 'underline' },
+              ]}
+            >
+              {item.quizData.quiz.subject.name}
+              {t('social_screen.quiz_suffix', ' Quiz')}
             </Text>
             {'. '}
             {t('social_screen.great_accuracy', 'Great accuracy! 🎯')}
@@ -196,8 +279,16 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({ item, onLike, o
 
         <View style={currentStyles.actionButtons}>
           <TouchableOpacity style={currentStyles.likeBtn} onPress={onLike}>
-            <MaterialIcons name="thumb-up" size={14} color={item.isLiked ? theme.colors.primary : theme.colors.textSecondary} />
-            <Text style={[currentStyles.likeBtnText, item.isLiked && { color: theme.colors.primary }]}>{t('common.like', 'Like')}</Text>
+            <MaterialIcons
+              name="thumb-up"
+              size={14}
+              color={item.isLiked ? theme.colors.primary : theme.colors.textSecondary}
+            />
+            <Text
+              style={[currentStyles.likeBtnText, item.isLiked && { color: theme.colors.primary }]}
+            >
+              {t('common.like', 'Like')}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -205,7 +296,17 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({ item, onLike, o
   );
 };
 
-const createStyles = (theme: any, common: any, spacing: any, borderRadius: any, typography: any, fontWeight: any, primaryColor: string, primaryBg: string, primaryBorder: string) =>
+const createStyles = (
+  theme: any,
+  common: any,
+  spacing: any,
+  borderRadius: any,
+  typography: any,
+  fontWeight: any,
+  primaryColor: string,
+  primaryBg: string,
+  primaryBorder: string,
+) =>
   StyleSheet.create({
     cardContainer: {
       backgroundColor: theme.mode === 'light' ? theme.colors.surface : theme.colors.card,
@@ -407,4 +508,3 @@ const styles = StyleSheet.create({
 });
 
 export default React.memo(QuizCompletionCard);
-

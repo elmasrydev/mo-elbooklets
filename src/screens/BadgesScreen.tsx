@@ -34,10 +34,12 @@ const BadgesScreen: React.FC = () => {
 
   const parseServerIcon = (iconStr?: string | null) => {
     if (!iconStr) return { family: 'MaterialIcons' as const, name: 'stars' };
-    
+
     // Extract icon name from class list (e.g. "fas fa-rocket" -> "rocket")
     const parts = iconStr.split(' ');
-    const faPart = parts.find(p => p.startsWith('fa-') && p !== 'fa-solid' && p !== 'fa-regular' && p !== 'fa-brands');
+    const faPart = parts.find(
+      (p) => p.startsWith('fa-') && p !== 'fa-solid' && p !== 'fa-regular' && p !== 'fa-brands',
+    );
     let iconName = faPart ? faPart.replace('fa-', '') : iconStr.replace(/_/g, '-');
 
     // Specific overrides
@@ -47,12 +49,12 @@ const BadgesScreen: React.FC = () => {
     if (iconName === 'sliders') {
       return { family: 'FontAwesome5' as const, name: 'sliders-h' };
     }
-    
+
     // Choose FontAwesome5 for web classes, default to MaterialIcons for others
     const isFA = iconStr.includes('fa-') || iconStr.includes('fas ') || iconStr.includes('far ');
     return {
       family: isFA ? ('FontAwesome5' as const) : ('MaterialIcons' as const),
-      name: iconName
+      name: iconName,
     };
   };
 
@@ -83,7 +85,9 @@ const BadgesScreen: React.FC = () => {
   const progress = badges.length > 0 ? (earnedBadgesCount / badges.length) * 100 : 0;
 
   // Sort categories by displayOrder
-  const sortedCategories = [...categories].sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+  const sortedCategories = [...categories].sort(
+    (a, b) => (a.displayOrder || 0) - (b.displayOrder || 0),
+  );
 
   if (loading) {
     return (
@@ -105,14 +109,29 @@ const BadgesScreen: React.FC = () => {
         <UnifiedHeader title={t('badges_screen.header_title', 'Badges')} showBackButton />
         <View style={styles.centerContainer}>
           <Ionicons name="alert-circle-outline" size={48} color={theme.colors.error} />
-          <Text style={[typography('body'), { color: theme.colors.textSecondary, marginTop: 12, textAlign: 'center', paddingHorizontal: 32 }]}>
-            {t('badges_screen.error_loading', 'Could not load badges. Please check your connection.')}
+          <Text
+            style={[
+              typography('body'),
+              {
+                color: theme.colors.textSecondary,
+                marginTop: 12,
+                textAlign: 'center',
+                paddingHorizontal: 32,
+              },
+            ]}
+          >
+            {t(
+              'badges_screen.error_loading',
+              'Could not load badges. Please check your connection.',
+            )}
           </Text>
           <TouchableOpacity
             style={[styles.retryButton, { backgroundColor: theme.colors.primary }]}
             onPress={() => refetch()}
           >
-            <Text style={[typography('button'), { color: '#fff' }]}>{t('common.error_boundary_retry', 'Retry')}</Text>
+            <Text style={[typography('button'), { color: '#fff' }]}>
+              {t('common.error_boundary_retry', 'Retry')}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -123,20 +142,35 @@ const BadgesScreen: React.FC = () => {
     <View style={[styles.mainContainer, { backgroundColor: theme.colors.background }]}>
       <UnifiedHeader title={t('badges_screen.header_title', 'Badges')} showBackButton />
 
-
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Total Progress Card */}
-        <View style={[styles.progressCard, { backgroundColor: theme.colors.surface, borderRadius: borderRadius.xl }]}>
+        <View
+          style={[
+            styles.progressCard,
+            { backgroundColor: theme.colors.surface, borderRadius: borderRadius.xl },
+          ]}
+        >
           <View style={styles.progressHeader}>
             <View style={styles.progressTitleContainer}>
-              <View style={[styles.progressIconContainer, { backgroundColor: theme.colors.primary + '15' }]}>
+              <View
+                style={[
+                  styles.progressIconContainer,
+                  { backgroundColor: theme.colors.primary + '15' },
+                ]}
+              >
                 <Ionicons name="ribbon" size={20} color={theme.colors.primary} />
               </View>
               <Text style={[typography('h3'), fontWeight('700'), { color: theme.colors.primary }]}>
                 {t('badges_screen.total_progress', 'Total Progress')}
               </Text>
             </View>
-            <Text style={[typography('caption'), fontWeight('700'), { color: theme.colors.textSecondary }]}>
+            <Text
+              style={[
+                typography('caption'),
+                fontWeight('700'),
+                { color: theme.colors.textSecondary },
+              ]}
+            >
               {earnedBadgesCount}/{badges.length} {t('badges_screen.badges_short', 'Badges')}
             </Text>
           </View>
@@ -147,8 +181,8 @@ const BadgesScreen: React.FC = () => {
                 styles.progressBarFill,
                 {
                   backgroundColor: theme.colors.primary,
-                  width: `${progress}%`
-                }
+                  width: `${progress}%`,
+                },
               ]}
             />
           </View>
@@ -163,29 +197,61 @@ const BadgesScreen: React.FC = () => {
           const catEarned = catBadges.filter((b) => !!b.awardedAt).length;
           const catTotal = category.badgeCount || catBadges.length; // Use server's count, fallback to local
           const catPercentage = catTotal > 0 ? (catEarned / catTotal) * 100 : 0;
-          
+
           const catColor = category.color || theme.colors.primary;
           const catIcon = category.icon;
-          const catName = isArabic ? (category.nameAr || category.name) : (category.nameEn || category.name);
+          const catName = isArabic
+            ? category.nameAr || category.name
+            : category.nameEn || category.name;
 
           return (
             <View
               key={category.id}
-              style={[styles.categorySection, { backgroundColor: theme.colors.surface, borderRadius: borderRadius.lg }]}
+              style={[
+                styles.categorySection,
+                { backgroundColor: theme.colors.surface, borderRadius: borderRadius.lg },
+              ]}
             >
               <View style={styles.categoryHeader}>
                 <View style={styles.categoryTitleRow}>
                   <DynamicIcon iconStr={catIcon} size={18} color={catColor} />
-                  <Text style={[typography('body'), fontWeight('700'), { color: catColor, marginStart: 8 }]}>
+                  <Text
+                    style={[
+                      typography('body'),
+                      fontWeight('700'),
+                      { color: catColor, marginStart: 8 },
+                    ]}
+                  >
                     {catName}
                   </Text>
                 </View>
 
                 <View style={styles.categoryProgressRow}>
-                  <View style={[styles.catProgressBarBg, { backgroundColor: theme.colors.border + '50' }]}>
-                    <View style={[styles.catProgressBarFill, { backgroundColor: catColor, width: `${catPercentage}%` }]} />
+                  <View
+                    style={[
+                      styles.catProgressBarBg,
+                      { backgroundColor: theme.colors.border + '50' },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.catProgressBarFill,
+                        { backgroundColor: catColor, width: `${catPercentage}%` },
+                      ]}
+                    />
                   </View>
-                  <Text style={[typography('caption'), fontWeight('700'), { color: theme.colors.textSecondary, marginStart: 8, width: 30, textAlign: 'right' }]}>
+                  <Text
+                    style={[
+                      typography('caption'),
+                      fontWeight('700'),
+                      {
+                        color: theme.colors.textSecondary,
+                        marginStart: 8,
+                        width: 30,
+                        textAlign: 'right',
+                      },
+                    ]}
+                  >
                     {catEarned}/{catTotal}
                   </Text>
                 </View>
@@ -193,7 +259,9 @@ const BadgesScreen: React.FC = () => {
 
               <View style={styles.badgeGrid}>
                 {catBadges.map((badge: any) => {
-                  const badgeName = isArabic ? (badge.nameAr || badge.name) : (badge.nameEn || badge.name);
+                  const badgeName = isArabic
+                    ? badge.nameAr || badge.name
+                    : badge.nameEn || badge.name;
 
                   return (
                     <TouchableOpacity
@@ -204,28 +272,29 @@ const BadgesScreen: React.FC = () => {
                       <View
                         style={[
                           styles.badgeIconOuter,
-                          { backgroundColor: theme.colors.background + '80' }
+                          { backgroundColor: theme.colors.background + '80' },
                         ]}
                       >
-                        <View style={[
-                          styles.badgeIconInner,
-                          {
-                            backgroundColor: badge.awardedAt ? catColor + '15' : theme.colors.border + '30',
-                            borderColor: badge.awardedAt ? catColor : 'transparent',
-                            borderWidth: badge.awardedAt ? 1.5 : 0
-                          }
-                        ]}>
+                        <View
+                          style={[
+                            styles.badgeIconInner,
+                            {
+                              backgroundColor: badge.awardedAt
+                                ? catColor + '15'
+                                : theme.colors.border + '30',
+                              borderColor: badge.awardedAt ? catColor : 'transparent',
+                              borderWidth: badge.awardedAt ? 1.5 : 0,
+                            },
+                          ]}
+                        >
                           {badge.logoUrl ? (
                             <Image
                               source={{
                                 uri: badge.logoUrl.startsWith('/')
                                   ? `https://prs.elbooklets.com${badge.logoUrl}`
-                                  : badge.logoUrl
+                                  : badge.logoUrl,
                               }}
-                              style={[
-                                styles.badgeImage,
-                                !badge.awardedAt && styles.grayscaleImage
-                              ]}
+                              style={[styles.badgeImage, !badge.awardedAt && styles.grayscaleImage]}
                             />
                           ) : (
                             <DynamicIcon
@@ -237,7 +306,12 @@ const BadgesScreen: React.FC = () => {
                           )}
                           {!badge.awardedAt && (
                             <View style={styles.lockOverlay}>
-                              <Ionicons name="lock-closed" size={14} color={theme.colors.textSecondary} style={{ opacity: 0.5 }} />
+                              <Ionicons
+                                name="lock-closed"
+                                size={14}
+                                color={theme.colors.textSecondary}
+                                style={{ opacity: 0.5 }}
+                              />
                             </View>
                           )}
                         </View>
@@ -247,7 +321,9 @@ const BadgesScreen: React.FC = () => {
                           typography('caption'),
                           fontWeight(badge.awardedAt ? '600' : 'normal'),
                           styles.badgeName,
-                          { color: badge.awardedAt ? theme.colors.text : theme.colors.textSecondary }
+                          {
+                            color: badge.awardedAt ? theme.colors.text : theme.colors.textSecondary,
+                          },
                         ]}
                         numberOfLines={2}
                       >
@@ -264,7 +340,9 @@ const BadgesScreen: React.FC = () => {
         {badges.length === 0 && (
           <View style={styles.emptyContainer}>
             <Ionicons name="medal-outline" size={64} color={theme.colors.border} />
-            <Text style={[typography('body'), { color: theme.colors.textSecondary, marginTop: 16 }]}>
+            <Text
+              style={[typography('body'), { color: theme.colors.textSecondary, marginTop: 16 }]}
+            >
               {t('badges_screen.no_badges', 'No badges available yet.')}
             </Text>
           </View>
@@ -283,103 +361,189 @@ const BadgesScreen: React.FC = () => {
           activeOpacity={1}
           onPress={() => setSelectedBadge(null)}
         >
-          <View style={[styles.modalContent, { backgroundColor: theme.colors.surface, borderRadius: borderRadius.xl }]}>
-            {selectedBadge && (() => {
-              const selectedCat = categories.find((c) => c.id === selectedBadge.category?.id);
-              const catColor = selectedCat?.color || theme.colors.primary;
-              const catIcon = selectedCat?.icon;
-              
-              const badgeName = isArabic ? (selectedBadge.nameAr || selectedBadge.name) : (selectedBadge.nameEn || selectedBadge.name);
-              const badgeDesc = isArabic ? (selectedBadge.descriptionAr || selectedBadge.description) : (selectedBadge.descriptionEn || selectedBadge.description);
+          <View
+            style={[
+              styles.modalContent,
+              { backgroundColor: theme.colors.surface, borderRadius: borderRadius.xl },
+            ]}
+          >
+            {selectedBadge &&
+              (() => {
+                const selectedCat = categories.find((c) => c.id === selectedBadge.category?.id);
+                const catColor = selectedCat?.color || theme.colors.primary;
+                const catIcon = selectedCat?.icon;
 
-              return (
-                <>
-                  <View style={[styles.modalHeader, { backgroundColor: catColor + '10' }]}>
-                    <View style={[styles.modalImageContainer, {
-                      backgroundColor: theme.colors.surface,
-                      borderRadius: borderRadius.lg,
-                      padding: 20,
-                      shadowColor: '#000',
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.1,
-                      shadowRadius: 10,
-                      elevation: 5,
-                      marginBottom: 10,
-                    }]}>
-                      {selectedBadge.logoUrl && !modalImageError ? (
-                        <Image
-                          source={{
-                            uri: selectedBadge.logoUrl.startsWith('/')
-                              ? `https://prs.elbooklets.com${selectedBadge.logoUrl}`
-                              : selectedBadge.logoUrl
-                          }}
-                          style={styles.modalBadgeImage}
-                          onError={() => setModalImageError(true)}
+                const badgeName = isArabic
+                  ? selectedBadge.nameAr || selectedBadge.name
+                  : selectedBadge.nameEn || selectedBadge.name;
+                const badgeDesc = isArabic
+                  ? selectedBadge.descriptionAr || selectedBadge.description
+                  : selectedBadge.descriptionEn || selectedBadge.description;
+
+                return (
+                  <>
+                    <View style={[styles.modalHeader, { backgroundColor: catColor + '10' }]}>
+                      <View
+                        style={[
+                          styles.modalImageContainer,
+                          {
+                            backgroundColor: theme.colors.surface,
+                            borderRadius: borderRadius.lg,
+                            padding: 20,
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 4 },
+                            shadowOpacity: 0.1,
+                            shadowRadius: 10,
+                            elevation: 5,
+                            marginBottom: 10,
+                          },
+                        ]}
+                      >
+                        {selectedBadge.logoUrl && !modalImageError ? (
+                          <Image
+                            source={{
+                              uri: selectedBadge.logoUrl.startsWith('/')
+                                ? `https://prs.elbooklets.com${selectedBadge.logoUrl}`
+                                : selectedBadge.logoUrl,
+                            }}
+                            style={styles.modalBadgeImage}
+                            onError={() => setModalImageError(true)}
+                          />
+                        ) : (
+                          <DynamicIcon
+                            iconStr={catIcon}
+                            size={60}
+                            color={selectedBadge.awardedAt ? catColor : theme.colors.textTertiary}
+                          />
+                        )}
+                      </View>
+                      <TouchableOpacity
+                        style={styles.closeButton}
+                        onPress={() => setSelectedBadge(null)}
+                      >
+                        <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
+                      </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.modalBody}>
+                      <Text
+                        style={[
+                          typography('h2'),
+                          fontWeight('700'),
+                          { color: theme.colors.text, marginBottom: 8, textAlign: 'center' },
+                        ]}
+                      >
+                        {badgeName}
+                      </Text>
+
+                      <View
+                        style={[
+                          styles.statusBadge,
+                          {
+                            backgroundColor: selectedBadge.awardedAt
+                              ? theme.colors.success + '15'
+                              : theme.colors.border + '40',
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name={selectedBadge.awardedAt ? 'checkmark-circle' : 'lock-closed'}
+                          size={14}
+                          color={
+                            selectedBadge.awardedAt
+                              ? theme.colors.success
+                              : theme.colors.textSecondary
+                          }
                         />
-                      ) : (
-                        <DynamicIcon
-                          iconStr={catIcon}
-                          size={60}
-                          color={selectedBadge.awardedAt ? catColor : theme.colors.textTertiary}
-                        />
+                        <Text
+                          style={[
+                            typography('caption'),
+                            fontWeight('700'),
+                            {
+                              color: selectedBadge.awardedAt
+                                ? theme.colors.success
+                                : theme.colors.textSecondary,
+                              marginStart: 4,
+                            },
+                          ]}
+                        >
+                          {selectedBadge.awardedAt
+                            ? t('badges_screen.earned', 'Earned')
+                            : t('badges_screen.locked', 'Locked')}
+                        </Text>
+                      </View>
+
+                      <Text
+                        style={[
+                          typography('body'),
+                          {
+                            color: theme.colors.textSecondary,
+                            marginVertical: spacing.md,
+                            textAlign: 'center',
+                          },
+                        ]}
+                      >
+                        {badgeDesc ||
+                          t(
+                            'badges_screen.no_description',
+                            'Complete challenges to earn this badge!',
+                          )}
+                      </Text>
+
+                      <View
+                        style={[
+                          styles.criteriaBox,
+                          {
+                            backgroundColor: theme.colors.background,
+                            borderRadius: borderRadius.md,
+                            padding: spacing.md,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            typography('caption'),
+                            fontWeight('700'),
+                            {
+                              color: theme.colors.textTertiary,
+                              marginBottom: 8,
+                              textTransform: 'uppercase',
+                              textAlign: 'left',
+                            },
+                          ]}
+                        >
+                          {t('badges_screen.requirement', 'REQUIREMENT')}
+                        </Text>
+                        <Text
+                          style={[
+                            typography('body'),
+                            { color: theme.colors.text, textAlign: 'left' },
+                          ]}
+                        >
+                          {selectedBadge.rulesPreview}
+                        </Text>
+                      </View>
+
+                      {selectedBadge.awardedAt && (
+                        <Text
+                          style={[
+                            typography('caption'),
+                            {
+                              color: theme.colors.textTertiary,
+                              marginTop: spacing.md,
+                              textAlign: 'center',
+                            },
+                          ]}
+                        >
+                          {t('badges_screen.awarded_at', 'Awarded on {{date}}', {
+                            date: new Date(selectedBadge.awardedAt).toLocaleDateString(),
+                          })}
+                        </Text>
                       )}
                     </View>
-                    <TouchableOpacity
-                      style={styles.closeButton}
-                      onPress={() => setSelectedBadge(null)}
-                    >
-                      <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
-                    </TouchableOpacity>
-                  </View>
-
-                  <View style={styles.modalBody}>
-                    <Text style={[typography('h2'), fontWeight('700'), { color: theme.colors.text, marginBottom: 8, textAlign: 'center' }]}>
-                      {badgeName}
-                    </Text>
-
-                    <View style={[
-                      styles.statusBadge,
-                      { backgroundColor: selectedBadge.awardedAt ? theme.colors.success + '15' : theme.colors.border + '40' }
-                    ]}>
-                      <Ionicons
-                        name={selectedBadge.awardedAt ? "checkmark-circle" : "lock-closed"}
-                        size={14}
-                        color={selectedBadge.awardedAt ? theme.colors.success : theme.colors.textSecondary}
-                      />
-                      <Text style={[
-                        typography('caption'),
-                        fontWeight('700'),
-                        {
-                          color: selectedBadge.awardedAt ? theme.colors.success : theme.colors.textSecondary,
-                          marginStart: 4
-                        }
-                      ]}>
-                        {selectedBadge.awardedAt ? t('badges_screen.earned', 'Earned') : t('badges_screen.locked', 'Locked')}
-                      </Text>
-                    </View>
-
-                    <Text style={[typography('body'), { color: theme.colors.textSecondary, marginVertical: spacing.md, textAlign: 'center' }]}>
-                      {badgeDesc || t('badges_screen.no_description', 'Complete challenges to earn this badge!')}
-                    </Text>
-
-                    <View style={[styles.criteriaBox, { backgroundColor: theme.colors.background, borderRadius: borderRadius.md, padding: spacing.md }]}>
-                      <Text style={[typography('caption'), fontWeight('700'), { color: theme.colors.textTertiary, marginBottom: 8, textTransform: 'uppercase', textAlign: 'left' }]}>
-                        {t('badges_screen.requirement', 'REQUIREMENT')}
-                      </Text>
-                      <Text style={[typography('body'), { color: theme.colors.text, textAlign: 'left' }]}>
-                        {selectedBadge.rulesPreview}
-                      </Text>
-                    </View>
-
-                    {selectedBadge.awardedAt && (
-                      <Text style={[typography('caption'), { color: theme.colors.textTertiary, marginTop: spacing.md, textAlign: 'center' }]}>
-                        {t('badges_screen.awarded_at', 'Awarded on {{date}}', { date: new Date(selectedBadge.awardedAt).toLocaleDateString() })}
-                      </Text>
-                    )}
-                  </View>
-                </>
-              );
-            })()}
+                  </>
+                );
+              })()}
           </View>
         </TouchableOpacity>
       </Modal>

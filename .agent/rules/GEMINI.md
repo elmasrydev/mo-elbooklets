@@ -147,9 +147,3 @@ Trigger on "final checks" or "checklist". A task is NOT finished until `checklis
 | `ux_audit.py`         | UI/UX & Accessibility       |
 | `mobile_audit.py`     | Mobile platform conventions |
 | `lighthouse_audit.py` | Performance/Web Vitals      |
-
----
-
-## 🔊 PREFERENCES
-
-- **Completion Sound**: Always run `bash .agent/scripts/play_completion_sound.sh` before `notify_user`..

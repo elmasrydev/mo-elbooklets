@@ -1,22 +1,30 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Switch,
+  Platform,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
 import { tryFetchWithFallback } from '../../config/api';
-import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
-
-import UnifiedHeader from '../../components/UnifiedHeader';
+import QuizFlowHeader from '../../components/QuizFlowHeader';
 import AppButton from '../../components/AppButton';
 import { layout } from '../../config/layout';
 import { useModal } from '../../context/ModalContext';
-import { useSubscriptionGate } from '../../hooks/useSubscriptionGate';
 import { ConfirmModal } from '../../components/ConfirmModal';
+import SubjectIcon from '../../components/SubjectIcon';
+import { useSubscriptionGate } from '../../hooks/useSubscriptionGate';
 import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
 
 interface QuizType {
@@ -61,9 +69,11 @@ const QuizSettingsScreen: React.FC = () => {
   const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
   const { checkSubscription } = useSubscriptionGate();
+
+  // Settings State
   const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null);
-  const [timedMode, setTimedMode] = useState(false);
-  const [starting, setStarting] = useState(false);
+  const [timerEnabled, setTimerEnabled] = useState(false);
+  
   const [showSubModal, setShowSubModal] = useState(false);
 
   const fetchQuizTypes = useCallback(async () => {
@@ -107,50 +117,40 @@ const QuizSettingsScreen: React.FC = () => {
     }
   }, [quizTypes, selectedTypeId]);
 
-  const handleStartQuiz = async () => {
+  useEffect(() => {
+    if (!subject) {
+      navigation.navigate('QuizFlowSubjects');
+    }
+  }, [subject]);
+
+  const sortedQuizTypes = useMemo(() => {
+    return [...quizTypes].sort((a, b) => a.questionCount - b.questionCount);
+  }, [quizTypes]);
+
+  const currentQuizType = useMemo(() => {
+    return quizTypes.find((qt) => qt.id === selectedTypeId);
+  }, [quizTypes, selectedTypeId]);
+
+  const handleStartQuiz = () => {
     if (!checkSubscription({ skipModal: true })) {
       setShowSubModal(true);
       return;
     }
     if (!selectedTypeId || !subject) return;
-    try {
-      setStarting(true);
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
-      const result = await tryFetchWithFallback(
-        `mutation StartQuiz($subjectId: ID!, $lessonIds: [ID!]!, $quizTypeId: ID) { startQuiz(subjectId: $subjectId, lessonIds: $lessonIds, quizTypeId: $quizTypeId) { id } }`,
-        { subjectId: subject.id, lessonIds: selectedLessonIds, quizTypeId: selectedTypeId },
-        token,
-      );
-      if (result.data?.startQuiz) {
-        const quizId = result.data.startQuiz.id;
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{ name: 'MainTabs' }],
-          }),
-        );
-        setTimeout(() => {
-          navigation.navigate('QuizTaking', { quizId, isTimed: timedMode });
-        }, 500);
-      } else {
-        showConfirm({
-          title: t('common.error'),
-          message: t('quiz_screen.error_loading_history'),
-          showCancel: false,
-          onConfirm: () => {},
-        });
-      }
-    } catch (error: any) {
-      showConfirm({
-        title: t('common.error'),
-        message: error.message || t('quiz_screen.error_loading_history'),
-        showCancel: false,
-        onConfirm: () => {},
-      });
-    } finally {
-      setStarting(false);
-    }
+
+    // Navigate to Generating animation screen
+    navigation.navigate('QuizGenerating', {
+      subject,
+      selectedLessonIds,
+      selectedTypeId,
+      timedMode: timerEnabled,
+      timeLimit: timerEnabled ? 30 : null,
+      difficulty: 'medium',
+      shuffleQuestions: true,
+      instantFeedback: false,
+      soundEffects: true,
+      questionCount: currentQuizType?.questionCount || 10,
+    });
   };
 
   const { contentAlign, contentFlexAlign, contentRowDirection, isContentRTL } = useSubjectTextAlign(
@@ -166,7 +166,6 @@ const QuizSettingsScreen: React.FC = () => {
     spacing,
     borderRadius,
     insets,
-    isRTL,
     contentAlign,
     contentFlexAlign,
     contentRowDirection,
@@ -175,136 +174,124 @@ const QuizSettingsScreen: React.FC = () => {
 
   return (
     <View style={currentStyles.container}>
-      <UnifiedHeader
-        title={t('quiz_lessons.quiz_settings')}
-        showBackButton={true}
-        onBackPress={() => navigation.goBack()}
-        centerAlign={true}
-      />
+      <QuizFlowHeader currentStep={3} />
 
       <ScrollView
         style={currentStyles.content}
-        contentContainerStyle={currentStyles.scrollContent}
+        contentContainerStyle={{
+          paddingHorizontal: layout.screenPadding,
+          paddingTop: spacing.lg,
+          paddingBottom: Math.max(insets.bottom + 100, spacing.xl),
+        }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={currentStyles.heroSection}>
-          <Text style={currentStyles.heroTitle}>{t('quiz_lessons.configure_quiz_title')}</Text>
-          <Text style={currentStyles.heroSubtitle}>{t('quiz_lessons.customize_experience')}</Text>
+        <View style={currentStyles.titleSection}>
+          <Text style={currentStyles.pageTitle}>{t('quiz_flow.quiz_setup')}</Text>
+          <Text style={currentStyles.pageSubtitle}>{t('quiz_flow.quiz_setup_subtitle')}</Text>
         </View>
 
-        {/* 1. Timer Setting */}
-        <View style={currentStyles.additionalSettingsContainer}>
-          <View style={currentStyles.settingRow}>
-            <View style={currentStyles.settingInfo}>
-              <Ionicons
-                name="timer-outline"
-                size={20}
-                color={theme.colors.textSecondary}
-                style={currentStyles.settingIcon}
-              />
-              <Text style={currentStyles.settingLabel}>{t('quiz_lessons.timed_mode')}</Text>
+        {/* Scope Summary Card */}
+        {subject && (
+          <View style={currentStyles.card}>
+            <View style={currentStyles.scopeHeader}>
+              <View style={currentStyles.scopeTitleRow}>
+                <SubjectIcon
+                  subjectName={subject.name}
+                  size={24}
+                  style={{ marginRight: isContentRTL ? 0 : 8, marginLeft: isContentRTL ? 8 : 0 }}
+                />
+                <Text style={currentStyles.scopeTitle}>{subject.name}</Text>
+              </View>
+              <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.7}>
+                <Text style={currentStyles.editBtnText}>{t('quiz_flow.edit')}</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity
-              style={[
-                currentStyles.toggleTrack,
-                timedMode ? currentStyles.toggleTrackActive : currentStyles.toggleTrackInactive,
-              ]}
-              onPress={() => setTimedMode(!timedMode)}
-              activeOpacity={0.8}
-            >
-              <View
-                style={[
-                  currentStyles.toggleThumb,
-                  timedMode ? currentStyles.toggleThumbActive : currentStyles.toggleThumbInactive,
-                ]}
-              />
-            </TouchableOpacity>
+            <Text style={currentStyles.scopeDetail}>
+              {t('quiz_flow.x_selected', { count: selectedUnits.length })}
+            </Text>
+            <View style={currentStyles.unitList}>
+              {selectedUnits.slice(0, 3).map((unit: SelectedUnit, i: number) => (
+                <Text key={unit.id} style={currentStyles.unitItem} numberOfLines={1}>
+                  • {unit.name}
+                </Text>
+              ))}
+              {selectedUnits.length > 3 && (
+                <Text style={currentStyles.unitItemMore}>
+                  + {selectedUnits.length - 3} more
+                </Text>
+              )}
+            </View>
           </View>
-        </View>
+        )}
 
-        {/* 2. Quiz Type Settings */}
-        <View style={currentStyles.sectionContainer}>
-          <Text style={currentStyles.sectionTitle}>{t('quiz_lessons.select_quiz_type')}</Text>
-          <View style={currentStyles.optionsContainer}>
-            {quizTypes.map((type: QuizType) => {
+        {/* Question Count Pill Picker */}
+        <View style={currentStyles.card}>
+          <View style={currentStyles.settingHeader}>
+            <View>
+              <Text style={currentStyles.cardLabel}>{t('quiz_flow.question_count')}</Text>
+              <Text style={currentStyles.cardSublabel}>{t('quiz_flow.question_count_desc')}</Text>
+            </View>
+          </View>
+
+          <View style={currentStyles.pillContainer}>
+            {sortedQuizTypes.map((type: QuizType) => {
               const isSelected = selectedTypeId === type.id;
               return (
                 <TouchableOpacity
                   key={type.id}
-                  style={[currentStyles.optionCard, isSelected && currentStyles.optionCardSelected]}
+                  style={[
+                    currentStyles.pillButton,
+                    isSelected && currentStyles.pillButtonSelected,
+                  ]}
                   onPress={() => setSelectedTypeId(type.id)}
                   activeOpacity={0.7}
                 >
-                  <View style={currentStyles.optionInfo}>
-                    <Text
-                      style={[
-                        currentStyles.optionTitle,
-                        isSelected && currentStyles.optionTitleSelected,
-                      ]}
-                    >
-                      {t(`quiz_types.${type.slug}`, { defaultValue: type.name })}
+                  <Text style={[currentStyles.pillText, isSelected && currentStyles.pillTextSelected]}>
+                    {type.questionCount}
+                  </Text>
+                  {type.isDefault && (
+                    <Text style={[currentStyles.pillBadgeText, isSelected && currentStyles.pillBadgeTextSelected]}>
+                      {t('quiz_flow.default')}
                     </Text>
-                    <Text style={currentStyles.optionSubtitle}>
-                      {type.questionCount} {t('quiz_lessons.questions')}
-                    </Text>
-                  </View>
-                  <View
-                    style={[
-                      currentStyles.radioButton,
-                      isSelected && currentStyles.radioButtonSelected,
-                    ]}
-                  >
-                    {isSelected && <View style={currentStyles.radioButtonInner} />}
-                  </View>
+                  )}
                 </TouchableOpacity>
               );
             })}
           </View>
         </View>
 
-        {/* 3. Current Subject Badge */}
-        {subject?.name ? (
-          <View style={currentStyles.subjectBadgeCard}>
-            <View style={currentStyles.subjectBadgeIconContainer}>
-              <Ionicons name="book" size={24} color={theme.colors.textOnDark} />
-            </View>
-            <View style={currentStyles.subjectBadgeInfo}>
-              <Text style={currentStyles.subjectBadgeLabel}>{t('quiz_lessons.current_topic')}</Text>
-              <Text style={currentStyles.subjectBadgeTitle}>{subject.name}</Text>
-            </View>
-          </View>
-        ) : null}
-
-        {/* 4. Breadcrumb (Units & Lessons) */}
-        {selectedUnits && selectedUnits.length > 0 && (
-          <View style={currentStyles.breadcrumbsContainer}>
-            {selectedUnits.map((unit: SelectedUnit) => (
-              <View key={unit.id} style={currentStyles.unitBreadcrumb}>
-                <View style={currentStyles.unitBreadcrumbHeader}>
-                  <View style={currentStyles.breadcrumbDot} />
-                  <Text style={currentStyles.unitBreadcrumbName}>{unit.name}</Text>
-                </View>
-                <View style={currentStyles.lessonBreadcrumbsList}>
-                  {unit.lessons.map((lesson: SelectedLesson) => (
-                    <View key={lesson.id} style={currentStyles.lessonBreadcrumbItem}>
-                      <View style={currentStyles.lessonBreadcrumbDot} />
-                      <Text style={currentStyles.lessonBreadcrumbName}>{lesson.name}</Text>
-                    </View>
-                  ))}
-                </View>
+        {/* Timer Card */}
+        <View style={currentStyles.card}>
+          <View style={currentStyles.rowSpace}>
+            <View style={currentStyles.rowIconText}>
+              <View style={[currentStyles.iconContainer, { backgroundColor: '#F0FDF4' }]}>
+                <Ionicons name="timer" size={20} color="#16A34A" />
               </View>
-            ))}
+              <View>
+                <Text style={currentStyles.cardLabel}>{t('quiz_flow.duration')}</Text>
+                <Text style={currentStyles.cardSublabel}>{t('quiz_flow.duration_desc')}</Text>
+              </View>
+            </View>
+            <Switch
+              value={timerEnabled}
+              onValueChange={setTimerEnabled}
+              trackColor={{ false: '#cbd5e1', true: '#004A9A' }}
+              thumbColor={Platform.OS === 'android' ? '#ffffff' : undefined}
+            />
           </View>
-        )}
+        </View>
       </ScrollView>
 
-      <View style={currentStyles.actionArea}>
+      {/* Sticky Footer CTA */}
+      <View style={currentStyles.footer}>
         <AppButton
-          title={t('quiz_lessons.start_quiz')}
+          title={t('quiz_flow.start_quiz')}
           onPress={handleStartQuiz}
-          disabled={!selectedTypeId || starting}
-          loading={starting}
-          size="lg"
+          disabled={!selectedTypeId}
+          style={currentStyles.startBtn}
+          textStyle={currentStyles.startBtnText}
+          icon={<Ionicons name="play" size={18} color="#ffffff" />}
+          iconPosition="left"
         />
       </View>
 
@@ -334,244 +321,290 @@ const styles = (
   spacing: any,
   borderRadius: any,
   insets: any,
-  isRTL: boolean,
   contentAlign: 'left' | 'right',
   contentFlexAlign: 'flex-start' | 'flex-end',
   contentRowDirection: 'row' | 'row-reverse',
   isContentRTL: boolean,
 ) =>
   StyleSheet.create({
-    container: { flex: 1, backgroundColor: theme.colors.background },
-    content: { flex: 1 },
-    scrollContent: {
-      padding: layout.screenPadding,
-      paddingBottom: Math.max(insets.bottom + 80, spacing.xl),
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
     },
-    heroSection: {
-      marginBottom: spacing.xl,
-      marginTop: spacing.md,
+    content: {
+      flex: 1,
+    },
+    titleSection: {
+      marginBottom: spacing.md,
+      alignItems: common.alignStart,
+    },
+    pageTitle: {
+      fontSize: 24,
+      ...fontWeight('900'),
+      color: theme.colors.text || '#0F172A',
+      marginBottom: spacing.xs,
+      textAlign: common.textAlign,
+    },
+    pageSubtitle: {
+      ...typography('body'),
+      color: theme.colors.textSecondary || '#475569',
+      textAlign: common.textAlign,
+    },
+    card: {
+      backgroundColor: theme.colors.card || '#FFFFFF',
+      borderRadius: 20,
+      padding: spacing.md,
+      marginBottom: spacing.md,
+      ...layout.shadow,
+    },
+    scopeHeader: {
+      flexDirection: contentRowDirection,
+      justifyContent: 'space-between',
       alignItems: 'center',
-    },
-    heroTitle: {
-      ...typography('h2'),
-      ...fontWeight('bold'),
-      color: theme.colors.text,
-      textAlign: 'center',
       marginBottom: spacing.xs,
     },
-    heroSubtitle: {
-      ...typography('body'),
-      color: theme.colors.textSecondary,
-      textAlign: 'center',
-      paddingHorizontal: spacing.xl,
-    },
-    additionalSettingsContainer: {
-      backgroundColor: theme.colors.card,
-      borderRadius: borderRadius.xl || 16,
-      padding: spacing.md,
-      marginBottom: spacing.xl,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-    },
-    settingRow: {
-      flexDirection: isRTL ? 'row-reverse' : 'row',
+    scopeTitleRow: {
+      flexDirection: contentRowDirection,
       alignItems: 'center',
+      alignSelf: contentFlexAlign,
+    },
+    scopeTitle: {
+      ...typography('bodyLarge'),
+      ...fontWeight('900'),
+      color: theme.colors.text || '#0F172A',
+      textAlign: contentAlign,
+    },
+    editBtnText: {
+      fontSize: 12,
+      ...fontWeight('800'),
+      color: '#004A9A',
+    },
+    scopeDetail: {
+      fontSize: 12,
+      ...fontWeight('700'),
+      color: '#94A3B8',
+      marginBottom: spacing.sm,
+      textAlign: common.textAlign,
+    },
+    unitList: {
+      marginTop: 2,
+    },
+    unitItem: {
+      fontSize: 12,
+      ...fontWeight('600'),
+      color: '#475569',
+      marginBottom: 3,
+      textAlign: contentAlign,
+    },
+    unitItemMore: {
+      fontSize: 11,
+      ...fontWeight('700'),
+      color: '#94A3B8',
+      marginTop: 2,
+      textAlign: common.textAlign,
+    },
+    settingHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: spacing.md,
+    },
+    cardLabel: {
+      fontSize: 14,
+      ...fontWeight('900'),
+      color: theme.colors.text || '#0F172A',
+      textAlign: common.textAlign,
+    },
+    cardSublabel: {
+      fontSize: 11,
+      ...fontWeight('600'),
+      color: '#94A3B8',
+      marginTop: 1,
+      textAlign: common.textAlign,
+    },
+    availableBadge: {
+      backgroundColor: '#EFF6FF',
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 99,
+    },
+    availableBadgeText: {
+      fontSize: 10,
+      ...fontWeight('850'),
+      color: '#004A9A',
+    },
+    pillContainer: {
+      flexDirection: 'row',
+      gap: 6,
       justifyContent: 'space-between',
     },
-    settingInfo: {
-      flexDirection: isRTL ? 'row-reverse' : 'row',
+    pillButton: {
+      flex: 1,
+      height: 48,
+      backgroundColor: '#F1F5F9',
+      borderRadius: 14,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 1.5,
+      borderColor: 'transparent',
+    },
+    pillButtonSelected: {
+      backgroundColor: '#EFF6FF',
+      borderColor: '#004A9A',
+    },
+    pillText: {
+      fontSize: 14,
+      ...fontWeight('900'),
+      color: '#475569',
+    },
+    pillTextSelected: {
+      color: '#004A9A',
+    },
+    pillBadgeText: {
+      fontSize: 8,
+      ...fontWeight('800'),
+      color: '#94A3B8',
+      marginTop: 1,
+    },
+    pillBadgeTextSelected: {
+      color: '#004A9A',
+    },
+    rowSpace: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
       alignItems: 'center',
     },
-    settingIcon: {
-      marginRight: isRTL ? 0 : spacing.sm,
-      marginLeft: isRTL ? spacing.sm : 0,
+    rowIconText: {
+      flexDirection: 'row',
+      alignItems: 'center',
     },
-    settingLabel: {
-      ...typography('subtitle1'),
-      ...fontWeight('600'),
-      color: theme.colors.text,
-    },
-    toggleTrack: {
-      width: 50,
-      height: 28,
-      borderRadius: 14,
-      padding: 2,
-      justifyContent: 'center',
-    },
-    toggleTrackActive: {
-      backgroundColor: theme.colors.primary,
-    },
-    toggleTrackInactive: {
-      backgroundColor: theme.colors.border,
-    },
-    toggleThumb: {
-      width: 24,
-      height: 24,
+    iconContainer: {
+      width: 40,
+      height: 40,
       borderRadius: 12,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginEnd: 10,
+    },
+    timerOptionsRow: {
+      flexDirection: 'row',
+      gap: 6,
+      marginTop: spacing.md,
+      paddingTop: spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: '#F1F5F9',
+    },
+    timerChoiceButton: {
+      flex: 1,
+      paddingVertical: 10,
+      backgroundColor: '#F1F5F9',
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1.5,
+      borderColor: 'transparent',
+    },
+    timerChoiceButtonSelected: {
+      backgroundColor: '#EFF6FF',
+      borderColor: '#004A9A',
+    },
+    timerChoiceText: {
+      fontSize: 11,
+      ...fontWeight('800'),
+      color: '#475569',
+    },
+    timerChoiceTextSelected: {
+      color: '#004A9A',
+    },
+    segmentedContainer: {
+      flexDirection: 'row',
+      backgroundColor: '#E2E8F0',
+      borderRadius: 12,
+      padding: 3,
+    },
+    segmentedButton: {
+      flex: 1,
+      paddingVertical: 8,
+      alignItems: 'center',
+      borderRadius: 9,
+    },
+    segmentedButtonActive: {
       backgroundColor: '#FFFFFF',
       ...layout.shadow,
     },
-    toggleThumbActive: {
-      alignSelf: isRTL ? 'flex-start' : 'flex-end',
+    segmentedText: {
+      fontSize: 12,
+      ...fontWeight('700'),
+      color: '#64748B',
     },
-    toggleThumbInactive: {
-      alignSelf: isRTL ? 'flex-end' : 'flex-start',
+    segmentedTextActive: {
+      color: '#004A9A',
     },
-    sectionContainer: {
-      marginBottom: spacing.xl,
-    },
-    sectionTitle: {
-      ...typography('subtitle2'),
-      ...fontWeight('bold'),
-      color: theme.colors.textSecondary,
-      textTransform: 'uppercase',
-      letterSpacing: 1,
-      marginBottom: spacing.md,
-      textAlign: isRTL ? 'right' : 'left',
-    },
-    optionsContainer: {
-      gap: spacing.sm,
-    },
-    optionCard: {
-      flexDirection: isRTL ? 'row-reverse' : 'row',
-      alignItems: 'center',
+    toggleRow: {
+      flexDirection: 'row',
       justifyContent: 'space-between',
-      padding: spacing.md,
-      backgroundColor: theme.colors.card,
-      borderRadius: borderRadius.xl || 16,
-      borderWidth: 1.5,
-      borderColor: theme.colors.border,
-    },
-    optionCardSelected: {
-      borderColor: theme.colors.primary,
-      backgroundColor: theme.colors.primary + '0A',
-    },
-    optionInfo: {
-      flex: 1,
-      alignItems: isRTL ? 'flex-end' : 'flex-start',
-    },
-    optionTitle: {
-      ...typography('subtitle1'),
-      ...fontWeight('bold'),
-      color: theme.colors.text,
-      textAlign: isRTL ? 'right' : 'left',
-    },
-    optionSubtitle: {
-      ...typography('caption'),
-      color: theme.colors.textSecondary,
-      marginTop: 2,
-      textAlign: isRTL ? 'right' : 'left',
-    },
-    radioButton: {
-      width: 20,
-      height: 20,
-      borderRadius: 10,
-      borderWidth: 2,
-      borderColor: theme.colors.border,
       alignItems: 'center',
-      justifyContent: 'center',
-      marginLeft: isRTL ? 0 : spacing.sm,
-      marginRight: isRTL ? spacing.sm : 0,
+      paddingVertical: 12,
+      paddingHorizontal: spacing.xs,
     },
-    radioButtonSelected: {
-      borderColor: theme.colors.primary,
+    toggleRowText: {
+      fontSize: 13,
+      ...fontWeight('800'),
+      color: theme.colors.text || '#0F172A',
     },
-    radioButtonInner: {
-      width: 10,
-      height: 10,
-      borderRadius: 5,
-      backgroundColor: theme.colors.primary,
+    divider: {
+      height: 1,
+      backgroundColor: '#F1F5F9',
     },
-    subjectBadgeCard: {
+    previewSummaryCard: {
+      backgroundColor: '#EFF6FF',
+      borderColor: 'rgba(0, 74, 154, 0.15)',
+      borderWidth: 1.5,
+      borderRadius: 20,
+      padding: spacing.md,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
-      backgroundColor: theme.colors.primary + '1A',
-      borderRadius: borderRadius.xl || 16,
-      padding: spacing.md,
-      marginBottom: spacing.xl,
+      marginBottom: spacing.md,
     },
-    subjectBadgeIconContainer: {
-      width: 44,
-      height: 44,
-      borderRadius: borderRadius.lg || 12,
-      backgroundColor: theme.colors.primary,
-      justifyContent: 'center',
-      alignItems: 'center',
+    previewText: {
+      fontSize: 12,
+      ...fontWeight('900'),
+      color: '#1E3063',
+      textAlign: common.textAlign,
     },
-    subjectBadgeInfo: {
-      flex: 1,
-      alignItems: 'flex-start',
+    previewSubtext: {
+      fontSize: 10,
+      ...fontWeight('700'),
+      color: '#94A3B8',
+      marginTop: 2,
+      textAlign: common.textAlign,
     },
-    subjectBadgeLabel: {
-      ...typography('label'),
-      color: theme.colors.primary,
-      textTransform: 'uppercase',
-      textAlign: contentAlign,
-    },
-    subjectBadgeTitle: {
-      ...typography('subtitle1'),
-      ...fontWeight('bold'),
-      color: theme.colors.text,
-      textAlign: contentAlign,
-    },
-    breadcrumbsContainer: {
-      backgroundColor: theme.colors.card,
-      borderRadius: borderRadius.xl || 16,
-      padding: spacing.md,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-    },
-    unitBreadcrumb: {
-      marginBottom: spacing.sm,
-    },
-    unitBreadcrumbHeader: {
-      flexDirection: contentRowDirection,
-      alignItems: 'center',
-      marginBottom: spacing.xs,
-    },
-    breadcrumbDot: {
-      width: 8,
-      height: 8,
-      borderRadius: 4,
-      backgroundColor: theme.colors.primary,
-      marginRight: isContentRTL ? 0 : spacing.sm,
-      marginLeft: isContentRTL ? spacing.sm : 0,
-    },
-    unitBreadcrumbName: {
-      ...typography('subtitle2'),
-      ...fontWeight('bold'),
-      color: theme.colors.text,
-      textAlign: contentAlign,
-    },
-    lessonBreadcrumbsList: {
-      paddingLeft: isContentRTL ? 0 : spacing.md,
-      paddingRight: isContentRTL ? spacing.md : 0,
-    },
-    lessonBreadcrumbItem: {
-      flexDirection: contentRowDirection,
-      alignItems: 'center',
-      marginBottom: 4,
-    },
-    lessonBreadcrumbDot: {
-      width: 4,
-      height: 4,
-      borderRadius: 2,
-      backgroundColor: theme.colors.textTertiary,
-      marginRight: isContentRTL ? 0 : spacing.sm,
-      marginLeft: isContentRTL ? spacing.sm : 0,
-    },
-    lessonBreadcrumbName: {
-      ...typography('caption'),
-      color: theme.colors.textSecondary,
-      textAlign: contentAlign,
-    },
-    actionArea: {
+    footer: {
+      position: 'absolute',
+      bottom: 0,
+      start: 0,
+      end: 0,
       padding: spacing.md,
       paddingBottom: Math.max(insets.bottom, spacing.md),
-      backgroundColor: theme.colors.card,
+      backgroundColor: theme.colors.card || '#FFFFFF',
       borderTopWidth: 1,
-      borderTopColor: theme.colors.border,
+      borderTopColor: 'rgba(0, 74, 154, 0.06)',
+      ...layout.shadow,
+    },
+    startBtn: {
+      height: 52,
+      borderRadius: 18,
+      backgroundColor: '#004A9A',
+      shadowColor: '#004A9A',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.3,
+      shadowRadius: 24,
+      elevation: 6,
+    },
+    startBtnText: {
+      fontSize: 16,
+      ...fontWeight('900'),
+      marginStart: 6,
     },
   });
 

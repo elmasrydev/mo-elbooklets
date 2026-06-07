@@ -30,24 +30,49 @@ const ConnectionCard: React.FC<ConnectionCardProps> = ({ item, onLike, onComment
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
 
-  const getInitials = (name: string) => name.split(' ').map((n) => n[0]).join('').toUpperCase().substring(0, 2);
+  const getInitials = (name: string) =>
+    name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
 
   const primaryColor = theme.colors.success;
   const primaryBg = `${theme.colors.success}10`;
   const primaryBorder = `${theme.colors.success}20`;
 
-  const currentStyles = createStyles(theme, common, spacing, borderRadius, typography, fontWeight, primaryColor, primaryBg, primaryBorder);
+  const currentStyles = createStyles(
+    theme,
+    common,
+    spacing,
+    borderRadius,
+    typography,
+    fontWeight,
+    primaryColor,
+    primaryBg,
+    primaryBorder,
+  );
 
   return (
     <View style={currentStyles.cardContainer}>
       {/* Top Header: Avatar + User Info */}
       <View style={currentStyles.headerRow}>
         <View style={currentStyles.headerLeft}>
-          <View style={[currentStyles.avatar, { borderColor: primaryBorder, backgroundColor: primaryBg }]}>
-            <Text style={[currentStyles.avatarText, { color: primaryColor }]}>{getInitials(item.user.name)}</Text>
+          <View
+            style={[
+              currentStyles.avatar,
+              { borderColor: primaryBorder, backgroundColor: primaryBg },
+            ]}
+          >
+            <Text style={[currentStyles.avatarText, { color: primaryColor }]}>
+              {getInitials(item.user.name)}
+            </Text>
           </View>
           <View style={currentStyles.userInfo}>
-            <Text style={[currentStyles.userName, { textAlign: common.textAlign }]}>{item.user.name}</Text>
+            <Text style={[currentStyles.userName, { textAlign: common.textAlign }]}>
+              {item.user.name}
+            </Text>
             <Text style={[currentStyles.userSubtitle, { textAlign: common.textAlign }]}>
               {item.user.grade.name} • {getTimeAgo(item.createdAt, t, language)}
             </Text>
@@ -64,10 +89,14 @@ const ConnectionCard: React.FC<ConnectionCardProps> = ({ item, onLike, onComment
             </View>
             <View style={currentStyles.connectionIcon}>
               <MaterialIcons name="people-alt" size={24} color={primaryColor} />
-              <Text style={currentStyles.connectedLabel}>{t('social_screen.connected', 'Connected')}</Text>
+              <Text style={currentStyles.connectedLabel}>
+                {t('social_screen.connected', 'Connected')}
+              </Text>
             </View>
             <View style={currentStyles.largeAvatar}>
-              <Text style={currentStyles.largeAvatarText}>{getInitials(item.connectedUser.name)}</Text>
+              <Text style={currentStyles.largeAvatarText}>
+                {getInitials(item.connectedUser.name)}
+              </Text>
             </View>
           </View>
           <Text style={[currentStyles.names, { textAlign: common.textAlign }]}>
@@ -87,8 +116,16 @@ const ConnectionCard: React.FC<ConnectionCardProps> = ({ item, onLike, onComment
 
         <View style={currentStyles.actionButtons}>
           <TouchableOpacity style={currentStyles.likeBtn} onPress={onLike}>
-            <MaterialIcons name="thumb-up" size={14} color={item.isLiked ? theme.colors.primary : theme.colors.textSecondary} />
-            <Text style={[currentStyles.likeBtnText, item.isLiked && { color: theme.colors.primary }]}>{t('common.like', 'Like')}</Text>
+            <MaterialIcons
+              name="thumb-up"
+              size={14}
+              color={item.isLiked ? theme.colors.primary : theme.colors.textSecondary}
+            />
+            <Text
+              style={[currentStyles.likeBtnText, item.isLiked && { color: theme.colors.primary }]}
+            >
+              {t('common.like', 'Like')}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -96,7 +133,17 @@ const ConnectionCard: React.FC<ConnectionCardProps> = ({ item, onLike, onComment
   );
 };
 
-const createStyles = (theme: any, common: any, spacing: any, borderRadius: any, typography: any, fontWeight: any, primaryColor: string, primaryBg: string, primaryBorder: string) =>
+const createStyles = (
+  theme: any,
+  common: any,
+  spacing: any,
+  borderRadius: any,
+  typography: any,
+  fontWeight: any,
+  primaryColor: string,
+  primaryBg: string,
+  primaryBorder: string,
+) =>
   StyleSheet.create({
     cardContainer: {
       backgroundColor: theme.mode === 'light' ? theme.colors.surface : theme.colors.card,
@@ -155,7 +202,8 @@ const createStyles = (theme: any, common: any, spacing: any, borderRadius: any, 
     },
     connectionBox: {
       alignItems: 'center',
-      backgroundColor: theme.mode === 'light' ? `${theme.colors.success}05` : `${theme.colors.success}10`,
+      backgroundColor:
+        theme.mode === 'light' ? `${theme.colors.success}05` : `${theme.colors.success}10`,
       borderWidth: 1,
       borderColor: `${theme.colors.success}20`,
       borderRadius: borderRadius.lg,
