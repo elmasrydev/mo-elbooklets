@@ -76,7 +76,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
     return leftContent || null;
   };
 
-  const HEADER_CONTENT_HEIGHT = Platform.OS === 'ios' ? (isModal ? 62 : 54) : isModal ? 62 : 57;
+  const HEADER_CONTENT_HEIGHT = Platform.OS === 'ios' ? (isModal ? 67 : 54) : isModal ? 67 : 57;
 
   const effectiveCenterAlign = centerAlign;
 

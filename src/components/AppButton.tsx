@@ -204,7 +204,14 @@ const AppButton: React.FC<AppButtonProps> = ({
             <View style={{ marginEnd: spacing.xs }}> {icon} </View>
           )}
           <View style={styles.textContainer}>
-            <Text style={titleStyles}>{title}</Text>
+            <Text
+              style={titleStyles}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumScaleFactor={0.75}
+            >
+              {title}
+            </Text>
             {subtitle && <Text style={subStyles}>{subtitle}</Text>}
           </View>
           {icon && iconPosition === 'right' && (

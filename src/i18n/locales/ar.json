@@ -390,7 +390,14 @@
     "partially_covered": "مُغطَّى جزئياً",
     "publish_to_feed": "شارك مع زملائك",
     "published_to_feed": "تمت المشاركة مع زملائك",
-    "your_answer": "إجابتك"
+    "your_answer": "إجابتك",
+    "review_answers": "مراجعة الإجابات",
+    "filter_all": "الكل",
+    "filter_correct": "صحيحة",
+    "filter_wrong": "خاطئة",
+    "wrong": "خاطئة",
+    "new_quiz": "اختبار جديد",
+    "back_to_results": "العودة للنتائج"
   },
   "social_screen": {
     "aced_quiz": "أتقن اختبار {{subject}}",

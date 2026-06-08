@@ -390,7 +390,14 @@
     "partially_covered": "Partially Covered",
     "publish_to_feed": "Share to Community Feed",
     "published_to_feed": "Published to Feed",
-    "your_answer": "Your Answer"
+    "your_answer": "Your Answer",
+    "review_answers": "Review Answers",
+    "filter_all": "All",
+    "filter_correct": "Correct",
+    "filter_wrong": "Wrong",
+    "wrong": "Wrong",
+    "new_quiz": "New Quiz",
+    "back_to_results": "Back to Results"
   },
   "social_screen": {
     "aced_quiz": "Aced the {{subject}} Quiz",
