@@ -68,6 +68,7 @@
     "leaderboard": "لوحة الأوائل",
     "lesson": "درس",
     "like": "إعجاب",
+    "likes": "إعجاب",
     "logout": "تسجيل الخروج",
     "logout_desc": "هل أنت متأكد من أنك تريد تسجيل الخروج؟",
     "logout_title": "تسجيل الخروج",
@@ -436,7 +437,11 @@
     "search_placeholder": "ابحث عن طلاب لمتابعتهم...",
     "search_results": "نتائج البحث",
     "searching": "جارٍ البحث...",
-    "try_different_search": "حاول البحث باسم أو رقم هاتف مختلف"
+    "try_different_search": "حاول البحث باسم أو رقم هاتف مختلف",
+    "questions_count": "{{count}} سؤال",
+    "accuracy": "دقة {{percent}}%",
+    "passed": "ناجح",
+    "failed": "لم يجتز"
   },
   "leaderboard_screen": {
     "all_time": "كل الأوقات",

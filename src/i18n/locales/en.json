@@ -68,6 +68,7 @@
     "leaderboard": "Leaderboard",
     "lesson": "Lesson",
     "like": "Like",
+    "likes": "Likes",
     "logout": "Logout",
     "logout_desc": "Are you sure you want to log out?",
     "logout_title": "Log Out",
@@ -436,7 +437,11 @@
     "search_placeholder": "Search for students to follow...",
     "search_results": "Search Results",
     "searching": "Searching...",
-    "try_different_search": "Try searching with a different name or mobile number"
+    "try_different_search": "Try searching with a different name or mobile number",
+    "questions_count": "{{count}} Questions",
+    "accuracy": "{{percent}}% Accuracy",
+    "passed": "Passed",
+    "failed": "Failed"
   },
   "leaderboard_screen": {
     "all_time": "All Time",
