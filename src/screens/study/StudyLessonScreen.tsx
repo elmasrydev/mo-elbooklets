@@ -539,6 +539,7 @@ const StudyLessonScreen: React.FC = () => {
               summary
               videoUrl
               myInteraction
+              mindMapUrl
               lessonPoints {
                 id
                 title
