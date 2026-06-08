@@ -1017,8 +1017,8 @@ const StudyLessonScreen: React.FC = () => {
                     onPress={() => point.explanation && togglePoint(point.id)}
                     activeOpacity={point.explanation ? 0.7 : 1}
                   >
-                    <View style={currentStyles.pointHeader}>
-                      <View>
+                    <View style={currentStyles.pointMainRow}>
+                      <View style={currentStyles.pointCheckContainer}>
                         <Ionicons
                           name={viewedPoints.has(point.id) ? 'checkmark-circle' : 'ellipse-outline'}
                           size={26}
@@ -1030,54 +1030,57 @@ const StudyLessonScreen: React.FC = () => {
                         />
                       </View>
                       <Text style={currentStyles.pointText}>{point.title}</Text>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                        <TouchableOpacity
-                          onPress={() => handleToggleBookmark(point.id)}
-                          style={{ padding: 4 }}
-                        >
-                          <Ionicons
-                            name={
-                              savedPoints.get(point.id)?.is_bookmarked
-                                ? 'bookmark'
-                                : 'bookmark-outline'
-                            }
-                            size={20}
-                            color={
-                              savedPoints.get(point.id)?.is_bookmarked
-                                ? theme.colors.primary
-                                : theme.colors.textTertiary
-                            }
-                          />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          onPress={() => {
-                            setSelectedPointId(point.id);
-                            setNoteModalVisible(true);
-                          }}
-                          style={{ padding: 4 }}
-                        >
-                          <Ionicons
-                            name={
-                              savedPoints.get(point.id)?.note_content
-                                ? 'document-text'
-                                : 'document-text-outline'
-                            }
-                            size={20}
-                            color={
-                              savedPoints.get(point.id)?.note_content
-                                ? theme.colors.primary
-                                : theme.colors.textTertiary
-                            }
-                          />
-                        </TouchableOpacity>
-                        {point.explanation && (
+                    </View>
+
+                    <View style={currentStyles.pointActionsRow}>
+                      <TouchableOpacity
+                        onPress={() => handleToggleBookmark(point.id)}
+                        style={{ padding: 4 }}
+                      >
+                        <Ionicons
+                          name={
+                            savedPoints.get(point.id)?.is_bookmarked
+                              ? 'bookmark'
+                              : 'bookmark-outline'
+                          }
+                          size={20}
+                          color={
+                            savedPoints.get(point.id)?.is_bookmarked
+                              ? theme.colors.primary
+                              : theme.colors.textSecondary
+                          }
+                        />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setSelectedPointId(point.id);
+                          setNoteModalVisible(true);
+                        }}
+                        style={{ padding: 4 }}
+                      >
+                        <Ionicons
+                          name={
+                            savedPoints.get(point.id)?.note_content
+                              ? 'document-text'
+                              : 'document-text-outline'
+                          }
+                          size={20}
+                          color={
+                            savedPoints.get(point.id)?.note_content
+                              ? theme.colors.primary
+                              : theme.colors.textSecondary
+                          }
+                        />
+                      </TouchableOpacity>
+                      {point.explanation && (
+                        <View style={{ padding: 4 }}>
                           <Ionicons
                             name={isExpanded ? 'chevron-up' : 'chevron-down'}
-                            size={16}
+                            size={18}
                             color={theme.colors.textSecondary}
                           />
-                        )}
-                      </View>
+                        </View>
+                      )}
                     </View>
                     {savedPoints.get(point.id)?.note_content && (
                       <View style={currentStyles.notePreviewContainer}>
@@ -1463,6 +1466,21 @@ const styles = (
       flexDirection: contentRowDirection,
       alignItems: 'center',
       gap: 7,
+    },
+    pointMainRow: {
+      flexDirection: contentRowDirection,
+      alignItems: 'flex-start',
+      gap: 7,
+    },
+    pointCheckContainer: {
+      marginTop: 2,
+    },
+    pointActionsRow: {
+      flexDirection: contentRowDirection,
+      justifyContent: 'flex-end',
+      alignItems: 'center',
+      gap: spacing.sm,
+      marginTop: spacing.xs,
     },
     pointBullet: {
       width: 20,

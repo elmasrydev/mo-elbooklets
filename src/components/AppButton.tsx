@@ -99,26 +99,29 @@ const AppButton: React.FC<AppButtonProps> = ({
     }
   };
 
+  const isArabicText = title ? /[\u0600-\u06FF]/.test(title) : false;
+  const isArabicSubtitle = subtitle ? /[\u0600-\u06FF]/.test(subtitle) : false;
+
   const getSizeStyles = () => {
     switch (size) {
       case 'sm':
         return {
           button: { height: 44, paddingHorizontal: spacing.md },
-          text: typography('caption', '700'),
-          subtitle: typography('caption'),
+          text: typography('caption', '700', isArabicText),
+          subtitle: typography('caption', undefined, isArabicSubtitle),
         };
       case 'lg':
         return {
           button: { height: 51, paddingHorizontal: spacing.xl },
-          text: typography('button'),
-          subtitle: typography('label'),
+          text: typography('button', undefined, isArabicText),
+          subtitle: typography('label', undefined, isArabicSubtitle),
         };
       case 'md':
       default:
         return {
           button: { height: 46, paddingHorizontal: spacing.lg },
-          text: typography('button'),
-          subtitle: typography('label'),
+          text: typography('button', undefined, isArabicText),
+          subtitle: typography('label', undefined, isArabicSubtitle),
         };
     }
   };
@@ -208,7 +211,7 @@ const AppButton: React.FC<AppButtonProps> = ({
               style={titleStyles}
               numberOfLines={1}
               adjustsFontSizeToFit
-              minimumScaleFactor={0.75}
+              minimumFontScale={0.75}
             >
               {title}
             </Text>

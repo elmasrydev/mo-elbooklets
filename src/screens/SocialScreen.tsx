@@ -339,6 +339,7 @@ const SocialScreen: React.FC = () => {
             size="sm"
             fullWidth={false}
             style={currentStyles.followButton}
+            textStyle={{ fontSize: 12.5 }}
             accessibilityLabel={`${student.isFollowing ? t('common.following') : t('common.follow')} ${student.name}`}
           />
         </View>
@@ -557,6 +558,7 @@ const styles = (theme: any, common: any, spacing: any, typography: any, fontWeig
       flexDirection: common.rowDirection,
       alignItems: 'center',
       justifyContent: 'space-between',
+      gap: 12,
     },
     studentInfo: {
       flexDirection: common.rowDirection,
@@ -595,9 +597,10 @@ const styles = (theme: any, common: any, spacing: any, typography: any, fontWeig
     },
     studentStats: {
       flexDirection: common.rowDirection,
+      flexWrap: 'nowrap',
       alignItems: 'center',
       marginTop: 8,
-      gap: 8,
+      gap: 6,
     },
     statBadge: {
       flexDirection: 'row',
@@ -613,8 +616,9 @@ const styles = (theme: any, common: any, spacing: any, typography: any, fontWeig
       color: theme.colors.primary,
     },
     followButton: {
-      paddingHorizontal: 16,
-      minWidth: 100,
+      paddingHorizontal: 12,
+      height: 32,
+      minWidth: 84,
     },
     loadingState: {
       paddingVertical: 60,

@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Platform,
   FlatList,
+  Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
@@ -95,6 +96,8 @@ const SearchablePickerModal: React.FC<SearchablePickerModalProps> = ({
                 value={searchValue}
                 onChangeText={onSearchChange}
                 autoFocus={true}
+                returnKeyType="done"
+                onSubmitEditing={Keyboard.dismiss}
               />
               {searchValue.length > 0 && (
                 <TouchableOpacity onPress={() => onSearchChange('')} style={styles.clearButton}>

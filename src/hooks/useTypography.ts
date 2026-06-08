@@ -43,12 +43,13 @@ export const useTypography = () => {
   const isArabic = language === 'ar';
 
   const typography = useCallback(
-    (style: TextStyleType, weight?: FontWeightValue) => {
-      const base = getTextStyle(style, isArabic);
+    (style: TextStyleType, weight?: FontWeightValue, forceArabic?: boolean) => {
+      const activeIsArabic = forceArabic !== undefined ? forceArabic : isArabic;
+      const base = getTextStyle(style, activeIsArabic);
       if (!weight) return base;
 
       // Resolve the correct fontFamily for the overridden weight atomically
-      const resolvedFamily = resolveWeightFamily(weight, isArabic);
+      const resolvedFamily = resolveWeightFamily(weight, activeIsArabic);
       return {
         ...base,
         fontFamily: resolvedFamily,
@@ -66,10 +67,11 @@ export const useTypography = () => {
   );
 
   const fontWeight = useCallback(
-    (weight: FontWeightValue) => {
+    (weight: FontWeightValue, forceArabic?: boolean) => {
+      const activeIsArabic = forceArabic !== undefined ? forceArabic : isArabic;
       if (Platform.OS === 'android') {
         return {
-          fontFamily: resolveWeightFamily(weight, isArabic),
+          fontFamily: resolveWeightFamily(weight, activeIsArabic),
           // fontWeight 'normal' — weight is encoded in fontFamily, avoid synthetic bold.
           fontWeight: 'normal' as const,
         };
