@@ -126,10 +126,13 @@ const RegisterScreen: React.FC = () => {
     }
   };
 
+  const STRONG_PASSWORD_REGEX =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+
   // Validation Flags
   const isNameValid = name.trim().length >= 3;
   const isMobileValid = MOBILE_REGEX.test(mobile.trim());
-  const isPasswordValid = password.length >= 8;
+  const isPasswordValid = STRONG_PASSWORD_REGEX.test(password);
   const isConfirmValid = isPasswordValid && password === confirmPassword;
 
   // Dynamic Border Color Helpers
@@ -146,9 +149,20 @@ const RegisterScreen: React.FC = () => {
         setTouchedPassword(true);
         setTouchedConfirm(true);
         if (!isNameValid || !isMobileValid || !isPasswordValid || !isConfirmValid) {
+          let errorMsg = t('auth.fill_all_fields', 'Please check highlighted fields');
+          if (!isNameValid && name.trim().length > 0) {
+            errorMsg = t('auth.name_too_short');
+          } else if (!isMobileValid && mobile.trim().length > 0) {
+            errorMsg = t('auth.invalid_egyptian_mobile');
+          } else if (!isPasswordValid && password.length > 0) {
+            errorMsg = t('auth.password_not_strong_enough');
+          } else if (!isConfirmValid && confirmPassword.length > 0) {
+            errorMsg = t('auth.passwords_not_match');
+          }
+
           showConfirm({
             title: t('common.error'),
-            message: t('auth.fill_all_fields', 'Please check highlighted fields'),
+            message: errorMsg,
             showCancel: false,
             onConfirm: () => {},
           });
@@ -586,6 +600,11 @@ const StepOne = ({
           />
         </TouchableOpacity>
       </View>
+      {touchedPassword && !isPasswordValid && password.length > 0 ? (
+        <Text style={currentStyles.errorText}>{t('auth.password_not_strong_enough')}</Text>
+      ) : (
+        <Text style={currentStyles.hintText}>{t('auth.password_strength_hint')}</Text>
+      )}
 
       <View
         style={[
@@ -1337,6 +1356,21 @@ const styles = (config: any) => {
       ...fontWeight('500'),
       flex: 1,
       textAlign: 'left',
+    },
+    errorText: {
+      ...typography('caption'),
+      color: '#FF6B6B',
+      marginTop: 4,
+      textAlign: 'left',
+      paddingHorizontal: spacing.sm,
+    },
+    hintText: {
+      ...typography('caption'),
+      color: theme.colors.textSecondary,
+      marginTop: 4,
+      textAlign: 'left',
+      fontSize: 10,
+      paddingHorizontal: spacing.sm,
     },
   });
 };
