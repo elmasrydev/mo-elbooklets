@@ -33,6 +33,7 @@ import ConnectionCard from '../components/feed/ConnectionCard';
 import { CardListSkeleton } from '../components/SkeletonLoader';
 import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
 import { isRTL, textAlign } from '../lib/rtl';
+import NotificationBell from '../components/NotificationBell';
 import { analytics } from '../lib/analytics';
 
 
@@ -361,7 +362,10 @@ const HomeScreen: React.FC = () => {
 
   return (
     <View style={common.container}>
-      <UnifiedHeader leftContent={<AnimatedNavbarLogo isRTL={isRTL} />} />
+      <UnifiedHeader 
+        leftContent={<AnimatedNavbarLogo isRTL={isRTL} />} 
+        rightContent={<NotificationBell />}
+      />
 
       <ScrollView
         style={s.scrollFlex}
@@ -428,7 +432,10 @@ const HomeScreen: React.FC = () => {
             <Text style={s.quizCTASubtitle}>{t('home_screen.test_knowledge_subtitle')}</Text>
             <TouchableOpacity
               activeOpacity={0.85}
-              onPress={() => navigation.navigate('Quiz')}
+              onPress={() => {
+                navigation.navigate('MainTabs', { screen: 'Quiz' });
+                navigation.navigate('QuizFlowSubjects');
+              }}
               style={s.quizCTAButton}
             >
               <Ionicons name="play" size={14} color={theme.colors.primary} />

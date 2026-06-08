@@ -454,7 +454,7 @@ const BookmarksNotesScreen: React.FC = () => {
                 onPress={() => navigation.navigate('MainTabs', { screen: 'Study' })}
               >
                 <Text style={currentStyles.studyButtonText}>
-                  {t('home_screen.my_subjects', 'Start Studying')}
+                  {t('home_screen.my_subjects', 'Start Revising')}
                 </Text>
                 <Ionicons 
                   name={isRTL ? 'arrow-back' : 'arrow-forward'} 
