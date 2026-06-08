@@ -36,6 +36,7 @@ interface SavedPoint {
     points?: string[];
     videoUrl?: string;
     myInteraction?: 'LIKE' | 'DISLIKE' | null;
+    mindMapUrl?: string;
     lessonPoints?: {
       id: string;
       title: string;
@@ -175,6 +176,7 @@ const BookmarksNotesScreen: React.FC = () => {
               points
               videoUrl
               myInteraction
+              mindMapUrl
               lessonPoints {
                 id
                 title

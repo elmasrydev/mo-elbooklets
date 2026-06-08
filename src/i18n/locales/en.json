@@ -152,6 +152,7 @@
     "leave_message": "Your revision progress is saved. Are you sure you want to leave?",
     "leave_title": "Leave Lesson?",
     "lesson_content": "Lesson Content",
+    "mind_map_title": "Lesson Mind Map",
     "next": "Next",
     "no_dod_data": "No progress data available",
     "no_key_points": "No key points available for this lesson.",
@@ -163,7 +164,8 @@
     "quizzes_progress": "Pass required quizzes ({{current}}/{{total}})",
     "summary": "Summary",
     "take_quiz": "Take Quiz",
-    "test_your_knowledge": "Test your knowledge on this lesson"
+    "test_your_knowledge": "Test your knowledge on this lesson",
+    "view_mind_map": "View Mind Map"
   },
   "more_screen": {
     "about_content": "ElBooklets Mobile App\nVersion 1.0.0\n\nYour digital learning companion for interactive education.",

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import crashlytics from '@react-native-firebase/crashlytics';
 import { ApolloProvider } from '@apollo/client/react';
 import { View, ActivityIndicator, StyleSheet, I18nManager, NativeModules } from 'react-native';
@@ -157,55 +158,57 @@ export default function App() {
   }
 
   return (
-    <SafeAreaProvider>
-      <AnalyticsProvider client={segmentClient}>
-        <ApolloProvider client={apolloClient}>
-        <ThemeProvider>
-          <ForceUpdateProvider>
-            <ModalProvider>
-              <LanguageProvider initialLanguage={initialLanguage}>
-                <I18nextProvider i18n={i18n}>
-                  <AuthProvider>
-                      <NavigationContainer
-                        ref={navigationRef}
-                        onReady={() => {
-                          const currentRouteName = navigationRef.current?.getCurrentRoute()?.name;
-                          routeNameRef.current = currentRouteName;
-                          if (currentRouteName) {
-                            crashlytics().log(`Screen viewed: ${currentRouteName}`);
-                            analytics.screen(currentRouteName);
-                          }
-                        }}
-                        onStateChange={async () => {
-                          const previousRouteName = routeNameRef.current;
-                          const currentRouteName = navigationRef.current?.getCurrentRoute()?.name;
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <AnalyticsProvider client={segmentClient}>
+          <ApolloProvider client={apolloClient}>
+          <ThemeProvider>
+            <ForceUpdateProvider>
+              <ModalProvider>
+                <LanguageProvider initialLanguage={initialLanguage}>
+                  <I18nextProvider i18n={i18n}>
+                    <AuthProvider>
+                        <NavigationContainer
+                          ref={navigationRef}
+                          onReady={() => {
+                            const currentRouteName = navigationRef.current?.getCurrentRoute()?.name;
+                            routeNameRef.current = currentRouteName;
+                            if (currentRouteName) {
+                              crashlytics().log(`Screen viewed: ${currentRouteName}`);
+                              analytics.screen(currentRouteName);
+                            }
+                          }}
+                          onStateChange={async () => {
+                            const previousRouteName = routeNameRef.current;
+                            const currentRouteName = navigationRef.current?.getCurrentRoute()?.name;
 
-                          if (previousRouteName !== currentRouteName && currentRouteName) {
-                            crashlytics().log(`Navigated to: ${currentRouteName}`);
-                            analytics.screen(currentRouteName);
-                          }
-                          routeNameRef.current = currentRouteName;
-                        }}
-                      >
-                      <ErrorBoundary>
-                        <AppNavigator />
-                        <NotificationHandler />
-                      </ErrorBoundary>
-                    </NavigationContainer>
-                    <ForceUpdateModal />
-                    <MaintenanceModal />
-                    <GlobalModalHandler />
-                    <ApiDomainChecker />
-                  </AuthProvider>
-                </I18nextProvider>
-              </LanguageProvider>
-            </ModalProvider>
-          </ForceUpdateProvider>
-        </ThemeProvider>
-      </ApolloProvider>
-    </AnalyticsProvider>
-      <StatusBar style="auto" />
-    </SafeAreaProvider>
+                            if (previousRouteName !== currentRouteName && currentRouteName) {
+                              crashlytics().log(`Navigated to: ${currentRouteName}`);
+                              analytics.screen(currentRouteName);
+                            }
+                            routeNameRef.current = currentRouteName;
+                          }}
+                        >
+                        <ErrorBoundary>
+                          <AppNavigator />
+                          <NotificationHandler />
+                        </ErrorBoundary>
+                      </NavigationContainer>
+                      <ForceUpdateModal />
+                      <MaintenanceModal />
+                      <GlobalModalHandler />
+                      <ApiDomainChecker />
+                    </AuthProvider>
+                  </I18nextProvider>
+                </LanguageProvider>
+              </ModalProvider>
+            </ForceUpdateProvider>
+          </ThemeProvider>
+        </ApolloProvider>
+      </AnalyticsProvider>
+        <StatusBar style="auto" />
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 
