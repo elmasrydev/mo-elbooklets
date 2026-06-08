@@ -604,10 +604,15 @@ const HomeScreen: React.FC = () => {
         {leaderboardEntries.length > 0 && (
           <View style={s.leaderboardCard}>
             <View style={s.leaderboardHeader}>
-              <Text style={s.leaderboardHeaderTitle}>
-                {t('home_screen.weekly_leaderboard', 'Weekly Leaderboard')}
-              </Text>
-              <Ionicons name="ribbon-sharp" size={20} color="#d97706" />
+              <View style={{ flexDirection: common.rowDirection, alignItems: 'center', gap: 6 }}>
+                <Ionicons name="ribbon-sharp" size={18} color="#d97706" />
+                <Text style={s.leaderboardHeaderTitle}>
+                  {t('home_screen.weekly_leaderboard', 'Weekly Leaderboard')}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => navigation.navigate('Leaderboard')}>
+                <Text style={s.viewAllLink}>{t('home_screen.view_all', 'View All')}</Text>
+              </TouchableOpacity>
             </View>
             <View style={s.leaderboardRowsContainer}>
               {leaderboardEntries.slice(0, 3).map((entry, index) => (
