@@ -65,7 +65,7 @@ const checkForAuthError = (data: any): boolean => {
 const handleAuthError = async () => {
   if (__DEV__) console.log('Auth error detected in API - logging out...');
   await SecureStore.deleteItemAsync('auth_token');
-  await AsyncStorage.removeItem('user_data');
+  await SecureStore.deleteItemAsync('user_data');
   if (authErrorHandler) {
     authErrorHandler();
   }
@@ -99,7 +99,7 @@ class ApiUriManager {
     if (this.isInitialized) return this.activeUrl;
 
     try {
-      const savedUrl = await AsyncStorage.getItem(CUSTOM_API_URL_KEY);
+      const savedUrl = await SecureStore.getItemAsync(CUSTOM_API_URL_KEY);
       if (
         isDebugMode() &&
         savedUrl &&
@@ -139,9 +139,9 @@ class ApiUriManager {
 
     if (url === PRIMARY_API_URL) {
       // No override needed — clear storage so default kicks in
-      await AsyncStorage.removeItem(CUSTOM_API_URL_KEY);
+      await SecureStore.deleteItemAsync(CUSTOM_API_URL_KEY);
     } else {
-      await AsyncStorage.setItem(CUSTOM_API_URL_KEY, url);
+      await SecureStore.setItemAsync(CUSTOM_API_URL_KEY, url);
     }
 
     this.activeUrl = url;

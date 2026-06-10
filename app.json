@@ -63,7 +63,8 @@
       "@react-native-firebase/crashlytics",
       "@react-native-firebase/messaging",
       "./plugins/withIosPushNotifications.js",
-      "./plugins/withAndroidNotificationIcon.js"
+      "./plugins/withAndroidNotificationIcon.js",
+      "./plugins/withSecurityConfigs.js"
     ],
     "extra": {
       "debugMode": true,

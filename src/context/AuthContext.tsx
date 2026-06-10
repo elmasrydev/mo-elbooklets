@@ -160,12 +160,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const checkAuthStatus = async () => {
     try {
       const token = await SecureStore.getItemAsync('auth_token');
-      const role = (await AsyncStorage.getItem('user_role')) as 'student' | 'parent' | null;
+      const role = (await SecureStore.getItemAsync('user_role')) as 'student' | 'parent' | null;
 
       if (token && role) {
         setUserRole(role);
         if (role === 'student') {
-          const userData = await AsyncStorage.getItem('user_data');
+          const userData = await SecureStore.getItemAsync('user_data');
           if (userData) {
             const parsedUser = JSON.parse(userData);
             setUser(parsedUser);
@@ -184,7 +184,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setShowRegistrationSuccess(true);
           }
         } else {
-          const parentData = await AsyncStorage.getItem('parent_data');
+          const parentData = await SecureStore.getItemAsync('parent_data');
           if (parentData) {
             const parsedParent = JSON.parse(parentData);
             setParentUser(parsedParent);
@@ -236,8 +236,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (result.data?.login) {
           const authPayload = result.data.login;
           await SecureStore.setItemAsync('auth_token', authPayload.access_token);
-          await AsyncStorage.setItem('user_data', JSON.stringify(authPayload.user));
-          await AsyncStorage.setItem('user_role', 'student');
+          await SecureStore.setItemAsync('user_data', JSON.stringify(authPayload.user));
+          await SecureStore.setItemAsync('user_role', 'student');
           setUser(authPayload.user);
           setUserRole('student');
           configureCrashlyticsStudent(authPayload.user);
@@ -301,8 +301,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (result.data?.register) {
           const authPayload = result.data.register;
           await SecureStore.setItemAsync('auth_token', authPayload.access_token);
-          await AsyncStorage.setItem('user_data', JSON.stringify(authPayload.user));
-          await AsyncStorage.setItem('user_role', 'student');
+          await SecureStore.setItemAsync('user_data', JSON.stringify(authPayload.user));
+          await SecureStore.setItemAsync('user_role', 'student');
           setUser(authPayload.user);
           setUserRole('student');
           configureCrashlyticsStudent(authPayload.user);
@@ -395,8 +395,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (result.data?.parentLogin) {
           const authPayload = result.data.parentLogin;
           await SecureStore.setItemAsync('auth_token', authPayload.access_token);
-          await AsyncStorage.setItem('parent_data', JSON.stringify(authPayload.parent));
-          await AsyncStorage.setItem('user_role', 'parent');
+          await SecureStore.setItemAsync('parent_data', JSON.stringify(authPayload.parent));
+          await SecureStore.setItemAsync('user_role', 'parent');
           setParentUser(authPayload.parent);
           setUserRole('parent');
           configureCrashlyticsParent(authPayload.parent);
@@ -443,8 +443,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (result.data?.parentRegister) {
           const authPayload = result.data.parentRegister;
           await SecureStore.setItemAsync('auth_token', authPayload.access_token);
-          await AsyncStorage.setItem('parent_data', JSON.stringify(authPayload.parent));
-          await AsyncStorage.setItem('user_role', 'parent');
+          await SecureStore.setItemAsync('parent_data', JSON.stringify(authPayload.parent));
+          await SecureStore.setItemAsync('user_role', 'parent');
           setParentUser(authPayload.parent);
           setUserRole('parent');
           configureCrashlyticsParent(authPayload.parent);
@@ -504,9 +504,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = useCallback(async () => {
     try {
       await SecureStore.deleteItemAsync('auth_token');
-      await AsyncStorage.removeItem('user_data');
-      await AsyncStorage.removeItem('parent_data');
-      await AsyncStorage.removeItem('user_role');
+      await SecureStore.deleteItemAsync('user_data');
+      await SecureStore.deleteItemAsync('parent_data');
+      await SecureStore.deleteItemAsync('user_role');
       await unregisterDeviceToken();
       await clearNotificationPromptedFlag();
       setUser(null);
@@ -523,7 +523,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     async (userData: User) => {
       try {
         const updatedUser = { ...user, ...userData };
-        await AsyncStorage.setItem('user_data', JSON.stringify(updatedUser));
+        await SecureStore.setItemAsync('user_data', JSON.stringify(updatedUser));
         setUser(updatedUser);
         configureCrashlyticsStudent(updatedUser);
         analytics.identify(updatedUser.id, {
@@ -542,7 +542,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const updateParentUser = useCallback(
     async (data: Partial<Parent>) => {
       const updatedParent = { ...parentUser, ...data } as Parent;
-      await AsyncStorage.setItem('parent_data', JSON.stringify(updatedParent));
+      await SecureStore.setItemAsync('parent_data', JSON.stringify(updatedParent));
       setParentUser(updatedParent);
     },
     [parentUser],
@@ -566,7 +566,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const refreshUser = useCallback(async () => {
     try {
       const token = await SecureStore.getItemAsync('auth_token');
-      const role = await AsyncStorage.getItem('user_role');
+      const role = await SecureStore.getItemAsync('user_role');
       if (!token || !role) return;
 
       if (role === 'student') {
@@ -584,7 +584,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           token,
         );
         if (result.data?.me) {
-          await AsyncStorage.setItem('user_data', JSON.stringify(result.data.me));
+          await SecureStore.setItemAsync('user_data', JSON.stringify(result.data.me));
           setUser(result.data.me);
           configureCrashlyticsStudent(result.data.me);
           analytics.identify(result.data.me.id, {
@@ -604,7 +604,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           token,
         );
         if (result.data?.parentMe) {
-          await AsyncStorage.setItem('parent_data', JSON.stringify(result.data.parentMe));
+          await SecureStore.setItemAsync('parent_data', JSON.stringify(result.data.parentMe));
           setParentUser(result.data.parentMe);
           configureCrashlyticsParent(result.data.parentMe);
         }

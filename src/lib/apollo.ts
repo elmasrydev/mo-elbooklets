@@ -52,7 +52,7 @@ const errorLink = onError((errorResponse: any) => {
         if (__DEV__) console.log('Auth error detected, logging out...');
         // Clear stored auth data
         SecureStore.deleteItemAsync('auth_token');
-        AsyncStorage.removeItem('user_data');
+        SecureStore.deleteItemAsync('user_data');
         // Trigger logout in AuthContext
         if (logoutHandler) {
           logoutHandler();
@@ -65,7 +65,7 @@ const errorLink = onError((errorResponse: any) => {
   if (networkError && 'statusCode' in networkError && (networkError as any).statusCode === 401) {
     if (__DEV__) console.log('401 error detected, logging out...');
     SecureStore.deleteItemAsync('auth_token');
-    AsyncStorage.removeItem('user_data');
+    SecureStore.deleteItemAsync('user_data');
     if (logoutHandler) {
       logoutHandler();
     }
