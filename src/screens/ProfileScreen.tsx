@@ -225,102 +225,90 @@ const ProfileScreen: React.FC = () => {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Profile Section */}
-        <View style={currentStyles.profileSection}>
-          <TouchableOpacity
-            style={currentStyles.avatarRingWrapper}
-            activeOpacity={0.8}
-            onPress={() => setShowPrompt(true)}
-          >
-            <CircularProgress
-              size={130}
-              strokeWidth={6}
-              percentage={completeness?.percentage || 0}
-              color={theme.colors.primary}
-              containerStyle={currentStyles.avatarProgress}
+        {/* Integrated Profile Card (Variation A) */}
+        <View style={currentStyles.profileCardContainer}>
+          {/* Top Half: Avatar (Left) + User Info (Right) */}
+          <View style={currentStyles.profileInfoRow}>
+            {/* Avatar Column */}
+            <TouchableOpacity
+              style={currentStyles.avatarContainer}
+              activeOpacity={0.8}
+              onPress={() => setShowPrompt(true)}
             >
-              <View style={[currentStyles.avatarImage, currentStyles.avatarFallback]}>
-                <Text style={currentStyles.avatarFallbackText}>
-                  {user?.name?.charAt(0).toUpperCase() || 'U'}
-                </Text>
-              </View>
-            </CircularProgress>
-          </TouchableOpacity>
-
-          <View style={currentStyles.userInfoTextContainer}>
-            <Text style={currentStyles.userName}>{user?.name || 'User'}</Text>
-            <Text style={currentStyles.userSubtitle}>
-              {user?.grade?.name || t('profile_screen.not_specified')}{' '}
-              {user?.educational_system?.name ? `• ${user.educational_system.name}` : ''}
-            </Text>
-            {user?.mobile ? (
-              <Text
-                style={[
-                  currentStyles.userSubtitle,
-                  { marginTop: 4, fontWeight: 'normal', opacity: 0.8 },
-                ]}
+              <CircularProgress
+                size={80}
+                strokeWidth={4}
+                percentage={completeness?.percentage || 0}
+                color={theme.colors.primary}
+                containerStyle={currentStyles.avatarProgress}
               >
-                {user?.country_code ? `${user.country_code} ` : ''}
-                {user.mobile}
-              </Text>
-            ) : null}
-
-            {!user?.mobile_verified_at ? (
-              <View style={currentStyles.verifyBanner}>
-                <View style={{ width: 16 }} />
-                <View
-                  style={{
-                    flex: 1,
-                    flexDirection: 'row',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Ionicons
-                    name="logo-whatsapp"
-                    size={18}
-                    color="#25D366"
-                    style={{ marginEnd: spacing.xs }}
-                  />
-                  <Text style={[typography('caption'), currentStyles.verifyText, { flex: 0 }]}>
-                    {t('otp.verify_mobile', 'Verify your mobile via WhatsApp')}
+                <View style={[currentStyles.avatarImage, currentStyles.avatarFallback]}>
+                  <Text style={currentStyles.avatarFallbackText}>
+                    {user?.name?.charAt(0).toUpperCase() || 'U'}
                   </Text>
                 </View>
-                <View style={{ width: 16 }} />
-              </View>
-            ) : (
-              <View style={currentStyles.verifiedBadge}>
-                <Ionicons
-                  name="checkmark-circle"
-                  size={16}
-                  color={theme.colors.success}
-                  style={{ marginEnd: spacing.xs }}
-                />
-                <Text style={[typography('caption'), currentStyles.verifiedText]}>
-                  {t('otp.mobile_verified', 'Mobile verified')}
-                </Text>
-              </View>
-            )}
-          </View>
-        </View>
+              </CircularProgress>
+            </TouchableOpacity>
 
-        {/* Follow Stats */}
-        <View style={currentStyles.followStatsContainer}>
-          <TouchableOpacity
-            style={currentStyles.statItem}
-            onPress={() => navigation.navigate('FollowList', { type: 'followers' })}
-          >
-            <Text style={currentStyles.statCount}>{followStats.followers}</Text>
-            <Text style={currentStyles.statLabel}>{t('profile_screen.followers')}</Text>
-          </TouchableOpacity>
-          <View style={currentStyles.statDivider} />
-          <TouchableOpacity
-            style={currentStyles.statItem}
-            onPress={() => navigation.navigate('FollowList', { type: 'following' })}
-          >
-            <Text style={currentStyles.statCount}>{followStats.following}</Text>
-            <Text style={currentStyles.statLabel}>{t('profile_screen.following')}</Text>
-          </TouchableOpacity>
+            {/* User Details Column */}
+            <View style={currentStyles.profileDetailsColumn}>
+              <Text numberOfLines={1} style={currentStyles.userNameText}>
+                {user?.name || 'User'}
+              </Text>
+              <Text numberOfLines={1} style={currentStyles.userGradeText}>
+                {user?.grade?.name || t('profile_screen.not_specified')}{' '}
+                {user?.educational_system?.name ? `• ${user.educational_system.name}` : ''}
+              </Text>
+
+              {/* Phone + Verification Badge Row */}
+              <View style={currentStyles.phoneBadgeRow}>
+                {user?.mobile ? (
+                  <Text style={currentStyles.userPhoneText}>
+                    {user?.country_code ? `${user.country_code} ` : ''}
+                    {user.mobile}
+                  </Text>
+                ) : null}
+
+                {!user?.mobile_verified_at ? (
+                  <View style={currentStyles.verifyCapsule}>
+                    <Ionicons name="logo-whatsapp" size={12} color="#25D366" />
+                    <Text numberOfLines={1} style={[typography('caption'), currentStyles.verifyCapsuleText]}>
+                      {t('otp.verify_mobile', 'Verify')}
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={currentStyles.verifiedCapsule}>
+                    <Ionicons name="checkmark-circle" size={12} color={theme.colors.success} />
+                    <Text numberOfLines={1} style={[typography('caption'), currentStyles.verifiedCapsuleText]}>
+                      {t('otp.mobile_verified', 'Verified')}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          </View>
+
+          {/* Divider */}
+          <View style={currentStyles.cardDivider} />
+
+          {/* Bottom Half: Follow Stats */}
+          <View style={currentStyles.statsRowContainer}>
+            <TouchableOpacity
+              style={currentStyles.statsColumn}
+              onPress={() => navigation.navigate('FollowList', { type: 'followers' })}
+            >
+              <Text style={currentStyles.statsNumber}>{followStats.followers}</Text>
+              <Text style={currentStyles.statsLabelText}>{t('profile_screen.followers')}</Text>
+            </TouchableOpacity>
+            <View style={currentStyles.statsVerticalDivider} />
+            <TouchableOpacity
+              style={currentStyles.statsColumn}
+              onPress={() => navigation.navigate('FollowList', { type: 'following' })}
+            >
+              <Text style={currentStyles.statsNumber}>{followStats.following}</Text>
+              <Text style={currentStyles.statsLabelText}>{t('profile_screen.following')}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Menu Section */}
@@ -375,7 +363,7 @@ const ProfileScreen: React.FC = () => {
             <View
               style={[currentStyles.settingIconBox, { backgroundColor: theme.colors.info + '20' }]}
             >
-              <Ionicons name="help-circle-outline" size={22} color={theme.colors.info} />
+              <Ionicons name="help-circle-outline" size={20} color={theme.colors.info} />
             </View>
             <View style={currentStyles.settingContent}>
               <Text style={currentStyles.settingTitle}>{t('profile_screen.faqs')}</Text>
@@ -398,7 +386,7 @@ const ProfileScreen: React.FC = () => {
                 { backgroundColor: theme.colors.warning + '20' },
               ]}
             >
-              <Ionicons name="mail-outline" size={22} color={theme.colors.warning} />
+              <Ionicons name="mail-outline" size={20} color={theme.colors.warning} />
             </View>
             <View style={currentStyles.settingContent}>
               <Text style={currentStyles.settingTitle}>{t('profile_screen.contact_us')}</Text>
@@ -421,7 +409,7 @@ const ProfileScreen: React.FC = () => {
                 { backgroundColor: theme.colors.primary + '20' },
               ]}
             >
-              <Ionicons name="people-outline" size={22} color={theme.colors.primary} />
+              <Ionicons name="people-outline" size={20} color={theme.colors.primary} />
             </View>
             <View style={currentStyles.settingContent}>
               <Text style={currentStyles.settingTitle}>
@@ -472,7 +460,7 @@ const ProfileScreen: React.FC = () => {
                 { backgroundColor: theme.colors.primary + '20' },
               ]}
             >
-              <Ionicons name="bookmark-outline" size={22} color={theme.colors.primary} />
+              <Ionicons name="bookmark-outline" size={20} color={theme.colors.primary} />
             </View>
             <View style={currentStyles.settingContent}>
               <Text style={currentStyles.settingTitle}>
@@ -521,7 +509,7 @@ const ProfileScreen: React.FC = () => {
                   { backgroundColor: theme.colors.warning + '20' },
                 ]}
               >
-                <Ionicons name="settings-outline" size={22} color={theme.colors.warning} />
+                <Ionicons name="settings-outline" size={20} color={theme.colors.warning} />
               </View>
               <View style={currentStyles.settingContent}>
                 <Text style={currentStyles.settingTitle}>
@@ -551,7 +539,7 @@ const ProfileScreen: React.FC = () => {
                 { backgroundColor: theme.colors.primary + '20' },
               ]}
             >
-              <Ionicons name="notifications-outline" size={22} color={theme.colors.primary} />
+              <Ionicons name="notifications-outline" size={20} color={theme.colors.primary} />
             </View>
             <View style={currentStyles.settingContent}>
               <Text style={currentStyles.settingTitle}>{t('profile_screen.notifications')}</Text>
@@ -562,6 +550,7 @@ const ProfileScreen: React.FC = () => {
             <Switch
               value={pushEnabled}
               onValueChange={handlePushToggle}
+              style={{ alignSelf: 'center' }}
               trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
               thumbColor={Platform.OS === 'ios' ? '#ffffff' : pushEnabled ? '#ffffff' : '#f4f3f4'}
               ios_backgroundColor={theme.colors.border}
@@ -576,7 +565,7 @@ const ProfileScreen: React.FC = () => {
                 { backgroundColor: theme.colors.secondary + '20' },
               ]}
             >
-              <Ionicons name="apps-outline" size={22} color={theme.colors.secondary} />
+              <Ionicons name="apps-outline" size={20} color={theme.colors.secondary} />
             </View>
             <View style={currentStyles.settingContent}>
               <Text style={currentStyles.settingTitle}>
@@ -595,6 +584,7 @@ const ProfileScreen: React.FC = () => {
                 value={preferences.app_notifications_enabled}
                 onValueChange={toggleAppNotifications}
                 disabled={!pushEnabled}
+                style={{ alignSelf: 'center' }}
                 trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
                 thumbColor={
                   Platform.OS === 'ios'
@@ -613,7 +603,7 @@ const ProfileScreen: React.FC = () => {
             <View
               style={[currentStyles.settingIconBox, { backgroundColor: theme.colors.info + '20' }]}
             >
-              <Ionicons name="chatbubbles-outline" size={22} color={theme.colors.info} />
+              <Ionicons name="chatbubbles-outline" size={20} color={theme.colors.info} />
             </View>
             <View style={currentStyles.settingContent}>
               <Text style={currentStyles.settingTitle}>
@@ -632,6 +622,7 @@ const ProfileScreen: React.FC = () => {
                 value={preferences.social_notifications_enabled ?? false}
                 onValueChange={toggleSocialNotifications}
                 disabled={!pushEnabled}
+                style={{ alignSelf: 'center' }}
                 trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
                 thumbColor={
                   Platform.OS === 'ios'
@@ -691,15 +682,17 @@ const ProfileScreen: React.FC = () => {
           onPress={handleDeleteAccount}
           disabled={isDeletingAccount}
         >
-          <View style={currentStyles.deleteAccountIconBox}>
-            <Ionicons name="trash-outline" size={18} color={'#fff'} />
-          </View>
-          <View style={currentStyles.deleteAccountContent}>
-            <Text style={currentStyles.deleteAccountTitle}>
-              {t('profile_screen.delete_account')}
-            </Text>
-          </View>
-          {isDeletingAccount && <ActivityIndicator color={theme.colors.error} size="small" />}
+          <Ionicons name="trash-outline" size={18} color={theme.colors.error} style={{ marginEnd: spacing.xs }} />
+          <Text style={currentStyles.deleteAccountTitle}>
+            {t('profile_screen.delete_account')}
+          </Text>
+          {isDeletingAccount && (
+            <ActivityIndicator
+              color={theme.colors.error}
+              size="small"
+              style={{ marginStart: spacing.xs }}
+            />
+          )}
         </TouchableOpacity>
       </ScrollView>
 
@@ -733,27 +726,12 @@ const styles = (
     scrollView: {
       flex: 1,
     },
-    profileSection: {
-      alignItems: 'center',
-      paddingVertical: spacing.lg,
-      marginBottom: 0,
-    },
-    avatarRingWrapper: {
-      position: 'relative',
-    },
-    avatarOuterRing: {
-      padding: 4,
-      borderRadius: borderRadius.full,
-      backgroundColor: theme.colors.primary100,
-      borderWidth: 2,
-      borderColor: theme.colors.primary + '33', // 20% opacity
-    },
     avatarImage: {
-      width: 100,
-      height: 100,
-      borderRadius: 50,
-      borderWidth: 2,
-      borderColor: theme.colors.card,
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      borderWidth: 1.5,
+      borderColor: theme.colors.surface,
     },
     avatarProgress: {
       padding: 4,
@@ -764,107 +742,113 @@ const styles = (
       alignItems: 'center',
     },
     avatarFallbackText: {
-      ...typography('h1'),
+      ...typography('h2'),
       ...fontWeight('bold'),
       color: '#ffffff',
     },
-    editAvatarButton: {
-      position: 'absolute',
-      bottom: 4,
-      right: 4,
-      backgroundColor: theme.colors.primary,
-      padding: spacing.xs,
-      borderRadius: borderRadius.full,
-      borderWidth: 2,
-      borderColor: theme.colors.card,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
-      elevation: 4,
+    profileCardContainer: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: borderRadius.xl,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      marginTop: spacing.sm,
+      padding: spacing.md,
+      ...layout.shadow,
     },
-    userInfoTextContainer: {
-      marginTop: spacing.md,
+    profileInfoRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    avatarContainer: {
+      position: 'relative',
+    },
+    profileDetailsColumn: {
+      flex: 1,
+      justifyContent: 'center',
+      gap: 4,
+    },
+    userNameText: {
+      ...typography('h3'),
+      ...fontWeight('bold'),
+      color: theme.colors.text,
+      textAlign: 'left',
+    },
+    userGradeText: {
+      ...typography('caption'),
+      color: theme.colors.textSecondary,
+      textAlign: 'left',
+    },
+    phoneBadgeRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+      gap: 8,
+    },
+    userPhoneText: {
+      ...typography('caption'),
+      color: theme.colors.textSecondary,
+      textAlign: 'left',
+    },
+    verifyCapsule: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: theme.colors.primary + '15',
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: borderRadius.md,
+    },
+    verifyCapsuleText: {
+      ...fontWeight('600'),
+      color: theme.colors.primary,
+      fontSize: 10,
+    },
+    verifiedCapsule: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: theme.colors.success + '15',
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: borderRadius.md,
+    },
+    verifiedCapsuleText: {
+      ...fontWeight('600'),
+      color: theme.colors.success,
+      fontSize: 10,
+    },
+    cardDivider: {
+      height: 1,
+      backgroundColor: theme.colors.border,
+      marginVertical: spacing.md,
+    },
+    statsRowContainer: {
+      flexDirection: 'row',
       alignItems: 'center',
     },
-    userName: {
+    statsColumn: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    statsNumber: {
       ...typography('h2'),
       ...fontWeight('bold'),
       color: theme.colors.text,
-      marginBottom: 2,
-      textAlign: 'center',
     },
-    userSubtitle: {
-      ...typography('body'),
-      ...fontWeight('bold'),
-      color: theme.colors.textSecondary,
-      textAlign: 'center',
-    },
-    verifyBanner: {
-      flexDirection: 'row',
-      justifyContent:'space-around',
-      alignItems: 'center',
-      height:44,
-      backgroundColor: theme.colors.primary + '15',
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
-      borderRadius: borderRadius.lg,
-      marginTop: spacing.md,
-      borderWidth: 1,
-      borderColor: theme.colors.primary + '30',
-    },
-    verifyText: {
-      ...fontWeight('600'),
-      color: theme.colors.primary,
-      flex: 1,
-      textAlign: 'center',
-    },
-    verifiedBadge: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: theme.colors.success + '15',
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
-      borderRadius: borderRadius.lg,
-      marginTop: spacing.md,
-    },
-    verifiedText: {
-      ...fontWeight('600'),
-      color: theme.colors.success,
-    },
-    menuSection: {
-      marginTop: spacing.lg,
-    },
-    followStatsContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: theme.colors.card,
-      paddingVertical: spacing.md,
-      paddingHorizontal: spacing.lg,
-      borderRadius: borderRadius.xl,
-      marginTop: spacing.md,
-      marginHorizontal: spacing.md,
-      ...layout.shadow,
-    },
-    statItem: {
-      alignItems: 'center',
-      paddingHorizontal: spacing.lg,
-    },
-    statCount: {
-      ...typography('h3'),
-      ...fontWeight('bold'),
-      color: theme.colors.primary,
-    },
-    statLabel: {
+    statsLabelText: {
       ...typography('caption'),
       color: theme.colors.textSecondary,
       marginTop: 2,
     },
-    statDivider: {
+    statsVerticalDivider: {
       width: 1,
-      height: 30,
+      height: 32,
       backgroundColor: theme.colors.border,
+    },
+    menuSection: {
+      marginTop: spacing.sm,
     },
     sectionHeader: {
       marginTop: spacing.md,
@@ -887,18 +871,22 @@ const styles = (
     settingItem: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      backgroundColor: theme.colors.card,
-      padding: spacing.md,
+      backgroundColor: theme.colors.surface,
+      paddingVertical: 8,
+      paddingHorizontal: spacing.md,
+      minHeight: 64,
       borderRadius: borderRadius.xl,
-      marginBottom: spacing.sm,
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
       ...layout.shadow,
       shadowOpacity: 0.05,
       shadowRadius: 3,
       elevation: 2,
     },
     settingIconBox: {
-      width: 40,
-      height: 40,
+      width: 36,
+      height: 36,
       borderRadius: borderRadius.md,
       backgroundColor: isDark ? theme.colors.primary + '1A' : theme.colors.primary100,
       justifyContent: 'center',
@@ -906,13 +894,13 @@ const styles = (
       ...common.marginEnd(spacing.md),
     },
     menuImage: {
-      width: 21,
-      height: 21,
+      width: 18,
+      height: 18,
       resizeMode: 'contain',
     },
     logoutMenuImage: {
-      width: 21,
-      height: 21,
+      width: 18,
+      height: 18,
       resizeMode: 'contain',
     },
     settingContent: {
@@ -933,7 +921,7 @@ const styles = (
     settingSubtitle: {
       ...typography('caption'),
       color: theme.colors.textSecondary,
-      marginTop: 2,
+      marginTop: 0,
       textAlign: common.textAlign,
     },
     logoutContainer: {
@@ -942,17 +930,23 @@ const styles = (
     logoutItem: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      backgroundColor: isDark ? theme.colors.error + '1A' : '#FEF2F2', // red-50
-      padding: spacing.md,
+      backgroundColor: theme.colors.surface,
+      paddingVertical: 8,
+      paddingHorizontal: spacing.md,
+      minHeight: 64,
       borderRadius: borderRadius.xl,
       borderWidth: 1,
-      borderColor: isDark ? theme.colors.error + '33' : '#FEE2E2', // red-100
+      borderColor: theme.colors.border,
+      ...layout.shadow,
+      shadowOpacity: 0.05,
+      shadowRadius: 3,
+      elevation: 2,
     },
     logoutIconBox: {
-      width: 40,
-      height: 40,
+      width: 36,
+      height: 36,
       borderRadius: borderRadius.md,
-      backgroundColor: isDark ? theme.colors.error + '33' : '#FEE2E2',
+      backgroundColor: theme.colors.error + '10',
       justifyContent: 'center',
       alignItems: 'center',
       ...common.marginEnd(spacing.md),
@@ -964,33 +958,23 @@ const styles = (
       textAlign: common.textAlign,
     },
     deleteAccountItem: {
-      width: '70%',
       alignSelf: 'center',
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: spacing.xs,
-      marginTop: spacing['3xl'],
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.xl,
+      marginTop: spacing['2xl'],
       borderRadius: borderRadius.lg,
       borderWidth: 1,
       borderColor: theme.colors.error + '40',
-      backgroundColor: 'red',
-      opacity: 0.75,
-    },
-    deleteAccountIconBox: {
-      width: 34,
-      height: 34,
-      borderRadius: borderRadius.sm,
-      backgroundColor: theme.colors.error + '1A',
-      justifyContent: 'center',
-      alignItems: 'center',
-      ...common.marginEnd(spacing.sm),
+      backgroundColor: 'transparent',
     },
     deleteAccountTitle: {
       ...typography('body'),
       ...fontWeight('bold'),
-      color: '#fff',
-      textAlign: common.textAlign,
+      color: theme.colors.error,
+      textAlign: 'center',
     },
     crashTestContainer: {
       marginTop: spacing.sm,
