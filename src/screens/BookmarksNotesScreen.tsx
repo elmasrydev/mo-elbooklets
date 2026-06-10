@@ -257,6 +257,7 @@ const BookmarksNotesScreen: React.FC = () => {
       lesson: item.lesson,
       // Pass the point ID to scroll to it
       initialPointId: item.lessonPoint.id,
+      fromBookmarks: true,
     });
   };
 
@@ -415,29 +416,42 @@ const BookmarksNotesScreen: React.FC = () => {
       <UnifiedHeader showBackButton title={t('more_screen.bookmarks_notes', 'Bookmarks & Notes')} />
 
       <View style={currentStyles.tabContainer}>
-        <TouchableOpacity
-          style={[currentStyles.tab, activeTab === 'bookmarks' && currentStyles.activeTab]}
-          onPress={() => setActiveTab('bookmarks')}
-        >
-          <Text
+        <View style={currentStyles.segmentedContainer}>
+          <TouchableOpacity
             style={[
-              currentStyles.tabText,
-              activeTab === 'bookmarks' && currentStyles.activeTabText,
+              currentStyles.segmentedButton,
+              activeTab === 'bookmarks' && currentStyles.segmentedButtonActive,
             ]}
+            onPress={() => setActiveTab('bookmarks')}
+            activeOpacity={0.8}
           >
-            {t('common.bookmarks', 'Bookmarks')}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[currentStyles.tab, activeTab === 'notes' && currentStyles.activeTab]}
-          onPress={() => setActiveTab('notes')}
-        >
-          <Text
-            style={[currentStyles.tabText, activeTab === 'notes' && currentStyles.activeTabText]}
+            <Text
+              style={[
+                currentStyles.segmentedText,
+                activeTab === 'bookmarks' && currentStyles.segmentedTextActive,
+              ]}
+            >
+              {t('common.bookmarks', 'Bookmarks')}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              currentStyles.segmentedButton,
+              activeTab === 'notes' && currentStyles.segmentedButtonActive,
+            ]}
+            onPress={() => setActiveTab('notes')}
+            activeOpacity={0.8}
           >
-            {t('common.notes', 'Notes')}
-          </Text>
-        </TouchableOpacity>
+            <Text
+              style={[
+                currentStyles.segmentedText,
+                activeTab === 'notes' && currentStyles.segmentedTextActive,
+              ]}
+            >
+              {t('common.notes', 'Notes')}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {loading && !refreshing ? (
@@ -545,28 +559,42 @@ const styles = (
       paddingHorizontal: layout.screenPadding,
       marginTop: 16,
       marginBottom: 8,
-      gap: 12,
     },
-    tab: {
+    segmentedContainer: {
+      flexDirection: 'row',
+      backgroundColor: theme.mode === 'light' ? '#E2E8F0' : theme.colors.border,
+      borderRadius: borderRadius.md || 12,
+      padding: 3,
+      flex: 1,
+    },
+    segmentedButton: {
       flex: 1,
       paddingVertical: 10,
       alignItems: 'center',
-      borderRadius: borderRadius.md,
-      backgroundColor: theme.colors.card,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
+      borderRadius: (borderRadius.md || 12) - 3,
     },
-    activeTab: {
-      backgroundColor: theme.colors.primary + '1A',
-      borderColor: theme.colors.primary,
+    segmentedButtonActive: {
+      backgroundColor: theme.mode === 'light' ? '#FFFFFF' : theme.colors.background,
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+        },
+        android: {
+          elevation: 2,
+        },
+      }),
     },
-    tabText: {
+    segmentedText: {
       ...typography('body'),
       ...fontWeight('600'),
       color: theme.colors.textSecondary,
     },
-    activeTabText: {
+    segmentedTextActive: {
       color: theme.colors.primary,
+      ...fontWeight('700'),
     },
     listContent: {
       paddingHorizontal: layout.screenPadding,
@@ -574,13 +602,23 @@ const styles = (
       paddingTop: 8,
     },
     card: {
-      backgroundColor: theme.colors.card,
-      borderRadius: borderRadius.lg,
+      backgroundColor: theme.colors.surface,
+      borderRadius: borderRadius.xl || 20,
       padding: 16,
       marginBottom: 16,
-      ...layout.shadow,
       borderWidth: 1,
       borderColor: theme.colors.border,
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.03,
+          shadowRadius: 10,
+        },
+        android: {
+          elevation: 2,
+        },
+      }),
     },
     cardHeader: {
       flexDirection: 'row',
@@ -627,9 +665,12 @@ const styles = (
       flexDirection: 'row',
       alignItems: 'flex-start',
       gap: 8,
-      backgroundColor: theme.colors.primary + '0D',
-      padding: 10,
-      borderRadius: borderRadius.sm,
+      backgroundColor: theme.colors.primary + '0A',
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      borderRadius: borderRadius.sm || 6,
+      borderStartWidth: 3,
+      borderStartColor: theme.colors.primary,
       marginBottom: 12,
     },
     noteText: {

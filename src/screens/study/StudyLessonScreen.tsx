@@ -462,9 +462,13 @@ const StudyLessonScreen: React.FC = () => {
 
   // Open local leave-disclaimer (works inside iOS native fullScreenModal).
   const handleLeaveLesson = useCallback(() => {
+    if (route.params?.fromBookmarks) {
+      navigation.goBack();
+      return true;
+    }
     setShowLeaveModal(true);
     return true; // block Android default back action
-  }, []);
+  }, [navigation, route.params?.fromBookmarks]);
 
   // Android hardware back → leave disclaimer
   useAndroidBack(handleLeaveLesson);
