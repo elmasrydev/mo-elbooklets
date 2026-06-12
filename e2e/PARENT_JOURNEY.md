@@ -79,12 +79,21 @@ approve → logout → login parent B → assert child visible.
 - ⚠️ `e2e/env.yaml` PRS student + parent mobiles are FIXED accounts used by login flows (02/03/06).
   The link flow should use the run's random mobiles instead, so cleanup stays simple.
 
-## Manual walkthrough checklist (the ❓ items)
+## Walkthrough answers (confirmed by product owner, 2026-06-12)
 
-1. Parent register on PRS: any disclaimer/popup after submit? (code shows none)
-2. Parent register: does backend send WhatsApp OTP anyway / any server-driven modal?
-3. Add child with a non-existent mobile → which error copy/modal appears?
-4. Add child twice with same mobile → duplicate-request error behavior?
-5. Student side: does the request appear instantly or after pull-to-refresh?
-6. Accept on student side → does parent dashboard need refresh to show the child?
-7. Rate-limit modal frequency on parent login (PRS)?
+1. Parent register on PRS: **no popup/disclaimer after submit** ✅
+2. Backend does **not** send WhatsApp OTP to parents ✅
+3. Add child with non-existent mobile → **unknown error UI; discover during first test run**
+   (flows must tolerate `confirm-modal-ok` conditionally)
+4. Duplicate add-child request → **unknown; discover during first test run**
+5. Student-side request visibility (instant vs pull-to-refresh) → **possibly not implemented;
+   the link E2E must verify this and may expose a missing-feature gap**
+6. Parent dashboard after student accepts (auto vs manual refresh) → **unverified; test must
+   handle both (re-focus dashboard / pull-to-refresh before asserting child card)**
+7. Parent login rate-limiting → **possibly not implemented on backend; keep the conditional
+   `confirm-modal-ok` handler anyway (harmless if it never fires)**
+
+## Testing scope (product owner decision)
+
+E2E covers **Auth system + parent↔child linking only** for now. No dashboard analytics,
+no child details (screen not implemented), no notifications testing.
