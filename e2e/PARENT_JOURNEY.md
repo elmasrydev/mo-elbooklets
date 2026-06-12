@@ -30,8 +30,8 @@ ParentDashboard
  │    └─ confirm → ParentSendLinkRequest mutation → request shows as PENDING
  ├─ Incoming link requests section → Accept / Decline buttons (ParentRespondToLink)
  ├─ Outgoing pending requests → Cancel (ParentCancelLinkRequest)
- └─ children list → tap child card → navigate('ChildDetailsScreen') ⚠️ BROKEN (route not
-    registered + screen file does not exist — tap silently fails)
+ └─ children list → tap child card → navigate('ChildDetailsScreen') — screen NOT IMPLEMENTED yet
+    (per product owner: ignore for now; do not test or "fix" this navigation)
 ```
 
 ## Student-side approval (required to complete a link!)
