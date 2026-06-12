@@ -4,7 +4,7 @@
  * All colors are aligned with the official UI guide.
  */
 
-export type ColorTheme = 'blue';
+export type ColorTheme = 'blue' | 'green' | 'purple' | 'orange';
 
 // Brand & Palette Colors from UI Guide
 export const COLORS = {
@@ -71,10 +71,16 @@ export const getColorPalette = (theme: ColorTheme): ColorPalette => {
 
 export const COLOR_THEME_NAMES: Record<ColorTheme, { en: string; ar: string }> = {
   blue: { en: 'Blue', ar: 'أزرق' },
+  green: { en: 'Green', ar: 'أخضر' },
+  purple: { en: 'Purple', ar: 'بنفسجي' },
+  orange: { en: 'Orange', ar: 'برتقالي' },
 };
 
 export const COLOR_THEME_DISPLAY_COLORS: Record<ColorTheme, string> = {
   blue: COLORS.primaryBlue,
+  green: COLORS.secondaryGreen,
+  purple: '#8B5CF6',
+  orange: COLORS.warningOrange,
 };
 
 export const DEFAULT_COLOR_THEME: ColorTheme = 'blue';
