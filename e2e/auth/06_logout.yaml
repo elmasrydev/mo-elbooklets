@@ -26,13 +26,14 @@ appId: com.elbooklets.app
 - tapOn:
     id: "login-submit-button"
 
-# Wait for login API response & screen transition
-- runScript:
-    file: ../utils/sleep.js
-    env:
-      timeout: 2000
+# Give a rate-limit / warning popup a window to appear (continues early if it does)
+- extendedWaitUntil:
+    optional: true
+    visible:
+      id: "confirm-modal-ok"
+    timeout: 2000
 
-# Dismiss rate-limit / warning popup if it appears
+# Dismiss rate-limit / warning popup if it appeared
 - runFlow:
     when:
       visible:
@@ -40,10 +41,10 @@ appId: com.elbooklets.app
     commands:
       - tapOn:
           id: "confirm-modal-ok"
-      - runScript:
-          file: ../utils/sleep.js
-          env:
-            timeout: 1500
+      - extendedWaitUntil:
+          notVisible:
+            id: "confirm-modal-ok"
+          timeout: 3000
 
 # Skip OTP using debug bypass button if it appears
 - runFlow:
@@ -61,11 +62,12 @@ appId: com.elbooklets.app
       - tapOn:
           id: "otp-skip-debug-2"
 
-# Wait for profile completion modal to auto-show and dismiss it
-- runScript:
-    file: ../utils/sleep.js
-    env:
-      timeout: 6000
+# Wait for profile completion modal to auto-show (continues early when it appears) and dismiss it
+- extendedWaitUntil:
+    optional: true
+    visible:
+      id: "profile-completion-skip-button"
+    timeout: 6000
 - runFlow:
     when:
       visible:
@@ -100,18 +102,14 @@ appId: com.elbooklets.app
       timeout: 1000
 - tapOn:
     id: "profile-logout-item"
-- runScript:
-    file: ../utils/sleep.js
-    env:
-      timeout: 1000
-- assertVisible:
-    id: "confirm-modal-ok"
+- extendedWaitUntil:
+    visible:
+      id: "confirm-modal-ok"
+    timeout: 5000
 - tapOn:
     id: "confirm-modal-ok"
-- runScript:
-    file: ../utils/sleep.js
-    env:
-      timeout: 3000
-- assertVisible:
-    id: "onboarding-student-tab"
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-student-tab"
+    timeout: 10000
 - takeScreenshot: e2e/screenshots/student-logout-success

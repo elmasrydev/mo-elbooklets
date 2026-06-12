@@ -2,11 +2,13 @@
 # Reusable subflow to switch environment dynamically in Maestro E2E
 appId: com.elbooklets.app
 ---
-# Wait for app boot and initial bundling to settle
-- runScript:
-    file: sleep.js
-    env:
-      timeout: 10000
+# Wait for app boot — continues as soon as Onboarding is ready (common case),
+# falls through after 10s max so the self-healing checks below can handle other states
+- extendedWaitUntil:
+    optional: true
+    visible:
+      id: "onboarding-language-toggle"
+    timeout: 10000
 
 # Dismiss any iOS system dialogs (Apple Account Verification, etc.)
 - runFlow:
@@ -14,10 +16,9 @@ appId: com.elbooklets.app
       visible: "Not Now"
     commands:
       - tapOn: "Not Now"
-      - runScript:
-          file: sleep.js
-          env:
-            timeout: 1000
+      - extendedWaitUntil:
+          notVisible: "Not Now"
+          timeout: 3000
 
 # Self-healing: if we booted into OTP screen, log out via the confirm modal
 - runFlow:
@@ -27,16 +28,12 @@ appId: com.elbooklets.app
     commands:
       - tapOn:
           id: "otp-logout-button"
-      - runScript:
-          file: sleep.js
-          env:
-            timeout: 1000
+      - extendedWaitUntil:
+          visible:
+            id: "confirm-modal-ok"
+          timeout: 5000
       - tapOn:
           id: "confirm-modal-ok"
-      - runScript:
-          file: sleep.js
-          env:
-            timeout: 3000
 
 # Self-healing: if keychain clear failed and we booted into Home screen, log out
 - runFlow:
@@ -48,12 +45,12 @@ appId: com.elbooklets.app
           id: "tab-profile"
       - tapOn:
           id: "profile-logout-item"
+      - extendedWaitUntil:
+          visible:
+            id: "confirm-modal-ok"
+          timeout: 5000
       - tapOn:
           id: "confirm-modal-ok"
-      - runScript:
-          file: sleep.js
-          env:
-            timeout: 2000
 
 # Finally assert that we are on Onboarding screen (or wait for it if driver was slow)
 - extendedWaitUntil:

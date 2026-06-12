@@ -57,11 +57,12 @@ appId: com.elbooklets.app
 - tapOn:
     id: "otp-skip-debug-2"
 
-# Wait for profile completion modal to auto-show and dismiss it
-- runScript:
-    file: sleep.js
-    env:
-      timeout: 6000
+# Wait for profile completion modal to auto-show (continues early when it appears) and dismiss it
+- extendedWaitUntil:
+    optional: true
+    visible:
+      id: "profile-completion-skip-button"
+    timeout: 6000
 - runFlow:
     when:
       visible:
