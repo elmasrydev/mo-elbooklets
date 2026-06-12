@@ -1,0 +1,75 @@
+appId: com.elbooklets.app
+---
+# e2e/auth/student-register-flow.yaml
+# Actual student registration steps run conditionally
+
+# Execute student registration flow
+- assertVisible:
+    id: "onboarding-student-tab"
+- tapOn:
+    id: "onboarding-get-started"
+- assertVisible:
+    id: "register-name-input"
+- tapOn:
+    id: "register-name-input"
+- inputText: "Maestro Student"
+- tapOn:
+    point: 50%,10%
+- tapOn:
+    id: "register-mobile-input"
+- inputText: ${STUDENT_MOBILE}
+- tapOn:
+    point: 50%,10%
+- tapOn:
+    id: "register-password-input"
+- inputText: ${STUDENT_PASSWORD}
+- tapOn:
+    point: 50%,10%
+- tapOn:
+    id: "register-confirm-input"
+- inputText: ${STUDENT_PASSWORD}
+- tapOn:
+    point: 50%,10%
+- tapOn:
+    id: "register-submit-button"
+
+# Step 2: Education System & Grade selection
+- assertVisible: "Secondary 1"
+# Taps on selections. In Maestro, if dynamic IDs are not resolved, we can tap the coordinates or matching labels.
+# Since we added testIDs to selectors (register-grade-{id}), let's tap the first grade or edu option by text or ID
+- tapOn: "Secondary 1"
+- tapOn: "Languages - لغات"
+- tapOn:
+    id: "register-submit-button"
+
+# Handle disclaimer modal if it appears
+- runFlow:
+    when:
+      visible:
+        id: "register-disclaimer-continue-button"
+    commands:
+      - tapOn:
+          id: "register-disclaimer-continue-button"
+
+# Skip OTP using debug bypass button
+- assertVisible:
+    id: "otp-skip-debug-2"
+- tapOn:
+    id: "otp-skip-debug-2"
+
+# Wait for profile completion modal to auto-show and dismiss it
+- runScript:
+    file: sleep.js
+    env:
+      timeout: 6000
+- runFlow:
+    when:
+      visible:
+        id: "profile-completion-skip-button"
+    commands:
+      - tapOn:
+          id: "profile-completion-skip-button"
+
+- assertVisible:
+    id: "tab-home"
+- takeScreenshot: e2e/screenshots/student-register-result

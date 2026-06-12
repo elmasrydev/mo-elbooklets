@@ -152,6 +152,7 @@ const OTPVerificationScreen: React.FC = () => {
             t('otp.whatsapp_failed'),
           confirmLabel: t('common.ok'),
           showCancel: false,
+          onConfirm: () => {},
         });
       }
     } catch (err: any) {
@@ -160,6 +161,7 @@ const OTPVerificationScreen: React.FC = () => {
         message: err.message || t('otp.whatsapp_failed'),
         confirmLabel: t('common.ok'),
         showCancel: false,
+        onConfirm: () => {},
       });
     } finally {
       setIsSending(false);
@@ -215,6 +217,7 @@ const OTPVerificationScreen: React.FC = () => {
     return (
       <View style={styles.otpInputContainer}>
         <TextInput
+          testID="otp-hidden-input"
           ref={inputRef}
           style={styles.hiddenInput}
           value={otpCode}
@@ -309,6 +312,7 @@ const OTPVerificationScreen: React.FC = () => {
       </View>
 
       <TouchableOpacity
+        testID="otp-send-button"
         style={[
           styles.primaryButton,
           {
@@ -336,6 +340,7 @@ const OTPVerificationScreen: React.FC = () => {
 
       {isActive && (
         <TouchableOpacity
+          testID="otp-enter-code-button"
           style={[
             styles.primaryButton,
             {
@@ -354,6 +359,7 @@ const OTPVerificationScreen: React.FC = () => {
 
       {/* Trapped User Log Out Option */}
       <TouchableOpacity
+        testID="otp-logout-button"
         style={{ marginTop: spacing.xl, padding: spacing.sm }}
         onPress={handleLogout}
       >
@@ -365,6 +371,7 @@ const OTPVerificationScreen: React.FC = () => {
       {/* Debug Skip Button */}
       {isDebugMode() && (
         <TouchableOpacity
+          testID="otp-skip-debug"
           style={[
             styles.primaryButton,
             {
@@ -449,6 +456,7 @@ const OTPVerificationScreen: React.FC = () => {
       ) : null}
 
       <TouchableOpacity
+        testID="otp-verify-button"
         style={[
           styles.primaryButton,
           {
@@ -492,7 +500,11 @@ const OTPVerificationScreen: React.FC = () => {
         >
           {isActive ? t('otp.resend_in', { time: formattedTime }) : ''}
         </Text>
-        <TouchableOpacity onPress={handleSendCode} disabled={isActive || isSending}>
+        <TouchableOpacity
+          testID="otp-resend-button"
+          onPress={handleSendCode}
+          disabled={isActive || isSending}
+        >
           <Text
             style={[
               typography('caption'),
@@ -508,6 +520,7 @@ const OTPVerificationScreen: React.FC = () => {
       {/* Debug Skip Button */}
       {isDebugMode() && (
         <TouchableOpacity
+          testID="otp-skip-debug-2"
           style={[
             styles.primaryButton,
             {

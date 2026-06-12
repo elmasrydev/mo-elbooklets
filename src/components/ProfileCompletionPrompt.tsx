@@ -946,7 +946,11 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
               }
             />
             <View style={styles.secondaryActions}>
-              <TouchableOpacity onPress={skipField} style={styles.skipButton}>
+              <TouchableOpacity
+                testID="profile-completion-skip-button"
+                onPress={skipField}
+                style={styles.skipButton}
+              >
                 <Text
                   style={[
                     styles.skipText,

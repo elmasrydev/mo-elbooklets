@@ -140,8 +140,13 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = (props: ConfirmModalPro
       style={[styles.fullScreenOverlay, { opacity: fadeAnim }]}
       pointerEvents={visible ? 'auto' : 'none'}
     >
-      <TouchableOpacity activeOpacity={1} style={styles.overlay} onPress={handleBackdropPress}>
-        <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+      <TouchableOpacity
+        accessible={false}
+        activeOpacity={1}
+        style={styles.overlay}
+        onPress={handleBackdropPress}
+      >
+        <TouchableWithoutFeedback accessible={false} onPress={() => Keyboard.dismiss()}>
           <View
             style={[
               styles.container,
@@ -165,6 +170,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = (props: ConfirmModalPro
                 {icon ? icon : <Image source={logo} style={styles.logoImage} />}
               </View>
               <Text
+                testID="confirm-modal-title"
                 style={[
                   styles.title,
                   typography('h2'),
@@ -205,6 +211,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = (props: ConfirmModalPro
 
             <View style={styles.buttonContainer}>
               <AppButton
+                testID="confirm-modal-ok"
                 title={
                   timeLeft > 0
                     ? `${confirmLabel || t('common.ok', 'OK')} (${timeLeft})`
@@ -218,6 +225,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = (props: ConfirmModalPro
               />
               {showCancel && (
                 <AppButton
+                  testID="confirm-modal-cancel"
                   title={cancelLabel || t('common.cancel', 'Cancel')}
                   onPress={onCancel}
                   variant="outline"

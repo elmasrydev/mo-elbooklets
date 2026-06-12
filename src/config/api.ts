@@ -10,6 +10,10 @@
  */
 
 import Constants from 'expo-constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
+
+import { isDebugMode } from './debug';
 
 const PRODUCTION_URL = 'https://elbooklets.com/graphql';
 const DEMO_URL = 'https://demo.elbooklets.com/graphql';
@@ -32,9 +36,7 @@ export const ENVIRONMENT_INFO = {
 // GraphQL endpoint path
 export const GRAPHQL_ENDPOINT = '/graphql';
 
-declare var __DEV__: boolean;
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as SecureStore from 'expo-secure-store';
+declare let __DEV__: boolean;
 
 // Logout handler to be set by AuthContext
 let authErrorHandler: (() => void) | null = null;
@@ -70,8 +72,6 @@ const handleAuthError = async () => {
     authErrorHandler();
   }
 };
-
-import { isDebugMode } from './debug';
 
 // AsyncStorage key for API URL override
 export const CUSTOM_API_URL_KEY = 'custom_api_url_override';

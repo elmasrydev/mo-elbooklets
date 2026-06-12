@@ -23,12 +23,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { analytics } from '../lib/analytics';
+import { isDebugMode } from '../config/debug';
 
 const LoginScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(isDebugMode());
   const [isLoading, setIsLoading] = useState(false);
 
   const [touchedMobile, setTouchedMobile] = useAutoReset(false);
@@ -46,6 +47,9 @@ const LoginScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
 
   const handleLogin = async () => {
+    setTouchedMobile(true);
+    setTouchedPassword(true);
+
     if (!mobile.trim() || !password.trim()) {
       showConfirm({
         title: t('common.error'),
@@ -55,6 +59,17 @@ const LoginScreen: React.FC = () => {
       });
       return;
     }
+
+    if (!isMobileValid) {
+      showConfirm({
+        title: t('common.error'),
+        message: t('auth.invalid_egyptian_mobile'),
+        showCancel: false,
+        onConfirm: () => {},
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const result = await login({ mobile: mobile.trim(), password });
@@ -165,6 +180,7 @@ const LoginScreen: React.FC = () => {
                   style={currentStyles.inputIconLeft}
                 />
                 <TextInput
+                  testID="login-mobile-input"
                   style={currentStyles.input}
                   value={mobile}
                   onChangeText={(val) => setMobile(val.replaceAll(/\D/g, '').slice(0, 11))}
@@ -186,7 +202,10 @@ const LoginScreen: React.FC = () => {
             <View style={currentStyles.inputGroup}>
               <View style={currentStyles.passwordLabelRow}>
                 <Text style={currentStyles.inputLabel}>{t('auth.password_placeholder')}</Text>
-                <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
+                <TouchableOpacity
+                  testID="login-forgot-password"
+                  onPress={() => navigation.navigate('ForgotPassword')}
+                >
                   <Text style={currentStyles.forgotText}>{t('auth.forgot_password')}</Text>
                 </TouchableOpacity>
               </View>
@@ -198,6 +217,7 @@ const LoginScreen: React.FC = () => {
                   style={currentStyles.inputIconLeft}
                 />
                 <TextInput
+                  testID="login-password-input"
                   // @ts-ignore
                   ref={passwordRef}
                   style={currentStyles.input}
@@ -214,6 +234,7 @@ const LoginScreen: React.FC = () => {
                   onBlur={() => setTouchedPassword(true)}
                 />
                 <TouchableOpacity
+                  testID="login-toggle-password"
                   onPress={() => setShowPassword(!showPassword)}
                   style={currentStyles.inputIconRight}
                 >
@@ -228,6 +249,7 @@ const LoginScreen: React.FC = () => {
 
             {/* Sign In Button */}
             <TouchableOpacity
+              testID="login-submit-button"
               style={currentStyles.signInButton}
               onPress={handleLogin}
               disabled={isLoading}
@@ -259,6 +281,7 @@ const LoginScreen: React.FC = () => {
 
           {/* Language Toggle */}
           <TouchableOpacity
+            testID="login-language-toggle"
             style={currentStyles.languageButton}
             onPress={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
             activeOpacity={0.7}
@@ -272,7 +295,11 @@ const LoginScreen: React.FC = () => {
           {/* Footer */}
           <View style={currentStyles.footer}>
             <Text style={currentStyles.footerText}>{t('auth.dont_have_account')} </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Register')} disabled={isLoading}>
+            <TouchableOpacity
+              testID="login-register-link"
+              onPress={() => navigation.navigate('Register')}
+              disabled={isLoading}
+            >
               <Text style={currentStyles.createAccountText}>{t('auth.sign_up')}</Text>
             </TouchableOpacity>
           </View>

@@ -1,0 +1,98 @@
+# e2e/utils/setup-environment.yaml
+# Reusable subflow to switch environment dynamically in Maestro E2E
+appId: com.elbooklets.app
+---
+# Wait for app boot and initial bundling to settle
+- runScript:
+    file: sleep.js
+    env:
+      timeout: 10000
+
+# Dismiss any iOS system dialogs (Apple Account Verification, etc.)
+- runFlow:
+    when:
+      visible: "Not Now"
+    commands:
+      - tapOn: "Not Now"
+      - runScript:
+          file: sleep.js
+          env:
+            timeout: 1000
+
+# Self-healing: if we booted into OTP screen, log out via the confirm modal
+- runFlow:
+    when:
+      visible:
+        id: "otp-logout-button"
+    commands:
+      - tapOn:
+          id: "otp-logout-button"
+      - runScript:
+          file: sleep.js
+          env:
+            timeout: 1000
+      - tapOn:
+          id: "confirm-modal-ok"
+      - runScript:
+          file: sleep.js
+          env:
+            timeout: 3000
+
+# Self-healing: if keychain clear failed and we booted into Home screen, log out
+- runFlow:
+    when:
+      visible:
+        id: "tab-profile"
+    commands:
+      - tapOn:
+          id: "tab-profile"
+      - tapOn:
+          id: "profile-logout-item"
+      - tapOn:
+          id: "confirm-modal-ok"
+      - runScript:
+          file: sleep.js
+          env:
+            timeout: 2000
+
+# Finally assert that we are on Onboarding screen (or wait for it if driver was slow)
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-language-toggle"
+    timeout: 30000
+
+# If TARGET_ENV is dev, switch to Demo URL
+- runFlow:
+    when:
+      true: ${TARGET_ENV == 'dev'}
+    commands:
+      - tapOn:
+          id: "onboarding-api-switcher-chip"
+      - tapOn:
+          id: "api-switcher-demo"
+      - assertNotVisible:
+          id: "onboarding-api-switcher-chip"
+      - assertVisible:
+          id: "onboarding-api-switcher-chip"
+
+# If TARGET_ENV is prod, switch to Production URL
+- runFlow:
+    when:
+      true: ${TARGET_ENV == 'prod'}
+    commands:
+      - tapOn:
+          id: "onboarding-api-switcher-chip"
+      - tapOn:
+          id: "api-switcher-production"
+      - assertNotVisible:
+          id: "onboarding-api-switcher-chip"
+      - assertVisible:
+          id: "onboarding-api-switcher-chip"
+
+# If TARGET_ENV is prs, switch to PRS URL (PRS is the default so we only assert)
+- runFlow:
+    when:
+      true: ${TARGET_ENV == 'prs'}
+    commands:
+      - assertVisible:
+          id: "onboarding-api-switcher-chip"

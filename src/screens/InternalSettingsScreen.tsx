@@ -110,8 +110,8 @@ const InternalSettingsScreen: React.FC = () => {
         token || undefined,
       );
 
-      if (result.data?.updateProfile) {
-        await updateUser({ ...user, mobile_verified_at: null });
+      if (result.data?.updateProfile && user) {
+        await updateUser({ ...user, mobile_verified_at: undefined });
         alert('Unverified! Restart app or log out to see OTP screen.');
       }
     } catch (e: any) {

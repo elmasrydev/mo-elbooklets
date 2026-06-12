@@ -139,6 +139,7 @@ const ForgotPasswordScreen: React.FC = () => {
                   style={currentStyles.inputIcon}
                 />
                 <TextInput
+                  testID="forgot-email-input"
                   style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
                   value={email}
                   onChangeText={setEmail}
@@ -156,6 +157,7 @@ const ForgotPasswordScreen: React.FC = () => {
             </View>
 
             <TouchableOpacity
+              testID="forgot-submit-button"
               style={[currentStyles.submitButton, isLoading && { opacity: 0.7 }]}
               onPress={handleReset}
               disabled={isLoading}

@@ -1,0 +1,13 @@
+appId: com.elbooklets.app
+---
+- launchApp
+
+# Switch environment if needed
+- runFlow:
+    file: ../utils/setup-environment.yaml
+
+# Execute parent registration flow (only on non-prod)
+- runFlow:
+    when:
+      true: ${TARGET_ENV != 'prod'}
+    file: ../utils/parent-register-flow.yaml

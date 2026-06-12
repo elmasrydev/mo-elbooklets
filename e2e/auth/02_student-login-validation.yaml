@@ -1,0 +1,45 @@
+appId: com.elbooklets.app
+---
+# Launch app without clearing state/keychain (Expo dev client needs them)
+- launchApp
+
+# Switch environment if needed
+- runFlow:
+    file: ../utils/setup-environment.yaml
+
+# Execute student login validation checks
+- assertVisible:
+    id: "onboarding-student-tab"
+- tapOn:
+    id: "onboarding-sign-in"
+- assertVisible:
+    id: "login-mobile-input"
+
+# Test 1: Empty submit
+- tapOn:
+    id: "login-submit-button"
+# ConfirmModal uses OK/Cancel buttons. In our translations they will show common.ok or OK.
+- assertVisible:
+    id: "confirm-modal-title"
+- tapOn:
+    id: "confirm-modal-ok"
+
+# Test 2: Invalid mobile length
+- tapOn:
+    id: "login-mobile-input"
+- inputText: "0100"
+- tapOn:
+    point: 50%,10%
+- tapOn:
+    id: "login-password-input"
+- inputText: "Short1!"
+- tapOn:
+    point: 50%,10%
+- tapOn:
+    id: "login-submit-button"
+- assertVisible:
+    id: "confirm-modal-title"
+- tapOn:
+    id: "confirm-modal-ok"
+
+- takeScreenshot: e2e/screenshots/login-validation-success

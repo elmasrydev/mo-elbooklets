@@ -161,10 +161,7 @@ const AppButton: React.FC<AppButtonProps> = ({
     buttonStyles.push(style);
   }
 
-  const titleStyles: TextStyle[] = [
-    sStyles.text as TextStyle,
-    vStyles.text as TextStyle,
-  ];
+  const titleStyles: TextStyle[] = [sStyles.text as TextStyle, vStyles.text as TextStyle];
 
   if (disabled && variant !== 'danger' && variant !== 'success') {
     titleStyles.push({ color: theme.colors.buttonDisabledText });
@@ -203,9 +200,7 @@ const AppButton: React.FC<AppButtonProps> = ({
         <ActivityIndicator color={indicatorColor} />
       ) : (
         <View style={styles.content}>
-          {icon && iconPosition === 'left' && (
-            <View style={{ marginEnd: spacing.xs }}> {icon} </View>
-          )}
+          {icon && iconPosition === 'left' && <View style={{ marginEnd: spacing.xs }}>{icon}</View>}
           <View style={styles.textContainer}>
             <Text
               style={titleStyles}
@@ -218,7 +213,7 @@ const AppButton: React.FC<AppButtonProps> = ({
             {subtitle && <Text style={subStyles}>{subtitle}</Text>}
           </View>
           {icon && iconPosition === 'right' && (
-            <View style={{ marginStart: spacing.xs }}> {icon} </View>
+            <View style={{ marginStart: spacing.xs }}>{icon}</View>
           )}
         </View>
       )}

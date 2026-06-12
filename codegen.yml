@@ -9,6 +9,7 @@ generates:
       - "typescript-operations"
       - "typescript-react-apollo"
     config:
+      banner: "// @ts-nocheck"
       withHooks: true
       withComponent: false
       withHOC: false

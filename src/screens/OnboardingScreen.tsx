@@ -69,6 +69,7 @@ const OnboardingScreen: React.FC = () => {
         <View style={[currentStyles.topRow, { paddingTop: insets.top + spacing.sm }]}>
           {isDebugMode() ? (
             <TouchableOpacity
+              testID="onboarding-api-switcher-chip"
               onPress={() => setShowApiModal(true)}
               style={currentStyles.chip}
               activeOpacity={0.8}
@@ -80,7 +81,12 @@ const OnboardingScreen: React.FC = () => {
             <View />
           )}
 
-          <TouchableOpacity onPress={toggleLanguage} style={currentStyles.chip} activeOpacity={0.8}>
+          <TouchableOpacity
+            testID="onboarding-language-toggle"
+            onPress={toggleLanguage}
+            style={currentStyles.chip}
+            activeOpacity={0.8}
+          >
             <Text style={currentStyles.chipText}>{language === 'ar' ? 'English' : 'عربي'}</Text>
             <Ionicons name="language-outline" size={16} color={theme.colors.primary} />
           </TouchableOpacity>
@@ -99,6 +105,7 @@ const OnboardingScreen: React.FC = () => {
         {/* Role Toggle */}
         <View style={currentStyles.segmentedContainer}>
           <TouchableOpacity
+            testID="onboarding-student-tab"
             onPress={() => setActiveRole('student')}
             style={[
               currentStyles.segmentButton,
@@ -116,6 +123,7 @@ const OnboardingScreen: React.FC = () => {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
+            testID="onboarding-parent-tab"
             onPress={() => setActiveRole('parent')}
             style={[
               currentStyles.segmentButton,
@@ -213,6 +221,7 @@ const OnboardingScreen: React.FC = () => {
         {/* CTA Container */}
         <View style={currentStyles.bottomContent}>
           <AppButton
+            testID="onboarding-get-started"
             title={t('onboarding.get_started')}
             onPress={handleGetStarted}
             size="lg"
@@ -223,12 +232,15 @@ const OnboardingScreen: React.FC = () => {
           />
 
           <View style={currentStyles.footer}>
-            <Text style={currentStyles.footerText}>
-              {t('onboarding.already_have_account')}{' '}
-              <Text style={currentStyles.link} onPress={handleSignIn}>
-                {t('onboarding.sign_in')}
-              </Text>
-            </Text>
+            <Text style={currentStyles.footerText}>{t('onboarding.already_have_account')} </Text>
+            <TouchableOpacity
+              testID="onboarding-sign-in"
+              onPress={handleSignIn}
+              activeOpacity={0.7}
+              style={{ padding: 10, margin: -10 }}
+            >
+              <Text style={currentStyles.link}>{t('onboarding.sign_in')}</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
@@ -475,13 +487,15 @@ const styles = (
       marginTop: 'auto',
     },
     footer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
       marginTop: 14,
     },
     footerText: {
       ...typography('body'),
       fontSize: 14,
       color: '#94a3b8',
-      textAlign: 'center',
     },
     link: {
       ...typography('button'),

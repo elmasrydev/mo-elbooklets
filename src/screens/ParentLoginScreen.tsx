@@ -21,6 +21,7 @@ import { useAutoReset } from '../hooks/useAutoReset';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { isDebugMode } from '../config/debug';
 
 const EGYPT_MOBILE_REGEX = /^01[0125]\d{8}$/;
 
@@ -28,7 +29,7 @@ const ParentLoginScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(isDebugMode());
   const [isLoading, setIsLoading] = useState(false);
 
   // Validation States
@@ -185,6 +186,7 @@ const ParentLoginScreen: React.FC = () => {
                   style={currentStyles.inputIcon}
                 />
                 <TextInput
+                  testID="parent-login-mobile"
                   style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
                   value={mobile}
                   onChangeText={(val) => setMobile(val.replace(/\D/g, '').slice(0, 11))}
@@ -204,7 +206,10 @@ const ParentLoginScreen: React.FC = () => {
             <View style={currentStyles.inputGroup}>
               <View style={currentStyles.labelRow}>
                 <Text style={currentStyles.inputLabel}>{t('auth.password_placeholder')}</Text>
-                <TouchableOpacity onPress={() => navigation.navigate('ParentForgotPassword')}>
+                <TouchableOpacity
+                  testID="parent-login-forgot-password"
+                  onPress={() => navigation.navigate('ParentForgotPassword')}
+                >
                   <Text style={currentStyles.forgotText}>{t('auth.forgot_password')}</Text>
                 </TouchableOpacity>
               </View>
@@ -223,6 +228,7 @@ const ParentLoginScreen: React.FC = () => {
                   style={currentStyles.inputIcon}
                 />
                 <TextInput
+                  testID="parent-login-password"
                   ref={passwordRef}
                   style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
                   value={password}
@@ -236,6 +242,7 @@ const ParentLoginScreen: React.FC = () => {
                   onSubmitEditing={handleLogin}
                 />
                 <TouchableOpacity
+                  testID="parent-login-toggle-password"
                   onPress={() => setShowPassword(!showPassword)}
                   style={currentStyles.eyeIcon}
                 >
@@ -250,6 +257,7 @@ const ParentLoginScreen: React.FC = () => {
 
             {/* Submit Button */}
             <TouchableOpacity
+              testID="parent-login-submit"
               style={[currentStyles.submitButton, isLoading && { opacity: 0.7 }]}
               onPress={handleLogin}
               disabled={isLoading}
@@ -273,6 +281,7 @@ const ParentLoginScreen: React.FC = () => {
         <View style={currentStyles.footerContainer}>
           {/* Language Toggle */}
           <TouchableOpacity
+            testID="parent-login-language-toggle"
             style={currentStyles.langButton}
             onPress={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
             activeOpacity={0.7}
@@ -285,6 +294,7 @@ const ParentLoginScreen: React.FC = () => {
           <View style={currentStyles.footer}>
             <Text style={currentStyles.footerText}>{t('auth.dont_have_account')} </Text>
             <TouchableOpacity
+              testID="parent-login-register-link"
               onPress={() => navigation.navigate('ParentRegister')}
               disabled={isLoading}
             >

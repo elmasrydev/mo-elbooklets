@@ -330,7 +330,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     [theme, toggleTheme, currentColorTheme, setColorTheme],
   );
 
-  return <ThemeContext.Provider value={contextValue}> {children} </ThemeContext.Provider>;
+  return <ThemeContext.Provider value={contextValue}>{children}</ThemeContext.Provider>;
 };
 
 export const useTheme = (): ThemeContextType => {

@@ -1,0 +1,30 @@
+appId: com.elbooklets.app
+---
+- launchApp
+
+# Switch environment if needed
+- runFlow:
+    file: ../utils/setup-environment.yaml
+
+
+
+# Execute parent login flow
+- assertVisible:
+    id: "onboarding-parent-tab"
+- tapOn:
+    id: "onboarding-parent-tab"
+- tapOn:
+    id: "onboarding-sign-in"
+- assertVisible:
+    id: "parent-login-mobile"
+- tapOn:
+    id: "parent-login-mobile"
+- inputText: ${PARENT_MOBILE}
+- tapOn:
+    id: "parent-login-password"
+- inputText: ${PARENT_PASSWORD}
+- tapOn:
+    id: "parent-login-submit"
+- assertVisible:
+    id: "parent-settings-logout-item"
+- takeScreenshot: e2e/screenshots/parent-login-result

@@ -48,3 +48,19 @@ yarn-error.*
 
 package-lock.json
 yarn.lock
+
+# Maestro E2E artifacts (screenshots land here; keep the folder, ignore its content)
+e2e/screenshots/*
+!e2e/screenshots/.gitkeep
+test.log
+
+# Local build/release tooling (contains credentials & machine-specific config)
+build.sh
+ANDROID_BUILD_INSTRUCTIONS.md
+IOS_BUILD_INSTRUCTIONS.md
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Local agent handover notes (not part of the codebase)
+handover_summary.md

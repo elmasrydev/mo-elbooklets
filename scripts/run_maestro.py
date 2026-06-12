@@ -1,0 +1,140 @@
+#!/usr/bin/env python3
+import os
+import sys
+import subprocess
+from pathlib import Path
+
+# Force unbuffered output so logs print immediately in the background runner
+sys.stdout.reconfigure(line_buffering=True)
+sys.stderr.reconfigure(line_buffering=True)
+
+
+def parse_env_yaml(yaml_path: Path) -> dict:
+    """Parse key-value pairs from simple YAML env file"""
+    env_vars = {}
+    if not yaml_path.exists():
+        print(f"Warning: env file {yaml_path} not found")
+        return env_vars
+        
+    for line in yaml_path.read_text(encoding='utf-8').splitlines():
+        line = line.strip()
+        if not line or line.startswith('#'):
+            continue
+        if ':' in line:
+            parts = line.split(':', 1)
+            key = parts[0].strip()
+            value = parts[1].strip()
+            # Strip quotes
+            if (value.startswith('"') and value.endswith('"')) or (value.startswith("'") and value.endswith("'")):
+                value = value[1:-1]
+            env_vars[key] = value
+    return env_vars
+
+def main():
+    # Set Maestro driver startup timeout to 300s (5 mins) to handle cold-boot xcuitest runner launch times safely
+    os.environ["MAESTRO_DRIVER_STARTUP_TIMEOUT"] = "300000"
+
+    if len(sys.argv) < 2:
+        print("Usage: python3 scripts/run_maestro.py [prs|dev|prod]")
+        sys.exit(1)
+        
+    target_env = sys.argv[1].lower()
+    if target_env not in ('prs', 'dev', 'prod'):
+        print(f"Error: invalid environment '{target_env}'. Must be prs, dev, or prod.")
+        sys.exit(1)
+        
+    workspace_dir = Path(__file__).parent.parent.resolve()
+    yaml_path = workspace_dir / "e2e" / "env.yaml"
+    env_vars = parse_env_yaml(yaml_path)
+    
+    # Base arguments for Maestro
+    base_args = [
+        "-e", f"TARGET_ENV={target_env}"
+    ]
+    
+    # Resolve target-specific credentials
+    prefix = target_env.upper()
+    student_password = env_vars.get(f"{prefix}_STUDENT_PASSWORD", "")
+    parent_password = env_vars.get(f"{prefix}_PARENT_PASSWORD", "")
+    
+    if target_env in ('prs', 'dev'):
+        import random
+        student_mobile = "010" + "".join(random.choices("0123456789", k=8))
+        parent_mobile = "010" + "".join(random.choices("0123456789", k=8))
+        print(f"Generated dynamic test numbers for E2E: Student={student_mobile}, Parent={parent_mobile}")
+    else:
+        student_mobile = env_vars.get(f"{prefix}_STUDENT_MOBILE", "")
+        parent_mobile = env_vars.get(f"{prefix}_PARENT_MOBILE", "")
+    
+    base_args.extend([
+        "-e", f"STUDENT_MOBILE={student_mobile}",
+        "-e", f"STUDENT_PASSWORD={student_password}",
+        "-e", f"PARENT_MOBILE={parent_mobile}",
+        "-e", f"PARENT_PASSWORD={parent_password}"
+    ])
+    
+    # Add all parsed environment variables as -e arguments
+    for key, val in env_vars.items():
+        base_args.extend(["-e", f"{key}={val}"])
+        
+    test_files = [
+        "e2e/auth/01_student-register.yaml",
+        "e2e/auth/02_student-login-validation.yaml",
+        "e2e/auth/03_student-login.yaml",
+        "e2e/auth/06_logout.yaml",
+        "e2e/auth/07_forgot-password.yaml"
+    ]
+    
+    print(f"Running Maestro tests sequentially for target environment: {target_env}\n")
+    
+    results = {}
+    any_failed = False
+    
+    for test_file in test_files:
+        test_path = workspace_dir / test_file
+        if not test_path.exists():
+            print(f"Skipping missing test file: {test_file}")
+            continue
+            
+        cmd = ["maestro", "test"] + base_args + [str(test_path)]
+        print(f"=== Running: {test_file} ===")
+        print(f"Command: {' '.join(cmd)}\n")
+        
+        try:
+            # Run with live output to stdout
+            process = subprocess.Popen(
+                cmd,
+                stdout=sys.stdout,
+                stderr=sys.stderr,
+                cwd=str(workspace_dir)
+            )
+            process.wait()
+            
+            if process.returncode == 0:
+                results[test_file] = "PASSED"
+            else:
+                results[test_file] = "FAILED"
+                any_failed = True
+        except KeyboardInterrupt:
+            print("\nTest run cancelled by user.")
+            sys.exit(130)
+        except Exception as e:
+            print(f"Error running Maestro for {test_file}: {e}")
+            results[test_file] = "ERROR"
+            any_failed = True
+            
+        print("\n" + "="*50 + "\n")
+        
+    print("=== E2E Test Execution Summary ===")
+    for test_file, status in results.items():
+        print(f"{test_file}: {status}")
+        
+    if any_failed:
+        print("\nSome E2E tests FAILED.")
+        sys.exit(1)
+    else:
+        print("\nAll E2E tests PASSED successfully!")
+        sys.exit(0)
+
+if __name__ == "__main__":
+    main()

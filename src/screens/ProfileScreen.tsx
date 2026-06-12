@@ -272,14 +272,20 @@ const ProfileScreen: React.FC = () => {
                 {!user?.mobile_verified_at ? (
                   <View style={currentStyles.verifyCapsule}>
                     <Ionicons name="logo-whatsapp" size={12} color="#25D366" />
-                    <Text numberOfLines={1} style={[typography('caption'), currentStyles.verifyCapsuleText]}>
+                    <Text
+                      numberOfLines={1}
+                      style={[typography('caption'), currentStyles.verifyCapsuleText]}
+                    >
                       {t('otp.verify_mobile', 'Verify')}
                     </Text>
                   </View>
                 ) : (
                   <View style={currentStyles.verifiedCapsule}>
                     <Ionicons name="checkmark-circle" size={12} color={theme.colors.success} />
-                    <Text numberOfLines={1} style={[typography('caption'), currentStyles.verifiedCapsuleText]}>
+                    <Text
+                      numberOfLines={1}
+                      style={[typography('caption'), currentStyles.verifiedCapsuleText]}
+                    >
                       {t('otp.mobile_verified', 'Verified')}
                     </Text>
                   </View>
@@ -660,7 +666,11 @@ const ProfileScreen: React.FC = () => {
 
           {/* Log Out */}
           <View style={currentStyles.logoutContainer}>
-            <TouchableOpacity style={currentStyles.logoutItem} onPress={handleLogout}>
+            <TouchableOpacity
+              testID="profile-logout-item"
+              style={currentStyles.logoutItem}
+              onPress={handleLogout}
+            >
               <View style={currentStyles.logoutIconBox}>
                 <Image
                   source={require('../../assets/images/logout.png')}
@@ -682,10 +692,13 @@ const ProfileScreen: React.FC = () => {
           onPress={handleDeleteAccount}
           disabled={isDeletingAccount}
         >
-          <Ionicons name="trash-outline" size={18} color={theme.colors.error} style={{ marginEnd: spacing.xs }} />
-          <Text style={currentStyles.deleteAccountTitle}>
-            {t('profile_screen.delete_account')}
-          </Text>
+          <Ionicons
+            name="trash-outline"
+            size={18}
+            color={theme.colors.error}
+            style={{ marginEnd: spacing.xs }}
+          />
+          <Text style={currentStyles.deleteAccountTitle}>{t('profile_screen.delete_account')}</Text>
           {isDeletingAccount && (
             <ActivityIndicator
               color={theme.colors.error}
@@ -696,8 +709,8 @@ const ProfileScreen: React.FC = () => {
         </TouchableOpacity>
       </ScrollView>
 
-      <ProfileCompletionPrompt 
-        context="more" 
+      <ProfileCompletionPrompt
+        context="more"
         isVisible={showPrompt}
         onClose={() => setShowPrompt(false)}
         autoShow={true}

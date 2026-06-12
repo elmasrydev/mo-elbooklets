@@ -405,7 +405,11 @@ const ParentSettingsScreen: React.FC = () => {
 
           {/* Log Out */}
           <View style={currentStyles.logoutContainer}>
-            <TouchableOpacity style={currentStyles.logoutItem} onPress={handleLogout}>
+            <TouchableOpacity
+              testID="parent-settings-logout-item"
+              style={currentStyles.logoutItem}
+              onPress={handleLogout}
+            >
               <View style={currentStyles.logoutIconBox}>
                 <Image
                   source={require('../../assets/images/logout.png')}

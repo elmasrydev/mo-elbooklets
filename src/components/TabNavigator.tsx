@@ -150,6 +150,8 @@ const TabScreens: React.FC = () => {
           name={tab.name}
           component={tab.component}
           options={{
+            tabBarAccessibilityLabel: `tab-${tab.name.toLowerCase()}`,
+            tabBarButtonTestID: `tab-${tab.name.toLowerCase()}`,
             tabBarLabel: ({ focused, color }) => (
               <Text
                 style={[

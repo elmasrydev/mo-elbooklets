@@ -1,0 +1,117 @@
+appId: com.elbooklets.app
+---
+# --- Student Login & Logout Flow ---
+- launchApp
+
+# Switch environment if needed (since state was cleared)
+- runFlow:
+    file: ../utils/setup-environment.yaml
+
+- assertVisible:
+    id: "onboarding-student-tab"
+- tapOn:
+    id: "onboarding-sign-in"
+- assertVisible:
+    id: "login-mobile-input"
+- tapOn:
+    id: "login-mobile-input"
+- inputText: ${STUDENT_MOBILE}
+- tapOn:
+    point: 50%,10%
+- tapOn:
+    id: "login-password-input"
+- inputText: ${STUDENT_PASSWORD}
+- tapOn:
+    point: 50%,10%
+- tapOn:
+    id: "login-submit-button"
+
+# Wait for login API response & screen transition
+- runScript:
+    file: ../utils/sleep.js
+    env:
+      timeout: 2000
+
+# Dismiss rate-limit / warning popup if it appears
+- runFlow:
+    when:
+      visible:
+        id: "confirm-modal-ok"
+    commands:
+      - tapOn:
+          id: "confirm-modal-ok"
+      - runScript:
+          file: ../utils/sleep.js
+          env:
+            timeout: 1500
+
+# Skip OTP using debug bypass button if it appears
+- runFlow:
+    when:
+      visible:
+        id: "otp-skip-debug"
+    commands:
+      - tapOn:
+          id: "otp-skip-debug"
+- runFlow:
+    when:
+      visible:
+        id: "otp-skip-debug-2"
+    commands:
+      - tapOn:
+          id: "otp-skip-debug-2"
+
+# Wait for profile completion modal to auto-show and dismiss it
+- runScript:
+    file: ../utils/sleep.js
+    env:
+      timeout: 6000
+- runFlow:
+    when:
+      visible:
+        id: "profile-completion-skip-button"
+    commands:
+      - tapOn:
+          id: "profile-completion-skip-button"
+
+- assertVisible:
+    id: "tab-home"
+
+# Go to profile tab and log out
+- tapOn:
+    id: "tab-profile"
+- runScript:
+    file: ../utils/sleep.js
+    env:
+      timeout: 2000
+# Scroll down to reveal the logout button at the bottom of the profile screen
+- swipe:
+    start: 50%, 70%
+    end: 50%, 30%
+- swipe:
+    start: 50%, 70%
+    end: 50%, 30%
+- swipe:
+    start: 50%, 70%
+    end: 50%, 30%
+- runScript:
+    file: ../utils/sleep.js
+    env:
+      timeout: 1000
+- tapOn:
+    id: "profile-logout-item"
+- runScript:
+    file: ../utils/sleep.js
+    env:
+      timeout: 1000
+- assertVisible:
+    id: "confirm-modal-ok"
+- tapOn:
+    id: "confirm-modal-ok"
+- runScript:
+    file: ../utils/sleep.js
+    env:
+      timeout: 3000
+- assertVisible:
+    id: "onboarding-student-tab"
+- takeScreenshot: e2e/screenshots/student-logout-success

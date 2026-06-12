@@ -1,0 +1,37 @@
+appId: com.elbooklets.app
+---
+# e2e/auth/parent-register-flow.yaml
+# Actual registration steps run conditionally
+
+- assertVisible:
+    id: "onboarding-parent-tab"
+- tapOn:
+    id: "onboarding-parent-tab"
+- tapOn:
+    id: "onboarding-get-started"
+- assertVisible:
+    id: "parent-register-name"
+- tapOn:
+    id: "parent-register-name"
+- inputText: "Maestro Parent"
+- tapOn:
+    id: "parent-register-mobile"
+- inputText: ${PARENT_MOBILE}
+- tapOn:
+    point: 50%,10%
+- tapOn:
+    id: "parent-register-email"
+- inputText: "parent@maestro.com"
+- tapOn:
+    id: "parent-register-password"
+- inputText: ${PARENT_PASSWORD}
+- tapOn:
+    id: "parent-register-confirm"
+- inputText: ${PARENT_PASSWORD}
+- tapOn:
+    point: 50%,10%
+- tapOn:
+    id: "parent-register-submit"
+- assertVisible:
+    id: "parent-settings-logout-item"
+- takeScreenshot: e2e/screenshots/parent-register-result
