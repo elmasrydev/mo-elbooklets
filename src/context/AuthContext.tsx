@@ -377,7 +377,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         mutation ParentLogin($mobile: String!, $password: String!) {
           parentLogin(input: {
             mobile: $mobile,
-            email: $email,
             password: $password
           }) {
             access_token
@@ -425,6 +424,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           parentRegister(input: {
             name: $name,
             mobile: $mobile,
+            email: $email,
             password: $password
           }) {
             access_token

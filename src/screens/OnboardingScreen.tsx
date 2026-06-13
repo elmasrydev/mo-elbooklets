@@ -237,7 +237,7 @@ const OnboardingScreen: React.FC = () => {
               testID="onboarding-sign-in"
               onPress={handleSignIn}
               activeOpacity={0.7}
-              style={{ padding: 10, margin: -10 }}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
               <Text style={currentStyles.link}>{t('onboarding.sign_in')}</Text>
             </TouchableOpacity>
