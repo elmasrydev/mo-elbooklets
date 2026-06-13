@@ -26,6 +26,7 @@ import { useModal } from '../context/ModalContext';
 import { useNavigation } from '@react-navigation/native';
 import { analytics } from '../lib/analytics';
 import { isDebugMode } from '../config/debug';
+import { EGYPT_MOBILE_REGEX as MOBILE_REGEX, STRONG_PASSWORD_REGEX } from '../utils/validators';
 
 import BackButton from '../components/navigation/BackButton';
 import AppButton from '../components/AppButton';
@@ -35,7 +36,6 @@ const RegisterScreen: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [countryCode] = useState('+2');
 
-  const MOBILE_REGEX = /^01[0125]\d{8}$/;
   const [name, setName] = useState('');
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
@@ -124,9 +124,6 @@ const RegisterScreen: React.FC = () => {
       console.error('Error fetching edu systems:', error);
     }
   };
-
-  const STRONG_PASSWORD_REGEX =
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
 
   // Validation Flags
   const isNameValid = name.trim().length >= 3;

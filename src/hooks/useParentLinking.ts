@@ -6,7 +6,8 @@ import {
   RESPOND_TO_PARENT_LINK_MUTATION,
   CANCEL_PARENT_LINK_REQUEST_MUTATION,
 } from '../graphql/parentingQueries';
-import { ParentLinkRequest, ParentSlot, SlotState } from '../types/parenting';
+import { ParentSlot } from '../types/parenting';
+import { buildSlots } from '../utils/parentSlots';
 
 export interface UseParentLinkingReturn {
   slots: [ParentSlot, ParentSlot];
@@ -38,36 +39,7 @@ export const useParentLinking = (): UseParentLinkingReturn => {
     CANCEL_PARENT_LINK_REQUEST_MUTATION,
   );
 
-  const getSlotState = (request: ParentLinkRequest): SlotState => {
-    if (request.status === 'accepted') return 'accepted';
-    if (request.status === 'rejected') return 'rejected';
-    if (request.status === 'pending') {
-      return request.initiated_by === 'student' ? 'pending_outgoing' : 'pending_incoming';
-    }
-    return 'empty';
-  };
-
-  const getSlots = (): [ParentSlot, ParentSlot] => {
-    const requests: ParentLinkRequest[] = data?.parentLinkRequests ?? [];
-
-    // Sort: accepted first, pending second, rejected last
-    const sorted = [...requests].sort((a, b) => {
-      const order = { accepted: 0, pending: 1, rejected: 2 };
-      return order[a.status] - order[b.status];
-    });
-
-    const slots: ParentSlot[] = sorted.slice(0, 2).map((req) => ({
-      state: getSlotState(req),
-      request: req,
-    }));
-
-    // Pad with empty slots if < 2
-    while (slots.length < 2) {
-      slots.push({ state: 'empty' });
-    }
-
-    return slots as [ParentSlot, ParentSlot];
-  };
+  const getSlots = (): [ParentSlot, ParentSlot] => buildSlots(data?.parentLinkRequests ?? []);
 
   const sendLinkRequest = useCallback(
     async (mobile: string) => {

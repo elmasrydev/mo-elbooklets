@@ -22,8 +22,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isDebugMode } from '../config/debug';
-
-const EGYPT_MOBILE_REGEX = /^01[0125]\d{8}$/;
+import { EGYPT_MOBILE_REGEX } from '../utils/validators';
 
 const ParentLoginScreen: React.FC = () => {
   const navigation = useNavigation<any>();

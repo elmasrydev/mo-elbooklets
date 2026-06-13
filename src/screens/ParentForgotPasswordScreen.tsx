@@ -20,8 +20,7 @@ import { useAutoReset } from '../hooks/useAutoReset';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+import { EMAIL_REGEX } from '../utils/validators';
 
 const ParentForgotPasswordScreen: React.FC = () => {
   const navigation = useNavigation<any>();

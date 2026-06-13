@@ -22,11 +22,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAutoReset } from '../hooks/useAutoReset';
 import { isDebugMode } from '../config/debug';
-
-const EGYPT_MOBILE_REGEX = /^01[0125]\d{8}$/;
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const STRONG_PASSWORD_REGEX =
-  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+import { EGYPT_MOBILE_REGEX, EMAIL_REGEX, STRONG_PASSWORD_REGEX } from '../utils/validators';
 
 const ParentRegisterScreen: React.FC = () => {
   const navigation = useNavigation<any>();
