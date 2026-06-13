@@ -53,7 +53,8 @@ export const useNotifications = () => {
       setError(null);
 
       try {
-        const query = userRole === 'student' ? USER_NOTIFICATIONS_QUERY : PARENT_NOTIFICATIONS_QUERY;
+        const query =
+          userRole === 'student' ? USER_NOTIFICATIONS_QUERY : PARENT_NOTIFICATIONS_QUERY;
         const result = await tryFetchWithFallback(print(query), {
           page: targetPage,
           per_page: PER_PAGE,
@@ -63,12 +64,13 @@ export const useNotifications = () => {
           throw new Error(result.errors[0]?.message || 'Failed to fetch notifications');
         }
 
-        const data = userRole === 'student' ? result.data.userNotifications : result.data.parentNotifications;
-        
+        const data =
+          userRole === 'student' ? result.data.userNotifications : result.data.parentNotifications;
+
         if (isRefresh || targetPage === 1) {
           setNotifications(data.data);
         } else {
-          setNotifications(prev => [...prev, ...data.data]);
+          setNotifications((prev) => [...prev, ...data.data]);
         }
 
         setUnreadCount(data.unread_count);
@@ -84,7 +86,7 @@ export const useNotifications = () => {
         isFetchingRef.current = false;
       }
     },
-    [isAuthenticated, userRole]
+    [isAuthenticated, userRole],
   );
 
   const refresh = useCallback(() => {
@@ -102,20 +104,21 @@ export const useNotifications = () => {
       if (!userRole) return;
 
       // Optimistic update
-      setNotifications(prev =>
-        prev.map(n => (n.id === id ? { ...n, is_read: true } : n))
-      );
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
 
       try {
-        const mutation = userRole === 'student' ? MARK_NOTIFICATION_READ_MUTATION : PARENT_MARK_NOTIFICATION_READ_MUTATION;
+        const mutation =
+          userRole === 'student'
+            ? MARK_NOTIFICATION_READ_MUTATION
+            : PARENT_MARK_NOTIFICATION_READ_MUTATION;
         await tryFetchWithFallback(print(mutation), { id });
       } catch (err) {
         // Revert if needed? Usually for simple read marks we don't revert to avoid flicker
         console.error('Failed to mark notification as read:', err);
       }
     },
-    [userRole]
+    [userRole],
   );
 
   const [markingAllRead, setMarkingAllRead] = useState(false);
@@ -125,11 +128,14 @@ export const useNotifications = () => {
 
     setMarkingAllRead(true);
     // Optimistic update
-    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
     setUnreadCount(0);
 
     try {
-      const mutation = userRole === 'student' ? MARK_ALL_NOTIFICATIONS_READ_MUTATION : PARENT_MARK_ALL_NOTIFICATIONS_READ_MUTATION;
+      const mutation =
+        userRole === 'student'
+          ? MARK_ALL_NOTIFICATIONS_READ_MUTATION
+          : PARENT_MARK_ALL_NOTIFICATIONS_READ_MUTATION;
       await tryFetchWithFallback(print(mutation));
     } catch (err) {
       console.error('Failed to mark all notifications as read:', err);
@@ -147,7 +153,7 @@ export const useNotifications = () => {
   useFocusEffect(
     useCallback(() => {
       fetchNotifications(1, true);
-    }, [fetchNotifications])
+    }, [fetchNotifications]),
   );
 
   return {

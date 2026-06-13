@@ -294,15 +294,14 @@ const EditProfileScreen: React.FC = () => {
 
   const handleSave = async () => {
     // Check if anything has actually changed
-    const hasChanges = (
+    const hasChanges =
       formData.email !== (user?.email || '') ||
       formData.school_name !== (user?.school_name || '') ||
       formData.gender !== (user?.gender || '') ||
       formData.educational_system_id !== (user?.educational_system?.id || '') ||
       formData.parent_mobile !== (user?.parent_mobile || '') ||
       String(formData.city_id) !== String((user as any)?.city_id || '') ||
-      String(formData.governorate_id) !== String((user as any)?.governorate_id || '')
-    );
+      String(formData.governorate_id) !== String((user as any)?.governorate_id || '');
 
     if (!hasChanges) {
       navigation.goBack();
@@ -557,9 +556,7 @@ const EditProfileScreen: React.FC = () => {
                   color={theme.colors.textTertiary}
                   style={currentStyles.inputIconLeft}
                 />
-                <Text
-                  style={[currentStyles.readonlyText, { textAlign: isRTL ? 'right' : 'left' }]}
-                >
+                <Text style={[currentStyles.readonlyText, { textAlign: isRTL ? 'right' : 'left' }]}>
                   {user?.name}
                 </Text>
               </View>
@@ -571,7 +568,14 @@ const EditProfileScreen: React.FC = () => {
               <View
                 style={[
                   currentStyles.inputWrapper,
-                  { borderColor: getBorderColor('email', touchedEmail, isEmailValid, formData.email) },
+                  {
+                    borderColor: getBorderColor(
+                      'email',
+                      touchedEmail,
+                      isEmailValid,
+                      formData.email,
+                    ),
+                  },
                 ]}
               >
                 <Ionicons
@@ -620,9 +624,7 @@ const EditProfileScreen: React.FC = () => {
                     name="man-outline"
                     size={20}
                     color={
-                      formData.gender === 'male'
-                        ? theme.colors.primary
-                        : theme.colors.textSecondary
+                      formData.gender === 'male' ? theme.colors.primary : theme.colors.textSecondary
                     }
                   />
                   <Text
@@ -682,9 +684,7 @@ const EditProfileScreen: React.FC = () => {
                 <Ionicons
                   name="location-outline"
                   size={20}
-                  color={
-                    formData.governorate_id ? theme.colors.primary : theme.colors.textTertiary
-                  }
+                  color={formData.governorate_id ? theme.colors.primary : theme.colors.textTertiary}
                   style={currentStyles.inputIconLeft}
                 />
                 <Text
@@ -924,9 +924,7 @@ const EditProfileScreen: React.FC = () => {
                   });
                 }}
               >
-                <Text style={currentStyles.addSchoolText}>
-                  {t('profile.add_school_request')}
-                </Text>
+                <Text style={currentStyles.addSchoolText}>{t('profile.add_school_request')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -945,9 +943,7 @@ const EditProfileScreen: React.FC = () => {
                 <View style={currentStyles.inputIconLeft}>
                   <Text style={{ fontSize: 18 }}>🎓</Text>
                 </View>
-                <Text
-                  style={[currentStyles.readonlyText, { textAlign: isRTL ? 'right' : 'left' }]}
-                >
+                <Text style={[currentStyles.readonlyText, { textAlign: isRTL ? 'right' : 'left' }]}>
                   {user?.grade?.name || user?.educational_system?.name || '---'}
                 </Text>
               </View>
@@ -983,9 +979,7 @@ const EditProfileScreen: React.FC = () => {
             >
               <View style={currentStyles.passwordToggleLeft}>
                 <Ionicons name="lock-closed-outline" size={20} color={theme.colors.primary} />
-                <Text style={currentStyles.passwordToggleText}>
-                  {t('profile.change_password')}
-                </Text>
+                <Text style={currentStyles.passwordToggleText}>{t('profile.change_password')}</Text>
               </View>
               <Ionicons
                 name={showPasswordSection ? 'chevron-up' : 'chevron-down'}
@@ -1002,7 +996,12 @@ const EditProfileScreen: React.FC = () => {
                   <View
                     style={[
                       currentStyles.inputWrapper,
-                      { borderColor: getPasswordInputBorderColor('oldPassword', passwordState.oldPassword) },
+                      {
+                        borderColor: getPasswordInputBorderColor(
+                          'oldPassword',
+                          passwordState.oldPassword,
+                        ),
+                      },
                     ]}
                   >
                     <Ionicons
@@ -1034,7 +1033,12 @@ const EditProfileScreen: React.FC = () => {
                   <View
                     style={[
                       currentStyles.inputWrapper,
-                      { borderColor: getPasswordInputBorderColor('newPassword', passwordState.newPassword) },
+                      {
+                        borderColor: getPasswordInputBorderColor(
+                          'newPassword',
+                          passwordState.newPassword,
+                        ),
+                      },
                     ]}
                   >
                     <Ionicons
@@ -1062,13 +1066,16 @@ const EditProfileScreen: React.FC = () => {
 
                 {/* Confirm New Password */}
                 <View style={currentStyles.inputGroup}>
-                  <Text style={currentStyles.inputLabel}>
-                    {t('profile.confirm_new_password')}
-                  </Text>
+                  <Text style={currentStyles.inputLabel}>{t('profile.confirm_new_password')}</Text>
                   <View
                     style={[
                       currentStyles.inputWrapper,
-                      { borderColor: getPasswordInputBorderColor('confirmPassword', passwordState.confirmPassword) },
+                      {
+                        borderColor: getPasswordInputBorderColor(
+                          'confirmPassword',
+                          passwordState.confirmPassword,
+                        ),
+                      },
                     ]}
                   >
                     <Ionicons
@@ -1085,9 +1092,7 @@ const EditProfileScreen: React.FC = () => {
                       style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
                       secureTextEntry
                       value={passwordState.confirmPassword}
-                      onChangeText={(v) =>
-                        setPasswordState((p) => ({ ...p, confirmPassword: v }))
-                      }
+                      onChangeText={(v) => setPasswordState((p) => ({ ...p, confirmPassword: v }))}
                       placeholder="••••••••"
                       placeholderTextColor={theme.colors.textTertiary}
                       onFocus={() => setFocusedField('confirmPassword')}

@@ -31,10 +31,7 @@ interface QuizCompletionCardProps {
   isCurrentUser?: boolean;
 }
 
-const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
-  item,
-  onLike,
-}) => {
+const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({ item, onLike }) => {
   const { theme, spacing, borderRadius } = useTheme();
   const { t } = useTranslation();
   const common = useCommonStyles();
@@ -75,9 +72,7 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
       <View style={currentStyles.headerRow}>
         <View style={currentStyles.headerLeft}>
           <View style={currentStyles.avatar}>
-            <Text style={currentStyles.avatarText}>
-              {getInitials(item.user.name)}
-            </Text>
+            <Text style={currentStyles.avatarText}>{getInitials(item.user.name)}</Text>
           </View>
           <View style={currentStyles.userInfo}>
             <Text numberOfLines={1} style={currentStyles.userName}>
@@ -97,56 +92,80 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
           size={32}
           style={{ backgroundColor: subConfig.bg }}
         />
-        <Text style={currentStyles.quizName}>
-          {subjectName}
-        </Text>
+        <Text style={currentStyles.quizName}>{subjectName}</Text>
       </View>
 
       {/* Metadata Capsule Badges Section */}
       <View style={currentStyles.metadataContainer}>
         {/* Top Row: Questions & Accuracy (50% width each) */}
         <View style={currentStyles.statsRow}>
-          <View style={[currentStyles.capsule, currentStyles.flexCapsule, currentStyles.questionsCapsule]}>
+          <View
+            style={[
+              currentStyles.capsule,
+              currentStyles.flexCapsule,
+              currentStyles.questionsCapsule,
+            ]}
+          >
             <Ionicons name="list-outline" size={14} color={theme.colors.primary} />
-            <Text numberOfLines={1} style={[currentStyles.capsuleText, { color: theme.colors.primary }]}>
-              {t('social_screen.questions_count', { count: totalQuestions, defaultValue: `${totalQuestions} Questions` })}
+            <Text
+              numberOfLines={1}
+              style={[currentStyles.capsuleText, { color: theme.colors.primary }]}
+            >
+              {t('social_screen.questions_count', {
+                count: totalQuestions,
+                defaultValue: `${totalQuestions} Questions`,
+              })}
             </Text>
           </View>
 
-          <View 
+          <View
             style={[
-              currentStyles.capsule, 
+              currentStyles.capsule,
               currentStyles.flexCapsule,
-              isPassed ? currentStyles.passedCapsule : currentStyles.failedCapsule
+              isPassed ? currentStyles.passedCapsule : currentStyles.failedCapsule,
             ]}
           >
-            <Ionicons 
-              name="star-outline" 
-              size={14} 
-              color={isPassed ? theme.colors.success : theme.colors.error} 
+            <Ionicons
+              name="star-outline"
+              size={14}
+              color={isPassed ? theme.colors.success : theme.colors.error}
             />
-            <Text numberOfLines={1} style={[currentStyles.capsuleText, { color: isPassed ? theme.colors.success : theme.colors.error }]}>
-              {t('social_screen.accuracy', { percent: scorePercent, defaultValue: `${scorePercent}% Accuracy` })}
+            <Text
+              numberOfLines={1}
+              style={[
+                currentStyles.capsuleText,
+                { color: isPassed ? theme.colors.success : theme.colors.error },
+              ]}
+            >
+              {t('social_screen.accuracy', {
+                percent: scorePercent,
+                defaultValue: `${scorePercent}% Accuracy`,
+              })}
             </Text>
           </View>
         </View>
 
         {/* Bottom Row: Passed/Failed Status (Centered) */}
         <View style={currentStyles.statusCenteredRow}>
-          <View 
+          <View
             style={[
-              currentStyles.capsule, 
-              isPassed ? currentStyles.passedCapsule : currentStyles.failedCapsule
+              currentStyles.capsule,
+              isPassed ? currentStyles.passedCapsule : currentStyles.failedCapsule,
             ]}
           >
-            <Ionicons 
-              name={isPassed ? 'checkmark-circle-outline' : 'close-circle-outline'} 
-              size={14} 
-              color={isPassed ? theme.colors.success : theme.colors.error} 
+            <Ionicons
+              name={isPassed ? 'checkmark-circle-outline' : 'close-circle-outline'}
+              size={14}
+              color={isPassed ? theme.colors.success : theme.colors.error}
             />
-            <Text style={[currentStyles.capsuleText, { color: isPassed ? theme.colors.success : theme.colors.error }]}>
-              {isPassed 
-                ? t('social_screen.passed', { defaultValue: 'Passed' }) 
+            <Text
+              style={[
+                currentStyles.capsuleText,
+                { color: isPassed ? theme.colors.success : theme.colors.error },
+              ]}
+            >
+              {isPassed
+                ? t('social_screen.passed', { defaultValue: 'Passed' })
                 : t('social_screen.failed', { defaultValue: 'Failed' })}
             </Text>
           </View>
@@ -159,20 +178,15 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
         {item.likes > 0 ? (
           <View style={currentStyles.likesBadge}>
             <Ionicons name="thumbs-up" size={14} color={theme.colors.primary} />
-            <Text style={currentStyles.likesBadgeText}>
-              {item.likes}
-            </Text>
+            <Text style={currentStyles.likesBadgeText}>{item.likes}</Text>
           </View>
         ) : (
           <View style={currentStyles.likesBadgeEmpty} />
         )}
 
         {/* Action Button (Like) */}
-        <TouchableOpacity 
-          style={[
-            currentStyles.likeBtn, 
-            item.isLiked && currentStyles.likeBtnActive
-          ]} 
+        <TouchableOpacity
+          style={[currentStyles.likeBtn, item.isLiked && currentStyles.likeBtnActive]}
           onPress={onLike}
           activeOpacity={0.7}
         >
@@ -182,10 +196,7 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
             color={item.isLiked ? theme.colors.primary : theme.colors.textSecondary}
           />
           <Text
-            style={[
-              currentStyles.likeBtnText, 
-              item.isLiked && currentStyles.likeBtnTextActive
-            ]}
+            style={[currentStyles.likeBtnText, item.isLiked && currentStyles.likeBtnTextActive]}
           >
             {t('common.like', { defaultValue: 'Like' })}
           </Text>
