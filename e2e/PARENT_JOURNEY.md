@@ -1,7 +1,9 @@
-# Parent Journey Map (code-derived — verify on simulator before writing flows)
+# Parent Journey Map (code-derived)
 
 > Built by reading the code (`AppNavigator.tsx`, `AuthContext.tsx`, parent screens, hooks).
-> ✅ = confirmed in code. ❓ = needs one manual simulator walkthrough to confirm timing/behavior.
+> **Status (2026-06-14):** flows 04/05/08 (parent auth) and 09 (parent↔child link) are
+> implemented and passing on PRS and Demo. This doc is kept as the reference map.
+> ✅ = confirmed in code.
 
 ## Key differences from the student journey
 
@@ -45,35 +47,35 @@ A full link E2E therefore needs BOTH accounts in one flow: register student (ran
 logout → register parent (random mobile B) → add child A → logout → login student A →
 approve → logout → login parent B → assert child visible.
 
-## Missing testIDs (add before writing flows — kebab-case `{screen}-{element}`)
+## testIDs for these flows — ADDED (2026-06-14, kebab-case `{screen}-{element}`)
 
-| Screen | Element | Suggested testID |
+All now exist in the code and are used by flows 04/05/08/09:
+
+| Screen | Element | testID |
 |---|---|---|
 | ParentDashboard | settings gear (header) | `parent-dashboard-settings-button` |
 | ParentDashboard | add-child FAB | `parent-dashboard-add-child-fab` |
 | ParentDashboard | modal mobile input | `parent-dashboard-child-mobile-input` |
 | ParentDashboard | modal confirm btn | `parent-dashboard-add-child-confirm` |
 | ParentDashboard | modal cancel btn | `parent-dashboard-add-child-cancel` |
-| ParentDashboard | accept / decline / cancel on request cards | `parent-dashboard-request-accept` / `-decline` / `-cancel` |
+| ParentDashboard | request card actions | `parent-dashboard-request-accept` / `-decline` / `-cancel` |
 | ParentDashboard | empty state / child card | `parent-dashboard-empty` / `parent-dashboard-child-card` |
 | ProfileScreen (student) | "Parental Linking" row | `profile-parent-linking-item` |
-| ParentLinkingScreen + ParentSlotCard (student) | accept/decline/slot elements | `parent-linking-*` |
+| ParentSlotCard (student) | accept/decline/cancel/accepted, suffixed by slot | `parent-linking-accept-{1,2}` / `-decline-` / `-cancel-` / `-accepted-` |
 
-## Bugs in the existing draft flows (04/05/08)
+## Draft-flow bugs — FIXED (2026-06-14)
 
-1. **04 + 05 + 08 assert `parent-settings-logout-item` right after register/login** — wrong:
-   that element is on ParentSettings; the app lands on ParentDashboard. Assert a dashboard
-   element instead (needs the dashboard testIDs above), then tap the settings gear before logout.
-2. **08_parent-logout.yaml runs `setup-environment` twice** (before and after `launchApp`);
-   the first call runs against a stale app state — delete it.
-3. **04 register draft enters email `parent@maestro.com`** every run — if the backend enforces
-   unique parent emails, repeat runs will fail ❓ → runner should generate a random email like it
-   does mobiles, or backend must allow duplicates.
+All three were fixed when flows 04/05/08 were wired up and verified green on PRS:
+
+1. ~~04/05/08 asserted `parent-settings-logout-item` right after auth~~ → now assert the
+   dashboard FAB after auth; logout routes via the dashboard gear → settings → scroll → logout.
+2. ~~08 ran `setup-environment` twice~~ → duplicate call removed.
+3. ~~04 used a fixed email~~ → `run_maestro.py` now generates a unique parent email per run.
 
 ## Other notes for flow writing
 
-- Parent password rule: `isDebugMode() || password === 'demopass'` mirrors student rules
-  (`ParentRegisterScreen.tsx:66`).
+- Parent password rule: `isDebugMode()` relaxes the strong-password check in debug builds
+  (`ParentRegisterScreen.tsx`); the old `|| password === 'demopass'` prod bypass was removed.
 - All error popups go through the global ConfirmModal → dismiss with `confirm-modal-ok`.
 - The add-child modal is a native `<Modal>` — fine for Maestro (same as ProfileCompletionPrompt).
 - ⚠️ `e2e/env.yaml` PRS student + parent mobiles are FIXED accounts used by login flows (02/03/06).
