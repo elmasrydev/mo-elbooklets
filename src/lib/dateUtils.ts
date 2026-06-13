@@ -2,6 +2,8 @@ import { TFunction } from 'i18next';
 
 export const getTimeAgo = (dateString: string, t: TFunction, language: string) => {
   const date = new Date(dateString);
+  // Guard invalid/empty input so we don't render the literal "Invalid Date".
+  if (isNaN(date.getTime())) return '';
   const now = new Date();
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
@@ -20,6 +22,7 @@ export const getTimeAgo = (dateString: string, t: TFunction, language: string) =
 
 export const formatDate = (dateString: string, language: string) => {
   const date = new Date(dateString);
+  if (isNaN(date.getTime())) return '';
   return date.toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', {
     month: 'short',
     day: 'numeric',

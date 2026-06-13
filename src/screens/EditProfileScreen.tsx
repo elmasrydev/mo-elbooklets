@@ -338,7 +338,14 @@ const EditProfileScreen: React.FC = () => {
       const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
 
-      const input = { ...formData };
+      // Omit empty fields so we don't send empty-string ids (educational_system_id,
+      // city_id, governorate_id, ...) which the backend expects as null/omitted.
+      const input: Record<string, any> = {};
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value !== '' && value !== null && value !== undefined) {
+          input[key] = value;
+        }
+      });
 
       const mutation = `
         mutation UpdateProfile($input: UpdateProfileInput!) {

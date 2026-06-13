@@ -43,8 +43,10 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({
   const { totalQuestions, isPassed, quiz } = item.quizData;
   const subjectName = quiz.subject.name;
 
-  // Calculate percentage
-  const scorePercent = Math.round((item.quizData.score / totalQuestions) * 100);
+  // Calculate percentage (guard against a zero-question quiz -> NaN%)
+  const scorePercent = totalQuestions
+    ? Math.round((item.quizData.score / totalQuestions) * 100)
+    : 0;
 
   // Get subject theme config (only used for subject badge and book icon)
   const subConfig = getSubjectConfig(subjectName, theme);

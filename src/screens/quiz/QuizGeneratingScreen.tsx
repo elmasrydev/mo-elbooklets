@@ -88,6 +88,11 @@ const QuizGeneratingScreen: React.FC = () => {
     let active = true;
     const startQuizApi = async () => {
       try {
+        // Guard against arriving here without route params (deep link / fast refresh)
+        if (!subject?.id) {
+          if (active) setApiError(t('quiz_screen.error_loading_history'));
+          return;
+        }
         const token = await SecureStore.getItemAsync('auth_token');
         if (!token) {
           if (active) setApiError('No authentication token found');

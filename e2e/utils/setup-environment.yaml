@@ -128,10 +128,28 @@ appId: com.elbooklets.app
             id: "onboarding-language-toggle"
           timeout: 30000
 
-# If TARGET_ENV is prs, switch to PRS URL (PRS is the default so we only assert)
+# If TARGET_ENV is prs, actively select PRS. The chosen URL is persisted in
+# SecureStore and survives launchApp, so a prior dev/prod run would otherwise
+# leave the override active and the PRS suite would silently run on the wrong
+# backend while still passing. Selecting PRS each run is idempotent (no reload
+# when already on PRS).
 - runFlow:
     when:
       true: ${TARGET_ENV == 'prs'}
     commands:
-      - assertVisible:
+      - tapOn:
           id: "onboarding-api-switcher-chip"
+      - extendedWaitUntil:
+          visible:
+            id: "api-switcher-prs"
+          timeout: 8000
+      - tapOn:
+          id: "api-switcher-prs"
+      - runScript:
+          file: sleep.js
+          env:
+            timeout: 4000
+      - extendedWaitUntil:
+          visible:
+            id: "onboarding-language-toggle"
+          timeout: 30000

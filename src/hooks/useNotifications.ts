@@ -36,7 +36,10 @@ export const useNotifications = () => {
         setLoading(false);
         return;
       }
-      if (isFetchingRef.current && !isRefresh) return;
+      // Skip if a fetch is already in flight — even for a refresh. Previously a
+      // focus-refresh bypassed this guard and could interleave with an in-flight
+      // loadMore, appending page-2 data onto a freshly reset page-1 list.
+      if (isFetchingRef.current) return;
 
       isFetchingRef.current = true;
       if (isRefresh) {

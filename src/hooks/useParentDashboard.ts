@@ -79,10 +79,10 @@ export const useParentDashboard = () => {
       if (requestsRes.data?.parentChildRequests) {
         setIncomingRequests(
           requestsRes.data.parentChildRequests.filter(
-            (r: LinkRequest) => {
-              const status = r.status.toLowerCase();
-              return status !== 'accepted' && status !== 'declined' && status !== 'rejected';
-            },
+            // Only genuinely pending requests are actionable. Allow-list 'pending'
+            // instead of excluding known terminal states, so unexpected backend
+            // statuses (e.g. cancelled/expired) aren't surfaced as accept/declinable.
+            (r: LinkRequest) => r.status.toLowerCase() === 'pending',
           ),
         );
       }

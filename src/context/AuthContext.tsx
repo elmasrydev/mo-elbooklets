@@ -145,6 +145,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       logInfo('Session expired - logging out');
       unregisterDeviceToken();
       clearNotificationPromptedFlag();
+      // Clear persisted credentials too — otherwise the stale token/role are
+      // restored on next launch and the app re-authenticates into a session the
+      // server already rejected, looping back into 401s.
+      SecureStore.deleteItemAsync('auth_token');
+      SecureStore.deleteItemAsync('user_role');
+      SecureStore.deleteItemAsync('user_data');
+      SecureStore.deleteItemAsync('parent_data');
       setUser(null);
       setParentUser(null);
       setUserRole(null);

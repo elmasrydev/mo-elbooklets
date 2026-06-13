@@ -46,7 +46,7 @@ const errorLink = onError((errorResponse: any) => {
       // Check for unauthenticated error
       if (
         err.message === 'Unauthenticated.' ||
-        err.message.toLowerCase().includes('unauthenticated') ||
+        err.message?.toLowerCase().includes('unauthenticated') ||
         (err.extensions && err.extensions.code === 'UNAUTHENTICATED')
       ) {
         if (__DEV__) console.log('Auth error detected, logging out...');

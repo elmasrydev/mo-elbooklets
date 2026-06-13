@@ -141,6 +141,9 @@ const StudyScreen: React.FC = () => {
     } catch (err: any) {
       console.error('Fetch subjects error:', err);
       setError(err.message || t('study_screen.error_loading_subjects'));
+    } finally {
+      // Always clear loading — previously only the catch did, so a GraphQL-error
+      // response (no thrown exception) left the screen stuck on the skeleton forever.
       if (!isRefresh) setLoading(false);
     }
   };

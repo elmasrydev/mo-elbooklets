@@ -151,16 +151,30 @@ appId: com.elbooklets.app
 - tapOn:
     id: "profile-parent-linking-item"
 
-# Accept the incoming parent request (lands in slot 1)
+# Accept the incoming parent request. The slot list is sorted (accepted-first),
+# so a reused student with a prior link can place the new request in slot 2 —
+# accept whichever slot shows the incoming request (id is matched as a regex).
 - extendedWaitUntil:
     visible:
-      id: "parent-linking-accept-1"
+      id: "parent-linking-accept-[12]"
     timeout: 10000
-- tapOn:
-    id: "parent-linking-accept-1"
+- runFlow:
+    when:
+      visible:
+        id: "parent-linking-accept-1"
+    commands:
+      - tapOn:
+          id: "parent-linking-accept-1"
+- runFlow:
+    when:
+      visible:
+        id: "parent-linking-accept-2"
+    commands:
+      - tapOn:
+          id: "parent-linking-accept-2"
 - extendedWaitUntil:
     visible:
-      id: "parent-linking-accepted-1"
+      id: "parent-linking-accepted-[12]"
     timeout: 10000
 - takeScreenshot: e2e/screenshots/link-approved-by-student
 

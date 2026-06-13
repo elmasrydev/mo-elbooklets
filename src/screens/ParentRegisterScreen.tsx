@@ -63,7 +63,7 @@ const ParentRegisterScreen: React.FC = () => {
   const isNameValid = name.trim().length >= 3;
   const isMobileValid = EGYPT_MOBILE_REGEX.test(mobile.trim());
   const isEmailValid = EMAIL_REGEX.test(email.trim());
-  const isPasswordStrong = isDebugMode() || password === 'demopass'
+  const isPasswordStrong = isDebugMode()
     ? password.length >= 6
     : STRONG_PASSWORD_REGEX.test(password);
   const isConfirmValid = password === confirmPassword && password.length > 0;

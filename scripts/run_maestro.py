@@ -109,12 +109,14 @@ def main():
     # assertion failure fails every attempt and is still reported FAILED.
     APP_ID = "com.elbooklets.app"
     MAX_ATTEMPTS = 3
+    # Narrow, driver-specific signatures only. Broad strings like "Exception in
+    # thread"/"UnknownFailure" also appear on ordinary assertion failures and would
+    # make genuine failures get retried 3x with sim reboots. These markers are
+    # emitted specifically by the wedged XCUITest driver (and our own timeout-kill).
     CRASH_SIGNATURES = (
         "kAXError",
-        "Exception in thread",
         "Request for viewHierarchy failed",
         "viewHierarchy failed",
-        "UnknownFailure",
         "Unable to launch",
     )
 

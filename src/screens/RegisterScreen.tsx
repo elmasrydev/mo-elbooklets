@@ -131,7 +131,7 @@ const RegisterScreen: React.FC = () => {
   // Validation Flags
   const isNameValid = name.trim().length >= 3;
   const isMobileValid = MOBILE_REGEX.test(mobile.trim());
-  const isPasswordValid = isDebugMode() || password === 'demopass'
+  const isPasswordValid = isDebugMode()
     ? password.length >= 6
     : STRONG_PASSWORD_REGEX.test(password);
   const isConfirmValid = isPasswordValid && password === confirmPassword;
@@ -145,17 +145,6 @@ const RegisterScreen: React.FC = () => {
   const validateStep = (step: number) => {
     switch (step) {
       case 1: {
-        console.log('[RegisterScreen DEBUG]', {
-          name,
-          mobile,
-          password,
-          confirmPassword,
-          isNameValid,
-          isMobileValid,
-          isPasswordValid,
-          isConfirmValid,
-          isDebugMode: isDebugMode(),
-        });
         setTouchedName(true);
         setTouchedMobile(true);
         setTouchedPassword(true);
