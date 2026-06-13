@@ -80,33 +80,53 @@ appId: com.elbooklets.app
       id: "onboarding-language-toggle"
     timeout: 30000
 
-# If TARGET_ENV is dev, switch to Demo URL
+# If TARGET_ENV is dev, switch to Demo URL.
+# The switcher is a native <Modal> (slide animation) so wait for the button before
+# tapping it. Selecting a *different* URL reloads the app (~500ms) to apply it, so
+# settle afterwards and re-confirm we're back on Onboarding (now pointed at Demo).
+# When already on Demo (subsequent flows) the tap just closes the modal — idempotent.
 - runFlow:
     when:
       true: ${TARGET_ENV == 'dev'}
     commands:
       - tapOn:
           id: "onboarding-api-switcher-chip"
+      - extendedWaitUntil:
+          visible:
+            id: "api-switcher-demo"
+          timeout: 8000
       - tapOn:
           id: "api-switcher-demo"
-      - assertNotVisible:
-          id: "onboarding-api-switcher-chip"
-      - assertVisible:
-          id: "onboarding-api-switcher-chip"
+      - runScript:
+          file: sleep.js
+          env:
+            timeout: 4000
+      - extendedWaitUntil:
+          visible:
+            id: "onboarding-language-toggle"
+          timeout: 30000
 
-# If TARGET_ENV is prod, switch to Production URL
+# If TARGET_ENV is prod, switch to Production URL (same idempotent + reload-tolerant pattern)
 - runFlow:
     when:
       true: ${TARGET_ENV == 'prod'}
     commands:
       - tapOn:
           id: "onboarding-api-switcher-chip"
+      - extendedWaitUntil:
+          visible:
+            id: "api-switcher-production"
+          timeout: 8000
       - tapOn:
           id: "api-switcher-production"
-      - assertNotVisible:
-          id: "onboarding-api-switcher-chip"
-      - assertVisible:
-          id: "onboarding-api-switcher-chip"
+      - runScript:
+          file: sleep.js
+          env:
+            timeout: 4000
+      - extendedWaitUntil:
+          visible:
+            id: "onboarding-language-toggle"
+          timeout: 30000
 
 # If TARGET_ENV is prs, switch to PRS URL (PRS is the default so we only assert)
 - runFlow:

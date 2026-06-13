@@ -118,8 +118,17 @@ const ApiUrlSwitcherModal: React.FC<ApiUrlSwitcherModalProps> = ({ isVisible, on
 
   return (
     <Modal visible={isVisible} transparent={true} animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.overlay} onPress={onClose} testID="api-switcher-modal">
+      {/* accessible={false} stops iOS from flattening the whole modal into one
+          accessibility element, which would hide the inner button testIDs from
+          Maestro (same reason ConfirmModal's overlay sets accessible={false}). */}
+      <Pressable
+        accessible={false}
+        style={styles.overlay}
+        onPress={onClose}
+        testID="api-switcher-modal"
+      >
         <View
+          accessible={false}
           onStartShouldSetResponder={() => true}
           style={[
             styles.container,
