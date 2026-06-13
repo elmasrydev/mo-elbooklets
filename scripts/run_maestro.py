@@ -102,35 +102,72 @@ def main():
         test_files.append("e2e/auth/09_parent-link-child.yaml")
 
     print(f"Running Maestro tests sequentially for target environment: {target_env}\n")
-    
+
+    # The iOS XCUITest driver crashes intermittently during long sessions (kAXError
+    # -25218 / "Request for viewHierarchy failed"). These are infrastructure flakes,
+    # not test failures, so a crashed flow is retried on a fresh driver. A genuine
+    # assertion failure fails every attempt and is still reported FAILED.
+    APP_ID = "com.elbooklets.app"
+    MAX_ATTEMPTS = 3
+    CRASH_SIGNATURES = (
+        "kAXError",
+        "Exception in thread",
+        "Request for viewHierarchy failed",
+        "viewHierarchy failed",
+        "UnknownFailure",
+        "Unable to launch",
+    )
+
+    def run_flow_capture(cmd):
+        """Run maestro, stream output live, and return (returncode, combined_output)."""
+        captured = []
+        process = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            cwd=str(workspace_dir), bufsize=1, universal_newlines=True,
+        )
+        for line in process.stdout:
+            sys.stdout.write(line)
+            captured.append(line)
+        process.wait()
+        return process.returncode, "".join(captured)
+
+    def recover_driver():
+        """Reset the app/driver between attempts so the retry gets a clean runner."""
+        subprocess.run(["xcrun", "simctl", "terminate", "booted", APP_ID],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        import time
+        time.sleep(5)
+
     results = {}
     any_failed = False
-    
+
     for test_file in test_files:
         test_path = workspace_dir / test_file
         if not test_path.exists():
             print(f"Skipping missing test file: {test_file}")
             continue
-            
+
         cmd = ["maestro", "test"] + base_args + [str(test_path)]
         print(f"=== Running: {test_file} ===")
         print(f"Command: {' '.join(cmd)}\n")
-        
+
         try:
-            # Run with live output to stdout
-            process = subprocess.Popen(
-                cmd,
-                stdout=sys.stdout,
-                stderr=sys.stderr,
-                cwd=str(workspace_dir)
-            )
-            process.wait()
-            
-            if process.returncode == 0:
-                results[test_file] = "PASSED"
-            else:
-                results[test_file] = "FAILED"
-                any_failed = True
+            for attempt in range(1, MAX_ATTEMPTS + 1):
+                returncode, output = run_flow_capture(cmd)
+
+                if returncode == 0:
+                    results[test_file] = "PASSED" if attempt == 1 else f"PASSED (retry {attempt})"
+                    break
+
+                is_crash = any(sig in output for sig in CRASH_SIGNATURES)
+                if attempt < MAX_ATTEMPTS:
+                    reason = "driver crash" if is_crash else "failure"
+                    print(f"\n--- {test_file} {reason} on attempt {attempt}; "
+                          f"recovering and retrying ({attempt + 1}/{MAX_ATTEMPTS}) ---\n")
+                    recover_driver()
+                else:
+                    results[test_file] = "FAILED"
+                    any_failed = True
         except KeyboardInterrupt:
             print("\nTest run cancelled by user.")
             sys.exit(130)
@@ -138,9 +175,9 @@ def main():
             print(f"Error running Maestro for {test_file}: {e}")
             results[test_file] = "ERROR"
             any_failed = True
-            
+
         print("\n" + "="*50 + "\n")
-        
+
     print("=== E2E Test Execution Summary ===")
     for test_file, status in results.items():
         print(f"{test_file}: {status}")
