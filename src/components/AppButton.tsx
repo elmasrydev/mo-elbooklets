@@ -202,12 +202,7 @@ const AppButton: React.FC<AppButtonProps> = ({
         <View style={styles.content}>
           {icon && iconPosition === 'left' && <View style={{ marginEnd: spacing.xs }}>{icon}</View>}
           <View style={styles.textContainer}>
-            <Text
-              style={titleStyles}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.75}
-            >
+            <Text style={titleStyles} numberOfLines={1} ellipsizeMode="tail">
               {title}
             </Text>
             {subtitle && <Text style={subStyles}>{subtitle}</Text>}
@@ -232,6 +227,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   textContainer: {
+    flexShrink: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
