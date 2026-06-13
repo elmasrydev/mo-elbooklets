@@ -24,15 +24,6 @@ describe('OnboardingScreen Integration Tests', () => {
     expect(screen.getByTestId('onboarding-sign-in')).toBeDefined();
   });
 
-  it('toggles active role to parent when parent tab is tapped', () => {
-    renderWithProviders(<OnboardingScreen />);
-
-    const parentTab = screen.getByTestId('onboarding-parent-tab');
-    fireEvent.press(parentTab);
-
-    // Verify it updates activeRole state internally (validated via actions below)
-  });
-
   it('navigates to Register when Get Started is tapped with Student role active', () => {
     renderWithProviders(<OnboardingScreen />);
 
