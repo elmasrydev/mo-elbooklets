@@ -118,24 +118,77 @@ def main():
         "Unable to launch",
     )
 
-    def run_flow_capture(cmd):
-        """Run maestro, stream output live, and return (returncode, combined_output)."""
+    def run_flow_capture(cmd, timeout=420):
+        """Run maestro, stream output live, and return (returncode, combined_output).
+        A watchdog kills the process if it exceeds `timeout` (a wedged XCUITest driver
+        hangs instead of exiting); the kill is surfaced as a crash so the caller does a
+        hard recovery and retries. 420s comfortably covers the long 09 link flow."""
+        import threading
         captured = []
+        timed_out = {"hit": False}
         process = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             cwd=str(workspace_dir), bufsize=1, universal_newlines=True,
         )
-        for line in process.stdout:
-            sys.stdout.write(line)
-            captured.append(line)
-        process.wait()
-        return process.returncode, "".join(captured)
 
-    def recover_driver():
-        """Reset the app/driver between attempts so the retry gets a clean runner."""
+        def _kill():
+            timed_out["hit"] = True
+            try:
+                process.kill()
+            except Exception:
+                pass
+
+        watchdog = threading.Timer(timeout, _kill)
+        watchdog.start()
+        try:
+            for line in process.stdout:
+                sys.stdout.write(line)
+                captured.append(line)
+            process.wait()
+        finally:
+            watchdog.cancel()
+
+        returncode = process.returncode
+        if timed_out["hit"]:
+            msg = f"\n[runner] flow exceeded {timeout}s and was killed (kAXError hang) — treating as driver crash\n"
+            sys.stdout.write(msg)
+            captured.append(msg)
+            if returncode == 0:
+                returncode = 1
+        return returncode, "".join(captured)
+
+    def booted_udid():
+        """Return the UDID of the first booted simulator, or None."""
+        try:
+            out = subprocess.run(["xcrun", "simctl", "list", "devices", "booted"],
+                                 capture_output=True, text=True).stdout
+            import re as _re
+            m = _re.search(r"\(([0-9A-Fa-f-]{36})\)\s*\(Booted\)", out)
+            return m.group(1) if m else None
+        except Exception:
+            return None
+
+    def recover_driver(hard=False):
+        """Reset between attempts. A soft reset just relaunches the app; a hard reset
+        reboots the simulator, which is what clears a fully wedged XCUITest driver
+        (kAXErrorInvalidUIElement). The app stays installed and reconnects to Metro."""
+        import time
+        if hard:
+            udid = booted_udid()
+            if udid:
+                print(f"--- hard recovery: rebooting simulator {udid} ---")
+                subprocess.run(["xcrun", "simctl", "shutdown", udid],
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                subprocess.run(["xcrun", "simctl", "boot", udid],
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                subprocess.run(["xcrun", "simctl", "bootstatus", udid, "-b"],
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                subprocess.run(["xcrun", "simctl", "launch", "booted", APP_ID],
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                time.sleep(8)
+                return
         subprocess.run(["xcrun", "simctl", "terminate", "booted", APP_ID],
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        import time
         time.sleep(5)
 
     results = {}
@@ -164,7 +217,8 @@ def main():
                     reason = "driver crash" if is_crash else "failure"
                     print(f"\n--- {test_file} {reason} on attempt {attempt}; "
                           f"recovering and retrying ({attempt + 1}/{MAX_ATTEMPTS}) ---\n")
-                    recover_driver()
+                    # A driver crash needs a full sim reboot; a plain failure just needs a relaunch.
+                    recover_driver(hard=is_crash)
                 else:
                     results[test_file] = "FAILED"
                     any_failed = True
