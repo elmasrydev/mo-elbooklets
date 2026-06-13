@@ -118,6 +118,7 @@ const ParentSlotCard: React.FC<ParentSlotCardProps> = ({
       <View style={[currentStyles.inputContainer, inputError && currentStyles.inputError]}>
         <Ionicons name="call-outline" size={20} color={theme.colors.textTertiary} />
         <TextInput
+          testID={`parent-linking-mobile-input-${slotNumber}`}
           style={currentStyles.input}
           placeholder={t('parent_linking.enter_mobile_placeholder')}
           placeholderTextColor={theme.colors.textTertiary}
@@ -132,6 +133,7 @@ const ParentSlotCard: React.FC<ParentSlotCardProps> = ({
       {inputError && <Text style={currentStyles.errorText}>{inputError}</Text>}
       <View style={currentStyles.actionContainer}>
         <AppButton
+          testID={`parent-linking-send-invite-${slotNumber}`}
           title={isSending ? t('parent_linking.sending') : t('parent_linking.send_invite')}
           onPress={handleSendInvite}
           loading={isSending}
@@ -153,6 +155,7 @@ const ParentSlotCard: React.FC<ParentSlotCardProps> = ({
       <Text style={currentStyles.descText}>{t('parent_linking.pending_outgoing_desc')}</Text>
       <View style={currentStyles.actionContainer}>
         <AppButton
+          testID={`parent-linking-cancel-${slotNumber}`}
           title={isCancelling ? t('parent_linking.cancelling') : t('parent_linking.cancel_invitation')}
           onPress={handleCancel}
           loading={isCancelling}
@@ -176,6 +179,7 @@ const ParentSlotCard: React.FC<ParentSlotCardProps> = ({
       <View style={currentStyles.buttonRow}>
         <View style={currentStyles.flexButton}>
           <AppButton
+            testID={`parent-linking-decline-${slotNumber}`}
             title={t('parent_linking.decline')}
             onPress={() => handleRespond('decline')}
             variant="outline"
@@ -185,6 +189,7 @@ const ParentSlotCard: React.FC<ParentSlotCardProps> = ({
         <View style={{ width: spacing.md }} />
         <View style={currentStyles.flexButton}>
           <AppButton
+            testID={`parent-linking-accept-${slotNumber}`}
             title={t('parent_linking.accept')}
             onPress={() => handleRespond('accept')}
             loading={isResponding}
@@ -196,7 +201,7 @@ const ParentSlotCard: React.FC<ParentSlotCardProps> = ({
   );
 
   const renderAccepted = () => (
-    <View>
+    <View testID={`parent-linking-accepted-${slotNumber}`}>
       <View style={currentStyles.headerRow}>
         <View style={currentStyles.titleInfo}>
           <Text style={currentStyles.parentName}>{slot.request?.parent.name || 'Parent'}</Text>

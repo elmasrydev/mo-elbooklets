@@ -59,18 +59,24 @@ def main():
     
     if target_env in ('prs', 'dev'):
         import random
+        rand_suffix = "".join(random.choices("0123456789", k=8))
         student_mobile = "010" + "".join(random.choices("0123456789", k=8))
         parent_mobile = "010" + "".join(random.choices("0123456789", k=8))
+        # Unique parent email per run so re-runs don't collide on a uniqueness check
+        parent_email = f"maestro.parent.{rand_suffix}@example.com"
         print(f"Generated dynamic test numbers for E2E: Student={student_mobile}, Parent={parent_mobile}")
+        print(f"Generated dynamic parent email for E2E: {parent_email}")
     else:
         student_mobile = env_vars.get(f"{prefix}_STUDENT_MOBILE", "")
         parent_mobile = env_vars.get(f"{prefix}_PARENT_MOBILE", "")
-    
+        parent_email = env_vars.get(f"{prefix}_PARENT_EMAIL", "")
+
     base_args.extend([
         "-e", f"STUDENT_MOBILE={student_mobile}",
         "-e", f"STUDENT_PASSWORD={student_password}",
         "-e", f"PARENT_MOBILE={parent_mobile}",
-        "-e", f"PARENT_PASSWORD={parent_password}"
+        "-e", f"PARENT_PASSWORD={parent_password}",
+        "-e", f"PARENT_EMAIL={parent_email}"
     ])
     
     # Add all parsed environment variables as -e arguments
@@ -78,11 +84,16 @@ def main():
         base_args.extend(["-e", f"{key}={val}"])
         
     test_files = [
+        # Student auth
         "e2e/auth/01_student-register.yaml",
         "e2e/auth/02_student-login-validation.yaml",
         "e2e/auth/03_student-login.yaml",
         "e2e/auth/06_logout.yaml",
-        "e2e/auth/07_forgot-password.yaml"
+        "e2e/auth/07_forgot-password.yaml",
+        # Parent auth (04 registers the run's random parent; 05/08 reuse that mobile)
+        "e2e/auth/04_parent-register.yaml",
+        "e2e/auth/05_parent-login.yaml",
+        "e2e/auth/08_parent-logout.yaml",
     ]
     
     print(f"Running Maestro tests sequentially for target environment: {target_env}\n")

@@ -70,6 +70,7 @@ const ParentDashboardScreen: React.FC = () => {
     (child: Child) => (
       <TouchableOpacity
         key={child.id}
+        testID="parent-dashboard-child-card"
         style={currentStyles.childCard}
         onPress={() => navigation.navigate('ChildDetailsScreen', { childId: child.id })}
         activeOpacity={0.7}
@@ -176,6 +177,7 @@ const ParentDashboardScreen: React.FC = () => {
             {isStudentInitiated ? (
               <>
                 <TouchableOpacity
+                  testID="parent-dashboard-request-decline"
                   style={[currentStyles.actionBtn, currentStyles.declineBtn]}
                   onPress={() => handleRespondToLink(req.id, 'DECLINED')}
                   disabled={isResponding}
@@ -192,6 +194,7 @@ const ParentDashboardScreen: React.FC = () => {
                 </TouchableOpacity>
 
                 <TouchableOpacity
+                  testID="parent-dashboard-request-accept"
                   style={[currentStyles.actionBtn, currentStyles.acceptBtn]}
                   onPress={() => handleRespondToLink(req.id, 'ACCEPTED')}
                   disabled={isResponding}
@@ -207,6 +210,7 @@ const ParentDashboardScreen: React.FC = () => {
               </>
             ) : (
               <TouchableOpacity
+                testID="parent-dashboard-request-cancel"
                 style={[currentStyles.actionBtn, currentStyles.declineBtn, { flex: 1 }]}
                 onPress={() => handleCancelRequest(req.id)}
                 disabled={isResponding}
@@ -251,6 +255,7 @@ const ParentDashboardScreen: React.FC = () => {
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <NotificationBell />
             <TouchableOpacity
+              testID="parent-dashboard-settings-button"
               style={[currentStyles.settingsBtn, { marginStart: 12 }]}
               onPress={() => navigation.navigate('ParentSettings')}
             >
@@ -302,7 +307,7 @@ const ParentDashboardScreen: React.FC = () => {
           {loading && children.length === 0 ? (
             <ActivityIndicator style={{ marginTop: 20 }} color={theme.colors.primary} />
           ) : children.length === 0 ? (
-            <View style={currentStyles.emptyState}>
+            <View testID="parent-dashboard-empty" style={currentStyles.emptyState}>
               <View style={currentStyles.emptyIconBox}>
                 <Ionicons name="people-outline" size={48} color={theme.colors.textTertiary} />
               </View>
@@ -315,6 +320,7 @@ const ParentDashboardScreen: React.FC = () => {
       </ScrollView>
 
       <TouchableOpacity
+        testID="parent-dashboard-add-child-fab"
         style={[currentStyles.fab, { end: 24 }]}
         onPress={() => setIsAddModalVisible(true)}
         activeOpacity={0.8}
@@ -336,6 +342,7 @@ const ParentDashboardScreen: React.FC = () => {
             </Text>
 
             <TextInput
+              testID="parent-dashboard-child-mobile-input"
               style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
               placeholder={t('parent_dashboard.child_mobile_placeholder')}
               placeholderTextColor={theme.colors.textTertiary}
@@ -347,6 +354,7 @@ const ParentDashboardScreen: React.FC = () => {
 
             <View style={currentStyles.modalActions}>
               <TouchableOpacity
+                testID="parent-dashboard-add-child-cancel"
                 style={[currentStyles.modalBtn, currentStyles.cancelBtn]}
                 onPress={() => setIsAddModalVisible(false)}
               >
@@ -354,6 +362,7 @@ const ParentDashboardScreen: React.FC = () => {
               </TouchableOpacity>
 
               <TouchableOpacity
+                testID="parent-dashboard-add-child-confirm"
                 style={[currentStyles.modalBtn, currentStyles.confirmBtn]}
                 onPress={onAddChild}
                 disabled={loading || !childMobile}

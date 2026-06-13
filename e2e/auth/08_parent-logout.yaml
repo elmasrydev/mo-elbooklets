@@ -1,16 +1,13 @@
 appId: com.elbooklets.app
 ---
-# Switch environment if needed
-- runFlow:
-    file: ../utils/setup-environment.yaml
-
 # --- Parent Login & Logout Flow ---
 - launchApp
 
-# Switch environment if needed (since state was cleared)
+# Switch environment if needed / self-heal to Onboarding
 - runFlow:
     file: ../utils/setup-environment.yaml
 
+# Log in as parent
 - assertVisible:
     id: "onboarding-parent-tab"
 - tapOn:
@@ -23,22 +20,54 @@ appId: com.elbooklets.app
     id: "parent-login-mobile"
 - inputText: ${PARENT_MOBILE}
 - tapOn:
+    point: 50%,10%
+- tapOn:
     id: "parent-login-password"
 - inputText: ${PARENT_PASSWORD}
 - tapOn:
+    point: 50%,10%
+- tapOn:
     id: "parent-login-submit"
-- assertVisible:
-    id: "parent-settings-logout-item"
 
-# Parents redirect to the ParentStack containing ParentSettingsScreen
-- assertVisible:
-    id: "parent-settings-logout-item"
+# Dismiss a rate-limit / error popup if it appears
+- extendedWaitUntil:
+    optional: true
+    visible:
+      id: "confirm-modal-ok"
+    timeout: 2000
+- runFlow:
+    when:
+      visible:
+        id: "confirm-modal-ok"
+    commands:
+      - tapOn:
+          id: "confirm-modal-ok"
+      - extendedWaitUntil:
+          notVisible:
+            id: "confirm-modal-ok"
+          timeout: 3000
+
+# Parents land on ParentDashboard — open settings via the header gear, then log out
+- extendedWaitUntil:
+    visible:
+      id: "parent-dashboard-settings-button"
+    timeout: 15000
+- tapOn:
+    id: "parent-dashboard-settings-button"
+- extendedWaitUntil:
+    visible:
+      id: "parent-settings-logout-item"
+    timeout: 10000
 - tapOn:
     id: "parent-settings-logout-item"
-- assertVisible:
-    id: "confirm-modal-ok"
+- extendedWaitUntil:
+    visible:
+      id: "confirm-modal-ok"
+    timeout: 5000
 - tapOn:
     id: "confirm-modal-ok"
-- assertVisible:
-    id: "onboarding-parent-tab"
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-parent-tab"
+    timeout: 10000
 - takeScreenshot: e2e/screenshots/parent-logout-success

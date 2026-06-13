@@ -52,6 +52,27 @@ appId: com.elbooklets.app
       - tapOn:
           id: "confirm-modal-ok"
 
+# Self-healing: if we booted into the ParentDashboard, log out via settings → confirm
+- runFlow:
+    when:
+      visible:
+        id: "parent-dashboard-settings-button"
+    commands:
+      - tapOn:
+          id: "parent-dashboard-settings-button"
+      - extendedWaitUntil:
+          visible:
+            id: "parent-settings-logout-item"
+          timeout: 10000
+      - tapOn:
+          id: "parent-settings-logout-item"
+      - extendedWaitUntil:
+          visible:
+            id: "confirm-modal-ok"
+          timeout: 5000
+      - tapOn:
+          id: "confirm-modal-ok"
+
 # Finally assert that we are on Onboarding screen (or wait for it if driver was slow)
 - extendedWaitUntil:
     visible:

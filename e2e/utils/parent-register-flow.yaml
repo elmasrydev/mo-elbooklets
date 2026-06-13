@@ -21,7 +21,7 @@ appId: com.elbooklets.app
     point: 50%,10%
 - tapOn:
     id: "parent-register-email"
-- inputText: "parent@maestro.com"
+- inputText: ${PARENT_EMAIL}
 - tapOn:
     id: "parent-register-password"
 - inputText: ${PARENT_PASSWORD}
@@ -32,6 +32,28 @@ appId: com.elbooklets.app
     point: 50%,10%
 - tapOn:
     id: "parent-register-submit"
-- assertVisible:
-    id: "parent-settings-logout-item"
+
+# Parents land directly on ParentDashboard (no OTP, no profile prompt).
+# Dismiss a rate-limit / error popup if the backend returns one.
+- extendedWaitUntil:
+    optional: true
+    visible:
+      id: "confirm-modal-ok"
+    timeout: 2000
+- runFlow:
+    when:
+      visible:
+        id: "confirm-modal-ok"
+    commands:
+      - tapOn:
+          id: "confirm-modal-ok"
+      - extendedWaitUntil:
+          notVisible:
+            id: "confirm-modal-ok"
+          timeout: 3000
+
+- extendedWaitUntil:
+    visible:
+      id: "parent-dashboard-add-child-fab"
+    timeout: 15000
 - takeScreenshot: e2e/screenshots/parent-register-result

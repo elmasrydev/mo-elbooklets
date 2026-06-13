@@ -21,10 +21,36 @@ appId: com.elbooklets.app
     id: "parent-login-mobile"
 - inputText: ${PARENT_MOBILE}
 - tapOn:
+    point: 50%,10%
+- tapOn:
     id: "parent-login-password"
 - inputText: ${PARENT_PASSWORD}
 - tapOn:
+    point: 50%,10%
+- tapOn:
     id: "parent-login-submit"
-- assertVisible:
-    id: "parent-settings-logout-item"
+
+# Dismiss a rate-limit / error popup if it appears
+- extendedWaitUntil:
+    optional: true
+    visible:
+      id: "confirm-modal-ok"
+    timeout: 2000
+- runFlow:
+    when:
+      visible:
+        id: "confirm-modal-ok"
+    commands:
+      - tapOn:
+          id: "confirm-modal-ok"
+      - extendedWaitUntil:
+          notVisible:
+            id: "confirm-modal-ok"
+          timeout: 3000
+
+# Parents land directly on ParentDashboard (no OTP)
+- extendedWaitUntil:
+    visible:
+      id: "parent-dashboard-add-child-fab"
+    timeout: 15000
 - takeScreenshot: e2e/screenshots/parent-login-result

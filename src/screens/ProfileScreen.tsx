@@ -406,6 +406,7 @@ const ProfileScreen: React.FC = () => {
 
           {/* Parental Linking */}
           <TouchableOpacity
+            testID="profile-parent-linking-item"
             style={currentStyles.settingItem}
             onPress={() => navigation.navigate('ParentLinking' as never)}
           >
