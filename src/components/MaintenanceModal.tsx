@@ -34,10 +34,7 @@ const MaintenanceModal: React.FC = () => {
   return (
     <Modal visible={isMaintenanceMode} transparent animationType="fade" statusBarTranslucent>
       <View style={currentStyles.overlay}>
-        <View
-          style={currentStyles.container}
-          onStartShouldSetResponder={() => true}
-        >
+        <View style={currentStyles.container} onStartShouldSetResponder={() => true}>
           <View style={currentStyles.iconContainer}>
             <Ionicons name="construct" size={48} color={theme.colors.primary} />
           </View>

@@ -29,7 +29,7 @@ export interface QuizAnalyticsParams {
  * Centralized Analytics Service
  * All analytics tracking should go through this service to maintain
  * a clean separation between the UI and the analytics provider.
- * 
+ *
  * NOTE: This service currently uses Segment SDK as a local router
  * to send events natively to Firebase and other local plugins.
  */
@@ -117,7 +117,7 @@ export const analytics = {
     analytics.track('Language Changed', { language });
     // Update local context for all subsequent events
     segmentClient.context.set({
-      locale: language
+      locale: language,
     });
   },
 };

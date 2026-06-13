@@ -73,7 +73,7 @@ const QuizSettingsScreen: React.FC = () => {
   // Settings State
   const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null);
   const [timerEnabled, setTimerEnabled] = useState(false);
-  
+
   const [showSubModal, setShowSubModal] = useState(false);
 
   const fetchQuizTypes = useCallback(async () => {
@@ -216,9 +216,7 @@ const QuizSettingsScreen: React.FC = () => {
                 </Text>
               ))}
               {selectedUnits.length > 3 && (
-                <Text style={currentStyles.unitItemMore}>
-                  + {selectedUnits.length - 3} more
-                </Text>
+                <Text style={currentStyles.unitItemMore}>+ {selectedUnits.length - 3} more</Text>
               )}
             </View>
           </View>
@@ -239,18 +237,22 @@ const QuizSettingsScreen: React.FC = () => {
               return (
                 <TouchableOpacity
                   key={type.id}
-                  style={[
-                    currentStyles.pillButton,
-                    isSelected && currentStyles.pillButtonSelected,
-                  ]}
+                  style={[currentStyles.pillButton, isSelected && currentStyles.pillButtonSelected]}
                   onPress={() => setSelectedTypeId(type.id)}
                   activeOpacity={0.7}
                 >
-                  <Text style={[currentStyles.pillText, isSelected && currentStyles.pillTextSelected]}>
+                  <Text
+                    style={[currentStyles.pillText, isSelected && currentStyles.pillTextSelected]}
+                  >
                     {type.questionCount}
                   </Text>
                   {type.isDefault && (
-                    <Text style={[currentStyles.pillBadgeText, isSelected && currentStyles.pillBadgeTextSelected]}>
+                    <Text
+                      style={[
+                        currentStyles.pillBadgeText,
+                        isSelected && currentStyles.pillBadgeTextSelected,
+                      ]}
+                    >
                       {t('quiz_flow.default')}
                     </Text>
                   )}

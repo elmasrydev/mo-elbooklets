@@ -68,10 +68,7 @@ const FAQScreen = ({ navigation }: any) => {
           return (
             <TouchableOpacity
               key={index}
-              style={[
-                currentStyles.faqCard,
-                isExpanded && currentStyles.faqCardExpanded,
-              ]}
+              style={[currentStyles.faqCard, isExpanded && currentStyles.faqCardExpanded]}
               onPress={() => toggleExpand(index)}
               activeOpacity={0.75}
             >

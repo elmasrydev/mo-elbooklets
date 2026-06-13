@@ -22,5 +22,5 @@ export type NotificationEventSlug =
   | 'link_request_accepted'
   | 'link_request_declined'
   | 'new_follower'
-  | 'post_liked'  // assumed slug — update if backend uses a different value
+  | 'post_liked' // assumed slug — update if backend uses a different value
   | (string & {}); // allow unknown slugs without breaking the type

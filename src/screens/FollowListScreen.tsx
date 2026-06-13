@@ -55,20 +55,21 @@ const FollowListScreen: React.FC = () => {
       const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
 
-      const query = type === 'following' 
-        ? `query MyFollowing { 
+      const query =
+        type === 'following'
+          ? `query MyFollowing { 
             myFollowing { 
               id name mobile grade { id name } totalQuizzes avgScore isFollowing 
             } 
           }`
-        : `query MyFollowers { 
+          : `query MyFollowers { 
             myFollowers { 
               id name mobile grade { id name } totalQuizzes avgScore isFollowing 
             } 
           }`;
 
       const result = await tryFetchWithFallback(query, undefined, token);
-      
+
       const listData = type === 'following' ? result.data?.myFollowing : result.data?.myFollowers;
       if (listData) {
         setData(listData);

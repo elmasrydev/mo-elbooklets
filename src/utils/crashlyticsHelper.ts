@@ -28,9 +28,7 @@ interface CrashlyticsParent {
 /**
  * Configure Crashlytics with student user attributes.
  */
-export const configureCrashlyticsStudent = async (
-  user: CrashlyticsStudent,
-): Promise<void> => {
+export const configureCrashlyticsStudent = async (user: CrashlyticsStudent): Promise<void> => {
   try {
     const brand = DeviceInfo.getBrand();
     const model = DeviceInfo.getModel();
@@ -64,9 +62,7 @@ export const configureCrashlyticsStudent = async (
 /**
  * Configure Crashlytics with parent user attributes.
  */
-export const configureCrashlyticsParent = async (
-  parent: CrashlyticsParent,
-): Promise<void> => {
+export const configureCrashlyticsParent = async (parent: CrashlyticsParent): Promise<void> => {
   try {
     const brand = DeviceInfo.getBrand();
     const model = DeviceInfo.getModel();

@@ -236,9 +236,14 @@ export const setupTokenRefreshListener = (): (() => void) => {
 
       if (!result?.errors) {
         await AsyncStorage.setItem(REGISTERED_FCM_TOKEN_KEY, newToken);
-        logInfo(`FCM Refresh Register Success | Role: ${role} | Platform: ${platform} | Token: ${newToken}`);
+        logInfo(
+          `FCM Refresh Register Success | Role: ${role} | Platform: ${platform} | Token: ${newToken}`,
+        );
       } else {
-        logError(`FCM Refresh Register Failed | Role: ${role} | Platform: ${platform}`, result?.errors);
+        logError(
+          `FCM Refresh Register Failed | Role: ${role} | Platform: ${platform}`,
+          result?.errors,
+        );
       }
     } catch (error) {
       logError(`FCM Refresh Register Error | Role: ${role} | Platform: ${Platform.OS}`, error);

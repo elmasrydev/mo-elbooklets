@@ -22,9 +22,8 @@ export const NotificationHandler: React.FC = () => {
   const { userRole } = useAuth();
 
   useEffect(() => {
-    const unsubscribe = setupNotificationHandlers(
-      showConfirm,
-      (slug, actionUrl) => handleNotificationRoute(navigation, slug, actionUrl, userRole)
+    const unsubscribe = setupNotificationHandlers(showConfirm, (slug, actionUrl) =>
+      handleNotificationRoute(navigation, slug, actionUrl, userRole),
     );
     return () => {
       if (unsubscribe) {

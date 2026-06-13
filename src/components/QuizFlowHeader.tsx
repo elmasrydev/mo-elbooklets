@@ -1,12 +1,5 @@
 import React, { useEffect } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Platform,
-  BackHandler,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, BackHandler } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -63,10 +56,7 @@ const QuizFlowHeader: React.FC<QuizFlowHeaderProps> = ({
       return true; // Prevent default back action
     };
 
-    const backHandler = BackHandler.addEventListener(
-      'hardwareBackPress',
-      backAction,
-    );
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
 
     return () => backHandler.remove();
   }, [onBack]);

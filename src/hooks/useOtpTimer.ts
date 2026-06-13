@@ -31,7 +31,7 @@ export const useOtpTimer = () => {
       if (stored) {
         const state: TimerState = JSON.parse(stored);
         const remaining = calculateRemaining(state);
-        
+
         if (remaining > 0) {
           setTimeLeft(remaining);
           setIsActive(true);
@@ -54,14 +54,14 @@ export const useOtpTimer = () => {
         loadTimer();
       }
     };
-    
+
     const subscription = AppState.addEventListener('change', handleAppStateChange);
     return () => subscription.remove();
   }, [loadTimer]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    
+
     if (isActive && timeLeft > 0) {
       interval = setInterval(() => {
         setTimeLeft((prev) => {
@@ -75,7 +75,7 @@ export const useOtpTimer = () => {
     } else if (timeLeft <= 0) {
       setIsActive(false);
     }
-    
+
     return () => {
       if (interval) clearInterval(interval);
     };
@@ -84,9 +84,9 @@ export const useOtpTimer = () => {
   const startTimer = async (expiresInSeconds: number) => {
     const state: TimerState = {
       sentAt: Date.now(),
-      expiresIn: expiresInSeconds
+      expiresIn: expiresInSeconds,
     };
-    
+
     try {
       await AsyncStorage.setItem(OTP_TIMER_STORAGE_KEY, JSON.stringify(state));
       setTimeLeft(expiresInSeconds);
@@ -111,6 +111,6 @@ export const useOtpTimer = () => {
     isActive,
     formattedTime: formatTime(timeLeft),
     startTimer,
-    clearTimer
+    clearTimer,
   };
 };
