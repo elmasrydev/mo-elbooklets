@@ -22,9 +22,8 @@ const useAndroidBack = (handler: () => boolean): void => {
     useCallback(() => {
       if (Platform.OS !== 'android') return;
 
-      const subscription = BackHandler.addEventListener(
-        'hardwareBackPress',
-        () => handlerRef.current(),
+      const subscription = BackHandler.addEventListener('hardwareBackPress', () =>
+        handlerRef.current(),
       );
       return () => subscription.remove();
     }, []), // ← empty deps: register once per focus, ref always has latest handler

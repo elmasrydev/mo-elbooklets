@@ -59,9 +59,10 @@ src/
 ## Testing
 
 ### Unit tests (Jest + React Native Testing Library)
-- Live in `src/__tests__/` (e.g. `src/__tests__/auth/`). Preset `jest-expo`, setup in `jest.setup.ts`.
+- Live in `src/__tests__/` (`auth/` for screens+context, `hooks/`, `lib/` for pure utils). Preset `jest-expo`, setup in `jest.setup.ts`.
 - Render through `src/__tests__/helpers/renderWithProviders.tsx`; shared mocks in `src/__tests__/__mocks__/` (navigation, expo-secure-store, react-i18next — `t()` returns the key, so assert on translation keys like `'auth.fill_all_fields'`).
 - Pattern: mock `tryFetchWithFallback` and `ModalContext`, assert user-visible behavior (validation errors, navigation, API called). Don't test styles or implementation details.
+- Prefer extracting pure logic into `src/utils/` and testing it directly over mock-heavy hook tests. Shared validators (`src/utils/validators.ts`) and the linking slot state-machine (`src/utils/parentSlots.ts`) are the single sources of truth — import them; never re-inline a copy.
 
 ### E2E tests (Maestro)
 - Flows in `e2e/auth/` (numbered `01_...yaml`), shared subflows in `e2e/utils/` (`setup-environment.yaml` boots + self-heals to the Onboarding screen and switches env based on `TARGET_ENV`).
@@ -70,6 +71,19 @@ src/
 - Prefer `extendedWaitUntil`/`assertVisible` with timeouts over fixed sleeps (`sleep.js`) — fixed sleeps make flows slow and flaky.
 - Known popups a flow must tolerate (use conditional `runFlow when: visible:`): iOS "Not Now" system dialog, rate-limit/warning `confirm-modal-ok`, profile-completion prompt (`profile-completion-skip-button`), register disclaimer (`register-disclaimer-continue-button`), OTP screens (skip via `otp-skip-debug` / `otp-skip-debug-2`).
 - Registration E2E only runs on PRS/dev (guarded by `TARGET_ENV != 'prod'`). Test accounts created on PRS should be cleaned up afterwards.
+
+## Documentation policy (keep docs lean + true)
+- **`CLAUDE.md` is the single source of truth** for project conventions. Update it in the *same commit* as any change to behavior/commands/conventions it documents.
+- The only living, git-tracked agent docs are: **this file** + **`e2e/PARENT_JOURNEY.md`** (parent-flow map). `README.md` stays for humans.
+- Do NOT add narrative / handover / one-off status docs to git — keep them local (gitignored, like `handover_summary.md`). Don't create a second architecture doc; fold it here instead.
+
+## Review gate — run before every commit
+1. `npm run guardme` (lint + `tsc --noEmit` + jest + docs-link check) — must pass. A commit-time hook runs this automatically and blocks the commit on failure.
+2. Run the relevant guard skill on what changed and fix its findings before committing:
+   - **test-guard** → changed test files
+   - **clean-code-guard** → changed production code
+   - **docs-guard** → changed `.md` docs (catches docs-vs-code drift)
+3. Keep Prettier-only reformatting in a separate `STYLE:` commit.
 
 ## Do NOT
 - ❌ Treat this as a bare RN CLI / Shopify project (it's Expo, education domain)

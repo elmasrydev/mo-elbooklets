@@ -1,11 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
@@ -59,12 +53,14 @@ const QuizSubjectsScreen: React.FC = () => {
         undefined,
         token,
       );
-      if (__DEV__) console.log('[QuizSubjectsScreen] fetchSubjects result:', JSON.stringify(result));
-      
+      if (__DEV__)
+        console.log('[QuizSubjectsScreen] fetchSubjects result:', JSON.stringify(result));
+
       if (result.data?.subjectsForUserGrade) {
         setSubjects(result.data.subjectsForUserGrade);
       } else {
-        if (__DEV__) console.warn('[QuizSubjectsScreen] No subjectsForUserGrade in response:', result);
+        if (__DEV__)
+          console.warn('[QuizSubjectsScreen] No subjectsForUserGrade in response:', result);
         setError(t('quiz_subjects.error_loading_subjects'));
       }
     } catch (err: any) {
@@ -100,10 +96,7 @@ const QuizSubjectsScreen: React.FC = () => {
     return (
       <View style={currentStyles.container}>
         <QuizFlowHeader currentStep={1} />
-        <RetryView
-          message={t('quiz_subjects.error_loading_subjects')}
-          onRetry={fetchSubjects}
-        />
+        <RetryView message={t('quiz_subjects.error_loading_subjects')} onRetry={fetchSubjects} />
       </View>
     );
   }
@@ -121,12 +114,8 @@ const QuizSubjectsScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         <View style={currentStyles.pageHeader}>
-          <Text style={currentStyles.pageTitle}>
-            {t('quiz_flow.choose_subject')}
-          </Text>
-          <Text style={currentStyles.pageSubtitle}>
-            {t('quiz_flow.choose_subject_subtitle')}
-          </Text>
+          <Text style={currentStyles.pageTitle}>{t('quiz_flow.choose_subject')}</Text>
+          <Text style={currentStyles.pageSubtitle}>{t('quiz_flow.choose_subject_subtitle')}</Text>
         </View>
 
         <View style={currentStyles.subjectsGrid}>
@@ -170,25 +159,15 @@ const SubjectCard: React.FC<SubjectCardProps> = ({ subject, currentStyles, theme
 
   return (
     <TouchableOpacity
-      style={[
-        currentStyles.subjectCard,
-        { borderColor: 'transparent' },
-      ]}
+      style={[currentStyles.subjectCard, { borderColor: 'transparent' }]}
       onPress={onPress}
       activeOpacity={0.7}
     >
       <View style={currentStyles.cardHeader}>
         <View
-          style={[
-            currentStyles.iconContainer,
-            { backgroundColor: subjectConfig.bg || '#F3F5FB' },
-          ]}
+          style={[currentStyles.iconContainer, { backgroundColor: subjectConfig.bg || '#F3F5FB' }]}
         >
-          <SubjectIcon
-            subjectName={subject.name}
-            size={48}
-            style={{}}
-          />
+          <SubjectIcon subjectName={subject.name} size={48} style={{}} />
         </View>
       </View>
 

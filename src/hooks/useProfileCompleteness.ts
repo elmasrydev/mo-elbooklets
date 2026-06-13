@@ -34,7 +34,7 @@ export const useProfileCompleteness = () => {
           } 
         }`,
         undefined,
-        token
+        token,
       );
 
       if (result.data?.profileCompleteness) {

@@ -54,7 +54,6 @@ const LeaderboardScreen: React.FC = () => {
   const { typography, fontWeight } = useTypography();
   const navigation = useNavigation<any>();
 
-
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [selectedTab, setSelectedTab] = useState<string>('all');
   const [loading, setLoading] = useState(true);
@@ -282,12 +281,7 @@ const LeaderboardScreen: React.FC = () => {
       );
 
     if (leaderboardError)
-      return (
-        <RetryView
-          message={leaderboardError}
-          onRetry={() => fetchLeaderboard(selectedTab)}
-        />
-      );
+      return <RetryView message={leaderboardError} onRetry={() => fetchLeaderboard(selectedTab)} />;
 
     const leaderboard =
       selectedTab === 'all'
@@ -369,20 +363,24 @@ const LeaderboardScreen: React.FC = () => {
                   <Text style={currentStyles.listItemNameText} numberOfLines={1}>
                     {item.name}
                   </Text>
-                  <Text style={currentStyles.listItemPointsTextSub}>{item.xp.toLocaleString()} XP</Text>
+                  <Text style={currentStyles.listItemPointsTextSub}>
+                    {item.xp.toLocaleString()} XP
+                  </Text>
                 </View>
               </View>
               <TouchableOpacity
                 style={[
                   currentStyles.followButton,
-                  item.isFollowing && currentStyles.followButtonFollowing
+                  item.isFollowing && currentStyles.followButtonFollowing,
                 ]}
                 onPress={() => handleFollowToggle(item.id)}
               >
-                <Text style={[
-                  currentStyles.followButtonText,
-                  item.isFollowing && currentStyles.followButtonTextFollowing
-                ]}>
+                <Text
+                  style={[
+                    currentStyles.followButtonText,
+                    item.isFollowing && currentStyles.followButtonTextFollowing,
+                  ]}
+                >
                   {item.isFollowing ? t('common.following') : t('common.follow')}
                 </Text>
               </TouchableOpacity>

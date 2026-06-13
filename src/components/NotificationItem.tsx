@@ -63,10 +63,12 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onPre
     <TouchableOpacity
       style={[
         styles.container,
-        { 
-          backgroundColor: notification.is_read ? theme.colors.background : `${theme.colors.primary}05`,
+        {
+          backgroundColor: notification.is_read
+            ? theme.colors.background
+            : `${theme.colors.primary}05`,
           borderBottomColor: theme.colors.border,
-        }
+        },
       ]}
       onPress={() => onPress(notification)}
       activeOpacity={hasRoute ? 0.6 : 0.9}
@@ -77,18 +79,20 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onPre
 
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text 
+          <Text
             style={[
-              typography('bodySmall'), 
+              typography('bodySmall'),
               fontWeight(notification.is_read ? '500' : '700'),
-              { color: theme.colors.text, flex: 1 }
+              { color: theme.colors.text, flex: 1 },
             ]}
             numberOfLines={2}
           >
             {notification.title}
           </Text>
           <View style={styles.trailingRow}>
-            {!notification.is_read && <View style={[styles.unreadDot, { backgroundColor: theme.colors.primary }]} />}
+            {!notification.is_read && (
+              <View style={[styles.unreadDot, { backgroundColor: theme.colors.primary }]} />
+            )}
             {hasRoute && (
               <Ionicons
                 name="chevron-forward"
@@ -101,7 +105,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onPre
         </View>
 
         {notification.body && (
-          <Text 
+          <Text
             style={[typography('caption'), { color: theme.colors.textSecondary, marginTop: 2 }]}
             numberOfLines={2}
           >

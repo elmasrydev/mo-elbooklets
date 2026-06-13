@@ -23,6 +23,7 @@
     "e2e:prod": "python3 scripts/run_maestro.py prod",
     "guardme:clean-code": "npm run lint && npx tsc --noEmit",
     "guardme:docs": "python3 scripts/verify_docs.py",
+    "guardme": "npm run guardme:clean-code && npm run test:prs && npm run guardme:docs",
     "guardme:prs": "npm run guardme:clean-code && npm run test:prs && npm run guardme:docs",
     "guardme:dev": "npm run guardme:clean-code && npm run test:dev && npm run guardme:docs",
     "guardme:prod": "npm run guardme:clean-code && npm run test:prod && npm run guardme:docs"

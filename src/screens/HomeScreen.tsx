@@ -469,7 +469,9 @@ const HomeScreen: React.FC = () => {
                 <View style={s.bannerStatDivider} />
                 <View style={s.bannerStatItem}>
                   <Text style={s.bannerStatLabel}>{t('home_screen.rank', 'Rank')}</Text>
-                  <Text style={s.bannerStatValue}>{leaderboardUser?.rank ? `#${leaderboardUser.rank}` : '-'}</Text>
+                  <Text style={s.bannerStatValue}>
+                    {leaderboardUser?.rank ? `#${leaderboardUser.rank}` : '-'}
+                  </Text>
                 </View>
               </View>
 

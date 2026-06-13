@@ -1,5 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  TouchableOpacity,
+} from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -80,9 +87,7 @@ const ParentLinkingScreen: React.FC = () => {
   return (
     <View style={currentStyles.container}>
       <UnifiedHeader title={t('parent_linking.header_title')} showBackButton={true} />
-      <ScrollView contentContainerStyle={currentStyles.scrollContent}>
-        {renderContent()}
-      </ScrollView>
+      <ScrollView contentContainerStyle={currentStyles.scrollContent}>{renderContent()}</ScrollView>
     </View>
   );
 };

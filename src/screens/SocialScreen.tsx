@@ -213,7 +213,11 @@ const SocialScreen: React.FC = () => {
       setFeedItems((prev) =>
         prev.map((item) =>
           item.id === feedItem.id
-            ? { ...item, isLiked: !item.isLiked, likes: item.isLiked ? item.likes - 1 : item.likes + 1 }
+            ? {
+                ...item,
+                isLiked: !item.isLiked,
+                likes: item.isLiked ? item.likes - 1 : item.likes + 1,
+              }
             : item,
         ),
       );
@@ -414,22 +418,20 @@ const SocialScreen: React.FC = () => {
         </Text>
       );
     }
-    
+
     if (!isSearchMode) {
       const isProfileComplete = !!(user?.school_name && user?.governorate_id && user?.city_id);
       return (
         <View>
           {isProfileComplete && (
-            <PeopleYouMayKnow 
+            <PeopleYouMayKnow
               onFollowSuccess={() => {
                 // Optionally refresh timeline if needed
-              }} 
+              }}
             />
           )}
           {feedItems.length > 0 && (
-            <Text style={currentStyles.sectionTitle}>
-              {t('social_screen.recent_activity')}
-            </Text>
+            <Text style={currentStyles.sectionTitle}>{t('social_screen.recent_activity')}</Text>
           )}
         </View>
       );

@@ -30,15 +30,22 @@ export const useNotificationPreferences = (role: UserRole) => {
   const fetchPreferences = useCallback(async () => {
     try {
       setLoading(true);
-      const query = role === 'student' ? NOTIFICATION_PREFERENCES_QUERY : PARENT_NOTIFICATION_PREFERENCES_QUERY;
+      const query =
+        role === 'student' ? NOTIFICATION_PREFERENCES_QUERY : PARENT_NOTIFICATION_PREFERENCES_QUERY;
       const result = await tryFetchWithFallback(print(query));
 
       if (result?.data) {
-        const data = role === 'student' ? result.data.notificationPreferences : result.data.parentNotificationPreferences;
+        const data =
+          role === 'student'
+            ? result.data.notificationPreferences
+            : result.data.parentNotificationPreferences;
         if (data) {
           setPreferences({
             app_notifications_enabled: !!data.app_notifications_enabled,
-            social_notifications_enabled: data.social_notifications_enabled !== null ? !!data.social_notifications_enabled : null,
+            social_notifications_enabled:
+              data.social_notifications_enabled !== null
+                ? !!data.social_notifications_enabled
+                : null,
           });
         }
       }
@@ -60,8 +67,11 @@ export const useNotificationPreferences = (role: UserRole) => {
 
     try {
       setUpdating(key);
-      const mutation = role === 'student' ? UPDATE_NOTIFICATION_PREFERENCES_MUTATION : PARENT_UPDATE_NOTIFICATION_PREFERENCES_MUTATION;
-      
+      const mutation =
+        role === 'student'
+          ? UPDATE_NOTIFICATION_PREFERENCES_MUTATION
+          : PARENT_UPDATE_NOTIFICATION_PREFERENCES_MUTATION;
+
       const input = { [key]: value };
       const result = await tryFetchWithFallback(print(mutation), { input });
 
@@ -70,11 +80,17 @@ export const useNotificationPreferences = (role: UserRole) => {
       }
 
       if (result?.data) {
-        const data = role === 'student' ? result.data.updateNotificationPreferences : result.data.parentUpdateNotificationPreferences;
+        const data =
+          role === 'student'
+            ? result.data.updateNotificationPreferences
+            : result.data.parentUpdateNotificationPreferences;
         if (data) {
           setPreferences({
             app_notifications_enabled: !!data.app_notifications_enabled,
-            social_notifications_enabled: data.social_notifications_enabled !== null ? !!data.social_notifications_enabled : null,
+            social_notifications_enabled:
+              data.social_notifications_enabled !== null
+                ? !!data.social_notifications_enabled
+                : null,
           });
         }
       }
@@ -94,8 +110,10 @@ export const useNotificationPreferences = (role: UserRole) => {
     }
   };
 
-  const toggleAppNotifications = (value: boolean) => updatePreference('app_notifications_enabled', value);
-  const toggleSocialNotifications = (value: boolean) => updatePreference('social_notifications_enabled', value);
+  const toggleAppNotifications = (value: boolean) =>
+    updatePreference('app_notifications_enabled', value);
+  const toggleSocialNotifications = (value: boolean) =>
+    updatePreference('social_notifications_enabled', value);
 
   return {
     loading,

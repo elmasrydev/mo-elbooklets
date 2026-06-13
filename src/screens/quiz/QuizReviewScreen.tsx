@@ -107,20 +107,21 @@ const QuizReviewScreen: React.FC = () => {
           userAnswers: response.data.quizResults.userAnswers.map((ua: any) => {
             const q = ua.question;
             const isDescriptive = ['what_happens', 'give_a_reason'].includes(q.type);
-            
+
             // Check if it's a True/False question
             const isTrueFalse = q.type === 'true_false';
-
 
             let answers = isDescriptive
               ? [] // No MCQ options for descriptive
               : [q.answer_1, q.answer_2, q.answer_3, q.answer_4].filter(
-                  (a) => a !== null && a !== undefined && a !== '' && String(a).toLowerCase() !== 'null',
+                  (a) =>
+                    a !== null && a !== undefined && a !== '' && String(a).toLowerCase() !== 'null',
                 );
 
             if (isTrueFalse) {
               answers = [q.answer_1, q.answer_2].filter(
-                (a) => a !== null && a !== undefined && a !== '' && String(a).toLowerCase() !== 'null'
+                (a) =>
+                  a !== null && a !== undefined && a !== '' && String(a).toLowerCase() !== 'null',
               );
             }
 
@@ -323,7 +324,8 @@ const QuizReviewScreen: React.FC = () => {
                 textAlign: 'center',
               }}
             >
-              {result.quiz?.subject?.name} · {correctCount}/{totalQuestions} {t('quiz_review.correct')}
+              {result.quiz?.subject?.name} · {correctCount}/{totalQuestions}{' '}
+              {t('quiz_review.correct')}
             </Text>
           </View>
         }
@@ -370,14 +372,15 @@ const QuizReviewScreen: React.FC = () => {
             (ans: any) => ans.question.id === ua.question.id,
           );
 
-          const isExpanded = expandedQuestions[ua.question.id] !== undefined
-            ? expandedQuestions[ua.question.id]
-            : !isCorrect; // wrong expanded by default, correct collapsed by default
+          const isExpanded =
+            expandedQuestions[ua.question.id] !== undefined
+              ? expandedQuestions[ua.question.id]
+              : !isCorrect; // wrong expanded by default, correct collapsed by default
 
           const toggleExpand = () => {
-            setExpandedQuestions(prev => ({
+            setExpandedQuestions((prev) => ({
               ...prev,
-              [ua.question.id]: !isExpanded
+              [ua.question.id]: !isExpanded,
             }));
           };
 
@@ -389,7 +392,7 @@ const QuizReviewScreen: React.FC = () => {
                 {
                   borderStartWidth: 4,
                   borderStartColor: isCorrect ? '#16a34a' : '#ef4444',
-                }
+                },
               ]}
             >
               {/* Card Header Row */}
@@ -425,18 +428,18 @@ const QuizReviewScreen: React.FC = () => {
                       </Text>
                     </View>
                   )}
-                  
+
                   {isDescriptive && ua.score !== undefined && (
                     <View
                       style={[
                         currentStyles.descriptiveScoreBadge,
-                        { backgroundColor: isCorrect ? '#ECFDF5' : '#FEF2F2' }
+                        { backgroundColor: isCorrect ? '#ECFDF5' : '#FEF2F2' },
                       ]}
                     >
                       <Text
                         style={[
                           currentStyles.descriptiveScoreText,
-                          { color: isCorrect ? '#10B981' : '#FF6B6B' }
+                          { color: isCorrect ? '#10B981' : '#FF6B6B' },
                         ]}
                       >
                         {ua.descriptive_feedback?.coverage_percentage !== undefined
@@ -501,7 +504,9 @@ const QuizReviewScreen: React.FC = () => {
                     activeOpacity={0.75}
                   >
                     <Ionicons name="flag" size={14} color={theme.colors.error} />
-                    <Text style={[currentStyles.reportBtnText, { color: theme.colors.textSecondary }]}>
+                    <Text
+                      style={[currentStyles.reportBtnText, { color: theme.colors.textSecondary }]}
+                    >
                       {t('report_question.report_btn', 'Report')}
                     </Text>
                   </TouchableOpacity>
@@ -547,7 +552,8 @@ const QuizReviewScreen: React.FC = () => {
                                 textAlign: contentAlign,
                               }}
                             >
-                              {ua.selected_answer || t('quiz_review.no_answer', 'No answer provided')}
+                              {ua.selected_answer ||
+                                t('quiz_review.no_answer', 'No answer provided')}
                             </Text>
                           </View>
 

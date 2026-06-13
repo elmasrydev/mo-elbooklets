@@ -34,7 +34,6 @@ const ContactUsScreen = ({ navigation }: any) => {
   const insets = useSafeAreaInsets();
   const { showConfirm } = useModal();
 
-
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [subject, setSubject] = useState('');
