@@ -11,9 +11,14 @@ appId: com.elbooklets.app
     id: "onboarding-get-started"
 - assertVisible:
     id: "parent-register-name"
+# Dismiss the keyboard (tap top of screen) after every field — otherwise the
+# keyboard covers the lower inputs and their taps land on the keyboard, sending
+# the next inputText into the previously-focused field.
 - tapOn:
     id: "parent-register-name"
 - inputText: "Maestro Parent"
+- tapOn:
+    point: 50%,10%
 - tapOn:
     id: "parent-register-mobile"
 - inputText: ${PARENT_MOBILE}
@@ -23,8 +28,12 @@ appId: com.elbooklets.app
     id: "parent-register-email"
 - inputText: ${PARENT_EMAIL}
 - tapOn:
+    point: 50%,10%
+- tapOn:
     id: "parent-register-password"
 - inputText: ${PARENT_PASSWORD}
+- tapOn:
+    point: 50%,10%
 - tapOn:
     id: "parent-register-confirm"
 - inputText: ${PARENT_PASSWORD}

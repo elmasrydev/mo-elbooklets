@@ -54,9 +54,10 @@ appId: com.elbooklets.app
     timeout: 15000
 - tapOn:
     id: "parent-dashboard-settings-button"
-- extendedWaitUntil:
-    visible:
+- scrollUntilVisible:
+    element:
       id: "parent-settings-logout-item"
+    direction: DOWN
     timeout: 10000
 - tapOn:
     id: "parent-settings-logout-item"
