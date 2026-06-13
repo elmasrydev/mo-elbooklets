@@ -86,10 +86,10 @@ approve → logout → login parent B → assert child visible.
 3. Add child with non-existent mobile → **unknown error UI; discover during first test run**
    (flows must tolerate `confirm-modal-ok` conditionally)
 4. Duplicate add-child request → **unknown; discover during first test run**
-5. Student-side request visibility (instant vs pull-to-refresh) → **possibly not implemented;
-   the link E2E must verify this and may expose a missing-feature gap**
-6. Parent dashboard after student accepts (auto vs manual refresh) → **unverified; test must
-   handle both (re-focus dashboard / pull-to-refresh before asserting child card)**
+5. Student-side request visibility → **WORKS** ✅ (verified by flow 09 on PRS 2026-06-13:
+   the parent's request appears on the student's Parental Linking screen as pending_incoming)
+6. Parent dashboard after student accepts → **WORKS with pull-to-refresh** ✅ (flow 09 swipes
+   to refresh, then the linked child card appears)
 7. Parent login rate-limiting → **possibly not implemented on backend; keep the conditional
    `confirm-modal-ok` handler anyway (harmless if it never fires)**
 

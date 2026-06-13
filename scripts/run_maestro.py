@@ -95,7 +95,12 @@ def main():
         "e2e/auth/05_parent-login.yaml",
         "e2e/auth/08_parent-logout.yaml",
     ]
-    
+
+    # Parent<->child linking reuses the student (01) + parent (04) registered this
+    # run, so it must run last and only where those registrations happen (non-prod).
+    if target_env != 'prod':
+        test_files.append("e2e/auth/09_parent-link-child.yaml")
+
     print(f"Running Maestro tests sequentially for target environment: {target_env}\n")
     
     results = {}
