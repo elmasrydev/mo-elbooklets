@@ -114,7 +114,9 @@ const ParentSlotCard: React.FC<ParentSlotCardProps> = ({
 
   const renderEmptyState = () => (
     <View>
-      <Text style={currentStyles.label}>{t('parent_linking.slot_title', { number: slotNumber })}</Text>
+      <Text style={currentStyles.label}>
+        {t('parent_linking.slot_title', { number: slotNumber })}
+      </Text>
       <View style={[currentStyles.inputContainer, inputError && currentStyles.inputError]}>
         <Ionicons name="call-outline" size={20} color={theme.colors.textTertiary} />
         <TextInput
@@ -156,7 +158,9 @@ const ParentSlotCard: React.FC<ParentSlotCardProps> = ({
       <View style={currentStyles.actionContainer}>
         <AppButton
           testID={`parent-linking-cancel-${slotNumber}`}
-          title={isCancelling ? t('parent_linking.cancelling') : t('parent_linking.cancel_invitation')}
+          title={
+            isCancelling ? t('parent_linking.cancelling') : t('parent_linking.cancel_invitation')
+          }
           onPress={handleCancel}
           loading={isCancelling}
           variant="danger"
@@ -223,9 +227,9 @@ const ParentSlotCard: React.FC<ParentSlotCardProps> = ({
         {renderBadge()}
       </View>
       <Text style={currentStyles.descText}>{t('parent_linking.rejected_desc')}</Text>
-      
+
       <View style={currentStyles.divider} />
-      
+
       <Text style={currentStyles.label}>{t('parent_linking.send_to_new_number')}</Text>
       <View style={[currentStyles.inputContainer, inputError && currentStyles.inputError]}>
         <Ionicons name="call-outline" size={20} color={theme.colors.textTertiary} />
@@ -270,7 +274,7 @@ const styles = (
   borderRadius: any,
   isRTL: boolean,
   typography: any,
-  fontWeight: any
+  fontWeight: any,
 ) =>
   StyleSheet.create({
     card: {
