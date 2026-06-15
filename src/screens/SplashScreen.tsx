@@ -625,9 +625,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   const tagOpacity = useSharedValue(0);
   const tagTranslateY = useSharedValue(15);
 
-  const haloScale = useSharedValue(0.85);
-  const haloOpacity = useSharedValue(0.4);
-
   const loopFloat = useSharedValue(0);
 
   // Single shared value for staggered entrance of all doodles
@@ -654,18 +651,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
     tagTranslateY.value = withDelay(
       500,
       withTiming(0, { duration: 800, easing: Easing.out(Easing.cubic) }),
-    );
-
-    // 2. Halo breathing loop
-    haloScale.value = withRepeat(
-      withTiming(1.05, { duration: 2200, easing: Easing.inOut(Easing.ease) }),
-      -1,
-      true,
-    );
-    haloOpacity.value = withRepeat(
-      withTiming(0.7, { duration: 2200, easing: Easing.inOut(Easing.ease) }),
-      -1,
-      true,
     );
 
     // 3. Doodles entrance timeline
@@ -712,8 +697,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
     brandTranslateY,
     tagOpacity,
     tagTranslateY,
-    haloScale,
-    haloOpacity,
     entranceProgress,
     loopFloat,
     dot1Scale,
@@ -735,11 +718,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   const tagAnimatedStyle = useAnimatedStyle(() => ({
     opacity: tagOpacity.value,
     transform: [{ translateY: tagTranslateY.value }],
-  }));
-
-  const haloAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: haloOpacity.value,
-    transform: [{ scale: haloScale.value }],
   }));
 
   const dot1Style = useAnimatedStyle(() => ({
@@ -774,9 +752,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
           />
         ))}
       </View>
-
-      {/* Logo Glow Halo */}
-      <Animated.View style={[styles.halo, haloAnimatedStyle]} />
 
       {/* Center content */}
       <View style={styles.content}>
@@ -827,14 +802,6 @@ const styles = StyleSheet.create({
         shadowRadius: 24,
       },
     }),
-  },
-  halo: {
-    position: 'absolute',
-    width: LOGO_WIDTH * 1.5,
-    height: LOGO_WIDTH * 1.5,
-    borderRadius: (LOGO_WIDTH * 1.5) / 2,
-    backgroundColor: 'rgba(255, 255, 255, 0.75)',
-    zIndex: 5,
   },
   brandName: {
     fontSize: 32,

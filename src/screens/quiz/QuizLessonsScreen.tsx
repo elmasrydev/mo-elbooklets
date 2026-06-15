@@ -70,10 +70,6 @@ const QuizLessonsScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Custom states for the new design
-  const [activeTab, setActiveTab] = useState<'specific' | 'all'>('specific');
-  const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
-
   useEffect(() => {
     if (!subject) {
       navigation.navigate('QuizFlowSubjects');
@@ -81,16 +77,6 @@ const QuizLessonsScreen: React.FC = () => {
     }
     fetchData();
   }, [subject]);
-
-  const allLessonIds = useMemo(() => {
-    const ids: string[] = [];
-    chapters.forEach((chapter) => {
-      chapter.lessons.forEach((lesson) => {
-        if (!lesson.isLocked) ids.push(lesson.id);
-      });
-    });
-    return ids;
-  }, [chapters]);
 
   const fetchData = async () => {
     try {
@@ -134,8 +120,8 @@ const QuizLessonsScreen: React.FC = () => {
     }
   };
 
+  // Tapping a unit selects/deselects all of its unlocked lessons.
   const handleChapterToggle = (chapter: Chapter) => {
-    if (activeTab === 'all') return;
     const isFreePlan = !checkSubscription({ skipModal: true });
     const hasLocked = chapter.lessons.some((l) => l.isLocked);
     if (isFreePlan && hasLocked) {
@@ -154,31 +140,18 @@ const QuizLessonsScreen: React.FC = () => {
     setSelectedLessons(newSelected);
   };
 
-  const handleSelectAll = () => {
-    if (activeTab === 'all') return;
-    const isFreePlan = !checkSubscription({ skipModal: true });
-    const hasLocked = chapters.some((c) => c.lessons.some((l) => l.isLocked));
-    if (isFreePlan && hasLocked) {
+  const toggleLesson = (lesson: Lesson) => {
+    if (lesson.isLocked) {
       showLockedDisclaimer();
       return;
     }
     const newSelected = new Set(selectedLessons);
-    const allSelected = allLessonIds.every((id) => newSelected.has(id));
-    if (allSelected) {
-      setSelectedLessons(new Set());
+    if (newSelected.has(lesson.id)) {
+      newSelected.delete(lesson.id);
     } else {
-      setSelectedLessons(new Set(allLessonIds));
+      newSelected.add(lesson.id);
     }
-  };
-
-  const toggleChapterExpanded = (chapterId: string) => {
-    const newExpanded = new Set(expandedChapters);
-    if (newExpanded.has(chapterId)) {
-      newExpanded.delete(chapterId);
-    } else {
-      newExpanded.add(chapterId);
-    }
-    setExpandedChapters(newExpanded);
+    setSelectedLessons(newSelected);
   };
 
   const handlePrepareQuiz = () => {
@@ -222,13 +195,6 @@ const QuizLessonsScreen: React.FC = () => {
     subjectConfig,
   );
 
-  // Sync "All units" mode selection
-  useEffect(() => {
-    if (activeTab === 'all') {
-      setSelectedLessons(new Set(allLessonIds));
-    }
-  }, [activeTab, allLessonIds]);
-
   if (loading) {
     return (
       <View style={common.container}>
@@ -239,9 +205,6 @@ const QuizLessonsScreen: React.FC = () => {
       </View>
     );
   }
-
-  const allSelected =
-    allLessonIds.length > 0 && allLessonIds.every((id) => selectedLessons.has(id));
 
   const unitsText =
     selectedUnits.length === 1
@@ -282,76 +245,7 @@ const QuizLessonsScreen: React.FC = () => {
           <Text style={currentStyles.pageSubtitle}>{t('quiz_flow.select_units_subtitle')}</Text>
         </View>
 
-        {/* Segmented Toggle: Specific vs All */}
-        <View style={currentStyles.toggleContainer}>
-          <TouchableOpacity
-            style={[
-              currentStyles.toggleButton,
-              activeTab === 'specific' && currentStyles.toggleButtonActive,
-            ]}
-            onPress={() => setActiveTab('specific')}
-            activeOpacity={0.8}
-          >
-            <Text
-              style={[
-                currentStyles.toggleText,
-                activeTab === 'specific' && currentStyles.toggleTextActive,
-              ]}
-            >
-              {t('quiz_flow.specific_units')}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              currentStyles.toggleButton,
-              activeTab === 'all' && currentStyles.toggleButtonActive,
-            ]}
-            onPress={() => {
-              const isFreePlan = !checkSubscription({ skipModal: true });
-              if (isFreePlan && chapters.some((c) => c.lessons.some((l) => l.isLocked))) {
-                showLockedDisclaimer();
-                return;
-              }
-              setActiveTab('all');
-            }}
-            activeOpacity={0.8}
-          >
-            <Text
-              style={[
-                currentStyles.toggleText,
-                activeTab === 'all' && currentStyles.toggleTextActive,
-              ]}
-            >
-              {t('quiz_flow.all_units')}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Quick Helper Row (only in Specific mode) */}
-        {activeTab === 'specific' && chapters.length > 0 && (
-          <View style={currentStyles.helperRow}>
-            <TouchableOpacity
-              onPress={handleSelectAll}
-              style={currentStyles.selectAllBtn}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name="checkbox-outline"
-                size={16}
-                color="#004A9A"
-                style={{ marginRight: 4 }}
-              />
-              <Text style={currentStyles.selectAllText}>
-                {allSelected ? t('quiz_flow.deselect_all') : t('quiz_flow.select_all')}
-              </Text>
-            </TouchableOpacity>
-            <Text style={currentStyles.selectedCounter}>
-              {t('quiz_flow.x_selected', { count: selectedUnits.length })}
-            </Text>
-          </View>
-        )}
-
-        {/* Unit & Lesson list */}
+        {/* Unit & Lesson list — all units are always expanded */}
         <View style={currentStyles.listContainer}>
           {chapters.map((chapter: Chapter) => {
             const chapterLessonIds = chapter.lessons.map((lesson) => lesson.id);
@@ -363,41 +257,24 @@ const QuizLessonsScreen: React.FC = () => {
             const isUnitSelected = selectedInChapter > 0;
             const isAllUnitSelected =
               selectedInChapter === unlockedLessonIds.length && unlockedLessonIds.length > 0;
-            const isExpanded = expandedChapters.has(chapter.id);
 
             return (
               <View key={chapter.id} style={currentStyles.chapterContainer}>
-                {/* Unit Card */}
+                {/* Unit Card (checkbox toggles the whole unit) */}
                 <TouchableOpacity
                   style={[
                     currentStyles.unitCard,
                     isUnitSelected && currentStyles.unitCardSelected,
                     isChapterLocked && currentStyles.unitCardLocked,
                   ]}
-                  onPress={() => {
-                    if (isChapterLocked) {
-                      showLockedDisclaimer();
-                      return;
-                    }
-                    const isFreePlan = !checkSubscription({ skipModal: true });
-                    if (isFreePlan && chapter.lessons.some((l) => l.isLocked)) {
-                      showLockedDisclaimer();
-                      return;
-                    }
-                    if (activeTab === 'all') {
-                      toggleChapterExpanded(chapter.id);
-                    } else {
-                      handleChapterToggle(chapter);
-                    }
-                  }}
+                  onPress={() => handleChapterToggle(chapter)}
                   activeOpacity={0.7}
                 >
-                  {/* Custom Checkbox */}
+                  {/* Unit Checkbox */}
                   <View
                     style={[
                       currentStyles.checkbox,
                       isUnitSelected && currentStyles.checkboxSelected,
-                      (activeTab === 'all' || isChapterLocked) && currentStyles.checkboxDisabled,
                       isChapterLocked && currentStyles.checkboxLocked,
                     ]}
                   >
@@ -424,7 +301,7 @@ const QuizLessonsScreen: React.FC = () => {
                     >
                       {chapter.name}
                     </Text>
-                    {activeTab === 'specific' && !isChapterLocked && (
+                    {!isChapterLocked && (
                       <Text style={currentStyles.unitStats}>
                         {selectedInChapter}/{chapterLessonIds.length}{' '}
                         {t('quiz_lessons.lessons_selected')}
@@ -436,79 +313,51 @@ const QuizLessonsScreen: React.FC = () => {
                       </Text>
                     )}
                   </View>
-
-                  {/* Expand Chevron */}
-                  <TouchableOpacity
-                    style={currentStyles.expandBtn}
-                    onPress={() => toggleChapterExpanded(chapter.id)}
-                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                  >
-                    <Ionicons
-                      name={isExpanded ? 'chevron-up' : 'chevron-down'}
-                      size={18}
-                      color="#64748B"
-                    />
-                  </TouchableOpacity>
                 </TouchableOpacity>
 
-                {/* Lessons Nested Accordion */}
-                {isExpanded && (
-                  <View style={currentStyles.lessonsContainer}>
-                    {chapter.lessons.map((lesson: Lesson) => {
-                      const isLessonSelected = selectedLessons.has(lesson.id);
-                      return (
-                        <TouchableOpacity
-                          key={lesson.id}
-                          style={currentStyles.lessonRow}
-                          onPress={() => {
-                            if (lesson.isLocked) {
-                              showLockedDisclaimer();
-                              return;
-                            }
-                            if (activeTab === 'all') return;
-                            const newSelected = new Set(selectedLessons);
-                            if (isLessonSelected) {
-                              newSelected.delete(lesson.id);
-                            } else {
-                              newSelected.add(lesson.id);
-                            }
-                            setSelectedLessons(newSelected);
-                          }}
-                          activeOpacity={0.7}
-                          disabled={activeTab === 'all' && !lesson.isLocked}
-                        >
-                          {lesson.isLocked ? (
-                            <Ionicons
-                              name="lock-closed"
-                              size={16}
-                              color="#94A3B8"
-                              style={{ marginEnd: 10 }}
-                            />
-                          ) : (
-                            <View
-                              style={[
-                                currentStyles.lessonRadio,
-                                isLessonSelected && currentStyles.lessonRadioSelected,
-                                activeTab === 'all' && currentStyles.lessonRadioDisabled,
-                              ]}
-                            >
-                              {isLessonSelected && <View style={currentStyles.lessonRadioInner} />}
-                            </View>
-                          )}
-                          <Text
+                {/* Lessons — always visible, each a checkbox row */}
+                <View style={currentStyles.lessonsContainer}>
+                  {chapter.lessons.map((lesson: Lesson) => {
+                    const isLessonSelected = selectedLessons.has(lesson.id);
+                    return (
+                      <TouchableOpacity
+                        key={lesson.id}
+                        style={currentStyles.lessonRow}
+                        onPress={() => toggleLesson(lesson)}
+                        activeOpacity={0.7}
+                      >
+                        {lesson.isLocked ? (
+                          <Ionicons
+                            name="lock-closed"
+                            size={16}
+                            color="#94A3B8"
+                            style={{ marginEnd: 10 }}
+                          />
+                        ) : (
+                          <View
                             style={[
-                              currentStyles.lessonName,
-                              lesson.isLocked && currentStyles.lessonNameLocked,
+                              currentStyles.lessonCheckbox,
+                              isLessonSelected && currentStyles.lessonCheckboxSelected,
                             ]}
-                            numberOfLines={2}
                           >
-                            {lesson.name}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                )}
+                            {isLessonSelected && (
+                              <Ionicons name="checkmark" size={12} color="#ffffff" />
+                            )}
+                          </View>
+                        )}
+                        <Text
+                          style={[
+                            currentStyles.lessonName,
+                            lesson.isLocked && currentStyles.lessonNameLocked,
+                          ]}
+                          numberOfLines={2}
+                        >
+                          {lesson.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               </View>
             );
           })}
@@ -613,51 +462,6 @@ const styles = (
       color: theme.colors.textSecondary || '#475569',
       textAlign: common.textAlign,
     },
-    toggleContainer: {
-      flexDirection: 'row',
-      backgroundColor: '#E2E8F0',
-      borderRadius: 14,
-      padding: 3,
-      marginBottom: spacing.md,
-    },
-    toggleButton: {
-      flex: 1,
-      paddingVertical: 10,
-      alignItems: 'center',
-      borderRadius: 11,
-    },
-    toggleButtonActive: {
-      backgroundColor: '#FFFFFF',
-      ...layout.shadow,
-    },
-    toggleText: {
-      fontSize: 13,
-      ...fontWeight('700'),
-      color: '#64748B',
-    },
-    toggleTextActive: {
-      color: '#004A9A',
-    },
-    helperRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: spacing.md,
-    },
-    selectAllBtn: {
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    selectAllText: {
-      fontSize: 12,
-      ...fontWeight('800'),
-      color: '#004A9A',
-    },
-    selectedCounter: {
-      fontSize: 12,
-      ...fontWeight('700'),
-      color: '#94A3B8',
-    },
     listContainer: {
       gap: spacing.sm,
     },
@@ -704,10 +508,6 @@ const styles = (
       backgroundColor: '#004A9A',
       borderColor: '#004A9A',
     },
-    checkboxDisabled: {
-      backgroundColor: '#E2E8F0',
-      borderColor: '#CBD5E1',
-    },
     unitInfo: {
       flex: 1,
       justifyContent: 'center',
@@ -725,13 +525,6 @@ const styles = (
       color: '#004A9A',
       marginTop: 2,
     },
-    expandBtn: {
-      width: 32,
-      height: 32,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginStart: 8,
-    },
     lessonsContainer: {
       backgroundColor: 'transparent',
       marginTop: 4,
@@ -744,10 +537,10 @@ const styles = (
       paddingVertical: 10,
       paddingHorizontal: spacing.md,
     },
-    lessonRadio: {
-      width: 16,
-      height: 16,
-      borderRadius: 8,
+    lessonCheckbox: {
+      width: 18,
+      height: 18,
+      borderRadius: 6,
       borderWidth: 1.5,
       borderColor: '#cbd5e1',
       alignItems: 'center',
@@ -755,17 +548,9 @@ const styles = (
       marginEnd: 10,
       backgroundColor: '#FFFFFF',
     },
-    lessonRadioSelected: {
-      borderColor: '#004A9A',
-    },
-    lessonRadioDisabled: {
-      borderColor: '#E2E8F0',
-    },
-    lessonRadioInner: {
-      width: 7,
-      height: 7,
-      borderRadius: 99,
+    lessonCheckboxSelected: {
       backgroundColor: '#004A9A',
+      borderColor: '#004A9A',
     },
     lessonName: {
       fontSize: 12,

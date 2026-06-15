@@ -40,7 +40,6 @@ const QuizGeneratingScreen: React.FC = () => {
   // Animation shared values
   const transitionProgress = useSharedValue(0);
   const logoScale = useSharedValue(1);
-  const logoRotation = useSharedValue(0);
   const glowOpacity = useSharedValue(0.6);
   const progressBarWidth = useSharedValue(0);
 
@@ -54,7 +53,7 @@ const QuizGeneratingScreen: React.FC = () => {
   const [apiError, setApiError] = useState<string | null>(null);
   const [apiCompleted, setApiCompleted] = useState(false);
 
-  // Start breathing / spinning animations
+  // Start breathing (pulse) animations
   useEffect(() => {
     progressBarWidth.value = withTiming(1, {
       duration: 1800,
@@ -75,11 +74,6 @@ const QuizGeneratingScreen: React.FC = () => {
       ),
       -1,
       true,
-    );
-    logoRotation.value = withRepeat(
-      withTiming(360, { duration: 12000, easing: Easing.linear }),
-      -1,
-      false,
     );
   }, []);
 
@@ -248,11 +242,7 @@ const QuizGeneratingScreen: React.FC = () => {
     const translateY = (1 - p) * (initialY - finalY);
 
     return {
-      transform: [
-        { translateY },
-        { scale: logoScale.value },
-        { rotate: `${logoRotation.value}deg` },
-      ],
+      transform: [{ translateY }, { scale: logoScale.value }],
     };
   });
 

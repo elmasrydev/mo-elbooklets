@@ -355,12 +355,10 @@ const HomeScreen: React.FC = () => {
           }}
           title={
             <View style={{ alignItems: 'center' }}>
-              <Text style={s.headerHiText}>
+              <Text style={s.headerWelcomeText}>
                 {t('home_screen.hi') || 'Hi'}, {user?.name?.split(' ')[0] || 'Student'}
               </Text>
-              <Text style={s.headerWelcomeText}>
-                {t('home_screen.welcome_back', 'Welcome back 👋')}
-              </Text>
+              <Text style={s.headerHiText}>{t('home_screen.welcome_back', 'Welcome back 👋')}</Text>
             </View>
           }
           leftContent={
@@ -401,12 +399,10 @@ const HomeScreen: React.FC = () => {
         }}
         title={
           <View style={{ alignItems: 'center' }}>
-            <Text style={s.headerHiText}>
+            <Text style={s.headerWelcomeText}>
               {t('home_screen.hi') || 'Hi'}, {user?.name?.split(' ')[0] || 'Student'}
             </Text>
-            <Text style={s.headerWelcomeText}>
-              {t('home_screen.welcome_back', 'Welcome back 👋')}
-            </Text>
+            <Text style={s.headerHiText}>{t('home_screen.welcome_back', 'Welcome back 👋')}</Text>
           </View>
         }
         leftContent={
