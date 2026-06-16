@@ -35,6 +35,22 @@ appId: com.elbooklets.app
       - tapOn:
           id: "confirm-modal-ok"
 
+# Self-healing: a leftover logged-in student may boot into Home with the
+# profile-completion modal up. It is a native <Modal> (accessibilityViewIsModal) so it
+# hides the Home tabs behind it from the a11y tree — dismiss it first so the Home
+# self-heal below can reach tab-profile → logout.
+- runFlow:
+    when:
+      visible:
+        id: "profile-completion-skip-button"
+    commands:
+      - tapOn:
+          id: "profile-completion-skip-button"
+      - extendedWaitUntil:
+          notVisible:
+            id: "profile-completion-skip-button"
+          timeout: 3000
+
 # Self-healing: if keychain clear failed and we booted into Home screen, log out
 - runFlow:
     when:
@@ -43,6 +59,13 @@ appId: com.elbooklets.app
     commands:
       - tapOn:
           id: "tab-profile"
+      # Log Out sits at the bottom of the Profile ScrollView (below Badges), so scroll
+      # to it rather than tapping blind — its position varies with profile content.
+      - scrollUntilVisible:
+          element:
+            id: "profile-logout-item"
+          direction: DOWN
+          timeout: 10000
       - tapOn:
           id: "profile-logout-item"
       - extendedWaitUntil:
@@ -106,27 +129,34 @@ appId: com.elbooklets.app
             id: "onboarding-language-toggle"
           timeout: 30000
 
-# If TARGET_ENV is prod, switch to Production URL (same idempotent + reload-tolerant pattern)
+# If TARGET_ENV is prod: on a debug build (switcher chip present) select Production;
+# on a real production build (debugMode:false) there is no chip and the app already
+# defaults to the production URL, so the switch is skipped (guarded on chip visibility).
 - runFlow:
     when:
       true: ${TARGET_ENV == 'prod'}
     commands:
-      - tapOn:
-          id: "onboarding-api-switcher-chip"
-      - extendedWaitUntil:
-          visible:
-            id: "api-switcher-production"
-          timeout: 8000
-      - tapOn:
-          id: "api-switcher-production"
-      - runScript:
-          file: sleep.js
-          env:
-            timeout: 4000
-      - extendedWaitUntil:
-          visible:
-            id: "onboarding-language-toggle"
-          timeout: 30000
+      - runFlow:
+          when:
+            visible:
+              id: "onboarding-api-switcher-chip"
+          commands:
+            - tapOn:
+                id: "onboarding-api-switcher-chip"
+            - extendedWaitUntil:
+                visible:
+                  id: "api-switcher-production"
+                timeout: 8000
+            - tapOn:
+                id: "api-switcher-production"
+            - runScript:
+                file: sleep.js
+                env:
+                  timeout: 4000
+            - extendedWaitUntil:
+                visible:
+                  id: "onboarding-language-toggle"
+                timeout: 30000
 
 # If TARGET_ENV is prs, actively select PRS. The chosen URL is persisted in
 # SecureStore and survives launchApp, so a prior dev/prod run would otherwise

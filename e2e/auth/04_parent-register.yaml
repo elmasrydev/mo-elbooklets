@@ -6,8 +6,7 @@ appId: com.elbooklets.app
 - runFlow:
     file: ../utils/setup-environment.yaml
 
-# Execute parent registration flow (only on non-prod)
+# Execute parent registration flow (runs on every env, mirroring student register-01;
+# prod runs create a throwaway parent that is cleaned up afterwards).
 - runFlow:
-    when:
-      true: ${TARGET_ENV != 'prod'}
     file: ../utils/parent-register-flow.yaml

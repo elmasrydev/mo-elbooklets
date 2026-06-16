@@ -7,8 +7,6 @@ appId: com.elbooklets.app
 - runFlow:
     file: ../utils/setup-environment.yaml
 
-# Execute student registration flow (only on non-prod)
+# Execute student registration flow
 - runFlow:
-    when:
-      true: ${TARGET_ENV != 'prod'}
     file: ../utils/student-register-flow.yaml

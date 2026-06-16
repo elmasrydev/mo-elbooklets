@@ -19,6 +19,15 @@ appId: com.elbooklets.app
 - inputText: ${STUDENT_MOBILE}
 - tapOn:
     point: 50%,10%
+# Prod build: the password field defaults to secure (showPassword=false on non-debug
+# builds) and Maestro drops special chars in iOS secure fields. Reveal it first so the
+# strong password types reliably. Debug builds render it visible already (prod-only).
+- runFlow:
+    when:
+      true: ${TARGET_ENV == 'prod'}
+    commands:
+      - tapOn:
+          id: "login-toggle-password"
 - tapOn:
     id: "login-password-input"
 - inputText: ${STUDENT_PASSWORD}

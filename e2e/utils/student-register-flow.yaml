@@ -20,6 +20,17 @@ appId: com.elbooklets.app
 - inputText: ${STUDENT_MOBILE}
 - tapOn:
     point: 50%,10%
+# On a production build the password field defaults to secure (showPassword=false on
+# non-debug builds) and Maestro can drop special characters typed into iOS secure
+# fields, leaving a non-strong value. Reveal it first so the strong password (incl.
+# its symbol) is entered reliably. Debug builds (prs/dev) render it visible already,
+# so this reveal is prod-only. One toggle reveals both password + confirm (shared state).
+- runFlow:
+    when:
+      true: ${TARGET_ENV == 'prod'}
+    commands:
+      - tapOn:
+          id: "register-password-toggle"
 - tapOn:
     id: "register-password-input"
 - inputText: ${STUDENT_PASSWORD}
@@ -38,7 +49,10 @@ appId: com.elbooklets.app
 # Taps on selections. In Maestro, if dynamic IDs are not resolved, we can tap the coordinates or matching labels.
 # Since we added testIDs to selectors (register-grade-{id}), let's tap the first grade or edu option by text or ID
 - tapOn: "Secondary 1"
-- tapOn: "Languages - لغات"
+# Educational-system label differs by backend/locale: PRS/Demo returns the bilingual
+# "Languages - لغات" while production returns just "Languages". Maestro matches a regex
+# substring, so "Languages" matches both.
+- tapOn: "Languages"
 - tapOn:
     id: "register-submit-button"
 
@@ -51,11 +65,15 @@ appId: com.elbooklets.app
       - tapOn:
           id: "register-disclaimer-continue-button"
 
-# Skip OTP using debug bypass button
-- assertVisible:
-    id: "otp-skip-debug-2"
-- tapOn:
-    id: "otp-skip-debug-2"
+# Handle OTP: debug build taps the skip button; production build (no skip)
+# sends, enters ${OTP_CODE}, and verifies. Wait for the OTP screen first.
+- extendedWaitUntil:
+    optional: true
+    visible:
+      id: "otp-send-button"
+    timeout: 10000
+- runFlow:
+    file: otp-handle.yaml
 
 # Wait for profile completion modal to auto-show (continues early when it appears) and dismiss it
 - extendedWaitUntil:
