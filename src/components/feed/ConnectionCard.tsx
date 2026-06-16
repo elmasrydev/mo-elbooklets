@@ -147,9 +147,9 @@ const createStyles = (
   StyleSheet.create({
     cardContainer: {
       backgroundColor: theme.mode === 'light' ? theme.colors.surface : theme.colors.card,
-      padding: spacing.lg,
-      borderRadius: borderRadius.xl,
-      marginBottom: spacing.sectionGap,
+      padding: spacing.md,
+      borderRadius: borderRadius['2xl'],
+      marginBottom: spacing.ssm,
       borderWidth: 1,
       borderColor: theme.colors.border,
       ...layout.shadow,
@@ -280,12 +280,11 @@ const createStyles = (
     likeBtn: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      gap: 4,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: borderRadius.md,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
+      gap: 6,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: borderRadius.full,
+      backgroundColor: theme.colors.background,
     },
     likeBtnText: {
       ...typography('caption'),

@@ -3,9 +3,11 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import { useLanguage } from '../../context/LanguageContext';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
 import { layout } from '../../config/layout';
+import { getTimeAgo } from '../../lib/dateUtils';
 import { getSubjectConfig } from '../../utils/subjectTheme';
 import SubjectIcon from '../SubjectIcon';
 
@@ -34,6 +36,7 @@ interface QuizCompletionCardProps {
 const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({ item, onLike }) => {
   const { theme, spacing, borderRadius } = useTheme();
   const { t } = useTranslation();
+  const { language } = useLanguage();
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
 
@@ -45,7 +48,6 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({ item, onLike })
     ? Math.round((item.quizData.score / totalQuestions) * 100)
     : 0;
 
-  // Get subject theme config (only used for subject badge and book icon)
   const subConfig = getSubjectConfig(subjectName, theme);
 
   const getInitials = (name: string) =>
@@ -56,137 +58,84 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({ item, onLike })
       .toUpperCase()
       .substring(0, 2);
 
-  const currentStyles = createStyles(
-    theme,
-    common,
-    spacing,
-    borderRadius,
-    typography,
-    fontWeight,
-    subConfig.color,
-  );
+  const accentColor = isPassed ? theme.colors.success : theme.colors.error;
+  const s = createStyles(theme, common, spacing, borderRadius, typography, fontWeight);
 
   return (
-    <View style={currentStyles.cardContainer}>
-      {/* Top Header: Avatar + User Info */}
-      <View style={currentStyles.headerRow}>
-        <View style={currentStyles.headerLeft}>
-          <View style={currentStyles.avatar}>
-            <Text style={currentStyles.avatarText}>{getInitials(item.user.name)}</Text>
-          </View>
-          <View style={currentStyles.userInfo}>
-            <Text numberOfLines={1} style={currentStyles.userName}>
-              {item.user.name}
-            </Text>
-            <Text numberOfLines={1} style={currentStyles.userSubtitle}>
-              {item.user.grade.name}
-            </Text>
-          </View>
+    <View style={s.card}>
+      {/* Header: avatar + name + grade · time */}
+      <View style={s.headerRow}>
+        <View style={s.avatar}>
+          <Text style={s.avatarText}>{getInitials(item.user.name)}</Text>
+        </View>
+        <View style={s.userInfo}>
+          <Text numberOfLines={1} style={s.userName}>
+            {item.user.name}
+          </Text>
+          <Text numberOfLines={1} style={s.userSubtitle}>
+            {item.user.grade.name} · {getTimeAgo(item.createdAt, t, language)}
+          </Text>
         </View>
       </View>
 
-      {/* Subject Icon and Subject Name */}
-      <View style={currentStyles.quizNameContainer}>
-        <SubjectIcon
-          subjectName={subjectName}
-          size={32}
-          style={{ backgroundColor: subConfig.bg }}
-        />
-        <Text style={currentStyles.quizName}>{subjectName}</Text>
-      </View>
-
-      {/* Metadata Capsule Badges Section */}
-      <View style={currentStyles.metadataContainer}>
-        {/* Top Row: Questions & Accuracy (50% width each) */}
-        <View style={currentStyles.statsRow}>
-          <View
-            style={[
-              currentStyles.capsule,
-              currentStyles.flexCapsule,
-              currentStyles.questionsCapsule,
-            ]}
-          >
-            <Ionicons name="list-outline" size={14} color={theme.colors.primary} />
-            <Text
-              numberOfLines={1}
-              style={[currentStyles.capsuleText, { color: theme.colors.primary }]}
-            >
-              {t('social_screen.questions_count', {
-                count: totalQuestions,
-                defaultValue: `${totalQuestions} Questions`,
-              })}
-            </Text>
-          </View>
-
-          <View
-            style={[
-              currentStyles.capsule,
-              currentStyles.flexCapsule,
-              isPassed ? currentStyles.passedCapsule : currentStyles.failedCapsule,
-            ]}
-          >
-            <Ionicons
-              name="star-outline"
-              size={14}
-              color={isPassed ? theme.colors.success : theme.colors.error}
-            />
-            <Text
-              numberOfLines={1}
-              style={[
-                currentStyles.capsuleText,
-                { color: isPassed ? theme.colors.success : theme.colors.error },
-              ]}
-            >
-              {t('social_screen.accuracy', {
-                percent: scorePercent,
-                defaultValue: `${scorePercent}% Accuracy`,
-              })}
-            </Text>
-          </View>
+      {/* Subject row + pass/fail pill */}
+      <View style={s.subjectRow}>
+        <View style={s.subjectLeft}>
+          <SubjectIcon
+            subjectName={subjectName}
+            size={30}
+            style={{ backgroundColor: subConfig.bg }}
+          />
+          <Text numberOfLines={1} style={s.subjectName}>
+            {subjectName}
+          </Text>
         </View>
-
-        {/* Bottom Row: Passed/Failed Status (Centered) */}
-        <View style={currentStyles.statusCenteredRow}>
-          <View
-            style={[
-              currentStyles.capsule,
-              isPassed ? currentStyles.passedCapsule : currentStyles.failedCapsule,
-            ]}
-          >
-            <Ionicons
-              name={isPassed ? 'checkmark-circle-outline' : 'close-circle-outline'}
-              size={14}
-              color={isPassed ? theme.colors.success : theme.colors.error}
-            />
-            <Text
-              style={[
-                currentStyles.capsuleText,
-                { color: isPassed ? theme.colors.success : theme.colors.error },
-              ]}
-            >
-              {isPassed
-                ? t('social_screen.passed', { defaultValue: 'Passed' })
-                : t('social_screen.failed', { defaultValue: 'Failed' })}
-            </Text>
-          </View>
+        <View style={[s.pill, { backgroundColor: accentColor + '14' }]}>
+          <Ionicons
+            name={isPassed ? 'checkmark-circle' : 'close-circle'}
+            size={14}
+            color={accentColor}
+          />
+          <Text style={[s.pillText, { color: accentColor }]}>
+            {isPassed
+              ? t('social_screen.passed', { defaultValue: 'Passed' })
+              : t('social_screen.failed', { defaultValue: 'Failed' })}
+          </Text>
         </View>
       </View>
 
-      {/* Footer Actions: Likes Badge + Like Button */}
-      <View style={currentStyles.footerRow}>
-        {/* Likes Count Pill Badge */}
+      {/* Stat chips: questions + accuracy */}
+      <View style={s.statsRow}>
+        <View style={[s.chip, s.chipNeutral]}>
+          <Ionicons name="list-outline" size={15} color={theme.colors.textSecondary} />
+          <Text numberOfLines={1} style={[s.chipText, { color: theme.colors.textSecondary }]}>
+            {t('social_screen.questions_count', {
+              count: totalQuestions,
+              defaultValue: `${totalQuestions} Questions`,
+            })}
+          </Text>
+        </View>
+        <View style={[s.chip, { backgroundColor: accentColor + '14' }]}>
+          <Ionicons name="star" size={15} color={accentColor} />
+          <Text numberOfLines={1} style={[s.chipText, { color: accentColor }]}>
+            {t('social_screen.accuracy', {
+              percent: scorePercent,
+              defaultValue: `${scorePercent}% Accuracy`,
+            })}
+          </Text>
+        </View>
+      </View>
+
+      {/* Footer: likes count + like button */}
+      <View style={s.footerRow}>
         {item.likes > 0 ? (
-          <View style={currentStyles.likesBadge}>
-            <Ionicons name="thumbs-up" size={14} color={theme.colors.primary} />
-            <Text style={currentStyles.likesBadgeText}>{item.likes}</Text>
+          <View style={s.likesCount}>
+            <Ionicons name="thumbs-up" size={16} color={theme.colors.primary} />
+            <Text style={s.likesCountText}>{item.likes}</Text>
           </View>
-        ) : (
-          <View style={currentStyles.likesBadgeEmpty} />
-        )}
-
-        {/* Action Button (Like) */}
+        ) : null}
         <TouchableOpacity
-          style={[currentStyles.likeBtn, item.isLiked && currentStyles.likeBtnActive]}
+          style={[s.likeBtn, item.isLiked && s.likeBtnActive]}
           onPress={onLike}
           activeOpacity={0.7}
         >
@@ -195,10 +144,10 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({ item, onLike })
             size={16}
             color={item.isLiked ? theme.colors.primary : theme.colors.textSecondary}
           />
-          <Text
-            style={[currentStyles.likeBtnText, item.isLiked && currentStyles.likeBtnTextActive]}
-          >
-            {t('common.like', { defaultValue: 'Like' })}
+          <Text style={[s.likeBtnText, item.isLiked && s.likeBtnTextActive]}>
+            {item.isLiked
+              ? t('common.liked', { defaultValue: 'Liked' })
+              : t('common.like', { defaultValue: 'Like' })}
           </Text>
         </TouchableOpacity>
       </View>
@@ -213,43 +162,33 @@ const createStyles = (
   borderRadius: any,
   typography: any,
   fontWeight: any,
-  subjectColor: string,
 ) =>
   StyleSheet.create({
-    cardContainer: {
+    card: {
       backgroundColor: theme.colors.surface,
-      paddingHorizontal: spacing.lg,
-      paddingTop: spacing.lg,
-      paddingBottom: spacing.ssm,
-      borderRadius: borderRadius.xl,
-      marginBottom: spacing.sectionGap || spacing.lg,
+      padding: spacing.md,
+      borderRadius: borderRadius['2xl'],
+      marginBottom: spacing.ssm,
       borderWidth: 1,
       borderColor: theme.colors.border,
       ...layout.shadow,
     },
     headerRow: {
       flexDirection: common.rowDirection,
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    },
-    headerLeft: {
-      flexDirection: common.rowDirection,
       alignItems: 'center',
       gap: 12,
-      flex: 1,
+      marginBottom: spacing.ssm,
     },
     avatar: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
+      width: 42,
+      height: 42,
+      borderRadius: 21,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: `${theme.colors.primary}10`,
-      borderWidth: 1.5,
-      borderColor: `${theme.colors.primary}25`,
+      backgroundColor: theme.colors.primary100,
     },
     avatarText: {
-      ...typography('body'),
+      ...typography('caption'),
       ...fontWeight('bold'),
       color: theme.colors.primary,
     },
@@ -265,105 +204,94 @@ const createStyles = (
       textAlign: common.textAlign,
     },
     userSubtitle: {
-      ...typography('caption'),
-      color: theme.colors.textSecondary,
+      ...typography('label'),
+      color: theme.colors.textTertiary,
       textAlign: common.textAlign,
     },
-    quizNameContainer: {
+    subjectRow: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      marginTop: spacing.sm,
-      marginBottom: spacing.sm,
-      gap: 12,
+      justifyContent: 'space-between',
+      gap: 10,
     },
-    quizName: {
+    subjectLeft: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      gap: 9,
+      flexShrink: 1,
+    },
+    subjectName: {
       ...typography('body'),
       ...fontWeight('bold'),
       color: theme.colors.text,
-      flex: 1,
+      flexShrink: 1,
       textAlign: common.textAlign,
-      lineHeight: 22,
     },
-    metadataContainer: {
-      marginBottom: spacing.ssm,
-      gap: 8,
+    pill: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 11,
+      paddingVertical: 6,
+      borderRadius: borderRadius.full,
+    },
+    pillText: {
+      ...typography('label'),
+      ...fontWeight('bold'),
     },
     statsRow: {
       flexDirection: common.rowDirection,
       gap: 8,
-      alignItems: 'center',
+      marginTop: spacing.ssm,
     },
-    statusCenteredRow: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      width: '100%',
-    },
-    capsule: {
+    chip: {
+      flex: 1,
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      paddingHorizontal: 10,
-      paddingVertical: 6,
-      borderRadius: borderRadius.lg || 12,
-      borderWidth: 1,
-      gap: 6,
-    },
-    flexCapsule: {
-      flex: 1,
       justifyContent: 'center',
+      gap: 5,
+      paddingHorizontal: 11,
+      paddingVertical: 8,
+      borderRadius: borderRadius.md,
     },
-    questionsCapsule: {
-      backgroundColor: theme.mode === 'light' ? '#eff6ff' : `${theme.colors.primary}15`,
-      borderColor: theme.mode === 'light' ? '#dbeafe' : `${theme.colors.primary}30`,
+    chipNeutral: {
+      backgroundColor: theme.colors.background,
     },
-    passedCapsule: {
-      backgroundColor: `${theme.colors.success}10`,
-      borderColor: `${theme.colors.success}25`,
-    },
-    failedCapsule: {
-      backgroundColor: `${theme.colors.error}10`,
-      borderColor: `${theme.colors.error}25`,
-    },
-    capsuleText: {
+    chipText: {
       ...typography('caption'),
-      ...fontWeight('600'),
+      ...fontWeight('bold'),
     },
     footerRow: {
       flexDirection: common.rowDirection,
-      justifyContent: 'space-between',
       alignItems: 'center',
-      paddingTop: spacing.sm,
+      justifyContent: 'flex-end',
+      marginTop: spacing.md,
+      paddingTop: spacing.ssm,
       borderTopWidth: 1,
-      borderTopColor: theme.mode === 'light' ? '#e2e8f0' : `${theme.colors.border}40`,
+      borderTopColor: theme.colors.border,
     },
-    likesBadge: {
+    likesCount: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      gap: 4,
-      backgroundColor: 'transparent',
-      paddingHorizontal: 0,
-      paddingVertical: 5,
+      gap: 5,
+      marginEnd: 'auto',
     },
-    likesBadgeText: {
+    likesCountText: {
       ...typography('caption'),
-      color: theme.colors.textSecondary,
-    },
-    likesBadgeEmpty: {
-      height: 28,
+      ...fontWeight('600'),
+      color: theme.colors.textTertiary,
     },
     likeBtn: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
       gap: 6,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: borderRadius.md || 8,
-      borderWidth: 1,
-      borderColor: theme.mode === 'light' ? '#e2e8f0' : `${theme.colors.border}40`,
-      backgroundColor: 'transparent',
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: borderRadius.full,
+      backgroundColor: theme.colors.background,
     },
     likeBtnActive: {
-      borderColor: theme.mode === 'light' ? '#dbeafe' : `${theme.colors.primary}30`,
-      backgroundColor: theme.mode === 'light' ? '#f0f9ff' : `${theme.colors.primary}10`,
+      backgroundColor: theme.colors.primary100,
     },
     likeBtnText: {
       ...typography('caption'),
