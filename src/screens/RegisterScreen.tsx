@@ -128,9 +128,8 @@ const RegisterScreen: React.FC = () => {
   // Validation Flags
   const isNameValid = name.trim().length >= 3;
   const isMobileValid = MOBILE_REGEX.test(mobile.trim());
-  const isPasswordValid = isDebugMode()
-    ? password.length >= 6
-    : STRONG_PASSWORD_REGEX.test(password);
+  // Strong password is enforced on every environment (no debug relaxation).
+  const isPasswordValid = STRONG_PASSWORD_REGEX.test(password);
   const isConfirmValid = isPasswordValid && password === confirmPassword;
 
   // Dynamic Border Color Helpers

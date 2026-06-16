@@ -59,9 +59,8 @@ const ParentRegisterScreen: React.FC = () => {
   const isNameValid = name.trim().length >= 3;
   const isMobileValid = EGYPT_MOBILE_REGEX.test(mobile.trim());
   const isEmailValid = EMAIL_REGEX.test(email.trim());
-  const isPasswordStrong = isDebugMode()
-    ? password.length >= 6
-    : STRONG_PASSWORD_REGEX.test(password);
+  // Strong password is enforced on every environment (no debug relaxation).
+  const isPasswordStrong = STRONG_PASSWORD_REGEX.test(password);
   const isConfirmValid = password === confirmPassword && password.length > 0;
 
   const getBorderColor = (touched: boolean, valid: boolean, value: string) => {
@@ -372,6 +371,7 @@ const ParentRegisterScreen: React.FC = () => {
                   onSubmitEditing={handleRegister}
                 />
                 <TouchableOpacity
+                  testID="parent-register-confirm-toggle"
                   onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                   style={currentStyles.eyeIcon}
                 >
