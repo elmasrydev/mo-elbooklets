@@ -458,6 +458,10 @@
     "no_student_yet": "في انتظار طالب",
     "points": "نقطة",
     "you": "أنت",
+    "your_ranking": "ترتيبك",
+    "top_performers": "الأوائل",
+    "all_subjects": "كل المواد",
+    "rank_of": "من {{count}} طالب",
     "your_rank": "ترتيبك"
   },
   "auth": {

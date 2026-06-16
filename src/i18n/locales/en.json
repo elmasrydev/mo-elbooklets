@@ -458,6 +458,10 @@
     "no_student_yet": "Waiting for student",
     "points": "Points",
     "you": "You",
+    "your_ranking": "Your Ranking",
+    "top_performers": "Top Performers",
+    "all_subjects": "All Subjects",
+    "rank_of": "of {{count}} students",
     "your_rank": "Your Rank"
   },
   "auth": {
