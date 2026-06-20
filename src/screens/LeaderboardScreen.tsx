@@ -25,6 +25,8 @@ import UnifiedHeader from '../components/UnifiedHeader';
 import { GenericListSkeleton } from '../components/SkeletonLoader';
 import RetryView from '../components/RetryView';
 import Confetti from '../components/Confetti';
+import Avatar from '../components/Avatar';
+import { avatarColor } from '../utils/avatar';
 import { useFollowToggle } from '../hooks/useFollowToggle';
 import { layout } from '../config/layout';
 import { tryFetchWithFallback } from '../config/api';
@@ -45,6 +47,7 @@ interface Student {
   xp: number;
   isFollowing: boolean;
   rank: number;
+  selectedAvatar?: { url?: string } | null;
 }
 
 // Medal colours (intentionally literal — podium semantics, not theme surfaces).
@@ -56,29 +59,6 @@ const BRONZE = '#c28045';
 const BANNER_GRADIENT = ['#003B7A', '#004A9A', '#1E54B8'] as const;
 const ON_DARK = '#ffffff';
 const ON_DARK_DIM = 'rgba(255,255,255,0.72)';
-// On-brand avatar palette (no purple / pink / neon).
-const AVATAR_PALETTE = [
-  '#004A9A',
-  '#1E54B8',
-  '#2563eb',
-  '#0d9488',
-  '#16a34a',
-  '#d97706',
-  '#0e7490',
-];
-const colorFor = (name: string) => {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
-  return AVATAR_PALETTE[h % AVATAR_PALETTE.length];
-};
-const initialsOf = (name: string) =>
-  name
-    .trim()
-    .split(/\s+/)
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .substring(0, 2);
 
 // Score progress bar — width grows on the UI thread (cheap), instant under reduce-motion.
 const AnimatedBar = ({ pct, color, styles: s }: { pct: number; color: string; styles: any }) => {
@@ -192,9 +172,11 @@ const LeaderboardScreen: React.FC = () => {
           leaderboard(subjectId: $subjectId, limit: $limit) {
             entries {
               id name grade { id name } totalQuizzes avgScore xp isFollowing rank
+              selectedAvatar { url }
             }
             userEntry {
               id name grade { id name } totalQuizzes avgScore xp isFollowing rank
+              selectedAvatar { url }
             }
           }
         }
@@ -269,39 +251,6 @@ const LeaderboardScreen: React.FC = () => {
   const gradeLabel = user?.grade?.name || '';
   const contextLine = [gradeLabel, subjectLabel].filter(Boolean).join(' · ');
 
-  // ---- Avatar ----
-  const Avatar = ({
-    name,
-    size,
-    ring,
-    fontScale = 0.4,
-  }: {
-    name: string;
-    size: number;
-    ring?: string;
-    fontScale?: number;
-  }) => (
-    <View
-      style={[
-        {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          backgroundColor: colorFor(name),
-          alignItems: 'center',
-          justifyContent: 'center',
-        },
-        ring ? { borderWidth: 3, borderColor: ring } : null,
-      ]}
-    >
-      <Text
-        style={{ color: '#fff', fontSize: Math.round(size * fontScale), ...fontWeight('bold') }}
-      >
-        {initialsOf(name)}
-      </Text>
-    </View>
-  );
-
   // ---- Podium spot ----
   const renderSpot = (student: Student | undefined, place: 1 | 2 | 3) => {
     const cfg = {
@@ -335,7 +284,13 @@ const LeaderboardScreen: React.FC = () => {
         ) : (
           <View style={{ height: 22, marginBottom: 2 }} />
         )}
-        <Avatar name={student.name} size={cfg.av} ring={cfg.ring} fontScale={0.36} />
+        <Avatar
+          uri={student.selectedAvatar?.url}
+          name={student.name}
+          size={cfg.av}
+          ring={cfg.ring}
+          fontScale={0.36}
+        />
         <Text style={s.spotName} numberOfLines={1}>
           {student.name}
         </Text>
@@ -360,7 +315,7 @@ const LeaderboardScreen: React.FC = () => {
   // ---- List row ----
   const renderRow = (e: Student, index: number) => {
     const isYou = leaderboard.userEntry?.id === e.id;
-    const barColor = colorFor(e.name);
+    const barColor = avatarColor(e.name);
     return (
       <Animated.View
         key={e.id}
@@ -368,7 +323,7 @@ const LeaderboardScreen: React.FC = () => {
         style={[s.row, isYou && s.rowYou]}
       >
         <Text style={s.rowRank}>{e.rank}</Text>
-        <Avatar name={e.name} size={40} fontScale={0.4} />
+        <Avatar uri={e.selectedAvatar?.url} name={e.name} size={40} fontScale={0.4} />
         <View style={s.rowMain}>
           <View style={s.rowNameLine}>
             <Text style={s.rowName} numberOfLines={1}>
@@ -456,7 +411,13 @@ const LeaderboardScreen: React.FC = () => {
               end={{ x: 1, y: 1 }}
               style={s.banner}
             >
-              <Avatar name={you.name} size={46} ring="rgba(255,255,255,0.35)" fontScale={0.4} />
+              <Avatar
+                uri={you.selectedAvatar?.url}
+                name={you.name}
+                size={46}
+                ring="rgba(255,255,255,0.35)"
+                fontScale={0.4}
+              />
               <View style={s.bannerMid}>
                 <Text style={s.bannerTitle}>
                   {t('leaderboard_screen.your_ranking', 'Your Ranking')}

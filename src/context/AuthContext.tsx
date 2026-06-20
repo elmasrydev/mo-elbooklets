@@ -48,6 +48,7 @@ interface User {
   role?: 'student' | 'parent';
   followers_count?: number;
   following_count?: number;
+  selectedAvatar?: { id: string; name?: string; url: string; gender?: string } | null;
 }
 
 interface Parent {
@@ -585,7 +586,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               governorate_id governorate { id name_ar name_en }
               city_id city { id name_ar name_en }
               is_subscribed
-            } 
+              selectedAvatar { id name url gender }
+            }
           }`,
           undefined,
           token,

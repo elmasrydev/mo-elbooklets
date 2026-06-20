@@ -28,6 +28,7 @@ import AppButton from '../components/AppButton';
 import { CardListSkeleton, GenericListSkeleton } from '../components/SkeletonLoader';
 import RetryView from '../components/RetryView';
 import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
+import Avatar from '../components/Avatar';
 import { isRTL } from '../lib/rtl';
 
 interface Student {
@@ -41,6 +42,7 @@ interface Student {
   totalQuizzes: number;
   avgScore: number;
   isFollowing: boolean;
+  selectedAvatar?: { url?: string } | null;
 }
 
 interface NewsFeedItem {
@@ -53,6 +55,7 @@ interface NewsFeedItem {
       id: string;
       name: string;
     };
+    selectedAvatar?: { url?: string } | null;
   };
   createdAt: string;
   quizData?: {
@@ -66,6 +69,7 @@ interface NewsFeedItem {
     id: string;
     name: string;
     grade: { id: string; name: string };
+    selectedAvatar?: { url?: string } | null;
   };
   rankData?: {
     previousRank?: number;
@@ -110,7 +114,7 @@ const SocialScreen: React.FC = () => {
           socialTimeline {
             id
             type
-            user { id name grade { id name } }
+            user { id name grade { id name } selectedAvatar { url } }
             createdAt
             quizData {
               quizUserId
@@ -119,7 +123,7 @@ const SocialScreen: React.FC = () => {
               totalQuestions
               isPassed
             }
-            connectedUser { id name grade { id name } }
+            connectedUser { id name grade { id name } selectedAvatar { url } }
             rankData { previousRank newRank subject { id name } isOverall }
             likes
             comments
@@ -176,6 +180,7 @@ const SocialScreen: React.FC = () => {
         query SearchStudents($query: String!) {
           searchStudents(query: $query) {
             id name mobile grade { id name } totalQuizzes avgScore isFollowing
+            selectedAvatar { url }
           }
         }
       `,
@@ -304,9 +309,7 @@ const SocialScreen: React.FC = () => {
       <View style={[common.card, { marginBottom: spacing.sectionGap }]}>
         <View style={currentStyles.studentCardContent}>
           <View style={currentStyles.studentInfo}>
-            <View style={currentStyles.avatarPlaceholder}>
-              <Text style={currentStyles.avatarText}>{student.name.charAt(0).toUpperCase()}</Text>
-            </View>
+            <Avatar uri={student.selectedAvatar?.url} name={student.name} size={52} />
             <View style={currentStyles.studentDetails}>
               <Text style={currentStyles.studentName}>{student.name}</Text>
               <Text style={currentStyles.studentGrade}>{student.grade.name}</Text>

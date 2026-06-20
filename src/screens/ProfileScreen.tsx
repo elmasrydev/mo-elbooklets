@@ -26,6 +26,8 @@ import { Ionicons } from '@expo/vector-icons';
 import DeviceInfo from 'react-native-device-info';
 import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
 import CircularProgress from '../components/CircularProgress';
+import Avatar from '../components/Avatar';
+import AvatarPickerModal from '../components/AvatarPickerModal';
 import { useProfileCompleteness } from '../hooks/useProfileCompleteness';
 import { useMutation } from '@apollo/client/react';
 import {
@@ -53,7 +55,7 @@ const VERIFY_CHEVRON = '#16a34a';
 
 const ProfileScreen: React.FC = () => {
   const navigation = useNavigation<any>();
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const { showConfirm } = useModal();
   const { theme, spacing, borderRadius } = useTheme();
   const common = useCommonStyles();
@@ -142,10 +144,14 @@ const ProfileScreen: React.FC = () => {
   useFocusEffect(
     useCallback(() => {
       fetchFollowStats();
-    }, [fetchFollowStats]),
+      // Refresh from the `me` query so the selected avatar (and other fresh fields)
+      // load — login/cached-launch don't fetch it.
+      refreshUser();
+    }, [fetchFollowStats, refreshUser]),
   );
   const { completeness } = useProfileCompleteness();
   const [showPrompt, setShowPrompt] = useState(false);
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
 
   const handleLogout = () => {
     showConfirm({
@@ -289,7 +295,11 @@ const ProfileScreen: React.FC = () => {
         {/* Profile header card */}
         <View style={s.headerCard}>
           <View style={s.headerRow}>
-            <TouchableOpacity activeOpacity={0.85} onPress={() => setShowPrompt(true)}>
+            <TouchableOpacity
+              testID="profile-avatar-button"
+              activeOpacity={0.85}
+              onPress={() => setShowAvatarPicker(true)}
+            >
               <CircularProgress
                 size={74}
                 strokeWidth={4}
@@ -297,12 +307,16 @@ const ProfileScreen: React.FC = () => {
                 color={theme.colors.primary}
                 containerStyle={{ padding: 4 }}
               >
-                <View style={s.headerAvatar}>
-                  <Text style={s.headerAvatarText}>
-                    {user?.name?.charAt(0).toUpperCase() || 'U'}
-                  </Text>
-                </View>
+                <Avatar
+                  uri={user?.selectedAvatar?.url}
+                  name={user?.name || 'U'}
+                  size={58}
+                  fontScale={0.36}
+                />
               </CircularProgress>
+              <View style={s.avatarEditBadge}>
+                <Ionicons name="camera" size={12} color="#fff" />
+              </View>
             </TouchableOpacity>
 
             <View style={s.headerInfo}>
@@ -544,6 +558,8 @@ const ProfileScreen: React.FC = () => {
         onClose={() => setShowPrompt(false)}
         autoShow={true}
       />
+
+      <AvatarPickerModal visible={showAvatarPicker} onClose={() => setShowAvatarPicker(false)} />
     </View>
   );
 };
@@ -586,18 +602,18 @@ const styles = (
       alignItems: 'center',
       gap: spacing.md,
     },
-    headerAvatar: {
-      width: 58,
-      height: 58,
-      borderRadius: 29,
-      backgroundColor: theme.colors.primary100,
+    avatarEditBadge: {
+      position: 'absolute',
+      bottom: 2,
+      right: 2,
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: theme.colors.primary,
+      borderWidth: 2,
+      borderColor: theme.colors.surface,
       justifyContent: 'center',
       alignItems: 'center',
-    },
-    headerAvatarText: {
-      ...typography('h2'),
-      ...fontWeight('bold'),
-      color: theme.colors.primary,
     },
     headerInfo: {
       flex: 1,

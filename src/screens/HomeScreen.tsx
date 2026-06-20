@@ -29,6 +29,7 @@ import SubjectIcon from '../components/SubjectIcon';
 import { CardListSkeleton } from '../components/SkeletonLoader';
 import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
 import NotificationBell from '../components/NotificationBell';
+import Avatar from '../components/Avatar';
 import { analytics } from '../lib/analytics';
 
 // ─── Type Definitions ────────────────────────────────────────────────────────
@@ -75,6 +76,7 @@ interface LeaderboardEntry {
   name: string;
   xp: number;
   rank: number;
+  selectedAvatar?: { url?: string } | null;
 }
 
 interface SocialFeedItem {
@@ -111,14 +113,6 @@ interface TodayScheduleData {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-const getInitials = (name: string) => {
-  if (!name) return '??';
-  const parts = name.trim().split(/\s+/);
-  return parts.length === 1
-    ? parts[0].substring(0, 2).toUpperCase()
-    : (parts[0][0] + parts[1][0]).toUpperCase();
-};
-
 const round = (val: number) => Math.round(val || 0);
 
 // ─── Wheel of Success Component ──────────────────────────────────────────────
@@ -259,8 +253,8 @@ const HomeScreen: React.FC = () => {
           tryFetchWithFallback(
             `query Leaderboard($limit: Int) {
               leaderboard(limit: $limit) {
-                entries { id name xp rank }
-                userEntry { id name xp rank }
+                entries { id name xp rank selectedAvatar { url } }
+                userEntry { id name xp rank selectedAvatar { url } }
               }
             }`,
             { limit: 4 },
@@ -628,16 +622,12 @@ const HomeScreen: React.FC = () => {
                   >
                     {index + 1}
                   </Text>
-                  <View
-                    style={[
-                      s.leaderboardRankAvatar,
-                      { borderColor: index === 0 ? '#fdba74' : '#e2e8f0' },
-                    ]}
-                  >
-                    <Text style={s.leaderboardRankAvatarText}>
-                      {entry.name.charAt(0).toUpperCase()}
-                    </Text>
-                  </View>
+                  <Avatar
+                    uri={entry.selectedAvatar?.url}
+                    name={entry.name}
+                    size={36}
+                    ring={index === 0 ? '#fdba74' : '#e2e8f0'}
+                  />
                   <View style={s.leaderboardRankInfo}>
                     <Text style={s.leaderboardRankName} numberOfLines={1}>
                       {entry.name}
@@ -651,9 +641,7 @@ const HomeScreen: React.FC = () => {
               {leaderboardUser && (
                 <View style={s.leaderboardUserRow}>
                   <Text style={s.leaderboardUserRankText}>{leaderboardUser.rank}</Text>
-                  <View style={s.leaderboardUserAvatar}>
-                    <Text style={s.leaderboardUserAvatarText}>{getInitials(user?.name || '')}</Text>
-                  </View>
+                  <Avatar uri={user?.selectedAvatar?.url} name={user?.name || ''} size={36} />
                   <View style={s.leaderboardRankInfo}>
                     <Text style={s.leaderboardUserName} numberOfLines={1}>
                       {user?.name

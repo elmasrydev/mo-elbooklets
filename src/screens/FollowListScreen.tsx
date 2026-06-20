@@ -18,6 +18,7 @@ import { useFollowToggle } from '../hooks/useFollowToggle';
 import { tryFetchWithFallback } from '../config/api';
 import UnifiedHeader from '../components/UnifiedHeader';
 import AppButton from '../components/AppButton';
+import Avatar from '../components/Avatar';
 import { GenericListSkeleton } from '../components/SkeletonLoader';
 import { layout } from '../config/layout';
 
@@ -32,6 +33,7 @@ interface Student {
   totalQuizzes: number;
   avgScore: number;
   isFollowing: boolean;
+  selectedAvatar?: { url?: string } | null;
 }
 
 const FollowListScreen: React.FC = () => {
@@ -59,12 +61,12 @@ const FollowListScreen: React.FC = () => {
         type === 'following'
           ? `query MyFollowing { 
             myFollowing { 
-              id name mobile grade { id name } totalQuizzes avgScore isFollowing 
+              id name mobile grade { id name } totalQuizzes avgScore isFollowing selectedAvatar { url }
             } 
           }`
           : `query MyFollowers { 
             myFollowers { 
-              id name mobile grade { id name } totalQuizzes avgScore isFollowing 
+              id name mobile grade { id name } totalQuizzes avgScore isFollowing selectedAvatar { url }
             } 
           }`;
 
@@ -104,26 +106,7 @@ const FollowListScreen: React.FC = () => {
     <View style={[common.card, { marginBottom: spacing.md }]}>
       <View style={currentStyles.studentCardContent}>
         <View style={currentStyles.studentInfo}>
-          <View
-            style={[
-              currentStyles.avatarPlaceholder,
-              {
-                backgroundColor: `${theme.colors.primary}15`,
-                borderColor: `${theme.colors.primary}30`,
-              },
-            ]}
-          >
-            <Text
-              style={[
-                currentStyles.avatarText,
-                typography('h3'),
-                fontWeight('bold'),
-                { color: theme.colors.primary },
-              ]}
-            >
-              {student.name.charAt(0).toUpperCase()}
-            </Text>
-          </View>
+          <Avatar uri={student.selectedAvatar?.url} name={student.name} size={52} />
           <View style={currentStyles.studentDetails}>
             <Text
               style={[
