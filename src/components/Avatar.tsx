@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, StyleSheet, StyleProp, ViewStyle, ImageStyle } from 'react-native';
+import {
+  View,
+  Text,
+  Image,
+  ActivityIndicator,
+  StyleSheet,
+  StyleProp,
+  ViewStyle,
+  ImageStyle,
+} from 'react-native';
 import { avatarColor, getAvatarInitials } from '../utils/avatar';
 
 interface AvatarProps {
@@ -13,13 +22,17 @@ interface AvatarProps {
   ringWidth?: number;
   /** Initials font size as a fraction of `size` (default 0.4). */
   fontScale?: number;
+  /** Show a spinner over the image while it downloads (e.g., on the Profile avatar). */
+  showLoading?: boolean;
   style?: StyleProp<ViewStyle & ImageStyle>;
 }
+
+const SPINNER_COLOR = '#004A9A';
 
 /**
  * Single source of truth for user avatars across the app.
  * Renders the backend image when available, otherwise a colored-initials circle.
- * Uses RN Image (memory/disk cached) — no extra native dependency.
+ * With `showLoading`, a spinner is shown over the image until it finishes loading.
  */
 const Avatar: React.FC<AvatarProps> = ({
   uri,
@@ -28,43 +41,60 @@ const Avatar: React.FC<AvatarProps> = ({
   ring,
   ringWidth = 2,
   fontScale = 0.4,
+  showLoading = false,
   style,
 }) => {
   const [errored, setErrored] = useState(false);
+  const [loading, setLoading] = useState(!!uri);
+
   useEffect(() => {
     setErrored(false);
+    setLoading(!!uri);
   }, [uri]);
 
-  const base = {
+  const base: ViewStyle = {
     width: size,
     height: size,
     borderRadius: size / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
     ...(ring ? { borderWidth: ringWidth, borderColor: ring } : null),
   };
 
-  if (uri && !errored) {
-    return (
-      <Image
-        source={{ uri }}
-        style={[base, styles.imageBg, style]}
-        onError={() => setErrored(true)}
-        resizeMode="cover"
-      />
-    );
-  }
+  const showImage = !!uri && !errored;
 
   return (
-    <View style={[base, styles.center, { backgroundColor: avatarColor(name) }, style]}>
-      <Text style={[styles.initials, { fontSize: Math.round(size * fontScale) }]} numberOfLines={1}>
-        {getAvatarInitials(name)}
-      </Text>
+    <View
+      style={[base, showImage ? styles.imageWrap : { backgroundColor: avatarColor(name) }, style]}
+    >
+      {showImage ? (
+        <>
+          <Image
+            source={{ uri: uri as string }}
+            style={StyleSheet.absoluteFill as StyleProp<ImageStyle>}
+            resizeMode="cover"
+            onLoad={() => setLoading(false)}
+            onError={() => {
+              setErrored(true);
+              setLoading(false);
+            }}
+          />
+          {showLoading && loading ? <ActivityIndicator size="small" color={SPINNER_COLOR} /> : null}
+        </>
+      ) : (
+        <Text
+          style={[styles.initials, { fontSize: Math.round(size * fontScale) }]}
+          numberOfLines={1}
+        >
+          {getAvatarInitials(name)}
+        </Text>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  center: { alignItems: 'center', justifyContent: 'center' },
-  imageBg: { backgroundColor: '#DBEAFA' },
+  imageWrap: { backgroundColor: '#DBEAFA', overflow: 'hidden' },
   initials: { color: '#ffffff', fontWeight: '700' },
 });
 

@@ -10,6 +10,8 @@
   },
   "avatar_picker": {
     "title": "Choose your avatar",
+    "male": "Male",
+    "female": "Female",
     "change": "Change avatar",
     "remove": "Remove current avatar",
     "error": "Could not load avatars",

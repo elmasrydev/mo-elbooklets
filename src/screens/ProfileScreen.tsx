@@ -312,6 +312,7 @@ const ProfileScreen: React.FC = () => {
                   name={user?.name || 'U'}
                   size={58}
                   fontScale={0.36}
+                  showLoading
                 />
               </CircularProgress>
               <View style={s.avatarEditBadge}>

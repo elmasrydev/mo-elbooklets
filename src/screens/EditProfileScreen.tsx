@@ -549,7 +549,12 @@ const EditProfileScreen: React.FC = () => {
               onPress={() => setShowAvatarPicker(true)}
             >
               <View>
-                <Avatar uri={user?.selectedAvatar?.url} name={user?.name || 'U'} size={72} />
+                <Avatar
+                  uri={user?.selectedAvatar?.url}
+                  name={user?.name || 'U'}
+                  size={72}
+                  showLoading
+                />
                 <View style={currentStyles.avatarBadge}>
                   <Ionicons name="camera" size={13} color="#fff" />
                 </View>
