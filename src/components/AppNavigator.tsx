@@ -16,11 +16,19 @@ import ParentSettingsScreen from '../screens/ParentSettingsScreen';
 import InternalSettingsScreen from '../screens/InternalSettingsScreen';
 import OTPVerificationScreen from '../screens/OTPVerificationScreen';
 import ProfileCompletionPrompt from './ProfileCompletionPrompt';
+import RegistrationSuccessScreen from '../screens/RegistrationSuccessScreen';
 
 const RootStack = createNativeStackNavigator();
 
 const AppNavigator: React.FC = () => {
-  const { isLoading, isAuthenticated, userRole, user, isVerificationSkipped } = useAuth();
+  const {
+    isLoading,
+    isAuthenticated,
+    userRole,
+    user,
+    isVerificationSkipped,
+    showRegistrationSuccess,
+  } = useAuth();
   const [showSplash, setShowSplash] = useState(true);
 
   const handleSplashFinish = (authenticated: boolean) => {
@@ -41,21 +49,29 @@ const AppNavigator: React.FC = () => {
               <RootStack.Screen name="ParentDashboard" component={ParentDashboardScreen} />
               <RootStack.Screen name="ParentSettings" component={ParentSettingsScreen} />
               <RootStack.Screen name="InternalSettings" component={InternalSettingsScreen} />
-              <RootStack.Screen name="Notifications" component={require('../screens/NotificationsScreen').default} />
+              <RootStack.Screen
+                name="Notifications"
+                component={require('../screens/NotificationsScreen').default}
+              />
               <RootStack.Screen name="FAQs" component={require('../screens/FAQScreen').default} />
-              <RootStack.Screen name="ContactUs" component={require('../screens/ContactUsScreen').default} />
+              <RootStack.Screen
+                name="ContactUs"
+                component={require('../screens/ContactUsScreen').default}
+              />
+            </RootStack.Group>
+          ) : !user?.mobile_verified_at && !isVerificationSkipped ? (
+            <RootStack.Group>
+              <RootStack.Screen name="OTPVerification" component={OTPVerificationScreen} />
+            </RootStack.Group>
+          ) : showRegistrationSuccess ? (
+            <RootStack.Group>
+              <RootStack.Screen name="RegistrationSuccess" component={RegistrationSuccessScreen} />
             </RootStack.Group>
           ) : (
-            !user?.mobile_verified_at && !isVerificationSkipped ? (
-              <RootStack.Group>
-                <RootStack.Screen name="OTPVerification" component={OTPVerificationScreen} />
-              </RootStack.Group>
-            ) : (
-              <RootStack.Group>
-                <RootStack.Screen name="MainTabs" component={TabNavigator} />
-                <RootStack.Screen name="InternalSettings" component={InternalSettingsScreen} />
-              </RootStack.Group>
-            )
+            <RootStack.Group>
+              <RootStack.Screen name="MainTabs" component={TabNavigator} />
+              <RootStack.Screen name="InternalSettings" component={InternalSettingsScreen} />
+            </RootStack.Group>
           )
         ) : (
           <RootStack.Group>
@@ -69,14 +85,15 @@ const AppNavigator: React.FC = () => {
           </RootStack.Group>
         )}
       </RootStack.Navigator>
-      
+
       {/* Global one-time check for profile completion — only after mobile is verified */}
-      {isAuthenticated && userRole !== 'parent' && (user?.mobile_verified_at || isVerificationSkipped) && (
-        <ProfileCompletionPrompt oneTimeAutoShow={true} />
-      )}
+      {isAuthenticated &&
+        userRole !== 'parent' &&
+        (user?.mobile_verified_at || isVerificationSkipped) && (
+          <ProfileCompletionPrompt oneTimeAutoShow={true} />
+        )}
     </>
   );
 };
-
 
 export default AppNavigator;

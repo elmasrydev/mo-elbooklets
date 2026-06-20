@@ -14,36 +14,39 @@ export const useFollowToggle = () => {
   const [isToggling, setIsToggling] = useState(false);
   const { refreshUser } = useAuth();
 
-  const toggleFollow = useCallback(async (userId: string): Promise<FollowResult | null> => {
-    try {
-      setIsToggling(true);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return null;
+  const toggleFollow = useCallback(
+    async (userId: string): Promise<FollowResult | null> => {
+      try {
+        setIsToggling(true);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-      const result = await tryFetchWithFallback(
-        `
+        const token = await SecureStore.getItemAsync('auth_token');
+        if (!token) return null;
+
+        const result = await tryFetchWithFallback(
+          `
         mutation FollowUser($userId: ID!) {
           followUser(userId: $userId) { success isFollowing message }
         }
       `,
-        { userId },
-        token,
-      );
+          { userId },
+          token,
+        );
 
-      if (result.data?.followUser?.success) {
-        await refreshUser();
+        if (result.data?.followUser?.success) {
+          await refreshUser();
+        }
+
+        return result.data?.followUser || null;
+      } catch (err) {
+        console.error('Follow toggle error:', err);
+        return null;
+      } finally {
+        setIsToggling(false);
       }
-
-      return result.data?.followUser || null;
-    } catch (err) {
-      console.error('Follow toggle error:', err);
-      return null;
-    } finally {
-      setIsToggling(false);
-    }
-  }, [refreshUser]);
+    },
+    [refreshUser],
+  );
 
   return { toggleFollow, isToggling };
 };

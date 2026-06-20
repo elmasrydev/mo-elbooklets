@@ -43,7 +43,7 @@ const InternalSettingsScreen: React.FC = () => {
   const { user, updateUser } = useAuth();
   const [showApiModal, setShowApiModal] = useState(false);
   const [triggerReactCrash, setTriggerReactCrash] = useState(false);
-  
+
   // From notification branch (feature/BKLT-16)
   const [fcmToken, setFcmToken] = useState<string>('');
   React.useEffect(() => {
@@ -98,7 +98,7 @@ const InternalSettingsScreen: React.FC = () => {
         mobile: user?.mobile,
         mobile_verified_at: 'reset',
       };
-      
+
       const result = await tryFetchWithFallback(
         `mutation UpdateProfile($input: UpdateProfileInput!) {
           updateProfile(input: $input) {
@@ -107,11 +107,11 @@ const InternalSettingsScreen: React.FC = () => {
           }
         }`,
         { input },
-        token || undefined
+        token || undefined,
       );
-      
-      if (result.data?.updateProfile) {
-        await updateUser({ ...user, mobile_verified_at: null });
+
+      if (result.data?.updateProfile && user) {
+        await updateUser({ ...user, mobile_verified_at: undefined });
         alert('Unverified! Restart app or log out to see OTP screen.');
       }
     } catch (e: any) {
@@ -149,11 +149,7 @@ const InternalSettingsScreen: React.FC = () => {
   );
   return (
     <View style={currentStyles.mainContainer}>
-      <UnifiedHeader
-        title={t('profile_screen.internal_settings')}
-        showBackButton={true}
-        style={currentStyles.headerOverride}
-      />
+      <UnifiedHeader title={t('profile_screen.internal_settings')} showBackButton={true} />
       <ScrollView
         style={currentStyles.scrollView}
         contentContainerStyle={currentStyles.scrollContentContainer}
@@ -295,10 +291,7 @@ const styles = (
       flex: 1,
       backgroundColor: theme.colors.background,
     },
-    headerOverride: {
-      backgroundColor: '#1E40AF',
-      borderBottomWidth: 0,
-    },
+
     scrollView: {
       flex: 1,
     },

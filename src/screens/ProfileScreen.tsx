@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Image,
   Switch,
   Platform,
   ActivityIndicator,
@@ -35,43 +34,46 @@ import {
   DeleteAccountMutationVariables,
 } from '../generated/graphql';
 import { isDebugMode } from '../config/debug';
-import crashlytics from '@react-native-firebase/crashlytics';
-import { checkNotificationPermission, requestNotificationPermission, openSettings } from '../services/notificationService';
+import {
+  checkNotificationPermission,
+  requestNotificationPermission,
+  openSettings,
+} from '../services/notificationService';
 import { useNotificationPreferences } from '../hooks/useNotificationPreferences';
-import { logError } from '../utils/logger';
 
 const APP_VERSION = `EL-Booklets v${DeviceInfo.getVersion()}`;
 
-const CrashTrigger = () => {
-  throw new Error('Test React Render Error for ErrorBoundary');
-};
+// WhatsApp / verify accent greens (brand-specific, intentionally literal to match the
+// verification CTA design — the theme `success` green is a different shade).
+const WHATSAPP_GREEN = '#25D366';
+const VERIFY_BG = '#f0fdf4';
+const VERIFY_BORDER = 'rgba(22,163,74,0.18)';
+const VERIFY_TEXT = '#166534';
+const VERIFY_CHEVRON = '#16a34a';
 
 const ProfileScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { user, logout } = useAuth();
   const { showConfirm } = useModal();
-  const { theme, spacing, fontSizes, borderRadius, isDark, toggleTheme } = useTheme();
+  const { theme, spacing, borderRadius } = useTheme();
   const common = useCommonStyles();
   const { isRTL, setLanguage, language } = useLanguage();
   const { typography, fontWeight } = useTypography();
   const { t } = useTranslation();
 
-
   const [pushEnabled, setPushEnabled] = useState(false);
-  const { 
-    preferences, 
-    toggleAppNotifications, 
+  const {
+    preferences,
+    toggleAppNotifications,
     toggleSocialNotifications,
     loading: prefsLoading,
-    updating
+    updating,
   } = useNotificationPreferences('student');
-
-
 
   useFocusEffect(
     React.useCallback(() => {
       checkNotificationPermission().then(setPushEnabled);
-    }, [])
+    }, []),
   );
 
   // Re-check permission when returning from OS Settings
@@ -97,17 +99,17 @@ const ProfileScreen: React.FC = () => {
           message: t('profile_screen.notifications_settings_msg'),
           confirmLabel: t('common.settings') || 'Settings',
           cancelLabel: t('common.cancel'),
-          onConfirm: openSettings
+          onConfirm: openSettings,
         });
       }
     } else {
       showConfirm({
-          title: t('profile_screen.notifications'),
-          message: t('profile_screen.notifications_disable_msg'),
-          confirmLabel: t('common.settings') || 'Settings',
-          cancelLabel: t('common.cancel'),
-          onConfirm: openSettings
-        });
+        title: t('profile_screen.notifications'),
+        message: t('profile_screen.notifications_disable_msg'),
+        confirmLabel: t('common.settings') || 'Settings',
+        cancelLabel: t('common.cancel'),
+        onConfirm: openSettings,
+      });
     }
   };
 
@@ -117,11 +119,9 @@ const ProfileScreen: React.FC = () => {
   >(DeleteAccountDocument);
 
   const [followStats, setFollowStats] = useState({ followers: 0, following: 0 });
-  const [loadingStats, setLoadingStats] = useState(false);
 
   const fetchFollowStats = useCallback(async () => {
     try {
-      setLoadingStats(true);
       const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
 
@@ -136,15 +136,13 @@ const ProfileScreen: React.FC = () => {
       });
     } catch (err) {
       console.error('Fetch follow stats error:', err);
-    } finally {
-      setLoadingStats(false);
     }
   }, []);
 
   useFocusEffect(
     useCallback(() => {
       fetchFollowStats();
-    }, [fetchFollowStats])
+    }, [fetchFollowStats]),
   );
   const { completeness } = useProfileCompleteness();
   const [showPrompt, setShowPrompt] = useState(false);
@@ -174,7 +172,10 @@ const ProfileScreen: React.FC = () => {
           if (result.data?.deleteAccount?.success) {
             logout();
           } else {
-            console.error('Delete account server returned false', result.data?.deleteAccount?.message);
+            console.error(
+              'Delete account server returned false',
+              result.data?.deleteAccount?.message,
+            );
           }
         } catch (error) {
           console.error('Error deleting account:', error);
@@ -193,460 +194,352 @@ const ProfileScreen: React.FC = () => {
     });
   };
 
-  const currentStyles = useMemo(
-    () =>
-      styles(
-        theme,
-        spacing,
-        fontSizes,
-        borderRadius,
-        common,
-        isRTL,
-        typography,
-        fontWeight,
-        isDark,
+  const handleVerifyPress = () => {
+    showConfirm({
+      title: t('otp.verify_mobile', 'Verify mobile'),
+      message: t(
+        'profile_screen.verify_mobile_msg',
+        'Verify your mobile number via WhatsApp to secure your account and unlock all features.',
       ),
-    [theme, spacing, fontSizes, borderRadius, common, isRTL, typography, fontWeight, isDark],
+      confirmLabel: t('common.ok', 'OK'),
+      onConfirm: () => {},
+    });
+  };
+
+  const s = useMemo(
+    () => styles(theme, spacing, borderRadius, common, isRTL, typography, fontWeight),
+    [theme, spacing, borderRadius, common, isRTL, typography, fontWeight],
   );
 
+  // Reusable settings row (grouped-list style). `first` controls the hairline divider.
+  const renderRow = ({
+    icon,
+    iconBg,
+    iconColor,
+    title,
+    subtitle,
+    meta,
+    onPress,
+    danger,
+    rightElement,
+    first,
+    dim,
+    testID,
+  }: {
+    icon: keyof typeof Ionicons.glyphMap;
+    iconBg?: string;
+    iconColor?: string;
+    title: string;
+    subtitle?: string;
+    meta?: string;
+    onPress?: () => void;
+    danger?: boolean;
+    rightElement?: React.ReactNode;
+    first?: boolean;
+    dim?: boolean;
+    testID?: string;
+  }) => (
+    <TouchableOpacity
+      testID={testID}
+      activeOpacity={onPress ? 0.6 : 1}
+      disabled={!onPress}
+      onPress={onPress}
+      style={[s.row, !first && s.rowDivider, dim && { opacity: 0.5 }]}
+    >
+      <View style={[s.rowIcon, { backgroundColor: iconBg || theme.colors.primary100 }]}>
+        <Ionicons name={icon} size={20} color={iconColor || theme.colors.navy} />
+      </View>
+      <View style={s.rowContent}>
+        <Text style={[s.rowTitle, danger && { color: theme.colors.error }]} numberOfLines={1}>
+          {title}
+        </Text>
+        {subtitle ? (
+          <Text style={s.rowSubtitle} numberOfLines={1}>
+            {subtitle}
+          </Text>
+        ) : null}
+      </View>
+      {meta ? <Text style={s.rowMeta}>{meta}</Text> : null}
+      {rightElement
+        ? rightElement
+        : onPress && (
+            <Ionicons
+              name={isRTL ? 'chevron-back' : 'chevron-forward'}
+              size={20}
+              color={theme.colors.textTertiary}
+            />
+          )}
+    </TouchableOpacity>
+  );
+
+  const isVerified = !!user?.mobile_verified_at;
+
   return (
-    <View style={currentStyles.mainContainer}>
-      <UnifiedHeader
-        title={t('profile_screen.header_title')}
-        style={currentStyles.headerOverride}
-      />
+    <View style={s.mainContainer}>
+      <UnifiedHeader title={t('profile_screen.header_title')} />
 
       <ScrollView
-        style={currentStyles.scrollView}
+        style={s.scrollView}
         contentContainerStyle={[
-          currentStyles.scrollContentContainer,
+          s.scrollContentContainer,
           { paddingBottom: Math.max(common.insets.bottom, spacing['2xl']) },
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Profile Section */}
-        <View style={currentStyles.profileSection}>
-          <TouchableOpacity 
-            style={currentStyles.avatarRingWrapper}
-            activeOpacity={0.8}
-            onPress={() => setShowPrompt(true)}
-          >
-            <CircularProgress
-              size={130}
-              strokeWidth={6}
-              percentage={completeness?.percentage || 0}
-              color={theme.colors.primary}
-              containerStyle={currentStyles.avatarProgress}
-            >
-              <View style={[currentStyles.avatarImage, currentStyles.avatarFallback]}>
-                <Text style={currentStyles.avatarFallbackText}>
-                  {user?.name?.charAt(0).toUpperCase() || 'U'}
-                </Text>
-              </View>
-            </CircularProgress>
-          </TouchableOpacity>
-
-          <View style={currentStyles.userInfoTextContainer}>
-            <Text style={currentStyles.userName}>{user?.name || 'User'}</Text>
-            <Text style={currentStyles.userSubtitle}>
-              {user?.grade?.name || t('profile_screen.not_specified')}{' '}
-              {user?.educational_system?.name ? `• ${user.educational_system.name}` : ''}
-            </Text>
-            {user?.mobile ? (
-              <Text
-                style={[
-                  currentStyles.userSubtitle,
-                  { marginTop: 4, fontWeight: 'normal', opacity: 0.8 },
-                ]}
+        {/* Profile header card */}
+        <View style={s.headerCard}>
+          <View style={s.headerRow}>
+            <TouchableOpacity activeOpacity={0.85} onPress={() => setShowPrompt(true)}>
+              <CircularProgress
+                size={74}
+                strokeWidth={4}
+                percentage={completeness?.percentage || 0}
+                color={theme.colors.primary}
+                containerStyle={{ padding: 4 }}
               >
-                {user?.country_code ? `${user.country_code} ` : ''}
-                {user.mobile}
-              </Text>
-            ) : null}
-
-            {!user?.mobile_verified_at ? (
-              <View style={currentStyles.verifyBanner}>
-                <View style={{ width: 16 }} />
-                <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
-                  <Ionicons name="logo-whatsapp" size={18} color="#25D366" style={{ marginEnd: spacing.xs }} />
-                  <Text style={[typography('caption'), currentStyles.verifyText, { flex: 0 }]}>{t('otp.verify_mobile', 'Verify your mobile via WhatsApp')}</Text>
+                <View style={s.headerAvatar}>
+                  <Text style={s.headerAvatarText}>
+                    {user?.name?.charAt(0).toUpperCase() || 'U'}
+                  </Text>
                 </View>
-                <View style={{ width: 16 }} />
-              </View>
-            ) : (
-              <View style={currentStyles.verifiedBadge}>
-                <Ionicons name="checkmark-circle" size={16} color={theme.colors.success} style={{ marginEnd: spacing.xs }} />
-                <Text style={[typography('caption'), currentStyles.verifiedText]}>{t('otp.mobile_verified', 'Mobile verified')}</Text>
-              </View>
-            )}
-          </View>
-        </View>
+              </CircularProgress>
+            </TouchableOpacity>
 
-        {/* Follow Stats */}
-        <View style={currentStyles.followStatsContainer}>
-          <TouchableOpacity
-            style={currentStyles.statItem}
-            onPress={() => navigation.navigate('FollowList', { type: 'followers' })}
-          >
-            <Text style={currentStyles.statCount}>{followStats.followers}</Text>
-            <Text style={currentStyles.statLabel}>{t('profile_screen.followers')}</Text>
-          </TouchableOpacity>
-          <View style={currentStyles.statDivider} />
-          <TouchableOpacity
-            style={currentStyles.statItem}
-            onPress={() => navigation.navigate('FollowList', { type: 'following' })}
-          >
-            <Text style={currentStyles.statCount}>{followStats.following}</Text>
-            <Text style={currentStyles.statLabel}>{t('profile_screen.following')}</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Menu Section */}
-        <View style={currentStyles.menuSection}>
-          {/* Menu Items "TODO: we need to release and show it in next release"*/}
-          <TouchableOpacity 
-            style={currentStyles.settingItem}
-            onPress={() => navigation.navigate('EditProfile')}
-          >
-            <View style={currentStyles.settingIconBox}>
-              <Image
-                source={require('../../assets/images/editProfile.png')}
-                style={currentStyles.menuImage}
-              />
-            </View>
-            <View style={currentStyles.settingContent}>
-              <Text style={currentStyles.settingTitle}>{t('profile_screen.edit_profile')}</Text>
-            </View>
-            <Ionicons
-              name={isRTL ? 'chevron-back' : 'chevron-forward'}
-              size={20}
-              color={theme.colors.textTertiary}
-            />
-          </TouchableOpacity>
-
-          {/* Change Language */}
-          <TouchableOpacity style={currentStyles.settingItem} onPress={handleLanguagePress}>
-            <View style={currentStyles.settingIconBox}>
-              <Image
-                source={require('../../assets/images/changeLang.png')}
-                style={currentStyles.menuImage}
-              />
-            </View>
-            <View style={currentStyles.settingContent}>
-              <Text style={currentStyles.settingTitle}>{t('profile_screen.change_language')}</Text>
-              <Text style={currentStyles.settingSubtitle}>
-                {t('profile_screen.change_language_desc')}
+            <View style={s.headerInfo}>
+              <Text numberOfLines={1} style={s.headerName}>
+                {user?.name || 'User'}
               </Text>
-            </View>
-            <Ionicons
-              name={isRTL ? 'chevron-back' : 'chevron-forward'}
-              size={20}
-              color={theme.colors.textTertiary}
-            />
-          </TouchableOpacity>
-
-          {/* FAQ */}
-          <TouchableOpacity
-            style={currentStyles.settingItem}
-            onPress={() => navigation.navigate('FAQs')}
-          >
-            <View
-              style={[currentStyles.settingIconBox, { backgroundColor: theme.colors.info + '20' }]}
-            >
-              <Ionicons name="help-circle-outline" size={22} color={theme.colors.info} />
-            </View>
-            <View style={currentStyles.settingContent}>
-              <Text style={currentStyles.settingTitle}>{t('profile_screen.faqs')}</Text>
-            </View>
-            <Ionicons
-              name={isRTL ? 'chevron-back' : 'chevron-forward'}
-              size={20}
-              color={theme.colors.textTertiary}
-            />
-          </TouchableOpacity>
-
-          {/* Contact Us */}
-          <TouchableOpacity
-            style={currentStyles.settingItem}
-            onPress={() => navigation.navigate('ContactUs')}
-          >
-            <View
-              style={[
-                currentStyles.settingIconBox,
-                { backgroundColor: theme.colors.warning + '20' },
-              ]}
-            >
-              <Ionicons name="mail-outline" size={22} color={theme.colors.warning} />
-            </View>
-            <View style={currentStyles.settingContent}>
-              <Text style={currentStyles.settingTitle}>{t('profile_screen.contact_us')}</Text>
-            </View>
-            <Ionicons
-              name={isRTL ? 'chevron-back' : 'chevron-forward'}
-              size={20}
-              color={theme.colors.textTertiary}
-            />
-          </TouchableOpacity>
-
-          {/* Parental Linking */}
-          <TouchableOpacity
-            style={currentStyles.settingItem}
-            onPress={() => navigation.navigate('ParentLinking' as never)}
-          >
-            <View
-              style={[
-                currentStyles.settingIconBox,
-                { backgroundColor: theme.colors.primary + '20' },
-              ]}
-            >
-              <Ionicons name="people-outline" size={22} color={theme.colors.primary} />
-            </View>
-            <View style={currentStyles.settingContent}>
-              <Text style={currentStyles.settingTitle}>
-                {t('profile_screen.parental_linking', 'Parental Linking')}
+              <Text numberOfLines={1} style={s.headerSub}>
+                {user?.grade?.name || t('profile_screen.not_specified')}
+                {user?.educational_system?.name ? ` · ${user.educational_system.name}` : ''}
               </Text>
-              <Text style={currentStyles.settingSubtitle}>
-                {user?.parent_mobile
-                  ? user.parent_mobile
-                  : t('profile_screen.parental_linking_desc', 'Connect with your parents')}
-              </Text>
+              {user?.mobile ? (
+                <Text numberOfLines={1} style={s.headerPhone}>
+                  {user?.country_code ? `${user.country_code} ` : ''}
+                  {user.mobile}
+                </Text>
+              ) : null}
+              {isVerified ? (
+                <View style={s.verifiedInline}>
+                  <Ionicons name="checkmark-circle" size={13} color={theme.colors.success} />
+                  <Text style={s.verifiedInlineText}>{t('otp.mobile_verified', 'Verified')}</Text>
+                </View>
+              ) : null}
             </View>
-            <Ionicons
-              name={isRTL ? 'chevron-back' : 'chevron-forward'}
-              size={20}
-              color={theme.colors.textTertiary}
-            />
-          </TouchableOpacity>
 
-          {/* Badges */}
-          <TouchableOpacity 
-            style={currentStyles.settingItem}
-            onPress={() => navigation.navigate('Badges')}
-          >
-            <View style={currentStyles.settingIconBox}>
-              <Image
-                source={require('../../assets/images/Badges.png')}
-                style={currentStyles.menuImage}
-              />
-            </View>
-            <View style={currentStyles.settingContent}>
-              <Text style={currentStyles.settingTitle}>{t('profile_screen.badges')}</Text>
-            </View>
-            <Ionicons
-              name={isRTL ? 'chevron-back' : 'chevron-forward'}
-              size={20}
-              color={theme.colors.textTertiary}
-            />
-          </TouchableOpacity>
-          
-          {/* Bookmarks & Notes */}
-          <TouchableOpacity 
-            style={currentStyles.settingItem}
-            onPress={() => navigation.navigate('BookmarksNotes')}
-          >
-            <View
-              style={[
-                currentStyles.settingIconBox,
-                { backgroundColor: theme.colors.primary + '20' },
-              ]}
-            >
-              <Ionicons name="bookmark-outline" size={22} color={theme.colors.primary} />
-            </View>
-            <View style={currentStyles.settingContent}>
-              <Text style={currentStyles.settingTitle}>
-                {t('more_screen.bookmarks_notes', 'Bookmarks & Notes')}
-              </Text>
-              <Text style={currentStyles.settingSubtitle}>
-                {t('more_screen.bookmarks_notes_desc', 'View your saved points and notes')}
-              </Text>
-            </View>
-            <Ionicons
-              name={isRTL ? 'chevron-back' : 'chevron-forward'}
-              size={20}
-              color={theme.colors.textTertiary}
-            />
-          </TouchableOpacity>
-
-          {/* Help and Support - Hidden for now */}
-          {/*
-          <TouchableOpacity style={currentStyles.settingItem}>
-            <View style={currentStyles.settingIconBox}>
-              <Image
-                source={require('../../assets/images/help.png')}
-                style={currentStyles.menuImage}
-              />
-            </View>
-            <View style={currentStyles.settingContent}>
-              <Text style={currentStyles.settingTitle}>{t('profile_screen.help_support')}</Text>
-            </View>
-            <Ionicons
-              name={isRTL ? 'chevron-back' : 'chevron-forward'}
-              size={20}
-              color={theme.colors.textTertiary}
-            />
-          </TouchableOpacity>
-          */}
-
-          {/* Internal Settings (debug builds only) */}
-          {isDebugMode() && (
             <TouchableOpacity
-              style={currentStyles.settingItem}
-              onPress={() => navigation.navigate('InternalSettings')}
+              style={s.editBtn}
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate('EditProfile')}
             >
-              <View
-                style={[
-                  currentStyles.settingIconBox,
-                  { backgroundColor: theme.colors.warning + '20' },
-                ]}
-              >
-                <Ionicons name="settings-outline" size={22} color={theme.colors.warning} />
-              </View>
-              <View style={currentStyles.settingContent}>
-                <Text style={currentStyles.settingTitle}>{t('profile_screen.internal_settings')}</Text>
-              </View>
+              <Ionicons name="create-outline" size={19} color={theme.colors.navy} />
+            </TouchableOpacity>
+          </View>
+
+          {!isVerified ? (
+            <TouchableOpacity style={s.verifyBtn} activeOpacity={0.8} onPress={handleVerifyPress}>
+              <Ionicons name="logo-whatsapp" size={18} color={WHATSAPP_GREEN} />
+              <Text style={s.verifyText} numberOfLines={1}>
+                {t('otp.verify_mobile', 'Verify your mobile via WhatsApp')}
+              </Text>
               <Ionicons
                 name={isRTL ? 'chevron-back' : 'chevron-forward'}
-                size={20}
-                color={theme.colors.textTertiary}
+                size={18}
+                color={VERIFY_CHEVRON}
+                style={{ marginStart: 'auto' }}
               />
             </TouchableOpacity>
-          )}
+          ) : null}
 
-          {/* Notifications Control Section */}
-          <View style={currentStyles.sectionHeader}>
-            <Text style={currentStyles.sectionHeaderText}>
-              {t('profile_screen.notifications_control')}
-            </Text>
-          </View>
-
-          {/* 1. Main Push Notifications Toggle (OS Level) */}
-          <View style={currentStyles.settingItem}>
-            <View style={[currentStyles.settingIconBox, { backgroundColor: theme.colors.primary + '20' }]}>
-              <Ionicons name="notifications-outline" size={22} color={theme.colors.primary} />
-            </View>
-            <View style={currentStyles.settingContent}>
-              <Text style={currentStyles.settingTitle}>{t('profile_screen.notifications')}</Text>
-              <Text style={currentStyles.settingSubtitle}>{t('profile_screen.notifications_desc')}</Text>
-            </View>
-            <Switch
-              value={pushEnabled}
-              onValueChange={handlePushToggle}
-              trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
-              thumbColor={Platform.OS === 'ios' ? '#ffffff' : pushEnabled ? '#ffffff' : '#f4f3f4'}
-              ios_backgroundColor={theme.colors.border}
-            />
-          </View>
-
-          {/* 2. App Notifications Toggle (API Level) */}
-          <View style={[currentStyles.settingItem, !pushEnabled && { opacity: 0.5 }]}>
-            <View style={[currentStyles.settingIconBox, { backgroundColor: theme.colors.secondary + '20' }]}>
-              <Ionicons name="apps-outline" size={22} color={theme.colors.secondary} />
-            </View>
-            <View style={currentStyles.settingContent}>
-              <Text style={currentStyles.settingTitle}>{t('profile_screen.app_notifications')}</Text>
-              <Text style={currentStyles.settingSubtitle}>{t('profile_screen.app_notifications_desc')}</Text>
-            </View>
-            {updating === 'app_notifications_enabled' || (prefsLoading && !pushEnabled) ? (
-              <View style={currentStyles.loaderContainer}>
-                <ActivityIndicator size="large" color={theme.colors.primary} />
-              </View>
-            ) : (
-              <Switch
-                value={preferences.app_notifications_enabled}
-                onValueChange={toggleAppNotifications}
-                disabled={!pushEnabled}
-                trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
-                thumbColor={Platform.OS === 'ios' ? '#ffffff' : preferences.app_notifications_enabled ? '#ffffff' : '#f4f3f4'}
-                ios_backgroundColor={theme.colors.border}
-              />
-            )}
-          </View>
-
-          {/* 3. Social Notifications Toggle (API Level) */}
-          <View style={[currentStyles.settingItem, !pushEnabled && { opacity: 0.5 }]}>
-            <View style={[currentStyles.settingIconBox, { backgroundColor: theme.colors.info + '20' }]}>
-              <Ionicons name="chatbubbles-outline" size={22} color={theme.colors.info} />
-            </View>
-            <View style={currentStyles.settingContent}>
-              <Text style={currentStyles.settingTitle}>{t('profile_screen.social_notifications')}</Text>
-              <Text style={currentStyles.settingSubtitle}>{t('profile_screen.social_notifications_desc')}</Text>
-            </View>
-            {updating === 'social_notifications_enabled' || (prefsLoading && !pushEnabled) ? (
-              <View style={currentStyles.loaderContainer}>
-                <ActivityIndicator size="large" color={theme.colors.primary} />
-              </View>
-            ) : (
-              <Switch
-                value={preferences.social_notifications_enabled ?? false}
-                onValueChange={toggleSocialNotifications}
-                disabled={!pushEnabled}
-                trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
-                thumbColor={Platform.OS === 'ios' ? '#ffffff' : preferences.social_notifications_enabled ? '#ffffff' : '#f4f3f4'}
-                ios_backgroundColor={theme.colors.border}
-              />
-            )}
-          </View>
-
-          {/* Dark Mode Toggle - Locked to Light Mode */}
-          {/* 
-          <View style={currentStyles.settingItem}>
-            <View style={currentStyles.settingIconBox}>
-              <Image
-                source={require('../../assets/images/darkMode.png')}
-                style={currentStyles.menuImage}
-              />
-            </View>
-            <View style={currentStyles.settingContent}>
-              <Text style={currentStyles.settingTitle}>{t('profile_screen.dark_mode')}</Text>
-            </View>
-            <Switch
-              value={isDark}
-              onValueChange={toggleTheme}
-              trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
-              thumbColor={Platform.OS === 'ios' ? '#ffffff' : isDark ? '#ffffff' : '#f4f3f4'}
-              ios_backgroundColor={theme.colors.border}
-            />
-          </View>
-          */}
-
-          {/* Log Out */}
-          <View style={currentStyles.logoutContainer}>
-            <TouchableOpacity style={currentStyles.logoutItem} onPress={handleLogout}>
-              <View style={currentStyles.logoutIconBox}>
-                <Image
-                  source={require('../../assets/images/logout.png')}
-                  style={currentStyles.logoutMenuImage}
-                />
-              </View>
-              <View style={currentStyles.settingContent}>
-                <Text style={currentStyles.logoutTitle}>{t('profile_screen.log_out')}</Text>
-              </View>
+          <View style={s.statsRow}>
+            <TouchableOpacity
+              style={s.statCol}
+              onPress={() => navigation.navigate('FollowList', { type: 'followers' })}
+            >
+              <Text style={s.statNum}>{followStats.followers}</Text>
+              <Text style={s.statLabel}>{t('profile_screen.followers')}</Text>
+            </TouchableOpacity>
+            <View style={s.statDivider} />
+            <TouchableOpacity
+              style={s.statCol}
+              onPress={() => navigation.navigate('FollowList', { type: 'following' })}
+            >
+              <Text style={s.statNum}>{followStats.following}</Text>
+              <Text style={s.statLabel}>{t('profile_screen.following')}</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Version Info */}
-        <Text style={currentStyles.versionText}>{APP_VERSION}</Text>
+        {/* Account */}
+        <Text style={s.groupLabel}>{t('profile_screen.account_section', 'Account')}</Text>
+        <View style={s.group}>
+          {renderRow({
+            icon: 'create-outline',
+            title: t('profile_screen.edit_profile'),
+            onPress: () => navigation.navigate('EditProfile'),
+            first: true,
+          })}
+          {renderRow({
+            icon: 'language-outline',
+            title: t('profile_screen.change_language'),
+            meta: language === 'ar' ? 'العربية' : 'English',
+            onPress: handleLanguagePress,
+          })}
+          {renderRow({
+            testID: 'profile-parent-linking-item',
+            icon: 'people-outline',
+            title: t('profile_screen.parental_linking', 'Parental Linking'),
+            subtitle: user?.parent_mobile
+              ? user.parent_mobile
+              : t('profile_screen.parental_linking_desc', 'Connect with your parents'),
+            onPress: () => navigation.navigate('ParentLinking' as never),
+          })}
+          {renderRow({
+            icon: 'medal-outline',
+            title: t('profile_screen.badges'),
+            onPress: () => navigation.navigate('Badges'),
+          })}
+          {renderRow({
+            icon: 'bookmark-outline',
+            title: t('more_screen.bookmarks_notes', 'Bookmarks & Notes'),
+            subtitle: t('more_screen.bookmarks_notes_desc', 'View your saved points and notes'),
+            onPress: () => navigation.navigate('BookmarksNotes'),
+          })}
+        </View>
 
+        {/* Support */}
+        <Text style={s.groupLabel}>{t('profile_screen.support_section', 'Support')}</Text>
+        <View style={s.group}>
+          {renderRow({
+            icon: 'help-circle-outline',
+            title: t('profile_screen.faqs'),
+            onPress: () => navigation.navigate('FAQs'),
+            first: true,
+          })}
+          {renderRow({
+            icon: 'mail-outline',
+            title: t('profile_screen.contact_us'),
+            onPress: () => navigation.navigate('ContactUs'),
+          })}
+          {isDebugMode()
+            ? renderRow({
+                icon: 'options-outline',
+                title: t('profile_screen.internal_settings'),
+                onPress: () => navigation.navigate('InternalSettings'),
+              })
+            : null}
+        </View>
+
+        {/* Notifications */}
+        <Text style={s.groupLabel}>{t('profile_screen.notifications_control')}</Text>
+        <View style={s.group}>
+          {renderRow({
+            icon: 'notifications-outline',
+            title: t('profile_screen.notifications'),
+            subtitle: t('profile_screen.notifications_desc'),
+            first: true,
+            rightElement: (
+              <Switch
+                value={pushEnabled}
+                onValueChange={handlePushToggle}
+                trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
+                thumbColor={Platform.OS === 'ios' ? '#ffffff' : pushEnabled ? '#ffffff' : '#f4f3f4'}
+                ios_backgroundColor={theme.colors.border}
+              />
+            ),
+          })}
+          {renderRow({
+            icon: 'megaphone-outline',
+            title: t('profile_screen.app_notifications'),
+            subtitle: t('profile_screen.app_notifications_desc'),
+            dim: !pushEnabled,
+            rightElement:
+              updating === 'app_notifications_enabled' || (prefsLoading && !pushEnabled) ? (
+                <ActivityIndicator size="small" color={theme.colors.primary} />
+              ) : (
+                <Switch
+                  value={preferences.app_notifications_enabled}
+                  onValueChange={toggleAppNotifications}
+                  disabled={!pushEnabled}
+                  trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
+                  thumbColor={
+                    Platform.OS === 'ios'
+                      ? '#ffffff'
+                      : preferences.app_notifications_enabled
+                        ? '#ffffff'
+                        : '#f4f3f4'
+                  }
+                  ios_backgroundColor={theme.colors.border}
+                />
+              ),
+          })}
+          {renderRow({
+            icon: 'chatbubbles-outline',
+            title: t('profile_screen.social_notifications'),
+            subtitle: t('profile_screen.social_notifications_desc'),
+            dim: !pushEnabled,
+            rightElement:
+              updating === 'social_notifications_enabled' || (prefsLoading && !pushEnabled) ? (
+                <ActivityIndicator size="small" color={theme.colors.primary} />
+              ) : (
+                <Switch
+                  value={preferences.social_notifications_enabled ?? false}
+                  onValueChange={toggleSocialNotifications}
+                  disabled={!pushEnabled}
+                  trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
+                  thumbColor={
+                    Platform.OS === 'ios'
+                      ? '#ffffff'
+                      : preferences.social_notifications_enabled
+                        ? '#ffffff'
+                        : '#f4f3f4'
+                  }
+                  ios_backgroundColor={theme.colors.border}
+                />
+              ),
+          })}
+        </View>
+
+        {/* Log out */}
+        <View style={[s.group, { marginTop: spacing.md }]}>
+          {renderRow({
+            testID: 'profile-logout-item',
+            icon: 'log-out-outline',
+            iconBg: theme.colors.error + '12',
+            iconColor: theme.colors.error,
+            title: t('profile_screen.log_out'),
+            danger: true,
+            first: true,
+            onPress: handleLogout,
+          })}
+        </View>
+
+        {/* Footer */}
+        <Text style={s.versionText}>{APP_VERSION}</Text>
         <TouchableOpacity
-          style={currentStyles.deleteAccountItem}
+          style={s.deleteBtn}
           onPress={handleDeleteAccount}
           disabled={isDeletingAccount}
         >
-          <View style={currentStyles.deleteAccountIconBox}>
-            <Ionicons name="trash-outline" size={18} color={'#fff'} />
-          </View>
-          <View style={currentStyles.deleteAccountContent}>
-            <Text style={currentStyles.deleteAccountTitle}>
-              {t('profile_screen.delete_account')}
-            </Text>
-          </View>
-          {isDeletingAccount && <ActivityIndicator color={theme.colors.error} size="small" />}
+          <Ionicons
+            name="trash-outline"
+            size={18}
+            color={theme.colors.error}
+            style={{ marginEnd: spacing.xs }}
+          />
+          <Text style={s.deleteText}>{t('profile_screen.delete_account')}</Text>
+          {isDeletingAccount && (
+            <ActivityIndicator
+              color={theme.colors.error}
+              size="small"
+              style={{ marginStart: spacing.xs }}
+            />
+          )}
         </TouchableOpacity>
       </ScrollView>
 
-      <ProfileCompletionPrompt 
-        context="more" 
+      <ProfileCompletionPrompt
+        context="more"
         isVisible={showPrompt}
         onClose={() => setShowPrompt(false)}
         autoShow={true}
@@ -658,346 +551,225 @@ const ProfileScreen: React.FC = () => {
 const styles = (
   theme: any,
   spacing: any,
-  fontSizes: any,
   borderRadius: any,
   common: any,
   isRTL: boolean,
   typography: any,
   fontWeight: any,
-  isDark: boolean,
 ) =>
   StyleSheet.create({
     mainContainer: {
       flex: 1,
       backgroundColor: theme.colors.background,
     },
-    headerOverride: {
-      backgroundColor: '#1E40AF', // Enforce specific blue from HTML design
-      borderBottomWidth: 0,
-    },
     scrollView: {
       flex: 1,
     },
-    profileSection: {
+    scrollContentContainer: {
+      padding: spacing.md,
+    },
+
+    // Header card
+    headerCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: borderRadius['2xl'],
+      padding: spacing.mdd,
+      marginTop: spacing.sm,
+      shadowColor: '#004A9A',
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.1,
+      shadowRadius: 20,
+      elevation: 4,
+    },
+    headerRow: {
+      flexDirection: common.rowDirection,
       alignItems: 'center',
-      paddingVertical: spacing.lg,
-      marginBottom: 0,
+      gap: spacing.md,
     },
-    avatarRingWrapper: {
-      position: 'relative',
-    },
-    avatarOuterRing: {
-      padding: 4,
-      borderRadius: borderRadius.full,
+    headerAvatar: {
+      width: 58,
+      height: 58,
+      borderRadius: 29,
       backgroundColor: theme.colors.primary100,
-      borderWidth: 2,
-      borderColor: theme.colors.primary + '33', // 20% opacity
-    },
-    avatarImage: {
-      width: 100,
-      height: 100,
-      borderRadius: 50,
-      borderWidth: 2,
-      borderColor: theme.colors.card,
-    },
-    avatarProgress: {
-      padding: 4,
-    },
-    avatarFallback: {
-      backgroundColor: theme.colors.primary,
       justifyContent: 'center',
       alignItems: 'center',
     },
-    avatarFallbackText: {
-      ...typography('h1'),
+    headerAvatarText: {
+      ...typography('h2'),
       ...fontWeight('bold'),
-      color: '#ffffff',
+      color: theme.colors.primary,
     },
-    editAvatarButton: {
-      position: 'absolute',
-      bottom: 4,
-      right: 4,
-      backgroundColor: theme.colors.primary,
-      padding: spacing.xs,
+    headerInfo: {
+      flex: 1,
+      gap: 3,
+    },
+    headerName: {
+      ...typography('h3'),
+      ...fontWeight('bold'),
+      color: theme.colors.text,
+      textAlign: common.textAlign,
+    },
+    headerSub: {
+      ...typography('caption'),
+      ...fontWeight('600'),
+      color: theme.colors.textSecondary,
+      textAlign: common.textAlign,
+    },
+    headerPhone: {
+      ...typography('caption'),
+      color: theme.colors.textTertiary,
+      textAlign: common.textAlign,
+    },
+    verifiedInline: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      gap: 4,
+      marginTop: 2,
+    },
+    verifiedInlineText: {
+      ...typography('label'),
+      ...fontWeight('bold'),
+      color: theme.colors.success,
+    },
+    editBtn: {
+      width: 36,
+      height: 36,
       borderRadius: borderRadius.full,
-      borderWidth: 2,
-      borderColor: theme.colors.card,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
-      elevation: 4,
-    },
-    userInfoTextContainer: {
-      marginTop: spacing.md,
+      backgroundColor: theme.colors.primary100,
+      justifyContent: 'center',
       alignItems: 'center',
     },
-    userName: {
+    verifyBtn: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      gap: 10,
+      marginTop: spacing.md,
+      paddingVertical: 10,
+      paddingHorizontal: 14,
+      borderRadius: borderRadius.lg,
+      backgroundColor: VERIFY_BG,
+      borderWidth: 1,
+      borderColor: VERIFY_BORDER,
+    },
+    verifyText: {
+      ...typography('caption'),
+      ...fontWeight('bold'),
+      color: VERIFY_TEXT,
+      flexShrink: 1,
+    },
+    statsRow: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      marginTop: spacing.md,
+      paddingTop: spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.border,
+    },
+    statCol: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    statNum: {
       ...typography('h2'),
       ...fontWeight('bold'),
       color: theme.colors.text,
-      marginBottom: 2,
-      textAlign: 'center',
-    },
-    userSubtitle: {
-      ...typography('body'),
-      ...fontWeight('bold'),
-      color: theme.colors.textSecondary,
-      textAlign: 'center',
-    },
-    verifyBanner: {
-      flexDirection: 'row',
-      justifyContent:'space-around',
-      alignItems: 'center',
-      height:44,
-      backgroundColor: theme.colors.primary + '15',
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
-      borderRadius: borderRadius.lg,
-      marginTop: spacing.md,
-      borderWidth: 1,
-      borderColor: theme.colors.primary + '30',
-    },
-    verifyText: {
-      ...fontWeight('600'),
-      color: theme.colors.primary,
-      flex: 1,
-      textAlign: 'center',
-    },
-    verifiedBadge: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: theme.colors.success + '15',
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
-      borderRadius: borderRadius.lg,
-      marginTop: spacing.md,
-    },
-    verifiedText: {
-      ...fontWeight('600'),
-      color: theme.colors.success,
-    },
-    menuSection: {
-      marginTop: spacing.lg,
-    },
-    followStatsContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: theme.colors.card,
-      paddingVertical: spacing.md,
-      paddingHorizontal: spacing.lg,
-      borderRadius: borderRadius.xl,
-      marginTop: spacing.md,
-      marginHorizontal: spacing.md,
-      ...layout.shadow,
-    },
-    statItem: {
-      alignItems: 'center',
-      paddingHorizontal: spacing.lg,
-    },
-    statCount: {
-      ...typography('h3'),
-      ...fontWeight('bold'),
-      color: theme.colors.primary,
     },
     statLabel: {
-      ...typography('caption'),
-      color: theme.colors.textSecondary,
+      ...typography('label'),
+      ...fontWeight('bold'),
+      color: theme.colors.textTertiary,
       marginTop: 2,
     },
     statDivider: {
       width: 1,
-      height: 30,
+      height: 34,
       backgroundColor: theme.colors.border,
     },
-    sectionHeader: {
-      marginTop: spacing.md,
-      marginBottom: spacing.xs,
-      ...common.marginStart(spacing.xs),
-    },
-    sectionHeaderText: {
-      ...typography('caption'),
+
+    // Grouped lists
+    groupLabel: {
+      ...typography('label'),
       ...fontWeight('bold'),
       color: theme.colors.textTertiary,
       textTransform: 'uppercase',
-      letterSpacing: 1,
-    },
-    loaderContainer: {
-      width: 50,
-      height: 30,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    settingItem: {
-      flexDirection: common.rowDirection,
-      alignItems: 'center',
-      backgroundColor: theme.colors.card,
-      padding: spacing.md,
-      borderRadius: borderRadius.xl,
+      letterSpacing: 0.5,
+      marginTop: spacing.lg,
       marginBottom: spacing.sm,
+      ...common.marginStart(spacing.xs),
+      textAlign: common.textAlign,
+    },
+    group: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: borderRadius.xl,
+      overflow: 'hidden',
       ...layout.shadow,
       shadowOpacity: 0.05,
-      shadowRadius: 3,
-      elevation: 2,
     },
-    settingIconBox: {
-      width: 40,
-      height: 40,
+    row: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      gap: 14,
+      paddingVertical: 14,
+      paddingHorizontal: spacing.md,
+      minHeight: 62,
+    },
+    rowDivider: {
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.border,
+    },
+    rowIcon: {
+      width: 38,
+      height: 38,
       borderRadius: borderRadius.md,
-      backgroundColor: isDark ? theme.colors.primary + '1A' : theme.colors.primary100,
       justifyContent: 'center',
       alignItems: 'center',
-      ...common.marginEnd(spacing.md),
     },
-    menuImage: {
-      width: 21,
-      height: 21,
-      resizeMode: 'contain',
-    },
-    logoutMenuImage: {
-      width: 21,
-      height: 21,
-      resizeMode: 'contain',
-    },
-    settingContent: {
+    rowContent: {
       flex: 1,
-      justifyContent: 'center',
     },
-    deleteAccountContent: {
-      //flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    settingTitle: {
+    rowTitle: {
       ...typography('body'),
       ...fontWeight('600'),
       color: theme.colors.text,
       textAlign: common.textAlign,
     },
-    settingSubtitle: {
-      ...typography('caption'),
-      color: theme.colors.textSecondary,
+    rowSubtitle: {
+      ...typography('label'),
+      color: theme.colors.textTertiary,
       marginTop: 2,
       textAlign: common.textAlign,
     },
-    logoutContainer: {
-      paddingTop: spacing.md,
+    rowMeta: {
+      ...typography('caption'),
+      ...fontWeight('600'),
+      color: theme.colors.textTertiary,
     },
-    logoutItem: {
-      flexDirection: common.rowDirection,
-      alignItems: 'center',
-      backgroundColor: isDark ? theme.colors.error + '1A' : '#FEF2F2', // red-50
-      padding: spacing.md,
-      borderRadius: borderRadius.xl,
-      borderWidth: 1,
-      borderColor: isDark ? theme.colors.error + '33' : '#FEE2E2', // red-100
+
+    // Footer
+    versionText: {
+      ...typography('caption'),
+      color: theme.colors.textTertiary,
+      textAlign: 'center',
+      marginTop: spacing.lg,
     },
-    logoutIconBox: {
-      width: 40,
-      height: 40,
-      borderRadius: borderRadius.md,
-      backgroundColor: isDark ? theme.colors.error + '33' : '#FEE2E2',
-      justifyContent: 'center',
-      alignItems: 'center',
-      ...common.marginEnd(spacing.md),
-    },
-    logoutTitle: {
-      ...typography('body'),
-      ...fontWeight('bold'),
-      color: theme.colors.error,
-      textAlign: common.textAlign,
-    },
-    deleteAccountItem: {
-      width: '70%',
+    deleteBtn: {
       alignSelf: 'center',
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: spacing.xs,
-      marginTop: spacing['3xl'],
+      paddingVertical: spacing.ssm,
+      paddingHorizontal: spacing.xl,
+      marginTop: spacing.md,
       borderRadius: borderRadius.lg,
-      borderWidth: 1,
-      borderColor: theme.colors.error + '40',
-      backgroundColor: 'red',
-      opacity: 0.75,
+      borderWidth: 1.5,
+      borderColor: theme.colors.error + '4D',
+      backgroundColor: theme.colors.surface,
     },
-    deleteAccountIconBox: {
-      width: 34,
-      height: 34,
-      borderRadius: borderRadius.sm,
-      backgroundColor: theme.colors.error + '1A',
-      justifyContent: 'center',
-      alignItems: 'center',
-      ...common.marginEnd(spacing.sm),
-    },
-    deleteAccountTitle: {
+    deleteText: {
       ...typography('body'),
       ...fontWeight('bold'),
-      color: '#fff',
-      textAlign: common.textAlign,
-    },
-    crashTestContainer: {
-      marginTop: spacing.sm,
-      padding: spacing.md,
-      backgroundColor: isDark ? theme.colors.warning + '0D' : '#FFF8E1',
-      borderRadius: borderRadius.xl,
-      borderWidth: 1,
-      borderColor: isDark ? theme.colors.warning + '33' : '#FFE082',
-    },
-    crashTestHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: spacing.xs,
-    },
-    crashTestTitle: {
-      ...typography('body'),
-      ...fontWeight('bold'),
-      color: theme.colors.warning,
-      ...common.marginStart(spacing.xs),
-    },
-    crashTestSubtitle: {
-      ...typography('caption'),
-      color: theme.colors.textSecondary,
-      marginBottom: spacing.sm,
-      textAlign: common.textAlign,
-    },
-    crashTestButtonsRow: {
-      gap: spacing.sm,
-    },
-    crashButton: {
-      flex: 1,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: spacing.xs,
-      backgroundColor: theme.colors.error,
-      paddingVertical: spacing.sm,
-      borderRadius: borderRadius.lg,
-    },
-    logErrorButton: {
-      flex: 1,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: spacing.xs,
-      backgroundColor: theme.colors.warning,
-      paddingVertical: spacing.sm,
-      borderRadius: borderRadius.lg,
-    },
-    crashButtonText: {
-      ...typography('caption'),
-      ...fontWeight('bold'),
-      color: '#ffffff',
-    },
-    versionText: {
-      ...typography('caption'),
-      color: theme.colors.textSecondary,
+      color: theme.colors.error,
       textAlign: 'center',
-      marginTop: spacing['lg'],
-    },
-    scrollContentContainer: {
-      padding: layout.screenPadding,
     },
   });
 

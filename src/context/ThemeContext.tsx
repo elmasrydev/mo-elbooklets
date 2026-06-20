@@ -123,9 +123,9 @@ const generateThemeColors = (mode: ThemeMode, palette: ColorPalette): ThemeColor
       primary: palette.primary500,
       secondary: palette.secondary,
       card: COLORS.white,
-      headerBackground: palette.primary500,
-      headerText: COLORS.white,
-      headerSubtitle: COLORS.white,
+      headerBackground: COLORS.navbarBackground,
+      headerText: '#000000',
+      headerSubtitle: COLORS.textSecondary,
       tabActive: COLORS.textPrimary,
       tabInactive: 'transparent',
       tabActiveText: COLORS.white,
@@ -330,7 +330,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     [theme, toggleTheme, currentColorTheme, setColorTheme],
   );
 
-  return <ThemeContext.Provider value={contextValue}> {children} </ThemeContext.Provider>;
+  return <ThemeContext.Provider value={contextValue}>{children}</ThemeContext.Provider>;
 };
 
 export const useTheme = (): ThemeContextType => {

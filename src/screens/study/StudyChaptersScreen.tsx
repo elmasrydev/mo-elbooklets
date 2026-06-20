@@ -355,7 +355,8 @@ const styles = (
       flexDirection: contentRowDirection,
       alignItems: 'center',
       padding: spacing.md,
-      backgroundColor: theme.mode === 'dark' ? theme.colors.primary + '26' : theme.colors.primary + '0D',
+      backgroundColor:
+        theme.mode === 'dark' ? theme.colors.primary + '26' : theme.colors.primary + '0D',
       borderBottomWidth: 1.5,
       borderBottomColor: theme.colors.border,
     },

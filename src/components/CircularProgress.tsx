@@ -30,7 +30,12 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
   return (
-    <View style={[{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }, containerStyle]}>
+    <View
+      style={[
+        { width: size, height: size, justifyContent: 'center', alignItems: 'center' },
+        containerStyle,
+      ]}
+    >
       <Svg width={size} height={size}>
         <Circle
           cx={size / 2}
@@ -56,24 +61,22 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
         />
       </Svg>
       <View style={{ position: 'absolute', justifyContent: 'center', alignItems: 'center' }}>
-        {children ? (
-          children
-        ) : (
-          showText && (
-            <Text
-              style={[
-                typography('label'),
-                {
-                  fontSize: size * 0.22,
-                  ...fontWeight('bold'),
-                  color: theme.colors.text,
-                },
-              ]}
-            >
-              {percentage} %
-            </Text>
-          )
-        )}
+        {children
+          ? children
+          : showText && (
+              <Text
+                style={[
+                  typography('label'),
+                  {
+                    fontSize: size * 0.22,
+                    ...fontWeight('bold'),
+                    color: theme.colors.text,
+                  },
+                ]}
+              >
+                {percentage} %
+              </Text>
+            )}
       </View>
     </View>
   );

@@ -1,0 +1,12 @@
+appId: com.elbooklets.app
+---
+- launchApp
+
+# Switch environment if needed
+- runFlow:
+    file: ../utils/setup-environment.yaml
+
+# Execute parent registration flow (runs on every env, mirroring student register-01;
+# prod runs create a throwaway parent that is cleaned up afterwards).
+- runFlow:
+    file: ../utils/parent-register-flow.yaml

@@ -99,26 +99,29 @@ const AppButton: React.FC<AppButtonProps> = ({
     }
   };
 
+  const isArabicText = title ? /[\u0600-\u06FF]/.test(title) : false;
+  const isArabicSubtitle = subtitle ? /[\u0600-\u06FF]/.test(subtitle) : false;
+
   const getSizeStyles = () => {
     switch (size) {
       case 'sm':
         return {
           button: { height: 44, paddingHorizontal: spacing.md },
-          text: typography('caption', '700'),
-          subtitle: typography('caption'),
+          text: typography('caption', '700', isArabicText),
+          subtitle: typography('caption', undefined, isArabicSubtitle),
         };
       case 'lg':
         return {
           button: { height: 51, paddingHorizontal: spacing.xl },
-          text: typography('button'),
-          subtitle: typography('label'),
+          text: typography('button', undefined, isArabicText),
+          subtitle: typography('label', undefined, isArabicSubtitle),
         };
       case 'md':
       default:
         return {
           button: { height: 46, paddingHorizontal: spacing.lg },
-          text: typography('button'),
-          subtitle: typography('label'),
+          text: typography('button', undefined, isArabicText),
+          subtitle: typography('label', undefined, isArabicSubtitle),
         };
     }
   };
@@ -158,10 +161,7 @@ const AppButton: React.FC<AppButtonProps> = ({
     buttonStyles.push(style);
   }
 
-  const titleStyles: TextStyle[] = [
-    sStyles.text as TextStyle,
-    vStyles.text as TextStyle,
-  ];
+  const titleStyles: TextStyle[] = [sStyles.text as TextStyle, vStyles.text as TextStyle];
 
   if (disabled && variant !== 'danger' && variant !== 'success') {
     titleStyles.push({ color: theme.colors.buttonDisabledText });
@@ -200,15 +200,15 @@ const AppButton: React.FC<AppButtonProps> = ({
         <ActivityIndicator color={indicatorColor} />
       ) : (
         <View style={styles.content}>
-          {icon && iconPosition === 'left' && (
-            <View style={{ marginEnd: spacing.xs }}> {icon} </View>
-          )}
+          {icon && iconPosition === 'left' && <View style={{ marginEnd: spacing.xs }}>{icon}</View>}
           <View style={styles.textContainer}>
-            <Text style={titleStyles}>{title}</Text>
+            <Text style={titleStyles} numberOfLines={1} ellipsizeMode="tail">
+              {title}
+            </Text>
             {subtitle && <Text style={subStyles}>{subtitle}</Text>}
           </View>
           {icon && iconPosition === 'right' && (
-            <View style={{ marginStart: spacing.xs }}> {icon} </View>
+            <View style={{ marginStart: spacing.xs }}>{icon}</View>
           )}
         </View>
       )}
@@ -227,6 +227,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   textContainer: {
+    flexShrink: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },

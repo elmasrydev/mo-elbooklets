@@ -1,0 +1,87 @@
+appId: com.elbooklets.app
+---
+# Build-agnostic OTP handling.
+# - Debug build (debugMode:true): the purple "Skip OTP (Debug)" buttons exist → tap them.
+# - Production build (debugMode:false): no skip button → reach the code-entry phase,
+#   type ${OTP_CODE}, and verify.
+# Each step is conditional so this is safe on either build and a no-op once past OTP.
+#
+# Phases (src/screens/OTPVerificationScreen.tsx):
+# - On Register the backend auto-sends the code, so the screen mounts DIRECTLY in the
+#   code-entry phase (phase 2) — there is no otp-send-button to tap.
+# - On Login the screen may mount in phase 1 (otp-send-button) and move to phase 2 after
+#   sending.
+# The code-entry block is anchored on the always-visible otp-verify-button, NOT on
+# otp-hidden-input: that input is opacity:0 (fills its container) so it is tappable by
+# id but never "visible" to Maestro.
+
+# Debug skip (phase 1 / phase 2 variants)
+- runFlow:
+    when:
+      visible:
+        id: 'otp-skip-debug'
+    commands:
+      - tapOn:
+          id: 'otp-skip-debug'
+- runFlow:
+    when:
+      visible:
+        id: 'otp-skip-debug-2'
+    commands:
+      - tapOn:
+          id: 'otp-skip-debug-2'
+
+# Production phase 1 (Login path): send the code if a send button is present
+- runFlow:
+    when:
+      visible:
+        id: 'otp-send-button'
+    commands:
+      - tapOn:
+          id: 'otp-send-button'
+      - runScript:
+          file: sleep.js
+          env:
+            timeout: 2500
+      # A backend send-error may surface a confirm modal — dismiss it if so
+      - runFlow:
+          when:
+            visible:
+              id: 'confirm-modal-ok'
+          commands:
+            - tapOn:
+                id: 'confirm-modal-ok'
+
+# Phase-1 fallback: if still on phase 1 with an "I have a code" button, advance to entry
+- runFlow:
+    when:
+      visible:
+        id: 'otp-enter-code-button'
+    commands:
+      - tapOn:
+          id: 'otp-enter-code-button'
+
+# Code-entry phase (phase 2): anchor on the visible Verify button. The code TextInput
+# (otp-hidden-input) is opacity:0 so iOS prunes it from the a11y tree — Maestro can
+# neither see nor tap it by id. The screen auto-focuses it ~500ms after this phase
+# mounts, so the field is already focused with the keyboard up: type the code directly.
+- runFlow:
+    when:
+      visible:
+        id: 'otp-verify-button'
+    commands:
+      - runScript:
+          file: sleep.js
+          env:
+            timeout: 1000
+      - inputText: ${OTP_CODE}
+      - runScript:
+          file: sleep.js
+          env:
+            timeout: 800
+      - tapOn:
+          id: 'otp-verify-button'
+      - runScript:
+          file: sleep.js
+          env:
+            timeout: 2500

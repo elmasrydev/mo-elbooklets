@@ -8,16 +8,15 @@ declare global {
 }
 
 if (__DEV__) {
-  const tron = Reactotron
-    .setAsyncStorageHandler(AsyncStorage)
+  const tron = Reactotron.setAsyncStorageHandler(AsyncStorage)
     .configure({
-      name: 'Mo ElBooklets'
+      name: 'Mo ElBooklets',
     })
     .useReactNative()
     .connect();
 
   console.tron = tron;
-  
+
   // Clear Reactotron on every reload
   Reactotron.clear?.();
 }

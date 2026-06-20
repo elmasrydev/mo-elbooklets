@@ -28,7 +28,15 @@ export default function RetryView({
   const { typography, fontWeight } = useTypography();
   const common = useCommonStyles();
 
-  const currentStyles = styles(theme, fontSizes, spacing, borderRadius, common, typography, fontWeight);
+  const currentStyles = styles(
+    theme,
+    fontSizes,
+    spacing,
+    borderRadius,
+    common,
+    typography,
+    fontWeight,
+  );
 
   return (
     <View style={currentStyles.container}>
@@ -39,24 +47,39 @@ export default function RetryView({
       <Text style={currentStyles.title}>
         {title || t('common.error_occurred', { defaultValue: 'Connection Error' })}
       </Text>
-      
+
       <Text style={currentStyles.message}>
-        {message || t('common.network_error', { defaultValue: 'Unable to connect. Please check your internet connection and try again.' })}
+        {message ||
+          t('common.network_error', {
+            defaultValue: 'Unable to connect. Please check your internet connection and try again.',
+          })}
       </Text>
 
       <AppButton
         title={t('home_screen.try_again', { defaultValue: 'Try Again' })}
         onPress={onRetry}
-        icon={!isLoading ? <Ionicons name="refresh" size={20} color={theme.colors.textOnDark} /> : undefined}
+        icon={
+          !isLoading ? (
+            <Ionicons name="refresh" size={20} color={theme.colors.textOnDark} />
+          ) : undefined
+        }
         loading={isLoading}
         size="md"
         fullWidth={false}
       />
     </View>
   );
-};
+}
 
-const styles = (theme: any, fontSizes: any, spacing: any, borderRadius: any, common: any, typography: any, fontWeight: any) =>
+const styles = (
+  theme: any,
+  fontSizes: any,
+  spacing: any,
+  borderRadius: any,
+  common: any,
+  typography: any,
+  fontWeight: any,
+) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -85,4 +108,3 @@ const styles = (theme: any, fontSizes: any, spacing: any, borderRadius: any, com
       maxWidth: 300,
     },
   });
-

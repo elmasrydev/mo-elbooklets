@@ -48,23 +48,22 @@ export const ModalProvider: React.FC<ModalProviderProps> = ({ children }) => {
     setTimeout(() => {
       setModalConfig(null);
       setInputValue('');
-    }, 200);
+    }, 500);
   }, []);
 
-  const value = useMemo(() => ({
-    showConfirm,
-    hideModal,
-    isModalVisible,
-    modalConfig,
-    inputValue,
-    setInputValue
-  }), [showConfirm, hideModal, isModalVisible, modalConfig, inputValue]);
-
-  return (
-    <ModalContext.Provider value={value}>
-      {children}
-    </ModalContext.Provider>
+  const value = useMemo(
+    () => ({
+      showConfirm,
+      hideModal,
+      isModalVisible,
+      modalConfig,
+      inputValue,
+      setInputValue,
+    }),
+    [showConfirm, hideModal, isModalVisible, modalConfig, inputValue],
   );
+
+  return <ModalContext.Provider value={value}>{children}</ModalContext.Provider>;
 };
 
 export const useModal = () => {

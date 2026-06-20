@@ -7,7 +7,6 @@ import {
   Pressable,
   Platform,
   NativeModules,
-  Alert,
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -119,8 +118,17 @@ const ApiUrlSwitcherModal: React.FC<ApiUrlSwitcherModalProps> = ({ isVisible, on
 
   return (
     <Modal visible={isVisible} transparent={true} animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.overlay} onPress={onClose}>
+      {/* accessible={false} stops iOS from flattening the whole modal into one
+          accessibility element, which would hide the inner button testIDs from
+          Maestro (same reason ConfirmModal's overlay sets accessible={false}). */}
+      <Pressable
+        accessible={false}
+        style={styles.overlay}
+        onPress={onClose}
+        testID="api-switcher-modal"
+      >
         <View
+          accessible={false}
           onStartShouldSetResponder={() => true}
           style={[
             styles.container,
@@ -168,21 +176,21 @@ const ApiUrlSwitcherModal: React.FC<ApiUrlSwitcherModalProps> = ({ isVisible, on
             {/* Switch Buttons */}
             <View style={styles.actions}>
               <AppButton
+                testID="api-switcher-production"
                 title={t('common.api_switch_production')}
                 variant={isProduction ? 'primary' : 'outline'}
-                disabled={isProduction}
                 onPress={() => applyUrl(PRODUCTION_URL)}
               />
               <AppButton
+                testID="api-switcher-demo"
                 title={t('common.api_switch_demo')}
                 variant={isDemo ? 'primary' : 'outline'}
-                disabled={isDemo}
                 onPress={() => applyUrl(DEMO_URL)}
               />
               <AppButton
+                testID="api-switcher-prs"
                 title={t('common.api_switch_prs')}
                 variant={isPrs ? 'primary' : 'outline'}
-                disabled={isPrs}
                 onPress={() => applyUrl(PRS_URL)}
               />
             </View>

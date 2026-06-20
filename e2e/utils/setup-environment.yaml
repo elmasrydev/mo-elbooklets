@@ -1,0 +1,185 @@
+# e2e/utils/setup-environment.yaml
+# Reusable subflow to switch environment dynamically in Maestro E2E
+appId: com.elbooklets.app
+---
+# Wait for app boot — continues as soon as Onboarding is ready (common case),
+# falls through after 10s max so the self-healing checks below can handle other states
+- extendedWaitUntil:
+    optional: true
+    visible:
+      id: "onboarding-language-toggle"
+    timeout: 10000
+
+# Dismiss any iOS system dialogs (Apple Account Verification, etc.)
+- runFlow:
+    when:
+      visible: "Not Now"
+    commands:
+      - tapOn: "Not Now"
+      - extendedWaitUntil:
+          notVisible: "Not Now"
+          timeout: 3000
+
+# Self-healing: if we booted into OTP screen, log out via the confirm modal
+- runFlow:
+    when:
+      visible:
+        id: "otp-logout-button"
+    commands:
+      - tapOn:
+          id: "otp-logout-button"
+      - extendedWaitUntil:
+          visible:
+            id: "confirm-modal-ok"
+          timeout: 5000
+      - tapOn:
+          id: "confirm-modal-ok"
+
+# Self-healing: a leftover logged-in student may boot into Home with the
+# profile-completion modal up. It is a native <Modal> (accessibilityViewIsModal) so it
+# hides the Home tabs behind it from the a11y tree — dismiss it first so the Home
+# self-heal below can reach tab-profile → logout.
+- runFlow:
+    when:
+      visible:
+        id: "profile-completion-skip-button"
+    commands:
+      - tapOn:
+          id: "profile-completion-skip-button"
+      - extendedWaitUntil:
+          notVisible:
+            id: "profile-completion-skip-button"
+          timeout: 3000
+
+# Self-healing: if keychain clear failed and we booted into Home screen, log out
+- runFlow:
+    when:
+      visible:
+        id: "tab-profile"
+    commands:
+      - tapOn:
+          id: "tab-profile"
+      # Log Out sits at the bottom of the Profile ScrollView (below Badges), so scroll
+      # to it rather than tapping blind — its position varies with profile content.
+      - scrollUntilVisible:
+          element:
+            id: "profile-logout-item"
+          direction: DOWN
+          timeout: 10000
+      - tapOn:
+          id: "profile-logout-item"
+      - extendedWaitUntil:
+          visible:
+            id: "confirm-modal-ok"
+          timeout: 5000
+      - tapOn:
+          id: "confirm-modal-ok"
+
+# Self-healing: if we booted into the ParentDashboard, log out via settings → confirm
+- runFlow:
+    when:
+      visible:
+        id: "parent-dashboard-settings-button"
+    commands:
+      - tapOn:
+          id: "parent-dashboard-settings-button"
+      - scrollUntilVisible:
+          element:
+            id: "parent-settings-logout-item"
+          direction: DOWN
+          timeout: 10000
+      - tapOn:
+          id: "parent-settings-logout-item"
+      - extendedWaitUntil:
+          visible:
+            id: "confirm-modal-ok"
+          timeout: 5000
+      - tapOn:
+          id: "confirm-modal-ok"
+
+# Finally assert that we are on Onboarding screen (or wait for it if driver was slow)
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-language-toggle"
+    timeout: 30000
+
+# If TARGET_ENV is dev, switch to Demo URL.
+# The switcher is a native <Modal> (slide animation) so wait for the button before
+# tapping it. Selecting a *different* URL reloads the app (~500ms) to apply it, so
+# settle afterwards and re-confirm we're back on Onboarding (now pointed at Demo).
+# When already on Demo (subsequent flows) the tap just closes the modal — idempotent.
+- runFlow:
+    when:
+      true: ${TARGET_ENV == 'dev'}
+    commands:
+      - tapOn:
+          id: "onboarding-api-switcher-chip"
+      - extendedWaitUntil:
+          visible:
+            id: "api-switcher-demo"
+          timeout: 8000
+      - tapOn:
+          id: "api-switcher-demo"
+      - runScript:
+          file: sleep.js
+          env:
+            timeout: 4000
+      - extendedWaitUntil:
+          visible:
+            id: "onboarding-language-toggle"
+          timeout: 30000
+
+# If TARGET_ENV is prod: on a debug build (switcher chip present) select Production;
+# on a real production build (debugMode:false) there is no chip and the app already
+# defaults to the production URL, so the switch is skipped (guarded on chip visibility).
+- runFlow:
+    when:
+      true: ${TARGET_ENV == 'prod'}
+    commands:
+      - runFlow:
+          when:
+            visible:
+              id: "onboarding-api-switcher-chip"
+          commands:
+            - tapOn:
+                id: "onboarding-api-switcher-chip"
+            - extendedWaitUntil:
+                visible:
+                  id: "api-switcher-production"
+                timeout: 8000
+            - tapOn:
+                id: "api-switcher-production"
+            - runScript:
+                file: sleep.js
+                env:
+                  timeout: 4000
+            - extendedWaitUntil:
+                visible:
+                  id: "onboarding-language-toggle"
+                timeout: 30000
+
+# If TARGET_ENV is prs, actively select PRS. The chosen URL is persisted in
+# SecureStore and survives launchApp, so a prior dev/prod run would otherwise
+# leave the override active and the PRS suite would silently run on the wrong
+# backend while still passing. Selecting PRS each run is idempotent (no reload
+# when already on PRS).
+- runFlow:
+    when:
+      true: ${TARGET_ENV == 'prs'}
+    commands:
+      - tapOn:
+          id: "onboarding-api-switcher-chip"
+      - extendedWaitUntil:
+          visible:
+            id: "api-switcher-prs"
+          timeout: 8000
+      - tapOn:
+          id: "api-switcher-prs"
+      - runScript:
+          file: sleep.js
+          env:
+            timeout: 4000
+      - extendedWaitUntil:
+          visible:
+            id: "onboarding-language-toggle"
+          timeout: 30000

@@ -58,15 +58,8 @@ const ForceUpdateModal: React.FC = () => {
       statusBarTranslucent
       onRequestClose={() => {}}
     >
-      <TouchableOpacity
-        style={currentStyles.overlay}
-        activeOpacity={1}
-        onPress={handleSkip}
-      >
-        <View
-          style={currentStyles.container}
-          onStartShouldSetResponder={() => true}
-        >
+      <TouchableOpacity style={currentStyles.overlay} activeOpacity={1} onPress={handleSkip}>
+        <View style={currentStyles.container} onStartShouldSetResponder={() => true}>
           <View style={currentStyles.logoContainer}>
             <Ionicons name="rocket-outline" size={60} color={theme.colors.primary} />
           </View>

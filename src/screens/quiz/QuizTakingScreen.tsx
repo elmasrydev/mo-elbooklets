@@ -307,7 +307,10 @@ const QuizTakingScreen: React.FC = () => {
               name: 'MainTabs',
               params: {
                 screen: 'Quiz',
-                params: { completedQuizId: quiz.id, timeTaken: isTimed ? elapsedSeconds : undefined },
+                params: {
+                  completedQuizId: quiz.id,
+                  timeTaken: isTimed ? elapsedSeconds : undefined,
+                },
               },
             },
           ],
@@ -458,7 +461,7 @@ const QuizTakingScreen: React.FC = () => {
         <View style={currentStyles.questionWrapper}>
           {isDescriptive && (
             <View style={currentStyles.descriptiveBadge}>
-              <Ionicons name="create-outline" size={14} color="#1E40AF" />
+              <Ionicons name="create-outline" size={14} color={theme.colors.primary} />
               <Text style={currentStyles.descriptiveBadgeText}>
                 {currentQuestion.type === 'what_happens'
                   ? t('quiz_taking.what_happens', 'What Happens?')
@@ -808,7 +811,7 @@ const styles = (
     descriptiveBadgeText: {
       ...typography('caption'),
       ...fontWeight('700'),
-      color: '#1E40AF',
+      color: theme.colors.primary,
     },
     descriptiveContainer: {
       gap: 8,

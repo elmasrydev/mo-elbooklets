@@ -18,9 +18,9 @@ import UnifiedHeader from '../components/UnifiedHeader';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
 import { layout } from '../config/layout';
-import { useAutoReset } from '../hooks/useAutoReset';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useModal } from '../context/ModalContext';
+import AppButton from '../components/AppButton';
 import { tryFetchWithFallback } from '../config/api';
 import * as SecureStore from 'expo-secure-store';
 import { analytics } from '../lib/analytics';
@@ -34,7 +34,6 @@ const ContactUsScreen = ({ navigation }: any) => {
   const insets = useSafeAreaInsets();
   const { showConfirm } = useModal();
 
-
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [subject, setSubject] = useState('');
@@ -46,10 +45,11 @@ const ContactUsScreen = ({ navigation }: any) => {
   const subjectRef = useRef<TextInput>(null);
   const messageRef = useRef<TextInput>(null);
 
-  const [touchedName, setTouchedName] = useAutoReset(false);
-  const [touchedEmail, setTouchedEmail] = useAutoReset(false);
-  const [touchedSubject, setTouchedSubject] = useAutoReset(false);
-  const [touchedMessage, setTouchedMessage] = useAutoReset(false);
+  const [touchedName, setTouchedName] = useState(false);
+  const [touchedEmail, setTouchedEmail] = useState(false);
+  const [touchedSubject, setTouchedSubject] = useState(false);
+  const [touchedMessage, setTouchedMessage] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const isNameValid = name.trim().length >= 3;
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -89,9 +89,13 @@ const ContactUsScreen = ({ navigation }: any) => {
           }
         }
       `;
-      
-      const response = await tryFetchWithFallback(mutation, { name, email, subject, message }, token || undefined);
-      
+
+      const response = await tryFetchWithFallback(
+        mutation,
+        { name, email, subject, message },
+        token || undefined,
+      );
+
       if (response.data?.sendContactMessage?.success) {
         analytics.trackContactSupport(subject);
         showConfirm({
@@ -101,7 +105,10 @@ const ContactUsScreen = ({ navigation }: any) => {
           onConfirm: () => navigation.goBack(),
         });
       } else {
-        const errMsg = response.data?.sendContactMessage?.message || response.errors?.[0]?.message || t('common.error');
+        const errMsg =
+          response.data?.sendContactMessage?.message ||
+          response.errors?.[0]?.message ||
+          t('common.error');
         showConfirm({
           title: t('common.error'),
           message: errMsg,
@@ -136,9 +143,17 @@ const ContactUsScreen = ({ navigation }: any) => {
     [theme, spacing, borderRadius, isRTL, typography, fontWeight, insets, fontSizes],
   );
 
-  const getBorderColor = (touched: boolean, valid: boolean) => {
-    if (!touched) return theme.colors.border;
-    return valid ? theme.colors.success || '#10B981' : theme.colors.warning || '#F59E0B';
+  const getBorderColor = (fieldName: string, touched: boolean, valid: boolean) => {
+    if (focusedField === fieldName) return theme.colors.primary;
+    if (touched && !valid) return '#FF6B6B';
+    return theme.colors.border;
+  };
+
+  const getIconColor = (fieldName: string, touched: boolean, valid: boolean, value: string) => {
+    if (focusedField === fieldName) return theme.colors.primary;
+    if (touched && !valid) return '#FF6B6B';
+    if (value.length > 0 && valid) return theme.colors.primary;
+    return theme.colors.textSecondary;
   };
 
   return (
@@ -171,13 +186,13 @@ const ContactUsScreen = ({ navigation }: any) => {
               <View
                 style={[
                   currentStyles.inputWrapper,
-                  { borderColor: getBorderColor(touchedName, isNameValid) },
+                  { borderColor: getBorderColor('name', touchedName, isNameValid) },
                 ]}
               >
                 <Ionicons
                   name="person-outline"
                   size={20}
-                  color={isNameValid ? '#10B981' : theme.colors.textSecondary}
+                  color={getIconColor('name', touchedName, isNameValid, name)}
                   style={currentStyles.inputIcon}
                 />
                 <TextInput
@@ -191,20 +206,24 @@ const ContactUsScreen = ({ navigation }: any) => {
                   editable={!loading}
                   returnKeyType="next"
                   onSubmitEditing={() => emailRef.current?.focus()}
-                  onBlur={() => setTouchedName(true)}
+                  onFocus={() => setFocusedField('name')}
+                  onBlur={() => {
+                    setFocusedField(null);
+                    setTouchedName(true);
+                  }}
                 />
               </View>
 
               <View
                 style={[
                   currentStyles.inputWrapper,
-                  { borderColor: getBorderColor(touchedEmail, isEmailValid) },
+                  { borderColor: getBorderColor('email', touchedEmail, isEmailValid) },
                 ]}
               >
                 <Ionicons
                   name="mail-outline"
                   size={20}
-                  color={isEmailValid ? '#10B981' : theme.colors.textSecondary}
+                  color={getIconColor('email', touchedEmail, isEmailValid, email)}
                   style={currentStyles.inputIcon}
                 />
                 <TextInput
@@ -220,20 +239,24 @@ const ContactUsScreen = ({ navigation }: any) => {
                   editable={!loading}
                   returnKeyType="next"
                   onSubmitEditing={() => subjectRef.current?.focus()}
-                  onBlur={() => setTouchedEmail(true)}
+                  onFocus={() => setFocusedField('email')}
+                  onBlur={() => {
+                    setFocusedField(null);
+                    setTouchedEmail(true);
+                  }}
                 />
               </View>
 
               <View
                 style={[
                   currentStyles.inputWrapper,
-                  { borderColor: getBorderColor(touchedSubject, isSubjectValid) },
+                  { borderColor: getBorderColor('subject', touchedSubject, isSubjectValid) },
                 ]}
               >
                 <Ionicons
                   name="help-circle-outline"
                   size={20}
-                  color={isSubjectValid ? '#10B981' : theme.colors.textSecondary}
+                  color={getIconColor('subject', touchedSubject, isSubjectValid, subject)}
                   style={currentStyles.inputIcon}
                 />
                 <TextInput
@@ -248,7 +271,11 @@ const ContactUsScreen = ({ navigation }: any) => {
                   editable={!loading}
                   returnKeyType="next"
                   onSubmitEditing={() => messageRef.current?.focus()}
-                  onBlur={() => setTouchedSubject(true)}
+                  onFocus={() => setFocusedField('subject')}
+                  onBlur={() => {
+                    setFocusedField(null);
+                    setTouchedSubject(true);
+                  }}
                 />
               </View>
 
@@ -256,13 +283,13 @@ const ContactUsScreen = ({ navigation }: any) => {
                 style={[
                   currentStyles.inputWrapper,
                   currentStyles.textAreaWrapper,
-                  { borderColor: getBorderColor(touchedMessage, isMessageValid) },
+                  { borderColor: getBorderColor('message', touchedMessage, isMessageValid) },
                 ]}
               >
                 <Ionicons
                   name="chatbox-ellipses-outline"
                   size={20}
-                  color={isMessageValid ? '#10B981' : theme.colors.textSecondary}
+                  color={getIconColor('message', touchedMessage, isMessageValid, message)}
                   style={[
                     currentStyles.inputIcon,
                     { marginTop: Platform.OS === 'ios' ? spacing.sm : 12 },
@@ -279,34 +306,35 @@ const ContactUsScreen = ({ navigation }: any) => {
                   numberOfLines={6}
                   editable={!loading}
                   returnKeyType="default"
-                  onBlur={() => setTouchedMessage(true)}
                   onFocus={() => {
+                    setFocusedField('message');
                     setTimeout(() => {
                       scrollViewRef.current?.scrollToEnd({ animated: true });
                     }, 150);
                   }}
+                  onBlur={() => {
+                    setFocusedField(null);
+                    setTouchedMessage(true);
+                  }}
                 />
               </View>
 
-              <TouchableOpacity
-                style={currentStyles.submitButton}
+              <AppButton
+                title={t('contact_us.send_message')}
                 onPress={handleSubmit}
-                disabled={loading}
-                activeOpacity={0.8}
-              >
-                <Text style={currentStyles.submitButtonText}>{t('contact_us.send_message')}</Text>
-                {loading ? (
-                  <ActivityIndicator size="small" color="#FFF" style={{ marginLeft: spacing.sm }} />
-                ) : (
+                loading={loading}
+                variant="primary"
+                size="lg"
+                style={{ marginTop: spacing.sm, height: 56, borderRadius: 16 }}
+                icon={
                   <Ionicons
                     name="send-outline"
                     size={20}
                     color="#FFF"
                     style={
                       isRTL
-                        ? { marginLeft: spacing.ssm, transform: [{ rotate: '215deg' }] }
+                        ? { transform: [{ rotate: '215deg' }] }
                         : {
-                            marginLeft: spacing.ssm,
                             transform: [
                               { rotate: '-35deg' },
                               { translateY: -2 },
@@ -315,11 +343,11 @@ const ContactUsScreen = ({ navigation }: any) => {
                           }
                     }
                   />
-                )}
-              </TouchableOpacity>
+                }
+                iconPosition={isRTL ? 'left' : 'right'}
+              />
             </View>
           </ScrollView>
-          <View style={currentStyles.cardAccent} />
         </View>
       </View>
     </KeyboardAvoidingView>
@@ -343,7 +371,7 @@ const styles = (config: any) => {
     card: {
       flex: 1,
       width: '100%',
-      backgroundColor: theme.colors.card || theme.colors.surface,
+      backgroundColor: theme.colors.surface,
       borderRadius: borderRadius.xl || 24,
       overflow: 'hidden',
       position: 'relative',
@@ -352,12 +380,12 @@ const styles = (config: any) => {
       ...Platform.select({
         ios: {
           shadowColor: '#000',
-          shadowOffset: { width: 0, height: 10 },
-          shadowOpacity: 0.1,
-          shadowRadius: 15,
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.05,
+          shadowRadius: 12,
         },
         android: {
-          elevation: 10,
+          elevation: 4,
         },
       }),
     },
@@ -366,15 +394,7 @@ const styles = (config: any) => {
     },
     cardContent: {
       flexGrow: 1,
-      paddingBottom: spacing.xl * 2,
-    },
-    cardAccent: {
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      height: 8,
-      backgroundColor: theme.colors.primary,
+      paddingBottom: spacing.xl,
     },
     headerInfo: {
       alignItems: 'center',
@@ -383,14 +403,15 @@ const styles = (config: any) => {
       paddingBottom: spacing.lg,
     },
     title: {
+      ...typography('h2'),
       fontSize: 28,
-      ...fontWeight('700'),
+      ...fontWeight('800'),
       color: theme.colors.text,
       marginBottom: spacing.xs,
       textAlign: 'center',
     },
     subtitle: {
-      ...typography('body'),
+      ...typography('bodyLarge'),
       color: theme.colors.textSecondary,
       textAlign: 'center',
     },
@@ -400,7 +421,7 @@ const styles = (config: any) => {
       paddingBottom: spacing.xs,
     },
     inputWrapper: {
-      flexDirection: isRTL ? 'row-reverse' : 'row',
+      flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: theme.colors.background,
       borderWidth: 1,
@@ -417,45 +438,19 @@ const styles = (config: any) => {
       paddingTop: Platform.OS === 'ios' ? spacing.sm : 0,
     },
     inputIcon: {
-      marginRight: isRTL ? 0 : spacing.sm,
-      marginLeft: isRTL ? spacing.sm : 0,
+      marginEnd: spacing.sm,
     },
     input: {
       flex: 1,
-      fontSize: fontSizes?.base || 15,
+      ...typography('body'),
       color: theme.colors.text,
       height: '100%',
-      textAlign: isRTL ? 'right' : 'left',
+      textAlign: 'left',
     },
     textArea: {
       height: 120,
       textAlignVertical: 'top',
       paddingTop: Platform.OS === 'ios' ? 0 : spacing.sm,
-    },
-    submitButton: {
-      flexDirection: 'row',
-      height: 56,
-      backgroundColor: theme.colors.primary,
-      borderRadius: 16,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginTop: spacing.sm,
-      ...Platform.select({
-        ios: {
-          shadowColor: theme.colors.primary,
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.3,
-          shadowRadius: 16,
-        },
-        android: {
-          elevation: 8,
-        },
-      }),
-    },
-    submitButtonText: {
-      ...typography('button'),
-      color: '#FFF',
-      ...fontWeight('700'),
     },
   });
 };

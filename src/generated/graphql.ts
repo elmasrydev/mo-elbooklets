@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { gql } from '@apollo/client';
 import * as ApolloReactCommon from '@apollo/client';
 import * as ApolloReactHooks from '@apollo/client/react';
@@ -703,7 +704,6 @@ export type SubjectsForUserGradeQuery = {
     id: string;
     name: string;
     description?: string | null;
-    chaptersCount?: number | null;
   }>;
 };
 
@@ -1929,7 +1929,6 @@ export const SubjectsForUserGradeDocument = gql`
       id
       name
       description
-      chaptersCount
     }
   }
 `;

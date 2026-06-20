@@ -1,0 +1,94 @@
+appId: com.elbooklets.app
+---
+# e2e/auth/student-register-flow.yaml
+# Actual student registration steps run conditionally
+
+# Execute student registration flow
+- assertVisible:
+    id: "onboarding-student-tab"
+- tapOn:
+    id: "onboarding-get-started"
+- assertVisible:
+    id: "register-name-input"
+- tapOn:
+    id: "register-name-input"
+- inputText: "Maestro Student"
+- tapOn:
+    point: 50%,10%
+- tapOn:
+    id: "register-mobile-input"
+- inputText: ${STUDENT_MOBILE}
+- tapOn:
+    point: 50%,10%
+# On a production build the password field defaults to secure (showPassword=false on
+# non-debug builds) and Maestro can drop special characters typed into iOS secure
+# fields, leaving a non-strong value. Reveal it first so the strong password (incl.
+# its symbol) is entered reliably. Debug builds (prs/dev) render it visible already,
+# so this reveal is prod-only. One toggle reveals both password + confirm (shared state).
+- runFlow:
+    when:
+      true: ${TARGET_ENV == 'prod'}
+    commands:
+      - tapOn:
+          id: "register-password-toggle"
+- tapOn:
+    id: "register-password-input"
+- inputText: ${STUDENT_PASSWORD}
+- tapOn:
+    point: 50%,10%
+- tapOn:
+    id: "register-confirm-input"
+- inputText: ${STUDENT_PASSWORD}
+- tapOn:
+    point: 50%,10%
+- tapOn:
+    id: "register-submit-button"
+
+# Step 2: Education System & Grade selection
+- assertVisible: "Secondary 1"
+# Taps on selections. In Maestro, if dynamic IDs are not resolved, we can tap the coordinates or matching labels.
+# Since we added testIDs to selectors (register-grade-{id}), let's tap the first grade or edu option by text or ID
+- tapOn: "Secondary 1"
+# Educational-system label differs by backend/locale: PRS/Demo returns the bilingual
+# "Languages - لغات" while production returns just "Languages". Maestro matches a regex
+# substring, so "Languages" matches both.
+- tapOn: "Languages"
+- tapOn:
+    id: "register-submit-button"
+
+# Handle disclaimer modal if it appears
+- runFlow:
+    when:
+      visible:
+        id: "register-disclaimer-continue-button"
+    commands:
+      - tapOn:
+          id: "register-disclaimer-continue-button"
+
+# Handle OTP: debug build taps the skip button; production build (no skip)
+# sends, enters ${OTP_CODE}, and verifies. Wait for the OTP screen first.
+- extendedWaitUntil:
+    optional: true
+    visible:
+      id: "otp-send-button"
+    timeout: 10000
+- runFlow:
+    file: otp-handle.yaml
+
+# Wait for profile completion modal to auto-show (continues early when it appears) and dismiss it
+- extendedWaitUntil:
+    optional: true
+    visible:
+      id: "profile-completion-skip-button"
+    timeout: 6000
+- runFlow:
+    when:
+      visible:
+        id: "profile-completion-skip-button"
+    commands:
+      - tapOn:
+          id: "profile-completion-skip-button"
+
+- assertVisible:
+    id: "tab-home"
+- takeScreenshot: e2e/screenshots/student-register-result

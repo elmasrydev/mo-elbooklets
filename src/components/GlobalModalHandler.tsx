@@ -6,14 +6,10 @@ export const GlobalModalHandler: React.FC = () => {
   const { isModalVisible, modalConfig, hideModal, inputValue, setInputValue } = useModal();
   const [isLoading, setIsLoading] = useState(false);
 
-  if (!modalConfig) {
-    return null;
-  }
-
   const handleConfirm = async () => {
     try {
       setIsLoading(true);
-      if (modalConfig.onConfirm) {
+      if (modalConfig?.onConfirm) {
         await modalConfig.onConfirm(inputValue);
       }
     } catch (error) {
@@ -25,7 +21,7 @@ export const GlobalModalHandler: React.FC = () => {
   };
 
   const handleCancel = () => {
-    if (modalConfig.onCancel) {
+    if (modalConfig?.onCancel) {
       modalConfig.onCancel();
     }
     hideModal();
@@ -33,21 +29,21 @@ export const GlobalModalHandler: React.FC = () => {
 
   return (
     <ConfirmModal
-      visible={isModalVisible}
-      title={modalConfig.title}
-      message={modalConfig.message}
+      visible={isModalVisible && !!modalConfig}
+      title={modalConfig?.title || ''}
+      message={modalConfig?.message || ''}
       onConfirm={handleConfirm}
       onCancel={handleCancel}
-      confirmLabel={modalConfig.confirmLabel}
-      cancelLabel={modalConfig.cancelLabel}
-      confirmVariant={modalConfig.confirmVariant}
+      confirmLabel={modalConfig?.confirmLabel}
+      cancelLabel={modalConfig?.cancelLabel}
+      confirmVariant={modalConfig?.confirmVariant}
       isLoading={isLoading}
-      showCancel={modalConfig.showCancel}
-      dismissible={modalConfig.dismissible}
-      backButtonCloseDisabled={modalConfig.backButtonCloseDisabled}
-      countdown={modalConfig.countdown}
-      hasInput={modalConfig.hasInput}
-      inputPlaceholder={modalConfig.inputPlaceholder}
+      showCancel={modalConfig?.showCancel}
+      dismissible={modalConfig?.dismissible}
+      backButtonCloseDisabled={modalConfig?.backButtonCloseDisabled}
+      countdown={modalConfig?.countdown}
+      hasInput={modalConfig?.hasInput}
+      inputPlaceholder={modalConfig?.inputPlaceholder}
       inputValue={inputValue}
       onInputChange={setInputValue}
     />

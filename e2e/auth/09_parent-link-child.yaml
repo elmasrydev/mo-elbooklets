@@ -1,0 +1,227 @@
+appId: com.elbooklets.app
+---
+# 09 — Parent <-> Child linking (end to end)
+#
+# Reuses the accounts created earlier in the suite: 01 registers STUDENT_MOBILE,
+# 04 registers PARENT_MOBILE. This flow must run AFTER both.
+#   Part 1: parent logs in, sends a link request to the student's mobile
+#   Part 2: relaunch -> setup-environment self-heals (logs the parent out)
+#   Part 3: student logs in, approves the incoming request
+#   Part 4: relaunch -> setup-environment self-heals (logs the student out)
+#   Part 5: parent logs back in, confirms the child now appears on the dashboard
+# Only runs on non-prod (registration-dependent accounts exist only on prs/dev).
+
+- launchApp
+- runFlow:
+    file: ../utils/setup-environment.yaml
+
+# ===================== PART 1: parent sends link request =====================
+- assertVisible:
+    id: "onboarding-parent-tab"
+- tapOn:
+    id: "onboarding-parent-tab"
+- tapOn:
+    id: "onboarding-sign-in"
+- assertVisible:
+    id: "parent-login-mobile"
+- tapOn:
+    id: "parent-login-mobile"
+- inputText: ${PARENT_MOBILE}
+- tapOn:
+    point: 50%,10%
+- tapOn:
+    id: "parent-login-password"
+- inputText: ${PARENT_PASSWORD}
+- tapOn:
+    point: 50%,10%
+- tapOn:
+    id: "parent-login-submit"
+- runFlow:
+    when:
+      visible:
+        id: "confirm-modal-ok"
+    commands:
+      - tapOn:
+          id: "confirm-modal-ok"
+- extendedWaitUntil:
+    visible:
+      id: "parent-dashboard-add-child-fab"
+    timeout: 15000
+
+# Open the add-child modal and send a request to the student's mobile
+- tapOn:
+    id: "parent-dashboard-add-child-fab"
+- assertVisible:
+    id: "parent-dashboard-child-mobile-input"
+- tapOn:
+    id: "parent-dashboard-child-mobile-input"
+- inputText: ${STUDENT_MOBILE}
+- tapOn:
+    point: 50%,10%
+- tapOn:
+    id: "parent-dashboard-add-child-confirm"
+
+# A success (or error) confirm modal is shown after sending — dismiss it
+- extendedWaitUntil:
+    visible:
+      id: "confirm-modal-ok"
+    timeout: 10000
+- tapOn:
+    id: "confirm-modal-ok"
+- extendedWaitUntil:
+    visible:
+      id: "parent-dashboard-add-child-fab"
+    timeout: 10000
+- takeScreenshot: e2e/screenshots/link-request-sent
+
+# ===================== PART 2: log the parent out =====================
+- launchApp
+- runFlow:
+    file: ../utils/setup-environment.yaml
+- assertVisible:
+    id: "onboarding-student-tab"
+
+# ===================== PART 3: student approves the request =====================
+- tapOn:
+    id: "onboarding-student-tab"
+- tapOn:
+    id: "onboarding-sign-in"
+- assertVisible:
+    id: "login-mobile-input"
+- tapOn:
+    id: "login-mobile-input"
+- inputText: ${STUDENT_MOBILE}
+- tapOn:
+    point: 50%,10%
+- tapOn:
+    id: "login-password-input"
+- inputText: ${STUDENT_PASSWORD}
+- tapOn:
+    point: 50%,10%
+- tapOn:
+    id: "login-submit-button"
+- runFlow:
+    when:
+      visible:
+        id: "confirm-modal-ok"
+    commands:
+      - tapOn:
+          id: "confirm-modal-ok"
+# Skip OTP if the unverified student is routed to it
+- runFlow:
+    when:
+      visible:
+        id: "otp-skip-debug"
+    commands:
+      - tapOn:
+          id: "otp-skip-debug"
+- runFlow:
+    when:
+      visible:
+        id: "otp-skip-debug-2"
+    commands:
+      - tapOn:
+          id: "otp-skip-debug-2"
+# Dismiss the profile-completion prompt if it auto-shows
+- extendedWaitUntil:
+    optional: true
+    visible:
+      id: "profile-completion-skip-button"
+    timeout: 6000
+- runFlow:
+    when:
+      visible:
+        id: "profile-completion-skip-button"
+    commands:
+      - tapOn:
+          id: "profile-completion-skip-button"
+- extendedWaitUntil:
+    visible:
+      id: "tab-home"
+    timeout: 15000
+
+# Go to Profile -> Parental Linking
+- tapOn:
+    id: "tab-profile"
+- scrollUntilVisible:
+    element:
+      id: "profile-parent-linking-item"
+    direction: DOWN
+    timeout: 10000
+- tapOn:
+    id: "profile-parent-linking-item"
+
+# Accept the incoming parent request. The slot list is sorted (accepted-first),
+# so a reused student with a prior link can place the new request in slot 2 —
+# accept whichever slot shows the incoming request (id is matched as a regex).
+- extendedWaitUntil:
+    visible:
+      id: "parent-linking-accept-[12]"
+    timeout: 10000
+- runFlow:
+    when:
+      visible:
+        id: "parent-linking-accept-1"
+    commands:
+      - tapOn:
+          id: "parent-linking-accept-1"
+- runFlow:
+    when:
+      visible:
+        id: "parent-linking-accept-2"
+    commands:
+      - tapOn:
+          id: "parent-linking-accept-2"
+- extendedWaitUntil:
+    visible:
+      id: "parent-linking-accepted-[12]"
+    timeout: 10000
+- takeScreenshot: e2e/screenshots/link-approved-by-student
+
+# ===================== PART 4: log the student out =====================
+- launchApp
+- runFlow:
+    file: ../utils/setup-environment.yaml
+- assertVisible:
+    id: "onboarding-parent-tab"
+
+# ===================== PART 5: parent sees the linked child =====================
+- tapOn:
+    id: "onboarding-parent-tab"
+- tapOn:
+    id: "onboarding-sign-in"
+- assertVisible:
+    id: "parent-login-mobile"
+- tapOn:
+    id: "parent-login-mobile"
+- inputText: ${PARENT_MOBILE}
+- tapOn:
+    point: 50%,10%
+- tapOn:
+    id: "parent-login-password"
+- inputText: ${PARENT_PASSWORD}
+- tapOn:
+    point: 50%,10%
+- tapOn:
+    id: "parent-login-submit"
+- runFlow:
+    when:
+      visible:
+        id: "confirm-modal-ok"
+    commands:
+      - tapOn:
+          id: "confirm-modal-ok"
+- extendedWaitUntil:
+    visible:
+      id: "parent-dashboard-add-child-fab"
+    timeout: 15000
+
+# Pull to refresh so the freshly-accepted child shows, then assert the child card
+- swipe:
+    start: 50%,35%
+    end: 50%,75%
+- extendedWaitUntil:
+    visible:
+      id: "parent-dashboard-child-card"
+    timeout: 15000
+- takeScreenshot: e2e/screenshots/parent-linked-child-visible

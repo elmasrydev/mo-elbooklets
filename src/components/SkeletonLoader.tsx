@@ -121,9 +121,7 @@ export const GenericListSkeleton: React.FC<{ numItems?: number }> = ({ numItems 
 /**
  * Card Skeleton (for Home/Social cards)
  */
-export const CardSkeleton: React.FC<{ marginHorizontal?: number }> = ({
-  marginHorizontal = 0,
-}) => {
+export const CardSkeleton: React.FC<{ marginHorizontal?: number }> = ({ marginHorizontal = 0 }) => {
   const { isDark, theme } = useTheme();
   const cardBg = isDark ? theme.colors.card : '#ffffff';
   const borderColor = theme.colors.border;
@@ -144,9 +142,17 @@ export const CardSkeleton: React.FC<{ marginHorizontal?: number }> = ({
       </View>
       <SkeletonLoader width="100%" height={14} borderRadius={4} marginBottom={8} />
       <SkeletonLoader width="80%" height={14} borderRadius={4} marginBottom={16} />
-      
+
       {/* Bottom actions mock */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingTop: 12, borderTopWidth: 1, borderTopColor: borderColor }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          paddingTop: 12,
+          borderTopWidth: 1,
+          borderTopColor: borderColor,
+        }}
+      >
         <SkeletonLoader width={60} height={24} borderRadius={12} />
         <SkeletonLoader width={60} height={24} borderRadius={12} />
       </View>
@@ -177,13 +183,18 @@ export const QuizScreenSkeleton: React.FC = () => {
   return (
     <View style={{ padding: 16, paddingTop: 24, paddingBottom: 60, gap: 16 }}>
       {/* Header Info */}
-      <View style={[styles.largeCard, { backgroundColor: cardBg, borderColor, borderWidth: 1, padding: 24 }]}>
+      <View
+        style={[
+          styles.largeCard,
+          { backgroundColor: cardBg, borderColor, borderWidth: 1, padding: 24 },
+        ]}
+      >
         <View style={{ alignItems: 'center', marginBottom: 24 }}>
           <SkeletonLoader width={80} height={80} borderRadius={40} marginBottom={16} />
           <SkeletonLoader width="50%" height={20} borderRadius={4} marginBottom={8} />
           <SkeletonLoader width="70%" height={14} borderRadius={4} />
         </View>
-        
+
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
           <View style={{ alignItems: 'center', flex: 1 }}>
             <SkeletonLoader width={40} height={14} borderRadius={4} marginBottom={8} />

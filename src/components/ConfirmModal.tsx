@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-  Modal,
+  Animated,
   View,
   Text,
   StyleSheet,
@@ -11,6 +11,7 @@ import {
   TextInput,
   Keyboard,
   TouchableWithoutFeedback,
+  BackHandler,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useTypography } from '../hooks/useTypography';
@@ -42,6 +43,7 @@ export interface ConfirmModalProps {
   inputPlaceholder?: string;
   onInputChange?: (text: string) => void;
   inputValue?: string;
+  icon?: React.ReactNode;
 }
 
 export const ConfirmModal: React.FC<ConfirmModalProps> = (props: ConfirmModalProps) => {
@@ -64,6 +66,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = (props: ConfirmModalPro
     inputPlaceholder = '',
     onInputChange,
     inputValue = '',
+    icon,
   } = props;
 
   const { theme, borderRadius } = useTheme();
@@ -71,6 +74,30 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = (props: ConfirmModalPro
   const { t } = useTranslation();
 
   const [timeLeft, setTimeLeft] = useState(countdown);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [shouldRender, setShouldRender] = useState(visible);
+
+  // Animate in/out
+  useEffect(() => {
+    if (visible) {
+      setShouldRender(true);
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start(({ finished }) => {
+        if (finished) {
+          setShouldRender(false);
+        }
+      });
+    }
+  }, [visible, fadeAnim]);
 
   useEffect(() => {
     if (visible) {
@@ -81,17 +108,24 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = (props: ConfirmModalPro
   useEffect(() => {
     if (visible && timeLeft > 0) {
       const timer = setInterval(() => {
-        setTimeLeft(prev => prev - 1);
+        setTimeLeft((prev) => prev - 1);
       }, 1000);
       return () => clearInterval(timer);
     }
   }, [visible, timeLeft]);
 
-  const handleRequestClose = () => {
-    if (!backButtonCloseDisabled) {
-      onCancel();
-    }
-  };
+  // Android back button support
+  useEffect(() => {
+    if (!visible) return;
+    const onBackPress = () => {
+      if (!backButtonCloseDisabled) {
+        onCancel();
+      }
+      return true; // Prevent default back behavior
+    };
+    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => subscription.remove();
+  }, [visible, backButtonCloseDisabled, onCancel]);
 
   const handleBackdropPress = () => {
     if (dismissible) {
@@ -99,20 +133,20 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = (props: ConfirmModalPro
     }
   };
 
+  if (!shouldRender) return null;
+
   return (
-    <Modal
-      visible={visible}
-      transparent={true}
-      animationType="fade"
-      onRequestClose={handleRequestClose}
-      statusBarTranslucent={true}
+    <Animated.View
+      style={[styles.fullScreenOverlay, { opacity: fadeAnim }]}
+      pointerEvents={visible ? 'auto' : 'none'}
     >
       <TouchableOpacity
+        accessible={false}
         activeOpacity={1}
         style={styles.overlay}
         onPress={handleBackdropPress}
       >
-        <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+        <TouchableWithoutFeedback accessible={false} onPress={() => Keyboard.dismiss()}>
           <View
             style={[
               styles.container,
@@ -123,88 +157,96 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = (props: ConfirmModalPro
             ]}
             onStartShouldSetResponder={() => true}
           >
-          <TouchableOpacity
-            style={[styles.closeButton, { backgroundColor: theme.colors.bgGray }]}
-            onPress={onCancel}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="close" size={24} color={theme.colors.text} />
-          </TouchableOpacity>
-
-          <View style={styles.header}>
-            <View style={styles.logoContainer}>
-              <Image source={logo} style={styles.logoImage} />
-            </View>
-            <Text
-              style={[
-                styles.title,
-                typography('h2'),
-                fontWeight('700'),
-                { color: theme.colors.text },
-              ]}
+            <TouchableOpacity
+              style={[styles.closeButton, { backgroundColor: theme.colors.bgGray }]}
+              onPress={onCancel}
+              activeOpacity={0.7}
             >
-              {title}
+              <Ionicons name="close" size={24} color={theme.colors.text} />
+            </TouchableOpacity>
+
+            <View style={styles.header}>
+              <View style={styles.logoContainer}>
+                {icon ? icon : <Image source={logo} style={styles.logoImage} />}
+              </View>
+              <Text
+                testID="confirm-modal-title"
+                style={[
+                  styles.title,
+                  typography('h2'),
+                  fontWeight('700'),
+                  { color: theme.colors.text },
+                ]}
+              >
+                {title}
+              </Text>
+            </View>
+
+            <Text
+              style={[styles.message, typography('body'), { color: theme.colors.textSecondary }]}
+            >
+              {message}
             </Text>
-          </View>
+            {children}
 
-          <Text
-            style={[
-              styles.message,
-              typography('body'),
-              { color: theme.colors.textSecondary },
-            ]}
-          >
-            {message}
-          </Text>
-          {children}
-          
-          {hasInput && (
-            <TextInput
-              style={[
-                styles.input,
-                typography('body'),
-                {
-                  backgroundColor: theme.colors.bgGray,
-                  color: theme.colors.text,
-                  borderColor: theme.colors.border,
-                  borderRadius: borderRadius.md,
-                }
-              ]}
-              placeholder={inputPlaceholder}
-              placeholderTextColor={theme.colors.textTertiary}
-              value={inputValue}
-              onChangeText={onInputChange}
-              autoFocus={true}
-            />
-          )}
-
-          <View style={styles.buttonContainer}>
-            <AppButton
-              title={timeLeft > 0 ? `${confirmLabel || t('common.ok', 'OK')} (${timeLeft})` : (confirmLabel || t('common.ok', 'OK'))}
-              onPress={onConfirm}
-              variant={confirmVariant}
-              loading={isLoading}
-              disabled={timeLeft > 0}
-              fullWidth={true}
-            />
-            {showCancel && (
-              <AppButton
-                title={cancelLabel || t('common.cancel', 'Cancel')}
-                onPress={onCancel}
-                variant="outline"
-                fullWidth={true}
-                disabled={isLoading}
+            {hasInput && (
+              <TextInput
+                style={[
+                  styles.input,
+                  typography('body'),
+                  {
+                    backgroundColor: theme.colors.bgGray,
+                    color: theme.colors.text,
+                    borderColor: theme.colors.border,
+                    borderRadius: borderRadius.md,
+                  },
+                ]}
+                placeholder={inputPlaceholder}
+                placeholderTextColor={theme.colors.textTertiary}
+                value={inputValue}
+                onChangeText={onInputChange}
+                autoFocus={true}
               />
             )}
-          </View>
+
+            <View style={styles.buttonContainer}>
+              <AppButton
+                testID="confirm-modal-ok"
+                title={
+                  timeLeft > 0
+                    ? `${confirmLabel || t('common.ok', 'OK')} (${timeLeft})`
+                    : confirmLabel || t('common.ok', 'OK')
+                }
+                onPress={onConfirm}
+                variant={confirmVariant}
+                loading={isLoading}
+                disabled={timeLeft > 0}
+                fullWidth={true}
+              />
+              {showCancel && (
+                <AppButton
+                  testID="confirm-modal-cancel"
+                  title={cancelLabel || t('common.cancel', 'Cancel')}
+                  onPress={onCancel}
+                  variant="outline"
+                  fullWidth={true}
+                  disabled={isLoading}
+                />
+              )}
+            </View>
           </View>
         </TouchableWithoutFeedback>
       </TouchableOpacity>
-    </Modal>
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
+  fullScreenOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 9999,
+    elevation: 9999,
+  },
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.4)',

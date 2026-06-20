@@ -114,10 +114,13 @@ const ParentSlotCard: React.FC<ParentSlotCardProps> = ({
 
   const renderEmptyState = () => (
     <View>
-      <Text style={currentStyles.label}>{t('parent_linking.slot_title', { number: slotNumber })}</Text>
+      <Text style={currentStyles.label}>
+        {t('parent_linking.slot_title', { number: slotNumber })}
+      </Text>
       <View style={[currentStyles.inputContainer, inputError && currentStyles.inputError]}>
         <Ionicons name="call-outline" size={20} color={theme.colors.textTertiary} />
         <TextInput
+          testID={`parent-linking-mobile-input-${slotNumber}`}
           style={currentStyles.input}
           placeholder={t('parent_linking.enter_mobile_placeholder')}
           placeholderTextColor={theme.colors.textTertiary}
@@ -132,6 +135,7 @@ const ParentSlotCard: React.FC<ParentSlotCardProps> = ({
       {inputError && <Text style={currentStyles.errorText}>{inputError}</Text>}
       <View style={currentStyles.actionContainer}>
         <AppButton
+          testID={`parent-linking-send-invite-${slotNumber}`}
           title={isSending ? t('parent_linking.sending') : t('parent_linking.send_invite')}
           onPress={handleSendInvite}
           loading={isSending}
@@ -153,7 +157,10 @@ const ParentSlotCard: React.FC<ParentSlotCardProps> = ({
       <Text style={currentStyles.descText}>{t('parent_linking.pending_outgoing_desc')}</Text>
       <View style={currentStyles.actionContainer}>
         <AppButton
-          title={isCancelling ? t('parent_linking.cancelling') : t('parent_linking.cancel_invitation')}
+          testID={`parent-linking-cancel-${slotNumber}`}
+          title={
+            isCancelling ? t('parent_linking.cancelling') : t('parent_linking.cancel_invitation')
+          }
           onPress={handleCancel}
           loading={isCancelling}
           variant="danger"
@@ -176,6 +183,7 @@ const ParentSlotCard: React.FC<ParentSlotCardProps> = ({
       <View style={currentStyles.buttonRow}>
         <View style={currentStyles.flexButton}>
           <AppButton
+            testID={`parent-linking-decline-${slotNumber}`}
             title={t('parent_linking.decline')}
             onPress={() => handleRespond('decline')}
             variant="outline"
@@ -185,6 +193,7 @@ const ParentSlotCard: React.FC<ParentSlotCardProps> = ({
         <View style={{ width: spacing.md }} />
         <View style={currentStyles.flexButton}>
           <AppButton
+            testID={`parent-linking-accept-${slotNumber}`}
             title={t('parent_linking.accept')}
             onPress={() => handleRespond('accept')}
             loading={isResponding}
@@ -196,7 +205,7 @@ const ParentSlotCard: React.FC<ParentSlotCardProps> = ({
   );
 
   const renderAccepted = () => (
-    <View>
+    <View testID={`parent-linking-accepted-${slotNumber}`}>
       <View style={currentStyles.headerRow}>
         <View style={currentStyles.titleInfo}>
           <Text style={currentStyles.parentName}>{slot.request?.parent.name || 'Parent'}</Text>
@@ -218,9 +227,9 @@ const ParentSlotCard: React.FC<ParentSlotCardProps> = ({
         {renderBadge()}
       </View>
       <Text style={currentStyles.descText}>{t('parent_linking.rejected_desc')}</Text>
-      
+
       <View style={currentStyles.divider} />
-      
+
       <Text style={currentStyles.label}>{t('parent_linking.send_to_new_number')}</Text>
       <View style={[currentStyles.inputContainer, inputError && currentStyles.inputError]}>
         <Ionicons name="call-outline" size={20} color={theme.colors.textTertiary} />
@@ -265,7 +274,7 @@ const styles = (
   borderRadius: any,
   isRTL: boolean,
   typography: any,
-  fontWeight: any
+  fontWeight: any,
 ) =>
   StyleSheet.create({
     card: {

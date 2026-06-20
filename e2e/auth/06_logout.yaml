@@ -1,0 +1,115 @@
+appId: com.elbooklets.app
+---
+# --- Student Login & Logout Flow ---
+- launchApp
+
+# Switch environment if needed (since state was cleared)
+- runFlow:
+    file: ../utils/setup-environment.yaml
+
+- assertVisible:
+    id: "onboarding-student-tab"
+- tapOn:
+    id: "onboarding-sign-in"
+- assertVisible:
+    id: "login-mobile-input"
+- tapOn:
+    id: "login-mobile-input"
+- inputText: ${STUDENT_MOBILE}
+- tapOn:
+    point: 50%,10%
+- tapOn:
+    id: "login-password-input"
+- inputText: ${STUDENT_PASSWORD}
+- tapOn:
+    point: 50%,10%
+- tapOn:
+    id: "login-submit-button"
+
+# Give a rate-limit / warning popup a window to appear (continues early if it does)
+- extendedWaitUntil:
+    optional: true
+    visible:
+      id: "confirm-modal-ok"
+    timeout: 2000
+
+# Dismiss rate-limit / warning popup if it appeared
+- runFlow:
+    when:
+      visible:
+        id: "confirm-modal-ok"
+    commands:
+      - tapOn:
+          id: "confirm-modal-ok"
+      - extendedWaitUntil:
+          notVisible:
+            id: "confirm-modal-ok"
+          timeout: 3000
+
+# Skip OTP using debug bypass button if it appears
+- runFlow:
+    when:
+      visible:
+        id: "otp-skip-debug"
+    commands:
+      - tapOn:
+          id: "otp-skip-debug"
+- runFlow:
+    when:
+      visible:
+        id: "otp-skip-debug-2"
+    commands:
+      - tapOn:
+          id: "otp-skip-debug-2"
+
+# Wait for profile completion modal to auto-show (continues early when it appears) and dismiss it
+- extendedWaitUntil:
+    optional: true
+    visible:
+      id: "profile-completion-skip-button"
+    timeout: 6000
+- runFlow:
+    when:
+      visible:
+        id: "profile-completion-skip-button"
+    commands:
+      - tapOn:
+          id: "profile-completion-skip-button"
+
+- assertVisible:
+    id: "tab-home"
+
+# Go to profile tab and log out
+- tapOn:
+    id: "tab-profile"
+- runScript:
+    file: ../utils/sleep.js
+    env:
+      timeout: 2000
+# Scroll down to reveal the logout button at the bottom of the profile screen
+- swipe:
+    start: 50%, 70%
+    end: 50%, 30%
+- swipe:
+    start: 50%, 70%
+    end: 50%, 30%
+- swipe:
+    start: 50%, 70%
+    end: 50%, 30%
+- runScript:
+    file: ../utils/sleep.js
+    env:
+      timeout: 1000
+- tapOn:
+    id: "profile-logout-item"
+- extendedWaitUntil:
+    visible:
+      id: "confirm-modal-ok"
+    timeout: 5000
+- tapOn:
+    id: "confirm-modal-ok"
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-student-tab"
+    timeout: 10000
+- takeScreenshot: e2e/screenshots/student-logout-success

@@ -2,9 +2,9 @@ import { isDebugMode } from '../config/debug';
 
 /**
  * Global error logger utility.
- * 
+ *
  * Used to centralize console logs and (in the future) external reporting providers like Firebase Crashlytics.
- * 
+ *
  * As per latest requirements:
  * - If debugMode=true in app.json, logs to console to aid developers.
  * - If debugMode=false, suppresses console logs.

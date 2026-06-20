@@ -1,12 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  Image,
-} from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
@@ -132,9 +125,9 @@ const QuizScreen: React.FC = () => {
       );
     if (historyError)
       return (
-        <RetryView 
-          message={historyError || t('quiz_screen.error_loading_history')} 
-          onRetry={fetchQuizHistory} 
+        <RetryView
+          message={historyError || t('quiz_screen.error_loading_history')}
+          onRetry={fetchQuizHistory}
         />
       );
     return (

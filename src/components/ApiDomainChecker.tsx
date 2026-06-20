@@ -2,12 +2,17 @@ import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useModal } from '../context/ModalContext';
 import { ApiUriManager } from '../config/api';
+import { isDebugMode } from '../config/debug';
 
 export const ApiDomainChecker: React.FC = () => {
   const { t } = useTranslation();
   const { showConfirm } = useModal();
 
   useEffect(() => {
+    if (isDebugMode()) {
+      return;
+    }
+
     const activeUrl = ApiUriManager.getActiveUrl();
     const timer = setTimeout(() => {
       // Check if the domain is not its base

@@ -52,12 +52,7 @@ export const CANCEL_PARENT_LINK_REQUEST_MUTATION = gql`
 
 export const PARENT_REGISTER_MUTATION = gql`
   mutation ParentRegister($name: String!, $mobile: String!, $email: String!, $password: String!) {
-    parentRegister(input: {
-      name: $name,
-      mobile: $mobile,
-      email: $email,
-      password: $password
-    }) {
+    parentRegister(input: { name: $name, mobile: $mobile, email: $email, password: $password }) {
       access_token
       token_type
       parent {
@@ -72,10 +67,7 @@ export const PARENT_REGISTER_MUTATION = gql`
 
 export const PARENT_LOGIN_MUTATION = gql`
   mutation ParentLogin($mobile: String!, $password: String!) {
-    parentLogin(input: {
-      mobile: $mobile,
-      password: $password
-    }) {
+    parentLogin(input: { mobile: $mobile, password: $password }) {
       access_token
       token_type
       parent {
@@ -136,13 +128,13 @@ export const GET_CHILD_DASHBOARD_QUERY = gql`
       quizzes_solved
       average_score
       started_subjects_count
-      
+
       subject_performance {
         subject_name
         quiz_count
         avg_score
       }
-      
+
       recent_activity {
         quiz_name
         subject_name
@@ -151,7 +143,7 @@ export const GET_CHILD_DASHBOARD_QUERY = gql`
         is_passed
         completed_at
       }
-      
+
       wheel_of_success {
         overall_percentage
         subject_metrics {
@@ -159,13 +151,15 @@ export const GET_CHILD_DASHBOARD_QUERY = gql`
           score
         }
       }
-      
+
       today_schedule {
         date
         is_school_day
         entries {
           id
-          subject { name }
+          subject {
+            name
+          }
           lesson_goal
           quiz_goal
           lessons_viewed
@@ -185,5 +179,3 @@ export const PARENT_FORGOT_PASSWORD_MUTATION = gql`
     }
   }
 `;
-
-

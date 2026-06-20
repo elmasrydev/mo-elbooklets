@@ -88,14 +88,14 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
       if (navigation.canGoBack()) {
         navigation.goBack();
       } else {
-        navigation.navigate('MainTabs', { screen: 'QuizTab' });
+        navigation.navigate('MainTabs', { screen: 'Quiz' });
       }
     });
 
   const onGoHome =
     props.onGoHome ||
     (() => {
-      navigation.navigate('MainTabs', { screen: 'HomeTab' });
+      navigation.navigate('MainTabs', { screen: 'Home' });
     });
 
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
@@ -319,7 +319,9 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
     );
   }
 
-  const percentage = Math.round((quizResult.score / quizResult.totalQuestions) * 100);
+  const percentage = quizResult.totalQuestions
+    ? Math.round((quizResult.score / quizResult.totalQuestions) * 100)
+    : 0;
   const correctAnswers = quizResult.userAnswers.filter((answer) => answer.is_correct).length;
   const timeTaken = props.timeTaken ?? route.params?.timeTaken;
 

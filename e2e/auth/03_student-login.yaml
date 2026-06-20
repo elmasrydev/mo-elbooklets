@@ -1,0 +1,91 @@
+appId: com.elbooklets.app
+---
+# Launch app without clearing state/keychain (Expo dev client needs them)
+- launchApp
+
+# Switch environment if needed
+- runFlow:
+    file: ../utils/setup-environment.yaml
+
+# Execute student login flow
+- assertVisible:
+    id: "onboarding-student-tab"
+- tapOn:
+    id: "onboarding-sign-in"
+- assertVisible:
+    id: "login-mobile-input"
+- tapOn:
+    id: "login-mobile-input"
+- inputText: ${STUDENT_MOBILE}
+- tapOn:
+    point: 50%,10%
+# Prod build: the password field defaults to secure (showPassword=false on non-debug
+# builds) and Maestro drops special chars in iOS secure fields. Reveal it first so the
+# strong password types reliably. Debug builds render it visible already (prod-only).
+- runFlow:
+    when:
+      true: ${TARGET_ENV == 'prod'}
+    commands:
+      - tapOn:
+          id: "login-toggle-password"
+- tapOn:
+    id: "login-password-input"
+- inputText: ${STUDENT_PASSWORD}
+- tapOn:
+    point: 50%,10%
+- tapOn:
+    id: "login-submit-button"
+
+# Give a rate-limit / warning popup a window to appear (continues early if it does)
+- extendedWaitUntil:
+    optional: true
+    visible:
+      id: "confirm-modal-ok"
+    timeout: 2000
+
+# Dismiss rate-limit / warning popup if it appeared
+- runFlow:
+    when:
+      visible:
+        id: "confirm-modal-ok"
+    commands:
+      - tapOn:
+          id: "confirm-modal-ok"
+      - extendedWaitUntil:
+          notVisible:
+            id: "confirm-modal-ok"
+          timeout: 3000
+
+# Skip OTP using debug bypass button if it appears (Phase 1 or 2)
+- runFlow:
+    when:
+      visible:
+        id: "otp-skip-debug"
+    commands:
+      - tapOn:
+          id: "otp-skip-debug"
+- runFlow:
+    when:
+      visible:
+        id: "otp-skip-debug-2"
+    commands:
+      - tapOn:
+          id: "otp-skip-debug-2"
+
+# Wait for profile completion modal to auto-show (continues early when it appears) and dismiss it
+- extendedWaitUntil:
+    optional: true
+    visible:
+      id: "profile-completion-skip-button"
+    timeout: 6000
+- runFlow:
+    when:
+      visible:
+        id: "profile-completion-skip-button"
+    commands:
+      - tapOn:
+          id: "profile-completion-skip-button"
+
+- assertVisible:
+    id: "tab-home"
+- takeScreenshot: e2e/screenshots/student-login-result

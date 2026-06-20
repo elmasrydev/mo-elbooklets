@@ -1,0 +1,12 @@
+appId: com.elbooklets.app
+---
+# Launch app without clearing state/keychain - the setup-environment flow handles logout
+- launchApp
+
+# Switch environment if needed
+- runFlow:
+    file: ../utils/setup-environment.yaml
+
+# Execute student registration flow
+- runFlow:
+    file: ../utils/student-register-flow.yaml

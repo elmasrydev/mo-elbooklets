@@ -109,7 +109,11 @@ export const ForceUpdateProvider: React.FC<{ children: React.ReactNode }> = ({ c
       const platform = Platform.OS as 'ios' | 'android';
       const platformConfig = versionData[platform];
 
-      const needsUpdate = compareVersions(currentVersion, platformConfig.version);
+      // Guard: if remote config omits this platform's key, skip the version gate
+      // instead of throwing (which was swallowed, silently disabling force-update).
+      const needsUpdate = platformConfig?.version
+        ? compareVersions(currentVersion, platformConfig.version)
+        : false;
 
       const maintenanceValue = getValue(remoteConfig, MAINTENANCE_CONFIG_KEY);
       const isMaintenance = maintenanceValue.asBoolean();

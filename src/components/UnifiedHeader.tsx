@@ -76,7 +76,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
     return leftContent || null;
   };
 
-  const HEADER_CONTENT_HEIGHT = Platform.OS === 'ios' ? (isModal ? 62 : 54) : isModal ? 62 : 57;
+  const HEADER_CONTENT_HEIGHT = Platform.OS === 'ios' ? (isModal ? 67 : 54) : isModal ? 67 : 57;
 
   const effectiveCenterAlign = centerAlign;
 
@@ -107,8 +107,8 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
     currentStyles.container,
     {
       backgroundColor: theme.colors.headerBackground,
-      borderBottomColor: theme.colors.border,
-      borderBottomWidth: showBorder ? 1 : 0,
+      borderBottomColor: 'rgba(0, 74, 154, 0.06)',
+      borderBottomWidth: 1,
       height: totalHeight,
       paddingTop: headerTop,
       paddingHorizontal: sidePadding,
