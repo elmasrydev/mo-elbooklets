@@ -583,7 +583,10 @@ const HomeScreen: React.FC = () => {
                         },
                       ]}
                     >
-                      {activity.score}
+                      {activity.totalQuestions
+                        ? Math.round((activity.score / activity.totalQuestions) * 100)
+                        : 0}
+                      %
                     </Text>
                   </TouchableOpacity>
                 );
