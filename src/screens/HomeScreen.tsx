@@ -630,6 +630,7 @@ const HomeScreen: React.FC = () => {
                     name={entry.name}
                     size={36}
                     ring={index === 0 ? '#fdba74' : '#e2e8f0'}
+                    style={s.leaderboardAvatarGap}
                   />
                   <View style={s.leaderboardRankInfo}>
                     <Text style={s.leaderboardRankName} numberOfLines={1}>
@@ -644,7 +645,12 @@ const HomeScreen: React.FC = () => {
               {leaderboardUser && (
                 <View style={s.leaderboardUserRow}>
                   <Text style={s.leaderboardUserRankText}>{leaderboardUser.rank}</Text>
-                  <Avatar uri={user?.selectedAvatar?.url} name={user?.name || ''} size={36} />
+                  <Avatar
+                    uri={user?.selectedAvatar?.url}
+                    name={user?.name || ''}
+                    size={36}
+                    style={s.leaderboardAvatarGap}
+                  />
                   <View style={s.leaderboardRankInfo}>
                     <Text style={s.leaderboardUserName} numberOfLines={1}>
                       {user?.name
@@ -1031,6 +1037,9 @@ const getStyles = (
       ...typography('bodySmall'),
       ...fontWeight('bold'),
       color: theme.colors.textSecondary,
+    },
+    leaderboardAvatarGap: {
+      ...common.marginEnd(spacing.sm),
     },
     leaderboardRankInfo: {
       flex: 1,
