@@ -1057,8 +1057,10 @@ const styles = (config: any) => {
       }),
     },
     gridItemText: {
-      fontSize: 12,
-      ...fontWeight('700'),
+      // Use the typography base so the Cairo font-family is applied on iOS too.
+      // fontWeight() alone has no fontFamily on iOS, which made the Arabic grade
+      // labels fall back to the system font and look inconsistent. (BKLT-255)
+      ...typography('label', '700'),
       color: '#444653',
     },
     gridItemTextActive: {

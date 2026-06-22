@@ -142,7 +142,9 @@ const styles = (theme: any, common: any, typography: any, fontWeight: any) =>
       color: theme.colors.text,
     },
     grade: {
-      ...typography('caption'),
+      // SemiBold so the Arabic grade reads consistently next to the bold name
+      // instead of looking thin/under-weighted. (BKLT-256)
+      ...typography('caption', '600'),
       color: theme.colors.textSecondary,
       marginTop: 2,
     },
