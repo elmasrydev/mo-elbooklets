@@ -17,6 +17,13 @@
     "error": "تعذّر تحميل الصور",
     "save_error": "تعذّر تحديث الصورة"
   },
+  "student_profile": {
+    "restricted_title": "ملف خاص",
+    "restricted_msg": "يجب أن يتابع كلٌّ منكما الآخر لعرض ملف {{name}} كاملاً.",
+    "quizzes": "الاختبارات",
+    "avg_score": "متوسط الدرجات",
+    "xp": "نقاط الخبرة"
+  },
   "common": {
     "about": "حول التطبيق",
     "accept": "قبول",

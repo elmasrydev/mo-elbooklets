@@ -17,6 +17,13 @@
     "error": "Could not load avatars",
     "save_error": "Could not update avatar"
   },
+  "student_profile": {
+    "restricted_title": "Private profile",
+    "restricted_msg": "You both need to follow each other to see {{name}}'s full profile.",
+    "quizzes": "Quizzes",
+    "avg_score": "Avg Score",
+    "xp": "XP"
+  },
   "common": {
     "about": "About",
     "accept": "Accept",
