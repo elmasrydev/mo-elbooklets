@@ -349,6 +349,12 @@ const ProfileScreen: React.FC = () => {
                   <Text style={s.verifiedInlineText}>{t('otp.mobile_verified', 'Verified')}</Text>
                 </View>
               ) : null}
+              {xp != null ? (
+                <View style={s.xpInline}>
+                  <Ionicons name="flash" size={13} color={theme.colors.warning} />
+                  <Text style={s.xpInlineText}>{xp.toLocaleString()} XP</Text>
+                </View>
+              ) : null}
             </View>
 
             <TouchableOpacity
@@ -375,13 +381,6 @@ const ProfileScreen: React.FC = () => {
             </TouchableOpacity>
           ) : null}
 
-          {xp != null && (
-            <View style={s.xpRow}>
-              <Ionicons name="flash" size={16} color={theme.colors.warning} />
-              <Text style={s.xpValue}>{xp.toLocaleString()}</Text>
-              <Text style={s.xpLabel}>XP</Text>
-            </View>
-          )}
           <View style={s.statsRow}>
             <TouchableOpacity
               style={s.statCol}
@@ -718,22 +717,16 @@ const styles = (
       height: 34,
       backgroundColor: theme.colors.border,
     },
-    xpRow: {
+    xpInline: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      justifyContent: 'flex-start',
-      gap: 6,
-      marginTop: spacing.sm,
+      gap: 4,
+      marginTop: 2,
     },
-    xpValue: {
-      ...typography('h3'),
-      ...fontWeight('bold'),
-      color: theme.colors.text,
-    },
-    xpLabel: {
+    xpInlineText: {
       ...typography('label'),
       ...fontWeight('bold'),
-      color: theme.colors.textTertiary,
+      color: theme.colors.warning,
     },
 
     // Grouped lists
