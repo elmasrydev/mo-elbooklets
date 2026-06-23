@@ -429,6 +429,10 @@ const LeaderboardScreen: React.FC = () => {
                   })}{' '}
                   · {contextLine}
                 </Text>
+                <View style={s.bannerXpRow}>
+                  <Ionicons name="flash" size={13} color={GOLD} />
+                  <Text style={s.bannerXpText}>{you.xp.toLocaleString()} XP</Text>
+                </View>
               </View>
               <View style={s.bannerRight}>
                 <Text style={s.bannerRankNum}>#{you.rank}</Text>
@@ -587,10 +591,21 @@ const styles = (
       alignItems: 'center',
       gap: 14,
       borderRadius: borderRadius.xl,
-      paddingVertical: 14,
+      paddingVertical: 18,
       paddingHorizontal: 16,
     },
     bannerMid: { flex: 1 },
+    bannerXpRow: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      gap: 4,
+      marginTop: 6,
+    },
+    bannerXpText: {
+      ...typography('caption'),
+      ...fontWeight('bold'),
+      color: ON_DARK,
+    },
     bannerTitle: {
       ...typography('caption'),
       ...fontWeight('bold'),
