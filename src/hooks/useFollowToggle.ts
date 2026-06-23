@@ -3,6 +3,7 @@ import * as Haptics from 'expo-haptics';
 import * as SecureStore from 'expo-secure-store';
 import { tryFetchWithFallback } from '../config/api';
 import { useAuth } from '../context/AuthContext';
+import { emitFollowChange } from '../utils/followBus';
 
 interface FollowResult {
   success: boolean;
@@ -34,6 +35,8 @@ export const useFollowToggle = () => {
         );
 
         if (result.data?.followUser?.success) {
+          // Broadcast so every mounted screen showing this user updates instantly.
+          emitFollowChange(userId, result.data.followUser.isFollowing);
           await refreshUser();
         }
 
