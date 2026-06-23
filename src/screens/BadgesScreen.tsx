@@ -406,7 +406,11 @@ const BadgesScreen: React.FC = () => {
                                 ? `https://prs.elbooklets.com${selectedBadge.logoUrl}`
                                 : selectedBadge.logoUrl,
                             }}
-                            style={styles.modalBadgeImage}
+                            style={[
+                              styles.modalBadgeImage,
+                              // Dim the badge in the pop-up when it isn't earned yet. (BKLT-260)
+                              !selectedBadge.awardedAt && styles.grayscaleImage,
+                            ]}
                             onError={() => setModalImageError(true)}
                           />
                         ) : (
@@ -675,7 +679,8 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
   grayscaleImage: {
-    opacity: 1,
+    // In-progress / unearned badges are dimmed (faded grey). (BKLT-260)
+    opacity: 0.4,
     tintColor: '#9CA3AF',
   },
   lockOverlay: {
