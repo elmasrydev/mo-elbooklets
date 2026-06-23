@@ -8,6 +8,22 @@
     "subtitle": "Curriculum-aligned practice • Instant feedback • Track your progress",
     "title": "Master Your Exams with AI-Powered Quizzes"
   },
+  "avatar_picker": {
+    "title": "Choose your avatar",
+    "male": "Male",
+    "female": "Female",
+    "change": "Change avatar",
+    "remove": "Remove current avatar",
+    "error": "Could not load avatars",
+    "save_error": "Could not update avatar"
+  },
+  "student_profile": {
+    "restricted_title": "Private profile",
+    "restricted_msg": "You both need to follow each other to see {{name}}'s full profile.",
+    "quizzes": "Quizzes",
+    "avg_score": "Avg Score",
+    "xp": "XP"
+  },
   "common": {
     "about": "About",
     "accept": "Accept",
@@ -28,6 +44,7 @@
     "app_name": "el Booklets",
     "brand_name": "El-Booklets",
     "cancel": "Cancel",
+    "retry": "Retry",
     "community": "Community",
     "completed": "Completed",
     "confirm": "Confirm",

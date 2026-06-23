@@ -7,14 +7,25 @@ import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
 import { getTimeAgo } from '../../lib/dateUtils';
+import Avatar from '../Avatar';
 import { layout } from '../../config/layout';
 
 interface ConnectionCardProps {
   item: {
     id: string;
-    user: { id: string; name: string; grade: { id: string; name: string } };
+    user: {
+      id: string;
+      name: string;
+      grade: { id: string; name: string };
+      selectedAvatar?: { url?: string } | null;
+    };
     createdAt: string;
-    connectedUser: { id: string; name: string; grade: { id: string; name: string } };
+    connectedUser: {
+      id: string;
+      name: string;
+      grade: { id: string; name: string };
+      selectedAvatar?: { url?: string } | null;
+    };
     likes?: number;
     comments?: number;
     isLiked?: boolean;
@@ -29,14 +40,6 @@ const ConnectionCard: React.FC<ConnectionCardProps> = ({ item, onLike, onComment
   const { t } = useTranslation();
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
-
-  const getInitials = (name: string) =>
-    name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
 
   const primaryColor = theme.colors.success;
   const primaryBg = `${theme.colors.success}10`;
@@ -59,16 +62,12 @@ const ConnectionCard: React.FC<ConnectionCardProps> = ({ item, onLike, onComment
       {/* Top Header: Avatar + User Info */}
       <View style={currentStyles.headerRow}>
         <View style={currentStyles.headerLeft}>
-          <View
-            style={[
-              currentStyles.avatar,
-              { borderColor: primaryBorder, backgroundColor: primaryBg },
-            ]}
-          >
-            <Text style={[currentStyles.avatarText, { color: primaryColor }]}>
-              {getInitials(item.user.name)}
-            </Text>
-          </View>
+          <Avatar
+            uri={item.user.selectedAvatar?.url}
+            name={item.user.name}
+            size={44}
+            fontScale={0.36}
+          />
           <View style={currentStyles.userInfo}>
             <Text style={[currentStyles.userName, { textAlign: common.textAlign }]}>
               {item.user.name}
@@ -84,20 +83,26 @@ const ConnectionCard: React.FC<ConnectionCardProps> = ({ item, onLike, onComment
       <View style={currentStyles.contentArea}>
         <View style={currentStyles.connectionBox}>
           <View style={currentStyles.avatarsRow}>
-            <View style={currentStyles.largeAvatar}>
-              <Text style={currentStyles.largeAvatarText}>{getInitials(item.user.name)}</Text>
-            </View>
+            <Avatar
+              uri={item.user.selectedAvatar?.url}
+              name={item.user.name}
+              size={56}
+              fontScale={0.36}
+              style={currentStyles.largeAvatar}
+            />
             <View style={currentStyles.connectionIcon}>
               <MaterialIcons name="people-alt" size={24} color={primaryColor} />
               <Text style={currentStyles.connectedLabel}>
                 {t('social_screen.connected', 'Connected')}
               </Text>
             </View>
-            <View style={currentStyles.largeAvatar}>
-              <Text style={currentStyles.largeAvatarText}>
-                {getInitials(item.connectedUser.name)}
-              </Text>
-            </View>
+            <Avatar
+              uri={item.connectedUser.selectedAvatar?.url}
+              name={item.connectedUser.name}
+              size={56}
+              fontScale={0.36}
+              style={currentStyles.largeAvatar}
+            />
           </View>
           <Text style={[currentStyles.names, { textAlign: common.textAlign }]}>
             {item.user.name} & {item.connectedUser.name}

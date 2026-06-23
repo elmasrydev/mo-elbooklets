@@ -1,4 +1,5 @@
 import { NavigationProp } from '@react-navigation/native';
+import { extractUserIdFromActionUrl } from './actionUrl';
 
 /**
  * Routes a notification tap to the correct in-app screen.
@@ -61,9 +62,20 @@ export const handleNotificationRoute = (
     // Social / Community activity (student only)
     // ------------------------------------------------------------------
 
-    case 'new_follower':
+    case 'new_follower': {
+      // Open the new follower's profile when the payload carries their id;
+      // otherwise fall back to the Community tab. (BKLT-252)
+      const followerId = extractUserIdFromActionUrl(action_url);
+      if (followerId) {
+        navigation.navigate('StudentProfile', { userId: followerId });
+      } else {
+        navigation.navigate('MainTabs', { screen: 'Community' });
+      }
+      return true;
+    }
+
     case 'post_liked':
-      // A student got a new follower or a like on their post → focus Community tab.
+      // A like on the student's post → focus Community tab.
       navigation.navigate('MainTabs', { screen: 'Community' });
       return true;
 

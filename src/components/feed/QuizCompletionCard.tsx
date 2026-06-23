@@ -10,11 +10,17 @@ import { layout } from '../../config/layout';
 import { getTimeAgo } from '../../lib/dateUtils';
 import { getSubjectConfig } from '../../utils/subjectTheme';
 import SubjectIcon from '../SubjectIcon';
+import Avatar from '../Avatar';
 
 interface QuizCompletionCardProps {
   item: {
     id: string;
-    user: { id: string; name: string; grade: { id: string; name: string } };
+    user: {
+      id: string;
+      name: string;
+      grade: { id: string; name: string };
+      selectedAvatar?: { url?: string } | null;
+    };
     createdAt: string;
     quizData: {
       quizUserId: string;
@@ -50,14 +56,6 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({ item, onLike })
 
   const subConfig = getSubjectConfig(subjectName, theme);
 
-  const getInitials = (name: string) =>
-    name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
-
   const accentColor = isPassed ? theme.colors.success : theme.colors.error;
   const s = createStyles(theme, common, spacing, borderRadius, typography, fontWeight);
 
@@ -65,9 +63,12 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({ item, onLike })
     <View style={s.card}>
       {/* Header: avatar + name + grade · time */}
       <View style={s.headerRow}>
-        <View style={s.avatar}>
-          <Text style={s.avatarText}>{getInitials(item.user.name)}</Text>
-        </View>
+        <Avatar
+          uri={item.user.selectedAvatar?.url}
+          name={item.user.name}
+          size={42}
+          fontScale={0.36}
+        />
         <View style={s.userInfo}>
           <Text numberOfLines={1} style={s.userName}>
             {item.user.name}

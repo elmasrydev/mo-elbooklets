@@ -211,6 +211,10 @@ const TabNavigator: React.FC = () => {
         component={require('../screens/NotificationsScreen').default}
       />
       <Stack.Screen name="FollowList" component={FollowListScreen} />
+      <Stack.Screen
+        name="StudentProfile"
+        component={require('../screens/StudentProfileScreen').default}
+      />
       <Stack.Screen name="Badges" component={BadgesScreen} />
       <Stack.Screen name="BookmarksNotes" component={BookmarksNotesScreen} />
       <Stack.Group screenOptions={{ presentation: 'fullScreenModal' }}>

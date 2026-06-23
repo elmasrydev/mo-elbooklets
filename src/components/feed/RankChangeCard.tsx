@@ -8,11 +8,17 @@ import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
 import { getTimeAgo } from '../../lib/dateUtils';
+import Avatar from '../Avatar';
 
 interface RankChangeCardProps {
   item: {
     id: string;
-    user: { id: string; name: string; grade: { id: string; name: string } };
+    user: {
+      id: string;
+      name: string;
+      grade: { id: string; name: string };
+      selectedAvatar?: { url?: string } | null;
+    };
     createdAt: string;
     rankData: {
       previousRank?: number;
@@ -46,14 +52,6 @@ const RankChangeCard: React.FC<RankChangeCardProps> = ({ item, onLike }) => {
 
   if (!item.rankData) return null;
 
-  const getInitials = (name: string) =>
-    name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
-
   const scopeLabel = item.rankData.isOverall
     ? t('social_screen.overall_ranking', 'Overall')
     : item.rankData.subject?.name || '';
@@ -64,9 +62,13 @@ const RankChangeCard: React.FC<RankChangeCardProps> = ({ item, onLike }) => {
     <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.card}>
       {/* Header: avatar + name + grade · time */}
       <View style={s.headerRow}>
-        <View style={s.avatar}>
-          <Text style={s.avatarText}>{getInitials(item.user.name)}</Text>
-        </View>
+        <Avatar
+          uri={item.user.selectedAvatar?.url}
+          name={item.user.name}
+          size={42}
+          ring="rgba(255,255,255,0.25)"
+          fontScale={0.36}
+        />
         <View style={s.userInfo}>
           <Text numberOfLines={1} style={s.userName}>
             {item.user.name}

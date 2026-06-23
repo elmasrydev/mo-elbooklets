@@ -16,6 +16,7 @@ import { useTypography } from '../../hooks/useTypography';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useFollowToggle } from '../../hooks/useFollowToggle';
 import { tryFetchWithFallback } from '../../config/api';
+import Avatar from '../Avatar';
 import AppButton from '../AppButton';
 import { layout } from '../../config/layout';
 
@@ -26,6 +27,7 @@ interface SuggestedUser {
   school?: { id: string; name: string };
   grade?: { id: string; name: string };
   isFollowing?: boolean;
+  selectedAvatar?: { url?: string } | null;
 }
 
 interface PeopleYouMayKnowProps {
@@ -64,6 +66,7 @@ const PeopleYouMayKnow: React.FC<PeopleYouMayKnowProps> = ({ onFollowSuccess }) 
               suggestionReason
               school { id name }
               grade { id name }
+              selectedAvatar { url }
             }
           }
         }
@@ -114,9 +117,7 @@ const PeopleYouMayKnow: React.FC<PeopleYouMayKnowProps> = ({ onFollowSuccess }) 
           { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
         ]}
       >
-        <View style={styles.avatarPlaceholder}>
-          <Text style={styles.avatarText}>{item.name.charAt(0).toUpperCase()}</Text>
-        </View>
+        <Avatar uri={item.selectedAvatar?.url} name={item.name} size={48} />
         <Text
           style={[
             styles.name,

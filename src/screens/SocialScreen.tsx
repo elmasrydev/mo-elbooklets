@@ -11,7 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as SecureStore from 'expo-secure-store';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useFollowToggle } from '../hooks/useFollowToggle';
 import { useTheme } from '../context/ThemeContext';
 import { useModal } from '../context/ModalContext';
@@ -24,7 +24,7 @@ import { layout } from '../config/layout';
 import { tryFetchWithFallback } from '../config/api';
 import { QuizCompletionCard, ConnectionCard, RankChangeCard } from '../components/feed';
 import PeopleYouMayKnow from '../components/feed/PeopleYouMayKnow';
-import AppButton from '../components/AppButton';
+import UserListRow from '../components/UserListRow';
 import { CardListSkeleton, GenericListSkeleton } from '../components/SkeletonLoader';
 import RetryView from '../components/RetryView';
 import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
@@ -41,6 +41,7 @@ interface Student {
   totalQuizzes: number;
   avgScore: number;
   isFollowing: boolean;
+  selectedAvatar?: { url?: string } | null;
 }
 
 interface NewsFeedItem {
@@ -53,6 +54,7 @@ interface NewsFeedItem {
       id: string;
       name: string;
     };
+    selectedAvatar?: { url?: string } | null;
   };
   createdAt: string;
   quizData?: {
@@ -66,6 +68,7 @@ interface NewsFeedItem {
     id: string;
     name: string;
     grade: { id: string; name: string };
+    selectedAvatar?: { url?: string } | null;
   };
   rankData?: {
     previousRank?: number;
@@ -85,9 +88,11 @@ const SocialScreen: React.FC = () => {
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
   const { user } = useAuth();
+  const navigation = useNavigation<any>();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Student[]>([]);
+  const [followingId, setFollowingId] = useState<string | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [feedItems, setFeedItems] = useState<NewsFeedItem[]>([]);
   const [timelineLoading, setTimelineLoading] = useState(true);
@@ -110,7 +115,7 @@ const SocialScreen: React.FC = () => {
           socialTimeline {
             id
             type
-            user { id name grade { id name } }
+            user { id name grade { id name } selectedAvatar { url } }
             createdAt
             quizData {
               quizUserId
@@ -119,7 +124,7 @@ const SocialScreen: React.FC = () => {
               totalQuestions
               isPassed
             }
-            connectedUser { id name grade { id name } }
+            connectedUser { id name grade { id name } selectedAvatar { url } }
             rankData { previousRank newRank subject { id name } isOverall }
             likes
             comments
@@ -176,6 +181,7 @@ const SocialScreen: React.FC = () => {
         query SearchStudents($query: String!) {
           searchStudents(query: $query) {
             id name mobile grade { id name } totalQuizzes avgScore isFollowing
+            selectedAvatar { url }
           }
         }
       `,
@@ -194,12 +200,18 @@ const SocialScreen: React.FC = () => {
   const { toggleFollow } = useFollowToggle();
 
   const handleFollowToggle = async (student: Student) => {
-    const result = await toggleFollow(student.id);
-    if (result?.success) {
-      setSearchResults((prev) =>
-        prev.map((s) => (s.id === student.id ? { ...s, isFollowing: result.isFollowing } : s)),
-      );
-      if (searchQuery.length === 0) fetchTimeline();
+    if (followingId) return;
+    setFollowingId(student.id);
+    try {
+      const result = await toggleFollow(student.id);
+      if (result?.success) {
+        setSearchResults((prev) =>
+          prev.map((s) => (s.id === student.id ? { ...s, isFollowing: result.isFollowing } : s)),
+        );
+        if (searchQuery.length === 0) fetchTimeline();
+      }
+    } finally {
+      setFollowingId(null);
     }
   };
 
@@ -301,55 +313,22 @@ const SocialScreen: React.FC = () => {
 
   const renderSearchItem = useCallback(
     ({ item: student }: { item: Student }) => (
-      <View style={[common.card, { marginBottom: spacing.sectionGap }]}>
-        <View style={currentStyles.studentCardContent}>
-          <View style={currentStyles.studentInfo}>
-            <View style={currentStyles.avatarPlaceholder}>
-              <Text style={currentStyles.avatarText}>{student.name.charAt(0).toUpperCase()}</Text>
-            </View>
-            <View style={currentStyles.studentDetails}>
-              <Text style={currentStyles.studentName}>{student.name}</Text>
-              <Text style={currentStyles.studentGrade}>{student.grade.name}</Text>
-              <View style={currentStyles.studentStats}>
-                <View
-                  style={[
-                    currentStyles.statBadge,
-                    { backgroundColor: `${theme.colors.primary}10` },
-                  ]}
-                >
-                  <Ionicons name="book-outline" size={12} color={theme.colors.primary} />
-                  <Text style={currentStyles.studentStat}>
-                    {student.totalQuizzes} {t('common.quizzes')}
-                  </Text>
-                </View>
-                <View
-                  style={[
-                    currentStyles.statBadge,
-                    { backgroundColor: `${theme.colors.success}10` },
-                  ]}
-                >
-                  <Ionicons name="star-outline" size={12} color={theme.colors.success} />
-                  <Text style={[currentStyles.studentStat, { color: theme.colors.success }]}>
-                    {student.avgScore}% {t('common.avg')}
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </View>
-          <AppButton
-            title={student.isFollowing ? t('common.following') : t('common.follow')}
-            onPress={() => handleFollowToggle(student)}
-            variant={student.isFollowing ? 'outline' : 'primary'}
-            size="sm"
-            fullWidth={false}
-            style={currentStyles.followButton}
-            textStyle={{ fontSize: 12.5 }}
-            accessibilityLabel={`${student.isFollowing ? t('common.following') : t('common.follow')} ${student.name}`}
-          />
-        </View>
-      </View>
+      <UserListRow
+        student={student}
+        containerStyle={{ marginBottom: spacing.sectionGap }}
+        followLoading={followingId === student.id}
+        onPress={() =>
+          navigation.navigate('StudentProfile', {
+            userId: student.id,
+            name: student.name,
+            avatarUrl: student.selectedAvatar?.url,
+            gradeName: student.grade?.name,
+          })
+        }
+        onFollowToggle={() => handleFollowToggle(student)}
+      />
     ),
-    [common, spacing, currentStyles, t, handleFollowToggle, theme],
+    [spacing, handleFollowToggle, navigation, followingId],
   );
 
   const isSearchMode = searchQuery.length >= 2;
@@ -555,72 +534,6 @@ const styles = (theme: any, common: any, spacing: any, typography: any, fontWeig
       marginBottom: spacing.md,
       textTransform: 'uppercase',
       letterSpacing: 1,
-    },
-    studentCardContent: {
-      flexDirection: common.rowDirection,
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 12,
-    },
-    studentInfo: {
-      flexDirection: common.rowDirection,
-      alignItems: 'center',
-      flex: 1,
-    },
-    avatarPlaceholder: {
-      width: 52,
-      height: 52,
-      borderRadius: 26,
-      backgroundColor: `${theme.colors.primary}15`,
-      justifyContent: 'center',
-      alignItems: 'center',
-      borderWidth: 1,
-      borderColor: `${theme.colors.primary}30`,
-    },
-    avatarText: {
-      color: theme.colors.primary,
-      ...fontWeight('bold'),
-      ...typography('h3'),
-    },
-    studentDetails: {
-      flex: 1,
-      ...common.marginStart(12),
-      alignItems: common.alignStart,
-    },
-    studentName: {
-      ...typography('body'),
-      ...fontWeight('bold'),
-      color: theme.colors.text,
-    },
-    studentGrade: {
-      ...typography('caption'),
-      color: theme.colors.textSecondary,
-      marginTop: 2,
-    },
-    studentStats: {
-      flexDirection: common.rowDirection,
-      flexWrap: 'nowrap',
-      alignItems: 'center',
-      marginTop: 8,
-      gap: 6,
-    },
-    statBadge: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-      paddingHorizontal: 8,
-      paddingVertical: 3,
-      borderRadius: 8,
-    },
-    studentStat: {
-      ...typography('label'),
-      ...fontWeight('bold'),
-      color: theme.colors.primary,
-    },
-    followButton: {
-      paddingHorizontal: 12,
-      height: 32,
-      minWidth: 84,
     },
     loadingState: {
       paddingVertical: 60,

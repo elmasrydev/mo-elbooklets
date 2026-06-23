@@ -26,6 +26,8 @@ import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useModal } from '../context/ModalContext';
 import SearchablePickerModal from '../components/SearchablePickerModal';
+import Avatar from '../components/Avatar';
+import AvatarPickerModal from '../components/AvatarPickerModal';
 
 interface EducationalSystem {
   id: string;
@@ -102,6 +104,7 @@ const EditProfileScreen: React.FC = () => {
   const [schoolSearch, setSchoolSearch] = useState('');
 
   const scrollViewRef = useRef<ScrollView>(null);
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const schoolRef = useRef<TextInput>(null);
   const parentMobileRef = useRef<TextInput>(null);
 
@@ -537,6 +540,29 @@ const EditProfileScreen: React.FC = () => {
           {/* Personal Information Card */}
           <View style={currentStyles.card}>
             <Text style={currentStyles.cardTitle}>{t('profile.personal_info')}</Text>
+
+            {/* Avatar */}
+            <TouchableOpacity
+              testID="edit-profile-avatar-button"
+              style={currentStyles.avatarRow}
+              activeOpacity={0.85}
+              onPress={() => setShowAvatarPicker(true)}
+            >
+              <View>
+                <Avatar
+                  uri={user?.selectedAvatar?.url}
+                  name={user?.name || 'U'}
+                  size={72}
+                  showLoading
+                />
+                <View style={currentStyles.avatarBadge}>
+                  <Ionicons name="camera" size={13} color="#fff" />
+                </View>
+              </View>
+              <Text style={currentStyles.avatarChangeText}>
+                {t('avatar_picker.change', 'Change avatar')}
+              </Text>
+            </TouchableOpacity>
 
             {/* Name (Readonly) */}
             <View style={currentStyles.inputGroup}>
@@ -1131,12 +1157,15 @@ const EditProfileScreen: React.FC = () => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <AvatarPickerModal visible={showAvatarPicker} onClose={() => setShowAvatarPicker(false)} />
     </View>
   );
 };
 
 const styles = (config: any) => {
-  const { theme, fontSizes, spacing, borderRadius, isRTL, typography, fontWeight, insets } = config;
+  const { theme, common, fontSizes, spacing, borderRadius, isRTL, typography, fontWeight, insets } =
+    config;
   return StyleSheet.create({
     container: {
       flex: 1,
@@ -1180,6 +1209,30 @@ const styles = (config: any) => {
       color: theme.colors.text,
       marginBottom: spacing.md,
       textAlign: 'left',
+    },
+    avatarRow: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      gap: spacing.md,
+      marginBottom: spacing.lg,
+    },
+    avatarBadge: {
+      position: 'absolute',
+      bottom: -2,
+      right: -2,
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: theme.colors.primary,
+      borderWidth: 2,
+      borderColor: theme.colors.card,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    avatarChangeText: {
+      ...typography('body'),
+      ...fontWeight('600'),
+      color: theme.colors.primary,
     },
     inputGroup: {
       marginBottom: spacing.lg,
