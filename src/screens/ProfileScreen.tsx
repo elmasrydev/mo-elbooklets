@@ -721,9 +721,9 @@ const styles = (
     xpRow: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      justifyContent: 'center',
+      justifyContent: 'flex-start',
       gap: 6,
-      marginTop: spacing.md,
+      marginTop: spacing.sm,
     },
     xpValue: {
       ...typography('h3'),
