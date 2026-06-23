@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useRoute } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
@@ -19,6 +19,7 @@ import Avatar from '../components/Avatar';
 import RetryView from '../components/RetryView';
 import { GenericListSkeleton } from '../components/SkeletonLoader';
 import { useFollowToggle } from '../hooks/useFollowToggle';
+import { subscribeFollowChange } from '../utils/followBus';
 import { tryFetchWithFallback } from '../config/api';
 import { layout } from '../config/layout';
 
@@ -41,12 +42,12 @@ interface StudentProfileData {
 
 const StudentProfileScreen: React.FC = () => {
   const route = useRoute<any>();
-  const navigation = useNavigation<any>();
   const {
     userId,
     name: paramName,
     avatarUrl: paramAvatar,
     gradeName: paramGrade,
+    isFollowing: paramFollowing,
   } = route.params || {};
 
   const { theme, spacing, borderRadius } = useTheme();
@@ -59,7 +60,7 @@ const StudentProfileScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [restricted, setRestricted] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [following, setFollowing] = useState(false);
+  const [following, setFollowing] = useState(!!paramFollowing);
   const [toggling, setToggling] = useState(false);
 
   const fetchProfile = useCallback(async () => {
@@ -102,6 +103,17 @@ const StudentProfileScreen: React.FC = () => {
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
+
+  // Reflect follow/unfollow performed on another screen (search list, etc.).
+  useEffect(
+    () =>
+      subscribeFollowChange((uid, isFollowing) => {
+        if (uid !== userId) return;
+        setFollowing(isFollowing);
+        setProfile((p) => (p ? { ...p, isFollowing } : p));
+      }),
+    [userId],
+  );
 
   const onToggleFollow = async () => {
     if (!userId || toggling) return;

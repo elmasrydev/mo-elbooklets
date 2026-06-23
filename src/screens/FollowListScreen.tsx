@@ -8,6 +8,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useTypography } from '../hooks/useTypography';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useFollowToggle } from '../hooks/useFollowToggle';
+import { subscribeFollowChange } from '../utils/followBus';
 import { tryFetchWithFallback } from '../config/api';
 import UnifiedHeader from '../components/UnifiedHeader';
 import UserListRow from '../components/UserListRow';
@@ -81,6 +82,15 @@ const FollowListScreen: React.FC = () => {
     fetchList();
   }, [fetchList]);
 
+  // Reflect follow/unfollow done from the profile screen back into the list.
+  useEffect(
+    () =>
+      subscribeFollowChange((userId, isFollowing) => {
+        setData((prev) => prev.map((s) => (s.id === userId ? { ...s, isFollowing } : s)));
+      }),
+    [],
+  );
+
   const onRefresh = () => {
     setRefreshing(true);
     fetchList();
@@ -112,6 +122,7 @@ const FollowListScreen: React.FC = () => {
           name: student.name,
           avatarUrl: student.selectedAvatar?.url,
           gradeName: student.grade?.name,
+          isFollowing: student.isFollowing,
         })
       }
       onFollowToggle={() => handleFollowToggle(student)}

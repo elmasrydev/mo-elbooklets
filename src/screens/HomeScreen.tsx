@@ -448,19 +448,30 @@ const HomeScreen: React.FC = () => {
               {/* Inline Stats Row */}
               <View style={s.bannerStatsRow}>
                 <View style={s.bannerStatItem}>
-                  <Text style={s.bannerStatLabel}>{t('home_screen.quizzes_done', 'Quizzes')}</Text>
-                  <Text style={s.bannerStatValue}>{activitiesData.total_quizzes ?? 0}</Text>
+                  <Text style={s.bannerStatLabel}>{t('common.quizzes')}</Text>
+                  <Text style={s.bannerStatValue} numberOfLines={1} adjustsFontSizeToFit>
+                    {activitiesData.total_quizzes ?? 0}
+                  </Text>
                 </View>
                 <View style={s.bannerStatDivider} />
                 <View style={s.bannerStatItem}>
                   <Text style={s.bannerStatLabel}>{t('home_screen.avg_score_label', 'Avg')}</Text>
-                  <Text style={s.bannerStatValue}>{activitiesData.avg_score ?? 0}%</Text>
+                  <Text style={s.bannerStatValue} numberOfLines={1} adjustsFontSizeToFit>
+                    {activitiesData.avg_score ?? 0}%
+                  </Text>
                 </View>
                 <View style={s.bannerStatDivider} />
                 <View style={s.bannerStatItem}>
                   <Text style={s.bannerStatLabel}>{t('home_screen.rank', 'Rank')}</Text>
-                  <Text style={s.bannerStatValue}>
+                  <Text style={s.bannerStatValue} numberOfLines={1} adjustsFontSizeToFit>
                     {leaderboardUser?.rank ? `#${leaderboardUser.rank}` : '-'}
+                  </Text>
+                </View>
+                <View style={s.bannerStatDivider} />
+                <View style={s.bannerStatItem}>
+                  <Text style={s.bannerStatLabel}>XP</Text>
+                  <Text style={s.bannerStatValue} numberOfLines={1} adjustsFontSizeToFit>
+                    {leaderboardUser?.xp != null ? leaderboardUser.xp.toLocaleString() : '-'}
                   </Text>
                 </View>
               </View>
@@ -825,12 +836,13 @@ const getStyles = (
     bannerStatsRow: {
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      gap: 16,
+      gap: 8,
       marginTop: 4,
       marginBottom: spacing.sm,
     },
     bannerStatItem: {
-      alignItems: 'flex-start',
+      flex: 1,
+      alignItems: 'center',
     },
     bannerStatLabel: {
       ...typography('caption'),
@@ -839,12 +851,14 @@ const getStyles = (
       ...fontWeight('bold'),
       textTransform: 'uppercase',
       letterSpacing: 0.8,
+      textAlign: 'center',
     },
     bannerStatValue: {
       ...typography('h3'),
       color: '#fff',
       ...fontWeight('900'),
       marginTop: 1,
+      textAlign: 'center',
     },
     bannerStatDivider: {
       width: 1,

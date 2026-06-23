@@ -29,6 +29,7 @@ import { CardListSkeleton, GenericListSkeleton } from '../components/SkeletonLoa
 import RetryView from '../components/RetryView';
 import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
 import { isRTL } from '../lib/rtl';
+import { subscribeFollowChange } from '../utils/followBus';
 
 interface Student {
   id: string;
@@ -169,6 +170,15 @@ const SocialScreen: React.FC = () => {
     const timeoutId = setTimeout(() => performSearch(searchQuery), 300);
     return () => clearTimeout(timeoutId);
   }, [searchQuery]);
+
+  // Reflect follow/unfollow done from the profile screen back into the list.
+  useEffect(
+    () =>
+      subscribeFollowChange((userId, isFollowing) => {
+        setSearchResults((prev) => prev.map((s) => (s.id === userId ? { ...s, isFollowing } : s)));
+      }),
+    [],
+  );
 
   const performSearch = async (query: string) => {
     try {
@@ -323,6 +333,7 @@ const SocialScreen: React.FC = () => {
             name: student.name,
             avatarUrl: student.selectedAvatar?.url,
             gradeName: student.grade?.name,
+            isFollowing: student.isFollowing,
           })
         }
         onFollowToggle={() => handleFollowToggle(student)}
@@ -532,8 +543,11 @@ const styles = (theme: any, common: any, spacing: any, typography: any, fontWeig
       ...fontWeight('bold'),
       color: theme.colors.textSecondary,
       marginBottom: spacing.md,
-      textTransform: 'uppercase',
-      letterSpacing: 1,
+      textAlign: common.textAlign,
+      // Arabic is cursive: uppercase is a no-op and letterSpacing breaks the
+      // letter joins, so only apply them in LTR.
+      textTransform: isRTL() ? 'none' : 'uppercase',
+      letterSpacing: isRTL() ? 0 : 1,
     },
     loadingState: {
       paddingVertical: 60,

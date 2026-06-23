@@ -121,21 +121,30 @@ const ProfileScreen: React.FC = () => {
   >(DeleteAccountDocument);
 
   const [followStats, setFollowStats] = useState({ followers: 0, following: 0 });
+  const [xp, setXp] = useState<number | null>(null);
 
   const fetchFollowStats = useCallback(async () => {
     try {
       const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
 
-      const [followingRes, followersRes] = await Promise.all([
+      // XP isn't on the `me`/User type, but the leaderboard exposes it via userEntry.
+      const [followingRes, followersRes, leaderboardRes] = await Promise.all([
         tryFetchWithFallback(`query { myFollowing { id } }`, undefined, token),
         tryFetchWithFallback(`query { myFollowers { id } }`, undefined, token),
+        tryFetchWithFallback(
+          `query ProfileXp($limit: Int) { leaderboard(limit: $limit) { userEntry { xp } } }`,
+          { limit: 1 },
+          token,
+        ),
       ]);
 
       setFollowStats({
         following: followingRes.data?.myFollowing?.length || 0,
         followers: followersRes.data?.myFollowers?.length || 0,
       });
+      const userXp = leaderboardRes.data?.leaderboard?.userEntry?.xp;
+      if (typeof userXp === 'number') setXp(userXp);
     } catch (err) {
       console.error('Fetch follow stats error:', err);
     }
@@ -338,6 +347,12 @@ const ProfileScreen: React.FC = () => {
                 <View style={s.verifiedInline}>
                   <Ionicons name="checkmark-circle" size={13} color={theme.colors.success} />
                   <Text style={s.verifiedInlineText}>{t('otp.mobile_verified', 'Verified')}</Text>
+                </View>
+              ) : null}
+              {xp != null ? (
+                <View style={s.xpInline}>
+                  <Ionicons name="flash" size={13} color={theme.colors.warning} />
+                  <Text style={s.xpInlineText}>{xp.toLocaleString()} XP</Text>
                 </View>
               ) : null}
             </View>
@@ -701,6 +716,17 @@ const styles = (
       width: 1,
       height: 34,
       backgroundColor: theme.colors.border,
+    },
+    xpInline: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      gap: 4,
+      marginTop: 2,
+    },
+    xpInlineText: {
+      ...typography('label'),
+      ...fontWeight('bold'),
+      color: theme.colors.warning,
     },
 
     // Grouped lists
