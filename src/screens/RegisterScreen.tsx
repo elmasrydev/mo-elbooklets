@@ -1254,12 +1254,13 @@ const styles = (config: any) => {
       // alone has no fontFamily on iOS). In Arabic, drop uppercase/letterSpacing
       // since they break the cursive letter joins. (BKLT grade-step font)
       ...typography('label', '900'),
-      fontSize: 10,
+      fontSize: 14,
       color: theme.colors.textSecondary,
       textTransform: isRTL ? 'none' : 'uppercase',
       letterSpacing: isRTL ? 0 : 1.5,
       marginBottom: spacing.xs,
-      textAlign: isRTL ? 'right' : 'left',
+      // App convention: 'left' is auto-flipped to right by native RTL in Arabic.
+      textAlign: 'left',
     },
     genderRow: {
       flexDirection: 'row',
