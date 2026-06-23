@@ -1250,13 +1250,16 @@ const styles = (config: any) => {
       marginBottom: spacing.md,
     },
     sectionLabel: {
+      // Use the typography base so the Cairo font-family is applied (fontWeight()
+      // alone has no fontFamily on iOS). In Arabic, drop uppercase/letterSpacing
+      // since they break the cursive letter joins. (BKLT grade-step font)
+      ...typography('label', '900'),
       fontSize: 10,
-      ...fontWeight('900'),
       color: theme.colors.textSecondary,
-      textTransform: 'uppercase',
-      letterSpacing: 1.5,
+      textTransform: isRTL ? 'none' : 'uppercase',
+      letterSpacing: isRTL ? 0 : 1.5,
       marginBottom: spacing.xs,
-      textAlign: 'left',
+      textAlign: isRTL ? 'right' : 'left',
     },
     genderRow: {
       flexDirection: 'row',
