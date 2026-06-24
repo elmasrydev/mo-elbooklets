@@ -120,4 +120,30 @@ export const analytics = {
       locale: language,
     });
   },
+
+  // --- Boki AI Assistant (BKLT-221) ---
+
+  trackBokiOpened: () => {
+    analytics.track('Boki Opened');
+  },
+
+  trackBokiMessageSent: (properties?: Record<string, any>) => {
+    analytics.track('Message Sent', { feature: 'boki', ...properties });
+  },
+
+  trackBokiResponseReceived: (properties?: Record<string, any>) => {
+    analytics.track('Response Received', { feature: 'boki', ...properties });
+  },
+
+  trackBokiReferenceLinkClicked: (properties?: Record<string, any>) => {
+    analytics.track('Reference Link Clicked', { feature: 'boki', ...properties });
+  },
+
+  trackBokiBackendError: (properties?: Record<string, any>) => {
+    analytics.track('Backend Error Displayed', { feature: 'boki', ...properties });
+  },
+
+  trackBokiConnectionError: (properties?: Record<string, any>) => {
+    analytics.track('Connection Error Displayed', { feature: 'boki', ...properties });
+  },
 };

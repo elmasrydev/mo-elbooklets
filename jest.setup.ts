@@ -113,6 +113,11 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
 
+// Mock NetInfo (connected by default; override per-test where needed)
+jest.mock('@react-native-community/netinfo', () =>
+  require('@react-native-community/netinfo/jest/netinfo-mock.js')
+);
+
 // Mock Expo SecureStore
 jest.mock('expo-secure-store', () => {
   let store: Record<string, string> = {};

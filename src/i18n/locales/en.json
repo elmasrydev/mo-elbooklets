@@ -938,5 +938,20 @@
     "unit_locked": "Unit Locked",
     "locked_lessons_title": "Upgrade to Pro",
     "locked_lessons_message": "Some lessons in this unit are locked. Upgrade to the Pro Plan to unlock all content!"
+  },
+  "boki": {
+    "title": "Boki",
+    "open_button": "Ask Boki",
+    "input_placeholder": "Ask Boki anything…",
+    "empty_title": "Hi! I'm Boki 👋",
+    "empty_subtitle": "Ask me anything about your lessons and the app.",
+    "typing": "Boki is typing…",
+    "sources_label": "Sources",
+    "source_info_title": "Reference",
+    "source_info_message": "This answer references the lesson: {{title}}",
+    "error_connection": "No internet connection. Check your connection and try again.",
+    "error_backend": "Something went wrong. Please try again.",
+    "error_rate_limit": "You're sending messages too quickly. Please wait a moment and try again.",
+    "retry": "Retry"
   }
 }

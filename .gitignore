@@ -64,3 +64,7 @@ IOS_BUILD_INSTRUCTIONS.md
 
 # Local agent handover notes (not part of the codebase)
 handover_summary.md
+
+# Local-only backend contract / API reference docs (keep out of git per docs policy)
+booki-graphql-api.md
+avatars.md
