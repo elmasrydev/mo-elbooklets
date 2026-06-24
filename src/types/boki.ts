@@ -1,10 +1,10 @@
 /**
- * Boki AI Assistant — domain types (Phase 1).
+ * Boki AI Assistant — domain types.
  *
  * Mirrors the backend GraphQL contract documented in `booki-graphql-api.md`.
  * Kept hand-written (not codegen) to match the project's raw-string API idiom
  * and to keep the whole Boki data layer swappable from a single place.
- * Conversation/history/feedback types are added with their consumers in later phases.
+ * Feedback (like/dislike) types are added with their consumers in Phase 3.
  */
 
 /** How an answer can fail to send/receive. Drives the error message shown. */
@@ -32,6 +32,49 @@ export interface AiChatInput {
   subjectId?: string | null;
   lessonId?: string | null;
   conversationId?: string | null;
+}
+
+/** A persisted chat-log entry: one user question + Booki's answer. */
+export interface ChatMessage {
+  id: string;
+  conversationId: string;
+  message: string;
+  response: string;
+  sources: AiChatSource[];
+  confidenceScore: number;
+  subjectId?: string | null;
+  lessonId?: string | null;
+  feedback?: 'like' | 'dislike' | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConversationSubject {
+  id: string;
+  name: string;
+  name_ar?: string | null;
+  name_en?: string | null;
+}
+
+/** A conversation summary as listed in history. */
+export interface Conversation {
+  id: string;
+  title: string | null;
+  subject?: ConversationSubject | null;
+  messagesCount: number;
+  latestMessage?: Pick<ChatMessage, 'id' | 'message' | 'response' | 'createdAt'> | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Generic backend pagination envelope (matches the contract's page fields). */
+export interface PaginatedResult<T> {
+  data: T[];
+  total: number;
+  perPage: number;
+  currentPage: number;
+  lastPage: number;
+  hasMore: boolean;
 }
 
 /** UI lifecycle of a chat turn. */

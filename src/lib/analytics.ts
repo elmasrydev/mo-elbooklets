@@ -139,6 +139,14 @@ export const analytics = {
     analytics.track('Reference Link Clicked', { feature: 'boki', ...properties });
   },
 
+  trackBokiConversationOpened: (properties?: Record<string, any>) => {
+    analytics.track('Conversation Opened', { feature: 'boki', ...properties });
+  },
+
+  trackBokiNewConversation: () => {
+    analytics.track('New Conversation Started', { feature: 'boki' });
+  },
+
   trackBokiBackendError: (properties?: Record<string, any>) => {
     analytics.track('Backend Error Displayed', { feature: 'boki', ...properties });
   },

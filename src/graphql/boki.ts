@@ -3,8 +3,7 @@
  *
  * Raw strings (not codegen) passed to `tryFetchWithFallback`, matching the
  * dominant API idiom in this codebase (see ContactUsScreen / AvatarPickerModal).
- * Phase 1 only needs `aiChat`; history/report/feedback operations are added in
- * their respective phases.
+ * Report/feedback operations are added in Phase 3.
  */
 
 export const AI_CHAT_MUTATION = `
@@ -19,6 +18,59 @@ export const AI_CHAT_MUTATION = `
       }
       confidenceScore
       conversationId
+    }
+  }
+`;
+
+export const CONVERSATIONS_QUERY = `
+  query Conversations($page: Int, $perPage: Int) {
+    conversations(page: $page, perPage: $perPage) {
+      data {
+        id
+        title
+        messagesCount
+        latestMessage {
+          id
+          message
+          response
+          createdAt
+        }
+        createdAt
+        updatedAt
+      }
+      total
+      perPage
+      currentPage
+      lastPage
+      hasMore
+    }
+  }
+`;
+
+export const CONVERSATION_MESSAGES_QUERY = `
+  query ConversationMessages($conversationId: ID!, $page: Int, $perPage: Int) {
+    conversationMessages(conversationId: $conversationId, page: $page, perPage: $perPage) {
+      data {
+        id
+        conversationId
+        message
+        response
+        sources {
+          lessonId
+          title
+          similarityScore
+        }
+        confidenceScore
+        subjectId
+        lessonId
+        createdAt
+        updatedAt
+      }
+      total
+      perPage
+      currentPage
+      lastPage
+      hasMore
     }
   }
 `;

@@ -41,6 +41,7 @@ const BOKI_HIDDEN_ROUTES = new Set<string>([
   'QuizFlowSettings',
   'QuizGenerating',
   'BokiChat',
+  'BokiConversations',
 ]);
 
 /**

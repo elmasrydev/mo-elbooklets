@@ -952,6 +952,15 @@
     "error_connection": "لا يوجد اتصال بالإنترنت. تحقق من اتصالك وحاول مرة أخرى.",
     "error_backend": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
     "error_rate_limit": "أنت ترسل الرسائل بسرعة كبيرة. انتظر لحظة ثم حاول مرة أخرى.",
-    "retry": "إعادة المحاولة"
+    "retry": "إعادة المحاولة",
+    "history_title": "محادثاتك",
+    "new_conversation": "محادثة جديدة",
+    "history": "المحادثات",
+    "history_empty_title": "لا توجد محادثات بعد",
+    "history_empty_subtitle": "ابدأ الدردشة مع بوكي وستظهر محادثاتك هنا.",
+    "history_error": "تعذّر تحميل محادثاتك.",
+    "load_error": "تعذّر تحميل هذه المحادثة.",
+    "message_count": "{{count}} رسالة",
+    "message_count_plural": "{{count}} رسائل"
   }
 }

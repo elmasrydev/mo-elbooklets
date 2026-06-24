@@ -5,7 +5,22 @@
  * chat (index 0 sits at the bottom).
  */
 
-import { AiChatResponse, BokiErrorKind, BokiTurn } from '../types/boki';
+import { AiChatResponse, BokiErrorKind, BokiTurn, ChatMessage } from '../types/boki';
+
+/** Map a persisted chat-log entry into a completed turn (chat-log id is the turn id). */
+export const messageToTurn = (message: ChatMessage): BokiTurn => ({
+  id: message.id,
+  chatLogId: message.id,
+  userText: message.message,
+  answer: message.response,
+  sources: message.sources ?? [],
+  confidenceScore: message.confidenceScore ?? null,
+  status: 'complete',
+  errorKind: null,
+  createdAt: message.createdAt,
+});
+
+export const messagesToTurns = (messages: ChatMessage[]): BokiTurn[] => messages.map(messageToTurn);
 
 /** Build the optimistic turn shown immediately after the user hits send. */
 export const makePendingTurn = (id: string, userText: string, createdAt: string): BokiTurn => ({

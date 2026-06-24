@@ -11,8 +11,18 @@
  */
 
 import { tryFetchWithFallback } from '../config/api';
-import { AI_CHAT_MUTATION } from '../graphql/boki';
-import { AiChatInput, AiChatResponse } from '../types/boki';
+import {
+  AI_CHAT_MUTATION,
+  CONVERSATIONS_QUERY,
+  CONVERSATION_MESSAGES_QUERY,
+} from '../graphql/boki';
+import {
+  AiChatInput,
+  AiChatResponse,
+  ChatMessage,
+  Conversation,
+  PaginatedResult,
+} from '../types/boki';
 import { BokiApiError, classifyBokiError } from '../utils/bokiErrors';
 import { logError } from '../utils/logger';
 
@@ -45,4 +55,23 @@ const execute = async (query: string, variables: Record<string, unknown>): Promi
 export const sendMessage = async (input: AiChatInput): Promise<AiChatResponse> => {
   const data = await execute(AI_CHAT_MUTATION, { input });
   return data.aiChat as AiChatResponse;
+};
+
+/** Load a page of the user's conversation history (newest first). */
+export const fetchConversations = async (
+  page = 1,
+  perPage = 15,
+): Promise<PaginatedResult<Conversation>> => {
+  const data = await execute(CONVERSATIONS_QUERY, { page, perPage });
+  return data.conversations as PaginatedResult<Conversation>;
+};
+
+/** Load a page of messages within a conversation (newest first). */
+export const fetchConversationMessages = async (
+  conversationId: string,
+  page = 1,
+  perPage = 20,
+): Promise<PaginatedResult<ChatMessage>> => {
+  const data = await execute(CONVERSATION_MESSAGES_QUERY, { conversationId, page, perPage });
+  return data.conversationMessages as PaginatedResult<ChatMessage>;
 };

@@ -952,6 +952,15 @@
     "error_connection": "No internet connection. Check your connection and try again.",
     "error_backend": "Something went wrong. Please try again.",
     "error_rate_limit": "You're sending messages too quickly. Please wait a moment and try again.",
-    "retry": "Retry"
+    "retry": "Retry",
+    "history_title": "Your conversations",
+    "new_conversation": "New conversation",
+    "history": "History",
+    "history_empty_title": "No conversations yet",
+    "history_empty_subtitle": "Start chatting with Boki and your conversations will appear here.",
+    "history_error": "Couldn't load your conversations.",
+    "load_error": "Couldn't load this conversation.",
+    "message_count": "{{count}} message",
+    "message_count_plural": "{{count}} messages"
   }
 }

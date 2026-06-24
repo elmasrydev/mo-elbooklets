@@ -1,5 +1,10 @@
 import { tryFetchWithFallback } from '../../config/api';
-import { sendMessage, BokiApiError } from '../../services/bokiApi';
+import {
+  sendMessage,
+  fetchConversations,
+  fetchConversationMessages,
+  BokiApiError,
+} from '../../services/bokiApi';
 
 jest.mock('../../config/api', () => ({
   tryFetchWithFallback: jest.fn(),
@@ -64,5 +69,52 @@ describe('bokiApi.sendMessage', () => {
     const error = await sendMessage({ message: 'Hi' }).catch((e) => e);
     expect(error).toBeInstanceOf(BokiApiError);
     expect(error.kind).toBe('backend');
+  });
+});
+
+describe('bokiApi.fetchConversations', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('requests the given page and returns the pagination envelope', async () => {
+    const page = {
+      data: [{ id: '1', title: 'Algebra', messagesCount: 3 }],
+      total: 1,
+      perPage: 15,
+      currentPage: 2,
+      lastPage: 2,
+      hasMore: false,
+    };
+    mockedFetch.mockResolvedValueOnce({ data: { conversations: page } });
+
+    const result = await fetchConversations(2, 15);
+
+    expect(result).toEqual(page);
+    expect(mockedFetch.mock.calls[0][1]).toEqual({ page: 2, perPage: 15 });
+  });
+
+  it('surfaces a backend error as a BokiApiError', async () => {
+    mockedFetch.mockResolvedValueOnce({ errors: [{ message: 'boom' }] });
+    await expect(fetchConversations()).rejects.toBeInstanceOf(BokiApiError);
+  });
+});
+
+describe('bokiApi.fetchConversationMessages', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('requests a conversation page and returns the messages envelope', async () => {
+    const page = {
+      data: [{ id: 'm1', conversationId: '42', message: 'hi', response: 'hello' }],
+      total: 1,
+      perPage: 20,
+      currentPage: 1,
+      lastPage: 1,
+      hasMore: false,
+    };
+    mockedFetch.mockResolvedValueOnce({ data: { conversationMessages: page } });
+
+    const result = await fetchConversationMessages('42', 1, 20);
+
+    expect(result).toEqual(page);
+    expect(mockedFetch.mock.calls[0][1]).toEqual({ conversationId: '42', page: 1, perPage: 20 });
   });
 });

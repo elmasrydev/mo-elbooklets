@@ -3,8 +3,50 @@ import {
   makePendingTurn,
   markTurnError,
   markTurnPending,
+  messageToTurn,
+  messagesToTurns,
 } from '../../utils/bokiMessages';
-import { AiChatResponse } from '../../types/boki';
+import { AiChatResponse, ChatMessage } from '../../types/boki';
+
+const buildMessage = (overrides: Partial<ChatMessage> = {}): ChatMessage => ({
+  id: 'm1',
+  conversationId: 'c1',
+  message: 'What is photosynthesis?',
+  response: 'It is how plants make food.',
+  sources: [{ lessonId: 'l1', title: 'Plants', similarityScore: 0.9 }],
+  confidenceScore: 0.8,
+  feedback: null,
+  createdAt: '2026-06-24T10:00:00.000Z',
+  updatedAt: '2026-06-24T10:00:00.000Z',
+  ...overrides,
+});
+
+describe('messageToTurn', () => {
+  it('maps a persisted chat-log entry into a completed turn (chatLogId = id)', () => {
+    const turn = messageToTurn(buildMessage());
+    expect(turn).toMatchObject({
+      id: 'm1',
+      chatLogId: 'm1',
+      userText: 'What is photosynthesis?',
+      answer: 'It is how plants make food.',
+      status: 'complete',
+      errorKind: null,
+    });
+    expect(turn.sources).toHaveLength(1);
+  });
+
+  it('defaults missing sources to an empty array', () => {
+    const turn = messageToTurn(buildMessage({ sources: undefined as never }));
+    expect(turn.sources).toEqual([]);
+  });
+});
+
+describe('messagesToTurns', () => {
+  it('preserves the backend (newest-first) order', () => {
+    const turns = messagesToTurns([buildMessage({ id: 'newest' }), buildMessage({ id: 'older' })]);
+    expect(turns.map((turn) => turn.id)).toEqual(['newest', 'older']);
+  });
+});
 
 describe('makePendingTurn', () => {
   it('creates a pending turn with no answer yet', () => {
