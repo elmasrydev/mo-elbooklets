@@ -1,28 +1,34 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { analytics } from '../lib/analytics';
-import { sendMessage, fetchConversationMessages, BokiApiError } from '../services/bokiApi';
-import { BokiErrorKind, BokiTurn } from '../types/boki';
+import {
+  sendMessage,
+  fetchConversationMessages,
+  submitFeedback as submitFeedbackApi,
+  BokiApiError,
+} from '../services/bokiApi';
+import { AiChatFeedbackType, BokiErrorKind, BokiTurn } from '../types/boki';
 import {
   applyAnswer,
   makePendingTurn,
   markTurnError,
   markTurnPending,
   messagesToTurns,
+  withFeedback,
 } from '../utils/bokiMessages';
 import { useNetworkStatus } from './useNetworkStatus';
 
 const HISTORY_PER_PAGE = 20;
 
 /**
- * Boki chat state machine (BKLT-221, Phases 1–2).
+ * Boki chat state machine (BKLT-221, Phases 1–3).
  *
  * Owns the list of turns (newest-first, rendered by an inverted FlatList) and
- * the active conversation id. Sending is optimistic. When opened with an
- * `initialConversationId`, it loads that conversation's history (page 1 =
- * newest) and pages in older messages via `loadOlder`. `startNewConversation`
- * resets to an empty thread.
+ * the active conversation id. Sending is optimistic; `submitFeedback` toggles
+ * like/dislike on an answer. `loadConversation` swaps
+ * the thread to an existing conversation in place (page 1 = newest, older pages
+ * via `loadOlder`); `startNewConversation` resets to an empty thread.
  */
-export const useBokiChat = (initialConversationId?: string | null) => {
+export const useBokiChat = () => {
   const { isConnected } = useNetworkStatus();
   const [turns, setTurns] = useState<BokiTurn[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -30,7 +36,7 @@ export const useBokiChat = (initialConversationId?: string | null) => {
   const [hasMoreHistory, setHasMoreHistory] = useState(false);
   const [historyError, setHistoryError] = useState(false);
 
-  const conversationIdRef = useRef<string | null>(initialConversationId ?? null);
+  const conversationIdRef = useRef<string | null>(null);
   const tempIdRef = useRef(0);
   const historyPageRef = useRef(1);
   const isFetchingHistoryRef = useRef(false);
@@ -106,6 +112,34 @@ export const useBokiChat = (initialConversationId?: string | null) => {
     [deliver],
   );
 
+  // --- Feedback (like / dislike) ---
+
+  const setFeedbackByChatLogId = useCallback(
+    (chatLogId: string, feedback: 'like' | 'dislike' | null) => {
+      setTurns((prev) =>
+        prev.map((turn) => (turn.chatLogId === chatLogId ? withFeedback(turn, feedback) : turn)),
+      );
+    },
+    [],
+  );
+
+  const submitFeedback = useCallback(
+    (chatLogId: string, next: 'like' | 'dislike') => {
+      const current =
+        turnsRef.current.find((turn) => turn.chatLogId === chatLogId)?.feedback ?? null;
+      // Tapping the active rating clears it (toggle off → NONE).
+      const target = current === next ? null : next;
+      const enumValue: AiChatFeedbackType =
+        target === 'like' ? 'LIKE' : target === 'dislike' ? 'DISLIKE' : 'NONE';
+
+      setFeedbackByChatLogId(chatLogId, target); // optimistic
+      submitFeedbackApi(chatLogId, enumValue).catch(() => {
+        setFeedbackByChatLogId(chatLogId, current); // revert on failure
+      });
+    },
+    [setFeedbackByChatLogId],
+  );
+
   // --- History ---
 
   const fetchHistoryPage = useCallback(async (page: number, mode: 'initial' | 'more') => {
@@ -147,6 +181,19 @@ export const useBokiChat = (initialConversationId?: string | null) => {
     void fetchHistoryPage(1, 'initial');
   }, [fetchHistoryPage]);
 
+  /** Swap the thread to an existing conversation, replacing the current state. */
+  const loadConversation = useCallback(
+    (conversationId: string) => {
+      conversationIdRef.current = conversationId;
+      historyPageRef.current = 1;
+      setTurns([]);
+      setHasMoreHistory(false);
+      setHistoryError(false);
+      void fetchHistoryPage(1, 'initial');
+    },
+    [fetchHistoryPage],
+  );
+
   const startNewConversation = useCallback(() => {
     conversationIdRef.current = null;
     historyPageRef.current = 1;
@@ -157,22 +204,17 @@ export const useBokiChat = (initialConversationId?: string | null) => {
     analytics.trackBokiNewConversation();
   }, []);
 
-  useEffect(() => {
-    if (initialConversationId) {
-      conversationIdRef.current = initialConversationId;
-      void fetchHistoryPage(1, 'initial');
-    }
-  }, [initialConversationId, fetchHistoryPage]);
-
   return {
     turns,
     send,
     retry,
+    submitFeedback,
     loadingHistory,
     loadingMore,
     loadOlder,
     historyError,
     reloadHistory,
+    loadConversation,
     startNewConversation,
   };
 };

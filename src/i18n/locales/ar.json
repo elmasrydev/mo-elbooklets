@@ -961,6 +961,20 @@
     "history_error": "تعذّر تحميل محادثاتك.",
     "load_error": "تعذّر تحميل هذه المحادثة.",
     "message_count": "{{count}} رسالة",
-    "message_count_plural": "{{count}} رسائل"
+    "message_count_plural": "{{count}} رسائل",
+    "like": "مفيدة",
+    "dislike": "غير مفيدة",
+    "report": "إبلاغ",
+    "report_title": "الإبلاغ عن هذه الإجابة",
+    "report_subtitle": "أخبرنا بالمشكلة لنحسّن بوكي.",
+    "report_reason_incorrect": "معلومات غير صحيحة",
+    "report_reason_irrelevant": "إجابة غير ذات صلة",
+    "report_reason_offensive": "مسيئة أو غير آمنة",
+    "report_reason_other": "أخرى",
+    "report_notes_placeholder": "أضف تفاصيل إضافية (اختياري)",
+    "report_submit": "إرسال البلاغ",
+    "report_success_title": "شكراً لك",
+    "report_success": "تم إرسال بلاغك.",
+    "report_error": "تعذّر إرسال البلاغ. يرجى المحاولة مرة أخرى."
   }
 }

@@ -13,6 +13,8 @@ interface BokiMessageBubbleProps {
   turn: BokiTurn;
   onRetry: (turnId: string) => void;
   onSourcePress: (source: AiChatSource) => void;
+  onReport: (chatLogId: string) => void;
+  onFeedback: (chatLogId: string, feedback: 'like' | 'dislike') => void;
 }
 
 const ERROR_KEY_BY_KIND: Record<BokiErrorKind, string> = {
@@ -30,12 +32,27 @@ const ERROR_KEY_BY_KIND: Record<BokiErrorKind, string> = {
  * Row alignment uses `flexDirection: 'row'` + `justifyContent`, both of which
  * flip automatically under RTL, so no manual direction logic is needed.
  */
-const BokiMessageBubble: React.FC<BokiMessageBubbleProps> = ({ turn, onRetry, onSourcePress }) => {
+const BokiMessageBubble: React.FC<BokiMessageBubbleProps> = ({
+  turn,
+  onRetry,
+  onSourcePress,
+  onReport,
+  onFeedback,
+}) => {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { typography } = useTypography();
 
   const handleRetry = useCallback(() => onRetry(turn.id), [onRetry, turn.id]);
+  const handleReport = useCallback(() => {
+    if (turn.chatLogId) onReport(turn.chatLogId);
+  }, [onReport, turn.chatLogId]);
+  const handleLike = useCallback(() => {
+    if (turn.chatLogId) onFeedback(turn.chatLogId, 'like');
+  }, [onFeedback, turn.chatLogId]);
+  const handleDislike = useCallback(() => {
+    if (turn.chatLogId) onFeedback(turn.chatLogId, 'dislike');
+  }, [onFeedback, turn.chatLogId]);
 
   return (
     <View style={styles.turn}>
@@ -93,6 +110,66 @@ const BokiMessageBubble: React.FC<BokiMessageBubbleProps> = ({ turn, onRetry, on
                   ))}
                 </View>
               )}
+              {turn.chatLogId && (
+                <View style={styles.actions}>
+                  <TouchableOpacity
+                    testID="boki-like-button"
+                    onPress={handleLike}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('boki.like')}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={styles.action}
+                  >
+                    <Ionicons
+                      name={turn.feedback === 'like' ? 'thumbs-up' : 'thumbs-up-outline'}
+                      size={spacing.icon.sm}
+                      color={
+                        turn.feedback === 'like' ? theme.colors.primary : theme.colors.textTertiary
+                      }
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    testID="boki-dislike-button"
+                    onPress={handleDislike}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('boki.dislike')}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={styles.action}
+                  >
+                    <Ionicons
+                      name={turn.feedback === 'dislike' ? 'thumbs-down' : 'thumbs-down-outline'}
+                      size={spacing.icon.sm}
+                      color={
+                        turn.feedback === 'dislike'
+                          ? theme.colors.primary
+                          : theme.colors.textTertiary
+                      }
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    testID="boki-report-button"
+                    onPress={handleReport}
+                    accessibilityRole="button"
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={styles.action}
+                  >
+                    <Ionicons
+                      name="flag-outline"
+                      size={spacing.icon.sm}
+                      color={theme.colors.textTertiary}
+                    />
+                    <Text
+                      style={[
+                        typography('caption'),
+                        styles.actionLabel,
+                        { color: theme.colors.textTertiary },
+                      ]}
+                    >
+                      {t('boki.report')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           )}
         </View>
@@ -133,6 +210,19 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   retryLabel: {
+    marginStart: spacing.xs,
+  },
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.sm,
+  },
+  action: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginEnd: spacing.md,
+  },
+  actionLabel: {
     marginStart: spacing.xs,
   },
 });

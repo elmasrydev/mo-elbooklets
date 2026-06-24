@@ -5,6 +5,7 @@ import {
   markTurnPending,
   messageToTurn,
   messagesToTurns,
+  withFeedback,
 } from '../../utils/bokiMessages';
 import { AiChatResponse, ChatMessage } from '../../types/boki';
 
@@ -35,6 +36,11 @@ describe('messageToTurn', () => {
     expect(turn.sources).toHaveLength(1);
   });
 
+  it('carries the persisted like/dislike feedback', () => {
+    expect(messageToTurn(buildMessage({ feedback: 'like' })).feedback).toBe('like');
+    expect(messageToTurn(buildMessage({ feedback: null })).feedback).toBeNull();
+  });
+
   it('defaults missing sources to an empty array', () => {
     const turn = messageToTurn(buildMessage({ sources: undefined as never }));
     expect(turn.sources).toEqual([]);
@@ -58,10 +64,20 @@ describe('makePendingTurn', () => {
       answer: null,
       sources: [],
       confidenceScore: null,
+      feedback: null,
       status: 'pending',
       errorKind: null,
       createdAt: '2026-06-24T10:00:00.000Z',
     });
+  });
+});
+
+describe('withFeedback', () => {
+  it('sets the feedback value, leaving the rest of the turn intact', () => {
+    const turn = makePendingTurn('local-1', 'hi', '2026-06-24T10:00:00.000Z');
+    expect(withFeedback(turn, 'dislike').feedback).toBe('dislike');
+    expect(withFeedback(turn, null).feedback).toBeNull();
+    expect(withFeedback(turn, 'like').userText).toBe('hi');
   });
 });
 

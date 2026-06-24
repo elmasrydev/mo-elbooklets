@@ -154,4 +154,12 @@ export const analytics = {
   trackBokiConnectionError: (properties?: Record<string, any>) => {
     analytics.track('Connection Error Displayed', { feature: 'boki', ...properties });
   },
+
+  trackBokiReportButtonClicked: (properties?: Record<string, any>) => {
+    analytics.track('Report Button Clicked', { feature: 'boki', ...properties });
+  },
+
+  trackBokiReportSubmitted: (properties?: Record<string, any>) => {
+    analytics.track('Report Submitted', { feature: 'boki', ...properties });
+  },
 };

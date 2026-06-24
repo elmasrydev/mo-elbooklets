@@ -15,6 +15,7 @@ export const messageToTurn = (message: ChatMessage): BokiTurn => ({
   answer: message.response,
   sources: message.sources ?? [],
   confidenceScore: message.confidenceScore ?? null,
+  feedback: message.feedback ?? null,
   status: 'complete',
   errorKind: null,
   createdAt: message.createdAt,
@@ -30,6 +31,7 @@ export const makePendingTurn = (id: string, userText: string, createdAt: string)
   answer: null,
   sources: [],
   confidenceScore: null,
+  feedback: null,
   status: 'pending',
   errorKind: null,
   createdAt,
@@ -59,4 +61,10 @@ export const markTurnPending = (turn: BokiTurn): BokiTurn => ({
   ...turn,
   status: 'pending',
   errorKind: null,
+});
+
+/** Set the like/dislike feedback on a turn. */
+export const withFeedback = (turn: BokiTurn, feedback: 'like' | 'dislike' | null): BokiTurn => ({
+  ...turn,
+  feedback,
 });

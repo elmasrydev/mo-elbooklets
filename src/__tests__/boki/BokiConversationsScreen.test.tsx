@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { renderWithProviders } from '../helpers/renderWithProviders';
-import { mockPush } from '../__mocks__/navigation';
+import { mockNavigate } from '../__mocks__/navigation';
 import BokiConversationsScreen from '../../screens/boki/BokiConversationsScreen';
 import { fetchConversations, BokiApiError } from '../../services/bokiApi';
 import { analytics } from '../../lib/analytics';
@@ -51,7 +51,7 @@ describe('BokiConversationsScreen', () => {
     fireEvent.press(screen.getByTestId('boki-conversation-42'));
 
     expect(openedSpy).toHaveBeenCalled();
-    expect(mockPush).toHaveBeenCalledWith('BokiChat', { conversationId: '42' });
+    expect(mockNavigate).toHaveBeenCalledWith('BokiChat', { conversationId: '42' });
   });
 
   it('shows the empty state when there are no conversations', async () => {

@@ -87,7 +87,9 @@ const BokiConversationsScreen: React.FC = () => {
   const handleOpen = useCallback(
     (conversation: Conversation) => {
       analytics.trackBokiConversationOpened({ conversation_id: conversation.id });
-      navigation.push('BokiChat', { conversationId: conversation.id });
+      // Navigate back to the single chat screen and load the selected
+      // conversation there (rather than stacking a new chat instance).
+      navigation.navigate('BokiChat', { conversationId: conversation.id });
     },
     [navigation],
   );

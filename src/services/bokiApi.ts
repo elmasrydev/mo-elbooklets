@@ -13,12 +13,18 @@
 import { tryFetchWithFallback } from '../config/api';
 import {
   AI_CHAT_MUTATION,
+  AI_CHAT_REPORT_MUTATION,
+  AI_CHAT_FEEDBACK_MUTATION,
   CONVERSATIONS_QUERY,
   CONVERSATION_MESSAGES_QUERY,
 } from '../graphql/boki';
 import {
+  AiChatFeedbackResult,
+  AiChatFeedbackType,
   AiChatInput,
   AiChatResponse,
+  AiChatReportResult,
+  BokiReportReason,
   ChatMessage,
   Conversation,
   PaginatedResult,
@@ -74,4 +80,27 @@ export const fetchConversationMessages = async (
 ): Promise<PaginatedResult<ChatMessage>> => {
   const data = await execute(CONVERSATION_MESSAGES_QUERY, { conversationId, page, perPage });
   return data.conversationMessages as PaginatedResult<ChatMessage>;
+};
+
+/** Report an answer as incorrect/irrelevant/etc., with optional notes. */
+export const reportAnswer = async (
+  chatLogId: string,
+  reason: BokiReportReason,
+  description?: string,
+): Promise<AiChatReportResult> => {
+  const data = await execute(AI_CHAT_REPORT_MUTATION, {
+    chatLogId,
+    reason,
+    description: description?.trim() ? description.trim() : null,
+  });
+  return data.aiChatReport as AiChatReportResult;
+};
+
+/** Rate an answer (LIKE / DISLIKE / NONE). */
+export const submitFeedback = async (
+  chatLogId: string,
+  feedback: AiChatFeedbackType,
+): Promise<AiChatFeedbackResult> => {
+  const data = await execute(AI_CHAT_FEEDBACK_MUTATION, { chatLogId, feedback });
+  return data.aiChatFeedback as AiChatFeedbackResult;
 };

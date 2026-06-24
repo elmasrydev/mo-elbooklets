@@ -1,5 +1,5 @@
 export const mockNavigate = jest.fn();
-export const mockPush = jest.fn();
+export const mockSetParams = jest.fn();
 export const mockGoBack = jest.fn();
 export const mockReset = jest.fn();
 export const mockCanGoBack = jest.fn(() => true);
@@ -7,7 +7,7 @@ export const mockDispatch = jest.fn();
 
 export const useNavigation = () => ({
   navigate: mockNavigate,
-  push: mockPush,
+  setParams: mockSetParams,
   goBack: mockGoBack,
   reset: mockReset,
   canGoBack: mockCanGoBack,

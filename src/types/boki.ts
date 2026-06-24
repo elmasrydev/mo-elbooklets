@@ -34,6 +34,22 @@ export interface AiChatInput {
   conversationId?: string | null;
 }
 
+/** Feedback value for the `aiChatFeedback` mutation. */
+export type AiChatFeedbackType = 'LIKE' | 'DISLIKE' | 'NONE';
+
+/** Allowed report reasons (fixed client-side set — no backend reasons query). */
+export type BokiReportReason = 'incorrect' | 'irrelevant' | 'offensive' | 'other';
+
+export interface AiChatReportResult {
+  success: boolean;
+  message: string;
+}
+
+export interface AiChatFeedbackResult {
+  success: boolean;
+  feedback: AiChatFeedbackType;
+}
+
 /** A persisted chat-log entry: one user question + Booki's answer. */
 export interface ChatMessage {
   id: string;
@@ -94,6 +110,8 @@ export interface BokiTurn {
   answer: string | null;
   sources: AiChatSource[];
   confidenceScore: number | null;
+  /** Current like/dislike on the answer (Phase 3); null when unrated. */
+  feedback: 'like' | 'dislike' | null;
   status: BokiTurnStatus;
   /** Set when status is 'error' — selects which error message to show. */
   errorKind: BokiErrorKind | null;

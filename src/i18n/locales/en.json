@@ -961,6 +961,20 @@
     "history_error": "Couldn't load your conversations.",
     "load_error": "Couldn't load this conversation.",
     "message_count": "{{count}} message",
-    "message_count_plural": "{{count}} messages"
+    "message_count_plural": "{{count}} messages",
+    "like": "Helpful",
+    "dislike": "Not helpful",
+    "report": "Report",
+    "report_title": "Report this answer",
+    "report_subtitle": "Tell us what's wrong so we can improve Boki.",
+    "report_reason_incorrect": "Incorrect information",
+    "report_reason_irrelevant": "Irrelevant answer",
+    "report_reason_offensive": "Offensive or unsafe",
+    "report_reason_other": "Other",
+    "report_notes_placeholder": "Add more details (optional)",
+    "report_submit": "Submit report",
+    "report_success_title": "Thank you",
+    "report_success": "Your report has been submitted.",
+    "report_error": "Couldn't submit your report. Please try again."
   }
 }

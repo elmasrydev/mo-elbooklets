@@ -3,6 +3,8 @@ import {
   sendMessage,
   fetchConversations,
   fetchConversationMessages,
+  reportAnswer,
+  submitFeedback,
   BokiApiError,
 } from '../../services/bokiApi';
 
@@ -116,5 +118,45 @@ describe('bokiApi.fetchConversationMessages', () => {
 
     expect(result).toEqual(page);
     expect(mockedFetch.mock.calls[0][1]).toEqual({ conversationId: '42', page: 1, perPage: 20 });
+  });
+});
+
+describe('bokiApi.reportAnswer', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('sends the reason and trimmed notes', async () => {
+    mockedFetch.mockResolvedValueOnce({ data: { aiChatReport: { success: true, message: 'ok' } } });
+
+    const result = await reportAnswer('123', 'incorrect', '  wrong  ');
+
+    expect(result).toEqual({ success: true, message: 'ok' });
+    expect(mockedFetch.mock.calls[0][1]).toEqual({
+      chatLogId: '123',
+      reason: 'incorrect',
+      description: 'wrong',
+    });
+  });
+
+  it('sends null description when notes are empty', async () => {
+    mockedFetch.mockResolvedValueOnce({ data: { aiChatReport: { success: true, message: 'ok' } } });
+
+    await reportAnswer('123', 'other');
+
+    expect(mockedFetch.mock.calls[0][1].description).toBeNull();
+  });
+});
+
+describe('bokiApi.submitFeedback', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('sends the chatLogId and feedback enum', async () => {
+    mockedFetch.mockResolvedValueOnce({
+      data: { aiChatFeedback: { success: true, feedback: 'LIKE' } },
+    });
+
+    const result = await submitFeedback('123', 'LIKE');
+
+    expect(result).toEqual({ success: true, feedback: 'LIKE' });
+    expect(mockedFetch.mock.calls[0][1]).toEqual({ chatLogId: '123', feedback: 'LIKE' });
   });
 });

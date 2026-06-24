@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -22,6 +22,7 @@ import { useModal } from '../../context/ModalContext';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import RetryView from '../../components/RetryView';
 import BokiMessageBubble from '../../components/boki/BokiMessageBubble';
+import BokiReportSheet from '../../components/boki/BokiReportSheet';
 import { useBokiChat } from '../../hooks/useBokiChat';
 import { analytics } from '../../lib/analytics';
 import { spacing, borderRadius } from '../../config/spacing';
@@ -29,7 +30,7 @@ import { layout } from '../../config/layout';
 import { AiChatSource, BokiTurn } from '../../types/boki';
 
 /**
- * Boki chat thread (BKLT-221, Phases 1–2).
+ * Boki chat thread (BKLT-221, Phases 1–3).
  *
  * The message list is an inverted FlatList — turns are stored newest-first, so
  * index 0 sits at the bottom and the newest message is always in view, while
@@ -47,21 +48,30 @@ const BokiChatScreen: React.FC = () => {
   const route = useRoute<any>();
   const { showConfirm } = useModal();
 
-  const conversationId = route.params?.conversationId as string | undefined;
+  const conversationIdParam = route.params?.conversationId as string | undefined;
   const {
     turns,
     send,
     retry,
+    submitFeedback,
     loadingHistory,
     loadingMore,
     loadOlder,
     historyError,
     reloadHistory,
+    loadConversation,
     startNewConversation,
-  } = useBokiChat(conversationId);
+  } = useBokiChat();
 
   const [input, setInput] = useState('');
+  const [reportChatLogId, setReportChatLogId] = useState<string | null>(null);
   const canSend = input.trim().length > 0;
+
+  // Opening a conversation from history navigates back here and updates this
+  // param; load it into the existing thread (also covers a param at first mount).
+  useEffect(() => {
+    if (conversationIdParam) loadConversation(conversationIdParam);
+  }, [conversationIdParam, loadConversation]);
 
   const handleSend = useCallback(() => {
     if (!canSend) return;
@@ -72,6 +82,16 @@ const BokiChatScreen: React.FC = () => {
   const handleOpenHistory = useCallback(() => {
     navigation.navigate('BokiConversations');
   }, [navigation]);
+
+  const handleNewConversation = useCallback(() => {
+    startNewConversation();
+    navigation.setParams({ conversationId: undefined });
+  }, [startNewConversation, navigation]);
+
+  const handleReport = useCallback((chatLogId: string) => {
+    analytics.trackBokiReportButtonClicked();
+    setReportChatLogId(chatLogId);
+  }, []);
 
   // Reference-link tap: exact-lesson navigation needs a backend `lesson(id)`
   // query that doesn't exist yet (see BKLT-221 known gaps), so for now we
@@ -91,9 +111,15 @@ const BokiChatScreen: React.FC = () => {
 
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<BokiTurn>) => (
-      <BokiMessageBubble turn={item} onRetry={retry} onSourcePress={handleSourcePress} />
+      <BokiMessageBubble
+        turn={item}
+        onRetry={retry}
+        onSourcePress={handleSourcePress}
+        onReport={handleReport}
+        onFeedback={submitFeedback}
+      />
     ),
-    [retry, handleSourcePress],
+    [retry, handleSourcePress, handleReport, submitFeedback],
   );
 
   const keyExtractor = useCallback((item: BokiTurn) => item.id, []);
@@ -109,7 +135,7 @@ const BokiChatScreen: React.FC = () => {
       </TouchableOpacity>
       <TouchableOpacity
         testID="boki-new-conversation"
-        onPress={startNewConversation}
+        onPress={handleNewConversation}
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         style={styles.newButton}
       >
@@ -221,6 +247,11 @@ const BokiChatScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+      <BokiReportSheet
+        visible={!!reportChatLogId}
+        chatLogId={reportChatLogId}
+        onClose={() => setReportChatLogId(null)}
+      />
     </View>
   );
 };

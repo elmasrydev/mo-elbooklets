@@ -2,14 +2,14 @@ import React from 'react';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { renderWithProviders } from '../helpers/renderWithProviders';
 import BokiChatScreen from '../../screens/boki/BokiChatScreen';
-import { sendMessage, BokiApiError } from '../../services/bokiApi';
+import { sendMessage, submitFeedback, BokiApiError } from '../../services/bokiApi';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { analytics } from '../../lib/analytics';
 
-// Keep the real BokiApiError (so `instanceof` works in the hook); mock only the call.
+// Keep the real BokiApiError (so `instanceof` works in the hook); mock only the calls.
 jest.mock('../../services/bokiApi', () => {
   const actual = jest.requireActual('../../services/bokiApi');
-  return { __esModule: true, ...actual, sendMessage: jest.fn() };
+  return { __esModule: true, ...actual, sendMessage: jest.fn(), submitFeedback: jest.fn() };
 });
 
 jest.mock('../../hooks/useNetworkStatus', () => ({
@@ -17,6 +17,7 @@ jest.mock('../../hooks/useNetworkStatus', () => ({
 }));
 
 const mockedSend = sendMessage as jest.Mock;
+const mockedFeedback = submitFeedback as jest.Mock;
 const mockedNetwork = useNetworkStatus as jest.Mock;
 
 const answer = (text: string, overrides = {}) => ({
@@ -98,5 +99,23 @@ describe('BokiChatScreen', () => {
 
     await waitFor(() => expect(screen.getByText('Here is the recovered answer.')).toBeTruthy());
     expect(mockedSend).toHaveBeenCalledTimes(2);
+  });
+
+  it('rates an answer as helpful via the like button', async () => {
+    mockedSend.mockResolvedValueOnce(answer('Plants make food.'));
+    mockedFeedback.mockResolvedValueOnce({ success: true, feedback: 'LIKE' });
+
+    renderWithProviders(<BokiChatScreen />);
+    fireEvent.changeText(screen.getByTestId('boki-chat-input'), 'hi');
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('boki-send-button'));
+    });
+    await waitFor(() => expect(screen.getByText('Plants make food.')).toBeTruthy());
+
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('boki-like-button'));
+    });
+
+    expect(mockedFeedback).toHaveBeenCalledWith('1', 'LIKE');
   });
 });
