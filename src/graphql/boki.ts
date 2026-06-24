@@ -3,11 +3,6 @@
  *
  * Raw strings (not codegen) passed to `tryFetchWithFallback`, matching the
  * dominant API idiom in this codebase (see ContactUsScreen / AvatarPickerModal).
- *
- * NOTE: the backend exposes `conversations` and `conversationMessages` as
- * GraphQL **mutations**, not queries (verified by schema introspection), even
- * though they are reads. The `booki-graphql-api.md` contract doc lists them
- * under `query` — it's inaccurate on that point.
  * Report/feedback operations are added in Phase 3.
  */
 
@@ -27,8 +22,8 @@ export const AI_CHAT_MUTATION = `
   }
 `;
 
-export const CONVERSATIONS_MUTATION = `
-  mutation Conversations($page: Int, $perPage: Int) {
+export const CONVERSATIONS_QUERY = `
+  query Conversations($page: Int, $perPage: Int) {
     conversations(page: $page, perPage: $perPage) {
       data {
         id
@@ -52,8 +47,8 @@ export const CONVERSATIONS_MUTATION = `
   }
 `;
 
-export const CONVERSATION_MESSAGES_MUTATION = `
-  mutation ConversationMessages($conversationId: ID!, $page: Int, $perPage: Int) {
+export const CONVERSATION_MESSAGES_QUERY = `
+  query ConversationMessages($conversationId: ID!, $page: Int, $perPage: Int) {
     conversationMessages(conversationId: $conversationId, page: $page, perPage: $perPage) {
       data {
         id

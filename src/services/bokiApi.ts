@@ -13,8 +13,8 @@
 import { tryFetchWithFallback } from '../config/api';
 import {
   AI_CHAT_MUTATION,
-  CONVERSATIONS_MUTATION,
-  CONVERSATION_MESSAGES_MUTATION,
+  CONVERSATIONS_QUERY,
+  CONVERSATION_MESSAGES_QUERY,
 } from '../graphql/boki';
 import {
   AiChatInput,
@@ -62,7 +62,7 @@ export const fetchConversations = async (
   page = 1,
   perPage = 15,
 ): Promise<PaginatedResult<Conversation>> => {
-  const data = await execute(CONVERSATIONS_MUTATION, { page, perPage });
+  const data = await execute(CONVERSATIONS_QUERY, { page, perPage });
   return data.conversations as PaginatedResult<Conversation>;
 };
 
@@ -72,6 +72,6 @@ export const fetchConversationMessages = async (
   page = 1,
   perPage = 20,
 ): Promise<PaginatedResult<ChatMessage>> => {
-  const data = await execute(CONVERSATION_MESSAGES_MUTATION, { conversationId, page, perPage });
+  const data = await execute(CONVERSATION_MESSAGES_QUERY, { conversationId, page, perPage });
   return data.conversationMessages as PaginatedResult<ChatMessage>;
 };
