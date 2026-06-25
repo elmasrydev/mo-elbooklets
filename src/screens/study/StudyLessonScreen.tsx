@@ -82,12 +82,13 @@ interface LessonDODProgress {
   isComplete: boolean;
 }
 
-const LessonVideoPlayer: React.FC<{ url: string; theme: any; spacing: any; borderRadius: any }> = ({
-  url,
-  theme,
-  spacing,
-  borderRadius,
-}) => {
+const LessonVideoPlayer: React.FC<{
+  url: string;
+  theme: any;
+  spacing: any;
+  borderRadius: any;
+  typography: any;
+}> = ({ url, theme, spacing, borderRadius, typography }) => {
   const video = React.useRef<Video>(null);
   const [status, setStatus] = useState<any>({});
   const [isMuted, setIsMuted] = useState(false);
@@ -131,7 +132,7 @@ const LessonVideoPlayer: React.FC<{ url: string; theme: any; spacing: any; borde
     }
   };
 
-  const currentVideoStyles = videoStyles(theme, spacing, borderRadius);
+  const currentVideoStyles = videoStyles(theme, spacing, borderRadius, typography);
 
   return (
     <View style={currentVideoStyles.container}>
@@ -475,10 +476,10 @@ const StudyLessonScreen: React.FC = () => {
   // Android hardware back → leave disclaimer
   useAndroidBack(handleLeaveLesson);
 
-  const togglePoint = async (pointId: string) => {
+  // Expanding/collapsing a point only toggles its explanation — it does NOT
+  // mark the point as done. "Done" is recorded solely via the check icon.
+  const togglePoint = (pointId: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    const isExpanding = !expandedPoints.has(pointId);
-
     setExpandedPoints((prev) => {
       const next = new Set(prev);
       if (next.has(pointId)) {
@@ -488,10 +489,6 @@ const StudyLessonScreen: React.FC = () => {
       }
       return next;
     });
-
-    if (isExpanding && !viewedPoints.has(pointId)) {
-      handleRecordView(pointId);
-    }
   };
 
   const fetchDodProgress = async (lessonId: string) => {
@@ -704,7 +701,11 @@ const StudyLessonScreen: React.FC = () => {
         setSavedPoints((prev) => {
           const next = new Map(prev);
           if (sp) {
-            next.set(pointId, sp);
+            // Saving a note must NOT change the bookmark — keep the prior state.
+            next.set(pointId, {
+              ...sp,
+              is_bookmarked: prev.get(pointId)?.is_bookmarked ?? false,
+            });
           }
           return next;
         });
@@ -913,6 +914,7 @@ const StudyLessonScreen: React.FC = () => {
                 theme={theme}
                 spacing={spacing}
                 borderRadius={borderRadius}
+                typography={typography}
               />
             </View>
             {/* Like / Dislike */}
@@ -1083,11 +1085,14 @@ const StudyLessonScreen: React.FC = () => {
                         activeOpacity={point.explanation ? 0.7 : 1}
                       >
                         <View style={currentStyles.kpTop}>
-                          <View
+                          <TouchableOpacity
                             style={[currentStyles.kpCheck, isViewed && currentStyles.kpCheckDone]}
+                            onPress={() => !isViewed && handleRecordView(point.id)}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            activeOpacity={0.7}
                           >
                             {isViewed && <Ionicons name="checkmark" size={14} color="#fff" />}
-                          </View>
+                          </TouchableOpacity>
                           <Text
                             style={[currentStyles.kpText, isViewed && currentStyles.kpTextDone]}
                           >
@@ -1880,7 +1885,7 @@ const styles = (
   });
 };
 
-const videoStyles = (theme: any, spacing: any, borderRadius: any) =>
+const videoStyles = (theme: any, spacing: any, borderRadius: any, typography: any) =>
   StyleSheet.create({
     container: {
       width: '100%',
@@ -1919,9 +1924,8 @@ const videoStyles = (theme: any, spacing: any, borderRadius: any) =>
       marginTop: 4,
     },
     timeText: {
+      ...typography('label'),
       color: '#fff',
-      fontSize: 10,
-      fontWeight: '600',
     },
     mainButtonsRow: {
       flexDirection: 'row',
