@@ -87,9 +87,10 @@ const BokiConversationsScreen: React.FC = () => {
   const handleOpen = useCallback(
     (conversation: Conversation) => {
       analytics.trackBokiConversationOpened({ conversation_id: conversation.id });
-      // Navigate back to the single chat screen and load the selected
-      // conversation there (rather than stacking a new chat instance).
-      navigation.navigate('BokiChat', { conversationId: conversation.id });
+      // popTo (not navigate/push) goes BACK to the single existing chat screen
+      // and refills it with the selected conversation — so the Boki flow never
+      // stacks more than the 2 screens (chat + history).
+      navigation.popTo('BokiChat', { conversationId: conversation.id });
     },
     [navigation],
   );
