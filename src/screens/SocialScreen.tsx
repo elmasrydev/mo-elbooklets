@@ -525,8 +525,10 @@ const styles = (theme: any, common: any, spacing: any, typography: any, fontWeig
       ...typography('body'),
       color: theme.colors.text,
       ...fontWeight('500'),
-      height: '100%',
-      // Vertically center the text against the search icon + clear button.
+      // No fixed height: let the container's alignItems:'center' vertically
+      // center the input with the search icon + clear button. A height:'100%'
+      // here made the text sit low on iOS. (paddingVertical/textAlignVertical/
+      // includeFontPadding keep it centered on Android too.)
       paddingVertical: 0,
       textAlignVertical: 'center',
       includeFontPadding: false,
