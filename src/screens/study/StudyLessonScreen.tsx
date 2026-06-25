@@ -905,13 +905,15 @@ const StudyLessonScreen: React.FC = () => {
         </View>
 
         {currentLesson.videoUrl && (
-          <View style={currentStyles.videoSection}>
-            <LessonVideoPlayer
-              url={currentLesson.videoUrl as string}
-              theme={theme}
-              spacing={spacing}
-              borderRadius={borderRadius}
-            />
+          <>
+            <View style={currentStyles.videoSection}>
+              <LessonVideoPlayer
+                url={currentLesson.videoUrl as string}
+                theme={theme}
+                spacing={spacing}
+                borderRadius={borderRadius}
+              />
+            </View>
             {/* Like / Dislike */}
             <View style={currentStyles.interactionRow}>
               <TouchableOpacity
@@ -962,7 +964,7 @@ const StudyLessonScreen: React.FC = () => {
                 </Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </>
         )}
 
         {/* Tabs: Summary & Key Points | My Notes */}
@@ -1533,7 +1535,7 @@ const styles = (
       color: theme.colors.text,
     },
     videoSection: {
-      marginBottom: spacing.sectionGap,
+      marginBottom: spacing.sm,
       borderRadius: borderRadius.lg,
       overflow: 'hidden',
       backgroundColor: '#000',
@@ -1541,17 +1543,17 @@ const styles = (
     },
     interactionRow: {
       flexDirection: 'row',
-      marginTop: spacing.sm,
-      justifyContent: 'space-between',
-      paddingHorizontal: spacing.xs,
-      paddingBottom: spacing.xs,
+      gap: 8,
+      marginBottom: spacing.sectionGap,
     },
     interactionButton: {
+      flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'center',
       paddingVertical: 9,
-      paddingHorizontal: 20,
-      borderRadius: 22,
+      paddingHorizontal: 16,
+      borderRadius: borderRadius.md,
       borderWidth: 1.5,
       gap: 8,
     },
@@ -1664,21 +1666,6 @@ const styles = (
       flexDirection: contentRowDirection,
       alignItems: 'center',
       gap: 7,
-    },
-    pointMainRow: {
-      flexDirection: contentRowDirection,
-      alignItems: 'flex-start',
-      gap: 7,
-    },
-    pointCheckContainer: {
-      marginTop: 2,
-    },
-    pointActionsRow: {
-      flexDirection: contentRowDirection,
-      justifyContent: 'flex-end',
-      alignItems: 'center',
-      gap: spacing.sm,
-      marginTop: spacing.xs,
     },
     pointBullet: {
       width: 20,
@@ -1881,24 +1868,6 @@ const styles = (
       width: 45,
       textAlign: 'center',
       marginBottom: 3,
-    },
-    notePreviewContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      marginTop: spacing.xs,
-      paddingHorizontal: spacing.md,
-      paddingVertical: 6,
-      backgroundColor: theme.colors.primary + '0D',
-      borderRadius: borderRadius.sm,
-      marginHorizontal: spacing.md,
-      marginBottom: spacing.xs,
-    },
-    notePreviewText: {
-      ...typography('caption'),
-      color: theme.colors.textSecondary,
-      fontStyle: '',
-      flex: 1,
     },
   });
 
