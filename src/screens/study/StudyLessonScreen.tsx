@@ -320,6 +320,7 @@ const StudyLessonScreen: React.FC = () => {
   const [allLessons, setAllLessons] = useState<Lesson[]>(route.params?.allLessons || []);
   const [subject, setSubject] = useState(route.params?.subject);
   const { checkSubscription } = useSubscriptionGate();
+  const [activeTab, setActiveTab] = useState<'lesson' | 'notes'>('lesson');
   const [expandedPoints, setExpandedPoints] = useState<Set<string>>(new Set());
   const [dodProgress, setDodProgress] = useState<LessonDODProgress | null>(null);
   const [loadingDod, setLoadingDod] = useState(false);
@@ -868,6 +869,11 @@ const StudyLessonScreen: React.FC = () => {
   const hasNewPoints = currentLesson.lessonPoints && currentLesson.lessonPoints.length > 0;
   const hasLegacyPoints = !hasNewPoints && currentLesson.points && currentLesson.points.length > 0;
 
+  // Key points that have a saved note — drives the "My Notes" tab.
+  const notedPoints = (currentLesson.lessonPoints || []).filter(
+    (p) => savedPoints.get(p.id)?.note_content,
+  );
+
   return (
     <View style={currentStyles.container}>
       <UnifiedHeader
@@ -959,282 +965,389 @@ const StudyLessonScreen: React.FC = () => {
           </View>
         )}
 
-        <View style={currentStyles.section}>
-          <View style={currentStyles.sectionHeader}>
-            <View
-              style={[currentStyles.sectionIcon, { backgroundColor: theme.colors.primary + '1A' }]}
-            >
-              <Ionicons name="newspaper-outline" size={20} color={theme.colors.primary} />
-            </View>
+        {/* Tabs: Summary & Key Points | My Notes */}
+        <View style={currentStyles.tabBar}>
+          <TouchableOpacity
+            style={currentStyles.tab}
+            onPress={() => setActiveTab('lesson')}
+            activeOpacity={0.7}
+          >
             <Text
-              style={[currentStyles.sectionTitle, { color: theme.colors.primary, fontSize: 24 }]}
+              style={[currentStyles.tabText, activeTab === 'lesson' && currentStyles.tabTextActive]}
             >
-              {' '}
-              {t('study_lesson.summary')}
+              {t('study_lesson.tab_overview', 'Summary & Points')}
             </Text>
-          </View>
-          {currentLesson.summary ? (
-            <Text style={currentStyles.summaryText}>{currentLesson.summary}</Text>
-          ) : (
-            <Text style={currentStyles.noContentText}>{t('study_lesson.no_summary')}</Text>
-          )}
+            <View
+              style={[
+                currentStyles.tabUnderline,
+                activeTab !== 'lesson' && currentStyles.tabUnderlineHidden,
+              ]}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={currentStyles.tab}
+            onPress={() => setActiveTab('notes')}
+            activeOpacity={0.7}
+          >
+            <Text
+              style={[currentStyles.tabText, activeTab === 'notes' && currentStyles.tabTextActive]}
+            >
+              {t('study_lesson.my_notes', 'My Notes')}
+            </Text>
+            <View
+              style={[
+                currentStyles.tabUnderline,
+                activeTab !== 'notes' && currentStyles.tabUnderlineHidden,
+              ]}
+            />
+          </TouchableOpacity>
         </View>
 
-        <View
-          style={currentStyles.section}
-          onLayout={(e) => {
-            pointsSectionLayoutY.current = e.nativeEvent.layout.y;
-          }}
-        >
-          <View style={currentStyles.sectionHeader}>
-            <View
-              style={[currentStyles.sectionIcon, { backgroundColor: theme.colors.primary + '1A' }]}
-            >
-              <Ionicons name="star-outline" size={20} color={theme.colors.primary} />
-            </View>
-            <Text style={currentStyles.sectionTitle}> {t('study_lesson.key_points')} </Text>
-            {fetchingDetails && (
-              <ActivityIndicator
-                size="small"
-                color={theme.colors.primary}
-                style={{ marginLeft: 'auto' }}
-              />
-            )}
-          </View>
-
-          {hasNewPoints ? (
-            <View style={currentStyles.pointsList}>
-              {currentLesson.lessonPoints!.map((point) => {
-                const isExpanded = expandedPoints.has(point.id);
-                return (
-                  <TouchableOpacity
-                    key={point.id}
-                    onLayout={(e) => pointLayoutsRef.current.set(point.id, e.nativeEvent.layout.y)}
-                    style={[
-                      currentStyles.pointItem,
-                      highlightedPointId === point.id && {
-                        borderColor: theme.colors.primary,
-                        borderWidth: 2,
-                        backgroundColor: theme.colors.primary + '10',
-                      },
-                    ]}
-                    onPress={() => point.explanation && togglePoint(point.id)}
-                    activeOpacity={point.explanation ? 0.7 : 1}
-                  >
-                    <View style={currentStyles.pointMainRow}>
-                      <View style={currentStyles.pointCheckContainer}>
-                        <Ionicons
-                          name={viewedPoints.has(point.id) ? 'checkmark-circle' : 'ellipse-outline'}
-                          size={26}
-                          color={
-                            viewedPoints.has(point.id)
-                              ? theme.colors.success
-                              : theme.colors.textTertiary
-                          }
-                        />
-                      </View>
-                      <Text style={currentStyles.pointText}>{point.title}</Text>
-                    </View>
-
-                    <View style={currentStyles.pointActionsRow}>
-                      <TouchableOpacity
-                        onPress={() => handleToggleBookmark(point.id)}
-                        style={{ padding: 4 }}
-                      >
-                        <Ionicons
-                          name={
-                            savedPoints.get(point.id)?.is_bookmarked
-                              ? 'bookmark'
-                              : 'bookmark-outline'
-                          }
-                          size={20}
-                          color={
-                            savedPoints.get(point.id)?.is_bookmarked
-                              ? theme.colors.primary
-                              : theme.colors.textSecondary
-                          }
-                        />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => {
-                          setSelectedPointId(point.id);
-                          setNoteModalVisible(true);
-                        }}
-                        style={{ padding: 4 }}
-                      >
-                        <Ionicons
-                          name={
-                            savedPoints.get(point.id)?.note_content
-                              ? 'document-text'
-                              : 'document-text-outline'
-                          }
-                          size={20}
-                          color={
-                            savedPoints.get(point.id)?.note_content
-                              ? theme.colors.primary
-                              : theme.colors.textSecondary
-                          }
-                        />
-                      </TouchableOpacity>
-                      {point.explanation && (
-                        <View style={{ padding: 4 }}>
-                          <Ionicons
-                            name={isExpanded ? 'chevron-up' : 'chevron-down'}
-                            size={18}
-                            color={theme.colors.textSecondary}
-                          />
-                        </View>
-                      )}
-                    </View>
-                    {savedPoints.get(point.id)?.note_content && (
-                      <View style={currentStyles.notePreviewContainer}>
-                        <Ionicons name="pencil" size={12} color={theme.colors.primary} />
-                        <Text style={currentStyles.notePreviewText} numberOfLines={2}>
-                          {savedPoints.get(point.id)?.note_content}
-                        </Text>
-                      </View>
-                    )}
-                    {isExpanded && point.explanation && (
-                      <View style={currentStyles.explanationContainer}>
-                        <Text style={currentStyles.explanationText}>{point.explanation}</Text>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          ) : hasLegacyPoints ? (
-            <View style={currentStyles.pointsList}>
-              {currentLesson.points!.map((point, index) => (
-                <View key={index} style={currentStyles.pointItem}>
-                  <View style={currentStyles.pointHeader}>
-                    <View
-                      style={[currentStyles.pointBullet, { backgroundColor: theme.colors.primary }]}
-                    >
-                      <Ionicons name="bookmark" size={12} color={theme.colors.textOnDark} />
-                    </View>
-                    <Text style={currentStyles.pointText}>{point}</Text>
-                  </View>
+        {activeTab === 'lesson' && (
+          <>
+            <View style={currentStyles.section}>
+              <View style={currentStyles.sectionHeader}>
+                <View
+                  style={[
+                    currentStyles.sectionIcon,
+                    { backgroundColor: theme.colors.primary + '1A' },
+                  ]}
+                >
+                  <Ionicons name="newspaper-outline" size={20} color={theme.colors.primary} />
                 </View>
-              ))}
+                <Text
+                  style={[
+                    currentStyles.sectionTitle,
+                    { color: theme.colors.primary, fontSize: 24 },
+                  ]}
+                >
+                  {' '}
+                  {t('study_lesson.summary')}
+                </Text>
+              </View>
+              {currentLesson.summary ? (
+                <Text style={currentStyles.summaryText}>{currentLesson.summary}</Text>
+              ) : (
+                <Text style={currentStyles.noContentText}>{t('study_lesson.no_summary')}</Text>
+              )}
             </View>
-          ) : (
-            <Text style={currentStyles.noContentText}>{t('study_lesson.no_key_points')}</Text>
-          )}
-        </View>
 
-        {/* DOD Progress Section */}
-        <View style={currentStyles.section}>
-          <View style={currentStyles.sectionHeader}>
             <View
-              style={[currentStyles.sectionIcon, { backgroundColor: theme.colors.success + '1A' }]}
+              style={currentStyles.section}
+              onLayout={(e) => {
+                pointsSectionLayoutY.current = e.nativeEvent.layout.y;
+              }}
             >
-              <Ionicons name="shield-checkmark-outline" size={20} color={theme.colors.success} />
-            </View>
-            <Text style={[currentStyles.sectionTitle, { color: theme.colors.success }]}>
-              {t('study_lesson.definition_of_done', 'Definition of Done')}
-            </Text>
-            {dodProgress?.isComplete && (
-              <Ionicons
-                name="checkmark-circle"
-                size={24}
-                color={theme.colors.success}
-                style={{ marginLeft: 'auto' }}
-              />
-            )}
-          </View>
+              <View style={currentStyles.sectionHeader}>
+                <View
+                  style={[
+                    currentStyles.sectionIcon,
+                    { backgroundColor: theme.colors.primary + '1A' },
+                  ]}
+                >
+                  <Ionicons name="star-outline" size={20} color={theme.colors.primary} />
+                </View>
+                <Text style={currentStyles.sectionTitle}> {t('study_lesson.key_points')} </Text>
+                {fetchingDetails && (
+                  <ActivityIndicator
+                    size="small"
+                    color={theme.colors.primary}
+                    style={{ marginLeft: 'auto' }}
+                  />
+                )}
+              </View>
 
-          {loadingDod && !dodProgress ? (
-            <ActivityIndicator color={theme.colors.primary} size="small" />
-          ) : dodProgress ? (
-            <View style={currentStyles.dodContent}>
-              <View style={currentStyles.dodItem}>
-                <Ionicons
-                  name={
-                    dodProgress.keyPointsViewed >= dodProgress.keyPointsTotal
-                      ? 'checkbox'
-                      : 'square-outline'
-                  }
-                  size={20}
-                  color={
-                    dodProgress.keyPointsViewed >= dodProgress.keyPointsTotal
-                      ? theme.colors.success
-                      : theme.colors.textTertiary
-                  }
-                />
-                <Text style={currentStyles.dodText}>
-                  {t('study_lesson.key_points_progress', {
-                    current: dodProgress.keyPointsViewed,
-                    total: dodProgress.keyPointsTotal,
-                    defaultValue: `View all key points (${dodProgress.keyPointsViewed}/${dodProgress.keyPointsTotal})`,
+              {hasNewPoints ? (
+                <View style={currentStyles.pointsList}>
+                  {currentLesson.lessonPoints!.map((point) => {
+                    const isExpanded = expandedPoints.has(point.id);
+                    return (
+                      <TouchableOpacity
+                        key={point.id}
+                        onLayout={(e) =>
+                          pointLayoutsRef.current.set(point.id, e.nativeEvent.layout.y)
+                        }
+                        style={[
+                          currentStyles.pointItem,
+                          highlightedPointId === point.id && {
+                            borderColor: theme.colors.primary,
+                            borderWidth: 2,
+                            backgroundColor: theme.colors.primary + '10',
+                          },
+                        ]}
+                        onPress={() => point.explanation && togglePoint(point.id)}
+                        activeOpacity={point.explanation ? 0.7 : 1}
+                      >
+                        <View style={currentStyles.pointMainRow}>
+                          <View style={currentStyles.pointCheckContainer}>
+                            <Ionicons
+                              name={
+                                viewedPoints.has(point.id) ? 'checkmark-circle' : 'ellipse-outline'
+                              }
+                              size={26}
+                              color={
+                                viewedPoints.has(point.id)
+                                  ? theme.colors.success
+                                  : theme.colors.textTertiary
+                              }
+                            />
+                          </View>
+                          <Text style={currentStyles.pointText}>{point.title}</Text>
+                        </View>
+
+                        <View style={currentStyles.pointActionsRow}>
+                          <TouchableOpacity
+                            onPress={() => handleToggleBookmark(point.id)}
+                            style={{ padding: 4 }}
+                          >
+                            <Ionicons
+                              name={
+                                savedPoints.get(point.id)?.is_bookmarked
+                                  ? 'bookmark'
+                                  : 'bookmark-outline'
+                              }
+                              size={20}
+                              color={
+                                savedPoints.get(point.id)?.is_bookmarked
+                                  ? theme.colors.primary
+                                  : theme.colors.textSecondary
+                              }
+                            />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => {
+                              setSelectedPointId(point.id);
+                              setNoteModalVisible(true);
+                            }}
+                            style={{ padding: 4 }}
+                          >
+                            <Ionicons
+                              name={
+                                savedPoints.get(point.id)?.note_content
+                                  ? 'document-text'
+                                  : 'document-text-outline'
+                              }
+                              size={20}
+                              color={
+                                savedPoints.get(point.id)?.note_content
+                                  ? theme.colors.primary
+                                  : theme.colors.textSecondary
+                              }
+                            />
+                          </TouchableOpacity>
+                          {point.explanation && (
+                            <View style={{ padding: 4 }}>
+                              <Ionicons
+                                name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                                size={18}
+                                color={theme.colors.textSecondary}
+                              />
+                            </View>
+                          )}
+                        </View>
+                        {savedPoints.get(point.id)?.note_content && (
+                          <View style={currentStyles.notePreviewContainer}>
+                            <Ionicons name="pencil" size={12} color={theme.colors.primary} />
+                            <Text style={currentStyles.notePreviewText} numberOfLines={2}>
+                              {savedPoints.get(point.id)?.note_content}
+                            </Text>
+                          </View>
+                        )}
+                        {isExpanded && point.explanation && (
+                          <View style={currentStyles.explanationContainer}>
+                            <Text style={currentStyles.explanationText}>{point.explanation}</Text>
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    );
                   })}
-                </Text>
-              </View>
-              <View style={currentStyles.dodItem}>
-                <Ionicons
-                  name={
-                    dodProgress.quizzesPassed >= dodProgress.quizzesRequired
-                      ? 'checkbox'
-                      : 'square-outline'
-                  }
-                  size={20}
-                  color={
-                    dodProgress.quizzesPassed >= dodProgress.quizzesRequired
-                      ? theme.colors.success
-                      : theme.colors.textTertiary
-                  }
-                />
-                <Text style={currentStyles.dodText}>
-                  {t('study_lesson.quizzes_progress', {
-                    current: dodProgress.quizzesPassed,
-                    total: dodProgress.quizzesRequired,
-                    defaultValue: `Pass required quizzes (${dodProgress.quizzesPassed}/${dodProgress.quizzesRequired})`,
-                  })}
-                </Text>
-              </View>
-              <View style={currentStyles.dodProgressContainer}>
-                <View style={currentStyles.dodProgressBar}>
-                  <View
-                    style={[
-                      currentStyles.dodProgressFill,
-                      {
-                        width: `${dodProgress.totalProgress}%`,
-                        backgroundColor: dodProgress.isComplete
-                          ? theme.colors.success
-                          : theme.colors.primary,
-                      },
-                    ]}
+                </View>
+              ) : hasLegacyPoints ? (
+                <View style={currentStyles.pointsList}>
+                  {currentLesson.points!.map((point, index) => (
+                    <View key={index} style={currentStyles.pointItem}>
+                      <View style={currentStyles.pointHeader}>
+                        <View
+                          style={[
+                            currentStyles.pointBullet,
+                            { backgroundColor: theme.colors.primary },
+                          ]}
+                        >
+                          <Ionicons name="bookmark" size={12} color={theme.colors.textOnDark} />
+                        </View>
+                        <Text style={currentStyles.pointText}>{point}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <Text style={currentStyles.noContentText}>{t('study_lesson.no_key_points')}</Text>
+              )}
+            </View>
+
+            {/* DOD Progress Section */}
+            <View style={currentStyles.section}>
+              <View style={currentStyles.sectionHeader}>
+                <View
+                  style={[
+                    currentStyles.sectionIcon,
+                    { backgroundColor: theme.colors.success + '1A' },
+                  ]}
+                >
+                  <Ionicons
+                    name="shield-checkmark-outline"
+                    size={20}
+                    color={theme.colors.success}
                   />
                 </View>
-                <Text style={currentStyles.dodPercentText}>
-                  {Math.round(dodProgress.totalProgress)}%
+                <Text style={[currentStyles.sectionTitle, { color: theme.colors.success }]}>
+                  {t('study_lesson.definition_of_done', 'Definition of Done')}
+                </Text>
+                {dodProgress?.isComplete && (
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={24}
+                    color={theme.colors.success}
+                    style={{ marginLeft: 'auto' }}
+                  />
+                )}
+              </View>
+
+              {loadingDod && !dodProgress ? (
+                <ActivityIndicator color={theme.colors.primary} size="small" />
+              ) : dodProgress ? (
+                <View style={currentStyles.dodContent}>
+                  <View style={currentStyles.dodItem}>
+                    <Ionicons
+                      name={
+                        dodProgress.keyPointsViewed >= dodProgress.keyPointsTotal
+                          ? 'checkbox'
+                          : 'square-outline'
+                      }
+                      size={20}
+                      color={
+                        dodProgress.keyPointsViewed >= dodProgress.keyPointsTotal
+                          ? theme.colors.success
+                          : theme.colors.textTertiary
+                      }
+                    />
+                    <Text style={currentStyles.dodText}>
+                      {t('study_lesson.key_points_progress', {
+                        current: dodProgress.keyPointsViewed,
+                        total: dodProgress.keyPointsTotal,
+                        defaultValue: `View all key points (${dodProgress.keyPointsViewed}/${dodProgress.keyPointsTotal})`,
+                      })}
+                    </Text>
+                  </View>
+                  <View style={currentStyles.dodItem}>
+                    <Ionicons
+                      name={
+                        dodProgress.quizzesPassed >= dodProgress.quizzesRequired
+                          ? 'checkbox'
+                          : 'square-outline'
+                      }
+                      size={20}
+                      color={
+                        dodProgress.quizzesPassed >= dodProgress.quizzesRequired
+                          ? theme.colors.success
+                          : theme.colors.textTertiary
+                      }
+                    />
+                    <Text style={currentStyles.dodText}>
+                      {t('study_lesson.quizzes_progress', {
+                        current: dodProgress.quizzesPassed,
+                        total: dodProgress.quizzesRequired,
+                        defaultValue: `Pass required quizzes (${dodProgress.quizzesPassed}/${dodProgress.quizzesRequired})`,
+                      })}
+                    </Text>
+                  </View>
+                  <View style={currentStyles.dodProgressContainer}>
+                    <View style={currentStyles.dodProgressBar}>
+                      <View
+                        style={[
+                          currentStyles.dodProgressFill,
+                          {
+                            width: `${dodProgress.totalProgress}%`,
+                            backgroundColor: dodProgress.isComplete
+                              ? theme.colors.success
+                              : theme.colors.primary,
+                          },
+                        ]}
+                      />
+                    </View>
+                    <Text style={currentStyles.dodPercentText}>
+                      {Math.round(dodProgress.totalProgress)}%
+                    </Text>
+                  </View>
+                </View>
+              ) : (
+                <Text style={currentStyles.noContentText}>
+                  {t('study_lesson.no_dod_data', 'No progress data available')}
+                </Text>
+              )}
+            </View>
+
+            {/* Take Quiz CTA */}
+            {subject && (
+              <View style={currentStyles.takeQuizSection}>
+                <View style={currentStyles.takeQuizDivider} />
+                <View style={currentStyles.takeQuizContent}>
+                  <Ionicons name="school-outline" size={28} color={theme.colors.primary} />
+                  <Text style={currentStyles.takeQuizLabel}>
+                    {t('study_lesson.test_your_knowledge')}
+                  </Text>
+                  <AppButton
+                    title={t('study_lesson.take_quiz')}
+                    onPress={handleTakeQuiz}
+                    size="lg"
+                    icon={<Ionicons name="play" size={20} color={theme.colors.textOnDark} />}
+                    iconPosition={isRTL ? 'left' : 'right'}
+                  />
+                </View>
+              </View>
+            )}
+          </>
+        )}
+
+        {activeTab === 'notes' && (
+          <View style={currentStyles.notesTab}>
+            {notedPoints.length > 0 ? (
+              notedPoints.map((point) => (
+                <TouchableOpacity
+                  key={point.id}
+                  style={currentStyles.noteCard}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setSelectedPointId(point.id);
+                    setNoteModalVisible(true);
+                  }}
+                >
+                  <Text style={currentStyles.noteCardTitle} numberOfLines={3}>
+                    {point.title}
+                  </Text>
+                  <View style={currentStyles.noteCardBubble}>
+                    <Ionicons name="pencil" size={13} color={theme.colors.primary} />
+                    <Text style={currentStyles.noteCardText}>
+                      {savedPoints.get(point.id)?.note_content}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))
+            ) : (
+              <View style={currentStyles.notesEmpty}>
+                <Ionicons
+                  name="document-text-outline"
+                  size={40}
+                  color={theme.colors.textTertiary}
+                />
+                <Text style={currentStyles.noContentText}>
+                  {t(
+                    'study_lesson.no_notes',
+                    'No notes yet. Tap the note icon on a key point to add one.',
+                  )}
                 </Text>
               </View>
-            </View>
-          ) : (
-            <Text style={currentStyles.noContentText}>
-              {t('study_lesson.no_dod_data', 'No progress data available')}
-            </Text>
-          )}
-        </View>
-
-        {/* Take Quiz CTA */}
-        {subject && (
-          <View style={currentStyles.takeQuizSection}>
-            <View style={currentStyles.takeQuizDivider} />
-            <View style={currentStyles.takeQuizContent}>
-              <Ionicons name="school-outline" size={28} color={theme.colors.primary} />
-              <Text style={currentStyles.takeQuizLabel}>
-                {t('study_lesson.test_your_knowledge')}
-              </Text>
-              <AppButton
-                title={t('study_lesson.take_quiz')}
-                onPress={handleTakeQuiz}
-                size="lg"
-                icon={<Ionicons name="play" size={20} color={theme.colors.textOnDark} />}
-                iconPosition={isRTL ? 'left' : 'right'}
-              />
-            </View>
+            )}
           </View>
         )}
       </ScrollView>
@@ -1453,6 +1566,73 @@ const styles = (
     noContentText: {
       ...typography('caption'),
       color: theme.colors.textSecondary,
+      textAlign: contentAlign,
+    },
+    tabBar: {
+      flexDirection: 'row',
+      borderBottomWidth: 2,
+      borderBottomColor: theme.colors.border,
+      marginBottom: spacing.md,
+    },
+    tab: {
+      flex: 1,
+      alignItems: 'center',
+      paddingVertical: spacing.sm,
+    },
+    tabText: {
+      ...typography('caption'),
+      ...fontWeight('bold'),
+      color: theme.colors.textTertiary,
+    },
+    tabTextActive: {
+      color: theme.colors.primary,
+    },
+    tabUnderline: {
+      position: 'absolute',
+      bottom: -2,
+      left: 0,
+      right: 0,
+      height: 2,
+      borderRadius: 99,
+      backgroundColor: theme.colors.primary,
+    },
+    tabUnderlineHidden: {
+      backgroundColor: 'transparent',
+    },
+    notesTab: {
+      gap: spacing.sm,
+    },
+    notesEmpty: {
+      alignItems: 'center',
+      paddingVertical: spacing.xl,
+      gap: spacing.sm,
+    },
+    noteCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: borderRadius.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      padding: spacing.md,
+      gap: spacing.sm,
+    },
+    noteCardTitle: {
+      ...typography('bodySmall'),
+      ...fontWeight('bold'),
+      color: theme.colors.text,
+      textAlign: contentAlign,
+    },
+    noteCardBubble: {
+      flexDirection: contentRowDirection,
+      alignItems: 'flex-start',
+      gap: 6,
+      backgroundColor: theme.colors.primary + '0D',
+      borderRadius: borderRadius.md,
+      padding: spacing.sm,
+    },
+    noteCardText: {
+      ...typography('caption'),
+      color: theme.colors.textSecondary,
+      flex: 1,
       textAlign: contentAlign,
     },
     pointsList: {

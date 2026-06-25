@@ -181,6 +181,9 @@
     "previous": "Previous",
     "quizzes_progress": "Pass required quizzes ({{current}}/{{total}})",
     "summary": "Summary",
+    "tab_overview": "Summary & Points",
+    "my_notes": "My Notes",
+    "no_notes": "No notes yet. Tap the note icon on a key point to add one.",
     "take_quiz": "Take Quiz",
     "test_your_knowledge": "Test your knowledge on this lesson"
   },
