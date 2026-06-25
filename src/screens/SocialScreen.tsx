@@ -526,6 +526,10 @@ const styles = (theme: any, common: any, spacing: any, typography: any, fontWeig
       color: theme.colors.text,
       ...fontWeight('500'),
       height: '100%',
+      // Vertically center the text against the search icon + clear button.
+      paddingVertical: 0,
+      textAlignVertical: 'center',
+      includeFontPadding: false,
     },
     clearBtn: {
       padding: 4,
