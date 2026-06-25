@@ -1059,8 +1059,12 @@ const StudyLessonScreen: React.FC = () => {
 
               {hasNewPoints ? (
                 <View style={currentStyles.pointsList}>
-                  {currentLesson.lessonPoints!.map((point) => {
+                  {currentLesson.lessonPoints!.map((point, idx) => {
                     const isExpanded = expandedPoints.has(point.id);
+                    const isViewed = viewedPoints.has(point.id);
+                    const saved = savedPoints.get(point.id);
+                    const isBookmarked = !!saved?.is_bookmarked;
+                    const hasNote = !!saved?.note_content;
                     return (
                       <TouchableOpacity
                         key={point.id}
@@ -1068,96 +1072,106 @@ const StudyLessonScreen: React.FC = () => {
                           pointLayoutsRef.current.set(point.id, e.nativeEvent.layout.y)
                         }
                         style={[
-                          currentStyles.pointItem,
-                          highlightedPointId === point.id && {
-                            borderColor: theme.colors.primary,
-                            borderWidth: 2,
-                            backgroundColor: theme.colors.primary + '10',
-                          },
+                          currentStyles.kpCard,
+                          isViewed && currentStyles.kpCardDone,
+                          highlightedPointId === point.id && currentStyles.kpCardHighlight,
                         ]}
                         onPress={() => point.explanation && togglePoint(point.id)}
                         activeOpacity={point.explanation ? 0.7 : 1}
                       >
-                        <View style={currentStyles.pointMainRow}>
-                          <View style={currentStyles.pointCheckContainer}>
-                            <Ionicons
-                              name={
-                                viewedPoints.has(point.id) ? 'checkmark-circle' : 'ellipse-outline'
-                              }
-                              size={26}
-                              color={
-                                viewedPoints.has(point.id)
-                                  ? theme.colors.success
-                                  : theme.colors.textTertiary
-                              }
-                            />
+                        <View style={currentStyles.kpTop}>
+                          <View
+                            style={[currentStyles.kpCheck, isViewed && currentStyles.kpCheckDone]}
+                          >
+                            {isViewed && <Ionicons name="checkmark" size={14} color="#fff" />}
                           </View>
-                          <Text style={currentStyles.pointText}>{point.title}</Text>
+                          <Text
+                            style={[currentStyles.kpText, isViewed && currentStyles.kpTextDone]}
+                          >
+                            {point.title}
+                          </Text>
+                          {point.explanation && (
+                            <Ionicons
+                              name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                              size={18}
+                              color={theme.colors.textSecondary}
+                              style={currentStyles.kpChevron}
+                            />
+                          )}
                         </View>
 
-                        <View style={currentStyles.pointActionsRow}>
+                        {isExpanded && point.explanation && (
+                          <View style={currentStyles.explanationContainer}>
+                            <Text style={currentStyles.explanationText}>{point.explanation}</Text>
+                          </View>
+                        )}
+
+                        {hasNote && (
+                          <View style={currentStyles.noteBubble}>
+                            <Ionicons name="document-text" size={14} color="#CA8A04" />
+                            <Text style={currentStyles.noteBubbleText} numberOfLines={3}>
+                              {saved?.note_content}
+                            </Text>
+                          </View>
+                        )}
+
+                        <View style={currentStyles.kpActions}>
                           <TouchableOpacity
                             onPress={() => handleToggleBookmark(point.id)}
-                            style={{ padding: 4 }}
+                            style={[
+                              currentStyles.kpActionBtn,
+                              isBookmarked && currentStyles.kpActionBtnSaved,
+                            ]}
                           >
                             <Ionicons
-                              name={
-                                savedPoints.get(point.id)?.is_bookmarked
-                                  ? 'bookmark'
-                                  : 'bookmark-outline'
-                              }
-                              size={20}
+                              name={isBookmarked ? 'bookmark' : 'bookmark-outline'}
+                              size={14}
                               color={
-                                savedPoints.get(point.id)?.is_bookmarked
-                                  ? theme.colors.primary
-                                  : theme.colors.textSecondary
+                                isBookmarked ? theme.colors.warning : theme.colors.textSecondary
                               }
                             />
+                            <Text
+                              style={[
+                                currentStyles.kpActionText,
+                                isBookmarked && { color: theme.colors.warning },
+                              ]}
+                            >
+                              {isBookmarked
+                                ? t('study_lesson.saved', 'Saved')
+                                : t('study_lesson.save', 'Save')}
+                            </Text>
                           </TouchableOpacity>
                           <TouchableOpacity
                             onPress={() => {
                               setSelectedPointId(point.id);
                               setNoteModalVisible(true);
                             }}
-                            style={{ padding: 4 }}
+                            style={[
+                              currentStyles.kpActionBtn,
+                              hasNote && currentStyles.kpActionBtnNote,
+                            ]}
                           >
                             <Ionicons
-                              name={
-                                savedPoints.get(point.id)?.note_content
-                                  ? 'document-text'
-                                  : 'document-text-outline'
-                              }
-                              size={20}
-                              color={
-                                savedPoints.get(point.id)?.note_content
-                                  ? theme.colors.primary
-                                  : theme.colors.textSecondary
-                              }
+                              name={hasNote ? 'document-text' : 'document-text-outline'}
+                              size={14}
+                              color={hasNote ? theme.colors.primary : theme.colors.textSecondary}
                             />
-                          </TouchableOpacity>
-                          {point.explanation && (
-                            <View style={{ padding: 4 }}>
-                              <Ionicons
-                                name={isExpanded ? 'chevron-up' : 'chevron-down'}
-                                size={18}
-                                color={theme.colors.textSecondary}
-                              />
-                            </View>
-                          )}
-                        </View>
-                        {savedPoints.get(point.id)?.note_content && (
-                          <View style={currentStyles.notePreviewContainer}>
-                            <Ionicons name="pencil" size={12} color={theme.colors.primary} />
-                            <Text style={currentStyles.notePreviewText} numberOfLines={2}>
-                              {savedPoints.get(point.id)?.note_content}
+                            <Text
+                              style={[
+                                currentStyles.kpActionText,
+                                hasNote && { color: theme.colors.primary },
+                              ]}
+                            >
+                              {hasNote
+                                ? t('study_lesson.edit_note', 'Edit note')
+                                : t('study_lesson.add_note', 'Note')}
                             </Text>
-                          </View>
-                        )}
-                        {isExpanded && point.explanation && (
-                          <View style={currentStyles.explanationContainer}>
-                            <Text style={currentStyles.explanationText}>{point.explanation}</Text>
-                          </View>
-                        )}
+                          </TouchableOpacity>
+                          <Text style={currentStyles.kpNum}>
+                            {idx + 1} {t('study_lesson.of', 'of')}{' '}
+                            {currentLesson.lessonPoints!.length}
+                          </Text>
+                        </View>
                       </TouchableOpacity>
                     );
                   })}
@@ -1697,6 +1711,112 @@ const styles = (
       lineHeight: 20,
       color: theme.colors.textSecondary,
       textAlign: contentAlign,
+    },
+    // Mockup-style key-point cards
+    kpCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: borderRadius.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderStartWidth: 3.5,
+      borderStartColor: theme.colors.border,
+      padding: spacing.md,
+      ...layout.shadow,
+    },
+    kpCardDone: {
+      backgroundColor: theme.colors.success + '0D',
+      borderStartColor: theme.colors.success,
+    },
+    kpCardHighlight: {
+      borderColor: theme.colors.primary,
+      borderWidth: 2,
+      borderStartColor: theme.colors.primary,
+      backgroundColor: theme.colors.primary + '0D',
+    },
+    kpTop: {
+      flexDirection: contentRowDirection,
+      alignItems: 'flex-start',
+      gap: 10,
+    },
+    kpCheck: {
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      borderWidth: 2,
+      borderColor: theme.colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 1,
+      flexShrink: 0,
+    },
+    kpCheckDone: {
+      backgroundColor: theme.colors.success,
+      borderColor: theme.colors.success,
+    },
+    kpText: {
+      flex: 1,
+      ...typography('bodySmall'),
+      ...fontWeight('bold'),
+      color: theme.colors.text,
+      textAlign: contentAlign,
+      lineHeight: 21,
+    },
+    kpTextDone: {
+      color: theme.colors.textSecondary,
+    },
+    kpChevron: {
+      marginTop: 2,
+      flexShrink: 0,
+    },
+    noteBubble: {
+      flexDirection: contentRowDirection,
+      alignItems: 'flex-start',
+      gap: 6,
+      backgroundColor: '#FEF9C3',
+      borderRadius: borderRadius.md,
+      padding: spacing.sm,
+      marginTop: spacing.sm,
+    },
+    noteBubbleText: {
+      flex: 1,
+      ...typography('caption'),
+      color: '#78350F',
+      textAlign: contentAlign,
+    },
+    kpActions: {
+      flexDirection: contentRowDirection,
+      alignItems: 'center',
+      gap: 6,
+      marginTop: spacing.sm,
+      paddingTop: spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.border,
+    },
+    kpActionBtn: {
+      flexDirection: contentRowDirection,
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 8,
+      backgroundColor: theme.colors.background,
+    },
+    kpActionBtnSaved: {
+      backgroundColor: theme.colors.warning + '1A',
+    },
+    kpActionBtnNote: {
+      backgroundColor: theme.colors.primary + '14',
+    },
+    kpActionText: {
+      ...typography('label'),
+      ...fontWeight('bold'),
+      color: theme.colors.textSecondary,
+    },
+    kpNum: {
+      ...typography('label'),
+      ...fontWeight('bold'),
+      color: theme.colors.textTertiary,
+      marginStart: 'auto',
     },
     takeQuizSection: {
       marginTop: spacing.lg,
