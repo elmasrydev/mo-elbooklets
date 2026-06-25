@@ -19,6 +19,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { Video, ResizeMode } from 'expo-av';
+import { LinearGradient } from 'expo-linear-gradient';
 import { layout } from '../../config/layout';
 import * as SecureStore from 'expo-secure-store';
 import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
@@ -1233,61 +1234,59 @@ const StudyLessonScreen: React.FC = () => {
                 <ActivityIndicator color={theme.colors.primary} size="small" />
               ) : dodProgress ? (
                 <View style={currentStyles.dodContent}>
-                  <View style={currentStyles.dodItem}>
-                    <Ionicons
-                      name={
-                        dodProgress.keyPointsViewed >= dodProgress.keyPointsTotal
-                          ? 'checkbox'
-                          : 'square-outline'
-                      }
-                      size={20}
-                      color={
-                        dodProgress.keyPointsViewed >= dodProgress.keyPointsTotal
-                          ? theme.colors.success
-                          : theme.colors.textTertiary
-                      }
-                    />
-                    <Text style={currentStyles.dodText}>
-                      {t('study_lesson.key_points_progress', {
-                        current: dodProgress.keyPointsViewed,
-                        total: dodProgress.keyPointsTotal,
-                        defaultValue: `View all key points (${dodProgress.keyPointsViewed}/${dodProgress.keyPointsTotal})`,
-                      })}
-                    </Text>
-                  </View>
-                  <View style={currentStyles.dodItem}>
-                    <Ionicons
-                      name={
-                        dodProgress.quizzesPassed >= dodProgress.quizzesRequired
-                          ? 'checkbox'
-                          : 'square-outline'
-                      }
-                      size={20}
-                      color={
-                        dodProgress.quizzesPassed >= dodProgress.quizzesRequired
-                          ? theme.colors.success
-                          : theme.colors.textTertiary
-                      }
-                    />
-                    <Text style={currentStyles.dodText}>
-                      {t('study_lesson.quizzes_progress', {
-                        current: dodProgress.quizzesPassed,
-                        total: dodProgress.quizzesRequired,
-                        defaultValue: `Pass required quizzes (${dodProgress.quizzesPassed}/${dodProgress.quizzesRequired})`,
-                      })}
-                    </Text>
-                  </View>
+                  {[
+                    {
+                      label: t('study_lesson.dod_view_points', 'View all key points'),
+                      current: dodProgress.keyPointsViewed,
+                      total: dodProgress.keyPointsTotal,
+                    },
+                    {
+                      label: t('study_lesson.dod_pass_quizzes', 'Pass required quizzes'),
+                      current: dodProgress.quizzesPassed,
+                      total: dodProgress.quizzesRequired,
+                    },
+                  ].map((row) => {
+                    const done = row.total > 0 && row.current >= row.total;
+                    const started = row.current > 0;
+                    // green when done, amber/loading when in progress, neutral when not started
+                    const stateColor = done
+                      ? theme.colors.success
+                      : started
+                        ? theme.colors.warning
+                        : theme.colors.textTertiary;
+                    return (
+                      <View key={row.label} style={currentStyles.dodItem}>
+                        <Ionicons
+                          name={
+                            done
+                              ? 'checkmark-circle'
+                              : started
+                                ? 'hourglass-outline'
+                                : 'ellipse-outline'
+                          }
+                          size={20}
+                          color={stateColor}
+                        />
+                        <Text style={currentStyles.dodText}>{row.label}</Text>
+                        <View
+                          style={[currentStyles.dodPill, { backgroundColor: stateColor + '1A' }]}
+                        >
+                          <Text style={[currentStyles.dodPillText, { color: stateColor }]}>
+                            {row.current} / {row.total}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })}
                   <View style={currentStyles.dodProgressContainer}>
                     <View style={currentStyles.dodProgressBar}>
-                      <View
+                      <LinearGradient
+                        colors={['#004A9A', '#3B82F6']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
                         style={[
                           currentStyles.dodProgressFill,
-                          {
-                            width: `${dodProgress.totalProgress}%`,
-                            backgroundColor: dodProgress.isComplete
-                              ? theme.colors.success
-                              : theme.colors.primary,
-                          },
+                          { width: `${dodProgress.totalProgress}%` },
                         ]}
                       />
                     </View>
@@ -1843,6 +1842,15 @@ const styles = (
       color: theme.colors.text,
       flex: 1,
       textAlign: contentAlign,
+    },
+    dodPill: {
+      paddingHorizontal: 10,
+      paddingVertical: 2,
+      borderRadius: 999,
+    },
+    dodPillText: {
+      ...typography('label'),
+      ...fontWeight('bold'),
     },
     dodProgressContainer: {
       flexDirection: 'row',
