@@ -528,10 +528,10 @@ const styles = (theme: any, common: any, spacing: any, typography: any, fontWeig
       ...typography('body'),
       color: theme.colors.text,
       ...fontWeight('500'),
-      // No fixed height: let the container's alignItems:'center' vertically
-      // center the input with the search icon + clear button. A height:'100%'
-      // here made the text sit low on iOS. (paddingVertical/textAlignVertical/
-      // includeFontPadding keep it centered on Android too.)
+      // Tight line-height + zero padding so the glyphs fill the input's frame
+      // and the row's alignItems:'center' lines the text up with the icons.
+      height: 24,
+      lineHeight: 22,
       paddingVertical: 0,
       textAlignVertical: 'center',
       includeFontPadding: false,
