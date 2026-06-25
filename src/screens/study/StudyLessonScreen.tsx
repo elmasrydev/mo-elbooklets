@@ -518,20 +518,23 @@ const StudyLessonScreen: React.FC = () => {
   };
 
   const handleRecordView = async (lessonPointId: string) => {
+    if (viewedPoints.has(lessonPointId)) return;
+    // Optimistically mark done so the check fills immediately. The server
+    // mutation returns false when the view was already recorded (e.g. after
+    // switching lessons with a stale is_viewed flag), which previously left the
+    // check empty — don't gate the UI on that boolean.
+    const lessonId = currentLesson.id;
+    setViewedPoints((prev) => new Set(prev).add(lessonPointId));
     try {
       const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
 
-      const result = await tryFetchWithFallback(
+      await tryFetchWithFallback(
         `mutation RecordView($lessonPointId: ID!) { recordKeyPointView(lessonPointId: $lessonPointId) }`,
         { lessonPointId },
         token,
       );
-
-      if (result.data?.recordKeyPointView) {
-        setViewedPoints((prev) => new Set(prev).add(lessonPointId));
-        fetchDodProgress(currentLesson.id);
-      }
+      fetchDodProgress(lessonId);
     } catch (err) {
       console.error('Record view error:', err);
     }
@@ -840,6 +843,10 @@ const StudyLessonScreen: React.FC = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setCurrentLesson(lesson);
     setExpandedPoints(new Set());
+    setHighlightedPointId(null);
+    // Clear the previous lesson's saved points immediately; the effect re-fetches
+    // them for the new lesson (avoids a stale-data window between switches).
+    setSavedPoints(new Map());
     setViewedPoints(
       new Set(lesson.lessonPoints?.filter((p) => p.is_viewed).map((p) => p.id) || []),
     );
