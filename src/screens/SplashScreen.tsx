@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet, Text, Image, Dimensions, Platform } from 'react-native';
+import { View, StyleSheet, Text, Image, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useSharedValue,
@@ -794,14 +794,7 @@ const styles = StyleSheet.create({
   logo: {
     width: LOGO_WIDTH,
     height: LOGO_WIDTH,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#004A9A',
-        shadowOffset: { width: 0, height: 18 },
-        shadowOpacity: 0.12,
-        shadowRadius: 24,
-      },
-    }),
+    // No shadow — the main logo is shown clean, like the splash design.
   },
   brandName: {
     fontSize: 32,
