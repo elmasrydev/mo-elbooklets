@@ -1021,7 +1021,7 @@ const StudyLessonScreen: React.FC = () => {
                 <Text
                   style={[
                     currentStyles.sectionTitle,
-                    { color: theme.colors.primary, fontSize: 24 },
+                    { color: theme.colors.primary, fontSize: 20 },
                   ]}
                 >
                   {' '}
@@ -1444,28 +1444,28 @@ const StudyLessonScreen: React.FC = () => {
 const styles = (
   theme: any,
   isRTL: boolean,
-  typography: any,
+  baseTypography: any,
   fontWeight: any,
   insets: { top: number; bottom: number },
   spacing: any,
   borderRadius: any,
   contentAlign: 'left' | 'right',
   contentRowDirection: 'row' | 'row-reverse',
-) =>
-  StyleSheet.create({
+) => {
+  // Slightly smaller type across the whole lesson screen.
+  const typography = (style: any, weight?: any, forceArabic?: any) => {
+    const o: any = baseTypography(style, weight, forceArabic);
+    return o?.fontSize ? { ...o, fontSize: o.fontSize - 1.5 } : o;
+  };
+  return StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: theme.colors.background,
     },
     titleBreadcrumbContainer: {
-      marginBottom: spacing.sectionGap,
+      // Title + breadcrumb sit on the page (no card) like the design.
+      marginBottom: spacing.md,
       alignItems: 'flex-start',
-      backgroundColor: theme.colors.card,
-      padding: spacing.md,
-      borderRadius: borderRadius.xl,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      ...layout.shadow,
     },
     breadcrumbRow: {
       flexDirection: 'row',
@@ -1488,7 +1488,7 @@ const styles = (
     },
     chapterBadge: {
       ...typography('caption'),
-      fontSize: 13,
+      fontSize: 12,
       ...fontWeight('700'),
       color: theme.colors.primary,
       textAlign: contentAlign,
@@ -1496,8 +1496,8 @@ const styles = (
     },
     mainTitle: {
       ...typography('h2'),
-      fontSize: 24,
-      lineHeight: 32,
+      fontSize: 21,
+      lineHeight: 28,
       ...fontWeight('800'),
       color: theme.colors.text,
       textAlign: contentAlign,
@@ -1693,8 +1693,8 @@ const styles = (
     },
     explanationText: {
       ...typography('caption'),
-      fontSize: 15,
-      lineHeight: 20,
+      fontSize: 14,
+      lineHeight: 19,
       color: theme.colors.textSecondary,
       textAlign: contentAlign,
     },
@@ -1878,6 +1878,7 @@ const styles = (
       marginBottom: 3,
     },
   });
+};
 
 const videoStyles = (theme: any, spacing: any, borderRadius: any) =>
   StyleSheet.create({
