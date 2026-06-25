@@ -832,6 +832,15 @@ const StudyLessonScreen: React.FC = () => {
   }, [route.params?.initialPointId, currentLesson.lessonPoints]);
 
   const handleNavigateLesson = (lesson: Lesson) => {
+    // Locked lessons aren't navigable (mirror the lessons list).
+    if (lesson?.isLocked) {
+      setLocalAlert({
+        visible: true,
+        title: t('study_lesson.locked_title', 'Lesson Locked'),
+        message: t('study_chapters.locked_lesson', 'Purchase required or restricted'),
+      });
+      return;
+    }
     analytics.trackLessonCompleted({
       lesson_id: currentLesson.id,
       lesson_title: currentLesson.name,
