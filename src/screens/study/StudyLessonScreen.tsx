@@ -697,15 +697,30 @@ const StudyLessonScreen: React.FC = () => {
       );
 
       if (result.data?.savePointNote?.success) {
-        const sp = result.data.savePointNote.savedPoint;
+        let sp = result.data.savePointNote.savedPoint;
+        const wasBookmarked = savedPoints.get(pointId)?.is_bookmarked ?? false;
+        // The backend's savePointNote auto-enables the bookmark. If the user
+        // hadn't bookmarked this point, undo it so note and bookmark stay
+        // independent and the bookmark toggle stays in sync (backend + UI agree).
+        if (sp && !wasBookmarked && sp.is_bookmarked) {
+          const undo = await tryFetchWithFallback(
+            `mutation ToggleSavedPointBookmark($lessonId: ID!, $lessonPointId: ID!) {
+              toggleSavedPointBookmark(lessonId: $lessonId, lessonPointId: $lessonPointId) {
+                success
+                savedPoint { id is_bookmarked note_content lessonPoint { id } }
+              }
+            }`,
+            { lessonId: currentLesson.id, lessonPointId: pointId },
+            token,
+          );
+          if (undo.data?.toggleSavedPointBookmark?.savedPoint) {
+            sp = undo.data.toggleSavedPointBookmark.savedPoint;
+          }
+        }
         setSavedPoints((prev) => {
           const next = new Map(prev);
           if (sp) {
-            // Saving a note must NOT change the bookmark — keep the prior state.
-            next.set(pointId, {
-              ...sp,
-              is_bookmarked: prev.get(pointId)?.is_bookmarked ?? false,
-            });
+            next.set(pointId, sp);
           }
           return next;
         });
