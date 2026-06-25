@@ -223,8 +223,14 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    // fontSize handled by typography('body')
-    height: '100%',
+    // fontSize handled by typography('body'). Tight height + lineHeight so the
+    // glyphs fill the frame and stay vertically centered with the search/clear
+    // icons on iOS (a height:'100%' here made the text sit low). (BKLT search-align)
+    height: 24,
+    lineHeight: 22,
+    paddingVertical: 0,
+    textAlignVertical: 'center',
+    includeFontPadding: false,
   },
   clearButton: {
     padding: 4,
