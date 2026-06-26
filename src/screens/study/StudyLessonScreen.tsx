@@ -350,6 +350,16 @@ const StudyLessonScreen: React.FC = () => {
   const interactionCacheRef = useRef<Map<string, 'LIKE' | 'DISLIKE' | null>>(
     new Map(allLessons.map((l) => [l.id, l.myInteraction ?? null])),
   );
+  // Cache viewed key-points per lesson so navigating Next/Prev keeps in-session
+  // checks (allLessons is loaded once with stale is_viewed flags).
+  const viewedCacheRef = useRef<Map<string, Set<string>>>(
+    new Map(
+      allLessons.map((l) => [
+        l.id,
+        new Set((l.lessonPoints || []).filter((p) => p.is_viewed).map((p) => p.id)),
+      ]),
+    ),
+  );
 
   const [savedPoints, setSavedPoints] = useState<Map<string, UserSavedPoint>>(new Map());
   const [noteModalVisible, setNoteModalVisible] = useState(false);
@@ -524,7 +534,11 @@ const StudyLessonScreen: React.FC = () => {
     // switching lessons with a stale is_viewed flag), which previously left the
     // check empty — don't gate the UI on that boolean.
     const lessonId = currentLesson.id;
-    setViewedPoints((prev) => new Set(prev).add(lessonPointId));
+    setViewedPoints((prev) => {
+      const next = new Set(prev).add(lessonPointId);
+      viewedCacheRef.current.set(lessonId, next);
+      return next;
+    });
     try {
       const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
@@ -849,6 +863,9 @@ const StudyLessonScreen: React.FC = () => {
       subject_id: subject?.id,
       subject_title: subject?.name,
     });
+    // Persist the current lesson's checks before leaving it.
+    viewedCacheRef.current.set(currentLesson.id, viewedPoints);
+
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setCurrentLesson(lesson);
     setExpandedPoints(new Set());
@@ -856,9 +873,14 @@ const StudyLessonScreen: React.FC = () => {
     // Clear the previous lesson's saved points immediately; the effect re-fetches
     // them for the new lesson (avoids a stale-data window between switches).
     setSavedPoints(new Map());
-    setViewedPoints(
-      new Set(lesson.lessonPoints?.filter((p) => p.is_viewed).map((p) => p.id) || []),
+    // Restore the new lesson's checks: server is_viewed merged with any cached
+    // in-session checks so they survive Next/Prev.
+    const mergedViewed = new Set(
+      lesson.lessonPoints?.filter((p) => p.is_viewed).map((p) => p.id) || [],
     );
+    viewedCacheRef.current.get(lesson.id)?.forEach((id) => mergedViewed.add(id));
+    viewedCacheRef.current.set(lesson.id, mergedViewed);
+    setViewedPoints(mergedViewed);
 
     // Restore persisted interaction from cache instead of stale lesson object
     const cachedInteraction = interactionCacheRef.current.get(lesson.id) ?? null;
