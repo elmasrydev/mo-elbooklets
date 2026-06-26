@@ -23,7 +23,7 @@ import { GenericListSkeleton } from '../components/SkeletonLoader';
 import { parseISO, isToday, isYesterday, subDays, isAfter } from 'date-fns';
 
 const NotificationsScreen: React.FC = () => {
-  const { theme, spacing } = useTheme();
+  const { theme } = useTheme();
   const { typography, fontWeight } = useTypography();
   const { t } = useTranslation();
   const common = useCommonStyles();
@@ -67,7 +67,6 @@ const NotificationsScreen: React.FC = () => {
     const earlier: AppNotification[] = [];
 
     const now = new Date();
-    const yesterdayDate = subDays(now, 1);
     const lastWeekDate = subDays(now, 7);
 
     notifications.forEach((item) => {
@@ -95,16 +94,36 @@ const NotificationsScreen: React.FC = () => {
     return sections;
   }, [notifications, t]);
 
-  const renderSectionHeader = (title: string) => (
-    <View style={[styles.sectionHeader, { backgroundColor: theme.colors.background }]}>
-      <Text style={[typography('label'), fontWeight('700'), { color: theme.colors.textSecondary }]}>
-        {title}
+  const renderSection = ({
+    item: section,
+  }: {
+    item: { title: string; data: AppNotification[] };
+  }) => (
+    <View style={styles.section}>
+      <Text
+        style={[
+          typography('label'),
+          fontWeight('800'),
+          styles.glabel,
+          { color: theme.colors.textTertiary },
+        ]}
+      >
+        {section.title}
       </Text>
+      <View
+        style={[
+          styles.card,
+          { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+        ]}
+      >
+        {section.data.map((n, i) => (
+          <View key={n.id}>
+            {i > 0 && <View style={[styles.separator, { backgroundColor: theme.colors.border }]} />}
+            <NotificationItem notification={n} onPress={handlePress} />
+          </View>
+        ))}
+      </View>
     </View>
-  );
-
-  const renderItem = ({ item }: { item: AppNotification }) => (
-    <NotificationItem notification={item} onPress={handlePress} />
   );
 
   const ListEmptyComponent = useMemo(() => {
@@ -143,29 +162,6 @@ const NotificationsScreen: React.FC = () => {
     );
   }, [loading, refreshing, theme, typography, fontWeight, t]);
 
-  // Flatten for FlatList but we want headers.
-  // FlatList doesn't support section headers as well as SectionList,
-  // but let's use a trick or just use SectionList.
-  // Actually, project usually uses FlatList. I'll use a flattened array with headers as items.
-
-  const flattenedData = useMemo(() => {
-    const result: any[] = [];
-    groupedNotifications.forEach((section) => {
-      result.push({ isHeader: true, title: section.title });
-      section.data.forEach((item) => {
-        result.push(item);
-      });
-    });
-    return result;
-  }, [groupedNotifications]);
-
-  const renderFlattenedItem = ({ item }: { item: any }) => {
-    if (item.isHeader) {
-      return renderSectionHeader(item.title);
-    }
-    return renderItem({ item });
-  };
-
   if (loading && notifications.length === 0) {
     return (
       <View style={common.container}>
@@ -182,29 +178,38 @@ const NotificationsScreen: React.FC = () => {
       <UnifiedHeader title={t('notifications_center.title')} showBackButton />
 
       {notifications.length > 0 && (
-        <View style={styles.actionHeader}>
+        <View
+          style={[
+            styles.ubar,
+            { backgroundColor: theme.colors.card, borderBottomColor: theme.colors.border },
+          ]}
+        >
           <Text style={[typography('caption'), { color: theme.colors.textSecondary }]}>
-            {unreadCount} {t('notifications_center.unread_count')}
+            {unreadCount > 0
+              ? `${unreadCount} ${t('notifications_center.unread_count')}`
+              : t('notifications_center.empty_title')}
           </Text>
           <TouchableOpacity
             onPress={markAllAsRead}
-            style={[styles.markAllPill, { backgroundColor: `${theme.colors.primary}10` }]}
+            style={[
+              styles.markPill,
+              {
+                backgroundColor: `${theme.colors.primary}15`,
+                opacity: unreadCount === 0 ? 0.45 : 1,
+              },
+            ]}
             activeOpacity={0.7}
-            disabled={markingAllRead}
+            disabled={markingAllRead || unreadCount === 0}
           >
             {markingAllRead ? (
-              <ActivityIndicator
-                size="small"
-                color={theme.colors.primary}
-                style={{ marginRight: 4 }}
-              />
+              <ActivityIndicator size="small" color={theme.colors.primary} />
             ) : (
-              <Ionicons name="checkmark-done" size={14} color={theme.colors.primary} />
+              <Ionicons name="checkmark-done" size={16} color={theme.colors.primary} />
             )}
             <Text
               style={[
                 typography('caption'),
-                fontWeight('600'),
+                fontWeight('bold'),
                 { color: theme.colors.primary, marginStart: 4 },
               ]}
             >
@@ -215,10 +220,13 @@ const NotificationsScreen: React.FC = () => {
       )}
 
       <FlatList
-        data={flattenedData}
-        renderItem={renderFlattenedItem}
-        keyExtractor={(item, index) => (item.isHeader ? `header-${index}` : item.id)}
-        contentContainerStyle={[styles.listContent, flattenedData.length === 0 && { flex: 1 }]}
+        data={groupedNotifications}
+        renderItem={renderSection}
+        keyExtractor={(item) => item.title}
+        contentContainerStyle={[
+          styles.listContent,
+          groupedNotifications.length === 0 && { flex: 1 },
+        ]}
         ListEmptyComponent={ListEmptyComponent}
         onRefresh={refresh}
         refreshing={refreshing}
@@ -237,28 +245,48 @@ const NotificationsScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   listContent: {
+    paddingHorizontal: 16,
     paddingBottom: 40,
   },
-  sectionHeader: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  actionHeader: {
+  ubar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#fff',
+    paddingHorizontal: 18,
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
-  markAllPill: {
+  markPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    gap: 4,
+    paddingVertical: 9,
+    paddingHorizontal: 15,
+    borderRadius: 999,
+  },
+  section: {
+    marginTop: 6,
+  },
+  glabel: {
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    paddingHorizontal: 6,
+    paddingTop: 14,
+    paddingBottom: 8,
+  },
+  card: {
     borderRadius: 20,
+    borderWidth: 1,
+    overflow: 'hidden',
+    shadowColor: '#004A9A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  separator: {
+    height: 1,
+    width: '100%',
   },
   emptyContainer: {
     flex: 1,
@@ -267,9 +295,9 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   emptyIconContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 96,
+    height: 96,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
   },
