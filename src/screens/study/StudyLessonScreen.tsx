@@ -599,9 +599,14 @@ const StudyLessonScreen: React.FC = () => {
         }));
 
         if (fullLesson.lessonPoints) {
-          setViewedPoints(
-            new Set(fullLesson.lessonPoints.filter((p: any) => p.is_viewed).map((p: any) => p.id)),
+          // Merge server is_viewed with any in-session checks (viewedCacheRef) so
+          // fetching details for a point-less lesson doesn't drop them.
+          const merged = new Set<string>(
+            fullLesson.lessonPoints.filter((p: any) => p.is_viewed).map((p: any) => p.id as string),
           );
+          viewedCacheRef.current.get(lessonId)?.forEach((id) => merged.add(id));
+          viewedCacheRef.current.set(lessonId, merged);
+          setViewedPoints(merged);
         }
       }
     } catch (err) {
@@ -732,6 +737,10 @@ const StudyLessonScreen: React.FC = () => {
           );
           if (undo.data?.toggleSavedPointBookmark?.savedPoint) {
             sp = undo.data.toggleSavedPointBookmark.savedPoint;
+          } else if (undo.data?.toggleSavedPointBookmark?.success) {
+            // Backend toggled the bookmark off but returned no savedPoint — reflect
+            // bookmark:false locally (keep the note) so UI and backend don't desync.
+            sp = { ...sp, is_bookmarked: false };
           }
         }
         setSavedPoints((prev) => {
