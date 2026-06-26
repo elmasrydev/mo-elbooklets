@@ -78,13 +78,17 @@ src/
 - The only living, git-tracked agent docs are: **this file** + **`e2e/PARENT_JOURNEY.md`** (parent-flow map). `README.md` stays for humans.
 - Do NOT add narrative / handover / one-off status docs to git — keep them local (gitignored, like `handover_summary.md`). Don't create a second architecture doc; fold it here instead.
 
-## Review gate — run before every commit
-1. `npm run guardme` (lint + `tsc --noEmit` + jest + docs-link check) — must pass. A commit-time hook runs this automatically and blocks the commit on failure.
-2. Run the relevant guard skill on what changed and fix its findings before committing:
+## Review gate — run before every commit (agents included)
+There is **no automatic git hook**; run this gate **manually** before each commit. Any agent making code changes must run it too:
+1. **`npm run guardme`** (lint + `tsc --noEmit` + jest + docs-link check) — must pass.
+2. **`/code-review`** on the changes — address its findings before committing.
+3. Run the relevant guard skill on what changed and fix its findings:
    - **test-guard** → changed test files
    - **clean-code-guard** → changed production code
    - **docs-guard** → changed `.md` docs (catches docs-vs-code drift)
-3. Keep Prettier-only reformatting in a separate `STYLE:` commit.
+4. Keep Prettier-only reformatting in a separate `STYLE:` commit.
+
+**E2E is NOT part of this gate.** `npm run e2e:*` (Maestro) is **run manually by the developer** — it needs a device/emulator and real accounts. **Agents must never run E2E**; leave it to the developer.
 
 ## Do NOT
 - ❌ Treat this as a bare RN CLI / Shopify project (it's Expo, education domain)
