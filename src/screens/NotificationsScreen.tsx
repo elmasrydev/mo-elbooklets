@@ -105,7 +105,12 @@ const NotificationsScreen: React.FC = () => {
           typography('label'),
           fontWeight('800'),
           styles.glabel,
-          { color: theme.colors.textTertiary },
+          {
+            color: theme.colors.textTertiary,
+            textAlign: common.textAlign,
+            // letterSpacing/uppercase break Arabic's cursive joins.
+            ...(common.isRTL ? { letterSpacing: 0, textTransform: 'none' as const } : null),
+          },
         ]}
       >
         {section.title}
