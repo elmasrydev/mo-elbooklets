@@ -512,7 +512,10 @@ const styles = (theme: any, common: any, spacing: any, typography: any, fontWeig
       backgroundColor: theme.mode === 'light' ? theme.colors.surface : theme.colors.card,
       borderRadius: 16,
       paddingHorizontal: 12,
-      height: 52,
+      // Size to content (icon row + input) with vertical padding instead of a
+      // fixed height, so alignItems:'center' truly centers the text with the
+      // icons on iOS (a fixed height left the input text sitting low). ~52px tall.
+      paddingVertical: 15,
       borderWidth: 1,
       borderColor: theme.colors.border,
       ...layout.shadow,
@@ -525,7 +528,13 @@ const styles = (theme: any, common: any, spacing: any, typography: any, fontWeig
       ...typography('body'),
       color: theme.colors.text,
       ...fontWeight('500'),
-      height: '100%',
+      // Tight line-height + zero padding so the glyphs fill the input's frame
+      // and the row's alignItems:'center' lines the text up with the icons.
+      height: 24,
+      lineHeight: 22,
+      paddingVertical: 0,
+      textAlignVertical: 'center',
+      includeFontPadding: false,
     },
     clearBtn: {
       padding: 4,

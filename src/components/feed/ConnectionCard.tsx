@@ -222,12 +222,9 @@ const createStyles = (
       marginBottom: spacing.sm,
     },
     largeAvatar: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: theme.colors.surface,
-      alignItems: 'center',
-      justifyContent: 'center',
+      // Only a decorative ring + shadow — sizing and the colored-initials
+      // background come from <Avatar>. Setting backgroundColor here would hide
+      // the initials (white text on a white circle). (BKLT-268)
       borderWidth: 2,
       borderColor: theme.colors.border,
       ...layout.shadow,

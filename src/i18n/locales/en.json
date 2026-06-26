@@ -181,6 +181,12 @@
     "previous": "Previous",
     "quizzes_progress": "Pass required quizzes ({{current}}/{{total}})",
     "summary": "Summary",
+    "tab_overview": "Summary & Points",
+    "my_notes": "My Notes",
+    "no_notes": "No notes yet. Tap the note icon on a key point to add one.",
+    "dod_view_points": "View all key points",
+    "dod_pass_quizzes": "Pass required quizzes",
+    "locked_title": "Lesson Locked",
     "take_quiz": "Take Quiz",
     "test_your_knowledge": "Test your knowledge on this lesson"
   },

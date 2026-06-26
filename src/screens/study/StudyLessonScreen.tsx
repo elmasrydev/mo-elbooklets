@@ -19,6 +19,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { Video, ResizeMode } from 'expo-av';
+import { LinearGradient } from 'expo-linear-gradient';
 import { layout } from '../../config/layout';
 import * as SecureStore from 'expo-secure-store';
 import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
@@ -81,12 +82,13 @@ interface LessonDODProgress {
   isComplete: boolean;
 }
 
-const LessonVideoPlayer: React.FC<{ url: string; theme: any; spacing: any; borderRadius: any }> = ({
-  url,
-  theme,
-  spacing,
-  borderRadius,
-}) => {
+const LessonVideoPlayer: React.FC<{
+  url: string;
+  theme: any;
+  spacing: any;
+  borderRadius: any;
+  typography: any;
+}> = ({ url, theme, spacing, borderRadius, typography }) => {
   const video = React.useRef<Video>(null);
   const [status, setStatus] = useState<any>({});
   const [isMuted, setIsMuted] = useState(false);
@@ -130,7 +132,7 @@ const LessonVideoPlayer: React.FC<{ url: string; theme: any; spacing: any; borde
     }
   };
 
-  const currentVideoStyles = videoStyles(theme, spacing, borderRadius);
+  const currentVideoStyles = videoStyles(theme, spacing, borderRadius, typography);
 
   return (
     <View style={currentVideoStyles.container}>
@@ -320,6 +322,7 @@ const StudyLessonScreen: React.FC = () => {
   const [allLessons, setAllLessons] = useState<Lesson[]>(route.params?.allLessons || []);
   const [subject, setSubject] = useState(route.params?.subject);
   const { checkSubscription } = useSubscriptionGate();
+  const [activeTab, setActiveTab] = useState<'lesson' | 'notes'>('lesson');
   const [expandedPoints, setExpandedPoints] = useState<Set<string>>(new Set());
   const [dodProgress, setDodProgress] = useState<LessonDODProgress | null>(null);
   const [loadingDod, setLoadingDod] = useState(false);
@@ -346,6 +349,16 @@ const StudyLessonScreen: React.FC = () => {
   );
   const interactionCacheRef = useRef<Map<string, 'LIKE' | 'DISLIKE' | null>>(
     new Map(allLessons.map((l) => [l.id, l.myInteraction ?? null])),
+  );
+  // Cache viewed key-points per lesson so navigating Next/Prev keeps in-session
+  // checks (allLessons is loaded once with stale is_viewed flags).
+  const viewedCacheRef = useRef<Map<string, Set<string>>>(
+    new Map(
+      allLessons.map((l) => [
+        l.id,
+        new Set((l.lessonPoints || []).filter((p) => p.is_viewed).map((p) => p.id)),
+      ]),
+    ),
   );
 
   const [savedPoints, setSavedPoints] = useState<Map<string, UserSavedPoint>>(new Map());
@@ -473,10 +486,10 @@ const StudyLessonScreen: React.FC = () => {
   // Android hardware back → leave disclaimer
   useAndroidBack(handleLeaveLesson);
 
-  const togglePoint = async (pointId: string) => {
+  // Expanding/collapsing a point only toggles its explanation — it does NOT
+  // mark the point as done. "Done" is recorded solely via the check icon.
+  const togglePoint = (pointId: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    const isExpanding = !expandedPoints.has(pointId);
-
     setExpandedPoints((prev) => {
       const next = new Set(prev);
       if (next.has(pointId)) {
@@ -486,10 +499,6 @@ const StudyLessonScreen: React.FC = () => {
       }
       return next;
     });
-
-    if (isExpanding && !viewedPoints.has(pointId)) {
-      handleRecordView(pointId);
-    }
   };
 
   const fetchDodProgress = async (lessonId: string) => {
@@ -519,20 +528,27 @@ const StudyLessonScreen: React.FC = () => {
   };
 
   const handleRecordView = async (lessonPointId: string) => {
+    if (viewedPoints.has(lessonPointId)) return;
+    // Optimistically mark done so the check fills immediately. The server
+    // mutation returns false when the view was already recorded (e.g. after
+    // switching lessons with a stale is_viewed flag), which previously left the
+    // check empty — don't gate the UI on that boolean.
+    const lessonId = currentLesson.id;
+    setViewedPoints((prev) => {
+      const next = new Set(prev).add(lessonPointId);
+      viewedCacheRef.current.set(lessonId, next);
+      return next;
+    });
     try {
       const token = await SecureStore.getItemAsync('auth_token');
       if (!token) return;
 
-      const result = await tryFetchWithFallback(
+      await tryFetchWithFallback(
         `mutation RecordView($lessonPointId: ID!) { recordKeyPointView(lessonPointId: $lessonPointId) }`,
         { lessonPointId },
         token,
       );
-
-      if (result.data?.recordKeyPointView) {
-        setViewedPoints((prev) => new Set(prev).add(lessonPointId));
-        fetchDodProgress(currentLesson.id);
-      }
+      fetchDodProgress(lessonId);
     } catch (err) {
       console.error('Record view error:', err);
     }
@@ -583,9 +599,14 @@ const StudyLessonScreen: React.FC = () => {
         }));
 
         if (fullLesson.lessonPoints) {
-          setViewedPoints(
-            new Set(fullLesson.lessonPoints.filter((p: any) => p.is_viewed).map((p: any) => p.id)),
+          // Merge server is_viewed with any in-session checks (viewedCacheRef) so
+          // fetching details for a point-less lesson doesn't drop them.
+          const merged = new Set<string>(
+            fullLesson.lessonPoints.filter((p: any) => p.is_viewed).map((p: any) => p.id as string),
           );
+          viewedCacheRef.current.get(lessonId)?.forEach((id) => merged.add(id));
+          viewedCacheRef.current.set(lessonId, merged);
+          setViewedPoints(merged);
         }
       }
     } catch (err) {
@@ -698,7 +719,30 @@ const StudyLessonScreen: React.FC = () => {
       );
 
       if (result.data?.savePointNote?.success) {
-        const sp = result.data.savePointNote.savedPoint;
+        let sp = result.data.savePointNote.savedPoint;
+        const wasBookmarked = savedPoints.get(pointId)?.is_bookmarked ?? false;
+        // The backend's savePointNote auto-enables the bookmark. If the user
+        // hadn't bookmarked this point, undo it so note and bookmark stay
+        // independent and the bookmark toggle stays in sync (backend + UI agree).
+        if (sp && !wasBookmarked && sp.is_bookmarked) {
+          const undo = await tryFetchWithFallback(
+            `mutation ToggleSavedPointBookmark($lessonId: ID!, $lessonPointId: ID!) {
+              toggleSavedPointBookmark(lessonId: $lessonId, lessonPointId: $lessonPointId) {
+                success
+                savedPoint { id is_bookmarked note_content lessonPoint { id } }
+              }
+            }`,
+            { lessonId: currentLesson.id, lessonPointId: pointId },
+            token,
+          );
+          if (undo.data?.toggleSavedPointBookmark?.savedPoint) {
+            sp = undo.data.toggleSavedPointBookmark.savedPoint;
+          } else if (undo.data?.toggleSavedPointBookmark?.success) {
+            // Backend toggled the bookmark off but returned no savedPoint — reflect
+            // bookmark:false locally (keep the note) so UI and backend don't desync.
+            sp = { ...sp, is_bookmarked: false };
+          }
+        }
         setSavedPoints((prev) => {
           const next = new Map(prev);
           if (sp) {
@@ -811,6 +855,15 @@ const StudyLessonScreen: React.FC = () => {
   }, [route.params?.initialPointId, currentLesson.lessonPoints]);
 
   const handleNavigateLesson = (lesson: Lesson) => {
+    // Locked lessons aren't navigable (mirror the lessons list).
+    if (lesson?.isLocked) {
+      setLocalAlert({
+        visible: true,
+        title: t('study_lesson.locked_title', 'Lesson Locked'),
+        message: t('study_chapters.locked_lesson', 'Purchase required or restricted'),
+      });
+      return;
+    }
     analytics.trackLessonCompleted({
       lesson_id: currentLesson.id,
       lesson_title: currentLesson.name,
@@ -819,12 +872,24 @@ const StudyLessonScreen: React.FC = () => {
       subject_id: subject?.id,
       subject_title: subject?.name,
     });
+    // Persist the current lesson's checks before leaving it.
+    viewedCacheRef.current.set(currentLesson.id, viewedPoints);
+
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setCurrentLesson(lesson);
     setExpandedPoints(new Set());
-    setViewedPoints(
-      new Set(lesson.lessonPoints?.filter((p) => p.is_viewed).map((p) => p.id) || []),
+    setHighlightedPointId(null);
+    // Clear the previous lesson's saved points immediately; the effect re-fetches
+    // them for the new lesson (avoids a stale-data window between switches).
+    setSavedPoints(new Map());
+    // Restore the new lesson's checks: server is_viewed merged with any cached
+    // in-session checks so they survive Next/Prev.
+    const mergedViewed = new Set(
+      lesson.lessonPoints?.filter((p) => p.is_viewed).map((p) => p.id) || [],
     );
+    viewedCacheRef.current.get(lesson.id)?.forEach((id) => mergedViewed.add(id));
+    viewedCacheRef.current.set(lesson.id, mergedViewed);
+    setViewedPoints(mergedViewed);
 
     // Restore persisted interaction from cache instead of stale lesson object
     const cachedInteraction = interactionCacheRef.current.get(lesson.id) ?? null;
@@ -868,6 +933,11 @@ const StudyLessonScreen: React.FC = () => {
   const hasNewPoints = currentLesson.lessonPoints && currentLesson.lessonPoints.length > 0;
   const hasLegacyPoints = !hasNewPoints && currentLesson.points && currentLesson.points.length > 0;
 
+  // Key points that have a saved note — drives the "My Notes" tab.
+  const notedPoints = (currentLesson.lessonPoints || []).filter(
+    (p) => savedPoints.get(p.id)?.note_content,
+  );
+
   return (
     <View style={currentStyles.container}>
       <UnifiedHeader
@@ -899,13 +969,16 @@ const StudyLessonScreen: React.FC = () => {
         </View>
 
         {currentLesson.videoUrl && (
-          <View style={currentStyles.videoSection}>
-            <LessonVideoPlayer
-              url={currentLesson.videoUrl as string}
-              theme={theme}
-              spacing={spacing}
-              borderRadius={borderRadius}
-            />
+          <>
+            <View style={currentStyles.videoSection}>
+              <LessonVideoPlayer
+                url={currentLesson.videoUrl as string}
+                theme={theme}
+                spacing={spacing}
+                borderRadius={borderRadius}
+                typography={typography}
+              />
+            </View>
             {/* Like / Dislike */}
             <View style={currentStyles.interactionRow}>
               <TouchableOpacity
@@ -956,285 +1029,407 @@ const StudyLessonScreen: React.FC = () => {
                 </Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </>
         )}
 
-        <View style={currentStyles.section}>
-          <View style={currentStyles.sectionHeader}>
-            <View
-              style={[currentStyles.sectionIcon, { backgroundColor: theme.colors.primary + '1A' }]}
-            >
-              <Ionicons name="newspaper-outline" size={20} color={theme.colors.primary} />
-            </View>
+        {/* Tabs: Summary & Key Points | My Notes */}
+        <View style={currentStyles.tabBar}>
+          <TouchableOpacity
+            style={currentStyles.tab}
+            onPress={() => setActiveTab('lesson')}
+            activeOpacity={0.7}
+          >
             <Text
-              style={[currentStyles.sectionTitle, { color: theme.colors.primary, fontSize: 24 }]}
+              style={[currentStyles.tabText, activeTab === 'lesson' && currentStyles.tabTextActive]}
             >
-              {' '}
-              {t('study_lesson.summary')}
+              {t('study_lesson.tab_overview', 'Summary & Points')}
             </Text>
-          </View>
-          {currentLesson.summary ? (
-            <Text style={currentStyles.summaryText}>{currentLesson.summary}</Text>
-          ) : (
-            <Text style={currentStyles.noContentText}>{t('study_lesson.no_summary')}</Text>
-          )}
+            <View
+              style={[
+                currentStyles.tabUnderline,
+                activeTab !== 'lesson' && currentStyles.tabUnderlineHidden,
+              ]}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={currentStyles.tab}
+            onPress={() => setActiveTab('notes')}
+            activeOpacity={0.7}
+          >
+            <Text
+              style={[currentStyles.tabText, activeTab === 'notes' && currentStyles.tabTextActive]}
+            >
+              {t('study_lesson.my_notes', 'My Notes')}
+            </Text>
+            <View
+              style={[
+                currentStyles.tabUnderline,
+                activeTab !== 'notes' && currentStyles.tabUnderlineHidden,
+              ]}
+            />
+          </TouchableOpacity>
         </View>
 
-        <View
-          style={currentStyles.section}
-          onLayout={(e) => {
-            pointsSectionLayoutY.current = e.nativeEvent.layout.y;
-          }}
-        >
-          <View style={currentStyles.sectionHeader}>
-            <View
-              style={[currentStyles.sectionIcon, { backgroundColor: theme.colors.primary + '1A' }]}
-            >
-              <Ionicons name="star-outline" size={20} color={theme.colors.primary} />
-            </View>
-            <Text style={currentStyles.sectionTitle}> {t('study_lesson.key_points')} </Text>
-            {fetchingDetails && (
-              <ActivityIndicator
-                size="small"
-                color={theme.colors.primary}
-                style={{ marginLeft: 'auto' }}
-              />
-            )}
-          </View>
-
-          {hasNewPoints ? (
-            <View style={currentStyles.pointsList}>
-              {currentLesson.lessonPoints!.map((point) => {
-                const isExpanded = expandedPoints.has(point.id);
-                return (
-                  <TouchableOpacity
-                    key={point.id}
-                    onLayout={(e) => pointLayoutsRef.current.set(point.id, e.nativeEvent.layout.y)}
-                    style={[
-                      currentStyles.pointItem,
-                      highlightedPointId === point.id && {
-                        borderColor: theme.colors.primary,
-                        borderWidth: 2,
-                        backgroundColor: theme.colors.primary + '10',
-                      },
-                    ]}
-                    onPress={() => point.explanation && togglePoint(point.id)}
-                    activeOpacity={point.explanation ? 0.7 : 1}
-                  >
-                    <View style={currentStyles.pointMainRow}>
-                      <View style={currentStyles.pointCheckContainer}>
-                        <Ionicons
-                          name={viewedPoints.has(point.id) ? 'checkmark-circle' : 'ellipse-outline'}
-                          size={26}
-                          color={
-                            viewedPoints.has(point.id)
-                              ? theme.colors.success
-                              : theme.colors.textTertiary
-                          }
-                        />
-                      </View>
-                      <Text style={currentStyles.pointText}>{point.title}</Text>
-                    </View>
-
-                    <View style={currentStyles.pointActionsRow}>
-                      <TouchableOpacity
-                        onPress={() => handleToggleBookmark(point.id)}
-                        style={{ padding: 4 }}
-                      >
-                        <Ionicons
-                          name={
-                            savedPoints.get(point.id)?.is_bookmarked
-                              ? 'bookmark'
-                              : 'bookmark-outline'
-                          }
-                          size={20}
-                          color={
-                            savedPoints.get(point.id)?.is_bookmarked
-                              ? theme.colors.primary
-                              : theme.colors.textSecondary
-                          }
-                        />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => {
-                          setSelectedPointId(point.id);
-                          setNoteModalVisible(true);
-                        }}
-                        style={{ padding: 4 }}
-                      >
-                        <Ionicons
-                          name={
-                            savedPoints.get(point.id)?.note_content
-                              ? 'document-text'
-                              : 'document-text-outline'
-                          }
-                          size={20}
-                          color={
-                            savedPoints.get(point.id)?.note_content
-                              ? theme.colors.primary
-                              : theme.colors.textSecondary
-                          }
-                        />
-                      </TouchableOpacity>
-                      {point.explanation && (
-                        <View style={{ padding: 4 }}>
-                          <Ionicons
-                            name={isExpanded ? 'chevron-up' : 'chevron-down'}
-                            size={18}
-                            color={theme.colors.textSecondary}
-                          />
-                        </View>
-                      )}
-                    </View>
-                    {savedPoints.get(point.id)?.note_content && (
-                      <View style={currentStyles.notePreviewContainer}>
-                        <Ionicons name="pencil" size={12} color={theme.colors.primary} />
-                        <Text style={currentStyles.notePreviewText} numberOfLines={2}>
-                          {savedPoints.get(point.id)?.note_content}
-                        </Text>
-                      </View>
-                    )}
-                    {isExpanded && point.explanation && (
-                      <View style={currentStyles.explanationContainer}>
-                        <Text style={currentStyles.explanationText}>{point.explanation}</Text>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          ) : hasLegacyPoints ? (
-            <View style={currentStyles.pointsList}>
-              {currentLesson.points!.map((point, index) => (
-                <View key={index} style={currentStyles.pointItem}>
-                  <View style={currentStyles.pointHeader}>
-                    <View
-                      style={[currentStyles.pointBullet, { backgroundColor: theme.colors.primary }]}
-                    >
-                      <Ionicons name="bookmark" size={12} color={theme.colors.textOnDark} />
-                    </View>
-                    <Text style={currentStyles.pointText}>{point}</Text>
-                  </View>
+        {activeTab === 'lesson' && (
+          <>
+            <View style={currentStyles.section}>
+              <View style={currentStyles.sectionHeader}>
+                <View
+                  style={[
+                    currentStyles.sectionIcon,
+                    { backgroundColor: theme.colors.primary + '1A' },
+                  ]}
+                >
+                  <Ionicons name="newspaper-outline" size={20} color={theme.colors.primary} />
                 </View>
-              ))}
+                <Text
+                  style={[
+                    currentStyles.sectionTitle,
+                    { color: theme.colors.primary, fontSize: 20 },
+                  ]}
+                >
+                  {' '}
+                  {t('study_lesson.summary')}
+                </Text>
+              </View>
+              {currentLesson.summary ? (
+                <Text style={currentStyles.summaryText}>{currentLesson.summary}</Text>
+              ) : (
+                <Text style={currentStyles.noContentText}>{t('study_lesson.no_summary')}</Text>
+              )}
             </View>
-          ) : (
-            <Text style={currentStyles.noContentText}>{t('study_lesson.no_key_points')}</Text>
-          )}
-        </View>
 
-        {/* DOD Progress Section */}
-        <View style={currentStyles.section}>
-          <View style={currentStyles.sectionHeader}>
             <View
-              style={[currentStyles.sectionIcon, { backgroundColor: theme.colors.success + '1A' }]}
+              style={currentStyles.section}
+              onLayout={(e) => {
+                pointsSectionLayoutY.current = e.nativeEvent.layout.y;
+              }}
             >
-              <Ionicons name="shield-checkmark-outline" size={20} color={theme.colors.success} />
-            </View>
-            <Text style={[currentStyles.sectionTitle, { color: theme.colors.success }]}>
-              {t('study_lesson.definition_of_done', 'Definition of Done')}
-            </Text>
-            {dodProgress?.isComplete && (
-              <Ionicons
-                name="checkmark-circle"
-                size={24}
-                color={theme.colors.success}
-                style={{ marginLeft: 'auto' }}
-              />
-            )}
-          </View>
+              <View style={currentStyles.sectionHeader}>
+                <View
+                  style={[
+                    currentStyles.sectionIcon,
+                    { backgroundColor: theme.colors.primary + '1A' },
+                  ]}
+                >
+                  <Ionicons name="star-outline" size={20} color={theme.colors.primary} />
+                </View>
+                <Text style={currentStyles.sectionTitle}> {t('study_lesson.key_points')} </Text>
+                {fetchingDetails && (
+                  <ActivityIndicator
+                    size="small"
+                    color={theme.colors.primary}
+                    style={{ marginLeft: 'auto' }}
+                  />
+                )}
+              </View>
 
-          {loadingDod && !dodProgress ? (
-            <ActivityIndicator color={theme.colors.primary} size="small" />
-          ) : dodProgress ? (
-            <View style={currentStyles.dodContent}>
-              <View style={currentStyles.dodItem}>
-                <Ionicons
-                  name={
-                    dodProgress.keyPointsViewed >= dodProgress.keyPointsTotal
-                      ? 'checkbox'
-                      : 'square-outline'
-                  }
-                  size={20}
-                  color={
-                    dodProgress.keyPointsViewed >= dodProgress.keyPointsTotal
-                      ? theme.colors.success
-                      : theme.colors.textTertiary
-                  }
-                />
-                <Text style={currentStyles.dodText}>
-                  {t('study_lesson.key_points_progress', {
-                    current: dodProgress.keyPointsViewed,
-                    total: dodProgress.keyPointsTotal,
-                    defaultValue: `View all key points (${dodProgress.keyPointsViewed}/${dodProgress.keyPointsTotal})`,
+              {hasNewPoints ? (
+                <View style={currentStyles.pointsList}>
+                  {currentLesson.lessonPoints!.map((point, idx) => {
+                    const isExpanded = expandedPoints.has(point.id);
+                    const isViewed = viewedPoints.has(point.id);
+                    const saved = savedPoints.get(point.id);
+                    const isBookmarked = !!saved?.is_bookmarked;
+                    const hasNote = !!saved?.note_content;
+                    return (
+                      <TouchableOpacity
+                        key={point.id}
+                        onLayout={(e) =>
+                          pointLayoutsRef.current.set(point.id, e.nativeEvent.layout.y)
+                        }
+                        style={[
+                          currentStyles.kpCard,
+                          isViewed && currentStyles.kpCardDone,
+                          highlightedPointId === point.id && currentStyles.kpCardHighlight,
+                        ]}
+                        onPress={() => point.explanation && togglePoint(point.id)}
+                        activeOpacity={point.explanation ? 0.7 : 1}
+                      >
+                        <View style={currentStyles.kpTop}>
+                          <TouchableOpacity
+                            style={[currentStyles.kpCheck, isViewed && currentStyles.kpCheckDone]}
+                            onPress={() => !isViewed && handleRecordView(point.id)}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            activeOpacity={0.7}
+                          >
+                            {isViewed && <Ionicons name="checkmark" size={14} color="#fff" />}
+                          </TouchableOpacity>
+                          <Text
+                            style={[currentStyles.kpText, isViewed && currentStyles.kpTextDone]}
+                          >
+                            {point.title}
+                          </Text>
+                          {point.explanation && (
+                            <Ionicons
+                              name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                              size={18}
+                              color={theme.colors.textSecondary}
+                              style={currentStyles.kpChevron}
+                            />
+                          )}
+                        </View>
+
+                        {isExpanded && point.explanation && (
+                          <View style={currentStyles.explanationContainer}>
+                            <Text style={currentStyles.explanationText}>{point.explanation}</Text>
+                          </View>
+                        )}
+
+                        {hasNote && (
+                          <View style={currentStyles.noteBubble}>
+                            <Ionicons name="document-text" size={14} color="#CA8A04" />
+                            <Text style={currentStyles.noteBubbleText} numberOfLines={3}>
+                              {saved?.note_content}
+                            </Text>
+                          </View>
+                        )}
+
+                        <View style={currentStyles.kpActions}>
+                          <TouchableOpacity
+                            onPress={() => handleToggleBookmark(point.id)}
+                            style={[
+                              currentStyles.kpActionBtn,
+                              isBookmarked && currentStyles.kpActionBtnSaved,
+                            ]}
+                          >
+                            <Ionicons
+                              name={isBookmarked ? 'bookmark' : 'bookmark-outline'}
+                              size={14}
+                              color={
+                                isBookmarked ? theme.colors.warning : theme.colors.textSecondary
+                              }
+                            />
+                            <Text
+                              style={[
+                                currentStyles.kpActionText,
+                                isBookmarked && { color: theme.colors.warning },
+                              ]}
+                            >
+                              {isBookmarked
+                                ? t('study_lesson.saved', 'Saved')
+                                : t('study_lesson.save', 'Save')}
+                            </Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => {
+                              setSelectedPointId(point.id);
+                              setNoteModalVisible(true);
+                            }}
+                            style={[
+                              currentStyles.kpActionBtn,
+                              hasNote && currentStyles.kpActionBtnNote,
+                            ]}
+                          >
+                            <Ionicons
+                              name={hasNote ? 'document-text' : 'document-text-outline'}
+                              size={14}
+                              color={hasNote ? theme.colors.primary : theme.colors.textSecondary}
+                            />
+                            <Text
+                              style={[
+                                currentStyles.kpActionText,
+                                hasNote && { color: theme.colors.primary },
+                              ]}
+                            >
+                              {hasNote
+                                ? t('study_lesson.edit_note', 'Edit note')
+                                : t('study_lesson.add_note', 'Note')}
+                            </Text>
+                          </TouchableOpacity>
+                          <Text style={currentStyles.kpNum}>
+                            {idx + 1} {t('study_lesson.of', 'of')}{' '}
+                            {currentLesson.lessonPoints!.length}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
                   })}
-                </Text>
-              </View>
-              <View style={currentStyles.dodItem}>
-                <Ionicons
-                  name={
-                    dodProgress.quizzesPassed >= dodProgress.quizzesRequired
-                      ? 'checkbox'
-                      : 'square-outline'
-                  }
-                  size={20}
-                  color={
-                    dodProgress.quizzesPassed >= dodProgress.quizzesRequired
-                      ? theme.colors.success
-                      : theme.colors.textTertiary
-                  }
-                />
-                <Text style={currentStyles.dodText}>
-                  {t('study_lesson.quizzes_progress', {
-                    current: dodProgress.quizzesPassed,
-                    total: dodProgress.quizzesRequired,
-                    defaultValue: `Pass required quizzes (${dodProgress.quizzesPassed}/${dodProgress.quizzesRequired})`,
-                  })}
-                </Text>
-              </View>
-              <View style={currentStyles.dodProgressContainer}>
-                <View style={currentStyles.dodProgressBar}>
-                  <View
-                    style={[
-                      currentStyles.dodProgressFill,
-                      {
-                        width: `${dodProgress.totalProgress}%`,
-                        backgroundColor: dodProgress.isComplete
-                          ? theme.colors.success
-                          : theme.colors.primary,
-                      },
-                    ]}
+                </View>
+              ) : hasLegacyPoints ? (
+                <View style={currentStyles.pointsList}>
+                  {currentLesson.points!.map((point, index) => (
+                    <View key={index} style={currentStyles.pointItem}>
+                      <View style={currentStyles.pointHeader}>
+                        <View
+                          style={[
+                            currentStyles.pointBullet,
+                            { backgroundColor: theme.colors.primary },
+                          ]}
+                        >
+                          <Ionicons name="bookmark" size={12} color={theme.colors.textOnDark} />
+                        </View>
+                        <Text style={currentStyles.pointText}>{point}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <Text style={currentStyles.noContentText}>{t('study_lesson.no_key_points')}</Text>
+              )}
+            </View>
+
+            {/* DOD Progress Section */}
+            <View style={currentStyles.section}>
+              <View style={currentStyles.sectionHeader}>
+                <View
+                  style={[
+                    currentStyles.sectionIcon,
+                    { backgroundColor: theme.colors.success + '1A' },
+                  ]}
+                >
+                  <Ionicons
+                    name="shield-checkmark-outline"
+                    size={20}
+                    color={theme.colors.success}
                   />
                 </View>
-                <Text style={currentStyles.dodPercentText}>
-                  {Math.round(dodProgress.totalProgress)}%
+                <Text style={[currentStyles.sectionTitle, { color: theme.colors.success }]}>
+                  {t('study_lesson.definition_of_done', 'Definition of Done')}
+                </Text>
+                {dodProgress?.isComplete && (
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={24}
+                    color={theme.colors.success}
+                    style={{ marginLeft: 'auto' }}
+                  />
+                )}
+              </View>
+
+              {loadingDod && !dodProgress ? (
+                <ActivityIndicator color={theme.colors.primary} size="small" />
+              ) : dodProgress ? (
+                <View style={currentStyles.dodContent}>
+                  {[
+                    {
+                      label: t('study_lesson.dod_view_points', 'View all key points'),
+                      current: dodProgress.keyPointsViewed,
+                      total: dodProgress.keyPointsTotal,
+                    },
+                    {
+                      label: t('study_lesson.dod_pass_quizzes', 'Pass required quizzes'),
+                      current: dodProgress.quizzesPassed,
+                      total: dodProgress.quizzesRequired,
+                    },
+                  ].map((row) => {
+                    const done = row.total > 0 && row.current >= row.total;
+                    const started = row.current > 0;
+                    // green when done, amber/loading when in progress, neutral when not started
+                    const stateColor = done
+                      ? theme.colors.success
+                      : started
+                        ? theme.colors.warning
+                        : theme.colors.textTertiary;
+                    return (
+                      <View key={row.label} style={currentStyles.dodItem}>
+                        <Ionicons
+                          name={
+                            done
+                              ? 'checkmark-circle'
+                              : started
+                                ? 'hourglass-outline'
+                                : 'ellipse-outline'
+                          }
+                          size={20}
+                          color={stateColor}
+                        />
+                        <Text style={currentStyles.dodText}>{row.label}</Text>
+                        <View
+                          style={[currentStyles.dodPill, { backgroundColor: stateColor + '1A' }]}
+                        >
+                          <Text style={[currentStyles.dodPillText, { color: stateColor }]}>
+                            {row.current} / {row.total}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+                  <View style={currentStyles.dodProgressContainer}>
+                    <View style={currentStyles.dodProgressBar}>
+                      <LinearGradient
+                        colors={['#004A9A', '#3B82F6']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={[
+                          currentStyles.dodProgressFill,
+                          { width: `${dodProgress.totalProgress}%` },
+                        ]}
+                      />
+                    </View>
+                    <Text style={currentStyles.dodPercentText}>
+                      {Math.round(dodProgress.totalProgress)}%
+                    </Text>
+                  </View>
+                </View>
+              ) : (
+                <Text style={currentStyles.noContentText}>
+                  {t('study_lesson.no_dod_data', 'No progress data available')}
+                </Text>
+              )}
+            </View>
+
+            {/* Take Quiz CTA */}
+            {subject && (
+              <View style={currentStyles.takeQuizSection}>
+                <View style={currentStyles.takeQuizDivider} />
+                <View style={currentStyles.takeQuizContent}>
+                  <Ionicons name="school-outline" size={28} color={theme.colors.primary} />
+                  <Text style={currentStyles.takeQuizLabel}>
+                    {t('study_lesson.test_your_knowledge')}
+                  </Text>
+                  <AppButton
+                    title={t('study_lesson.take_quiz')}
+                    onPress={handleTakeQuiz}
+                    size="lg"
+                    icon={<Ionicons name="play" size={20} color={theme.colors.textOnDark} />}
+                    iconPosition={isRTL ? 'left' : 'right'}
+                  />
+                </View>
+              </View>
+            )}
+          </>
+        )}
+
+        {activeTab === 'notes' && (
+          <View style={currentStyles.notesTab}>
+            {notedPoints.length > 0 ? (
+              notedPoints.map((point) => (
+                <TouchableOpacity
+                  key={point.id}
+                  style={currentStyles.noteCard}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setSelectedPointId(point.id);
+                    setNoteModalVisible(true);
+                  }}
+                >
+                  <Text style={currentStyles.noteCardTitle} numberOfLines={3}>
+                    {point.title}
+                  </Text>
+                  <View style={currentStyles.noteCardBubble}>
+                    <Ionicons name="pencil" size={13} color={theme.colors.primary} />
+                    <Text style={currentStyles.noteCardText}>
+                      {savedPoints.get(point.id)?.note_content}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))
+            ) : (
+              <View style={currentStyles.notesEmpty}>
+                <Ionicons
+                  name="document-text-outline"
+                  size={40}
+                  color={theme.colors.textTertiary}
+                />
+                <Text style={currentStyles.noContentText}>
+                  {t(
+                    'study_lesson.no_notes',
+                    'No notes yet. Tap the note icon on a key point to add one.',
+                  )}
                 </Text>
               </View>
-            </View>
-          ) : (
-            <Text style={currentStyles.noContentText}>
-              {t('study_lesson.no_dod_data', 'No progress data available')}
-            </Text>
-          )}
-        </View>
-
-        {/* Take Quiz CTA */}
-        {subject && (
-          <View style={currentStyles.takeQuizSection}>
-            <View style={currentStyles.takeQuizDivider} />
-            <View style={currentStyles.takeQuizContent}>
-              <Ionicons name="school-outline" size={28} color={theme.colors.primary} />
-              <Text style={currentStyles.takeQuizLabel}>
-                {t('study_lesson.test_your_knowledge')}
-              </Text>
-              <AppButton
-                title={t('study_lesson.take_quiz')}
-                onPress={handleTakeQuiz}
-                size="lg"
-                icon={<Ionicons name="play" size={20} color={theme.colors.textOnDark} />}
-                iconPosition={isRTL ? 'left' : 'right'}
-              />
-            </View>
+            )}
           </View>
         )}
       </ScrollView>
@@ -1316,28 +1511,28 @@ const StudyLessonScreen: React.FC = () => {
 const styles = (
   theme: any,
   isRTL: boolean,
-  typography: any,
+  baseTypography: any,
   fontWeight: any,
   insets: { top: number; bottom: number },
   spacing: any,
   borderRadius: any,
   contentAlign: 'left' | 'right',
   contentRowDirection: 'row' | 'row-reverse',
-) =>
-  StyleSheet.create({
+) => {
+  // Slightly smaller type across the whole lesson screen.
+  const typography = (style: any, weight?: any, forceArabic?: any) => {
+    const o: any = baseTypography(style, weight, forceArabic);
+    return o?.fontSize ? { ...o, fontSize: o.fontSize - 1.5 } : o;
+  };
+  return StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: theme.colors.background,
     },
     titleBreadcrumbContainer: {
-      marginBottom: spacing.sectionGap,
+      // Title + breadcrumb sit on the page (no card) like the design.
+      marginBottom: spacing.md,
       alignItems: 'flex-start',
-      backgroundColor: theme.colors.card,
-      padding: spacing.md,
-      borderRadius: borderRadius.xl,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      ...layout.shadow,
     },
     breadcrumbRow: {
       flexDirection: 'row',
@@ -1360,7 +1555,7 @@ const styles = (
     },
     chapterBadge: {
       ...typography('caption'),
-      fontSize: 13,
+      fontSize: 12,
       ...fontWeight('700'),
       color: theme.colors.primary,
       textAlign: contentAlign,
@@ -1368,8 +1563,8 @@ const styles = (
     },
     mainTitle: {
       ...typography('h2'),
-      fontSize: 24,
-      lineHeight: 32,
+      fontSize: 21,
+      lineHeight: 28,
       ...fontWeight('800'),
       color: theme.colors.text,
       textAlign: contentAlign,
@@ -1406,7 +1601,7 @@ const styles = (
       color: theme.colors.text,
     },
     videoSection: {
-      marginBottom: spacing.sectionGap,
+      marginBottom: spacing.sm,
       borderRadius: borderRadius.lg,
       overflow: 'hidden',
       backgroundColor: '#000',
@@ -1414,17 +1609,17 @@ const styles = (
     },
     interactionRow: {
       flexDirection: 'row',
-      marginTop: spacing.sm,
-      justifyContent: 'space-between',
-      paddingHorizontal: spacing.xs,
-      paddingBottom: spacing.xs,
+      gap: 8,
+      marginBottom: spacing.sectionGap,
     },
     interactionButton: {
+      flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'center',
       paddingVertical: 9,
-      paddingHorizontal: 20,
-      borderRadius: 22,
+      paddingHorizontal: 16,
+      borderRadius: borderRadius.md,
       borderWidth: 1.5,
       gap: 8,
     },
@@ -1455,6 +1650,73 @@ const styles = (
       color: theme.colors.textSecondary,
       textAlign: contentAlign,
     },
+    tabBar: {
+      flexDirection: 'row',
+      borderBottomWidth: 2,
+      borderBottomColor: theme.colors.border,
+      marginBottom: spacing.md,
+    },
+    tab: {
+      flex: 1,
+      alignItems: 'center',
+      paddingVertical: spacing.sm,
+    },
+    tabText: {
+      ...typography('caption'),
+      ...fontWeight('bold'),
+      color: theme.colors.textTertiary,
+    },
+    tabTextActive: {
+      color: theme.colors.primary,
+    },
+    tabUnderline: {
+      position: 'absolute',
+      bottom: -2,
+      left: 0,
+      right: 0,
+      height: 2,
+      borderRadius: 99,
+      backgroundColor: theme.colors.primary,
+    },
+    tabUnderlineHidden: {
+      backgroundColor: 'transparent',
+    },
+    notesTab: {
+      gap: spacing.sm,
+    },
+    notesEmpty: {
+      alignItems: 'center',
+      paddingVertical: spacing.xl,
+      gap: spacing.sm,
+    },
+    noteCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: borderRadius.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      padding: spacing.md,
+      gap: spacing.sm,
+    },
+    noteCardTitle: {
+      ...typography('bodySmall'),
+      ...fontWeight('bold'),
+      color: theme.colors.text,
+      textAlign: contentAlign,
+    },
+    noteCardBubble: {
+      flexDirection: contentRowDirection,
+      alignItems: 'flex-start',
+      gap: 6,
+      backgroundColor: theme.colors.primary + '0D',
+      borderRadius: borderRadius.md,
+      padding: spacing.sm,
+    },
+    noteCardText: {
+      ...typography('caption'),
+      color: theme.colors.textSecondary,
+      flex: 1,
+      textAlign: contentAlign,
+    },
     pointsList: {
       gap: spacing.sm,
     },
@@ -1470,21 +1732,6 @@ const styles = (
       flexDirection: contentRowDirection,
       alignItems: 'center',
       gap: 7,
-    },
-    pointMainRow: {
-      flexDirection: contentRowDirection,
-      alignItems: 'flex-start',
-      gap: 7,
-    },
-    pointCheckContainer: {
-      marginTop: 2,
-    },
-    pointActionsRow: {
-      flexDirection: contentRowDirection,
-      justifyContent: 'flex-end',
-      alignItems: 'center',
-      gap: spacing.sm,
-      marginTop: spacing.xs,
     },
     pointBullet: {
       width: 20,
@@ -1513,10 +1760,116 @@ const styles = (
     },
     explanationText: {
       ...typography('caption'),
-      fontSize: 15,
-      lineHeight: 20,
+      fontSize: 14,
+      lineHeight: 19,
       color: theme.colors.textSecondary,
       textAlign: contentAlign,
+    },
+    // Mockup-style key-point cards
+    kpCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: borderRadius.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderStartWidth: 3.5,
+      borderStartColor: theme.colors.border,
+      padding: spacing.md,
+      ...layout.shadow,
+    },
+    kpCardDone: {
+      backgroundColor: theme.colors.success + '0D',
+      borderStartColor: theme.colors.success,
+    },
+    kpCardHighlight: {
+      borderColor: theme.colors.primary,
+      borderWidth: 2,
+      borderStartColor: theme.colors.primary,
+      backgroundColor: theme.colors.primary + '0D',
+    },
+    kpTop: {
+      flexDirection: contentRowDirection,
+      alignItems: 'flex-start',
+      gap: 10,
+    },
+    kpCheck: {
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      borderWidth: 2,
+      borderColor: theme.colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 1,
+      flexShrink: 0,
+    },
+    kpCheckDone: {
+      backgroundColor: theme.colors.success,
+      borderColor: theme.colors.success,
+    },
+    kpText: {
+      flex: 1,
+      ...typography('bodySmall'),
+      ...fontWeight('bold'),
+      color: theme.colors.text,
+      textAlign: contentAlign,
+      lineHeight: 21,
+    },
+    kpTextDone: {
+      color: theme.colors.textSecondary,
+    },
+    kpChevron: {
+      marginTop: 2,
+      flexShrink: 0,
+    },
+    noteBubble: {
+      flexDirection: contentRowDirection,
+      alignItems: 'flex-start',
+      gap: 6,
+      backgroundColor: '#FEF9C3',
+      borderRadius: borderRadius.md,
+      padding: spacing.sm,
+      marginTop: spacing.sm,
+    },
+    noteBubbleText: {
+      flex: 1,
+      ...typography('caption'),
+      color: '#78350F',
+      textAlign: contentAlign,
+    },
+    kpActions: {
+      flexDirection: contentRowDirection,
+      alignItems: 'center',
+      gap: 6,
+      marginTop: spacing.sm,
+      paddingTop: spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.border,
+    },
+    kpActionBtn: {
+      flexDirection: contentRowDirection,
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 8,
+      backgroundColor: theme.colors.background,
+    },
+    kpActionBtnSaved: {
+      backgroundColor: theme.colors.warning + '1A',
+    },
+    kpActionBtnNote: {
+      backgroundColor: theme.colors.primary + '14',
+    },
+    kpActionText: {
+      ...typography('label'),
+      ...fontWeight('bold'),
+      color: theme.colors.textSecondary,
+    },
+    kpNum: {
+      ...typography('label'),
+      ...fontWeight('bold'),
+      color: theme.colors.textTertiary,
+      marginStart: 'auto',
     },
     takeQuizSection: {
       marginTop: spacing.lg,
@@ -1557,6 +1910,15 @@ const styles = (
       flex: 1,
       textAlign: contentAlign,
     },
+    dodPill: {
+      paddingHorizontal: 10,
+      paddingVertical: 2,
+      borderRadius: 999,
+    },
+    dodPillText: {
+      ...typography('label'),
+      ...fontWeight('bold'),
+    },
     dodProgressContainer: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -1582,27 +1944,10 @@ const styles = (
       textAlign: 'center',
       marginBottom: 3,
     },
-    notePreviewContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      marginTop: spacing.xs,
-      paddingHorizontal: spacing.md,
-      paddingVertical: 6,
-      backgroundColor: theme.colors.primary + '0D',
-      borderRadius: borderRadius.sm,
-      marginHorizontal: spacing.md,
-      marginBottom: spacing.xs,
-    },
-    notePreviewText: {
-      ...typography('caption'),
-      color: theme.colors.textSecondary,
-      fontStyle: '',
-      flex: 1,
-    },
   });
+};
 
-const videoStyles = (theme: any, spacing: any, borderRadius: any) =>
+const videoStyles = (theme: any, spacing: any, borderRadius: any, typography: any) =>
   StyleSheet.create({
     container: {
       width: '100%',
@@ -1641,9 +1986,8 @@ const videoStyles = (theme: any, spacing: any, borderRadius: any) =>
       marginTop: 4,
     },
     timeText: {
+      ...typography('label'),
       color: '#fff',
-      fontSize: 10,
-      fontWeight: '600',
     },
     mainButtonsRow: {
       flexDirection: 'row',
