@@ -29,6 +29,7 @@ import { NotificationHandler } from './src/components/NotificationHandler';
 import { ForceUpdateProvider } from './src/context/ForceUpdateContext';
 import ForceUpdateModal from './src/components/ForceUpdateModal';
 import MaintenanceModal from './src/components/MaintenanceModal';
+import BokiFloatingButton from './src/components/boki/BokiFloatingButton';
 
 import * as Updates from 'expo-updates';
 
@@ -192,6 +193,7 @@ export default function App() {
                         <NotificationHandler />
                       </ErrorBoundary>
                     </NavigationContainer>
+                    <BokiFloatingButton navigationRef={navigationRef} />
                     <ForceUpdateModal />
                     <MaintenanceModal />
                     <GlobalModalHandler />
