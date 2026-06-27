@@ -45,12 +45,12 @@ appId: com.elbooklets.app
           id: "confirm-modal-ok"
 - extendedWaitUntil:
     visible:
-      id: "parent-dashboard-add-child-fab"
+      id: "parent-tab-add-child"
     timeout: 15000
 
 # Open the add-child modal and send a request to the student's mobile
 - tapOn:
-    id: "parent-dashboard-add-child-fab"
+    id: "parent-tab-add-child"
 - assertVisible:
     id: "parent-dashboard-child-mobile-input"
 - tapOn:
@@ -70,7 +70,7 @@ appId: com.elbooklets.app
     id: "confirm-modal-ok"
 - extendedWaitUntil:
     visible:
-      id: "parent-dashboard-add-child-fab"
+      id: "parent-tab-add-child"
     timeout: 10000
 - takeScreenshot: e2e/screenshots/link-request-sent
 
@@ -213,7 +213,7 @@ appId: com.elbooklets.app
           id: "confirm-modal-ok"
 - extendedWaitUntil:
     visible:
-      id: "parent-dashboard-add-child-fab"
+      id: "parent-tab-add-child"
     timeout: 15000
 
 # Pull to refresh so the freshly-accepted child shows, then assert the child card

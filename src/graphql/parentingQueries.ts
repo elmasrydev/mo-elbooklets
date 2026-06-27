@@ -119,7 +119,9 @@ export const PARENT_CANCEL_LINK_REQUEST_MUTATION = gql`
   }
 `;
 
-export const GET_CHILD_DASHBOARD_QUERY = gql`
+// Raw string (not a gql document) — the parent dashboard fetches via
+// `tryFetchWithFallback`, which takes the query as a plain string.
+export const GET_CHILD_DASHBOARD_QUERY = `
   query GetChildDashboard($childId: ID!) {
     childDashboard(child_id: $childId) {
       child {
@@ -136,36 +138,11 @@ export const GET_CHILD_DASHBOARD_QUERY = gql`
       }
 
       recent_activity {
-        quiz_name
         subject_name
         score
         total_questions
         is_passed
         completed_at
-      }
-
-      wheel_of_success {
-        overall_percentage
-        subject_metrics {
-          subject_name
-          score
-        }
-      }
-
-      today_schedule {
-        date
-        is_school_day
-        entries {
-          id
-          subject {
-            name
-          }
-          lesson_goal
-          quiz_goal
-          lessons_viewed
-          quizzes_solved
-          is_completed
-        }
       }
     }
   }

@@ -177,7 +177,7 @@ const ParentSettingsScreen: React.FC = () => {
 
   return (
     <View style={currentStyles.mainContainer}>
-      <UnifiedHeader title={t('profile_screen.header_title')} showBackButton={true} />
+      <UnifiedHeader title={t('profile_screen.header_title')} showBackButton={false} />
 
       <ScrollView
         style={currentStyles.scrollView}
