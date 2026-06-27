@@ -59,6 +59,6 @@ appId: com.elbooklets.app
 # Parents land directly on ParentDashboard (no OTP)
 - extendedWaitUntil:
     visible:
-      id: "parent-dashboard-add-child-fab"
+      id: "parent-tab-add-child"
     timeout: 15000
 - takeScreenshot: e2e/screenshots/parent-login-result

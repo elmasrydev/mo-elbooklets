@@ -29,6 +29,9 @@ export const useParentDashboard = () => {
   const [incomingRequests, setIncomingRequests] = useState<LinkRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  // Separate from `loading` so submitting the add-child modal never flips the
+  // dashboard's empty-state spinner (and vice-versa).
+  const [adding, setAdding] = useState(false);
   const [respondingId, setRespondingId] = useState<string | null>(null);
   const { parentUser } = useAuth();
   const { t } = useTranslation();
@@ -97,7 +100,7 @@ export const useParentDashboard = () => {
   const handleRefresh = () => fetchDashboardData(true);
 
   const handleAddChild = async (childMobile: string) => {
-    setLoading(true);
+    setAdding(true);
     try {
       const result = await tryFetchWithFallback(
         `
@@ -132,7 +135,7 @@ export const useParentDashboard = () => {
       });
       return false;
     } finally {
-      setLoading(false);
+      setAdding(false);
     }
   };
 
@@ -233,6 +236,7 @@ export const useParentDashboard = () => {
     incomingRequests,
     loading,
     refreshing,
+    adding,
     respondingId,
     handleRefresh,
     handleRespondToLink,

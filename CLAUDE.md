@@ -10,7 +10,7 @@ elsewhere says "don't use Expo modules", it is for a different project — ignor
 
 There are **two user roles** with parallel auth flows:
 - **Student**: Onboarding → Register/Login → OTP (WhatsApp) → Home tabs
-- **Parent**: Onboarding (parent tab) → ParentRegister/ParentLogin → ParentDashboard directly (**no OTP, no profile-completion prompt for parents**). Parent links a child via the dashboard add-child modal; the **student approves** in Profile → Parental Linking. See `e2e/PARENT_JOURNEY.md` for the full map.
+- **Parent**: Onboarding (parent tab) → ParentRegister/ParentLogin → Parent **bottom tabs** directly (**no OTP, no profile-completion prompt for parents**). The parent area is a 4-tab bottom navigator (`ParentTabNavigator`): **Dashboard** (children list), **Requests** (link requests), **Add Child** (a modal-trigger tab — `tabPress` opens the shared add-child popup, it is not a screen), **Settings** (parent settings — moved here from the old header gear). Tapping a child opens `ChildDetailsScreen`. Shared parent data lives in `ParentDashboardContext` (wraps `useParentDashboard`). Parent links a child via the add-child modal; the **student approves** in Profile → Parental Linking. See `e2e/PARENT_JOURNEY.md` for the full map.
 
 ## Environments
 Three backends, selected at runtime via the API URL Switcher (debug builds only):

@@ -47,13 +47,13 @@ appId: com.elbooklets.app
             id: "confirm-modal-ok"
           timeout: 3000
 
-# Parents land on ParentDashboard — open settings via the header gear, then log out
+# Parents land on the parent tabs — open settings via the Settings tab, then log out
 - extendedWaitUntil:
     visible:
-      id: "parent-dashboard-settings-button"
+      id: "parent-tab-settings"
     timeout: 15000
 - tapOn:
-    id: "parent-dashboard-settings-button"
+    id: "parent-tab-settings"
 - scrollUntilVisible:
     element:
       id: "parent-settings-logout-item"
