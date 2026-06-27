@@ -13,7 +13,7 @@
 | Profile-completion prompt | Yes (`profile-completion-skip-button`) | **NO — never** ✅ (`AppNavigator.tsx:91` excludes parents) |
 | Registration success screen | Possible | No (non-parent only) ✅ |
 | Post-auth landing | Home tabs (`tab-home`) | `ParentDashboardScreen` ✅ |
-| Logout location | Profile tab → scroll → `profile-logout-item` | Dashboard → settings gear → `parent-settings-logout-item` ✅ |
+| Logout location | Profile tab → scroll → `profile-logout-item` | Settings tab → scroll → `parent-settings-logout-item` ✅ |
 
 ## Parent-side journey
 
@@ -25,15 +25,13 @@ Onboarding (onboarding-parent-tab)
  │    └─ submit → ParentDashboard
  └─ Forgot → ParentForgotPassword
 
-ParentDashboard
- ├─ header settings gear → ParentSettings → parent-settings-logout-item → confirm-modal-ok → Onboarding
- ├─ FAB (person-add icon) → Add-Child Modal (native Modal)
+Parent bottom tabs (ParentTabNavigator): Dashboard · Requests · Add Child · Settings
+ ├─ Dashboard tab (parent-tab-dashboard) → children list → tap child card → ChildDetailsScreen (childDashboard data)
+ ├─ Requests tab (parent-tab-requests) → incoming Accept/Decline (ParentRespondToLink), outgoing Cancel (ParentCancelLinkRequest)
+ ├─ Add Child tab (parent-tab-add-child) → opens Add-Child Modal (also openable from the dashboard "add another child" button)
  │    ├─ mobile input (11-digit, digits only)
- │    └─ confirm → ParentSendLinkRequest mutation → request shows as PENDING
- ├─ Incoming link requests section → Accept / Decline buttons (ParentRespondToLink)
- ├─ Outgoing pending requests → Cancel (ParentCancelLinkRequest)
- └─ children list → tap child card → navigate('ChildDetailsScreen') — screen NOT IMPLEMENTED yet
-    (per product owner: ignore for now; do not test or "fix" this navigation)
+ │    └─ confirm → ParentSendLinkRequest mutation → request shows as PENDING in the Requests tab
+ └─ Settings tab (parent-tab-settings) → scroll → parent-settings-logout-item → confirm-modal-ok → Onboarding
 ```
 
 ## Student-side approval (required to complete a link!)
@@ -53,13 +51,14 @@ All now exist in the code and are used by flows 04/05/08/09:
 
 | Screen | Element | testID |
 |---|---|---|
-| ParentDashboard | settings gear (header) | `parent-dashboard-settings-button` |
-| ParentDashboard | add-child FAB | `parent-dashboard-add-child-fab` |
-| ParentDashboard | modal mobile input | `parent-dashboard-child-mobile-input` |
-| ParentDashboard | modal confirm btn | `parent-dashboard-add-child-confirm` |
-| ParentDashboard | modal cancel btn | `parent-dashboard-add-child-cancel` |
-| ParentDashboard | request card actions | `parent-dashboard-request-accept` / `-decline` / `-cancel` |
+| Parent tabs | bottom tabs | `parent-tab-dashboard` / `parent-tab-requests` / `parent-tab-add-child` / `parent-tab-settings` |
+| ParentDashboard | "add another child" button | `parent-dashboard-add-another-child` |
+| Add-Child modal | mobile input | `parent-dashboard-child-mobile-input` |
+| Add-Child modal | confirm btn | `parent-dashboard-add-child-confirm` |
+| Add-Child modal | cancel btn | `parent-dashboard-add-child-cancel` |
+| Requests tab | request card actions | `parent-dashboard-request-accept` / `-decline` / `-cancel` |
 | ParentDashboard | empty state / child card | `parent-dashboard-empty` / `parent-dashboard-child-card` |
+| ChildDetailsScreen | hero / empty / error | `child-details-hero` / `child-details-empty` / `child-details-error` |
 | ProfileScreen (student) | "Parental Linking" row | `profile-parent-linking-item` |
 | ParentSlotCard (student) | accept/decline/cancel/accepted, suffixed by slot | `parent-linking-accept-{1,2}` / `-decline-` / `-cancel-` / `-accepted-` |
 
@@ -68,7 +67,7 @@ All now exist in the code and are used by flows 04/05/08/09:
 All three were fixed when flows 04/05/08 were wired up and verified green on PRS:
 
 1. ~~04/05/08 asserted `parent-settings-logout-item` right after auth~~ → now assert the
-   dashboard FAB after auth; logout routes via the dashboard gear → settings → scroll → logout.
+   add-child tab after auth; logout routes via the Settings tab → scroll → logout.
 2. ~~08 ran `setup-environment` twice~~ → duplicate call removed.
 3. ~~04 used a fixed email~~ → `run_maestro.py` now generates a unique parent email per run.
 

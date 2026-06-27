@@ -79,10 +79,10 @@ appId: com.elbooklets.app
 - runFlow:
     when:
       visible:
-        id: "parent-dashboard-settings-button"
+        id: "parent-tab-settings"
     commands:
       - tapOn:
-          id: "parent-dashboard-settings-button"
+          id: "parent-tab-settings"
       - scrollUntilVisible:
           element:
             id: "parent-settings-logout-item"

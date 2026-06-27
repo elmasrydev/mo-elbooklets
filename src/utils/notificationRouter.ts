@@ -32,8 +32,11 @@ export const handleNotificationRoute = (
         // A student received a link request from a parent.
         navigation.navigate('ParentLinking');
       } else {
-        // A parent received a new link request from a student.
-        navigation.navigate('ParentDashboard');
+        // A parent received a new link request from a student → Requests tab.
+        navigation.navigate('ParentMain', {
+          screen: 'ParentMainTabs',
+          params: { screen: 'ParentRequests' },
+        });
       }
       return true;
 
@@ -44,7 +47,10 @@ export const handleNotificationRoute = (
         navigation.navigate('ParentLinking');
       } else {
         // Student accepted the parent's request → parent opens dashboard to see the new child.
-        navigation.navigate('ParentDashboard');
+        navigation.navigate('ParentMain', {
+          screen: 'ParentMainTabs',
+          params: { screen: 'ParentDashboard' },
+        });
       }
       return true;
 
@@ -54,7 +60,10 @@ export const handleNotificationRoute = (
         navigation.navigate('ParentLinking');
       } else {
         // Student declined the parent's request → parent opens dashboard.
-        navigation.navigate('ParentDashboard');
+        navigation.navigate('ParentMain', {
+          screen: 'ParentMainTabs',
+          params: { screen: 'ParentDashboard' },
+        });
       }
       return true;
 

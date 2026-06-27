@@ -6,6 +6,12 @@
 
 export type ColorTheme = 'blue' | 'green' | 'purple' | 'orange';
 
+// Brand hero/banner gradient (navy → primary → blue) used by the parent screens.
+export const PARENT_HERO_GRADIENT: [string, string, string] = ['#1E3063', '#004A9A', '#1E54B8'];
+
+// Faint brand-tinted hairline for separators/dividers (design `--line`).
+export const HAIRLINE_BLUE = 'rgba(0, 74, 154, 0.08)';
+
 // Brand & Palette Colors from UI Guide
 export const COLORS = {
   // Brand Colors

@@ -11,8 +11,7 @@ import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import ParentLoginScreen from '../screens/ParentLoginScreen';
 import ParentRegisterScreen from '../screens/ParentRegisterScreen';
 import ParentForgotPasswordScreen from '../screens/ParentForgotPasswordScreen';
-import ParentDashboardScreen from '../screens/ParentDashboardScreen';
-import ParentSettingsScreen from '../screens/ParentSettingsScreen';
+import ParentTabNavigator from './ParentTabNavigator';
 import InternalSettingsScreen from '../screens/InternalSettingsScreen';
 import OTPVerificationScreen from '../screens/OTPVerificationScreen';
 import ProfileCompletionPrompt from './ProfileCompletionPrompt';
@@ -46,18 +45,7 @@ const AppNavigator: React.FC = () => {
         {isAuthenticated ? (
           userRole === 'parent' ? (
             <RootStack.Group>
-              <RootStack.Screen name="ParentDashboard" component={ParentDashboardScreen} />
-              <RootStack.Screen name="ParentSettings" component={ParentSettingsScreen} />
-              <RootStack.Screen name="InternalSettings" component={InternalSettingsScreen} />
-              <RootStack.Screen
-                name="Notifications"
-                component={require('../screens/NotificationsScreen').default}
-              />
-              <RootStack.Screen name="FAQs" component={require('../screens/FAQScreen').default} />
-              <RootStack.Screen
-                name="ContactUs"
-                component={require('../screens/ContactUsScreen').default}
-              />
+              <RootStack.Screen name="ParentMain" component={ParentTabNavigator} />
             </RootStack.Group>
           ) : !user?.mobile_verified_at && !isVerificationSkipped ? (
             <RootStack.Group>
