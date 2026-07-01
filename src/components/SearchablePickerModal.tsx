@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
   ScrollView,
   Modal,
   ActivityIndicator,
@@ -17,6 +16,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { useTypography } from '../hooks/useTypography';
+import SearchBar from './SearchBar';
 
 interface SearchablePickerModalProps {
   visible: boolean;
@@ -73,38 +73,15 @@ const SearchablePickerModal: React.FC<SearchablePickerModalProps> = ({
           </View>
 
           <View style={styles.searchContainer}>
-            <View
-              style={[
-                styles.inputWrapper,
-                { backgroundColor: theme.colors.background, borderColor: theme.colors.border },
-              ]}
-            >
-              <Ionicons
-                name="search"
-                size={20}
-                color={theme.colors.textTertiary}
-                style={styles.inputIconLeft}
-              />
-              <TextInput
-                style={[
-                  styles.input,
-                  typography('body'),
-                  { color: theme.colors.text, textAlign: 'left' },
-                ]}
-                placeholder={placeholder}
-                placeholderTextColor={theme.colors.textTertiary}
-                value={searchValue}
-                onChangeText={onSearchChange}
-                autoFocus={true}
-                returnKeyType="done"
-                onSubmitEditing={Keyboard.dismiss}
-              />
-              {searchValue.length > 0 && (
-                <TouchableOpacity onPress={() => onSearchChange('')} style={styles.clearButton}>
-                  <Ionicons name="close-circle" size={18} color={theme.colors.textTertiary} />
-                </TouchableOpacity>
-              )}
-            </View>
+            <SearchBar
+              value={searchValue}
+              onChangeText={onSearchChange}
+              placeholder={placeholder}
+              autoFocus
+              returnKeyType="done"
+              onSubmitEditing={Keyboard.dismiss}
+              style={[styles.searchBox, { backgroundColor: theme.colors.background }]}
+            />
           </View>
 
           <FlatList
@@ -210,30 +187,9 @@ const styles = StyleSheet.create({
   searchContainer: {
     padding: 16,
   },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  // Only the height differs from <SearchBar>'s defaults; background is themed inline.
+  searchBox: {
     height: 50,
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-  },
-  inputIconLeft: {
-    marginEnd: 8,
-  },
-  input: {
-    flex: 1,
-    // fontSize handled by typography('body'). Tight height + lineHeight so the
-    // glyphs fill the frame and stay vertically centered with the search/clear
-    // icons on iOS (a height:'100%' here made the text sit low). (BKLT search-align)
-    height: 24,
-    lineHeight: 22,
-    paddingVertical: 0,
-    textAlignVertical: 'center',
-    includeFontPadding: false,
-  },
-  clearButton: {
-    padding: 4,
   },
   list: {
     flex: 1,

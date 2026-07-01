@@ -114,7 +114,9 @@ const LoginScreen: React.FC = () => {
   });
 
   const isMobileValid = /^01[0125]\d{8}$/.test(mobile.trim());
-  const isPasswordValid = password.length >= 8;
+  // Min 6 to match the registration policy (BKLT-284), so a valid password never
+  // flags red at login. This only drives the border colour; submit isn't gated on it.
+  const isPasswordValid = password.length >= 6;
 
   const getMobileBorderColor = () => {
     if (touchedMobile && !isMobileValid) return '#FF6B6B'; // Red-500

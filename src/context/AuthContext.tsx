@@ -111,6 +111,7 @@ interface AuthContextType {
   updateParentUser: (data: Partial<Parent>) => Promise<void>;
   isVerificationSkipped: boolean;
   skipVerification: () => void;
+  requestVerification: () => void;
   otpWasAutoSent: boolean;
   markOtpAutoSent: () => void;
   clearOtpAutoSent: () => void;
@@ -520,6 +521,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(null);
       setParentUser(null);
       setUserRole(null);
+      // Reset session-scoped verification flags so they can't leak into the next
+      // account signed in without an app restart (e.g. a skipped unverified user
+      // logging out, then another unverified user logging in would otherwise
+      // bypass the OTP screen). (code-review)
+      setIsVerificationSkipped(false);
+      setOtpShouldAutoRequest(false);
       configureCrashlyticsGuest();
       analytics.trackLogout();
     } catch (error) {
@@ -558,6 +565,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const skipVerification = useCallback(() => {
     setIsVerificationSkipped(true);
+  }, []);
+
+  const requestVerification = useCallback(() => {
+    // Reverse a prior skip so AppNavigator re-mounts the OTP screen, and flag it to
+    // auto-request a fresh code on mount. Entry point for the "Verify via WhatsApp"
+    // banner, which is the only way a Skip-OTP user can get back to verification. (BKLT-276)
+    setIsVerificationSkipped(false);
+    setOtpShouldAutoRequest(true);
   }, []);
 
   const setRegistrationSuccessPending = useCallback(async (pending: boolean) => {
@@ -642,6 +657,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       updateParentUser,
       isVerificationSkipped,
       skipVerification,
+      requestVerification,
       otpWasAutoSent,
       markOtpAutoSent: () => setOtpWasAutoSent(true),
       clearOtpAutoSent: () => setOtpWasAutoSent(false),
@@ -667,6 +683,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       updateParentUser,
       isVerificationSkipped,
       skipVerification,
+      requestVerification,
       otpWasAutoSent,
       otpShouldAutoRequest,
       showRegistrationSuccess,

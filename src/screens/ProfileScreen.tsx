@@ -55,7 +55,7 @@ const VERIFY_CHEVRON = '#16a34a';
 
 const ProfileScreen: React.FC = () => {
   const navigation = useNavigation<any>();
-  const { user, logout, refreshUser } = useAuth();
+  const { user, logout, refreshUser, requestVerification } = useAuth();
   const { showConfirm } = useModal();
   const { theme, spacing, borderRadius } = useTheme();
   const common = useCommonStyles();
@@ -217,7 +217,9 @@ const ProfileScreen: React.FC = () => {
         'Verify your mobile number via WhatsApp to secure your account and unlock all features.',
       ),
       confirmLabel: t('common.ok', 'OK'),
-      onConfirm: () => {},
+      // Actually start verification: un-skip + auto-request routes the user to the
+      // OTP screen with a code on its way (previously this was a no-op). (BKLT-276)
+      onConfirm: () => requestVerification(),
     });
   };
 

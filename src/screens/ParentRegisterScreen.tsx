@@ -22,7 +22,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAutoReset } from '../hooks/useAutoReset';
 import { isDebugMode } from '../config/debug';
-import { EGYPT_MOBILE_REGEX, EMAIL_REGEX, STRONG_PASSWORD_REGEX } from '../utils/validators';
+import { EGYPT_MOBILE_REGEX, EMAIL_REGEX, PASSWORD_REGEX } from '../utils/validators';
 
 const ParentRegisterScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -59,8 +59,8 @@ const ParentRegisterScreen: React.FC = () => {
   const isNameValid = name.trim().length >= 3;
   const isMobileValid = EGYPT_MOBILE_REGEX.test(mobile.trim());
   const isEmailValid = EMAIL_REGEX.test(email.trim());
-  // Strong password is enforced on every environment (no debug relaxation).
-  const isPasswordStrong = STRONG_PASSWORD_REGEX.test(password);
+  // Password policy: minimum 6 characters (BKLT-284). Same rule on every env.
+  const isPasswordValid = PASSWORD_REGEX.test(password);
   const isConfirmValid = password === confirmPassword && password.length > 0;
 
   const getBorderColor = (touched: boolean, valid: boolean, value: string) => {
@@ -77,15 +77,14 @@ const ParentRegisterScreen: React.FC = () => {
     setTouchedPassword(true);
     setTouchedConfirm(true);
 
-    if (!isNameValid || !isMobileValid || !isEmailValid || !isPasswordStrong || !isConfirmValid) {
+    if (!isNameValid || !isMobileValid || !isEmailValid || !isPasswordValid || !isConfirmValid) {
       let errorMsg = t('auth.fill_all_fields');
 
       if (!isNameValid && name.trim().length > 0) errorMsg = t('auth.name_too_short');
       else if (!isMobileValid && mobile.trim().length > 0)
         errorMsg = t('auth.invalid_egyptian_mobile');
       else if (!isEmailValid && email.trim().length > 0) errorMsg = t('auth.invalid_email_format');
-      else if (!isPasswordStrong && password.length > 0)
-        errorMsg = t('auth.password_not_strong_enough');
+      else if (!isPasswordValid && password.length > 0) errorMsg = t('auth.password_min_6');
       else if (!isConfirmValid && confirmPassword.length > 0)
         errorMsg = t('auth.passwords_not_match');
 
@@ -297,14 +296,14 @@ const ParentRegisterScreen: React.FC = () => {
               <View
                 style={[
                   currentStyles.inputWrapper,
-                  { borderColor: getBorderColor(touchedPassword, isPasswordStrong, password) },
+                  { borderColor: getBorderColor(touchedPassword, isPasswordValid, password) },
                 ]}
               >
                 <Ionicons
                   name="lock-closed-outline"
                   size={20}
                   color={
-                    touchedPassword && !isPasswordStrong ? '#FF6B6B' : theme.colors.textTertiary
+                    touchedPassword && !isPasswordValid ? '#FF6B6B' : theme.colors.textTertiary
                   }
                   style={currentStyles.inputIcon}
                 />
@@ -334,10 +333,10 @@ const ParentRegisterScreen: React.FC = () => {
                   />
                 </TouchableOpacity>
               </View>
-              {touchedPassword && !isPasswordStrong && password.length > 0 ? (
-                <Text style={currentStyles.errorText}>{t('auth.password_not_strong_enough')}</Text>
+              {touchedPassword && !isPasswordValid && password.length > 0 ? (
+                <Text style={currentStyles.errorText}>{t('auth.password_min_6')}</Text>
               ) : (
-                <Text style={currentStyles.hintText}>{t('auth.password_strength_hint')}</Text>
+                <Text style={currentStyles.hintText}>{t('auth.password_min_6')}</Text>
               )}
             </View>
 

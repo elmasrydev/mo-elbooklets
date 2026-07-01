@@ -1,6 +1,6 @@
 // Tests the SHARED regexes the auth screens actually use (src/utils/validators.ts),
 // not a local copy — so a regex drift in production is caught here.
-import { EGYPT_MOBILE_REGEX, EMAIL_REGEX, STRONG_PASSWORD_REGEX } from '../../utils/validators';
+import { EGYPT_MOBILE_REGEX, EMAIL_REGEX, PASSWORD_REGEX } from '../../utils/validators';
 
 describe('EGYPT_MOBILE_REGEX', () => {
   test.each([
@@ -46,22 +46,20 @@ describe('EMAIL_REGEX', () => {
   });
 });
 
-describe('STRONG_PASSWORD_REGEX (min 8, upper, lower, digit, special)', () => {
-  test.each(['DemoPass1!', 'Aabcd4#z', 'SecurePassword123$', 'My$p@ssw0rd!'])(
-    'accepts %s',
+describe('PASSWORD_REGEX (min 6 characters, nothing else required — BKLT-284)', () => {
+  // No uppercase / digit / special requirement: 6+ chars of any kind is valid.
+  test.each(['abcdef', '123456', 'password', 'ABCDEF', 'aB3$xy', 'DemoPass1!', 'مرورسر'])(
+    'accepts %s (>= 6 chars)',
     (pwd) => {
-      expect(STRONG_PASSWORD_REGEX.test(pwd)).toBe(true);
+      expect(PASSWORD_REGEX.test(pwd)).toBe(true);
     },
   );
 
   test.each([
-    ['demopass1!', 'no uppercase'],
-    ['DEMOPASS1!', 'no lowercase'],
-    ['DemoPass!', 'no digit'],
-    ['DemoPass123', 'no special char'],
-    ['Short1!', 'fewer than 8 chars'],
     ['', 'empty'],
+    ['a', '1 char'],
+    ['abc12', '5 chars'],
   ])('rejects %s (%s)', (pwd) => {
-    expect(STRONG_PASSWORD_REGEX.test(pwd)).toBe(false);
+    expect(PASSWORD_REGEX.test(pwd)).toBe(false);
   });
 });

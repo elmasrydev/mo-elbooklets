@@ -12,6 +12,7 @@ export const EGYPT_MOBILE_REGEX = /^01[0125]\d{8}$/;
 // Pragmatic email shape check (not RFC-complete on purpose — matches the app's UX).
 export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Strong password: min 8 chars with lower, upper, digit, and a special char.
-export const STRONG_PASSWORD_REGEX =
-  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+// Password policy (BKLT-284): minimum 6 characters, nothing else required —
+// no mandatory uppercase, digit, or special character. Keep this in sync with the
+// backend policy so registration/login can't disagree.
+export const PASSWORD_REGEX = /^.{6,}$/;

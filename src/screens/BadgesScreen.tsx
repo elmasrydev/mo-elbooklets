@@ -284,11 +284,11 @@ const BadgesScreen: React.FC = () => {
                           style={[
                             styles.badgeIconInner,
                             {
+                              // Earned/locked is conveyed by the background tint + icon
+                              // color only; no colored ring around earned badges. (BKLT-278)
                               backgroundColor: badge.awardedAt
                                 ? catColor + '15'
                                 : theme.colors.border + '30',
-                              borderColor: badge.awardedAt ? catColor : 'transparent',
-                              borderWidth: badge.awardedAt ? 1.5 : 0,
                             },
                           ]}
                         >

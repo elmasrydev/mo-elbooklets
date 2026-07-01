@@ -26,7 +26,7 @@ import { useModal } from '../context/ModalContext';
 import { useNavigation } from '@react-navigation/native';
 import { analytics } from '../lib/analytics';
 import { isDebugMode } from '../config/debug';
-import { EGYPT_MOBILE_REGEX as MOBILE_REGEX, STRONG_PASSWORD_REGEX } from '../utils/validators';
+import { EGYPT_MOBILE_REGEX as MOBILE_REGEX, PASSWORD_REGEX } from '../utils/validators';
 
 import BackButton from '../components/navigation/BackButton';
 import AppButton from '../components/AppButton';
@@ -128,8 +128,8 @@ const RegisterScreen: React.FC = () => {
   // Validation Flags
   const isNameValid = name.trim().length >= 3;
   const isMobileValid = MOBILE_REGEX.test(mobile.trim());
-  // Strong password is enforced on every environment (no debug relaxation).
-  const isPasswordValid = STRONG_PASSWORD_REGEX.test(password);
+  // Password policy: minimum 6 characters (BKLT-284). Same rule on every env.
+  const isPasswordValid = PASSWORD_REGEX.test(password);
   const isConfirmValid = isPasswordValid && password === confirmPassword;
 
   // Dynamic Border Color Helpers
@@ -152,7 +152,7 @@ const RegisterScreen: React.FC = () => {
           } else if (!isMobileValid && mobile.trim().length > 0) {
             errorMsg = t('auth.invalid_egyptian_mobile');
           } else if (!isPasswordValid && password.length > 0) {
-            errorMsg = t('auth.password_not_strong_enough');
+            errorMsg = t('auth.password_min_6');
           } else if (!isConfirmValid && confirmPassword.length > 0) {
             errorMsg = t('auth.passwords_not_match');
           }
@@ -605,9 +605,9 @@ const StepOne = ({
         </TouchableOpacity>
       </View>
       {touchedPassword && !isPasswordValid && password.length > 0 ? (
-        <Text style={currentStyles.errorText}>{t('auth.password_not_strong_enough')}</Text>
+        <Text style={currentStyles.errorText}>{t('auth.password_min_6')}</Text>
       ) : (
-        <Text style={currentStyles.hintText}>{t('auth.password_strength_hint')}</Text>
+        <Text style={currentStyles.hintText}>{t('auth.password_min_6')}</Text>
       )}
 
       <View

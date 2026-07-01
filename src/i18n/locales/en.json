@@ -251,6 +251,7 @@
     "quick_actions": "Quick Actions",
     "quizzes": "Quizzes",
     "quizzes_done": "Quizzes Done",
+    "rank": "Rank",
     "ready_for_quiz": "Ready for Quiz",
     "ready_today": "Ready for today's challenge?",
     "recent_activity": "Recent Activity",
@@ -551,10 +552,7 @@
     "parent_register_title": "Parent Registration",
     "password": "Password",
     "password_min_6": "Password must be at least 6 characters",
-    "password_not_strong_enough": "Your password is not strong enough. It must have at least 8 characters including uppercase, lowercase, number and symbol.",
     "password_placeholder": "Enter your password",
-    "password_strength_hint": "Must contain uppercase, lowercase, number, and symbol",
-    "password_too_short": "Password must be at least 8 characters long",
     "passwords_not_match": "Passwords do not match. Please type the same password in both fields.",
     "personal_info": "Personal Info",
     "promo_code": "Referral Code (Optional)",
@@ -899,6 +897,8 @@
     "empty_title": "No notes yet"
   },
   "otp": {
+    "account_not_verified_message": "Your account isn't verified yet. Enter the verification code to continue, or tap resend to get a new one.",
+    "account_not_verified_title": "Verify Your Account",
     "code_expired": "Code expired. Please request a new one.",
     "code_sent": "Code sent via WhatsApp",
     "enter_code": "Enter the verification code",

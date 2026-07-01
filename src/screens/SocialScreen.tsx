@@ -1,13 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TextInput,
-  TouchableOpacity,
-  Keyboard,
-} from 'react-native';
+import { View, Text, StyleSheet, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as SecureStore from 'expo-secure-store';
@@ -25,6 +17,7 @@ import { tryFetchWithFallback } from '../config/api';
 import { QuizCompletionCard, ConnectionCard, RankChangeCard } from '../components/feed';
 import PeopleYouMayKnow from '../components/feed/PeopleYouMayKnow';
 import UserListRow from '../components/UserListRow';
+import SearchBar from '../components/SearchBar';
 import { CardListSkeleton, GenericListSkeleton } from '../components/SkeletonLoader';
 import RetryView from '../components/RetryView';
 import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
@@ -437,35 +430,20 @@ const SocialScreen: React.FC = () => {
       />
 
       <View style={currentStyles.searchWrapper}>
-        <View style={currentStyles.searchInputBox}>
-          <Ionicons
-            name="search"
-            size={20}
-            color={theme.colors.primary}
-            style={currentStyles.searchIcon}
-          />
-          <TextInput
-            style={currentStyles.searchInput}
-            placeholder={t('social_screen.search_placeholder')}
-            placeholderTextColor={theme.colors.textTertiary}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            textAlign={isRTL() ? 'right' : 'left'}
-            returnKeyType="search"
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity
-              onPress={() => {
-                setSearchQuery('');
-                setSearchResults([]);
-                Keyboard.dismiss();
-              }}
-              style={currentStyles.clearBtn}
-            >
-              <Ionicons name="close-circle" size={20} color={theme.colors.textTertiary} />
-            </TouchableOpacity>
-          )}
-        </View>
+        <SearchBar
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder={t('social_screen.search_placeholder')}
+          iconColor={theme.colors.primary}
+          style={currentStyles.searchBox}
+          inputStyle={currentStyles.searchInputText}
+          dismissKeyboardOnClear
+          onClear={() => {
+            setSearchQuery('');
+            setSearchResults([]);
+          }}
+          testID="community-search-input"
+        />
       </View>
 
       {isSearchMode ? (
@@ -506,38 +484,18 @@ const styles = (theme: any, common: any, spacing: any, typography: any, fontWeig
       paddingVertical: spacing.md,
       backgroundColor: theme.colors.background,
     },
-    searchInputBox: {
-      flexDirection: common.rowDirection,
-      alignItems: 'center',
+    // Visual overrides for the shared <SearchBar>; the RTL-correct row/input
+    // structure lives in the component. Community look: rounded, tinted, shadow.
+    searchBox: {
       backgroundColor: theme.mode === 'light' ? theme.colors.surface : theme.colors.card,
       borderRadius: 16,
-      paddingHorizontal: 12,
-      // Size to content (icon row + input) with vertical padding instead of a
-      // fixed height, so alignItems:'center' truly centers the text with the
-      // icons on iOS (a fixed height left the input text sitting low). ~52px tall.
+      // Size to content with vertical padding instead of a fixed height, so the
+      // text stays centered with the icons on iOS. ~52px tall.
       paddingVertical: 15,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
       ...layout.shadow,
     },
-    searchIcon: {
-      marginHorizontal: 4,
-    },
-    searchInput: {
-      flex: 1,
-      ...typography('body'),
-      color: theme.colors.text,
+    searchInputText: {
       ...fontWeight('500'),
-      // Tight line-height + zero padding so the glyphs fill the input's frame
-      // and the row's alignItems:'center' lines the text up with the icons.
-      height: 24,
-      lineHeight: 22,
-      paddingVertical: 0,
-      textAlignVertical: 'center',
-      includeFontPadding: false,
-    },
-    clearBtn: {
-      padding: 4,
     },
     content: {
       flex: 1,
