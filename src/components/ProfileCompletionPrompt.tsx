@@ -18,6 +18,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { tryFetchWithFallback } from '../config/api';
+import { addCity, addSchool } from '../services/locationService';
 import * as SecureStore from 'expo-secure-store';
 import AppButton from './AppButton';
 import { useTypography } from '../hooks/useTypography';
@@ -127,6 +128,8 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
   const [fetchingEdu, setFetchingEdu] = useState(false);
   const [fetchingGov, setFetchingGov] = useState(false);
   const [fetchingCities, setFetchingCities] = useState(false);
+  const [addingCity, setAddingCity] = useState(false);
+  const [addingSchool, setAddingSchool] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const [showGovModal, setShowGovModal] = useState(false);
@@ -440,6 +443,47 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
     }
   };
 
+  // "Can't find your city? Add it" — create it under the selected governorate,
+  // select it, and add it to the local list so it renders immediately.
+  const handleAddCity = async (name: string) => {
+    const gId = governorateId || (user as any)?.governorate_id || user?.governorate?.id;
+    if (!gId) return;
+    setAddingCity(true);
+    const created = await addCity(String(gId), name);
+    setAddingCity(false);
+    if (!created) {
+      setError(t('profile.add_failed', "Couldn't add that right now. Please try again."));
+      return;
+    }
+    const mapped: Location = {
+      id: String(created.id),
+      name: isRTL ? created.name_ar || created.name_en : created.name_en || created.name_ar,
+      name_ar: created.name_ar,
+      name_en: created.name_en,
+    };
+    setCities((prev) => [mapped, ...prev.filter((c) => String(c.id) !== String(created.id))]);
+    setCityId(String(created.id));
+    setShowCityModal(false);
+    setCitySearch('');
+  };
+
+  // Schools are saved on the profile by name, so just persist the created name.
+  const handleAddSchool = async (name: string) => {
+    setAddingSchool(true);
+    // Canonical English governorate label (avoid language-dependent values). (code-review)
+    const gov = governorates.find((g) => String(g.id) === String(governorateId));
+    const govLabel = gov?.name_en || gov?.name_ar || undefined;
+    const created = await addSchool(name, govLabel);
+    setAddingSchool(false);
+    if (!created) {
+      setError(t('profile.add_failed', "Couldn't add that right now. Please try again."));
+      return;
+    }
+    setSchoolName(created.name);
+    setShowSchoolModal(false);
+    setSchoolSearch('');
+  };
+
   const skipField = () => {
     Keyboard.dismiss();
     setTimeout(() => {
@@ -672,6 +716,8 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
                     setShowSchoolModal(false);
                     setSchoolSearch('');
                   }}
+                  onAddNew={handleAddSchool}
+                  addingNew={addingSchool}
                 />
               </View>
             )}
@@ -912,6 +958,8 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
                     setShowCityModal(false);
                     setCitySearch('');
                   }}
+                  onAddNew={handleAddCity}
+                  addingNew={addingCity}
                 />
               </View>
             )}

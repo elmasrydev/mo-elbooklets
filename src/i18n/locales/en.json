@@ -815,7 +815,8 @@
     "slot_title": "Parent {{number}}"
   },
   "profile": {
-    "add_school_request": "Can't find your school? Request to add it",
+    "add_failed": "Couldn't add that right now. Please try again.",
+    "cant_find_add": "Can't find it? Add ⁨\"{{name}}\"⁩",
     "personal_info": "Personal Information",
     "change_password": "Change Password",
     "city": "City",
@@ -840,12 +841,8 @@
     "old_password": "Old Password",
     "password_changed_success": "Password changed successfully",
     "passwords_dont_match": "Passwords don't match",
-    "request_school_message": "Enter the name of the school you want to add",
-    "request_school_title": "Request New School",
     "school_name": "School Name",
-    "school_name_placeholder": "School name...",
     "school_placeholder": "Your school name",
-    "school_request_sent": "Your request has been sent successfully. We will review it soon.",
     "select_city": "Select City",
     "select_educational_system": "Select Educational System",
     "select_gender": "Select Gender",

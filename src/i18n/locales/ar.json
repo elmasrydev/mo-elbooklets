@@ -815,7 +815,8 @@
     "slot_title": "ولي الأمر {{number}}"
   },
   "profile": {
-    "add_school_request": "لم تجد مدرستك؟ اطلب إضافتها",
+    "add_failed": "تعذّر الإضافة الآن. حاول مرة أخرى.",
+    "cant_find_add": "لم تجدها؟ أضف ⁨\"{{name}}\"⁩",
     "personal_info": "البيانات الشخصية",
     "change_password": "تغيير كلمة المرور",
     "city": "المدينة",
@@ -840,12 +841,8 @@
     "old_password": "كلمة المرور القديمة",
     "password_changed_success": "تم تغيير كلمة المرور بنجاح",
     "passwords_dont_match": "كلمات المرور غير متطابقة",
-    "request_school_message": "أدخل اسم المدرسة التي تريد إضافتها",
-    "request_school_title": "طلب إضافة مدرسة",
     "school_name": "اسم المدرسة",
-    "school_name_placeholder": "اسم المدرسة...",
     "school_placeholder": "اسم مدرستك",
-    "school_request_sent": "تم إرسال طلبك بنجاح. سنقوم بمراجعته قريباً.",
     "select_city": "اختَر المدينة",
     "select_educational_system": "اختَر النظام التعليمي",
     "select_gender": "اختر الجنس",

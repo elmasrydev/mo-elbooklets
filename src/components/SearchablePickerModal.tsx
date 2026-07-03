@@ -17,6 +17,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { useTypography } from '../hooks/useTypography';
 import SearchBar from './SearchBar';
+import { shouldOfferAddNew } from '../utils/pickerAddRow';
 
 interface SearchablePickerModalProps {
   visible: boolean;
@@ -31,6 +32,13 @@ interface SearchablePickerModalProps {
   selectedId?: string | number;
   emptyMessage?: string;
   searchHelperText?: string;
+  /**
+   * When provided, a "Can't find it? Add <typed>" row is shown once the user has
+   * typed something with no exact match, letting them create their own entry.
+   */
+  onAddNew?: (typedName: string) => void;
+  /** Shows a spinner + disables the add row while the create request is in flight. */
+  addingNew?: boolean;
 }
 
 const SearchablePickerModal: React.FC<SearchablePickerModalProps> = ({
@@ -46,11 +54,16 @@ const SearchablePickerModal: React.FC<SearchablePickerModalProps> = ({
   selectedId,
   emptyMessage,
   searchHelperText,
+  onAddNew,
+  addingNew,
 }) => {
   const { theme, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const { typography, fontWeight } = useTypography();
+
+  const trimmedSearch = searchValue.trim();
+  const showAddRow = !!onAddNew && !loading && shouldOfferAddNew(data, searchValue);
 
   return (
     <Modal visible={visible} transparent={true} animationType="slide" onRequestClose={onClose}>
@@ -100,7 +113,7 @@ const SearchablePickerModal: React.FC<SearchablePickerModalProps> = ({
                   />
                 )}
 
-                {!loading && data.length === 0 && (
+                {!loading && data.length === 0 && !showAddRow && (
                   <View style={styles.emptyContainer}>
                     <Text
                       style={[
@@ -117,6 +130,35 @@ const SearchablePickerModal: React.FC<SearchablePickerModalProps> = ({
                   </View>
                 )}
               </>
+            }
+            ListFooterComponent={
+              showAddRow ? (
+                <TouchableOpacity
+                  style={[styles.addRow, { borderTopColor: theme.colors.border }]}
+                  onPress={() => !addingNew && onAddNew?.(trimmedSearch)}
+                  disabled={addingNew}
+                  testID="picker-add-new"
+                >
+                  {addingNew ? (
+                    <ActivityIndicator size="small" color={theme.colors.primary} />
+                  ) : (
+                    <Ionicons name="add-circle-outline" size={22} color={theme.colors.primary} />
+                  )}
+                  <Text
+                    style={[
+                      styles.addText,
+                      typography('body'),
+                      fontWeight('600'),
+                      { color: theme.colors.primary },
+                    ]}
+                    numberOfLines={2}
+                  >
+                    {t('profile.cant_find_add', 'Can\'t find it? Add "{{name}}"', {
+                      name: trimmedSearch,
+                    })}
+                  </Text>
+                </TouchableOpacity>
+              ) : null
             }
             renderItem={({ item }) => (
               <TouchableOpacity
@@ -218,6 +260,18 @@ const styles = StyleSheet.create({
   pickerItemText: {
     flex: 1,
     // fontSize handled by typography('body')
+  },
+  addRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderTopWidth: 1,
+  },
+  addText: {
+    flex: 1,
+    marginStart: 10, // logical → flips with RTL
+    textAlign: 'left', // native RTL flips to right
   },
 });
 
