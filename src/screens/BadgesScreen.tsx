@@ -18,11 +18,6 @@ import { useTypography } from '../hooks/useTypography';
 import UnifiedHeader from '../components/UnifiedHeader';
 import { useGetBadgesScreenDataQuery, Badge } from '../generated/graphql';
 
-// Badge requirement text arrives with 2-decimal numbers (e.g. "5.00 quizzes");
-// render whole-number values as integers ("5 quizzes").
-const formatRequirement = (text?: string | null): string =>
-  (text || '').replace(/(\d+)\.0+(?!\d)/g, '$1');
-
 const BadgesScreen: React.FC = () => {
   const { t } = useTranslation();
   const { theme, spacing, borderRadius } = useTheme();
@@ -499,40 +494,6 @@ const BadgesScreen: React.FC = () => {
                           )}
                       </Text>
 
-                      <View
-                        style={[
-                          styles.criteriaBox,
-                          {
-                            backgroundColor: theme.colors.background,
-                            borderRadius: borderRadius.md,
-                            padding: spacing.md,
-                          },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            typography('caption'),
-                            fontWeight('700'),
-                            {
-                              color: theme.colors.textTertiary,
-                              marginBottom: 8,
-                              textTransform: 'uppercase',
-                              textAlign: 'left',
-                            },
-                          ]}
-                        >
-                          {t('badges_screen.requirement', 'REQUIREMENT')}
-                        </Text>
-                        <Text
-                          style={[
-                            typography('body'),
-                            { color: theme.colors.text, textAlign: 'left' },
-                          ]}
-                        >
-                          {formatRequirement(selectedBadge.rulesPreview)}
-                        </Text>
-                      </View>
-
                       {selectedBadge.awardedAt && (
                         <Text
                           style={[
@@ -753,9 +714,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
     marginBottom: 8,
-  },
-  criteriaBox: {
-    width: '100%',
   },
 });
 
