@@ -64,6 +64,7 @@ interface QuizResult {
   };
   score: number;
   totalQuestions: number;
+  xp?: number | null;
   userAnswers: UserQuizAnswer[];
   isPassed: boolean;
   isPublished?: boolean;
@@ -147,6 +148,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
             }
             score
             totalQuestions
+            xp
             userAnswers {
               question {
                 id
@@ -425,6 +427,20 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
         </View>
 
         <View style={currentStyles.statsGrid}>
+          {quizResult.xp != null && quizResult.xp > 0 && (
+            <View style={[currentStyles.statCard, currentStyles.statCardFullWidth]}>
+              <View style={currentStyles.statHeader}>
+                <Ionicons name="flash" size={20} color={theme.colors.warning} />
+                <Text style={currentStyles.statLabelText}>
+                  {t('quiz_results.xp_earned', 'XP Earned')}
+                </Text>
+              </View>
+              <Text style={[currentStyles.statValueText, { color: theme.colors.warning }]}>
+                +{quizResult.xp.toLocaleString()} XP
+              </Text>
+            </View>
+          )}
+
           <View style={currentStyles.statCard}>
             <View style={currentStyles.statHeader}>
               <Ionicons name="checkmark-circle" size={20} color={theme.colors.primary} />

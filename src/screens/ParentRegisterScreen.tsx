@@ -84,7 +84,7 @@ const ParentRegisterScreen: React.FC = () => {
       else if (!isMobileValid && mobile.trim().length > 0)
         errorMsg = t('auth.invalid_egyptian_mobile');
       else if (!isEmailValid && email.trim().length > 0) errorMsg = t('auth.invalid_email_format');
-      else if (!isPasswordValid && password.length > 0) errorMsg = t('auth.password_min_6');
+      else if (!isPasswordValid && password.length > 0) errorMsg = t('auth.password_min_8');
       else if (!isConfirmValid && confirmPassword.length > 0)
         errorMsg = t('auth.passwords_not_match');
 
@@ -334,9 +334,9 @@ const ParentRegisterScreen: React.FC = () => {
                 </TouchableOpacity>
               </View>
               {touchedPassword && !isPasswordValid && password.length > 0 ? (
-                <Text style={currentStyles.errorText}>{t('auth.password_min_6')}</Text>
+                <Text style={currentStyles.errorText}>{t('auth.password_min_8')}</Text>
               ) : (
-                <Text style={currentStyles.hintText}>{t('auth.password_min_6')}</Text>
+                <Text style={currentStyles.hintText}>{t('auth.password_min_8')}</Text>
               )}
             </View>
 

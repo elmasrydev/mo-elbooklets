@@ -46,10 +46,10 @@ describe('EMAIL_REGEX', () => {
   });
 });
 
-describe('PASSWORD_REGEX (min 6 characters, nothing else required — BKLT-284)', () => {
-  // No uppercase / digit / special requirement: 6+ chars of any kind is valid.
-  test.each(['abcdef', '123456', 'password', 'ABCDEF', 'aB3$xy', 'DemoPass1!', 'مرورسر'])(
-    'accepts %s (>= 6 chars)',
+describe('PASSWORD_REGEX (min 8 characters, nothing else required — BKLT-297)', () => {
+  // No uppercase / digit / special requirement: 8+ chars of any kind is valid.
+  test.each(['abcdefgh', '12345678', 'password', 'ABCDEFGH', 'aB3$xy9!', 'DemoPass1!', 'مرورسرية'])(
+    'accepts %s (>= 8 chars)',
     (pwd) => {
       expect(PASSWORD_REGEX.test(pwd)).toBe(true);
     },
@@ -58,7 +58,8 @@ describe('PASSWORD_REGEX (min 6 characters, nothing else required — BKLT-284)'
   test.each([
     ['', 'empty'],
     ['a', '1 char'],
-    ['abc12', '5 chars'],
+    ['abc123', '6 chars'],
+    ['abc1234', '7 chars'],
   ])('rejects %s (%s)', (pwd) => {
     expect(PASSWORD_REGEX.test(pwd)).toBe(false);
   });

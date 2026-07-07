@@ -245,7 +245,7 @@ const StudentProfileScreen: React.FC = () => {
               <View style={s.metricDivider} />
               {renderMetric(
                 'flash',
-                profile.xp.toLocaleString(),
+                (profile.xp ?? 0).toLocaleString(),
                 t('student_profile.xp', 'XP'),
                 theme.colors.warning,
               )}
