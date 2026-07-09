@@ -109,6 +109,10 @@ export const analytics = {
     analytics.track('Leaderboard Viewed');
   },
 
+  trackLeaderboardFilterChanged: (params: { scope: string; subjectId: string | null }) => {
+    analytics.track('Leaderboard Filter Changed', params);
+  },
+
   trackContactSupport: (subject?: string) => {
     analytics.track('Contact Support', { subject });
   },
