@@ -9,7 +9,9 @@ import React, {
 } from 'react';
 import { I18nManager, NativeModules } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import i18n, { LANGUAGE_KEY } from '../i18n';
+import { tryFetchWithFallback } from '../config/api';
 import * as Updates from 'expo-updates';
 import { useTranslation } from 'react-i18next';
 import { analytics } from '../lib/analytics';
@@ -27,6 +29,41 @@ interface LanguageContextType {
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+
+const SET_LANGUAGE_MUTATION = `
+  mutation SetLanguage($input: UpdateProfileInput!) {
+    updateProfile(input: $input) {
+      id
+    }
+  }
+`;
+
+/**
+ * Persist the selected language to the logged-in student's account so the
+ * backend localizes push notifications immediately (BKLT-273).
+ * Parents have no updateProfile mutation; their users.language self-heals via
+ * the `lang` header on the first authenticated request after the reload.
+ * Best-effort: never blocks the language switch on failure, and never waits
+ * longer than the timeout so the pending reload can't kill the request mid-flight.
+ */
+const persistLanguageToBackend = async (lang: Language): Promise<void> => {
+  try {
+    const [token, role] = await Promise.all([
+      SecureStore.getItemAsync('auth_token'),
+      SecureStore.getItemAsync('user_role'),
+    ]);
+    if (!token || role !== 'student') return;
+
+    await Promise.race([
+      tryFetchWithFallback(SET_LANGUAGE_MUTATION, { input: { language: lang } }, token),
+      // Cap the wait so a dead network can't stall the language-switch reload;
+      // if this loses the race, the lang header self-heals it after reload.
+      new Promise((resolve) => setTimeout(resolve, 1500)),
+    ]);
+  } catch (error) {
+    console.warn('Failed to persist language to backend:', error);
+  }
+};
 
 interface LanguageProviderProps {
   children: ReactNode;
@@ -100,7 +137,10 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({
           I18nManager.allowRTL(shouldBeRTL);
           I18nManager.forceRTL(shouldBeRTL);
 
-          // 4. Reload to apply native RTL change
+          // 4. Persist to the user's account before the reload (BKLT-273)
+          await persistLanguageToBackend(lang);
+
+          // 5. Reload to apply native RTL change
           setTimeout(() => reloadApp(lang), 300);
         };
 

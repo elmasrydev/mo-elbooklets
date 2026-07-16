@@ -31,6 +31,9 @@ const authLink = setContext(async (_, { headers }) => {
       authorization: token ? `Bearer ${token}` : '',
       'Content-Type': 'application/json',
       Accept: 'application/json',
+      // Backend persists `lang` from authenticated requests to users.language,
+      // which localizes push notifications (BKLT-273).
+      lang,
       'Accept-Language': lang,
     },
   };

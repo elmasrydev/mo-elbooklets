@@ -286,7 +286,7 @@ export const setupNotificationHandlers = (
 
     if (!remoteMessage.notification && !remoteMessage.data) return;
 
-    const title = remoteMessage.notification?.title || 'Notification';
+    const title = remoteMessage.notification?.title || i18n.t('common.notification');
     const body = remoteMessage.notification?.body || '';
     const slug = remoteMessage.data?.event_slug as string | undefined;
     const actionUrl = remoteMessage.data?.action_url as string | undefined;
