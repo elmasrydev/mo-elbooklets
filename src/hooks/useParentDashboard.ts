@@ -10,6 +10,10 @@ export interface Child {
   mobile: string;
   grade?: { name: string };
   educational_system?: { name: string };
+  // Not populated yet: the backend's ParentLinkedChild type doesn't expose an
+  // avatar field (BKLT-311). When it does, add `selectedAvatar { url }` to
+  // MyLinkedChildren below; the dashboard already renders it when present.
+  selectedAvatar?: { url?: string | null } | null;
 }
 
 export interface LinkRequest {

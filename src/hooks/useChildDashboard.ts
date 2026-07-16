@@ -17,7 +17,7 @@ export interface ChildRecentActivity {
 }
 
 export interface ChildDashboardData {
-  child?: { name: string };
+  child?: { name: string; selectedAvatar?: { url?: string | null } | null };
   quizzes_solved: number;
   average_score: number;
   started_subjects_count: number;

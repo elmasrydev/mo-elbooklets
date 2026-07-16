@@ -126,6 +126,9 @@ export const GET_CHILD_DASHBOARD_QUERY = `
     childDashboard(child_id: $childId) {
       child {
         name
+        selectedAvatar {
+          url
+        }
       }
       quizzes_solved
       average_score
