@@ -9,6 +9,7 @@ import {
   Dimensions,
   ActivityIndicator,
   Modal,
+  Platform,
 } from 'react-native';
 import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -281,9 +282,14 @@ const BadgesScreen: React.FC = () => {
                             {
                               // Earned/locked is conveyed by the background tint + icon
                               // color only; no colored ring around earned badges. (BKLT-278)
-                              backgroundColor: badge.awardedAt
-                                ? catColor + '15'
-                                : theme.colors.border + '30',
+                              // Logo assets are opaque squares that carry their own plate —
+                              // a tint circle behind them bleeds out around the square, so
+                              // only tint the icon-fallback path. (BKLT-312)
+                              backgroundColor: badge.logoUrl
+                                ? 'transparent'
+                                : badge.awardedAt
+                                  ? catColor + '15'
+                                  : theme.colors.border + '30',
                             },
                           ]}
                         >
@@ -625,11 +631,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    // iOS: soft subtle shadow. Android's elevation renders a much darker, wider
+    // gray halo (worsened by the tile's translucent bg) that doesn't match the
+    // iOS design — so drop elevation there and let the tile read via its bg. BKLT.
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+      },
+      android: { elevation: 0 },
+    }),
   },
   badgeIconInner: {
     width: 48,

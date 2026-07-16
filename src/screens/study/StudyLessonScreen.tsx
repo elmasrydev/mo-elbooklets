@@ -32,7 +32,7 @@ import useAndroidBack from '../../hooks/useAndroidBack';
 import AppButton from '../../components/AppButton';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
-import { isRTL, textAlign } from '../../lib/rtl';
+import { isRTL, textAlign, INPUT_TEXT_ALIGN } from '../../lib/rtl';
 
 import { useSubscriptionGate } from '../../hooks/useSubscriptionGate';
 import { analytics } from '../../lib/analytics';
@@ -268,7 +268,7 @@ const NoteModal: React.FC<{
             textAlignVertical: 'top',
             color: theme.colors.text,
             ...typography('body'),
-            textAlign: isRTL ? 'right' : 'left',
+            textAlign: INPUT_TEXT_ALIGN,
           }}
           placeholder={t('study_lesson.notes_placeholder', 'Add your note here...')}
           placeholderTextColor={theme.colors.textTertiary}
@@ -297,9 +297,7 @@ const NoteModal: React.FC<{
               color={theme.colors.error}
               style={{ marginRight: 8 }}
             />
-            <Text
-              style={{ ...typography('caption'), color: theme.colors.error, fontWeight: '700' }}
-            >
+            <Text style={{ ...typography('caption', '700'), color: theme.colors.error }}>
               {t('common.delete', 'Delete')}
             </Text>
           </TouchableOpacity>
@@ -1208,7 +1206,7 @@ const StudyLessonScreen: React.FC = () => {
                             >
                               {isBookmarked
                                 ? t('study_lesson.saved', 'Saved')
-                                : t('study_lesson.save', 'Save')}
+                                : t('common.save', 'Save')}
                             </Text>
                           </TouchableOpacity>
                           <TouchableOpacity
@@ -1238,8 +1236,11 @@ const StudyLessonScreen: React.FC = () => {
                             </Text>
                           </TouchableOpacity>
                           <Text style={currentStyles.kpNum}>
-                            {idx + 1} {t('study_lesson.of', 'of')}{' '}
-                            {currentLesson.lessonPoints!.length}
+                            {t('study_lesson.point_counter', {
+                              current: idx + 1,
+                              total: currentLesson.lessonPoints!.length,
+                              defaultValue: '{{current}} of {{total}}',
+                            })}
                           </Text>
                         </View>
                       </TouchableOpacity>

@@ -25,6 +25,7 @@ import { useAutoReset } from '../hooks/useAutoReset';
 import { useModal } from '../context/ModalContext';
 import { useNavigation } from '@react-navigation/native';
 import { analytics } from '../lib/analytics';
+import { INPUT_TEXT_ALIGN } from '../lib/rtl';
 import { isDebugMode } from '../config/debug';
 import { EGYPT_MOBILE_REGEX as MOBILE_REGEX, PASSWORD_REGEX } from '../utils/validators';
 
@@ -369,7 +370,6 @@ const RegisterScreen: React.FC = () => {
                   isLoading={isLoading}
                   theme={theme}
                   t={t}
-                  isRTL={isRTL}
                   currentStyles={currentStyles}
                   campaignFreeAccess={campaignFreeAccess}
                   spacing={spacing}
@@ -512,7 +512,7 @@ const StepOne = ({
         />
         <TextInput
           testID="register-name-input"
-          style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left', flex: 1 }]}
+          style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN, flex: 1 }]}
           value={name}
           onChangeText={(val) => setName(val.replaceAll(/[^a-zA-Z\s\u0621-\u064A]/g, ''))}
           placeholder={t('auth.name_placeholder')}
@@ -549,7 +549,7 @@ const StepOne = ({
           testID="register-mobile-input"
           style={[
             currentStyles.input,
-            { flex: 1, textAlign: isRTL ? 'right' : 'left', paddingHorizontal: 16 },
+            { flex: 1, textAlign: INPUT_TEXT_ALIGN, paddingHorizontal: 16 },
           ]}
           value={mobile}
           onChangeText={(val) => setMobile(val.replaceAll(/\D/g, '').slice(0, 11))}
@@ -579,7 +579,7 @@ const StepOne = ({
         />
         <TextInput
           testID="register-password-input"
-          style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left', flex: 1 }]}
+          style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN, flex: 1 }]}
           value={password}
           onChangeText={setPassword}
           placeholder={t('auth.password_placeholder')}
@@ -626,7 +626,7 @@ const StepOne = ({
           testID="register-confirm-input"
           // @ts-ignore
           ref={confirmPasswordRef}
-          style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left', flex: 1 }]}
+          style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN, flex: 1 }]}
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           placeholder={t('auth.confirm_password_placeholder')}
@@ -657,7 +657,6 @@ const StepTwo = ({
   isLoading,
   theme,
   t,
-  isRTL,
   currentStyles,
   campaignFreeAccess,
   spacing,
@@ -741,7 +740,7 @@ const StepTwo = ({
               testID="register-promo-input"
               // @ts-ignore
               ref={promoCodeRef}
-              style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left', flex: 1 }]}
+              style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN, flex: 1 }]}
               value={promoCode}
               onChangeText={setPromoCode}
               placeholder={t('auth.promo_code_placeholder')}
@@ -898,8 +897,7 @@ const styles = (config: any) => {
       gap: 8,
     },
     inputIcon: {
-      marginRight: isRTL ? 0 : spacing.sm,
-      marginLeft: isRTL ? spacing.sm : 0,
+      marginEnd: spacing.sm,
     },
     input: {
       flex: 1,
@@ -911,7 +909,7 @@ const styles = (config: any) => {
       flex: 1,
       fontSize: 15,
       color: '#181c22',
-      textAlign: isRTL ? 'right' : 'left',
+      textAlign: 'left',
     },
     footer: {
       flexDirection: 'row',
@@ -944,8 +942,7 @@ const styles = (config: any) => {
       fontSize: 14,
       ...fontWeight('600'),
       color: theme.colors.text,
-      marginLeft: isRTL ? 0 : spacing.sm,
-      marginRight: isRTL ? spacing.sm : 0,
+      marginStart: spacing.sm,
     },
     dividerRow: {
       flexDirection: 'row',
@@ -988,8 +985,7 @@ const styles = (config: any) => {
       ...typography('button'),
       color: '#FFF',
       ...fontWeight('700'),
-      marginRight: isRTL ? 0 : spacing.sm,
-      marginLeft: isRTL ? spacing.sm : 0,
+      marginEnd: spacing.sm,
     },
     stepIndicatorContainer: {
       alignItems: 'center',
@@ -1057,9 +1053,9 @@ const styles = (config: any) => {
       }),
     },
     gridItemText: {
-      // Use the typography base so the Cairo font-family is applied on iOS too.
-      // fontWeight() alone has no fontFamily on iOS, which made the Arabic grade
-      // labels fall back to the system font and look inconsistent. (BKLT-255)
+      // Use the typography base so the Arabic font-family is applied on iOS too;
+      // grade labels previously fell back to the system font and looked
+      // inconsistent. (BKLT-255)
       ...typography('label', '700'),
       color: '#444653',
     },
@@ -1107,8 +1103,7 @@ const styles = (config: any) => {
     },
     checkIcon: {
       position: 'absolute',
-      right: isRTL ? undefined : spacing.md,
-      left: isRTL ? spacing.md : undefined,
+      end: spacing.md,
       top: 18, // (56 - 20) / 2
     },
     autocompleteContainer: {
@@ -1151,7 +1146,7 @@ const styles = (config: any) => {
       flex: 1,
       fontSize: fontSizes.base,
       color: theme.colors.text,
-      textAlign: isRTL ? 'right' : 'left',
+      textAlign: 'left',
     },
     autocompleteItem: {
       marginTop: spacing.sm,
@@ -1183,8 +1178,7 @@ const styles = (config: any) => {
       backgroundColor: theme.colors.primary + '08',
       justifyContent: 'center',
       alignItems: 'center',
-      marginRight: isRTL ? 0 : spacing.sm,
-      marginLeft: isRTL ? spacing.sm : 0,
+      marginEnd: spacing.sm,
     },
     schoolResultInfo: {
       flex: 1,
@@ -1250,9 +1244,9 @@ const styles = (config: any) => {
       marginBottom: spacing.md,
     },
     sectionLabel: {
-      // Use the typography base so the Cairo font-family is applied (fontWeight()
-      // alone has no fontFamily on iOS). In Arabic, drop uppercase/letterSpacing
-      // since they break the cursive letter joins. (BKLT grade-step font)
+      // Use the typography base so the Arabic font-family is applied. In Arabic,
+      // drop uppercase/letterSpacing since they break the cursive letter joins.
+      // (BKLT grade-step font)
       ...typography('label', '900'),
       fontSize: 14,
       color: theme.colors.textSecondary,

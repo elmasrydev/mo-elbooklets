@@ -24,6 +24,7 @@ import AppButton from '../components/AppButton';
 import { tryFetchWithFallback } from '../config/api';
 import * as SecureStore from 'expo-secure-store';
 import { analytics } from '../lib/analytics';
+import { INPUT_TEXT_ALIGN } from '../lib/rtl';
 
 const ContactUsScreen = ({ navigation }: any) => {
   const { t } = useTranslation();
@@ -445,7 +446,8 @@ const styles = (config: any) => {
       ...typography('body'),
       color: theme.colors.text,
       height: '100%',
-      textAlign: 'left',
+      // Platform-split TextInput alignment — see INPUT_TEXT_ALIGN in lib/rtl.ts (BKLT-312).
+      textAlign: INPUT_TEXT_ALIGN,
     },
     textArea: {
       height: 120,

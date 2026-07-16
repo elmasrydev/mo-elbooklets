@@ -375,9 +375,8 @@ const styles = (
       alignItems: contentFlexAlign,
     },
     chapterName: {
-      ...typography('h3'),
+      ...typography('h3', '800'),
       fontSize: 18,
-      fontWeight: '800',
       color: theme.colors.text,
       textAlign: contentAlign,
     },

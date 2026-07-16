@@ -345,7 +345,9 @@ const QuizGeneratingScreen: React.FC = () => {
             {step3 === 'done' && (
               <Animated.View style={styles.readyBadge}>
                 <Ionicons name="sparkles" size={14} color="#16A34A" style={{ marginRight: 4 }} />
-                <Text style={styles.readyBadgeText}>{t('quiz_flow.quiz_ready')}</Text>
+                <Text style={[styles.readyBadgeText, fontWeight('800')]}>
+                  {t('quiz_flow.quiz_ready')}
+                </Text>
               </Animated.View>
             )}
           </View>
@@ -619,7 +621,6 @@ const styles = StyleSheet.create({
   readyBadgeText: {
     fontSize: 11,
     color: '#16A34A',
-    fontWeight: '800',
   },
   logoImage: {
     width: 44,

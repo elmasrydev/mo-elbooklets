@@ -29,6 +29,7 @@ import { useModal } from '../context/ModalContext';
 import SearchablePickerModal from '../components/SearchablePickerModal';
 import Avatar from '../components/Avatar';
 import AvatarPickerModal from '../components/AvatarPickerModal';
+import { INPUT_TEXT_ALIGN } from '../lib/rtl';
 
 interface EducationalSystem {
   id: string;
@@ -659,7 +660,7 @@ const EditProfileScreen: React.FC = () => {
                   style={currentStyles.inputIconLeft}
                 />
                 <TextInput
-                  style={[currentStyles.input, { textAlign: 'left' }]}
+                  style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN }]}
                   value={formData.email}
                   onChangeText={(v) => setFormData((p) => ({ ...p, email: v }))}
                   placeholder="example@mail.com"
@@ -1052,7 +1053,7 @@ const EditProfileScreen: React.FC = () => {
                       style={currentStyles.inputIconLeft}
                     />
                     <TextInput
-                      style={[currentStyles.input, { textAlign: 'left' }]}
+                      style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN }]}
                       secureTextEntry
                       value={passwordState.oldPassword}
                       onChangeText={(v) => setPasswordState((p) => ({ ...p, oldPassword: v }))}
@@ -1089,7 +1090,7 @@ const EditProfileScreen: React.FC = () => {
                       style={currentStyles.inputIconLeft}
                     />
                     <TextInput
-                      style={[currentStyles.input, { textAlign: 'left' }]}
+                      style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN }]}
                       secureTextEntry
                       value={passwordState.newPassword}
                       onChangeText={(v) => setPasswordState((p) => ({ ...p, newPassword: v }))}
@@ -1126,7 +1127,7 @@ const EditProfileScreen: React.FC = () => {
                       style={currentStyles.inputIconLeft}
                     />
                     <TextInput
-                      style={[currentStyles.input, { textAlign: 'left' }]}
+                      style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN }]}
                       secureTextEntry
                       value={passwordState.confirmPassword}
                       onChangeText={(v) => setPasswordState((p) => ({ ...p, confirmPassword: v }))}
@@ -1363,8 +1364,7 @@ const styles = (config: any) => {
       ...typography('button'),
       ...fontWeight('700'),
       color: '#FFFFFF',
-      marginRight: spacing.sm,
-      marginLeft: isRTL ? spacing.sm : 0,
+      marginEnd: spacing.sm,
     },
     modalOverlay: {
       flex: 1,

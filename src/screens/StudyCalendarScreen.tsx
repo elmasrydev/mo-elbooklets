@@ -23,7 +23,7 @@ import { Ionicons } from '@expo/vector-icons';
 import UnifiedHeader from '../components/UnifiedHeader';
 import AppButton from '../components/AppButton';
 import { GenericListSkeleton } from '../components/SkeletonLoader';
-import { textAlign } from '../lib/rtl';
+import { textAlign, INPUT_TEXT_ALIGN } from '../lib/rtl';
 
 const STUDY_SCHEDULE_QUERY = gql`
   query StudySchedule {
@@ -192,7 +192,7 @@ const StudyCalendarScreen: React.FC = () => {
     saveSchedule({ variables: { entries: allEntries } });
   };
 
-  const currentStyles = styles(theme, isRTL, typography, fontWeight, spacing, borderRadius);
+  const currentStyles = styles(theme, typography, fontWeight, spacing, borderRadius);
 
   if (loadingSchedule || loadingSubjects) {
     return (
@@ -434,14 +434,7 @@ const StudyCalendarScreen: React.FC = () => {
   );
 };
 
-const styles = (
-  theme: any,
-  isRTL: boolean,
-  typography: any,
-  fontWeight: any,
-  spacing: any,
-  borderRadius: any,
-) =>
+const styles = (theme: any, typography: any, fontWeight: any, spacing: any, borderRadius: any) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -620,7 +613,7 @@ const styles = (
       paddingTop: spacing.md,
       ...typography('body'),
       color: theme.colors.text,
-      textAlign: isRTL ? 'right' : 'left',
+      textAlign: INPUT_TEXT_ALIGN,
       textAlignVertical: 'top',
       borderWidth: 1,
       borderColor: theme.colors.border,

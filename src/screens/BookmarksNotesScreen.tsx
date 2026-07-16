@@ -22,6 +22,7 @@ import { tryFetchWithFallback } from '../config/api';
 import * as SecureStore from 'expo-secure-store';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { GenericListSkeleton } from '../components/SkeletonLoader';
+import { INPUT_TEXT_ALIGN } from '../lib/rtl';
 
 interface SavedPoint {
   id: string;
@@ -67,7 +68,6 @@ const NoteModal: React.FC<{
   spacing: any;
   borderRadius: any;
   t: any;
-  isRTL: boolean;
   typography: any;
   onDelete?: () => void;
 }> = ({
@@ -80,7 +80,6 @@ const NoteModal: React.FC<{
   spacing,
   borderRadius,
   t,
-  isRTL,
   typography,
   onDelete,
 }) => {
@@ -111,7 +110,7 @@ const NoteModal: React.FC<{
             textAlignVertical: 'top',
             color: theme.colors.text,
             ...typography('body'),
-            textAlign: isRTL ? 'right' : 'left',
+            textAlign: INPUT_TEXT_ALIGN,
           }}
           placeholder={t('study_lesson.notes_placeholder', 'Add your note here...')}
           placeholderTextColor={theme.colors.textTertiary}
@@ -140,9 +139,7 @@ const NoteModal: React.FC<{
               color={theme.colors.error}
               style={{ marginRight: 8 }}
             />
-            <Text
-              style={{ ...typography('caption'), color: theme.colors.error, fontWeight: '700' }}
-            >
+            <Text style={{ ...typography('caption', '700'), color: theme.colors.error }}>
               {t('common.delete', 'Delete')}
             </Text>
           </TouchableOpacity>
@@ -514,7 +511,6 @@ const BookmarksNotesScreen: React.FC = () => {
         spacing={spacing}
         borderRadius={borderRadius}
         t={t}
-        isRTL={isRTL}
         typography={typography}
       />
 

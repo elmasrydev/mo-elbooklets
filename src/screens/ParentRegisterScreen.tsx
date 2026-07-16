@@ -23,6 +23,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAutoReset } from '../hooks/useAutoReset';
 import { isDebugMode } from '../config/debug';
 import { EGYPT_MOBILE_REGEX, EMAIL_REGEX, PASSWORD_REGEX } from '../utils/validators';
+import { INPUT_TEXT_ALIGN } from '../lib/rtl';
 
 const ParentRegisterScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -202,7 +203,7 @@ const ParentRegisterScreen: React.FC = () => {
                 />
                 <TextInput
                   testID="parent-register-name"
-                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
+                  style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN }]}
                   value={name}
                   onChangeText={(val) => setName(val.replace(/[^a-zA-Z\s\u0621-\u064A]/g, ''))}
                   placeholder={t('auth.full_name_placeholder')}
@@ -236,7 +237,7 @@ const ParentRegisterScreen: React.FC = () => {
                 <TextInput
                   testID="parent-register-mobile"
                   ref={mobileRef}
-                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
+                  style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN }]}
                   value={mobile}
                   onChangeText={(val) => setMobile(val.replace(/\D/g, '').slice(0, 11))}
                   maxLength={11}
@@ -272,7 +273,7 @@ const ParentRegisterScreen: React.FC = () => {
                 <TextInput
                   testID="parent-register-email"
                   ref={emailRef}
-                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
+                  style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN }]}
                   value={email}
                   onChangeText={setEmail}
                   autoCapitalize="none"
@@ -310,7 +311,7 @@ const ParentRegisterScreen: React.FC = () => {
                 <TextInput
                   testID="parent-register-password"
                   ref={passwordRef}
-                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
+                  style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN }]}
                   value={password}
                   onChangeText={setPassword}
                   placeholder={t('auth.password_placeholder')}
@@ -358,7 +359,7 @@ const ParentRegisterScreen: React.FC = () => {
                 <TextInput
                   testID="parent-register-confirm"
                   ref={confirmPasswordRef}
-                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
+                  style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN }]}
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   placeholder={t('auth.confirm_password_placeholder')}

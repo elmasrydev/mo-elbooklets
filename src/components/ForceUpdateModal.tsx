@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../context/ThemeContext';
 import { useForceUpdate } from '../context/ForceUpdateContext';
+import { useTypography } from '../hooks/useTypography';
 import AppButton from './AppButton';
 import { layout } from '../config/layout';
 
@@ -23,6 +24,7 @@ const ForceUpdateModal: React.FC = () => {
   const { t } = useTranslation();
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { shouldUpdate, isForceUpdate, dismissUpdate } = useForceUpdate();
+  const { fontWeight } = useTypography();
 
   const currentStyles = useMemo(
     () => styles(theme, borderRadius, spacing),
@@ -65,7 +67,7 @@ const ForceUpdateModal: React.FC = () => {
           </View>
 
           <View style={currentStyles.content}>
-            <Text style={currentStyles.title}>
+            <Text style={[currentStyles.title, fontWeight('bold')]}>
               {isForceUpdate
                 ? t('common.forceUpdate.requiredTitle')
                 : t('common.forceUpdate.optionalTitle')}
@@ -101,7 +103,7 @@ const ForceUpdateModal: React.FC = () => {
           {isForceUpdate && (
             <View style={currentStyles.forceBadge}>
               <Ionicons name="lock-closed" size={14} color="#FFF" />
-              <Text style={currentStyles.forceBadgeText}>
+              <Text style={[currentStyles.forceBadgeText, fontWeight('600')]}>
                 {t('common.forceUpdate.mandatoryUpdate')}
               </Text>
             </View>
@@ -143,7 +145,6 @@ const styles = (theme: any, borderRadius: any, spacing: any) =>
     },
     title: {
       fontSize: 22,
-      fontWeight: 'bold',
       color: theme.colors.text || '#000',
       textAlign: 'center',
       marginBottom: spacing.sm || 8,
@@ -172,7 +173,6 @@ const styles = (theme: any, borderRadius: any, spacing: any) =>
     forceBadgeText: {
       fontSize: 12,
       color: '#FFF',
-      fontWeight: '600',
       marginLeft: 4,
     },
   });

@@ -9,7 +9,7 @@ import { useTypography } from '../hooks/useTypography';
 const NotificationBell: React.FC = () => {
   const { theme, spacing } = useTheme();
   const { unreadCount } = useNotifications();
-  const { typography, fontWeight } = useTypography();
+  const { fontWeight } = useTypography();
   const navigation = useNavigation<any>();
 
   return (
@@ -21,7 +21,9 @@ const NotificationBell: React.FC = () => {
       <Ionicons name="notifications-outline" size={26} color={theme.colors.headerText} />
       {unreadCount > 0 && (
         <View style={[styles.badge, { backgroundColor: theme.colors.error || '#EF4444' }]}>
-          <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+          <Text style={[styles.badgeText, fontWeight('bold')]}>
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </Text>
         </View>
       )}
     </TouchableOpacity>
@@ -49,7 +51,6 @@ const styles = StyleSheet.create({
   badgeText: {
     color: '#fff',
     fontSize: 9,
-    fontWeight: 'bold',
     textAlign: 'center',
     lineHeight: 12, // Help with vertical centering
     includeFontPadding: false, // For Android

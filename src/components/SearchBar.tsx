@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Keyboard,
   I18nManager,
+  Platform,
   StyleProp,
   ViewStyle,
   TextStyle,
@@ -14,6 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useTypography } from '../hooks/useTypography';
+import { INPUT_TEXT_ALIGN } from '../lib/rtl';
 
 interface SearchBarProps {
   value: string;
@@ -39,10 +41,14 @@ interface SearchBarProps {
  * Shared search field: leading search icon, text input, and a clear (✕) button
  * that appears once there's text.
  *
- * RTL-correct by construction — it uses `flexDirection: 'row'` + `textAlign: 'left'`
- * + a logical `marginEnd` gap and lets the native RTL engine flip the layout, per
- * the project RTL rule. Do NOT re-introduce manual `row-reverse` / `isRTL() ? 'right'`
- * here — that mismatch is what clipped Arabic-mode search text in BKLT-277.
+ * RTL-correct by construction — it uses `flexDirection: 'row'` + a logical
+ * `marginEnd` gap and lets the native RTL engine flip the layout, per the project
+ * RTL rule. Text alignment goes through the shared `INPUT_TEXT_ALIGN` constant
+ * (rationale in `src/lib/rtl.ts`): the "let native flip 'left'" rule does not
+ * apply to TextInput on either platform, so alignment is resolved there once and
+ * reused here (BKLT-312). Do NOT re-introduce a manual `row-reverse` or a local
+ * `isRTL() ? 'right'` — that layout/text mismatch is what clipped Arabic-mode
+ * search text in BKLT-277.
  */
 const SearchBar: React.FC<SearchBarProps> = ({
   value,
@@ -90,20 +96,21 @@ const SearchBar: React.FC<SearchBarProps> = ({
           typography('body'),
           {
             color: theme.colors.text,
-            // Horizontal: anchor text to the leading edge (next to the icon) and
-            // keep it stable across languages/focus. `textAlign: 'left'` as a STYLE
-            // is flipped to 'right' in Arabic by the native RTL engine (project
-            // rule); `writingDirection` pinned to the UI direction stops iOS from
-            // re-aligning on focus based on the first character's script. (BKLT-277)
-            textAlign: 'left',
-            writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
-            // Vertical: strip the lineHeight that typography('body') injects. An
-            // explicit lineHeight makes iOS render the text lower when focused than
-            // when blurred, dropping it off the icon/clear line. With it gone, the
-            // row's alignItems:'center' keeps icon + text + clear on one line in
-            // both states. (BKLT-277)
-            lineHeight: undefined,
+            // Anchor text to the leading edge (next to the icon) via the shared
+            // INPUT_TEXT_ALIGN (rationale in src/lib/rtl.ts, BKLT-312).
+            textAlign: INPUT_TEXT_ALIGN,
           },
+          // iOS-only vertical/focus tuning (BKLT-277). On Android these BREAK the
+          // field: `lineHeight: undefined` collapses the line box so typed text
+          // renders invisibly (BKLT-312), and `writingDirection` is unneeded since
+          // Android keeps typography's lineHeight. So apply them on iOS only:
+          //  - writingDirection pinned to the UI direction stops iOS re-aligning on
+          //    focus by the first character's script.
+          //  - stripping typography('body')'s lineHeight keeps the text on the
+          //    icon/clear line focused (native field) vs blurred (RN text).
+          Platform.OS === 'ios'
+            ? { writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr', lineHeight: undefined }
+            : null,
           inputStyle,
         ]}
         placeholder={placeholder}

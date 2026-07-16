@@ -341,6 +341,8 @@ const ProfileScreen: React.FC = () => {
               </Text>
               {user?.mobile ? (
                 <Text numberOfLines={1} style={s.headerPhone}>
+                  {/* LRM: keep "+20 010…" LTR inside the RTL paragraph */}
+                  {'‎'}
                   {user?.country_code ? `${user.country_code} ` : ''}
                   {user.mobile}
                 </Text>

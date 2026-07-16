@@ -43,7 +43,8 @@ src/
 - **Auth tokens** in `expo-secure-store` (`auth_token`); misc state in AsyncStorage.
 - **Modals**: global confirm/alert via `ModalContext`'s `showConfirm()` → renders `ConfirmModal` (`confirm-modal-ok` testID).
 - Design tokens from `src/config/` (`colors.ts`, `spacing.ts`, `layout.ts`, `fonts.ts`) — never hardcode colors/spacing.
-- RTL rule: set `textAlign: 'left'` and let native RTL flip it.
+- RTL rule: set `textAlign: 'left'` and let native RTL flip it. **Exception — `TextInput`:** use `INPUT_TEXT_ALIGN` from `src/lib/rtl.ts` instead (and never also set `textAlign` in that input's style, or it wins over the prop). Only the `<Text>` path propagates `layoutDirection`, so for inputs `left`/`right` stay *physical* on both platforms and Arabic text would pin to the wrong edge (BKLT-312).
+- Arabic font rule: font follows the **text's script, not the UI language** — pass `isArabicText(str)` (`src/config/fonts.ts`) as `forceArabic` to `useTypography` for any user-supplied text (names, titles). Never inline a new Arabic-range regex, and never set a bare `fontWeight` (it drops the custom family on Android — use `typography(style, weight)` / `fontWeight(weight)`).
 
 ## Commands
 | Command | What it does |
