@@ -21,9 +21,17 @@ import { useTranslation } from 'react-i18next';
 import { Video, ResizeMode } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
 import { layout } from '../../config/layout';
-import * as SecureStore from 'expo-secure-store';
 import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
-import { tryFetchWithFallback } from '../../config/api';
+import { useLazyQuery, useMutation } from '@apollo/client/react';
+import {
+  DeletePointNoteDocument,
+  LessonDodProgressDocument,
+  MySavedPointsDocument,
+  RecordKeyPointViewDocument,
+  SavePointNoteDocument,
+  ToggleLessonInteractionDocument,
+  ToggleSavedPointBookmarkDocument,
+} from '../../generated/graphql';
 import CloseButton from '../../components/navigation/CloseButton';
 import LessonNavBar from '../../components/navigation/LessonNavBar';
 import UnifiedHeader from '../../components/UnifiedHeader';
@@ -44,33 +52,41 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 interface LessonPoint {
   id: string;
   title: string;
-  explanation?: string;
+  explanation?: string | null;
   order: number;
   is_viewed?: boolean;
 }
 
+// The narrow shape every saved-point payload shares — the mutations return
+// different selections of UserSavedPoint and the screen only reads these.
 interface UserSavedPoint {
   id: string;
   is_bookmarked: boolean;
-  note_content?: string;
+  note_content?: string | null;
   lessonPoint: { id: string };
 }
 
 interface Lesson {
   id: string;
   name: string;
-  summary?: string;
-  points?: string[];
+  summary?: string | null;
+  points?: string[] | null;
   lessonPoints?: LessonPoint[];
-  videoUrl?: string;
-  myInteraction?: 'LIKE' | 'DISLIKE' | null;
-  chapter: {
+  videoUrl?: string | null;
+  myInteraction?: string | null;
+  chapter?: {
     id: string;
     name: string;
-    order: number;
-  };
+    order?: number;
+  } | null;
   isLocked?: boolean;
 }
+
+type InteractionType = 'LIKE' | 'DISLIKE' | null;
+
+/** The backend types myInteraction as String; anything else means "no vote". */
+const toInteraction = (value?: string | null): InteractionType =>
+  value === 'LIKE' || value === 'DISLIKE' ? value : null;
 
 interface LessonDODProgress {
   lessonId: string;
@@ -339,14 +355,14 @@ const StudyLessonScreen: React.FC = () => {
   } | null>(null);
 
   // Like / Dislike — seeded from the lesson list query (myInteraction)
-  const [interaction, setInteraction] = useState<'LIKE' | 'DISLIKE' | null>(
-    currentLesson.myInteraction ?? null,
+  const [interaction, setInteraction] = useState<InteractionType>(
+    toInteraction(currentLesson.myInteraction),
   );
-  const confirmedInteractionRef = useRef<'LIKE' | 'DISLIKE' | null>(
-    currentLesson.myInteraction ?? null,
+  const confirmedInteractionRef = useRef<InteractionType>(
+    toInteraction(currentLesson.myInteraction),
   );
-  const interactionCacheRef = useRef<Map<string, 'LIKE' | 'DISLIKE' | null>>(
-    new Map(allLessons.map((l) => [l.id, l.myInteraction ?? null])),
+  const interactionCacheRef = useRef<Map<string, InteractionType>>(
+    new Map(allLessons.map((l: Lesson) => [l.id, toInteraction(l.myInteraction)])),
   );
   // Cache viewed key-points per lesson so navigating Next/Prev keeps in-session
   // checks (allLessons is loaded once with stale is_viewed flags).
@@ -365,16 +381,32 @@ const StudyLessonScreen: React.FC = () => {
   const [highlightedPointId, setHighlightedPointId] = useState<string | null>(null);
   const [fetchingDetails, setFetchingDetails] = useState(false);
 
+  // Both queries run on demand (lesson switches, post-mutation refreshes)
+  // rather than declaratively, so they're lazy; the local loading flags above
+  // stay the source of truth for the UI because one document serves two callers.
+  // network-only: saved-point flags and DOD progress change as the user works
+  // through the lesson, so a cached answer would show stale state.
+  const [fetchSavedPoints] = useLazyQuery(MySavedPointsDocument, {
+    fetchPolicy: 'network-only',
+  });
+  const [fetchDod] = useLazyQuery(LessonDodProgressDocument, { fetchPolicy: 'network-only' });
+  const [toggleLessonInteraction] = useMutation(ToggleLessonInteractionDocument);
+  const [recordKeyPointView] = useMutation(RecordKeyPointViewDocument);
+  const [toggleSavedPointBookmark] = useMutation(ToggleSavedPointBookmarkDocument);
+  const [savePointNote] = useMutation(SavePointNoteDocument);
+  const [deletePointNote] = useMutation(DeletePointNoteDocument);
+
   const mutationInFlightRef = useRef(false);
   const pointLayoutsRef = useRef<Map<string, number>>(new Map());
   const pointsSectionLayoutY = useRef<number>(0);
 
   // Re-seed when the user navigates to a different lesson
   useEffect(() => {
-    let cachedInteraction = interactionCacheRef.current.get(currentLesson.id);
-    if (cachedInteraction === undefined) {
-      // Seed cache with the lesson's own interaction state
-      cachedInteraction = currentLesson.myInteraction ?? null;
+    const cached = interactionCacheRef.current.get(currentLesson.id);
+    // `null` is a real cached value ("no vote"), so only `undefined` means unseeded.
+    const cachedInteraction: InteractionType =
+      cached === undefined ? toInteraction(currentLesson.myInteraction) : cached;
+    if (cached === undefined) {
       interactionCacheRef.current.set(currentLesson.id, cachedInteraction);
     }
     setInteraction(cachedInteraction);
@@ -386,25 +418,15 @@ const StudyLessonScreen: React.FC = () => {
       if (mutationInFlightRef.current) return;
       try {
         mutationInFlightRef.current = true;
-        const token = await SecureStore.getItemAsync('auth_token');
-        if (!token) return;
 
         const previous = confirmedInteractionRef.current;
         // Toggle off if same type, switch otherwise
         const optimistic: 'LIKE' | 'DISLIKE' | null = previous === type ? null : type;
         setInteraction(optimistic);
 
-        const result = await tryFetchWithFallback(
-          `mutation ToggleLessonInteraction($lessonId: ID!, $type: String!) {
-          toggleLessonInteraction(lessonId: $lessonId, type: $type) {
-            success
-            interactionType
-            message
-          }
-        }`,
-          { lessonId: currentLesson.id, type },
-          token,
-        );
+        const result = await toggleLessonInteraction({
+          variables: { lessonId: currentLesson.id, type },
+        });
 
         const payload = result.data?.toggleLessonInteraction;
         if (payload?.success) {
@@ -426,7 +448,7 @@ const StudyLessonScreen: React.FC = () => {
         mutationInFlightRef.current = false;
       }
     },
-    [currentLesson.id],
+    [currentLesson.id, toggleLessonInteraction],
   );
 
   const currentIndex = allLessons.findIndex((l) => l.id === currentLesson.id);
@@ -502,21 +524,9 @@ const StudyLessonScreen: React.FC = () => {
   const fetchDodProgress = async (lessonId: string) => {
     try {
       setLoadingDod(true);
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
-
-      const result = await tryFetchWithFallback(
-        `query LessonDOD($lessonId: ID!) { 
-          lessonDODProgress(lessonId: $lessonId) { 
-            lessonId keyPointsViewed keyPointsTotal quizzesPassed quizzesRequired totalProgress isComplete 
-          } 
-        }`,
-        { lessonId },
-        token,
-      );
-
-      if (result.data?.lessonDODProgress) {
-        setDodProgress(result.data.lessonDODProgress);
+      const { data } = await fetchDod({ variables: { lessonId } });
+      if (data?.lessonDODProgress) {
+        setDodProgress(data.lessonDODProgress);
       }
     } catch (err) {
       console.error('Fetch DOD error:', err);
@@ -538,14 +548,7 @@ const StudyLessonScreen: React.FC = () => {
       return next;
     });
     try {
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
-
-      await tryFetchWithFallback(
-        `mutation RecordView($lessonPointId: ID!) { recordKeyPointView(lessonPointId: $lessonPointId) }`,
-        { lessonPointId },
-        token,
-      );
+      await recordKeyPointView({ variables: { lessonPointId } });
       fetchDodProgress(lessonId);
     } catch (err) {
       console.error('Record view error:', err);
@@ -555,41 +558,12 @@ const StudyLessonScreen: React.FC = () => {
   const fetchLessonDetails = async (lessonId: string) => {
     try {
       setFetchingDetails(true);
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
-
       // We use mySavedPoints because it's guaranteed to return the lesson object
       // if we're navigating from a bookmark.
-      const result = await tryFetchWithFallback(
-        `query GetLessonDetails($lessonId: ID) {
-          mySavedPoints(lessonId: $lessonId) {
-            lesson {
-              id
-              name
-              summary
-              videoUrl
-              myInteraction
-              lessonPoints {
-                id
-                title
-                explanation
-                order
-                is_viewed
-              }
-              chapter {
-                id
-                name
-                order
-              }
-            }
-          }
-        }`,
-        { lessonId },
-        token,
-      );
+      const { data } = await fetchSavedPoints({ variables: { lessonId } });
 
-      if (result.data?.mySavedPoints?.[0]?.lesson) {
-        const fullLesson = result.data.mySavedPoints[0].lesson;
+      if (data?.mySavedPoints?.[0]?.lesson) {
+        const fullLesson = data.mySavedPoints[0].lesson;
         setCurrentLesson((prev) => ({
           ...prev,
           ...fullLesson,
@@ -616,26 +590,12 @@ const StudyLessonScreen: React.FC = () => {
 
   const fetchLessonMetadata = async (lessonId: string) => {
     try {
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
+      const { data } = await fetchSavedPoints({ variables: { lessonId } });
 
-      const result = await tryFetchWithFallback(
-        `query MySavedPointsMetadata($lessonId: ID) {
-          mySavedPoints(lessonId: $lessonId) {
-            id
-            is_bookmarked
-            note_content
-            lessonPoint { id }
-          }
-        }`,
-        { lessonId },
-        token,
-      );
-
-      if (result.data?.mySavedPoints) {
+      if (data?.mySavedPoints) {
         const pointsMap = new Map<string, UserSavedPoint>();
-        result.data.mySavedPoints.forEach((p: UserSavedPoint) => {
-          pointsMap.set(p.lessonPoint.id, p);
+        data.mySavedPoints.forEach((point) => {
+          pointsMap.set(point.lessonPoint.id, point);
         });
         setSavedPoints(pointsMap);
       }
@@ -646,25 +606,9 @@ const StudyLessonScreen: React.FC = () => {
 
   const handleToggleBookmark = async (pointId: string) => {
     try {
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
-
-      const result = await tryFetchWithFallback(
-        `mutation ToggleSavedPointBookmark($lessonId: ID!, $lessonPointId: ID!) {
-          toggleSavedPointBookmark(lessonId: $lessonId, lessonPointId: $lessonPointId) {
-            success
-            message
-            savedPoint {
-              id
-              is_bookmarked
-              note_content
-              lessonPoint { id }
-            }
-          }
-        }`,
-        { lessonId: currentLesson.id, lessonPointId: pointId },
-        token,
-      );
+      const result = await toggleSavedPointBookmark({
+        variables: { lessonId: currentLesson.id, lessonPointId: pointId },
+      });
 
       if (result.data?.toggleSavedPointBookmark?.success) {
         const sp = result.data.toggleSavedPointBookmark.savedPoint;
@@ -696,43 +640,20 @@ const StudyLessonScreen: React.FC = () => {
 
   const handleSaveNote = async (pointId: string, note: string) => {
     try {
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
-
-      const result = await tryFetchWithFallback(
-        `mutation SavePointNote($lessonId: ID!, $lessonPointId: ID!, $noteContent: String!) {
-          savePointNote(lessonId: $lessonId, lessonPointId: $lessonPointId, noteContent: $noteContent) {
-            success
-            message
-            savedPoint {
-              id
-              is_bookmarked
-              note_content
-              lessonPoint { id }
-            }
-          }
-        }`,
-        { lessonId: currentLesson.id, lessonPointId: pointId, noteContent: note },
-        token,
-      );
+      const result = await savePointNote({
+        variables: { lessonId: currentLesson.id, lessonPointId: pointId, noteContent: note },
+      });
 
       if (result.data?.savePointNote?.success) {
-        let sp = result.data.savePointNote.savedPoint;
+        let sp: UserSavedPoint | null | undefined = result.data.savePointNote.savedPoint;
         const wasBookmarked = savedPoints.get(pointId)?.is_bookmarked ?? false;
         // The backend's savePointNote auto-enables the bookmark. If the user
         // hadn't bookmarked this point, undo it so note and bookmark stay
         // independent and the bookmark toggle stays in sync (backend + UI agree).
         if (sp && !wasBookmarked && sp.is_bookmarked) {
-          const undo = await tryFetchWithFallback(
-            `mutation ToggleSavedPointBookmark($lessonId: ID!, $lessonPointId: ID!) {
-              toggleSavedPointBookmark(lessonId: $lessonId, lessonPointId: $lessonPointId) {
-                success
-                savedPoint { id is_bookmarked note_content lessonPoint { id } }
-              }
-            }`,
-            { lessonId: currentLesson.id, lessonPointId: pointId },
-            token,
-          );
+          const undo = await toggleSavedPointBookmark({
+            variables: { lessonId: currentLesson.id, lessonPointId: pointId },
+          });
           if (undo.data?.toggleSavedPointBookmark?.savedPoint) {
             sp = undo.data.toggleSavedPointBookmark.savedPoint;
           } else if (undo.data?.toggleSavedPointBookmark?.success) {
@@ -763,25 +684,7 @@ const StudyLessonScreen: React.FC = () => {
 
   const handleDeleteNote = async (pointId: string) => {
     try {
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
-
-      const result = await tryFetchWithFallback(
-        `mutation DeletePointNote($lessonPointId: ID!) {
-          deletePointNote(lessonPointId: $lessonPointId) {
-            success
-            message
-            savedPoint {
-              id
-              is_bookmarked
-              note_content
-              lessonPoint { id }
-            }
-          }
-        }`,
-        { lessonPointId: pointId },
-        token,
-      );
+      const result = await deletePointNote({ variables: { lessonPointId: pointId } });
 
       if (result.data?.deletePointNote?.success) {
         const sp = result.data.deletePointNote.savedPoint;
@@ -898,13 +801,16 @@ const StudyLessonScreen: React.FC = () => {
   };
 
   const handleTakeQuiz = () => {
-    const selectedUnits = [
-      {
-        id: currentLesson.chapter.id,
-        name: currentLesson.chapter.name,
-        lessons: [{ id: currentLesson.id, name: currentLesson.name }],
-      },
-    ];
+    const chapter = currentLesson.chapter;
+    const selectedUnits = chapter
+      ? [
+          {
+            id: chapter.id,
+            name: chapter.name,
+            lessons: [{ id: currentLesson.id, name: currentLesson.name }],
+          },
+        ]
+      : [];
     const selectedLessonIds = [currentLesson.id];
 
     navigation.goBack();
@@ -961,7 +867,7 @@ const StudyLessonScreen: React.FC = () => {
               color={theme.colors.primary}
               style={currentStyles.breadcrumbIcon}
             />
-            <Text style={currentStyles.chapterBadge}>{currentLesson.chapter.name}</Text>
+            <Text style={currentStyles.chapterBadge}>{currentLesson.chapter?.name}</Text>
           </View>
           <Text style={currentStyles.mainTitle}>{currentLesson.name}</Text>
         </View>

@@ -1,46 +1,50 @@
-mutation ToggleSavedPointBookmark($lessonId: ID!, $lessonPointId: ID!) {
-  toggleSavedPointBookmark(lessonId: $lessonId, lessonPointId: $lessonPointId) {
-    success
-    message
-    savedPoint {
+# Study domain: subject list → chapters/lessons → lesson reader (key points,
+# notes, bookmarks, DOD progress) and the Bookmarks & Notes screen.
+
+# Study's own subject list — the shared SubjectsForUserGrade in quiz.graphql is
+# deliberately leaner (the leaderboard and quiz flow don't need progress, which
+# the backend computes per subject).
+query StudySubjects {
+  subjectsForUserGrade {
+    id
+    name
+    description
+    language
+    study_progress
+    quiz_progress
+    chapters {
       id
-      is_bookmarked
-      note_content
     }
   }
 }
 
-mutation SavePointNote($lessonId: ID!, $lessonPointId: ID!, $noteContent: String!) {
-  savePointNote(lessonId: $lessonId, lessonPointId: $lessonPointId, noteContent: $noteContent) {
-    success
-    message
-    savedPoint {
+# Same root field as quiz.graphql's LessonsForSubject, but the reader needs the
+# full lesson payload (points, video, interaction) rather than just names.
+query StudyChapters($subjectId: ID!) {
+  lessonsForSubject(subjectId: $subjectId) {
+    id
+    name
+    lessons {
       id
-      is_bookmarked
-      note_content
+      name
+      summary
+      points
+      videoUrl
+      myInteraction
+      lessonPoints {
+        id
+        title
+        explanation
+        order
+        is_viewed
+      }
+      isLocked
     }
   }
 }
 
-mutation DeletePointNote($lessonPointId: ID!) {
-  deletePointNote(lessonPointId: $lessonPointId) {
-    success
-    message
-    savedPoint {
-      id
-      is_bookmarked
-      note_content
-    }
-  }
-}
-
-mutation RemoveSavedPoint($lessonPointId: ID!) {
-  removeSavedPoint(lessonPointId: $lessonPointId) {
-    success
-    message
-  }
-}
-
+# Saved points carry the whole lesson so the reader can restore a lesson opened
+# from a bookmark without a second round trip.
 query MySavedPoints($lessonId: ID) {
   mySavedPoints(lessonId: $lessonId) {
     id
@@ -51,6 +55,19 @@ query MySavedPoints($lessonId: ID) {
     lesson {
       id
       name
+      summary
+      points
+      videoUrl
+      myInteraction
+      lessonPoints {
+        id
+        title
+        explanation
+        order
+        is_viewed
+      }
+      # No `order` on Chapter — the old inline query asked for one, which failed
+      # the whole request, so lessons opened from a bookmark never loaded.
       chapter {
         id
         name
@@ -61,6 +78,91 @@ query MySavedPoints($lessonId: ID) {
       title
       explanation
       order
+    }
+  }
+}
+
+query LessonDODProgress($lessonId: ID!) {
+  lessonDODProgress(lessonId: $lessonId) {
+    lessonId
+    keyPointsViewed
+    keyPointsTotal
+    quizzesPassed
+    quizzesRequired
+    totalProgress
+    isComplete
+  }
+}
+
+mutation RecordKeyPointView($lessonPointId: ID!) {
+  recordKeyPointView(lessonPointId: $lessonPointId)
+}
+
+mutation ToggleLessonInteraction($lessonId: ID!, $type: String!) {
+  toggleLessonInteraction(lessonId: $lessonId, type: $type) {
+    success
+    interactionType
+    message
+  }
+}
+
+mutation ToggleSavedPointBookmark($lessonId: ID!, $lessonPointId: ID!) {
+  toggleSavedPointBookmark(lessonId: $lessonId, lessonPointId: $lessonPointId) {
+    success
+    message
+    savedPoint {
+      id
+      is_bookmarked
+      note_content
+      lessonPoint {
+        id
+      }
+    }
+  }
+}
+
+# Returns the row in full: the Bookmarks & Notes list re-renders it in place.
+mutation SavePointNote($lessonId: ID!, $lessonPointId: ID!, $noteContent: String!) {
+  savePointNote(lessonId: $lessonId, lessonPointId: $lessonPointId, noteContent: $noteContent) {
+    success
+    message
+    savedPoint {
+      id
+      is_bookmarked
+      note_content
+      created_at
+      updated_at
+      lesson {
+        id
+        name
+        chapter {
+          id
+          name
+        }
+      }
+      lessonPoint {
+        id
+        title
+        explanation
+        order
+      }
+    }
+  }
+}
+
+# Deliberately narrow: the row may be gone once its note and bookmark are both
+# cleared, so only the fields both callers need to reconcile local state.
+mutation DeletePointNote($lessonPointId: ID!) {
+  deletePointNote(lessonPointId: $lessonPointId) {
+    success
+    message
+    savedPoint {
+      id
+      is_bookmarked
+      note_content
+      lessonPoint {
+        id
+      }
     }
   }
 }

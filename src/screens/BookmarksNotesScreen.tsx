@@ -18,45 +18,18 @@ import UnifiedHeader from '../components/UnifiedHeader';
 import { ConfirmModal } from '../components/ConfirmModal';
 
 import { layout } from '../config/layout';
-import { tryFetchWithFallback } from '../config/api';
-import * as SecureStore from 'expo-secure-store';
+import { useApolloClient, useMutation, useQuery } from '@apollo/client/react';
+import {
+  DeletePointNoteDocument,
+  MySavedPointsDocument,
+  MySavedPointsQuery,
+  SavePointNoteDocument,
+} from '../generated/graphql';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { GenericListSkeleton } from '../components/SkeletonLoader';
 import { INPUT_TEXT_ALIGN } from '../lib/rtl';
 
-interface SavedPoint {
-  id: string;
-  is_bookmarked: boolean;
-  note_content?: string;
-  created_at: string;
-  updated_at: string;
-  lesson: {
-    id: string;
-    name: string;
-    summary?: string;
-    points?: string[];
-    videoUrl?: string;
-    myInteraction?: 'LIKE' | 'DISLIKE' | null;
-    lessonPoints?: {
-      id: string;
-      title: string;
-      explanation?: string;
-      order: number;
-      is_viewed: boolean;
-    }[];
-    chapter: {
-      id: string;
-      name: string;
-      order?: number;
-    };
-  };
-  lessonPoint: {
-    id: string;
-    title: string;
-    explanation?: string;
-    order: number;
-  };
-}
+type SavedPoint = MySavedPointsQuery['mySavedPoints'][number];
 
 const NoteModal: React.FC<{
   visible: boolean;
@@ -163,77 +136,30 @@ const BookmarksNotesScreen: React.FC = () => {
     title: string;
     message: string;
   } | null>(null);
-  const [savedPoints, setSavedPoints] = useState<SavedPoint[]>([]);
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [noteModalVisible, setNoteModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState<SavedPoint | null>(null);
 
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
+  const { data, loading, refetch } = useQuery(MySavedPointsDocument, {
+    notifyOnNetworkStatusChange: true,
+  });
+  const savedPoints = data?.mySavedPoints ?? [];
 
-      const result = await tryFetchWithFallback(
-        `query MySavedPoints {
-          mySavedPoints {
-            id
-            is_bookmarked
-            note_content
-            created_at
-            updated_at
-            lesson {
-              id
-              name
-              summary
-              points
-              videoUrl
-              myInteraction
-              lessonPoints {
-                id
-                title
-                explanation
-                order
-                is_viewed
-              }
-              chapter {
-                id
-                name
-              }
-            }
-            lessonPoint {
-              id
-              title
-              explanation
-              order
-            }
-          }
-        }`,
-        undefined,
-        token,
-      );
-
-      if (result.data?.mySavedPoints) {
-        setSavedPoints(result.data.mySavedPoints);
-      }
-    } catch (err) {
-      console.error('Fetch saved points error:', err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
-
+  // Notes and bookmarks can be edited inside the lesson reader, so re-check on
+  // every focus.
   useFocusEffect(
     useCallback(() => {
-      fetchData();
-    }, [fetchData]),
+      refetch();
+    }, [refetch]),
   );
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setRefreshing(true);
-    fetchData();
+    try {
+      await refetch();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const filteredData = useMemo(() => {
@@ -263,45 +189,24 @@ const BookmarksNotesScreen: React.FC = () => {
     setNoteModalVisible(true);
   };
 
+  const [savePointNote] = useMutation(SavePointNoteDocument);
+  const [deletePointNote] = useMutation(DeletePointNoteDocument);
+  const client = useApolloClient();
+
   const handleSaveNote = async (note: string) => {
     if (!selectedItem) return;
     try {
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
-
-      const result = await tryFetchWithFallback(
-        `mutation SavePointNote($lessonId: ID!, $lessonPointId: ID!, $noteContent: String!) {
-          savePointNote(lessonId: $lessonId, lessonPointId: $lessonPointId, noteContent: $noteContent) {
-            success
-            message
-            savedPoint {
-              id
-              is_bookmarked
-              note_content
-              created_at
-              updated_at
-              lesson {
-                id
-                name
-                chapter { id name }
-              }
-              lessonPoint { id title explanation order }
-            }
-          }
-        }`,
-        {
+      // The mutation returns the row, and UserSavedPoint is normalized by id —
+      // the cached list updates itself, so there is no local copy to patch.
+      const result = await savePointNote({
+        variables: {
           lessonId: selectedItem.lesson.id,
           lessonPointId: selectedItem.lessonPoint.id,
           noteContent: note,
         },
-        token,
-      );
+      });
 
       if (result.data?.savePointNote?.success) {
-        const updatedPoint = result.data.savePointNote.savedPoint;
-        setSavedPoints((prev) =>
-          prev.map((p) => (p.id === updatedPoint.id ? { ...p, ...updatedPoint } : p)),
-        );
         setNoteModalVisible(false);
         setSelectedItem(null);
 
@@ -318,35 +223,23 @@ const BookmarksNotesScreen: React.FC = () => {
 
   const handleDeleteNote = async () => {
     if (!selectedItem) return;
+    const deletedId = selectedItem.id;
     try {
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
-
-      const result = await tryFetchWithFallback(
-        `mutation DeletePointNote($lessonPointId: ID!) {
-          deletePointNote(lessonPointId: $lessonPointId) {
-            success
-            message
-            savedPoint {
-              id
-              is_bookmarked
-              note_content
-            }
-          }
-        }`,
-        { lessonPointId: selectedItem.lessonPoint.id },
-        token,
-      );
+      const result = await deletePointNote({
+        variables: { lessonPointId: selectedItem.lessonPoint.id },
+      });
 
       if (result.data?.deletePointNote?.success) {
-        const sp = result.data.deletePointNote.savedPoint;
-        setSavedPoints((prev) => {
-          if (sp && (sp.is_bookmarked || sp.note_content)) {
-            return prev.map((p) => (p.id === sp.id ? { ...p, ...sp } : p));
-          } else {
-            return prev.filter((p) => p.id !== selectedItem.id);
-          }
-        });
+        // A row that still has a bookmark comes back updated (and the
+        // normalized write drops it from the notes tab on its own). When the
+        // backend returns nothing the row is gone for good — evict it so it
+        // disappears from every cached list.
+        if (!result.data.deletePointNote.savedPoint) {
+          client.cache.evict({
+            id: client.cache.identify({ __typename: 'UserSavedPoint', id: deletedId }),
+          });
+          client.cache.gc();
+        }
         setNoteModalVisible(false);
         setSelectedItem(null);
 

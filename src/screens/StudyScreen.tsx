@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useQuery } from '@apollo/client/react';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -9,74 +9,14 @@ import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
 import { useTranslation } from 'react-i18next';
 import { layout } from '../config/layout';
-import { tryFetchWithFallback } from '../config/api';
+import { StudySubjectsDocument, StudySubjectsQuery } from '../generated/graphql';
 import UnifiedHeader from '../components/UnifiedHeader';
 import SubjectIcon from '../components/SubjectIcon';
 import { GenericListSkeleton } from '../components/SkeletonLoader';
 import RetryView from '../components/RetryView';
 import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
 
-interface Subject {
-  id: string;
-  name: string;
-  description?: string;
-  language?: string;
-  chapters: { id: string }[];
-  study_progress: number;
-  quiz_progress: number;
-}
-
-const USE_DUMMY_DATA = false; // Flag for testing UI without real API data
-const DUMMY_SUBJECTS: Subject[] = [
-  {
-    id: '1',
-    name: 'Arabic / عربي',
-    description: 'Secondary 1',
-    chapters: [],
-    study_progress: 0,
-    quiz_progress: 0,
-  },
-  {
-    id: '2',
-    name: 'English',
-    description: 'Secondary 1',
-    chapters: [],
-    study_progress: 0,
-    quiz_progress: 0,
-  },
-  {
-    id: '3',
-    name: 'Math / رياضيات',
-    description: 'Secondary 1',
-    chapters: [],
-    study_progress: 0,
-    quiz_progress: 0,
-  },
-  {
-    id: '4',
-    name: 'Science / علوم',
-    description: 'Secondary 1',
-    chapters: [],
-    study_progress: 0,
-    quiz_progress: 0,
-  },
-  {
-    id: '5',
-    name: 'History / تاريخ',
-    description: 'Secondary 1',
-    chapters: [],
-    study_progress: 0,
-    quiz_progress: 0,
-  },
-  {
-    id: '6',
-    name: 'Geography / جغرافيا',
-    description: 'Secondary 1',
-    chapters: [],
-    study_progress: 0,
-    quiz_progress: 0,
-  },
-];
+type Subject = StudySubjectsQuery['subjectsForUserGrade'][number];
 
 const StudyScreen: React.FC = () => {
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
@@ -85,12 +25,19 @@ const StudyScreen: React.FC = () => {
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
   const navigation = useNavigation<any>();
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const lastFetchRef = React.useRef<number>(0);
+  const {
+    data,
+    loading,
+    error: queryError,
+    refetch,
+  } = useQuery(StudySubjectsDocument, { notifyOnNetworkStatusChange: true });
+  const subjects = data?.subjectsForUserGrade ?? [];
+  const error = queryError ? queryError.message || t('study_screen.error_loading_subjects') : null;
+
+  // useQuery fetched on mount, so the first focus inside the window is a no-op.
+  const lastFetchRef = React.useRef<number>(Date.now());
   const STALE_MS = 30_000;
 
   useFocusEffect(
@@ -98,67 +45,20 @@ const StudyScreen: React.FC = () => {
       const now = Date.now();
       if (now - lastFetchRef.current < STALE_MS && subjects.length > 0) return;
       lastFetchRef.current = now;
-      fetchSubjects();
-    }, [subjects.length]),
+      refetch();
+    }, [subjects.length, refetch]),
   );
-
-  const fetchSubjects = async (isRefresh = false) => {
-    try {
-      if (!isRefresh) setLoading(true);
-      setError(null);
-
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) {
-        setError(t('common.error'));
-        return;
-      }
-
-      const result = await tryFetchWithFallback(
-        `
-        query SubjectsForUserGrade {
-          subjectsForUserGrade {
-            id
-            name
-            description
-            language
-            study_progress
-            quiz_progress
-            chapters {
-              id
-            }
-          }
-        }
-      `,
-        undefined,
-        token,
-      );
-
-      if (result.data?.subjectsForUserGrade) {
-        setSubjects(result.data.subjectsForUserGrade);
-      } else {
-        setError(result.errors?.[0]?.message || t('study_screen.error_loading_subjects'));
-      }
-    } catch (err: any) {
-      console.error('Fetch subjects error:', err);
-      setError(err.message || t('study_screen.error_loading_subjects'));
-    } finally {
-      // Always clear loading — previously only the catch did, so a GraphQL-error
-      // response (no thrown exception) left the screen stuck on the skeleton forever.
-      if (!isRefresh) setLoading(false);
-    }
-  };
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchSubjects(true);
+    lastFetchRef.current = Date.now();
+    await refetch();
     setRefreshing(false);
-  }, []);
+  }, [refetch]);
 
   const handleSubjectSelect = (subject: Subject) => {
     navigation.navigate('StudyChapters', { subject });
   };
-
-  const subjectsToRender = USE_DUMMY_DATA ? DUMMY_SUBJECTS : subjects;
 
   const currentStyles = useMemo(
     () => styles(theme, fontSizes, spacing, borderRadius, common, isRTL, typography, fontWeight),
@@ -166,20 +66,20 @@ const StudyScreen: React.FC = () => {
   );
 
   let content;
-  if (loading && subjectsToRender.length === 0 && !USE_DUMMY_DATA) {
+  if (loading && subjects.length === 0) {
     content = (
       <View style={{ paddingTop: 16, paddingHorizontal: layout.screenPadding }}>
         <GenericListSkeleton numItems={6} />
       </View>
     );
-  } else if (error && !USE_DUMMY_DATA) {
+  } else if (error) {
     content = (
       <RetryView
         message={error || t('study_screen.error_loading_subjects')}
-        onRetry={() => fetchSubjects()}
+        onRetry={() => refetch()}
       />
     );
-  } else if (subjectsToRender.length === 0) {
+  } else if (subjects.length === 0) {
     content = (
       <View style={currentStyles.emptyState}>
         <Ionicons name="book-outline" size={spacing.icon.xl} color={theme.colors.textSecondary} />
@@ -215,7 +115,7 @@ const StudyScreen: React.FC = () => {
           <Text style={currentStyles.pageSubtitle}>{t('study_screen.page_subtitle')}</Text>
         </View>
 
-        {subjectsToRender.map((subject) => {
+        {subjects.map((subject) => {
           return (
             <TouchableOpacity
               key={subject.id}

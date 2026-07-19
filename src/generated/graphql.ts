@@ -226,51 +226,45 @@ export type LeaderboardQuery = {
   };
 };
 
-export type ToggleSavedPointBookmarkMutationVariables = Exact<{
-  lessonId: string;
-  lessonPointId: string;
-}>;
+export type StudySubjectsQueryVariables = Exact<{ [key: string]: never }>;
 
-export type ToggleSavedPointBookmarkMutation = {
-  toggleSavedPointBookmark: {
-    success: boolean;
-    message: string | null;
-    savedPoint: { id: string; is_bookmarked: boolean; note_content: string | null } | null;
-  };
+export type StudySubjectsQuery = {
+  subjectsForUserGrade: Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    language: string | null;
+    study_progress: number;
+    quiz_progress: number;
+    chapters: Array<{ id: string }>;
+  }>;
 };
 
-export type SavePointNoteMutationVariables = Exact<{
-  lessonId: string;
-  lessonPointId: string;
-  noteContent: string;
+export type StudyChaptersQueryVariables = Exact<{
+  subjectId: string;
 }>;
 
-export type SavePointNoteMutation = {
-  savePointNote: {
-    success: boolean;
-    message: string | null;
-    savedPoint: { id: string; is_bookmarked: boolean; note_content: string | null } | null;
-  };
-};
-
-export type DeletePointNoteMutationVariables = Exact<{
-  lessonPointId: string;
-}>;
-
-export type DeletePointNoteMutation = {
-  deletePointNote: {
-    success: boolean;
-    message: string | null;
-    savedPoint: { id: string; is_bookmarked: boolean; note_content: string | null } | null;
-  };
-};
-
-export type RemoveSavedPointMutationVariables = Exact<{
-  lessonPointId: string;
-}>;
-
-export type RemoveSavedPointMutation = {
-  removeSavedPoint: { success: boolean; message: string | null };
+export type StudyChaptersQuery = {
+  lessonsForSubject: Array<{
+    id: string;
+    name: string;
+    lessons: Array<{
+      id: string;
+      name: string;
+      summary: string | null;
+      points: Array<string> | null;
+      videoUrl: string | null;
+      myInteraction: string | null;
+      isLocked: boolean;
+      lessonPoints: Array<{
+        id: string;
+        title: string;
+        explanation: string | null;
+        order: number;
+        is_viewed: boolean;
+      }>;
+    }>;
+  }>;
 };
 
 export type MySavedPointsQueryVariables = Exact<{
@@ -284,9 +278,116 @@ export type MySavedPointsQuery = {
     note_content: string | null;
     created_at: string;
     updated_at: string;
-    lesson: { id: string; name: string; chapter: { id: string; name: string } | null };
+    lesson: {
+      id: string;
+      name: string;
+      summary: string | null;
+      points: Array<string> | null;
+      videoUrl: string | null;
+      myInteraction: string | null;
+      lessonPoints: Array<{
+        id: string;
+        title: string;
+        explanation: string | null;
+        order: number;
+        is_viewed: boolean;
+      }>;
+      chapter: { id: string; name: string } | null;
+    };
     lessonPoint: { id: string; title: string; explanation: string | null; order: number };
   }>;
+};
+
+export type LessonDodProgressQueryVariables = Exact<{
+  lessonId: string;
+}>;
+
+export type LessonDodProgressQuery = {
+  lessonDODProgress: {
+    lessonId: string;
+    keyPointsViewed: number;
+    keyPointsTotal: number;
+    quizzesPassed: number;
+    quizzesRequired: number;
+    totalProgress: number;
+    isComplete: boolean;
+  };
+};
+
+export type RecordKeyPointViewMutationVariables = Exact<{
+  lessonPointId: string;
+}>;
+
+export type RecordKeyPointViewMutation = { recordKeyPointView: boolean };
+
+export type ToggleLessonInteractionMutationVariables = Exact<{
+  lessonId: string;
+  type: string;
+}>;
+
+export type ToggleLessonInteractionMutation = {
+  toggleLessonInteraction: {
+    success: boolean;
+    interactionType: string | null;
+    message: string | null;
+  };
+};
+
+export type ToggleSavedPointBookmarkMutationVariables = Exact<{
+  lessonId: string;
+  lessonPointId: string;
+}>;
+
+export type ToggleSavedPointBookmarkMutation = {
+  toggleSavedPointBookmark: {
+    success: boolean;
+    message: string | null;
+    savedPoint: {
+      id: string;
+      is_bookmarked: boolean;
+      note_content: string | null;
+      lessonPoint: { id: string };
+    } | null;
+  };
+};
+
+export type SavePointNoteMutationVariables = Exact<{
+  lessonId: string;
+  lessonPointId: string;
+  noteContent: string;
+}>;
+
+export type SavePointNoteMutation = {
+  savePointNote: {
+    success: boolean;
+    message: string | null;
+    savedPoint: {
+      id: string;
+      is_bookmarked: boolean;
+      note_content: string | null;
+      created_at: string;
+      updated_at: string;
+      lesson: { id: string; name: string; chapter: { id: string; name: string } | null };
+      lessonPoint: { id: string; title: string; explanation: string | null; order: number };
+    } | null;
+  };
+};
+
+export type DeletePointNoteMutationVariables = Exact<{
+  lessonPointId: string;
+}>;
+
+export type DeletePointNoteMutation = {
+  deletePointNote: {
+    success: boolean;
+    message: string | null;
+    savedPoint: {
+      id: string;
+      is_bookmarked: boolean;
+      note_content: string | null;
+      lessonPoint: { id: string };
+    } | null;
+  };
 };
 
 export type UserNotificationsQueryVariables = Exact<{
@@ -1452,6 +1553,357 @@ export const LeaderboardDocument = {
     },
   ],
 } as unknown as DocumentNode<LeaderboardQuery, LeaderboardQueryVariables>;
+export const StudySubjectsDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'StudySubjects' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'subjectsForUserGrade' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'language' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'study_progress' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'quiz_progress' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'chapters' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [{ kind: 'Field', name: { kind: 'Name', value: 'id' } }],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<StudySubjectsQuery, StudySubjectsQueryVariables>;
+export const StudyChaptersDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'StudyChapters' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'subjectId' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'lessonsForSubject' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'subjectId' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'subjectId' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'lessons' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'summary' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'points' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'videoUrl' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'myInteraction' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'lessonPoints' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'explanation' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'order' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'is_viewed' } },
+                          ],
+                        },
+                      },
+                      { kind: 'Field', name: { kind: 'Name', value: 'isLocked' } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<StudyChaptersQuery, StudyChaptersQueryVariables>;
+export const MySavedPointsDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'MySavedPoints' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'lessonId' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'mySavedPoints' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'lessonId' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'lessonId' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'is_bookmarked' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'note_content' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'created_at' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'updated_at' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'lesson' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'summary' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'points' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'videoUrl' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'myInteraction' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'lessonPoints' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'explanation' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'order' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'is_viewed' } },
+                          ],
+                        },
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'chapter' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'lessonPoint' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'explanation' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'order' } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<MySavedPointsQuery, MySavedPointsQueryVariables>;
+export const LessonDodProgressDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'LessonDODProgress' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'lessonId' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'lessonDODProgress' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'lessonId' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'lessonId' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'lessonId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'keyPointsViewed' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'keyPointsTotal' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'quizzesPassed' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'quizzesRequired' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'totalProgress' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'isComplete' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<LessonDodProgressQuery, LessonDodProgressQueryVariables>;
+export const RecordKeyPointViewDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'RecordKeyPointView' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'lessonPointId' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'recordKeyPointView' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'lessonPointId' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'lessonPointId' } },
+              },
+            ],
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<RecordKeyPointViewMutation, RecordKeyPointViewMutationVariables>;
+export const ToggleLessonInteractionDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'ToggleLessonInteraction' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'lessonId' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'type' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'toggleLessonInteraction' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'lessonId' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'lessonId' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'type' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'type' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'interactionType' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'message' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  ToggleLessonInteractionMutation,
+  ToggleLessonInteractionMutationVariables
+>;
 export const ToggleSavedPointBookmarkDocument = {
   kind: 'Document',
   definitions: [
@@ -1509,6 +1961,14 @@ export const ToggleSavedPointBookmarkDocument = {
                       { kind: 'Field', name: { kind: 'Name', value: 'id' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'is_bookmarked' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'note_content' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'lessonPoint' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [{ kind: 'Field', name: { kind: 'Name', value: 'id' } }],
+                        },
+                      },
                     ],
                   },
                 },
@@ -1593,6 +2053,43 @@ export const SavePointNoteDocument = {
                       { kind: 'Field', name: { kind: 'Name', value: 'id' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'is_bookmarked' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'note_content' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'created_at' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'updated_at' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'lesson' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                            {
+                              kind: 'Field',
+                              name: { kind: 'Name', value: 'chapter' },
+                              selectionSet: {
+                                kind: 'SelectionSet',
+                                selections: [
+                                  { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                                  { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'lessonPoint' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'explanation' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'order' } },
+                          ],
+                        },
+                      },
                     ],
                   },
                 },
@@ -1648,6 +2145,14 @@ export const DeletePointNoteDocument = {
                       { kind: 'Field', name: { kind: 'Name', value: 'id' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'is_bookmarked' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'note_content' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'lessonPoint' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [{ kind: 'Field', name: { kind: 'Name', value: 'id' } }],
+                        },
+                      },
                     ],
                   },
                 },
@@ -1659,127 +2164,6 @@ export const DeletePointNoteDocument = {
     },
   ],
 } as unknown as DocumentNode<DeletePointNoteMutation, DeletePointNoteMutationVariables>;
-export const RemoveSavedPointDocument = {
-  kind: 'Document',
-  definitions: [
-    {
-      kind: 'OperationDefinition',
-      operation: 'mutation',
-      name: { kind: 'Name', value: 'RemoveSavedPoint' },
-      variableDefinitions: [
-        {
-          kind: 'VariableDefinition',
-          variable: { kind: 'Variable', name: { kind: 'Name', value: 'lessonPointId' } },
-          type: {
-            kind: 'NonNullType',
-            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
-          },
-        },
-      ],
-      selectionSet: {
-        kind: 'SelectionSet',
-        selections: [
-          {
-            kind: 'Field',
-            name: { kind: 'Name', value: 'removeSavedPoint' },
-            arguments: [
-              {
-                kind: 'Argument',
-                name: { kind: 'Name', value: 'lessonPointId' },
-                value: { kind: 'Variable', name: { kind: 'Name', value: 'lessonPointId' } },
-              },
-            ],
-            selectionSet: {
-              kind: 'SelectionSet',
-              selections: [
-                { kind: 'Field', name: { kind: 'Name', value: 'success' } },
-                { kind: 'Field', name: { kind: 'Name', value: 'message' } },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<RemoveSavedPointMutation, RemoveSavedPointMutationVariables>;
-export const MySavedPointsDocument = {
-  kind: 'Document',
-  definitions: [
-    {
-      kind: 'OperationDefinition',
-      operation: 'query',
-      name: { kind: 'Name', value: 'MySavedPoints' },
-      variableDefinitions: [
-        {
-          kind: 'VariableDefinition',
-          variable: { kind: 'Variable', name: { kind: 'Name', value: 'lessonId' } },
-          type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
-        },
-      ],
-      selectionSet: {
-        kind: 'SelectionSet',
-        selections: [
-          {
-            kind: 'Field',
-            name: { kind: 'Name', value: 'mySavedPoints' },
-            arguments: [
-              {
-                kind: 'Argument',
-                name: { kind: 'Name', value: 'lessonId' },
-                value: { kind: 'Variable', name: { kind: 'Name', value: 'lessonId' } },
-              },
-            ],
-            selectionSet: {
-              kind: 'SelectionSet',
-              selections: [
-                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
-                { kind: 'Field', name: { kind: 'Name', value: 'is_bookmarked' } },
-                { kind: 'Field', name: { kind: 'Name', value: 'note_content' } },
-                { kind: 'Field', name: { kind: 'Name', value: 'created_at' } },
-                { kind: 'Field', name: { kind: 'Name', value: 'updated_at' } },
-                {
-                  kind: 'Field',
-                  name: { kind: 'Name', value: 'lesson' },
-                  selectionSet: {
-                    kind: 'SelectionSet',
-                    selections: [
-                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
-                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
-                      {
-                        kind: 'Field',
-                        name: { kind: 'Name', value: 'chapter' },
-                        selectionSet: {
-                          kind: 'SelectionSet',
-                          selections: [
-                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
-                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
-                          ],
-                        },
-                      },
-                    ],
-                  },
-                },
-                {
-                  kind: 'Field',
-                  name: { kind: 'Name', value: 'lessonPoint' },
-                  selectionSet: {
-                    kind: 'SelectionSet',
-                    selections: [
-                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
-                      { kind: 'Field', name: { kind: 'Name', value: 'title' } },
-                      { kind: 'Field', name: { kind: 'Name', value: 'explanation' } },
-                      { kind: 'Field', name: { kind: 'Name', value: 'order' } },
-                    ],
-                  },
-                },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<MySavedPointsQuery, MySavedPointsQueryVariables>;
 export const UserNotificationsDocument = {
   kind: 'Document',
   definitions: [

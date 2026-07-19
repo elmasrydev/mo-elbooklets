@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,12 +8,12 @@ import {
   ActivityIndicator,
 } from 'react-native';
 
-import * as SecureStore from 'expo-secure-store';
+import { useQuery } from '@apollo/client/react';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
-import { tryFetchWithFallback } from '../../config/api';
+import { StudyChaptersDocument, StudyChaptersQuery } from '../../generated/graphql';
 import { layout } from '../../config/layout';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
@@ -32,28 +32,13 @@ interface Subject {
   language?: string;
 }
 
-interface LessonPoint {
-  id: string;
-  title: string;
-  explanation?: string;
-  order: number;
-}
+type ApiChapter = StudyChaptersQuery['lessonsForSubject'][number];
 
-interface Lesson {
-  id: string;
-  name: string;
-  summary?: string;
-  points?: string[];
-  lessonPoints?: LessonPoint[];
-  videoUrl?: string;
-  myInteraction?: 'LIKE' | 'DISLIKE' | null;
-  chapter: {
-    id: string;
-    name: string;
-    order: number;
-  };
-  isLocked: boolean;
-}
+// The reader needs to know which chapter a lesson belongs to, so each lesson
+// gets a back-reference the API response doesn't carry.
+type Lesson = ApiChapter['lessons'][number] & {
+  chapter: { id: string; name: string; order: number };
+};
 
 interface Chapter {
   id: string;
@@ -73,75 +58,42 @@ const StudyChaptersScreen: React.FC = () => {
   const subject: Subject = route.params?.subject;
   const { checkSubscription } = useSubscriptionGate();
 
-  const [chapters, setChapters] = useState<Chapter[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    data,
+    loading,
+    error: queryError,
+    refetch,
+  } = useQuery(StudyChaptersDocument, {
+    variables: { subjectId: subject?.id },
+    skip: !subject?.id,
+    // myInteraction (like/dislike) must be fresh when returning from the reader.
+    fetchPolicy: 'cache-and-network',
+    notifyOnNetworkStatusChange: true,
+  });
+  const error = queryError ? queryError.message || t('study_chapters.error_loading') : null;
 
-  const fetchLessons = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) {
-        setError(t('common.error'));
-        return;
-      }
-      const result = await tryFetchWithFallback(
-        `
-        query LessonsForSubject($subjectId: ID!) {
-          lessonsForSubject(subjectId: $subjectId) {
-            id
-            name
-            lessons {
-              id
-              name
-              summary
-              points
-              videoUrl
-              myInteraction
-              lessonPoints {
-                id
-                title
-                explanation
-                order
-                is_viewed
-              }
-              isLocked
-            }
-          }
-        }
-      `,
-        { subjectId: subject.id },
-        token,
-      );
-      if (result.data?.lessonsForSubject) {
-        const mappedChapters = result.data.lessonsForSubject.map((chapter: any, idx: number) => ({
-          id: chapter.id,
-          name: chapter.name,
-          order: idx + 1,
-          lessons: chapter.lessons.map((lesson: any) => ({
-            ...lesson,
-            chapter: { id: chapter.id, name: chapter.name, order: idx + 1 },
-          })),
-        }));
-        setChapters(mappedChapters);
-      } else {
-        setError(result.errors?.[0]?.message || t('study_chapters.error_loading'));
-      }
-    } catch (err: any) {
-      console.error('Fetch lessons error:', err);
-      setError(err.message || t('study_chapters.error_loading'));
-    } finally {
-      setLoading(false);
-    }
-  }, [subject.id, t]);
+  // The list is ordered by the backend; `order` is its 1-based position, and
+  // each lesson carries a back-reference so the reader can show its chapter.
+  const chapters: Chapter[] = useMemo(
+    () =>
+      (data?.lessonsForSubject ?? []).map((chapter, idx) => ({
+        id: chapter.id,
+        name: chapter.name,
+        order: idx + 1,
+        lessons: chapter.lessons.map((lesson) => ({
+          ...lesson,
+          chapter: { id: chapter.id, name: chapter.name, order: idx + 1 },
+        })),
+      })),
+    [data],
+  );
 
   // Re-fetch on every focus so myInteraction (like/dislike) is always fresh
   // when the user navigates back from StudyLessonScreen.
   useFocusEffect(
     useCallback(() => {
-      fetchLessons();
-    }, [fetchLessons]),
+      refetch();
+    }, [refetch]),
   );
 
   const handleLessonPress = (lesson: Lesson) => {
@@ -183,7 +135,7 @@ const StudyChaptersScreen: React.FC = () => {
     return (
       <View style={common.container}>
         <UnifiedHeader showBackButton title={subject.name} />
-        <RetryView message={error} onRetry={fetchLessons} />
+        <RetryView message={error} onRetry={() => refetch()} />
       </View>
     );
   }
