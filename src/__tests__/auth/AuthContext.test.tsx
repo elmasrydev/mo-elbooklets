@@ -12,7 +12,6 @@ jest.mock('../../config/api', () => {
   return {
     ...actual,
     tryFetchWithFallback: jest.fn(),
-    setAuthErrorHandler: jest.fn(),
   };
 });
 

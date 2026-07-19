@@ -18,9 +18,9 @@ type MobileAvailabilityType = 'student' | 'parent';
 const INCONCLUSIVE: MobileAvailabilityResult = { status: 'idle', message: '' };
 
 /**
- * Cap on the pre-submit gate: tryFetchWithFallback applies no timeout of its
- * own, so without this a stalled connection would pin the submit button to its
- * spinner for the platform default (up to ~60s on iOS). Timing out is safe —
+ * Cap on the pre-submit gate, deliberately tighter than the transport's own
+ * REQUEST_TIMEOUT_MS: a verdict here is only nice-to-have, so the submit
+ * button shouldn't hang the full transport timeout for it. Timing out is safe —
  * it lands in the fail-open catch below, and `register` / `parentRegister`
  * still enforce uniqueness server-side.
  */

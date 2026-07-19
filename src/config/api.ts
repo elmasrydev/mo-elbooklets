@@ -2,7 +2,7 @@
  * Centralized API Configuration
  *
  * The default API URL is determined by the `debugMode` flag in app.json:
- *   debugMode: true  → https://demo.elbooklets.com/graphql
+ *   debugMode: true  → https://prs.elbooklets.com/graphql
  *   debugMode: false → https://elbooklets.com/graphql
  *
  * This flag is read at build time via expo-constants and controls the entire
@@ -14,6 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 
 import { isDebugMode } from './debug';
+import { isUnauthenticatedError, revokeSession } from '../lib/session';
 
 const PRODUCTION_URL = 'https://elbooklets.com/graphql';
 const DEMO_URL = 'https://demo.elbooklets.com/graphql';
@@ -26,60 +27,21 @@ export const PRIMARY_API_URL =
 // Fallback list starts with the primary URL
 export const POSSIBLE_URLS = [PRIMARY_API_URL];
 
-// Environment info for debugging
-export const ENVIRONMENT_INFO = {
-  isDebugMode: Constants.expoConfig?.extra?.debugMode === true,
-  apiUrl: PRIMARY_API_URL,
-  fallbackCount: POSSIBLE_URLS.length,
-};
-
-// GraphQL endpoint path
-export const GRAPHQL_ENDPOINT = '/graphql';
+/**
+ * Cap on every request from this module (and, via import, Apollo's fetch).
+ * RN's fetch otherwise waits on the platform default — up to ~60s on iOS —
+ * stranding every awaiting screen on a dead connection.
+ */
+export const REQUEST_TIMEOUT_MS = 10000;
 
 declare let __DEV__: boolean;
-
-// Logout handler to be set by AuthContext. Receives the credential being revoked
-// so the handler can still make authenticated cleanup calls (e.g. retiring the
-// push token) before it is gone.
-let authErrorHandler: ((authToken?: string) => void) | null = null;
-export const setAuthErrorHandler = (handler: (authToken?: string) => void) => {
-  authErrorHandler = handler;
-};
 
 /**
  * Check if response contains authentication error
  * (exported so callers can tell "session ended" apart from other GraphQL errors)
  */
-export const checkForAuthError = (data: any): boolean => {
-  if (data?.errors) {
-    for (const err of data.errors) {
-      if (
-        err.message === 'Unauthenticated.' ||
-        err.message?.toLowerCase().includes('unauthenticated')
-      ) {
-        return true;
-      }
-    }
-  }
-  return false;
-};
-
-/**
- * Handle authentication error - clear storage and trigger logout
- */
-const handleAuthError = async () => {
-  if (__DEV__) console.log('Auth error detected in API - logging out...');
-  // Hand the credential to the handler before destroying it. `checkForAuthError`
-  // also matches any error merely containing "unauthenticated", so this fires on
-  // sessions that are still valid — where the push-token cleanup can and should
-  // still authenticate.
-  const authToken = (await SecureStore.getItemAsync('auth_token')) || undefined;
-  await SecureStore.deleteItemAsync('auth_token');
-  await SecureStore.deleteItemAsync('user_data');
-  if (authErrorHandler) {
-    authErrorHandler(authToken);
-  }
-};
+export const checkForAuthError = (data: any): boolean =>
+  !!data?.errors?.some((err: any) => isUnauthenticatedError(err.message, err.extensions?.code));
 
 // AsyncStorage key for API URL override
 export const CUSTOM_API_URL_KEY = 'custom_api_url_override';
@@ -183,6 +145,10 @@ export const tryFetchWithFallback = async (
   const lang = (await AsyncStorage.getItem('user_language')) || 'en';
 
   for (const url of urlsToTry) {
+    // Abort the attempt at the shared timeout instead of waiting on the
+    // platform default; the next URL (if any) still gets its own attempt.
+    const abort = new AbortController();
+    const timer = setTimeout(() => abort.abort(), REQUEST_TIMEOUT_MS);
     try {
       if (__DEV__) console.log(`Trying to connect to: ${url}`);
 
@@ -208,6 +174,7 @@ export const tryFetchWithFallback = async (
           query,
           variables,
         }),
+        signal: abort.signal,
       });
 
       if (response.ok) {
@@ -216,14 +183,16 @@ export const tryFetchWithFallback = async (
 
         // Check for authentication errors in GraphQL response
         if (checkForAuthError(data)) {
-          await handleAuthError();
+          if (__DEV__) console.log('Auth error detected in API - logging out...');
+          await revokeSession();
         }
 
         return data;
       } else {
         // Handle 401 HTTP status
         if (response.status === 401) {
-          await handleAuthError();
+          if (__DEV__) console.log('Auth error detected in API - logging out...');
+          await revokeSession();
         }
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
@@ -231,98 +200,10 @@ export const tryFetchWithFallback = async (
       if (__DEV__) console.log(`Failed to connect to ${url}:`, error.message);
       lastError = error;
       continue;
+    } finally {
+      clearTimeout(timer);
     }
   }
 
   throw lastError || new Error('All connection attempts failed');
-};
-
-/**
- * Configuration for different environments
- */
-export const API_CONFIG = {
-  // Timeout for API requests (in milliseconds)
-  timeout: 10000,
-
-  // Retry configuration
-  maxRetries: 3,
-  retryDelay: 1000,
-
-  // GraphQL specific settings
-  graphql: {
-    endpoint: GRAPHQL_ENDPOINT,
-    introspection: __DEV__, // Enable introspection in development
-    playground: __DEV__, // Enable playground in development
-  },
-};
-
-/**
- * Network status and debugging utilities
- */
-export const NetworkUtils = {
-  /**
-   * Test connectivity to all possible URLs
-   */
-  async testConnectivity(): Promise<
-    { url: string; status: 'success' | 'failed'; error?: string }[]
-  > {
-    const results: { url: string; status: 'success' | 'failed'; error?: string }[] = [];
-
-    for (const url of POSSIBLE_URLS) {
-      try {
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          },
-          body: JSON.stringify({
-            query: '{ __typename }',
-          }),
-        });
-
-        results.push({
-          url,
-          status: (response.ok ? 'success' : 'failed') as 'success' | 'failed',
-          error: response.ok ? undefined : `HTTP ${response.status}`,
-        });
-      } catch (error: any) {
-        results.push({
-          url,
-          status: 'failed' as const,
-          error: error.message,
-        });
-      }
-    }
-
-    return results;
-  },
-
-  /**
-   * Get the first working URL
-   */
-  async getWorkingUrl(): Promise<string | null> {
-    for (const url of POSSIBLE_URLS) {
-      try {
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          },
-          body: JSON.stringify({
-            query: '{ __typename }',
-          }),
-        });
-
-        if (response.ok) {
-          return url;
-        }
-      } catch (error) {
-        continue;
-      }
-    }
-
-    return null;
-  },
 };

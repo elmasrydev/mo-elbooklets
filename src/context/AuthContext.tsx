@@ -8,8 +8,9 @@ import React, {
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import { tryFetchWithFallback, setAuthErrorHandler } from '../config/api';
-import { setLogoutHandler } from '../lib/apollo';
+import { tryFetchWithFallback } from '../config/api';
+import { apolloClient } from '../lib/apollo';
+import { setSessionRevokedHandler } from '../lib/session';
 import { analytics } from '../lib/analytics';
 import {
   configureCrashlyticsStudent,
@@ -161,6 +162,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         await SecureStore.deleteItemAsync('user_role');
         await SecureStore.deleteItemAsync('user_data');
         await SecureStore.deleteItemAsync('parent_data');
+        // The Apollo cache still holds the revoked session's data (profile,
+        // notifications, badges) — drop it so the next sign-in can't see it.
+        await apolloClient.clearStore();
         // `authToken` comes from whichever handler caught the auth failure, which
         // captures it before revoking it. The trigger is often a still-valid session
         // (the matcher fires on any error containing "unauthenticated"), so the
@@ -172,11 +176,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     };
 
-    // Register logout handler for Apollo error link
-    setLogoutHandler(handleSessionExpired);
-
-    // Register logout handler for API fetch calls
-    setAuthErrorHandler(handleSessionExpired);
+    // Single registration point — both transports (the Apollo error link and
+    // tryFetchWithFallback) funnel auth failures through lib/session.
+    setSessionRevokedHandler(handleSessionExpired);
   }, []);
 
   const checkAuthStatus = async () => {
@@ -553,6 +555,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       configureCrashlyticsGuest();
       analytics.trackLogout();
 
+      // Same reason as handleSessionExpired: the cached Apollo data belongs to
+      // the account that just signed out.
+      await apolloClient.clearStore();
       await unregisterDeviceToken(authToken);
       await clearNotificationPromptedFlag();
     } catch (error) {

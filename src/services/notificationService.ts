@@ -340,7 +340,7 @@ export const setupTokenRefreshListener = (): (() => void) => {
 
 // ─── Handler Registration ────────────────────────────────────────────
 
-// Handler registration pattern (same as setLogoutHandler in apollo.ts)
+// Handler registration pattern (same as setSessionRevokedHandler in lib/session.ts)
 // Allows AuthContext to trigger the notification prompt without needing showConfirm
 let notificationPromptHandler: (() => void) | null = null;
 
