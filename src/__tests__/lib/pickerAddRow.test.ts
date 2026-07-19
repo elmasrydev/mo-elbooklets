@@ -1,4 +1,4 @@
-import { shouldOfferAddNew } from '../../utils/pickerAddRow';
+import { shouldOfferAddNew, shouldWarnInvalidName } from '../../utils/pickerAddRow';
 
 describe('shouldOfferAddNew', () => {
   const cities = [
@@ -45,5 +45,41 @@ describe('shouldOfferAddNew', () => {
   it('offers add when the typed text is only a partial (substring) match', () => {
     // "Cai" is a prefix of "Cairo" but not an exact match → still addable.
     expect(shouldOfferAddNew(cities, 'Cai')).toBe(true);
+  });
+
+  // BKLT-318 — the typed text becomes a row other users will see, so it has to
+  // pass the shared name policy before we offer to create it. The policy itself
+  // is covered in nameValidation.test.ts; one representative input is enough to
+  // pin that this function defers to it.
+  it('does not offer add for text outside the name policy', () => {
+    expect(shouldOfferAddNew(cities, '<script>alert(1)</script>')).toBe(false);
+  });
+});
+
+describe('shouldWarnInvalidName', () => {
+  const cities = [{ id: '1', name: 'Cairo', name_ar: 'القاهرة', name_en: 'Cairo' }];
+
+  it('warns when the typed text is long enough but not a valid name', () => {
+    expect(shouldWarnInvalidName(cities, '<script>')).toBe(true);
+    expect(shouldWarnInvalidName(cities, 'Newtown😀')).toBe(true);
+  });
+
+  it('stays quiet while the user is still typing', () => {
+    expect(shouldWarnInvalidName(cities, '')).toBe(false);
+    expect(shouldWarnInvalidName(cities, '<')).toBe(false);
+  });
+
+  it('stays quiet for valid text', () => {
+    expect(shouldWarnInvalidName(cities, 'Newtown')).toBe(false);
+  });
+
+  // A row created before BKLT-318 can hold a name the policy now rejects. The
+  // user can still select it, so telling them their input is malformed while
+  // the matching row sits right above would be wrong.
+  it('stays quiet when a legacy row already has that exact (policy-invalid) name', () => {
+    const legacy = [{ id: '7', name: 'Cairo/Giza', name_ar: 'Cairo/Giza', name_en: 'Cairo/Giza' }];
+    expect(shouldWarnInvalidName(legacy, 'Cairo/Giza')).toBe(false);
+    // …but an unmatched policy-invalid string still warns.
+    expect(shouldWarnInvalidName(legacy, 'Cairo/Qalyub')).toBe(true);
   });
 });

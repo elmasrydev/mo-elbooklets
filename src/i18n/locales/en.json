@@ -832,6 +832,7 @@
   "profile": {
     "add_failed": "Couldn't add that right now. Please try again.",
     "cant_find_add": "Can't find it? Add ⁨\"{{name}}\"⁩",
+    "name_invalid_chars": "Use letters, numbers and spaces. The marks \u2068- ' .\u2069 are allowed inside the name only \u2014 not at the start or end, and not doubled.",
     "personal_info": "Personal Information",
     "change_password": "Change Password",
     "city": "City",

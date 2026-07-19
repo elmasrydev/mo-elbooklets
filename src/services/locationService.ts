@@ -11,6 +11,7 @@
  */
 import { tryFetchWithFallback } from '../config/api';
 import { logError } from '../utils/logger';
+import { isValidPlaceName } from '../utils/validators';
 
 export interface AddedCity {
   id: string;
@@ -51,7 +52,14 @@ const ADD_SCHOOL_MUTATION = `
 /** Create (or fetch) a city under a governorate. Returns null on failure. */
 export const addCity = async (governorateId: string, name: string): Promise<AddedCity | null> => {
   const trimmed = name.trim();
-  if (!governorateId || !trimmed) return null;
+  if (!governorateId) return null;
+  // Last line of defence (BKLT-318): the UI already hides the add row for an
+  // invalid name, so reaching here means a caller skipped that check — log it,
+  // otherwise the bypass is invisible.
+  if (!isValidPlaceName(trimmed)) {
+    logError('addCity rejected an invalid name', trimmed);
+    return null;
+  }
   try {
     const result = await tryFetchWithFallback(ADD_CITY_MUTATION, {
       governorate_id: governorateId,
@@ -74,7 +82,10 @@ export const addSchool = async (
   governorate?: string,
 ): Promise<AddedSchool | null> => {
   const trimmed = name.trim();
-  if (!trimmed) return null;
+  if (!isValidPlaceName(trimmed)) {
+    logError('addSchool rejected an invalid name', trimmed);
+    return null;
+  }
   try {
     const result = await tryFetchWithFallback(ADD_SCHOOL_MUTATION, {
       name: trimmed,

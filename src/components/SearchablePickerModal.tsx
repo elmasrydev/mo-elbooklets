@@ -17,7 +17,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { useTypography } from '../hooks/useTypography';
 import SearchBar from './SearchBar';
-import { shouldOfferAddNew } from '../utils/pickerAddRow';
+import { shouldOfferAddNew, shouldWarnInvalidName } from '../utils/pickerAddRow';
+import { NAME_MAX_LENGTH } from '../utils/validators';
 
 interface SearchablePickerModalProps {
   visible: boolean;
@@ -63,7 +64,11 @@ const SearchablePickerModal: React.FC<SearchablePickerModalProps> = ({
   const { typography, fontWeight } = useTypography();
 
   const trimmedSearch = searchValue.trim();
-  const showAddRow = !!onAddNew && !loading && shouldOfferAddNew(data, searchValue);
+  const canAdd = !!onAddNew && !loading;
+  const showAddRow = canAdd && shouldOfferAddNew(data, searchValue);
+  // The search box is deliberately unfiltered so any existing entry stays
+  // findable; this tells the user why "Add …" didn't appear (BKLT-318).
+  const showInvalidNameHint = canAdd && shouldWarnInvalidName(data, searchValue);
 
   return (
     <Modal visible={visible} transparent={true} animationType="slide" onRequestClose={onClose}>
@@ -91,6 +96,7 @@ const SearchablePickerModal: React.FC<SearchablePickerModalProps> = ({
               onChangeText={onSearchChange}
               placeholder={placeholder}
               autoFocus
+              maxLength={onAddNew ? NAME_MAX_LENGTH : undefined}
               returnKeyType="done"
               onSubmitEditing={Keyboard.dismiss}
               style={[styles.searchBox, { backgroundColor: theme.colors.background }]}
@@ -113,7 +119,7 @@ const SearchablePickerModal: React.FC<SearchablePickerModalProps> = ({
                   />
                 )}
 
-                {!loading && data.length === 0 && !showAddRow && (
+                {!loading && data.length === 0 && !showAddRow && !showInvalidNameHint && (
                   <View style={styles.emptyContainer}>
                     <Text
                       style={[
@@ -158,6 +164,18 @@ const SearchablePickerModal: React.FC<SearchablePickerModalProps> = ({
                     })}
                   </Text>
                 </TouchableOpacity>
+              ) : showInvalidNameHint ? (
+                <View style={styles.emptyContainer} testID="picker-invalid-name">
+                  <Text
+                    style={[
+                      styles.emptyText,
+                      typography('body'),
+                      { color: theme.colors.textTertiary },
+                    ]}
+                  >
+                    {t('profile.name_invalid_chars')}
+                  </Text>
+                </View>
               ) : null
             }
             renderItem={({ item }) => (

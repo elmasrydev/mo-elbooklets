@@ -34,6 +34,8 @@ interface SearchBarProps {
   inputStyle?: StyleProp<TextStyle>;
   /** Colour of the leading search icon. Defaults to theme.colors.textTertiary. */
   iconColor?: string;
+  /** Hard cap on typed characters. Unbounded when omitted. */
+  maxLength?: number;
   testID?: string;
 }
 
@@ -62,6 +64,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   style,
   inputStyle,
   iconColor,
+  maxLength,
   testID,
 }) => {
   const { theme } = useTheme();
@@ -117,6 +120,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
         placeholderTextColor={theme.colors.textTertiary}
         value={value}
         onChangeText={onChangeText}
+        maxLength={maxLength}
         autoFocus={autoFocus}
         returnKeyType={returnKeyType}
         onSubmitEditing={onSubmitEditing}

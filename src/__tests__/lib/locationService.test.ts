@@ -1,5 +1,6 @@
 import { addCity, addSchool } from '../../services/locationService';
 import { tryFetchWithFallback } from '../../config/api';
+import { NAME_MAX_LENGTH } from '../../utils/validators';
 
 jest.mock('../../config/api', () => ({ tryFetchWithFallback: jest.fn() }));
 jest.mock('../../utils/logger', () => ({ logError: jest.fn() }));
@@ -7,7 +8,10 @@ jest.mock('../../utils/logger', () => ({ logError: jest.fn() }));
 const mockFetch = tryFetchWithFallback as jest.Mock;
 
 describe('locationService', () => {
-  beforeEach(() => jest.clearAllMocks());
+  // resetAllMocks, not clearAllMocks: clearAllMocks leaves any unconsumed
+  // mockResolvedValueOnce queued, so a test that short-circuits before calling
+  // the API silently hands its queued value to the next test.
+  beforeEach(() => jest.resetAllMocks());
 
   describe('addCity', () => {
     it('returns the created city and trims the name', async () => {
@@ -24,19 +28,29 @@ describe('locationService', () => {
     });
 
     it('returns null without calling the API when governorate or name is missing', async () => {
-      expect(await addCity('', 'x')).toBeNull();
+      expect(await addCity('', 'Newtown')).toBeNull();
       expect(await addCity('5', '   ')).toBeNull();
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    // BKLT-318 — the UI hides the add row for these, so this is the backstop for
+    // a caller that skips that check.
+    it('returns null without calling the API for a name outside the name policy', async () => {
+      expect(await addCity('5', '<script>alert(1)</script>')).toBeNull();
+      expect(await addCity('5', "Newtown'; DROP TABLE cities;--")).toBeNull();
+      expect(await addCity('5', 'a')).toBeNull();
+      expect(await addCity('5', 'a'.repeat(NAME_MAX_LENGTH + 1))).toBeNull();
       expect(mockFetch).not.toHaveBeenCalled();
     });
 
     it('returns null on GraphQL errors', async () => {
       mockFetch.mockResolvedValueOnce({ errors: [{ message: 'boom' }] });
-      expect(await addCity('5', 'x')).toBeNull();
+      expect(await addCity('5', 'Newtown')).toBeNull();
     });
 
     it('returns null when the request throws', async () => {
       mockFetch.mockRejectedValueOnce(new Error('network'));
-      expect(await addCity('5', 'x')).toBeNull();
+      expect(await addCity('5', 'Newtown')).toBeNull();
     });
   });
 
@@ -56,10 +70,13 @@ describe('locationService', () => {
 
     it('sends governorate: null when omitted', async () => {
       mockFetch.mockResolvedValueOnce({
-        data: { addSchool: { id: '9', name: 'S', name_en: null, is_verified: false } },
+        data: { addSchool: { id: '9', name: 'Al Nasr', name_en: null, is_verified: false } },
       });
-      await addSchool('S');
-      expect(mockFetch).toHaveBeenCalledWith(expect.any(String), { name: 'S', governorate: null });
+      await addSchool('Al Nasr');
+      expect(mockFetch).toHaveBeenCalledWith(expect.any(String), {
+        name: 'Al Nasr',
+        governorate: null,
+      });
     });
 
     it('returns null without calling the API for an empty name', async () => {
@@ -67,9 +84,20 @@ describe('locationService', () => {
       expect(mockFetch).not.toHaveBeenCalled();
     });
 
+    it('returns null without calling the API for a name outside the name policy', async () => {
+      expect(await addSchool('<script>alert(1)</script>')).toBeNull();
+      expect(await addSchool('Al Nasr😀')).toBeNull();
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
     it('returns null on GraphQL errors', async () => {
       mockFetch.mockResolvedValueOnce({ errors: [{ message: 'x' }] });
-      expect(await addSchool('S')).toBeNull();
+      expect(await addSchool('Al Nasr')).toBeNull();
+    });
+
+    it('returns null when the request throws', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('network'));
+      expect(await addSchool('Al Nasr')).toBeNull();
     });
   });
 });
