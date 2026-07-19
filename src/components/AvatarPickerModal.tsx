@@ -10,13 +10,13 @@ import {
   StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as SecureStore from 'expo-secure-store';
+import { useLazyQuery, useMutation } from '@apollo/client/react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
-import { tryFetchWithFallback } from '../config/api';
+import { AvatarsDocument, UpdateProfileDocument } from '../generated/graphql';
 import { layout } from '../config/layout';
 
 interface AvatarItem {
@@ -55,22 +55,18 @@ const AvatarPickerModal: React.FC<AvatarPickerModalProps> = ({ visible, onClose 
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // Pages are appended into local state, so the query runs imperatively.
+  const [runAvatarsQuery] = useLazyQuery(AvatarsDocument);
+  const [updateProfile] = useMutation(UpdateProfileDocument);
+
   const fetchAvatars = useCallback(
     async (g: Gender, pageToLoad: number) => {
       try {
         setLoading(true);
         setError(null);
-        const token = await SecureStore.getItemAsync('auth_token');
-        const result = await tryFetchWithFallback(
-          `query Avatars($gender: String, $first: Int!, $page: Int) {
-            avatars(gender: $gender, first: $first, page: $page) {
-              data { id name url gender }
-              paginatorInfo { currentPage lastPage }
-            }
-          }`,
-          { gender: g, first: PAGE_SIZE, page: pageToLoad },
-          token || undefined,
-        );
+        const result = await runAvatarsQuery({
+          variables: { gender: g, first: PAGE_SIZE, page: pageToLoad },
+        });
         const payload = result.data?.avatars;
         if (payload?.data) {
           setAvatars((prev) => (pageToLoad === 1 ? payload.data : [...prev, ...payload.data]));
@@ -85,7 +81,7 @@ const AvatarPickerModal: React.FC<AvatarPickerModalProps> = ({ visible, onClose 
         setLoading(false);
       }
     },
-    [t],
+    [t, runAvatarsQuery],
   );
 
   // On open: reset to the user's current gender/avatar and load that gender's list.
@@ -118,18 +114,9 @@ const AvatarPickerModal: React.FC<AvatarPickerModalProps> = ({ visible, onClose 
     try {
       setSaving(true);
       setError(null);
-      const token = await SecureStore.getItemAsync('auth_token');
-      const result = await tryFetchWithFallback(
-        `mutation UpdateProfile($input: UpdateProfileInput!) {
-          updateProfile(input: $input) {
-            id
-            gender
-            selectedAvatar { id name url gender }
-          }
-        }`,
-        { input: { gender, avatar_id: selectedId } },
-        token || undefined,
-      );
+      const result = await updateProfile({
+        variables: { input: { gender, avatar_id: selectedId } },
+      });
       if (result.data?.updateProfile) {
         await updateUser({
           gender: result.data.updateProfile.gender ?? gender,

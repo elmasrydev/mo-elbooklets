@@ -1,0 +1,151 @@
+# Profile domain: completeness prompt, profile editing, avatar picker, and the
+# shared reference data (grades, educational systems, governorates, cities,
+# schools) used by registration, the profile editor, and the completion prompt.
+
+query ProfileCompleteness {
+  profileCompleteness {
+    isComplete
+    missingFields
+    percentage
+    needsGender
+    needsSchool
+    needsParentMobile
+    needsEmail
+    needsGovernorate
+    needsCity
+  }
+}
+
+# The profile header shows the signed-in user's XP; the leaderboard's userEntry
+# is the only place that exposes it.
+query ProfileXp($limit: Int) {
+  leaderboard(limit: $limit) {
+    userEntry {
+      xp
+    }
+  }
+}
+
+# Counts only — the profile header renders totals, not the lists themselves.
+query FollowCounts {
+  myFollowing {
+    id
+  }
+  myFollowers {
+    id
+  }
+}
+
+# One document for every updateProfile caller (editor, avatar picker, the
+# completion prompt, the debug unverify action): the superset keeps the
+# normalized User entity complete whichever screen writes it.
+mutation UpdateProfile($input: UpdateProfileInput!) {
+  updateProfile(input: $input) {
+    id
+    name
+    email
+    gender
+    school_name
+    parent_mobile
+    mobile_verified_at
+    governorate_id
+    governorate {
+      id
+      name_ar
+      name_en
+    }
+    city_id
+    city {
+      id
+      name_ar
+      name_en
+    }
+    educational_system {
+      id
+      name
+    }
+    selectedAvatar {
+      id
+      name
+      url
+      gender
+    }
+  }
+}
+
+query Avatars($gender: String, $first: Int!, $page: Int) {
+  avatars(gender: $gender, first: $first, page: $page) {
+    data {
+      id
+      name
+      url
+      gender
+    }
+    paginatorInfo {
+      currentPage
+      lastPage
+    }
+  }
+}
+
+# --- Reference data ---
+
+# GetGrades lives in auth.graphql — registration owns it.
+
+query GetEduSystems {
+  educationalSystems {
+    id
+    name
+  }
+}
+
+query GetGovernorates {
+  governorates {
+    id
+    name_ar
+    name_en
+  }
+}
+
+query SearchCities($governorate_id: ID, $query: String!) {
+  searchCities(governorate_id: $governorate_id, query: $query) {
+    id
+    name_ar
+    name_en
+    governorate_id
+  }
+}
+
+query SearchSchools($search: String!) {
+  searchSchools(search: $search) {
+    id
+    name
+    name_en
+    is_verified
+  }
+}
+
+# User-suggested entries (BKLT-318 validates the names before they get here).
+mutation AddCity($governorate_id: ID!, $name: String!) {
+  addCity(governorate_id: $governorate_id, name: $name) {
+    id
+    name_ar
+    name_en
+    governorate_id
+  }
+}
+
+mutation AddSchool($name: String!, $governorate: String) {
+  addSchool(name: $name, governorate: $governorate) {
+    id
+    name
+    name_en
+    is_verified
+  }
+}
+
+query GetAppConfig {
+  appConfig {
+    campaignFreeAccess
+  }
+}

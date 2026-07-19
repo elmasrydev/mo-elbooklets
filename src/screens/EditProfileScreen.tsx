@@ -15,10 +15,18 @@ import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../context/AuthContext';
-import { tryFetchWithFallback } from '../config/api';
+import { useAuth, User } from '../context/AuthContext';
+import { useLazyQuery, useMutation } from '@apollo/client/react';
+import {
+  ForgotPasswordDocument,
+  GetEduSystemsDocument,
+  GetGovernoratesDocument,
+  SearchCitiesDocument,
+  SearchSchoolsDocument,
+  UpdatePasswordDocument,
+  UpdateProfileDocument,
+} from '../generated/graphql';
 import { addCity, addSchool } from '../services/locationService';
-import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 import UnifiedHeader from '../components/UnifiedHeader';
 import AppButton from '../components/AppButton';
@@ -76,6 +84,17 @@ const EditProfileScreen: React.FC = () => {
     city_id: (user as any)?.city_id || '',
     governorate_id: (user as any)?.governorate_id || '',
   });
+
+  // Reference lookups run on demand (modal opens, debounced search boxes), so
+  // they're lazy; results stay in local state because the pickers merge in
+  // user-suggested entries (BKLT-318).
+  const [runGovernoratesQuery] = useLazyQuery(GetGovernoratesDocument);
+  const [runEduSystemsQuery] = useLazyQuery(GetEduSystemsDocument);
+  const [runCitiesQuery] = useLazyQuery(SearchCitiesDocument);
+  const [runSchoolsQuery] = useLazyQuery(SearchSchoolsDocument);
+  const [updateProfile] = useMutation(UpdateProfileDocument);
+  const [updatePassword] = useMutation(UpdatePasswordDocument);
+  const [forgotPassword] = useMutation(ForgotPasswordDocument);
 
   const [governorates, setGovernorates] = useState<any[]>([]);
   const [cities, setCities] = useState<City[]>([]);
@@ -137,9 +156,7 @@ const EditProfileScreen: React.FC = () => {
   const fetchGovernorates = async () => {
     try {
       setFetchingGov(true);
-      const result = await tryFetchWithFallback(
-        `query GetGovernorates { governorates { id name_ar name_en } }`,
-      );
+      const result = await runGovernoratesQuery();
       if (result.data?.governorates) {
         setGovernorates(result.data.governorates);
       }
@@ -166,20 +183,8 @@ const EditProfileScreen: React.FC = () => {
   const fetchCities = async (governorateId: string, search: string = '') => {
     try {
       setFetchingCities(true);
-      const query = `
-        query SearchCities($governorate_id: ID, $query: String!) {
-          searchCities(governorate_id: $governorate_id, query: $query) {
-            id
-            name_ar
-            name_en
-            governorate_id
-          }
-        }
-      `;
-
-      const result = await tryFetchWithFallback(query, {
-        governorate_id: governorateId,
-        query: search,
+      const result = await runCitiesQuery({
+        variables: { governorate_id: governorateId, query: search },
       });
 
       if (result.data?.searchCities) {
@@ -200,9 +205,7 @@ const EditProfileScreen: React.FC = () => {
   const fetchEduSystems = async () => {
     try {
       setFetchingEdu(true);
-      const result = await tryFetchWithFallback(
-        `query GetEduSystems { educationalSystems { id name } }`,
-      );
+      const result = await runEduSystemsQuery();
       if (result.data?.educationalSystems) {
         setEduSystems(result.data.educationalSystems);
       }
@@ -216,18 +219,7 @@ const EditProfileScreen: React.FC = () => {
   const fetchSchoolSuggestions = async (search: string) => {
     try {
       setLoadingSchools(true);
-      const query = `
-        query SearchSchools($search: String!) {
-          searchSchools(search: $search) {
-            id
-            name
-            name_en
-            is_verified
-          }
-        }
-      `;
-
-      const result = await tryFetchWithFallback(query, { search });
+      const result = await runSchoolsQuery({ variables: { search } });
 
       if (result.data?.searchSchools) {
         setSchoolSuggestions(result.data.searchSchools);
@@ -382,8 +374,6 @@ const EditProfileScreen: React.FC = () => {
 
     try {
       setLoading(true);
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
 
       // Omit empty fields so we don't send empty-string ids (educational_system_id,
       // city_id, governorate_id, ...) which the backend expects as null/omitted.
@@ -394,28 +384,13 @@ const EditProfileScreen: React.FC = () => {
         }
       });
 
-      const mutation = `
-        mutation UpdateProfile($input: UpdateProfileInput!) {
-          updateProfile(input: $input) {
-            id 
-            name 
-            email 
-            gender 
-            school_name 
-            parent_mobile
-            governorate_id
-            governorate { id name_ar name_en }
-            city_id
-            city { id name_ar name_en }
-            educational_system { id name } 
-          }
-        }
-      `;
-
-      const result = await tryFetchWithFallback(mutation, { input }, token);
+      const result = await updateProfile({ variables: { input } });
 
       if (result.data?.updateProfile) {
-        await updateUser(result.data.updateProfile);
+        // Merge: the mutation returns the fields it can change, not the whole
+        // User. The cast bridges wire nulls to the model's optional fields —
+        // both read as "absent" everywhere this object is consumed.
+        await updateUser({ ...user, ...result.data.updateProfile } as User);
         showConfirm({
           title: t('common.success'),
           message: t('profile.update_success'),
@@ -423,10 +398,9 @@ const EditProfileScreen: React.FC = () => {
           onConfirm: () => navigation.goBack(),
         });
       } else {
-        const errorMsg = result.errors?.[0]?.message || t('common.error');
         showConfirm({
           title: t('common.error'),
-          message: errorMsg,
+          message: t('common.error'),
           showCancel: false,
           onConfirm: () => {},
         });
@@ -467,8 +441,6 @@ const EditProfileScreen: React.FC = () => {
 
     try {
       setLoading(true);
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
 
       const input = {
         current_password: passwordState.oldPassword,
@@ -476,16 +448,7 @@ const EditProfileScreen: React.FC = () => {
         password_confirmation: passwordState.confirmPassword,
       };
 
-      const mutation = `
-        mutation UpdatePassword($input: UpdatePasswordInput!) {
-          updatePassword(input: $input) {
-            success
-            message
-          }
-        }
-      `;
-
-      const result = await tryFetchWithFallback(mutation, { input }, token);
+      const result = await updatePassword({ variables: { input } });
 
       if (result.data?.updatePassword?.success) {
         showConfirm({
@@ -498,8 +461,7 @@ const EditProfileScreen: React.FC = () => {
           },
         });
       } else {
-        const errorMsg =
-          result.errors?.[0]?.message || result.data?.updatePassword?.message || t('common.error');
+        const errorMsg = result.data?.updatePassword?.message || t('common.error');
         showConfirm({
           title: t('common.error'),
           message: errorMsg,
@@ -525,16 +487,7 @@ const EditProfileScreen: React.FC = () => {
 
     try {
       setLoading(true);
-      const query = `
-        mutation ForgotPassword($email: String!) {
-          forgotPassword(email: $email) {
-            success
-            message
-          }
-        }
-      `;
-
-      const result = await tryFetchWithFallback(query, { email: user.email });
+      const result = await forgotPassword({ variables: { email: user.email } });
 
       if (result.data?.forgotPassword?.success) {
         showConfirm({
@@ -544,8 +497,7 @@ const EditProfileScreen: React.FC = () => {
           onConfirm: () => {},
         });
       } else {
-        const errorMsg =
-          result.errors?.[0]?.message || result.data?.forgotPassword?.message || t('common.error');
+        const errorMsg = result.data?.forgotPassword?.message || t('common.error');
         showConfirm({
           title: t('common.error'),
           message: errorMsg,

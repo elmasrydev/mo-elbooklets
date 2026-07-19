@@ -27,7 +27,7 @@ import {
 import i18n from '../i18n';
 
 // Temporary types for testing
-interface User {
+export interface User {
   id: string;
   name: string;
   email?: string;

@@ -49,6 +49,25 @@ export type UpdatePasswordInput = {
   password_confirmation: string;
 };
 
+/** Update profile input for progressive field collection */
+export type UpdateProfileInput = {
+  avatar_id?: string | null | undefined;
+  city?: string | null | undefined;
+  city_id?: string | null | undefined;
+  educational_system_id?: string | null | undefined;
+  email?: string | null | undefined;
+  gender?: string | null | undefined;
+  governorate_id?: string | null | undefined;
+  language?: string | null | undefined;
+  name?: string | null | undefined;
+  parent_country_code?: string | null | undefined;
+  parent_country_code_2?: string | null | undefined;
+  parent_mobile?: string | null | undefined;
+  parent_mobile_2?: string | null | undefined;
+  school_id?: string | null | undefined;
+  school_name?: string | null | undefined;
+};
+
 export type GetGradesQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GetGradesQuery = { grades: Array<{ id: string; name: string }> };
@@ -585,6 +604,119 @@ export type GetChildDashboardQuery = {
     }>;
   };
 };
+
+export type ProfileCompletenessQueryVariables = Exact<{ [key: string]: never }>;
+
+export type ProfileCompletenessQuery = {
+  profileCompleteness: {
+    isComplete: boolean;
+    missingFields: Array<string>;
+    percentage: number;
+    needsGender: boolean;
+    needsSchool: boolean;
+    needsParentMobile: boolean;
+    needsEmail: boolean;
+    needsGovernorate: boolean;
+    needsCity: boolean;
+  };
+};
+
+export type ProfileXpQueryVariables = Exact<{
+  limit?: number | null | undefined;
+}>;
+
+export type ProfileXpQuery = { leaderboard: { userEntry: { xp: number } | null } };
+
+export type FollowCountsQueryVariables = Exact<{ [key: string]: never }>;
+
+export type FollowCountsQuery = {
+  myFollowing: Array<{ id: string }>;
+  myFollowers: Array<{ id: string }>;
+};
+
+export type UpdateProfileMutationVariables = Exact<{
+  input: UpdateProfileInput;
+}>;
+
+export type UpdateProfileMutation = {
+  updateProfile: {
+    id: string;
+    name: string;
+    email: string | null;
+    gender: string | null;
+    school_name: string | null;
+    parent_mobile: string | null;
+    mobile_verified_at: string | null;
+    governorate_id: string | null;
+    city_id: string | null;
+    governorate: { id: string; name_ar: string; name_en: string } | null;
+    city: { id: string; name_ar: string; name_en: string } | null;
+    educational_system: { id: string; name: string } | null;
+    selectedAvatar: { id: string; name: string; url: string; gender: string | null } | null;
+  };
+};
+
+export type AvatarsQueryVariables = Exact<{
+  gender?: string | null | undefined;
+  first: number;
+  page?: number | null | undefined;
+}>;
+
+export type AvatarsQuery = {
+  avatars: {
+    data: Array<{ id: string; name: string; url: string; gender: string | null }>;
+    paginatorInfo: { currentPage: number; lastPage: number };
+  };
+};
+
+export type GetEduSystemsQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetEduSystemsQuery = { educationalSystems: Array<{ id: string; name: string }> };
+
+export type GetGovernoratesQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetGovernoratesQuery = {
+  governorates: Array<{ id: string; name_ar: string; name_en: string }>;
+};
+
+export type SearchCitiesQueryVariables = Exact<{
+  governorate_id?: string | null | undefined;
+  query: string;
+}>;
+
+export type SearchCitiesQuery = {
+  searchCities: Array<{ id: string; name_ar: string; name_en: string; governorate_id: string }>;
+};
+
+export type SearchSchoolsQueryVariables = Exact<{
+  search: string;
+}>;
+
+export type SearchSchoolsQuery = {
+  searchSchools: Array<{ id: string; name: string; name_en: string | null; is_verified: boolean }>;
+};
+
+export type AddCityMutationVariables = Exact<{
+  governorate_id: string;
+  name: string;
+}>;
+
+export type AddCityMutation = {
+  addCity: { id: string; name_ar: string; name_en: string; governorate_id: string };
+};
+
+export type AddSchoolMutationVariables = Exact<{
+  name: string;
+  governorate?: string | null | undefined;
+}>;
+
+export type AddSchoolMutation = {
+  addSchool: { id: string; name: string; name_en: string | null; is_verified: boolean };
+};
+
+export type GetAppConfigQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetAppConfigQuery = { appConfig: { campaignFreeAccess: boolean } };
 
 export type UserQuizHistoryQueryVariables = Exact<{ [key: string]: never }>;
 
@@ -2949,6 +3081,588 @@ export const GetChildDashboardDocument = {
     },
   ],
 } as unknown as DocumentNode<GetChildDashboardQuery, GetChildDashboardQueryVariables>;
+export const ProfileCompletenessDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'ProfileCompleteness' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'profileCompleteness' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'isComplete' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'missingFields' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'percentage' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'needsGender' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'needsSchool' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'needsParentMobile' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'needsEmail' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'needsGovernorate' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'needsCity' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<ProfileCompletenessQuery, ProfileCompletenessQueryVariables>;
+export const ProfileXpDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'ProfileXp' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'limit' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'leaderboard' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'limit' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'limit' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'userEntry' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [{ kind: 'Field', name: { kind: 'Name', value: 'xp' } }],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<ProfileXpQuery, ProfileXpQueryVariables>;
+export const FollowCountsDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'FollowCounts' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'myFollowing' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [{ kind: 'Field', name: { kind: 'Name', value: 'id' } }],
+            },
+          },
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'myFollowers' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [{ kind: 'Field', name: { kind: 'Name', value: 'id' } }],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<FollowCountsQuery, FollowCountsQueryVariables>;
+export const UpdateProfileDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'UpdateProfile' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'UpdateProfileInput' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'updateProfile' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'gender' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'school_name' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'parent_mobile' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'mobile_verified_at' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'governorate_id' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'governorate' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name_ar' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name_en' } },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'city_id' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'city' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name_ar' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name_en' } },
+                    ],
+                  },
+                },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'educational_system' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                    ],
+                  },
+                },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'selectedAvatar' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'gender' } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<UpdateProfileMutation, UpdateProfileMutationVariables>;
+export const AvatarsDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'Avatars' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'gender' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'first' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'page' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'avatars' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'gender' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'gender' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'first' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'first' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'page' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'page' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'data' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'gender' } },
+                    ],
+                  },
+                },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'paginatorInfo' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'currentPage' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'lastPage' } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<AvatarsQuery, AvatarsQueryVariables>;
+export const GetEduSystemsDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'GetEduSystems' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'educationalSystems' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<GetEduSystemsQuery, GetEduSystemsQueryVariables>;
+export const GetGovernoratesDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'GetGovernorates' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'governorates' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name_ar' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name_en' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<GetGovernoratesQuery, GetGovernoratesQueryVariables>;
+export const SearchCitiesDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'SearchCities' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'governorate_id' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'query' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'searchCities' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'governorate_id' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'governorate_id' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'query' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'query' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name_ar' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name_en' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'governorate_id' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<SearchCitiesQuery, SearchCitiesQueryVariables>;
+export const SearchSchoolsDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'SearchSchools' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'search' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'searchSchools' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'search' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'search' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name_en' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'is_verified' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<SearchSchoolsQuery, SearchSchoolsQueryVariables>;
+export const AddCityDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'AddCity' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'governorate_id' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'name' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'addCity' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'governorate_id' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'governorate_id' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'name' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'name' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name_ar' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name_en' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'governorate_id' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<AddCityMutation, AddCityMutationVariables>;
+export const AddSchoolDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'AddSchool' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'name' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'governorate' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'addSchool' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'name' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'name' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'governorate' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'governorate' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name_en' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'is_verified' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<AddSchoolMutation, AddSchoolMutationVariables>;
+export const GetAppConfigDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'GetAppConfig' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'appConfig' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [{ kind: 'Field', name: { kind: 'Name', value: 'campaignFreeAccess' } }],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<GetAppConfigQuery, GetAppConfigQueryVariables>;
 export const UserQuizHistoryDocument = {
   kind: 'Document',
   definitions: [

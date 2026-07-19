@@ -17,7 +17,6 @@ import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
-import { tryFetchWithFallback } from '../config/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../context/LanguageContext';
@@ -34,6 +33,12 @@ import {
   sanitizePersonName,
   isValidPersonName,
 } from '../utils/validators';
+import { useQuery } from '@apollo/client/react';
+import {
+  GetAppConfigDocument,
+  GetEduSystemsDocument,
+  GetGradesDocument,
+} from '../generated/graphql';
 import { useMobileAvailability } from '../hooks/useMobileAvailability';
 import MobileAvailabilityHint from '../components/MobileAvailabilityHint';
 
@@ -78,60 +83,18 @@ const RegisterScreen: React.FC = () => {
   const { typography, fontWeight } = useTypography();
   const isRTL = language === 'ar';
 
-  const [gradesData, setGradesData] = useState<{ grades: any[] } | null>(null);
-  const [eduSystems, setEduSystems] = useState<any[]>([]);
-  const [campaignFreeAccess, setCampaignFreeAccess] = useState(false);
+  // Reference data for step 2 — all three load once on mount.
+  const { data: gradesData } = useQuery(GetGradesDocument);
+  const { data: eduSystemsData } = useQuery(GetEduSystemsDocument);
+  const { data: appConfigData } = useQuery(GetAppConfigDocument);
+  const eduSystems = eduSystemsData?.educationalSystems ?? [];
+  const campaignFreeAccess = appConfigData?.appConfig?.campaignFreeAccess ?? false;
 
   const messages = {
     no_referral: t(
       'auth.no_referral_disclaimer',
       'You are now going to sign up without referral code and will have Trial Limited Access only',
     ),
-  };
-
-  useEffect(() => {
-    fetchRegistrationData();
-  }, []);
-
-  const fetchRegistrationData = async () => {
-    fetchGrades();
-    fetchEduSystems();
-    fetchAppConfig();
-  };
-
-  const fetchAppConfig = async () => {
-    try {
-      const result = await tryFetchWithFallback(
-        `query GetAppConfig { appConfig { campaignFreeAccess } }`,
-      );
-      if (result.data?.appConfig) {
-        setCampaignFreeAccess(result.data.appConfig.campaignFreeAccess);
-      }
-    } catch (error) {
-      console.error('Error fetching app config:', error);
-    }
-  };
-
-  const fetchGrades = async () => {
-    try {
-      const result = await tryFetchWithFallback(`query GetGrades { grades { id name } }`);
-      if (result.data) setGradesData(result.data);
-    } catch (error) {
-      console.error('Error fetching grades:', error);
-    }
-  };
-
-  const fetchEduSystems = async () => {
-    try {
-      const result = await tryFetchWithFallback(
-        `query GetEduSystems { educationalSystems { id name } }`,
-      );
-      if (result.data?.educationalSystems) {
-        setEduSystems(result.data.educationalSystems);
-      }
-    } catch (error) {
-      console.error('Error fetching edu systems:', error);
-    }
   };
 
   // Validation Flags
