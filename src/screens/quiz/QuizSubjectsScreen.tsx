@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { useQuery } from '@apollo/client/react';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import { loadFailureMessage } from '../../utils/queryError';
 import { useLanguage } from '../../context/LanguageContext';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
@@ -32,7 +33,11 @@ const QuizSubjectsScreen: React.FC = () => {
     refetch,
   } = useQuery(SubjectsForUserGradeDocument, { notifyOnNetworkStatusChange: true });
   const subjects = data?.subjectsForUserGrade ?? [];
-  const error = queryError ? t('quiz_subjects.error_loading_subjects') : null;
+  const error = loadFailureMessage(
+    data?.subjectsForUserGrade,
+    queryError,
+    t('quiz_subjects.error_loading_subjects'),
+  );
 
   const currentStyles = styles(
     theme,

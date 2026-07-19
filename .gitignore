@@ -69,3 +69,6 @@ handover_summary.md
 booki-graphql-api.md
 mobile-availability-check-mutation.md
 notification-localization-mobile-guide.md
+
+# Bug-report screenshots (CLAUDE.md: never commit screenshots to the repo root)
+simulator_screenshot_*.png

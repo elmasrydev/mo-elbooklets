@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
+import { loadFailureMessage } from '../../utils/queryError';
 import { QuizDocument, QuizQuery, SubmitQuizAnswersDocument } from '../../generated/graphql';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
 import useAndroidBack from '../../hooks/useAndroidBack';
@@ -107,9 +108,7 @@ const QuizTakingScreen: React.FC = () => {
   const quiz = quizData?.quiz ?? null;
   const error = !quizId
     ? t('common.error')
-    : quizQueryError
-      ? quizQueryError.message || t('quiz_taking.error_loading_quiz')
-      : null;
+    : loadFailureMessage(quizData?.quiz, quizQueryError, t('quiz_taking.error_loading_quiz'));
 
   const trackedQuizIdRef = React.useRef<string | null>(null);
   useEffect(() => {

@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
+import { loadFailureMessage } from '../../utils/queryError';
 import { PublishQuizToFeedDocument, QuizReviewDocument } from '../../generated/graphql';
 import { layout } from '../../config/layout';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
@@ -62,9 +63,7 @@ const QuizReviewScreen: React.FC = () => {
   });
   const error = !quizId
     ? 'No quiz ID'
-    : queryError
-      ? queryError.message || t('common.error')
-      : null;
+    : loadFailureMessage(reviewData?.quizResults, queryError, t('common.error'));
 
   // Derive the per-question MCQ options once per response: descriptive types
   // have none, true/false uses the first two, MCQ filters empty option slots.

@@ -19,6 +19,7 @@ import { useQuery } from '@apollo/client/react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import { loadFailureMessage } from '../utils/queryError';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
 import UnifiedHeader from '../components/UnifiedHeader';
@@ -185,9 +186,11 @@ const LeaderboardScreen: React.FC = () => {
     entries: leaderboardData?.leaderboard?.entries ?? [],
     userEntry: leaderboardData?.leaderboard?.userEntry ?? null,
   };
-  const leaderboardError = leaderboardErrorObj
-    ? t('leaderboard_screen.error_loading_leaderboard')
-    : null;
+  const leaderboardError = loadFailureMessage(
+    leaderboardData?.leaderboard,
+    leaderboardErrorObj,
+    t('leaderboard_screen.error_loading_leaderboard'),
+  );
 
   // useQuery fetched on mount, so the first focus inside the stale window
   // must not refetch again.

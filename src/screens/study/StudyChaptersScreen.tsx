@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
+import { loadFailureMessage } from '../../utils/queryError';
 import { StudyChaptersDocument, StudyChaptersQuery } from '../../generated/graphql';
 import { layout } from '../../config/layout';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
@@ -70,7 +71,11 @@ const StudyChaptersScreen: React.FC = () => {
     fetchPolicy: 'cache-and-network',
     notifyOnNetworkStatusChange: true,
   });
-  const error = queryError ? queryError.message || t('study_chapters.error_loading') : null;
+  const error = loadFailureMessage(
+    data?.lessonsForSubject,
+    queryError,
+    t('study_chapters.error_loading'),
+  );
 
   // The list is ordered by the backend; `order` is its 1-based position, and
   // each lesson carries a back-reference so the reader can show its chapter.

@@ -8,6 +8,7 @@ import { useFollowToggle } from '../hooks/useFollowToggle';
 import { useTheme } from '../context/ThemeContext';
 import { useModal } from '../context/ModalContext';
 import { useTranslation } from 'react-i18next';
+import { loadFailureMessage } from '../utils/queryError';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
 import UnifiedHeader from '../components/UnifiedHeader';
@@ -55,7 +56,11 @@ const SocialScreen: React.FC = () => {
     refetch: refetchTimeline,
   } = useQuery(SocialTimelineDocument, { notifyOnNetworkStatusChange: true });
   const feedItems = timelineData?.socialTimeline ?? [];
-  const timelineError = timelineErrorObj ? timelineErrorObj.message : null;
+  const timelineError = loadFailureMessage(
+    timelineData?.socialTimeline,
+    timelineErrorObj,
+    t('social_screen.error_loading_timeline'),
+  );
 
   // useQuery already fetched on mount, so the first focus within the stale
   // window must not refetch.

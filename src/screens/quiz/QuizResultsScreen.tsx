@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
+import { loadFailureMessage } from '../../utils/queryError';
 import { PublishQuizToFeedDocument, QuizResultsDocument } from '../../generated/graphql';
 import { layout } from '../../config/layout';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
@@ -80,7 +81,11 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
     notifyOnNetworkStatusChange: true,
   });
   const quizResult = resultsData?.quizResults ?? null;
-  const error = queryError ? queryError.message || t('quiz_results.error_loading_results') : null;
+  const error = loadFailureMessage(
+    resultsData?.quizResults,
+    queryError,
+    t('quiz_results.error_loading_results'),
+  );
 
   const trackedQuizIdRef = React.useRef<string | null>(null);
   useEffect(() => {

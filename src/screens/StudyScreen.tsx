@@ -8,6 +8,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
 import { useTranslation } from 'react-i18next';
+import { loadFailureMessage } from '../utils/queryError';
 import { layout } from '../config/layout';
 import { StudySubjectsDocument, StudySubjectsQuery } from '../generated/graphql';
 import UnifiedHeader from '../components/UnifiedHeader';
@@ -34,7 +35,11 @@ const StudyScreen: React.FC = () => {
     refetch,
   } = useQuery(StudySubjectsDocument, { notifyOnNetworkStatusChange: true });
   const subjects = data?.subjectsForUserGrade ?? [];
-  const error = queryError ? queryError.message || t('study_screen.error_loading_subjects') : null;
+  const error = loadFailureMessage(
+    data?.subjectsForUserGrade,
+    queryError,
+    t('study_screen.error_loading_subjects'),
+  );
 
   // useQuery fetched on mount, so the first focus inside the window is a no-op.
   const lastFetchRef = React.useRef<number>(Date.now());

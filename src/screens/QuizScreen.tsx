@@ -10,6 +10,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { layout } from '../config/layout';
 import { UserQuizHistoryDocument, UserQuizHistoryQuery } from '../generated/graphql';
 import { useTranslation } from 'react-i18next';
+import { loadFailureMessage } from '../utils/queryError';
 import RecentActivityCard from '../components/RecentActivityCard';
 import UnifiedHeader from '../components/UnifiedHeader';
 import { GenericListSkeleton } from '../components/SkeletonLoader';
@@ -34,7 +35,11 @@ const QuizScreen: React.FC = () => {
     refetch: refetchHistory,
   } = useQuery(UserQuizHistoryDocument, { notifyOnNetworkStatusChange: true });
   const quizHistory = historyData?.userQuizHistory ?? [];
-  const historyError = historyErrorObj ? t('quiz_screen.error_loading_history') : null;
+  const historyError = loadFailureMessage(
+    historyData?.userQuizHistory,
+    historyErrorObj,
+    t('quiz_screen.error_loading_history'),
+  );
 
   useFocusEffect(
     useCallback(() => {
