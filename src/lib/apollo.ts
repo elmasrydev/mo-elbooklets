@@ -5,9 +5,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { PRIMARY_API_URL, ApiUriManager } from '../config/api';
 
-// Logout handler to be set by AuthContext
-let logoutHandler: (() => void) | null = null;
-export const setLogoutHandler = (handler: () => void) => {
+// Logout handler to be set by AuthContext. Receives the credential being revoked
+// so the handler can still make authenticated cleanup calls (e.g. retiring the
+// push token) before it is gone.
+let logoutHandler: ((authToken?: string) => void) | null = null;
+export const setLogoutHandler = (handler: (authToken?: string) => void) => {
   logoutHandler = handler;
 };
 
@@ -39,6 +41,19 @@ const authLink = setContext(async (_, { headers }) => {
   };
 });
 
+/**
+ * Clear the stored session and hand the credential being revoked to the logout
+ * handler, which needs it to authenticate its cleanup calls before it is gone.
+ * Deliberately not awaited by the error link — `onError` must stay synchronous so
+ * Apollo does not mistake a returned promise for a retry observable.
+ */
+const revokeSession = async () => {
+  const authToken = (await SecureStore.getItemAsync('auth_token')) || undefined;
+  await SecureStore.deleteItemAsync('auth_token');
+  await SecureStore.deleteItemAsync('user_data');
+  logoutHandler?.(authToken);
+};
+
 // Error link to handle authentication failures
 const errorLink = onError((errorResponse: any) => {
   const graphQLErrors = errorResponse.graphQLErrors;
@@ -53,13 +68,7 @@ const errorLink = onError((errorResponse: any) => {
         (err.extensions && err.extensions.code === 'UNAUTHENTICATED')
       ) {
         if (__DEV__) console.log('Auth error detected, logging out...');
-        // Clear stored auth data
-        SecureStore.deleteItemAsync('auth_token');
-        SecureStore.deleteItemAsync('user_data');
-        // Trigger logout in AuthContext
-        if (logoutHandler) {
-          logoutHandler();
-        }
+        revokeSession();
         break;
       }
     }
@@ -67,11 +76,7 @@ const errorLink = onError((errorResponse: any) => {
   // Also handle 401 network errors
   if (networkError && 'statusCode' in networkError && (networkError as any).statusCode === 401) {
     if (__DEV__) console.log('401 error detected, logging out...');
-    SecureStore.deleteItemAsync('auth_token');
-    SecureStore.deleteItemAsync('user_data');
-    if (logoutHandler) {
-      logoutHandler();
-    }
+    revokeSession();
   }
 });
 

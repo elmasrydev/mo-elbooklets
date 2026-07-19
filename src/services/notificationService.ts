@@ -100,8 +100,16 @@ export const openSettings = () => {
 
 const REGISTERED_FCM_TOKEN_KEY = 'registered_fcm_token';
 const REGISTERED_FCM_ROLE_KEY = 'registered_fcm_role';
+const PENDING_FCM_DELETE_KEY = 'pending_fcm_delete';
 
 type UserRole = 'student' | 'parent';
+
+/**
+ * FCM tokens are stable device identifiers, and `logInfo`/`logError` are gated on
+ * the build-time debug flag rather than `__DEV__`, so they can reach a shipped
+ * artifact. Log enough of the token to correlate entries, not enough to reuse it.
+ */
+const maskToken = (token: string): string => `${token.slice(0, 12)}…`;
 
 const REGISTER_MUTATIONS: Record<UserRole, string> = {
   student: `mutation RegisterDeviceToken($token: String!, $platform: String!) {
@@ -152,11 +160,38 @@ export const getFCMToken = async (): Promise<string | null> => {
 };
 
 /**
+ * Delete the FCM token at the device level, invalidating it with Firebase, so the
+ * next registration mints a fresh one. Returns whether the token is now gone.
+ */
+const deleteFCMToken = async (): Promise<boolean> => {
+  try {
+    const isEmulator = await DeviceInfo.isEmulator();
+    if (Platform.OS === 'ios' && isEmulator) return true;
+
+    await messaging().deleteToken();
+    logInfo('FCM: Device token deleted');
+    return true;
+  } catch (error) {
+    logError('FCM: Failed to delete device token', error);
+    return false;
+  }
+};
+
+/**
  * Register the device's FCM token with the backend server.
  * Stores the registered token + role locally for later unregistration.
  */
 export const registerDeviceToken = async (role: UserRole): Promise<void> => {
   try {
+    // A previous sign-out could not retire its token — it was offline for both the
+    // server call and the FCM delete. Retire it now, before minting the token this
+    // account is about to bind, so the two accounts never share one.
+    if (await AsyncStorage.getItem(PENDING_FCM_DELETE_KEY)) {
+      if (await deleteFCMToken()) {
+        await AsyncStorage.removeItem(PENDING_FCM_DELETE_KEY);
+      }
+    }
+
     const token = await getFCMToken();
     if (!token) {
       logInfo('FCM: No token available, skipping registration');
@@ -176,47 +211,46 @@ export const registerDeviceToken = async (role: UserRole): Promise<void> => {
     // Store locally so we can unregister on logout
     await AsyncStorage.setItem(REGISTERED_FCM_TOKEN_KEY, token);
     await AsyncStorage.setItem(REGISTERED_FCM_ROLE_KEY, role);
-    logInfo(`FCM Register Success | Role: ${role} | Platform: ${platform} | Token: ${token}`);
+    logInfo(
+      `FCM Register Success | Role: ${role} | Platform: ${platform} | Token: ${maskToken(token)}`,
+    );
   } catch (error) {
     logError(`FCM Register Error | Role: ${role} | Platform: ${Platform.OS}`, error);
   }
 };
 
 /**
- * Delete the FCM token at the device level, invalidating it with Firebase.
- * The next registration mints a fresh one.
- */
-const deleteFCMToken = async (): Promise<void> => {
-  try {
-    const isEmulator = await DeviceInfo.isEmulator();
-    if (Platform.OS === 'ios' && isEmulator) return;
-
-    await messaging().deleteToken();
-    logInfo('FCM: Device token deleted');
-  } catch (error) {
-    logError('FCM: Failed to delete device token', error);
-  }
-};
-
-/**
  * Ask the backend to drop each token that may still be bound to the account.
+ * Returns true only if every token was accepted.
  */
 const retireTokensOnServer = async (
   tokens: string[],
   role: UserRole,
   authToken?: string,
-): Promise<void> => {
+): Promise<boolean> => {
   const mutation = UNREGISTER_MUTATIONS[role];
+  let allRetired = true;
 
   for (const token of tokens) {
-    const result = await tryFetchWithFallback(mutation, { token }, authToken);
+    try {
+      const result = await tryFetchWithFallback(mutation, { token }, authToken);
 
-    if (result?.errors) {
-      logError(`FCM Unregister Failed | Role: ${role} | Token: ${token}`, result.errors);
-    } else {
-      logInfo(`FCM Unregister Success | Role: ${role} | Token: ${token}`);
+      if (result?.errors) {
+        logError(
+          `FCM Unregister Failed | Role: ${role} | Token: ${maskToken(token)}`,
+          result.errors,
+        );
+        allRetired = false;
+      } else {
+        logInfo(`FCM Unregister Success | Role: ${role} | Token: ${maskToken(token)}`);
+      }
+    } catch (error) {
+      logError(`FCM Unregister Error | Role: ${role} | Token: ${maskToken(token)}`, error);
+      allRetired = false;
     }
   }
+
+  return allRetired;
 };
 
 /**
@@ -228,17 +262,17 @@ const retireTokensOnServer = async (
  * otherwise falls back to reading `auth_token` from SecureStore (BKLT-316).
  */
 export const unregisterDeviceToken = async (authToken?: string): Promise<void> => {
-  const storedToken = await AsyncStorage.getItem(REGISTERED_FCM_TOKEN_KEY);
-  const role = (await AsyncStorage.getItem(REGISTERED_FCM_ROLE_KEY)) as UserRole | null;
-
-  // Clear the local bookkeeping up front, before any network call. It stops the
-  // token-refresh listener from re-registering a rotated token against the account
-  // being signed out, and it short-circuits the re-entrant call that happens when
-  // this mutation itself comes back "Unauthenticated." and trips the global
-  // auth-error handler, which calls back into here.
-  await AsyncStorage.multiRemove([REGISTERED_FCM_TOKEN_KEY, REGISTERED_FCM_ROLE_KEY]);
-
   try {
+    const storedToken = await AsyncStorage.getItem(REGISTERED_FCM_TOKEN_KEY);
+    const role = (await AsyncStorage.getItem(REGISTERED_FCM_ROLE_KEY)) as UserRole | null;
+
+    // Clear the local bookkeeping up front, before any network call. It stops the
+    // token-refresh listener from re-registering a rotated token against the account
+    // being signed out, and it short-circuits the re-entrant call that happens when
+    // this mutation itself comes back "Unauthenticated." and trips the global
+    // auth-error handler, which calls back into here.
+    await AsyncStorage.multiRemove([REGISTERED_FCM_TOKEN_KEY, REGISTERED_FCM_ROLE_KEY]);
+
     if (!storedToken || !role) {
       logInfo('FCM: No registered token found, skipping unregistration');
       return;
@@ -250,15 +284,23 @@ export const unregisterDeviceToken = async (authToken?: string): Promise<void> =
     const liveToken = await getFCMToken();
     const bound = liveToken && liveToken !== storedToken ? [storedToken, liveToken] : [storedToken];
 
-    await retireTokensOnServer(bound, role, authToken);
+    const retiredOnServer = await retireTokensOnServer(bound, role, authToken);
+
+    // Backstop for the cases the server call cannot cover: an already-expired
+    // session, or a backend that still holds the binding. Killing the token at the
+    // FCM level means pushes aimed at the signed-out account cannot reach here.
+    const deletedOnDevice = await deleteFCMToken();
+
+    // Signing out while offline fails both, which leaves a live token still bound
+    // to the account — the BKLT-316 symptom. The local keys are already gone by
+    // this point, so record the debt separately and settle it before the next
+    // account binds a token on this device.
+    if (!retiredOnServer && !deletedOnDevice) {
+      await AsyncStorage.setItem(PENDING_FCM_DELETE_KEY, 'true');
+      logInfo('FCM: Token still live after failed unregister, queued for deletion');
+    }
   } catch (error) {
     logError('FCM Unregister Error', error);
-  } finally {
-    // Backstop for every case where the server-side unregister could not happen:
-    // logging out while offline, an already-expired session, or a backend that
-    // still has the token bound. Killing the token at the FCM level means pushes
-    // aimed at the signed-out account cannot be delivered to this device.
-    await deleteFCMToken();
   }
 };
 
@@ -282,7 +324,7 @@ export const setupTokenRefreshListener = (): (() => void) => {
       if (!result?.errors) {
         await AsyncStorage.setItem(REGISTERED_FCM_TOKEN_KEY, newToken);
         logInfo(
-          `FCM Refresh Register Success | Role: ${role} | Platform: ${platform} | Token: ${newToken}`,
+          `FCM Refresh Register Success | Role: ${role} | Platform: ${platform} | Token: ${maskToken(newToken)}`,
         );
       } else {
         logError(

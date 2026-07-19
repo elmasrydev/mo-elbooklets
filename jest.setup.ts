@@ -53,7 +53,6 @@ jest.mock('react-native-device-info', () => {
   };
 });
 
-
 // Mock React Native Firebase native module requirements
 NativeModules.RNFBAppModule = {
   getApp: jest.fn(),
@@ -80,7 +79,6 @@ jest.mock('@react-native-firebase/app', () => {
     initializeApp: jest.fn(() => mockApp),
   };
 });
-
 
 // Mock React Native Reanimated
 jest.mock('react-native-reanimated', () => {
@@ -110,7 +108,7 @@ jest.mock('expo-constants', () => ({
 
 // Mock AsyncStorage
 jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock')
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 
 // Mock Expo SecureStore
@@ -195,12 +193,21 @@ jest.mock('@react-native-firebase/crashlytics', () => {
 });
 
 jest.mock('@react-native-firebase/messaging', () => {
-  return () => ({
+  // A single shared instance, so tests can assert against the same mock the code
+  // under test calls. Returning a fresh object per call would make that impossible.
+  const instance = {
     requestPermission: jest.fn(() => Promise.resolve(true)),
     getToken: jest.fn(() => Promise.resolve('mock-fcm-token')),
+    deleteToken: jest.fn(() => Promise.resolve()),
     onMessage: jest.fn(),
     onNotificationOpenedApp: jest.fn(),
-  });
+    onTokenRefresh: jest.fn(() => jest.fn()),
+    isDeviceRegisteredForRemoteMessages: true,
+    registerDeviceForRemoteMessages: jest.fn(() => Promise.resolve()),
+  };
+  const messaging = () => instance;
+  messaging.AuthorizationStatus = { AUTHORIZED: 1, PROVISIONAL: 2, DENIED: 0 };
+  return messaging;
 });
 
 jest.mock('@react-native-firebase/remote-config', () => {
@@ -214,10 +221,6 @@ jest.mock('@react-native-firebase/remote-config', () => {
     })),
   });
 });
-
-
-
-
 
 // Mock Expo Updates
 jest.mock('expo-updates', () => ({
@@ -260,4 +263,3 @@ jest.mock('react-native/Libraries/AppState/AppState', () => {
 (global as any).simulateAppStateChange = (nextState: string) => {
   (global as any).mockAppStateListeners.forEach((handler: any) => handler(nextState));
 };
-

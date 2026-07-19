@@ -38,9 +38,11 @@ export const GRAPHQL_ENDPOINT = '/graphql';
 
 declare let __DEV__: boolean;
 
-// Logout handler to be set by AuthContext
-let authErrorHandler: (() => void) | null = null;
-export const setAuthErrorHandler = (handler: () => void) => {
+// Logout handler to be set by AuthContext. Receives the credential being revoked
+// so the handler can still make authenticated cleanup calls (e.g. retiring the
+// push token) before it is gone.
+let authErrorHandler: ((authToken?: string) => void) | null = null;
+export const setAuthErrorHandler = (handler: (authToken?: string) => void) => {
   authErrorHandler = handler;
 };
 
@@ -66,10 +68,15 @@ const checkForAuthError = (data: any): boolean => {
  */
 const handleAuthError = async () => {
   if (__DEV__) console.log('Auth error detected in API - logging out...');
+  // Hand the credential to the handler before destroying it. `checkForAuthError`
+  // also matches any error merely containing "unauthenticated", so this fires on
+  // sessions that are still valid — where the push-token cleanup can and should
+  // still authenticate.
+  const authToken = (await SecureStore.getItemAsync('auth_token')) || undefined;
   await SecureStore.deleteItemAsync('auth_token');
   await SecureStore.deleteItemAsync('user_data');
   if (authErrorHandler) {
-    authErrorHandler();
+    authErrorHandler(authToken);
   }
 };
 
