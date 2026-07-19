@@ -64,3 +64,8 @@ IOS_BUILD_INSTRUCTIONS.md
 
 # Local agent handover notes (not part of the codebase)
 handover_summary.md
+
+# Local backend reference docs (CLAUDE.md: keep narrative/one-off docs out of git)
+booki-graphql-api.md
+mobile-availability-check-mutation.md
+notification-localization-mobile-guide.md
