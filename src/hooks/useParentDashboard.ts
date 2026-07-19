@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
-import { tryFetchWithFallback } from '../config/api';
+import { checkForAuthError, tryFetchWithFallback } from '../config/api';
+import { MY_LINKED_CHILDREN_QUERY, PARENT_CHILD_REQUESTS_QUERY } from '../graphql/parentingQueries';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useModal } from '../context/ModalContext';
@@ -10,9 +11,7 @@ export interface Child {
   mobile: string;
   grade?: { name: string };
   educational_system?: { name: string };
-  // Not populated yet: the backend's ParentLinkedChild type doesn't expose an
-  // avatar field (BKLT-311). When it does, add `selectedAvatar { url }` to
-  // MyLinkedChildren below; the dashboard already renders it when present.
+  /** Optional — children who never picked an avatar fall back to initials. */
   selectedAvatar?: { url?: string | null } | null;
 }
 
@@ -41,65 +40,61 @@ export const useParentDashboard = () => {
   const { t } = useTranslation();
   const { showConfirm } = useModal();
 
-  const fetchDashboardData = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
+  const fetchDashboardData = useCallback(
+    async (isRefresh = false) => {
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
 
-    try {
-      const [childrenRes, requestsRes] = await Promise.all([
-        tryFetchWithFallback(`
-          query MyLinkedChildren {
-            linkedChildren {
-              id
-              name
-              mobile
-              grade {
-                name
-              }
-              educational_system {
-                name
-              }
-            }
-          }
-        `),
-        tryFetchWithFallback(`
-          query ParentChildRequests {
-            parentChildRequests {
-              id
-              status
-              initiated_by
-              created_at
-              child {
-                name
-                mobile
-                school_name
-              }
-            }
-          }
-        `),
-      ]);
+      try {
+        const [childrenRes, requestsRes] = await Promise.all([
+          tryFetchWithFallback(MY_LINKED_CHILDREN_QUERY),
+          tryFetchWithFallback(PARENT_CHILD_REQUESTS_QUERY),
+        ]);
 
-      if (childrenRes.data?.linkedChildren) {
-        setChildren(childrenRes.data.linkedChildren);
+        if (childrenRes.data?.linkedChildren) {
+          setChildren(childrenRes.data.linkedChildren);
+        }
+
+        if (requestsRes.data?.parentChildRequests) {
+          setIncomingRequests(
+            requestsRes.data.parentChildRequests.filter(
+              // Only genuinely pending requests are actionable. Allow-list 'pending'
+              // instead of excluding known terminal states, so unexpected backend
+              // statuses (e.g. cancelled/expired) aren't surfaced as accept/declinable.
+              (r: LinkRequest) => r.status.toLowerCase() === 'pending',
+            ),
+          );
+        }
+
+        // tryFetchWithFallback resolves HTTP-200 GraphQL errors instead of
+        // throwing (the same trap handleAddChild guards against) — without this
+        // check a failing query would leave the parent staring at an empty
+        // "no children" state with no explanation. Auth errors are exempt:
+        // they already route through the global logout handler inside
+        // tryFetchWithFallback, so don't stack a load-failure popup on that.
+        const gqlError = childrenRes.errors?.[0] || requestsRes.errors?.[0];
+        if (gqlError && !checkForAuthError(childrenRes) && !checkForAuthError(requestsRes)) {
+          throw new Error(gqlError.message || 'GraphQL error');
+        }
+      } catch (err) {
+        console.error('Error fetching parent dashboard data:', err);
+        showConfirm({
+          title: t('common.error'),
+          // Generic copy, not err.message: load failures surface raw GraphQL
+          // internals, unlike the localized messages the mutations return.
+          message: t('parent_dashboard.load_failed'),
+          showCancel: false,
+          onConfirm: () => {},
+        });
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-
-      if (requestsRes.data?.parentChildRequests) {
-        setIncomingRequests(
-          requestsRes.data.parentChildRequests.filter(
-            // Only genuinely pending requests are actionable. Allow-list 'pending'
-            // instead of excluding known terminal states, so unexpected backend
-            // statuses (e.g. cancelled/expired) aren't surfaced as accept/declinable.
-            (r: LinkRequest) => r.status.toLowerCase() === 'pending',
-          ),
-        );
-      }
-    } catch (err) {
-      console.error('Error fetching parent dashboard data:', err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
+      // Both deps are stable (showConfirm is a []-dep useCallback); t changes
+      // only on language switch, where a refetch is harmless.
+    },
+    [showConfirm, t],
+  );
 
   const handleRefresh = () => fetchDashboardData(true);
 

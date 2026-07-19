@@ -76,6 +76,11 @@ export const analytics = {
     analytics.track('Sign Up', { method });
   },
 
+  /** Registration halted at the pre-submit gate (BKLT-308). */
+  trackRegistrationBlocked: (role: 'student' | 'parent') => {
+    analytics.track('Registration Blocked', { reason: 'mobile_taken', role });
+  },
+
   trackLogout: () => {
     analytics.track('Logout');
     analytics.reset();

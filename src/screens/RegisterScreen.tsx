@@ -15,6 +15,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { tryFetchWithFallback } from '../config/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -27,7 +28,14 @@ import { useNavigation } from '@react-navigation/native';
 import { analytics } from '../lib/analytics';
 import { INPUT_TEXT_ALIGN } from '../lib/rtl';
 import { isDebugMode } from '../config/debug';
-import { EGYPT_MOBILE_REGEX as MOBILE_REGEX, PASSWORD_REGEX } from '../utils/validators';
+import {
+  EGYPT_MOBILE_REGEX as MOBILE_REGEX,
+  PASSWORD_REGEX,
+  sanitizePersonName,
+  isValidPersonName,
+} from '../utils/validators';
+import { useMobileAvailability } from '../hooks/useMobileAvailability';
+import MobileAvailabilityHint from '../components/MobileAvailabilityHint';
 
 import BackButton from '../components/navigation/BackButton';
 import AppButton from '../components/AppButton';
@@ -127,9 +135,10 @@ const RegisterScreen: React.FC = () => {
   };
 
   // Validation Flags
-  const isNameValid = name.trim().length >= 3;
+  const isNameValid = isValidPersonName(name);
   const isMobileValid = MOBILE_REGEX.test(mobile.trim());
-  // Password policy: minimum 6 characters (BKLT-284). Same rule on every env.
+  const mobileAvailability = useMobileAvailability('student');
+  // Password policy: minimum 8 characters (BKLT-297). Same rule on every env.
   const isPasswordValid = PASSWORD_REGEX.test(password);
   const isConfirmValid = isPasswordValid && password === confirmPassword;
 
@@ -184,13 +193,46 @@ const RegisterScreen: React.FC = () => {
     }
   };
 
-  const handleNext = () => {
-    if (validateStep(currentStep)) {
-      if (currentStep < 2) {
-        setCurrentStep(currentStep + 1);
-      } else {
-        handleRegister();
-      }
+  /**
+   * Blocks step 1 when the mobile is already registered (BKLT-308). Awaits the
+   * on-blur check (or starts one) so tapping Next straight after typing still
+   * gets a verdict. An inconclusive check never blocks — `register` re-validates
+   * uniqueness server-side.
+   */
+  const confirmMobileAvailable = async (): Promise<boolean> => {
+    // isLoading disables the Continue button for the duration, so a second tap
+    // can't stack modals or double-advance while the check is in flight.
+    setIsLoading(true);
+    let verdict;
+    try {
+      verdict = await mobileAvailability.ensureChecked(mobile);
+    } finally {
+      setIsLoading(false);
+    }
+    if (verdict.status !== 'taken') return true;
+
+    analytics.trackRegistrationBlocked('student');
+    showConfirm({
+      title: t('common.error'),
+      // Read from the resolved verdict, not the hook's state: this closure was
+      // captured before the await, so its `message` is still the pre-check value.
+      message: verdict.message || t('auth.mobile_already_registered'),
+      confirmLabel: t('auth.login'),
+      cancelLabel: t('common.ok'),
+      showCancel: true,
+      onConfirm: () => navigation.navigate('Login'),
+    });
+    return false;
+  };
+
+  const handleNext = async () => {
+    if (!validateStep(currentStep)) return;
+    if (currentStep === 1 && !(await confirmMobileAvailable())) return;
+
+    if (currentStep < 2) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      handleRegister();
     }
   };
 
@@ -332,6 +374,7 @@ const RegisterScreen: React.FC = () => {
                   touchedMobile={touchedMobile}
                   setTouchedMobile={setTouchedMobile}
                   isMobileValid={isMobileValid}
+                  mobileAvailability={mobileAvailability}
                   password={password}
                   setPassword={setPassword}
                   confirmPassword={confirmPassword}
@@ -464,6 +507,40 @@ const RegisterScreen: React.FC = () => {
   );
 };
 
+interface StepOneProps {
+  name: string;
+  setName: (value: string) => void;
+  mobile: string;
+  setMobile: (value: string) => void;
+  touchedName: boolean;
+  setTouchedName: (value: boolean) => void;
+  isNameValid: boolean;
+  touchedMobile: boolean;
+  setTouchedMobile: (value: boolean) => void;
+  isMobileValid: boolean;
+  mobileAvailability: ReturnType<typeof useMobileAvailability>;
+  password: string;
+  setPassword: (value: string) => void;
+  confirmPassword: string;
+  setConfirmPassword: (value: string) => void;
+  showPassword: boolean;
+  setShowPassword: (value: boolean) => void;
+  touchedPassword: boolean;
+  setTouchedPassword: (value: boolean) => void;
+  isPasswordValid: boolean;
+  touchedConfirm: boolean;
+  setTouchedConfirm: (value: boolean) => void;
+  isConfirmValid: boolean;
+  confirmPasswordRef: React.RefObject<TextInput | null>;
+  isLoading: boolean;
+  theme: ReturnType<typeof useTheme>['theme'];
+  t: TFunction;
+  isRTL: boolean;
+  currentStyles: ReturnType<typeof styles>;
+  getBorderColor: (touched: boolean, valid: boolean) => string;
+  spacing: ReturnType<typeof useTheme>['spacing'];
+}
+
 const StepOne = ({
   name,
   setName,
@@ -475,6 +552,7 @@ const StepOne = ({
   touchedMobile,
   setTouchedMobile,
   isMobileValid,
+  mobileAvailability,
   password,
   setPassword,
   confirmPassword,
@@ -495,7 +573,7 @@ const StepOne = ({
   currentStyles,
   getBorderColor,
   spacing,
-}: any) => {
+}: StepOneProps) => {
   return (
     <>
       <View
@@ -514,7 +592,7 @@ const StepOne = ({
           testID="register-name-input"
           style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN, flex: 1 }]}
           value={name}
-          onChangeText={(val) => setName(val.replaceAll(/[^a-zA-Z\s\u0621-\u064A]/g, ''))}
+          onChangeText={(val) => setName(sanitizePersonName(val))}
           placeholder={t('auth.name_placeholder')}
           placeholderTextColor={theme.colors.textSecondary}
           autoCapitalize="none"
@@ -552,7 +630,11 @@ const StepOne = ({
             { flex: 1, textAlign: INPUT_TEXT_ALIGN, paddingHorizontal: 16 },
           ]}
           value={mobile}
-          onChangeText={(val) => setMobile(val.replaceAll(/\D/g, '').slice(0, 11))}
+          onChangeText={(val) => {
+            setMobile(val.replaceAll(/\D/g, '').slice(0, 11));
+            // Drop the previous verdict — it belongs to the old number.
+            mobileAvailability.reset();
+          }}
           maxLength={11}
           placeholder={t('auth.mobile_placeholder')}
           placeholderTextColor={theme.colors.textSecondary}
@@ -561,9 +643,23 @@ const StepOne = ({
           autoCorrect={false}
           editable={!isLoading}
           returnKeyType="next"
-          onBlur={() => setTouchedMobile(true)}
+          onBlur={() => {
+            setTouchedMobile(true);
+            mobileAvailability.check(mobile);
+          }}
+          onSubmitEditing={() => mobileAvailability.check(mobile)}
         />
       </View>
+
+      <MobileAvailabilityHint
+        status={mobileAvailability.status}
+        message={mobileAvailability.message}
+        // The mobile field already contributes spacing.md below itself, which
+        // left the hint hugging the password field. Pull it back up so the gap
+        // reads evenly on both sides.
+        style={{ marginTop: -spacing.sm, marginBottom: spacing.sm }}
+        testID="register-mobile-availability"
+      />
 
       <View
         style={[

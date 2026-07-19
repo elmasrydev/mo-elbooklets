@@ -48,8 +48,9 @@ export const setAuthErrorHandler = (handler: (authToken?: string) => void) => {
 
 /**
  * Check if response contains authentication error
+ * (exported so callers can tell "session ended" apart from other GraphQL errors)
  */
-const checkForAuthError = (data: any): boolean => {
+export const checkForAuthError = (data: any): boolean => {
   if (data?.errors) {
     for (const err of data.errors) {
       if (

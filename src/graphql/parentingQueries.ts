@@ -94,17 +94,39 @@ export const PARENT_ME_QUERY = gql`
  * PARENT APP DASHBOARD QUERIES & MUTATIONS
  */
 
-export const MY_LINKED_CHILDREN_QUERY = gql`
+// Plain string, not gql: consumed by tryFetchWithFallback (raw fetch), same as
+// GET_CHILD_DASHBOARD_QUERY below.
+export const MY_LINKED_CHILDREN_QUERY = `
   query MyLinkedChildren {
     linkedChildren {
       id
       name
       mobile
+      selectedAvatar {
+        url
+      }
       grade {
         name
       }
       educational_system {
         name
+      }
+    }
+  }
+`;
+
+// Plain string as well — same tryFetchWithFallback consumer.
+export const PARENT_CHILD_REQUESTS_QUERY = `
+  query ParentChildRequests {
+    parentChildRequests {
+      id
+      status
+      initiated_by
+      created_at
+      child {
+        name
+        mobile
+        school_name
       }
     }
   }
