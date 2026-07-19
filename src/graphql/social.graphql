@@ -1,0 +1,181 @@
+# Social graph: timeline feed, student search, follow lists, public profiles.
+# StudentSearchResult and LeaderboardEntry are normalized by id, so the
+# FollowUser mutation syncs isFollowing across every list via the Apollo cache
+# (useFollowToggle); followBus covers the non-normalized screens.
+
+query SocialTimeline {
+  socialTimeline {
+    id
+    type
+    user {
+      id
+      name
+      grade {
+        id
+        name
+      }
+      selectedAvatar {
+        url
+      }
+    }
+    createdAt
+    quizData {
+      quizUserId
+      quiz {
+        id
+        name
+        subject {
+          id
+          name
+        }
+        type
+      }
+      score
+      totalQuestions
+      isPassed
+    }
+    connectedUser {
+      id
+      name
+      grade {
+        id
+        name
+      }
+      selectedAvatar {
+        url
+      }
+    }
+    rankData {
+      previousRank
+      newRank
+      subject {
+        id
+        name
+      }
+      isOverall
+    }
+    likes
+    comments
+    isLiked
+  }
+}
+
+query SearchStudents($query: String!) {
+  searchStudents(query: $query) {
+    id
+    name
+    mobile
+    grade {
+      id
+      name
+    }
+    totalQuizzes
+    avgScore
+    isFollowing
+    selectedAvatar {
+      url
+    }
+  }
+}
+
+query MyFollowers {
+  myFollowers {
+    id
+    name
+    mobile
+    grade {
+      id
+      name
+    }
+    totalQuizzes
+    avgScore
+    isFollowing
+    selectedAvatar {
+      url
+    }
+  }
+}
+
+query MyFollowing {
+  myFollowing {
+    id
+    name
+    mobile
+    grade {
+      id
+      name
+    }
+    totalQuizzes
+    avgScore
+    isFollowing
+    selectedAvatar {
+      url
+    }
+  }
+}
+
+query StudentProfile($userId: ID!) {
+  studentProfile(userId: $userId) {
+    id
+    name
+    gender
+    grade {
+      id
+      name
+    }
+    educationalSystem {
+      id
+      name
+    }
+    selectedAvatar {
+      url
+    }
+    totalQuizzes
+    avgScore
+    xp
+    followersCount
+    followingCount
+    isFollowing
+    isFollower
+    createdAt
+  }
+}
+
+# SuggestedUser exposes no selectedAvatar (the old inline query asked for one,
+# which failed the whole request server-side — the rail never rendered).
+# Avatars fall back to name initials until the backend adds the field.
+query PeopleYouMayKnow($limit: Int) {
+  peopleYouMayKnow(limit: $limit) {
+    canShow
+    suggestions {
+      id
+      name
+      suggestionReason
+      school {
+        id
+        name
+      }
+      grade {
+        id
+        name
+      }
+    }
+  }
+}
+
+mutation FollowUser($userId: ID!) {
+  followUser(userId: $userId) {
+    success
+    isFollowing
+    message
+  }
+}
+
+mutation LikeActivity($quizUserId: ID, $newsFeedId: ID) {
+  likeActivity(quizUserId: $quizUserId, newsFeedId: $newsFeedId) {
+    success
+    isLiked
+    likeCount
+    message
+  }
+}

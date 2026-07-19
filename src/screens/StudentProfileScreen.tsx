@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,8 +8,9 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as SecureStore from 'expo-secure-store';
 import { useRoute } from '@react-navigation/native';
+import { useQuery } from '@apollo/client/react';
+import { CombinedGraphQLErrors } from '@apollo/client/errors';
 import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
@@ -20,25 +21,8 @@ import RetryView from '../components/RetryView';
 import { GenericListSkeleton } from '../components/SkeletonLoader';
 import { useFollowToggle } from '../hooks/useFollowToggle';
 import { subscribeFollowChange } from '../utils/followBus';
-import { tryFetchWithFallback } from '../config/api';
+import { StudentProfileDocument } from '../generated/graphql';
 import { layout } from '../config/layout';
-
-interface StudentProfileData {
-  id: string;
-  name: string;
-  gender?: string | null;
-  grade?: { id: string; name: string } | null;
-  educationalSystem?: { id: string; name: string } | null;
-  selectedAvatar?: { url?: string } | null;
-  totalQuizzes: number;
-  avgScore: number;
-  xp: number;
-  followersCount: number;
-  followingCount: number;
-  isFollowing: boolean;
-  isFollower: boolean;
-  createdAt?: string;
-}
 
 const StudentProfileScreen: React.FC = () => {
   const route = useRoute<any>();
@@ -56,61 +40,36 @@ const StudentProfileScreen: React.FC = () => {
   const { typography, fontWeight } = useTypography();
   const { toggleFollow } = useFollowToggle();
 
-  const [profile, setProfile] = useState<StudentProfileData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [restricted, setRestricted] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [following, setFollowing] = useState(!!paramFollowing);
   const [toggling, setToggling] = useState(false);
 
-  const fetchProfile = useCallback(async () => {
-    if (!userId) return;
-    try {
-      setLoading(true);
-      setError(null);
-      setRestricted(false);
-      const token = await SecureStore.getItemAsync('auth_token');
-      const result = await tryFetchWithFallback(
-        `query StudentProfile($userId: ID!) {
-          studentProfile(userId: $userId) {
-            id name gender
-            grade { id name }
-            educationalSystem { id name }
-            selectedAvatar { url }
-            totalQuizzes avgScore xp
-            followersCount followingCount
-            isFollowing isFollower
-            createdAt
-          }
-        }`,
-        { userId },
-        token || undefined,
-      );
-      if (result.data?.studentProfile) {
-        setProfile(result.data.studentProfile);
-        setFollowing(!!result.data.studentProfile.isFollowing);
-      } else {
-        // studentProfile is mutual-follow gated — null/error means not (yet) mutual.
-        setRestricted(true);
-      }
-    } catch {
-      setError(t('common.error'));
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, t]);
+  const {
+    data,
+    loading,
+    error: queryError,
+    refetch,
+  } = useQuery(StudentProfileDocument, {
+    variables: { userId },
+    skip: !userId,
+    notifyOnNetworkStatusChange: true,
+  });
+  const profile = data?.studentProfile ?? null;
+  // studentProfile is mutual-follow gated — a GraphQL error / null data means
+  // not (yet) mutual; only transport-level failures show the generic error.
+  const restricted = !loading && !profile && (!queryError || CombinedGraphQLErrors.is(queryError));
+  const error = queryError && !CombinedGraphQLErrors.is(queryError) ? t('common.error') : null;
 
   useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
+    if (profile) setFollowing(profile.isFollowing);
+  }, [profile]);
 
-  // Reflect follow/unfollow performed on another screen (search list, etc.).
+  // Reflect follow/unfollow performed on another screen (search list, etc.) —
+  // StudentProfile is not one of the cache-synced list types, so the bus still
+  // feeds the local `following` state here.
   useEffect(
     () =>
       subscribeFollowChange((uid, isFollowing) => {
-        if (uid !== userId) return;
-        setFollowing(isFollowing);
-        setProfile((p) => (p ? { ...p, isFollowing } : p));
+        if (uid === userId) setFollowing(isFollowing);
       }),
     [userId],
   );
@@ -121,9 +80,8 @@ const StudentProfileScreen: React.FC = () => {
     const res = await toggleFollow(userId);
     if (res?.success) {
       setFollowing(res.isFollowing);
-      setProfile((p) => (p ? { ...p, isFollowing: res.isFollowing } : p));
       // Following may have made the relationship mutual — re-check the full profile.
-      if (restricted) fetchProfile();
+      if (restricted) refetch();
     }
     setToggling(false);
   };
@@ -135,7 +93,9 @@ const StudentProfileScreen: React.FC = () => {
 
   const displayName = profile?.name || paramName || '';
   const avatarUrl = profile?.selectedAvatar?.url || paramAvatar;
-  const isFollowing = profile?.isFollowing ?? following;
+  // `following` is the live value: seeded from the route param, synced from
+  // the profile on load, then updated by the toggle and the follow bus.
+  const isFollowing = following;
 
   const renderFollowButton = () => (
     <TouchableOpacity
@@ -184,7 +144,7 @@ const StudentProfileScreen: React.FC = () => {
           <GenericListSkeleton numItems={4} />
         </View>
       ) : error ? (
-        <RetryView message={error} onRetry={fetchProfile} />
+        <RetryView message={error} onRetry={() => refetch()} />
       ) : (
         <ScrollView
           contentContainerStyle={[

@@ -14,8 +14,8 @@ import Animated, {
   useReducedMotion,
 } from 'react-native-reanimated';
 
-import * as SecureStore from 'expo-secure-store';
 import { useFocusEffect } from '@react-navigation/native';
+import { useQuery } from '@apollo/client/react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
@@ -29,26 +29,16 @@ import Avatar from '../components/Avatar';
 import { avatarColor } from '../utils/avatar';
 import { useFollowToggle } from '../hooks/useFollowToggle';
 import { layout } from '../config/layout';
-import { tryFetchWithFallback } from '../config/api';
+import {
+  LeaderboardDocument,
+  LeaderboardQuery,
+  SubjectsForUserGradeDocument,
+} from '../generated/graphql';
 import { analytics } from '../lib/analytics';
 
-interface Subject {
-  id: string;
-  name: string;
-  description?: string;
-}
-
-interface Student {
-  id: string;
-  name: string;
-  grade: { id: string; name: string };
-  totalQuizzes: number;
-  avgScore: number;
-  xp: number;
-  isFollowing: boolean;
-  rank: number;
-  selectedAvatar?: { url?: string } | null;
-}
+// Entries and userEntry share the LeaderboardEntry shape; follow toggles
+// update these rows through the normalized cache (see useFollowToggle).
+type Student = NonNullable<LeaderboardQuery['leaderboard']>['entries'][number];
 
 // Scope filter (BKLT-172). The `filter` string values match the web frontend
 // (demo.elbooklets.com/en/leaderboard?filter=...). The backend derives the actual
@@ -162,134 +152,69 @@ const LeaderboardScreen: React.FC = () => {
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
 
-  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [selectedTab, setSelectedTab] = useState<string>('all');
   const [selectedScope, setSelectedScope] = useState<ScopeId>('global');
-  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
-  const [leaderboardError, setLeaderboardError] = useState<string | null>(null);
-  const [leaderboard, setLeaderboard] = useState<{
-    entries: Student[];
-    userEntry: Student | null;
-  }>({ entries: [], userEntry: null });
 
   // Confetti plays once per screen visit, the first time a podium is shown.
   const [showConfetti, setShowConfetti] = useState(false);
   const confettiPlayed = useRef(false);
 
   useEffect(() => {
-    fetchSubjects();
     analytics.trackLeaderboardViewed();
   }, []);
 
-  // Refetch whenever the subject or scope filter changes (once subjects are loaded).
-  useEffect(() => {
-    if (subjects.length > 0) fetchLeaderboard(selectedTab, selectedScope);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTab, selectedScope, subjects.length]);
+  const { data: subjectsData } = useQuery(SubjectsForUserGradeDocument);
+  const subjects = subjectsData?.subjectsForUserGrade ?? [];
 
-  const lastFetchRef = React.useRef<number>(0);
-  // Key of the most recent fetch, so out-of-order responses from an older
-  // filter selection can be discarded instead of overwriting the current view.
-  const requestKeyRef = React.useRef<string>('');
+  // Filter changes just change the variables — Apollo refetches and discards
+  // out-of-order responses itself (the old manual requestKey guard is gone).
+  const {
+    data: leaderboardData,
+    loading: leaderboardLoading,
+    error: leaderboardErrorObj,
+    refetch: refetchLeaderboard,
+  } = useQuery(LeaderboardDocument, {
+    variables: {
+      subjectId: selectedTab === 'all' ? null : selectedTab,
+      filter: scopeToFilter(selectedScope),
+      limit: 50,
+    },
+    notifyOnNetworkStatusChange: true,
+  });
+  const leaderboard = {
+    entries: leaderboardData?.leaderboard?.entries ?? [],
+    userEntry: leaderboardData?.leaderboard?.userEntry ?? null,
+  };
+  const leaderboardError = leaderboardErrorObj
+    ? t('leaderboard_screen.error_loading_leaderboard')
+    : null;
+
+  // useQuery fetched on mount, so the first focus inside the stale window
+  // must not refetch again.
+  const lastFetchRef = React.useRef<number>(Date.now());
   const STALE_MS = 30_000;
 
   useFocusEffect(
     useCallback(() => {
-      // Refetch on refocus only when the data is stale. Do NOT depend on `leaderboard`
-      // here: that recreates this callback on every fetch, and when a filter returns no
-      // results the callback would re-run forever (infinite refetch loop / flicker).
       if (Date.now() - lastFetchRef.current < STALE_MS) return;
-      if (subjects.length > 0) fetchLeaderboard(selectedTab, selectedScope);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedTab, selectedScope, subjects.length]),
+      lastFetchRef.current = Date.now();
+      refetchLeaderboard();
+    }, [refetchLeaderboard]),
   );
 
-  const fetchSubjects = async () => {
-    try {
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
-      const result = await tryFetchWithFallback(
-        `query SubjectsForUserGrade { subjectsForUserGrade { id name description } }`,
-        undefined,
-        token,
-      );
-      if (result.data?.subjectsForUserGrade) setSubjects(result.data.subjectsForUserGrade);
-    } catch (err: any) {
-      console.error('Fetch subjects error:', err);
+  useEffect(() => {
+    if (!confettiPlayed.current && leaderboard.entries.length > 0) {
+      confettiPlayed.current = true;
+      setShowConfetti(true);
     }
-  };
-
-  const fetchLeaderboard = async (tabId: string, scope: ScopeId) => {
-    const reqKey = `${scope}|${tabId}`;
-    requestKeyRef.current = reqKey;
-    lastFetchRef.current = Date.now();
-    try {
-      setLeaderboardLoading(true);
-      setLeaderboardError(null);
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
-
-      const subjectId = tabId === 'all' ? null : tabId;
-      const filter = scopeToFilter(scope);
-      const result = await tryFetchWithFallback(
-        `
-        query Leaderboard($subjectId: ID, $filter: String, $limit: Int) {
-          leaderboard(subjectId: $subjectId, filter: $filter, limit: $limit) {
-            entries {
-              id name grade { id name } totalQuizzes avgScore xp isFollowing rank
-              selectedAvatar { url }
-            }
-            userEntry {
-              id name grade { id name } totalQuizzes avgScore xp isFollowing rank
-              selectedAvatar { url }
-            }
-          }
-        }
-      `,
-        { subjectId, filter, limit: 50 },
-        token,
-      );
-
-      // Discard a superseded response (user changed the filter before this resolved).
-      if (requestKeyRef.current !== reqKey) return;
-
-      if (result.data?.leaderboard) {
-        const { entries, userEntry } = result.data.leaderboard;
-        const processedEntries = entries.map((st: any) => ({
-          ...st,
-          xp: st.xp || 0,
-          isFollowing: !!st.isFollowing,
-        }));
-        const processedUserEntry = userEntry
-          ? { ...userEntry, xp: userEntry.xp || 0, isFollowing: !!userEntry.isFollowing }
-          : null;
-
-        setLeaderboard({ entries: processedEntries, userEntry: processedUserEntry });
-
-        if (!confettiPlayed.current && processedEntries.length > 0) {
-          confettiPlayed.current = true;
-          setShowConfetti(true);
-        }
-      } else {
-        setLeaderboardError(t('leaderboard_screen.error_loading_leaderboard'));
-      }
-    } finally {
-      // Only the latest request may clear the loading state.
-      if (requestKeyRef.current === reqKey) setLeaderboardLoading(false);
-    }
-  };
+  }, [leaderboard.entries.length]);
 
   const { toggleFollow } = useFollowToggle();
 
+  // The cache write in useFollowToggle updates the LeaderboardEntry rows
+  // (entries and userEntry alike) — nothing to patch locally.
   const handleFollowToggle = async (studentId: string) => {
-    const result = await toggleFollow(studentId);
-    if (!result?.success) return;
-    setLeaderboard((lb) => ({
-      ...lb,
-      entries: lb.entries.map((st) =>
-        st.id === studentId ? { ...st, isFollowing: result.isFollowing } : st,
-      ),
-    }));
+    await toggleFollow(studentId);
   };
 
   const onSelectScope = (scope: ScopeId) => {
@@ -449,12 +374,7 @@ const LeaderboardScreen: React.FC = () => {
       );
 
     if (leaderboardError)
-      return (
-        <RetryView
-          message={leaderboardError}
-          onRetry={() => fetchLeaderboard(selectedTab, selectedScope)}
-        />
-      );
+      return <RetryView message={leaderboardError} onRetry={() => refetchLeaderboard()} />;
 
     if (leaderboard.entries.length === 0) {
       const filtered = selectedScope !== 'global';
@@ -570,10 +490,7 @@ const LeaderboardScreen: React.FC = () => {
         title={t('leaderboard_screen.header_title', { defaultValue: 'Leaderboard' })}
         showBackButton={true}
         rightContent={
-          <TouchableOpacity
-            style={s.refreshButton}
-            onPress={() => fetchLeaderboard(selectedTab, selectedScope)}
-          >
+          <TouchableOpacity style={s.refreshButton} onPress={() => refetchLeaderboard()}>
             <Ionicons
               name="refresh-outline"
               size={spacing.icon.md}

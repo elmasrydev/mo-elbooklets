@@ -32,6 +32,9 @@ export type StudyScheduleInput = {
   subjectId: string;
 };
 
+/** Why this user was suggested */
+export type SuggestionReason = 'SAME_CITY' | 'SAME_SCHOOL';
+
 export type UpdateNotificationPreferencesInput = {
   /** Enable or disable app notifications (badges, quizzes, lessons, etc.) */
   app_notifications_enabled?: boolean | null | undefined;
@@ -188,6 +191,39 @@ export type SaveStudyScheduleMutation = {
     notes: string | null;
     subject: { id: string; name: string };
   }>;
+};
+
+export type LeaderboardQueryVariables = Exact<{
+  subjectId?: string | null | undefined;
+  filter?: string | null | undefined;
+  limit?: number | null | undefined;
+}>;
+
+export type LeaderboardQuery = {
+  leaderboard: {
+    entries: Array<{
+      id: string;
+      name: string;
+      totalQuizzes: number;
+      avgScore: number;
+      xp: number;
+      isFollowing: boolean;
+      rank: number;
+      grade: { id: string; name: string };
+      selectedAvatar: { url: string } | null;
+    }>;
+    userEntry: {
+      id: string;
+      name: string;
+      totalQuizzes: number;
+      avgScore: number;
+      xp: number;
+      isFollowing: boolean;
+      rank: number;
+      grade: { id: string; name: string };
+      selectedAvatar: { url: string } | null;
+    } | null;
+  };
 };
 
 export type ToggleSavedPointBookmarkMutationVariables = Exact<{
@@ -499,6 +535,148 @@ export type SubmitQuizAnswersMutation = {
     isPassed: boolean;
     quiz: { id: string; name: string };
   };
+};
+
+export type SocialTimelineQueryVariables = Exact<{ [key: string]: never }>;
+
+export type SocialTimelineQuery = {
+  socialTimeline: Array<{
+    id: string;
+    type: string;
+    createdAt: string;
+    likes: number;
+    comments: number;
+    isLiked: boolean;
+    user: {
+      id: string;
+      name: string;
+      grade: { id: string; name: string };
+      selectedAvatar: { url: string } | null;
+    };
+    quizData: {
+      quizUserId: string;
+      score: number;
+      totalQuestions: number;
+      isPassed: boolean;
+      quiz: { id: string; name: string; type: string; subject: { id: string; name: string } };
+    } | null;
+    connectedUser: {
+      id: string;
+      name: string;
+      grade: { id: string; name: string };
+      selectedAvatar: { url: string } | null;
+    } | null;
+    rankData: {
+      previousRank: number | null;
+      newRank: number;
+      isOverall: boolean;
+      subject: { id: string; name: string } | null;
+    } | null;
+  }>;
+};
+
+export type SearchStudentsQueryVariables = Exact<{
+  query: string;
+}>;
+
+export type SearchStudentsQuery = {
+  searchStudents: Array<{
+    id: string;
+    name: string;
+    mobile: string;
+    totalQuizzes: number;
+    avgScore: number;
+    isFollowing: boolean;
+    grade: { id: string; name: string };
+    selectedAvatar: { url: string } | null;
+  }>;
+};
+
+export type MyFollowersQueryVariables = Exact<{ [key: string]: never }>;
+
+export type MyFollowersQuery = {
+  myFollowers: Array<{
+    id: string;
+    name: string;
+    mobile: string;
+    totalQuizzes: number;
+    avgScore: number;
+    isFollowing: boolean;
+    grade: { id: string; name: string };
+    selectedAvatar: { url: string } | null;
+  }>;
+};
+
+export type MyFollowingQueryVariables = Exact<{ [key: string]: never }>;
+
+export type MyFollowingQuery = {
+  myFollowing: Array<{
+    id: string;
+    name: string;
+    mobile: string;
+    totalQuizzes: number;
+    avgScore: number;
+    isFollowing: boolean;
+    grade: { id: string; name: string };
+    selectedAvatar: { url: string } | null;
+  }>;
+};
+
+export type StudentProfileQueryVariables = Exact<{
+  userId: string;
+}>;
+
+export type StudentProfileQuery = {
+  studentProfile: {
+    id: string;
+    name: string;
+    gender: string | null;
+    totalQuizzes: number;
+    avgScore: number;
+    xp: number;
+    followersCount: number;
+    followingCount: number;
+    isFollowing: boolean;
+    isFollower: boolean;
+    createdAt: string;
+    grade: { id: string; name: string } | null;
+    educationalSystem: { id: string; name: string } | null;
+    selectedAvatar: { url: string } | null;
+  };
+};
+
+export type PeopleYouMayKnowQueryVariables = Exact<{
+  limit?: number | null | undefined;
+}>;
+
+export type PeopleYouMayKnowQuery = {
+  peopleYouMayKnow: {
+    canShow: boolean;
+    suggestions: Array<{
+      id: string;
+      name: string;
+      suggestionReason: SuggestionReason;
+      school: { id: string; name: string } | null;
+      grade: { id: string; name: string } | null;
+    }>;
+  };
+};
+
+export type FollowUserMutationVariables = Exact<{
+  userId: string;
+}>;
+
+export type FollowUserMutation = {
+  followUser: { success: boolean; isFollowing: boolean; message: string };
+};
+
+export type LikeActivityMutationVariables = Exact<{
+  quizUserId?: string | null | undefined;
+  newsFeedId?: string | null | undefined;
+}>;
+
+export type LikeActivityMutation = {
+  likeActivity: { success: boolean; isLiked: boolean; likeCount: number; message: string };
 };
 
 export const GetGradesDocument = {
@@ -1025,6 +1203,134 @@ export const SaveStudyScheduleDocument = {
     },
   ],
 } as unknown as DocumentNode<SaveStudyScheduleMutation, SaveStudyScheduleMutationVariables>;
+export const LeaderboardDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'Leaderboard' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'subjectId' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'filter' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'limit' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'leaderboard' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'subjectId' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'subjectId' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'filter' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'filter' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'limit' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'limit' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'entries' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'grade' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                          ],
+                        },
+                      },
+                      { kind: 'Field', name: { kind: 'Name', value: 'totalQuizzes' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'avgScore' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'xp' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'isFollowing' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'rank' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'selectedAvatar' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [{ kind: 'Field', name: { kind: 'Name', value: 'url' } }],
+                        },
+                      },
+                    ],
+                  },
+                },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'userEntry' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'grade' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                          ],
+                        },
+                      },
+                      { kind: 'Field', name: { kind: 'Name', value: 'totalQuizzes' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'avgScore' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'xp' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'isFollowing' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'rank' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'selectedAvatar' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [{ kind: 'Field', name: { kind: 'Name', value: 'url' } }],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<LeaderboardQuery, LeaderboardQueryVariables>;
 export const ToggleSavedPointBookmarkDocument = {
   kind: 'Document',
   definitions: [
@@ -2355,3 +2661,567 @@ export const SubmitQuizAnswersDocument = {
     },
   ],
 } as unknown as DocumentNode<SubmitQuizAnswersMutation, SubmitQuizAnswersMutationVariables>;
+export const SocialTimelineDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'SocialTimeline' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'socialTimeline' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'type' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'user' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'grade' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                          ],
+                        },
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'selectedAvatar' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [{ kind: 'Field', name: { kind: 'Name', value: 'url' } }],
+                        },
+                      },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'quizData' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'quizUserId' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'quiz' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                            {
+                              kind: 'Field',
+                              name: { kind: 'Name', value: 'subject' },
+                              selectionSet: {
+                                kind: 'SelectionSet',
+                                selections: [
+                                  { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                                  { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                ],
+                              },
+                            },
+                            { kind: 'Field', name: { kind: 'Name', value: 'type' } },
+                          ],
+                        },
+                      },
+                      { kind: 'Field', name: { kind: 'Name', value: 'score' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'totalQuestions' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'isPassed' } },
+                    ],
+                  },
+                },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'connectedUser' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'grade' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                          ],
+                        },
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'selectedAvatar' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [{ kind: 'Field', name: { kind: 'Name', value: 'url' } }],
+                        },
+                      },
+                    ],
+                  },
+                },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'rankData' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'previousRank' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'newRank' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'subject' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                          ],
+                        },
+                      },
+                      { kind: 'Field', name: { kind: 'Name', value: 'isOverall' } },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'likes' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'comments' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'isLiked' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<SocialTimelineQuery, SocialTimelineQueryVariables>;
+export const SearchStudentsDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'SearchStudents' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'query' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'searchStudents' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'query' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'query' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'mobile' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'grade' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'totalQuizzes' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'avgScore' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'isFollowing' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'selectedAvatar' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [{ kind: 'Field', name: { kind: 'Name', value: 'url' } }],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<SearchStudentsQuery, SearchStudentsQueryVariables>;
+export const MyFollowersDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'MyFollowers' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'myFollowers' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'mobile' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'grade' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'totalQuizzes' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'avgScore' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'isFollowing' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'selectedAvatar' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [{ kind: 'Field', name: { kind: 'Name', value: 'url' } }],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<MyFollowersQuery, MyFollowersQueryVariables>;
+export const MyFollowingDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'MyFollowing' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'myFollowing' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'mobile' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'grade' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'totalQuizzes' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'avgScore' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'isFollowing' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'selectedAvatar' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [{ kind: 'Field', name: { kind: 'Name', value: 'url' } }],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<MyFollowingQuery, MyFollowingQueryVariables>;
+export const StudentProfileDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'StudentProfile' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'userId' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'studentProfile' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'userId' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'userId' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'gender' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'grade' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                    ],
+                  },
+                },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'educationalSystem' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                    ],
+                  },
+                },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'selectedAvatar' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [{ kind: 'Field', name: { kind: 'Name', value: 'url' } }],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'totalQuizzes' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'avgScore' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'xp' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'followersCount' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'followingCount' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'isFollowing' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'isFollower' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<StudentProfileQuery, StudentProfileQueryVariables>;
+export const PeopleYouMayKnowDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'PeopleYouMayKnow' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'limit' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'peopleYouMayKnow' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'limit' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'limit' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'canShow' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'suggestions' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'suggestionReason' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'school' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                          ],
+                        },
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'grade' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<PeopleYouMayKnowQuery, PeopleYouMayKnowQueryVariables>;
+export const FollowUserDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'FollowUser' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'userId' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'followUser' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'userId' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'userId' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'isFollowing' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'message' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<FollowUserMutation, FollowUserMutationVariables>;
+export const LikeActivityDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'LikeActivity' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'quizUserId' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'newsFeedId' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'likeActivity' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'quizUserId' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'quizUserId' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'newsFeedId' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'newsFeedId' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'isLiked' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'likeCount' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'message' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<LikeActivityMutation, LikeActivityMutationVariables>;
