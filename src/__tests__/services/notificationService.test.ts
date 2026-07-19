@@ -1,19 +1,21 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import messaging from '@react-native-firebase/messaging';
 import DeviceInfo from 'react-native-device-info';
-import { tryFetchWithFallback } from '../../config/api';
+import { apolloClient } from '../../lib/apollo';
+import {
+  ParentUnregisterDeviceTokenDocument,
+  UnregisterDeviceTokenDocument,
+} from '../../generated/graphql';
 import { registerDeviceToken, unregisterDeviceToken } from '../../services/notificationService';
 
-jest.mock('../../config/api', () => ({
-  tryFetchWithFallback: jest.fn(),
-}));
+jest.mock('../../lib/apollo', () => ({ apolloClient: { mutate: jest.fn() } }));
 
 const REGISTERED_FCM_TOKEN_KEY = 'registered_fcm_token';
 const REGISTERED_FCM_ROLE_KEY = 'registered_fcm_role';
 const PENDING_FCM_DELETE_KEY = 'pending_fcm_delete';
 
 const fcm = messaging() as any;
-const mockFetch = tryFetchWithFallback as jest.Mock;
+const mockMutate = apolloClient.mutate as jest.Mock;
 
 const signedInAs = async (role: 'student' | 'parent', token: string) => {
   await AsyncStorage.setItem(REGISTERED_FCM_TOKEN_KEY, token);
@@ -29,7 +31,7 @@ describe('notificationService — push token lifecycle on sign-out', () => {
     (DeviceInfo.isEmulator as jest.Mock).mockResolvedValue(false);
     fcm.getToken.mockResolvedValue('device-token');
     fcm.deleteToken.mockResolvedValue(undefined);
-    mockFetch.mockResolvedValue({ data: {} });
+    mockMutate.mockResolvedValue({ data: {} });
   });
 
   it('sends the unregister mutation with the credential it was given', async () => {
@@ -37,13 +39,15 @@ describe('notificationService — push token lifecycle on sign-out', () => {
 
     await unregisterDeviceToken('student-auth-token');
 
-    // Third argument is the bearer token. Without it tryFetchWithFallback falls back
-    // to SecureStore, which the caller has already cleared, and the mutation goes out
-    // unauthenticated — the BKLT-316 defect.
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('unregisterDeviceToken'),
-      { token: 'device-token' },
-      'student-auth-token',
+    // The credential must ride on the operation. Without it Apollo's auth link
+    // falls back to SecureStore, which the caller has already cleared, and the
+    // mutation goes out unauthenticated — the BKLT-316 defect.
+    expect(mockMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mutation: UnregisterDeviceTokenDocument,
+        variables: { token: 'device-token' },
+        context: { headers: { authorization: 'Bearer student-auth-token' } },
+      }),
     );
   });
 
@@ -52,10 +56,11 @@ describe('notificationService — push token lifecycle on sign-out', () => {
 
     await unregisterDeviceToken('parent-auth-token');
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('parentUnregisterDeviceToken'),
-      expect.anything(),
-      'parent-auth-token',
+    expect(mockMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mutation: ParentUnregisterDeviceTokenDocument,
+        context: { headers: { authorization: 'Bearer parent-auth-token' } },
+      }),
     );
   });
 
@@ -67,7 +72,7 @@ describe('notificationService — push token lifecycle on sign-out', () => {
 
     await unregisterDeviceToken('student-auth-token');
 
-    const retiredTokens = mockFetch.mock.calls.map((call) => call[1].token);
+    const retiredTokens = mockMutate.mock.calls.map((call) => call[0].variables.token);
     expect(retiredTokens).toEqual(['stale-token', 'rotated-token']);
   });
 
@@ -83,7 +88,7 @@ describe('notificationService — push token lifecycle on sign-out', () => {
 
   it('still clears local state when the server rejects the unregister', async () => {
     await signedInAs('student', 'device-token');
-    mockFetch.mockResolvedValue({ errors: [{ message: 'Unauthenticated.' }] });
+    mockMutate.mockResolvedValue({ error: new Error('Unauthenticated.') });
 
     await unregisterDeviceToken('student-auth-token');
 
@@ -93,7 +98,7 @@ describe('notificationService — push token lifecycle on sign-out', () => {
 
   it('does not queue a deletion when the device token was successfully invalidated', async () => {
     await signedInAs('student', 'device-token');
-    mockFetch.mockRejectedValue(new Error('offline'));
+    mockMutate.mockRejectedValue(new Error('offline'));
 
     await unregisterDeviceToken('student-auth-token');
 
@@ -105,7 +110,7 @@ describe('notificationService — push token lifecycle on sign-out', () => {
   describe('signing out with no connectivity', () => {
     it('queues the deletion when neither the server nor the device could retire the token', async () => {
       await signedInAs('student', 'device-token');
-      mockFetch.mockRejectedValue(new Error('offline'));
+      mockMutate.mockRejectedValue(new Error('offline'));
       fcm.deleteToken.mockRejectedValue(new Error('offline'));
 
       await unregisterDeviceToken('student-auth-token');
@@ -140,6 +145,6 @@ describe('notificationService — push token lifecycle on sign-out', () => {
   it('skips the server call when nothing was registered', async () => {
     await unregisterDeviceToken('student-auth-token');
 
-    expect(mockFetch).not.toHaveBeenCalled();
+    expect(mockMutate).not.toHaveBeenCalled();
   });
 });

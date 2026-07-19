@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { tryFetchWithFallback } from '../config/api';
+import { useLazyQuery, useMutation } from '@apollo/client/react';
 import { useModal } from '../context/ModalContext';
 import { useTranslation } from 'react-i18next';
 import {
@@ -26,29 +26,32 @@ export const useNotificationPreferences = (role: UserRole) => {
     social_notifications_enabled: false,
   });
 
+  // Role picks the document at call time, so both run imperatively.
+  const [runStudentPrefsQuery] = useLazyQuery(GetNotificationPreferencesDocument, {
+    fetchPolicy: 'network-only',
+  });
+  const [runParentPrefsQuery] = useLazyQuery(GetParentNotificationPreferencesDocument, {
+    fetchPolicy: 'network-only',
+  });
+  const [updateStudentPrefs] = useMutation(UpdateNotificationPreferencesDocument);
+  const [updateParentPrefs] = useMutation(ParentUpdateNotificationPreferencesDocument);
+
   const fetchPreferences = useCallback(async () => {
     try {
       setLoading(true);
-      const query =
+      // Resolve the payload inside each branch — the two documents return
+      // differently-named root fields.
+      const data =
         role === 'student'
-          ? GetNotificationPreferencesDocument
-          : GetParentNotificationPreferencesDocument;
-      const result = await tryFetchWithFallback(query);
+          ? (await runStudentPrefsQuery()).data?.notificationPreferences
+          : (await runParentPrefsQuery()).data?.parentNotificationPreferences;
 
-      if (result?.data) {
-        const data =
-          role === 'student'
-            ? result.data.notificationPreferences
-            : result.data.parentNotificationPreferences;
-        if (data) {
-          setPreferences({
-            app_notifications_enabled: !!data.app_notifications_enabled,
-            social_notifications_enabled:
-              data.social_notifications_enabled !== null
-                ? !!data.social_notifications_enabled
-                : null,
-          });
-        }
+      if (data) {
+        setPreferences({
+          app_notifications_enabled: !!data.app_notifications_enabled,
+          social_notifications_enabled:
+            data.social_notifications_enabled !== null ? !!data.social_notifications_enabled : null,
+        });
       }
     } catch (error) {
       console.error('Error fetching notification preferences:', error);
@@ -68,32 +71,19 @@ export const useNotificationPreferences = (role: UserRole) => {
 
     try {
       setUpdating(key);
-      const mutation =
-        role === 'student'
-          ? UpdateNotificationPreferencesDocument
-          : ParentUpdateNotificationPreferencesDocument;
-
       const input = { [key]: value };
-      const result = await tryFetchWithFallback(mutation, { input });
+      const data =
+        role === 'student'
+          ? (await updateStudentPrefs({ variables: { input } })).data?.updateNotificationPreferences
+          : (await updateParentPrefs({ variables: { input } })).data
+              ?.parentUpdateNotificationPreferences;
 
-      if (result?.errors) {
-        throw new Error(result.errors[0]?.message || 'Update failed');
-      }
-
-      if (result?.data) {
-        const data =
-          role === 'student'
-            ? result.data.updateNotificationPreferences
-            : result.data.parentUpdateNotificationPreferences;
-        if (data) {
-          setPreferences({
-            app_notifications_enabled: !!data.app_notifications_enabled,
-            social_notifications_enabled:
-              data.social_notifications_enabled !== null
-                ? !!data.social_notifications_enabled
-                : null,
-          });
-        }
+      if (data) {
+        setPreferences({
+          app_notifications_enabled: !!data.app_notifications_enabled,
+          social_notifications_enabled:
+            data.social_notifications_enabled !== null ? !!data.social_notifications_enabled : null,
+        });
       }
     } catch (error) {
       // Revert on error

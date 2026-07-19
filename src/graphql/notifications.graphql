@@ -89,3 +89,21 @@ mutation ParentUpdateNotificationPreferences($input: UpdateNotificationPreferenc
     social_notifications_enabled
   }
 }
+
+# Push-token registration, per role (notificationService).
+
+mutation RegisterDeviceToken($token: String!, $platform: String!) {
+  registerDeviceToken(token: $token, platform: $platform)
+}
+
+mutation ParentRegisterDeviceToken($token: String!, $platform: String!) {
+  parentRegisterDeviceToken(token: $token, platform: $platform)
+}
+
+mutation UnregisterDeviceToken($token: String!) {
+  unregisterDeviceToken(token: $token)
+}
+
+mutation ParentUnregisterDeviceToken($token: String!) {
+  parentUnregisterDeviceToken(token: $token)
+}

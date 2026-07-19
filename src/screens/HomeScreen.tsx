@@ -9,7 +9,6 @@ import {
   Image,
   Platform,
 } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
@@ -19,7 +18,14 @@ import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
 import { layout } from '../config/layout';
-import { tryFetchWithFallback } from '../config/api';
+import { useQuery } from '@apollo/client/react';
+import {
+  HomeDataDocument,
+  HomeLeaderboardDocument,
+  SocialTimelineDocument,
+  StudySubjectsDocument,
+  TodayScheduleDocument,
+} from '../generated/graphql';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
 import UnifiedHeader from '../components/UnifiedHeader';
@@ -206,119 +212,37 @@ const HomeScreen: React.FC = () => {
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
 
-  const [activitiesData, setActivitiesData] = useState<ActivitiesData | null>(null);
-  const [wheelData, setWheelData] = useState<WheelOfSuccessData | null>(null);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [leaderboardEntries, setLeaderboardEntries] = useState<LeaderboardEntry[]>([]);
-  const [leaderboardUser, setLeaderboardUser] = useState<LeaderboardEntry | null>(null);
-  const [socialFeed, setSocialFeed] = useState<SocialFeedItem[]>([]);
+  // Subjects, the feed and today's schedule reuse their own tabs' documents,
+  // so opening those tabs reads the same cache entry instead of refetching.
+  const homeQuery = useQuery(HomeDataDocument, { notifyOnNetworkStatusChange: true });
+  const subjectsQuery = useQuery(StudySubjectsDocument);
+  const leaderboardQuery = useQuery(HomeLeaderboardDocument, { variables: { limit: 4 } });
+  const socialQuery = useQuery(SocialTimelineDocument);
+  const scheduleQuery = useQuery(TodayScheduleDocument);
 
-  const [todaySchedule, setTodaySchedule] = useState<TodayScheduleData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const activitiesData = homeQuery.data?.activities ?? null;
+  const wheelData = homeQuery.data?.wheelOfSuccess ?? null;
+  const subjects = subjectsQuery.data?.subjectsForUserGrade ?? [];
+  const leaderboardEntries = leaderboardQuery.data?.leaderboard?.entries ?? [];
+  const leaderboardUser = leaderboardQuery.data?.leaderboard?.userEntry ?? null;
+  const socialFeed = (socialQuery.data?.socialTimeline ?? []).slice(0, 2);
+  const todaySchedule = scheduleQuery.data?.todaySchedule ?? null;
+  const loading = homeQuery.loading;
 
   const fetchHomeData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
-
-      // Fetch all data in parallel
-      const [activitiesResult, subjectsResult, leaderboardResult, socialResult, todayResult] =
-        await Promise.all([
-          tryFetchWithFallback(
-            `query HomeData {
-              activities {
-                total_quizzes avg_score performance_status performance_trend streak
-                activities { id name subject { id name } score totalQuestions completedAt isPassed }
-                weekly_performance { week score }
-              }
-              wheelOfSuccess {
-                arms { id name progress color type }
-                overallProgress
-              }
-            }`,
-            undefined,
-            token,
-          ),
-          tryFetchWithFallback(
-            `query SubjectsForUserGrade {
-              subjectsForUserGrade { 
-                id name description language study_progress quiz_progress 
-                chapters { id } 
-              }
-            }`,
-            undefined,
-            token,
-          ),
-          tryFetchWithFallback(
-            `query Leaderboard($limit: Int) {
-              leaderboard(limit: $limit) {
-                entries { id name xp rank selectedAvatar { url } }
-                userEntry { id name xp rank selectedAvatar { url } }
-              }
-            }`,
-            { limit: 4 },
-            token,
-          ),
-          tryFetchWithFallback(
-            `query SocialTimeline {
-              socialTimeline {
-                id type
-                user { id name grade { id name } }
-                createdAt
-                quizData {
-                  quiz { name subject { name } }
-                  score totalQuestions isPassed
-                }
-                connectedUser { id name grade { id name } }
-                rankData { previousRank newRank subject { id name } isOverall }
-                likes comments
-              }
-            }`,
-            undefined,
-            token,
-          ),
-          tryFetchWithFallback(
-            `query TodaySchedule {
-              todaySchedule {
-                date dayName dayOfWeek
-                schedule {
-                  id subject { name } lessonGoal quizGoal lessonsCompleted quizzesCompleted completionPercentage isComplete
-                }
-              }
-            }`,
-            undefined,
-            token,
-          ),
-        ]);
-
-      if (activitiesResult.data?.activities) {
-        setActivitiesData(activitiesResult.data.activities);
-      }
-      if (activitiesResult.data?.wheelOfSuccess) {
-        setWheelData(activitiesResult.data.wheelOfSuccess);
-      }
-      if (subjectsResult.data?.subjectsForUserGrade) {
-        setSubjects(subjectsResult.data.subjectsForUserGrade);
-      }
-      if (leaderboardResult.data?.leaderboard) {
-        setLeaderboardEntries(leaderboardResult.data.leaderboard.entries || []);
-        setLeaderboardUser(leaderboardResult.data.leaderboard.userEntry || null);
-      }
-      if (socialResult.data?.socialTimeline) {
-        setSocialFeed(socialResult.data.socialTimeline.slice(0, 2));
-      }
-      if (todayResult.data?.todaySchedule) {
-        setTodaySchedule(todayResult.data.todaySchedule);
-      }
-    } catch (err: any) {
-      console.error('Fetch home data error:', err);
-    } finally {
-      setLoading(false);
-    }
+    await Promise.all([
+      homeQuery.refetch(),
+      subjectsQuery.refetch(),
+      leaderboardQuery.refetch(),
+      socialQuery.refetch(),
+      scheduleQuery.refetch(),
+    ]);
+    // Refetch functions are stable for the life of the hook.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const lastFetchRef = React.useRef<number>(0);
+  // useQuery fetched on mount, so the first focus inside the window is a no-op.
+  const lastFetchRef = React.useRef<number>(Date.now());
   const STALE_MS = 30_000; // 30 seconds
 
   useFocusEffect(

@@ -212,6 +212,55 @@ export type SaveStudyScheduleMutation = {
   }>;
 };
 
+export type HomeDataQueryVariables = Exact<{ [key: string]: never }>;
+
+export type HomeDataQuery = {
+  activities: {
+    total_quizzes: number;
+    avg_score: number;
+    performance_status: string;
+    performance_trend: string;
+    streak: number;
+    activities: Array<{
+      id: string;
+      name: string;
+      score: number;
+      totalQuestions: number;
+      completedAt: string;
+      isPassed: boolean;
+      subject: { id: string; name: string };
+    }>;
+    weekly_performance: Array<{ week: string; score: number }>;
+  };
+  wheelOfSuccess: {
+    overallProgress: number;
+    arms: Array<{ id: string; name: string; progress: number; color: string; type: string }>;
+  };
+};
+
+export type HomeLeaderboardQueryVariables = Exact<{
+  limit?: number | null | undefined;
+}>;
+
+export type HomeLeaderboardQuery = {
+  leaderboard: {
+    entries: Array<{
+      id: string;
+      name: string;
+      xp: number;
+      rank: number;
+      selectedAvatar: { url: string } | null;
+    }>;
+    userEntry: {
+      id: string;
+      name: string;
+      xp: number;
+      rank: number;
+      selectedAvatar: { url: string } | null;
+    } | null;
+  };
+};
+
 export type LeaderboardQueryVariables = Exact<{
   subjectId?: string | null | undefined;
   filter?: string | null | undefined;
@@ -519,6 +568,32 @@ export type ParentUpdateNotificationPreferencesMutation = {
   };
 };
 
+export type RegisterDeviceTokenMutationVariables = Exact<{
+  token: string;
+  platform: string;
+}>;
+
+export type RegisterDeviceTokenMutation = { registerDeviceToken: boolean };
+
+export type ParentRegisterDeviceTokenMutationVariables = Exact<{
+  token: string;
+  platform: string;
+}>;
+
+export type ParentRegisterDeviceTokenMutation = { parentRegisterDeviceToken: boolean };
+
+export type UnregisterDeviceTokenMutationVariables = Exact<{
+  token: string;
+}>;
+
+export type UnregisterDeviceTokenMutation = { unregisterDeviceToken: boolean };
+
+export type ParentUnregisterDeviceTokenMutationVariables = Exact<{
+  token: string;
+}>;
+
+export type ParentUnregisterDeviceTokenMutation = { parentUnregisterDeviceToken: boolean };
+
 export type ParentLinkRequestsQueryVariables = Exact<{ [key: string]: never }>;
 
 export type ParentLinkRequestsQuery = {
@@ -603,6 +678,29 @@ export type GetChildDashboardQuery = {
       completed_at: string;
     }>;
   };
+};
+
+export type ParentSendLinkRequestMutationVariables = Exact<{
+  mobile: string;
+}>;
+
+export type ParentSendLinkRequestMutation = {
+  parentSendLinkRequest: { id: string; status: string };
+};
+
+export type ParentRespondToLinkMutationVariables = Exact<{
+  requestId: string;
+  action: string;
+}>;
+
+export type ParentRespondToLinkMutation = { parentRespondToLink: { id: string; status: string } };
+
+export type ParentCancelLinkRequestMutationVariables = Exact<{
+  requestId: string;
+}>;
+
+export type ParentCancelLinkRequestMutation = {
+  parentCancelLinkRequest: { success: boolean; message: string | null };
 };
 
 export type ProfileCompletenessQueryVariables = Exact<{ [key: string]: never }>;
@@ -717,6 +815,12 @@ export type AddSchoolMutation = {
 export type GetAppConfigQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GetAppConfigQuery = { appConfig: { campaignFreeAccess: boolean } };
+
+export type SetLanguageMutationVariables = Exact<{
+  input: UpdateProfileInput;
+}>;
+
+export type SetLanguageMutation = { updateProfile: { id: string } };
 
 export type UserQuizHistoryQueryVariables = Exact<{ [key: string]: never }>;
 
@@ -1031,6 +1135,31 @@ export type LikeActivityMutationVariables = Exact<{
 
 export type LikeActivityMutation = {
   likeActivity: { success: boolean; isLiked: boolean; likeCount: number; message: string };
+};
+
+export type SendContactMessageMutationVariables = Exact<{
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}>;
+
+export type SendContactMessageMutation = {
+  sendContactMessage: { success: boolean; message: string | null };
+};
+
+export type QuestionReportTypesQueryVariables = Exact<{ [key: string]: never }>;
+
+export type QuestionReportTypesQuery = { questionReportTypes: Array<{ id: string; name: string }> };
+
+export type ReportQuestionMutationVariables = Exact<{
+  questionId: string;
+  reportTypeId: string;
+  comment?: string | null | undefined;
+}>;
+
+export type ReportQuestionMutation = {
+  reportQuestion: { success: boolean; message: string | null };
 };
 
 export const GetGradesDocument = {
@@ -1557,6 +1686,176 @@ export const SaveStudyScheduleDocument = {
     },
   ],
 } as unknown as DocumentNode<SaveStudyScheduleMutation, SaveStudyScheduleMutationVariables>;
+export const HomeDataDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'HomeData' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'activities' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'total_quizzes' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'avg_score' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'performance_status' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'performance_trend' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'streak' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'activities' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'subject' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                          ],
+                        },
+                      },
+                      { kind: 'Field', name: { kind: 'Name', value: 'score' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'totalQuestions' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'isPassed' } },
+                    ],
+                  },
+                },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'weekly_performance' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'week' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'score' } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'wheelOfSuccess' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'arms' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'progress' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'color' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'type' } },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'overallProgress' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<HomeDataQuery, HomeDataQueryVariables>;
+export const HomeLeaderboardDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'HomeLeaderboard' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'limit' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'leaderboard' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'limit' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'limit' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'entries' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'xp' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'rank' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'selectedAvatar' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [{ kind: 'Field', name: { kind: 'Name', value: 'url' } }],
+                        },
+                      },
+                    ],
+                  },
+                },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'userEntry' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'xp' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'rank' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'selectedAvatar' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [{ kind: 'Field', name: { kind: 'Name', value: 'url' } }],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<HomeLeaderboardQuery, HomeLeaderboardQueryVariables>;
 export const LeaderboardDocument = {
   kind: 'Document',
   definitions: [
@@ -2709,6 +3008,182 @@ export const ParentUpdateNotificationPreferencesDocument = {
   ParentUpdateNotificationPreferencesMutation,
   ParentUpdateNotificationPreferencesMutationVariables
 >;
+export const RegisterDeviceTokenDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'RegisterDeviceToken' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'token' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'platform' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'registerDeviceToken' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'token' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'token' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'platform' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'platform' } },
+              },
+            ],
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<RegisterDeviceTokenMutation, RegisterDeviceTokenMutationVariables>;
+export const ParentRegisterDeviceTokenDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'ParentRegisterDeviceToken' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'token' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'platform' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'parentRegisterDeviceToken' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'token' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'token' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'platform' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'platform' } },
+              },
+            ],
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  ParentRegisterDeviceTokenMutation,
+  ParentRegisterDeviceTokenMutationVariables
+>;
+export const UnregisterDeviceTokenDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'UnregisterDeviceToken' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'token' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'unregisterDeviceToken' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'token' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'token' } },
+              },
+            ],
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<UnregisterDeviceTokenMutation, UnregisterDeviceTokenMutationVariables>;
+export const ParentUnregisterDeviceTokenDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'ParentUnregisterDeviceToken' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'token' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'parentUnregisterDeviceToken' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'token' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'token' } },
+              },
+            ],
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  ParentUnregisterDeviceTokenMutation,
+  ParentUnregisterDeviceTokenMutationVariables
+>;
 export const ParentLinkRequestsDocument = {
   kind: 'Document',
   definitions: [
@@ -3081,6 +3556,151 @@ export const GetChildDashboardDocument = {
     },
   ],
 } as unknown as DocumentNode<GetChildDashboardQuery, GetChildDashboardQueryVariables>;
+export const ParentSendLinkRequestDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'ParentSendLinkRequest' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'mobile' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'parentSendLinkRequest' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'child_mobile' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'mobile' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<ParentSendLinkRequestMutation, ParentSendLinkRequestMutationVariables>;
+export const ParentRespondToLinkDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'ParentRespondToLink' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'requestId' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'action' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'parentRespondToLink' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'request_id' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'requestId' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'action' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'action' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<ParentRespondToLinkMutation, ParentRespondToLinkMutationVariables>;
+export const ParentCancelLinkRequestDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'ParentCancelLinkRequest' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'requestId' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'parentCancelLinkRequest' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'request_id' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'requestId' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'message' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  ParentCancelLinkRequestMutation,
+  ParentCancelLinkRequestMutationVariables
+>;
 export const ProfileCompletenessDocument = {
   kind: 'Document',
   definitions: [
@@ -3663,6 +4283,46 @@ export const GetAppConfigDocument = {
     },
   ],
 } as unknown as DocumentNode<GetAppConfigQuery, GetAppConfigQueryVariables>;
+export const SetLanguageDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'SetLanguage' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'UpdateProfileInput' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'updateProfile' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [{ kind: 'Field', name: { kind: 'Name', value: 'id' } }],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<SetLanguageMutation, SetLanguageMutationVariables>;
 export const UserQuizHistoryDocument = {
   kind: 'Document',
   definitions: [
@@ -4878,3 +5538,177 @@ export const LikeActivityDocument = {
     },
   ],
 } as unknown as DocumentNode<LikeActivityMutation, LikeActivityMutationVariables>;
+export const SendContactMessageDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'SendContactMessage' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'name' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'email' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'subject' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'message' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'sendContactMessage' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'name' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'name' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'email' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'email' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'subject' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'subject' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'message' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'message' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'message' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<SendContactMessageMutation, SendContactMessageMutationVariables>;
+export const QuestionReportTypesDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'QuestionReportTypes' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'questionReportTypes' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<QuestionReportTypesQuery, QuestionReportTypesQueryVariables>;
+export const ReportQuestionDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'ReportQuestion' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'questionId' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'reportTypeId' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'comment' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'reportQuestion' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'questionId' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'questionId' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'reportTypeId' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'reportTypeId' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'comment' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'comment' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'message' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<ReportQuestionMutation, ReportQuestionMutationVariables>;

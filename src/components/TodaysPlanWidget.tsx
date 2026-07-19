@@ -7,32 +7,9 @@ import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
 import { layout } from '../config/layout';
-import { gql } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
+import { TodayScheduleDocument } from '../generated/graphql';
 import { GenericListSkeleton } from './SkeletonLoader';
-
-const TODAY_SCHEDULE_QUERY = gql`
-  query TodaySchedule {
-    todaySchedule {
-      date
-      dayName
-      dayOfWeek
-      schedule {
-        id
-        subject {
-          id
-          name
-        }
-        lessonGoal
-        quizGoal
-        lessonsCompleted
-        quizzesCompleted
-        completionPercentage
-        isComplete
-      }
-    }
-  }
-`;
 
 const TodaysPlanWidget: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -50,7 +27,7 @@ const TodaysPlanWidget: React.FC = () => {
     };
   }
 
-  const { data, loading, error } = useQuery<TodayScheduleData>(TODAY_SCHEDULE_QUERY, {
+  const { data, loading, error } = useQuery(TodayScheduleDocument, {
     fetchPolicy: 'cache-and-network',
     pollInterval: 60000,
   });

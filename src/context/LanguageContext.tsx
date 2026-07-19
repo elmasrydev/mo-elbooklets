@@ -11,7 +11,8 @@ import { I18nManager, NativeModules } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import i18n, { LANGUAGE_KEY } from '../i18n';
-import { tryFetchWithFallback } from '../config/api';
+import { apolloClient } from '../lib/apollo';
+import { SetLanguageDocument } from '../generated/graphql';
 import * as Updates from 'expo-updates';
 import { useTranslation } from 'react-i18next';
 import { analytics } from '../lib/analytics';
@@ -30,14 +31,6 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-const SET_LANGUAGE_MUTATION = `
-  mutation SetLanguage($input: UpdateProfileInput!) {
-    updateProfile(input: $input) {
-      id
-    }
-  }
-`;
-
 /**
  * Persist the selected language to the logged-in student's account so the
  * backend localizes push notifications immediately (BKLT-273).
@@ -55,7 +48,11 @@ const persistLanguageToBackend = async (lang: Language): Promise<void> => {
     if (!token || role !== 'student') return;
 
     await Promise.race([
-      tryFetchWithFallback(SET_LANGUAGE_MUTATION, { input: { language: lang } }, token),
+      apolloClient.mutate({
+        mutation: SetLanguageDocument,
+        variables: { input: { language: lang } },
+        context: { headers: { authorization: `Bearer ${token}` } },
+      }),
       // Cap the wait so a dead network can't stall the language-switch reload;
       // if this loses the race, the lang header self-heals it after reload.
       new Promise((resolve) => setTimeout(resolve, 1500)),

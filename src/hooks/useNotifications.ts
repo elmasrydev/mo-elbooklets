@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { tryFetchWithFallback } from '../config/api';
+import { useLazyQuery, useMutation } from '@apollo/client/react';
 import { AppNotification } from '../types/notification';
 import {
   UserNotificationsDocument,
@@ -29,6 +29,19 @@ export const useNotifications = () => {
   // Use a ref to prevent overlapping fetches
   const isFetchingRef = useRef(false);
 
+  // Role picks the document at call time, and pages append into local state,
+  // so every operation runs imperatively.
+  const [runStudentNotifications] = useLazyQuery(UserNotificationsDocument, {
+    fetchPolicy: 'network-only',
+  });
+  const [runParentNotifications] = useLazyQuery(ParentNotificationsDocument, {
+    fetchPolicy: 'network-only',
+  });
+  const [markStudentRead] = useMutation(MarkNotificationReadDocument);
+  const [markParentRead] = useMutation(ParentMarkNotificationReadDocument);
+  const [markAllStudentRead] = useMutation(MarkAllNotificationsReadDocument);
+  const [markAllParentRead] = useMutation(ParentMarkAllNotificationsReadDocument);
+
   const fetchNotifications = useCallback(
     async (targetPage: number, isRefresh = false) => {
       if (!isAuthenticated || !userRole) {
@@ -52,19 +65,17 @@ export const useNotifications = () => {
       setError(null);
 
       try {
-        const query =
-          userRole === 'student' ? UserNotificationsDocument : ParentNotificationsDocument;
-        const result = await tryFetchWithFallback(query, {
-          page: targetPage,
-          per_page: PER_PAGE,
-        });
-
-        if (result.errors) {
-          throw new Error(result.errors[0]?.message || 'Failed to fetch notifications');
-        }
-
+        const variables = { page: targetPage, per_page: PER_PAGE };
+        // Resolve the payload inside each branch — the two documents return
+        // differently-named root fields.
         const data =
-          userRole === 'student' ? result.data.userNotifications : result.data.parentNotifications;
+          userRole === 'student'
+            ? (await runStudentNotifications({ variables })).data?.userNotifications
+            : (await runParentNotifications({ variables })).data?.parentNotifications;
+
+        if (!data) {
+          throw new Error('Failed to fetch notifications');
+        }
 
         if (isRefresh || targetPage === 1) {
           setNotifications(data.data);
@@ -85,7 +96,7 @@ export const useNotifications = () => {
         isFetchingRef.current = false;
       }
     },
-    [isAuthenticated, userRole],
+    [isAuthenticated, userRole, runStudentNotifications, runParentNotifications],
   );
 
   const refresh = useCallback(() => {
@@ -107,17 +118,14 @@ export const useNotifications = () => {
       setUnreadCount((prev) => Math.max(0, prev - 1));
 
       try {
-        const mutation =
-          userRole === 'student'
-            ? MarkNotificationReadDocument
-            : ParentMarkNotificationReadDocument;
-        await tryFetchWithFallback(mutation, { id });
+        if (userRole === 'student') await markStudentRead({ variables: { id } });
+        else await markParentRead({ variables: { id } });
       } catch (err) {
         // Revert if needed? Usually for simple read marks we don't revert to avoid flicker
         console.error('Failed to mark notification as read:', err);
       }
     },
-    [userRole],
+    [userRole, markStudentRead, markParentRead],
   );
 
   const [markingAllRead, setMarkingAllRead] = useState(false);
@@ -131,17 +139,14 @@ export const useNotifications = () => {
     setUnreadCount(0);
 
     try {
-      const mutation =
-        userRole === 'student'
-          ? MarkAllNotificationsReadDocument
-          : ParentMarkAllNotificationsReadDocument;
-      await tryFetchWithFallback(mutation);
+      if (userRole === 'student') await markAllStudentRead();
+      else await markAllParentRead();
     } catch (err) {
       console.error('Failed to mark all notifications as read:', err);
     } finally {
       setMarkingAllRead(false);
     }
-  }, [userRole, markingAllRead]);
+  }, [userRole, markingAllRead, markAllStudentRead, markAllParentRead]);
 
   // Initial fetch
   useEffect(() => {

@@ -14,11 +14,11 @@ import {
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as SecureStore from 'expo-secure-store';
 import { useTheme } from '../context/ThemeContext';
 import { useTypography } from '../hooks/useTypography';
 import { useTranslation } from 'react-i18next';
-import { tryFetchWithFallback } from '../config/api';
+import { useLazyQuery, useMutation } from '@apollo/client/react';
+import { QuestionReportTypesDocument, ReportQuestionDocument } from '../generated/graphql';
 import AppButton from './AppButton';
 import { spacing as spacingConst } from '../config/spacing';
 
@@ -44,6 +44,8 @@ const ReportQuestionModal: React.FC<ReportQuestionModalProps> = ({
   const { typography, fontWeight } = useTypography();
   const { t } = useTranslation();
 
+  const [runReportTypesQuery] = useLazyQuery(QuestionReportTypesDocument);
+  const [reportQuestion] = useMutation(ReportQuestionDocument);
   const [reportTypes, setReportTypes] = useState<ReportType[]>([]);
   const [loadingTypes, setLoadingTypes] = useState(false);
   const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null);
@@ -69,19 +71,7 @@ const ReportQuestionModal: React.FC<ReportQuestionModalProps> = ({
     try {
       setLoadingTypes(true);
       setError(null);
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
-
-      const result = await tryFetchWithFallback(
-        `query {
-          questionReportTypes {
-            id
-            name
-          }
-        }`,
-        {},
-        token,
-      );
+      const result = await runReportTypesQuery();
 
       if (result.data?.questionReportTypes) {
         setReportTypes(result.data.questionReportTypes);
@@ -115,23 +105,13 @@ const ReportQuestionModal: React.FC<ReportQuestionModalProps> = ({
     try {
       setSubmitting(true);
       setError(null);
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
-
-      const result = await tryFetchWithFallback(
-        `mutation ReportQuestion($questionId: ID!, $reportTypeId: ID!, $comment: String) {
-          reportQuestion(questionId: $questionId, reportTypeId: $reportTypeId, comment: $comment) {
-            success
-            message
-          }
-        }`,
-        {
+      const result = await reportQuestion({
+        variables: {
           questionId,
           reportTypeId: selectedTypeId,
           comment: comment.trim() || null,
         },
-        token,
-      );
+      });
 
       const payload = result.data?.reportQuestion;
       if (payload?.success) {

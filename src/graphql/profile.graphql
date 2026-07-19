@@ -149,3 +149,11 @@ query GetAppConfig {
     campaignFreeAccess
   }
 }
+
+# Persists the UI language so the backend localizes push notifications
+# immediately (BKLT-273). Students only — parents have no updateProfile.
+mutation SetLanguage($input: UpdateProfileInput!) {
+  updateProfile(input: $input) {
+    id
+  }
+}

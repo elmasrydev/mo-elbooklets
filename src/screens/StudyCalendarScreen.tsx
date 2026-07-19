@@ -17,48 +17,17 @@ import { useTypography } from '../hooks/useTypography';
 import { layout } from '../config/layout';
 
 import { useTranslation } from 'react-i18next';
-import { gql } from '@apollo/client';
 import { useQuery, useMutation } from '@apollo/client/react';
+import {
+  SaveStudyScheduleDocument,
+  StudyScheduleDocument,
+  SubjectsForUserGradeDocument,
+} from '../generated/graphql';
 import { Ionicons } from '@expo/vector-icons';
 import UnifiedHeader from '../components/UnifiedHeader';
 import AppButton from '../components/AppButton';
 import { GenericListSkeleton } from '../components/SkeletonLoader';
 import { textAlign, INPUT_TEXT_ALIGN } from '../lib/rtl';
-
-const STUDY_SCHEDULE_QUERY = gql`
-  query StudySchedule {
-    studySchedule {
-      id
-      subject {
-        id
-        name
-      }
-      dayOfWeek
-      dayName
-      lessonGoal
-      quizGoal
-      notes
-    }
-  }
-`;
-
-const SUBJECTS_QUERY = gql`
-  query SubjectsForUserGrade {
-    subjectsForUserGrade {
-      id
-      name
-    }
-  }
-`;
-
-const SAVE_SCHEDULE_MUTATION = gql`
-  mutation SaveStudySchedule($entries: [StudyScheduleInput!]!) {
-    saveStudySchedule(entries: $entries) {
-      id
-      dayOfWeek
-    }
-  }
-`;
 
 interface Subject {
   id: string;
@@ -91,13 +60,13 @@ const StudyCalendarScreen: React.FC = () => {
     data: scheduleResult,
     loading: loadingSchedule,
     refetch,
-  } = useQuery<any>(STUDY_SCHEDULE_QUERY, {
+  } = useQuery(StudyScheduleDocument, {
     fetchPolicy: 'network-only',
   });
 
-  const { data: subjectsResult, loading: loadingSubjects } = useQuery<any>(SUBJECTS_QUERY);
+  const { data: subjectsResult, loading: loadingSubjects } = useQuery(SubjectsForUserGradeDocument);
 
-  const [saveSchedule, { loading: saving }] = useMutation(SAVE_SCHEDULE_MUTATION, {
+  const [saveSchedule, { loading: saving }] = useMutation(SaveStudyScheduleDocument, {
     onCompleted: () => {
       showConfirm({
         title: t('common.success', 'Success'),

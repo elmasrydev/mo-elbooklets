@@ -4,7 +4,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform, Linking, PermissionsAndroid } from 'react-native';
 import DeviceInfo from 'react-native-device-info';
 import { logError, logInfo } from '../utils/logger';
-import { tryFetchWithFallback } from '../config/api';
+import { apolloClient } from '../lib/apollo';
+import {
+  ParentRegisterDeviceTokenDocument,
+  ParentUnregisterDeviceTokenDocument,
+  RegisterDeviceTokenDocument,
+  UnregisterDeviceTokenDocument,
+} from '../generated/graphql';
 import i18n from '../i18n';
 
 const NOTIFICATION_PROMPTED_KEY = 'notification_permission_prompted';
@@ -111,23 +117,15 @@ type UserRole = 'student' | 'parent';
  */
 const maskToken = (token: string): string => `${token.slice(0, 12)}…`;
 
-const REGISTER_MUTATIONS: Record<UserRole, string> = {
-  student: `mutation RegisterDeviceToken($token: String!, $platform: String!) {
-    registerDeviceToken(token: $token, platform: $platform)
-  }`,
-  parent: `mutation ParentRegisterDeviceToken($token: String!, $platform: String!) {
-    parentRegisterDeviceToken(token: $token, platform: $platform)
-  }`,
-};
+const REGISTER_MUTATIONS = {
+  student: RegisterDeviceTokenDocument,
+  parent: ParentRegisterDeviceTokenDocument,
+} as const;
 
-const UNREGISTER_MUTATIONS: Record<UserRole, string> = {
-  student: `mutation UnregisterDeviceToken($token: String!) {
-    unregisterDeviceToken(token: $token)
-  }`,
-  parent: `mutation ParentUnregisterDeviceToken($token: String!) {
-    parentUnregisterDeviceToken(token: $token)
-  }`,
-};
+const UNREGISTER_MUTATIONS = {
+  student: UnregisterDeviceTokenDocument,
+  parent: ParentUnregisterDeviceTokenDocument,
+} as const;
 
 /**
  * Get the FCM token. Handles iOS device registration if needed.
@@ -201,10 +199,15 @@ export const registerDeviceToken = async (role: UserRole): Promise<void> => {
     const platform = Platform.OS; // 'ios' or 'android'
     const mutation = REGISTER_MUTATIONS[role];
 
-    const result = await tryFetchWithFallback(mutation, { token, platform });
+    const result = await apolloClient.mutate({
+      mutation,
+      variables: { token, platform },
+      // A device token must be recorded server-side, never served from cache.
+      fetchPolicy: 'no-cache',
+    });
 
-    if (result?.errors) {
-      logError('FCM: Server error registering token', result.errors);
+    if (result.error) {
+      logError('FCM: Server error registering token', result.error);
       return;
     }
 
@@ -233,12 +236,19 @@ const retireTokensOnServer = async (
 
   for (const token of tokens) {
     try {
-      const result = await tryFetchWithFallback(mutation, { token }, authToken);
+      const result = await apolloClient.mutate({
+        mutation,
+        variables: { token },
+        fetchPolicy: 'no-cache',
+        // Logout deletes the stored credential before this runs, so the
+        // caller hands us the one being revoked (BKLT-316).
+        context: authToken ? { headers: { authorization: `Bearer ${authToken}` } } : undefined,
+      });
 
-      if (result?.errors) {
+      if (result.error) {
         logError(
           `FCM Unregister Failed | Role: ${role} | Token: ${maskToken(token)}`,
-          result.errors,
+          result.error,
         );
         allRetired = false;
       } else {
@@ -258,7 +268,7 @@ const retireTokensOnServer = async (
  * Uses the locally stored token and role from registration.
  *
  * `authToken` must be supplied by callers that clear the stored credentials as
- * part of the same flow — the mutation is authenticated, and `tryFetchWithFallback`
+ * part of the same flow — the mutation is authenticated, and Apollo's auth link
  * otherwise falls back to reading `auth_token` from SecureStore (BKLT-316).
  */
 export const unregisterDeviceToken = async (authToken?: string): Promise<void> => {
@@ -319,9 +329,13 @@ export const setupTokenRefreshListener = (): (() => void) => {
       const platform = Platform.OS;
       const mutation = REGISTER_MUTATIONS[role];
 
-      const result = await tryFetchWithFallback(mutation, { token: newToken, platform });
+      const result = await apolloClient.mutate({
+        mutation,
+        variables: { token: newToken, platform },
+        fetchPolicy: 'no-cache',
+      });
 
-      if (!result?.errors) {
+      if (!result.error) {
         await AsyncStorage.setItem(REGISTERED_FCM_TOKEN_KEY, newToken);
         logInfo(
           `FCM Refresh Register Success | Role: ${role} | Platform: ${platform} | Token: ${maskToken(newToken)}`,
@@ -329,7 +343,7 @@ export const setupTokenRefreshListener = (): (() => void) => {
       } else {
         logError(
           `FCM Refresh Register Failed | Role: ${role} | Platform: ${platform}`,
-          result?.errors,
+          result.error,
         );
       }
     } catch (error) {

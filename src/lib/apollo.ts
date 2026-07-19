@@ -40,7 +40,10 @@ const authLink = setContext(async (_, { headers }) => {
   return {
     headers: {
       ...headers,
-      authorization: token ? `Bearer ${token}` : '',
+      // An operation may carry its own credential: logout retires the push
+      // token using the token it has just revoked, so the stored one is
+      // already gone by then (BKLT-316). Never clobber an explicit header.
+      authorization: headers?.authorization ?? (token ? `Bearer ${token}` : ''),
       'Content-Type': 'application/json',
       Accept: 'application/json',
       // Backend persists `lang` from authenticated requests to users.language,
