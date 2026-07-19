@@ -143,20 +143,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     checkAuthStatus();
 
     // Create logout function to share between handlers
-    const handleSessionExpired = () => {
+    const handleSessionExpired = async () => {
       logInfo('Session expired - logging out');
-      unregisterDeviceToken();
-      clearNotificationPromptedFlag();
-      // Clear persisted credentials too — otherwise the stale token/role are
-      // restored on next launch and the app re-authenticates into a session the
-      // server already rejected, looping back into 401s.
-      SecureStore.deleteItemAsync('auth_token');
-      SecureStore.deleteItemAsync('user_role');
-      SecureStore.deleteItemAsync('user_data');
-      SecureStore.deleteItemAsync('parent_data');
+      // Drop the session first so the app redirects to login straight away. The
+      // push-token cleanup below makes a network call that retries across every
+      // fallback URL, which would otherwise strand the user on an authenticated
+      // screen for as long as that takes.
       setUser(null);
       setParentUser(null);
       setUserRole(null);
+      // Clear persisted credentials too — otherwise the stale token/role are
+      // restored on next launch and the app re-authenticates into a session the
+      // server already rejected, looping back into 401s.
+      await SecureStore.deleteItemAsync('auth_token');
+      await SecureStore.deleteItemAsync('user_role');
+      await SecureStore.deleteItemAsync('user_data');
+      await SecureStore.deleteItemAsync('parent_data');
+      // The credential is already void server-side, so the unregister mutation
+      // will most likely be rejected — it still retires the FCM token on the
+      // device, which is what stops pushes for the dead session landing here.
+      await unregisterDeviceToken();
+      await clearNotificationPromptedFlag();
     };
 
     // Register logout handler for Apollo error link
@@ -512,11 +519,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = useCallback(async () => {
     try {
+      // Read the credential first and hand it to the unregister mutation, which is
+      // authenticated. Deleting `auth_token` ahead of the call sent it without an
+      // Authorization header, the server rejected it, and the failure was only
+      // logged — so the signed-out account's push token stayed registered and the
+      // device kept receiving its notifications (BKLT-316).
+      const authToken = (await SecureStore.getItemAsync('auth_token')) || undefined;
+      await unregisterDeviceToken(authToken);
+
       await SecureStore.deleteItemAsync('auth_token');
       await SecureStore.deleteItemAsync('user_data');
       await SecureStore.deleteItemAsync('parent_data');
       await SecureStore.deleteItemAsync('user_role');
-      await unregisterDeviceToken();
       await clearNotificationPromptedFlag();
       setUser(null);
       setParentUser(null);

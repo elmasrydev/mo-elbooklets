@@ -183,37 +183,82 @@ export const registerDeviceToken = async (role: UserRole): Promise<void> => {
 };
 
 /**
- * Unregister the device's FCM token from the backend server.
- * Uses the locally stored token and role from registration.
+ * Delete the FCM token at the device level, invalidating it with Firebase.
+ * The next registration mints a fresh one.
  */
-export const unregisterDeviceToken = async (): Promise<void> => {
+const deleteFCMToken = async (): Promise<void> => {
   try {
-    const token = await AsyncStorage.getItem(REGISTERED_FCM_TOKEN_KEY);
-    const role = (await AsyncStorage.getItem(REGISTERED_FCM_ROLE_KEY)) as UserRole | null;
+    const isEmulator = await DeviceInfo.isEmulator();
+    if (Platform.OS === 'ios' && isEmulator) return;
 
-    if (!token || !role) {
-      logInfo('FCM: No registered token found, skipping unregistration');
-      return;
-    }
+    await messaging().deleteToken();
+    logInfo('FCM: Device token deleted');
+  } catch (error) {
+    logError('FCM: Failed to delete device token', error);
+  }
+};
 
-    const mutation = UNREGISTER_MUTATIONS[role];
+/**
+ * Ask the backend to drop each token that may still be bound to the account.
+ */
+const retireTokensOnServer = async (
+  tokens: string[],
+  role: UserRole,
+  authToken?: string,
+): Promise<void> => {
+  const mutation = UNREGISTER_MUTATIONS[role];
 
-    const result = await tryFetchWithFallback(mutation, { token });
+  for (const token of tokens) {
+    const result = await tryFetchWithFallback(mutation, { token }, authToken);
 
     if (result?.errors) {
       logError(`FCM Unregister Failed | Role: ${role} | Token: ${token}`, result.errors);
     } else {
       logInfo(`FCM Unregister Success | Role: ${role} | Token: ${token}`);
     }
+  }
+};
 
-    // Clear local storage regardless of server result
-    await AsyncStorage.removeItem(REGISTERED_FCM_TOKEN_KEY);
-    await AsyncStorage.removeItem(REGISTERED_FCM_ROLE_KEY);
+/**
+ * Unregister the device's FCM token from the backend server.
+ * Uses the locally stored token and role from registration.
+ *
+ * `authToken` must be supplied by callers that clear the stored credentials as
+ * part of the same flow — the mutation is authenticated, and `tryFetchWithFallback`
+ * otherwise falls back to reading `auth_token` from SecureStore (BKLT-316).
+ */
+export const unregisterDeviceToken = async (authToken?: string): Promise<void> => {
+  const storedToken = await AsyncStorage.getItem(REGISTERED_FCM_TOKEN_KEY);
+  const role = (await AsyncStorage.getItem(REGISTERED_FCM_ROLE_KEY)) as UserRole | null;
+
+  // Clear the local bookkeeping up front, before any network call. It stops the
+  // token-refresh listener from re-registering a rotated token against the account
+  // being signed out, and it short-circuits the re-entrant call that happens when
+  // this mutation itself comes back "Unauthenticated." and trips the global
+  // auth-error handler, which calls back into here.
+  await AsyncStorage.multiRemove([REGISTERED_FCM_TOKEN_KEY, REGISTERED_FCM_ROLE_KEY]);
+
+  try {
+    if (!storedToken || !role) {
+      logInfo('FCM: No registered token found, skipping unregistration');
+      return;
+    }
+
+    // The token can rotate while the app is closed, or a refresh re-registration
+    // can fail, leaving the server holding a token that differs from the stored
+    // one. Retire both so neither is left bound to the account.
+    const liveToken = await getFCMToken();
+    const bound = liveToken && liveToken !== storedToken ? [storedToken, liveToken] : [storedToken];
+
+    await retireTokensOnServer(bound, role, authToken);
   } catch (error) {
-    logError(`FCM Unregister Error`, error);
-    // Still clear local storage on error
-    await AsyncStorage.removeItem(REGISTERED_FCM_TOKEN_KEY);
-    await AsyncStorage.removeItem(REGISTERED_FCM_ROLE_KEY);
+    logError('FCM Unregister Error', error);
+  } finally {
+    // Backstop for every case where the server-side unregister could not happen:
+    // logging out while offline, an already-expired session, or a backend that
+    // still has the token bound. Killing the token at the FCM level means pushes
+    // aimed at the signed-out account cannot be delivered to this device.
+    await deleteFCMToken();
   }
 };
 

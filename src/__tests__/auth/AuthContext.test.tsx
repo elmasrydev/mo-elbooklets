@@ -2,6 +2,7 @@ import React from 'react';
 import { renderHook, act, waitFor } from '@testing-library/react-native';
 import { AuthProvider, useAuth } from '../../context/AuthContext';
 import { tryFetchWithFallback } from '../../config/api';
+import { unregisterDeviceToken } from '../../services/notificationService';
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -278,6 +279,32 @@ describe('AuthContext & AuthProvider', () => {
       expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith('auth_token');
       expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith('user_role');
       expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith('user_data');
+    });
+
+    it('should unregister the push token before the credential is cleared (BKLT-316)', async () => {
+      // Seeded through the store rather than queued responses: logout has to read
+      // `auth_token` back out of storage, so clearing it first surfaces here as a
+      // missing credential instead of passing on a canned value.
+      const studentUser = { id: '1', name: 'Ali', mobile: '01007867184' };
+      await SecureStore.setItemAsync('auth_token', 'student-token');
+      await SecureStore.setItemAsync('user_role', 'student');
+      await SecureStore.setItemAsync('user_data', JSON.stringify(studentUser));
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isAuthenticated).toBe(true);
+      });
+
+      await act(async () => {
+        await result.current.logout();
+      });
+
+      // The unregister mutation is authenticated. Clearing `auth_token` ahead of
+      // it sent the request without an Authorization header, so the signed-out
+      // account's push token stayed registered and the device kept receiving its
+      // notifications.
+      expect(unregisterDeviceToken).toHaveBeenCalledWith('student-token');
     });
 
     it('should invoke forgot password mutation for student', async () => {
