@@ -9,8 +9,8 @@ import {
   Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as SecureStore from 'expo-secure-store';
-import { tryFetchWithFallback } from '../../config/api';
+import { useQuery } from '@apollo/client/react';
+import { QuizTypesDocument } from '../../generated/graphql';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
@@ -56,9 +56,22 @@ const QuizSettingsScreen: React.FC = () => {
     selectedLessonIds = [],
   } = route.params || {};
 
-  const [quizTypes, setQuizTypes] = useState<QuizType[]>(passedQuizTypes || []);
-  const [loadingTypes, setLoadingTypes] = useState(
-    !passedQuizTypes || passedQuizTypes.length === 0,
+  // Types usually arrive via route params (fetched on the lessons screen);
+  // the query is only the fallback for deep entries into this screen.
+  const hasPassedTypes = !!passedQuizTypes && passedQuizTypes.length > 0;
+  const { data: quizTypesData } = useQuery(QuizTypesDocument, { skip: hasPassedTypes });
+  const quizTypes: QuizType[] = useMemo(
+    () =>
+      hasPassedTypes
+        ? passedQuizTypes
+        : (quizTypesData?.quizTypes ?? []).map((qt) => ({
+            id: qt.id,
+            name: qt.name,
+            slug: qt.slug,
+            questionCount: qt.question_count,
+            isDefault: qt.is_default,
+          })),
+    [hasPassedTypes, passedQuizTypes, quizTypesData],
   );
 
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
@@ -75,40 +88,6 @@ const QuizSettingsScreen: React.FC = () => {
   const [timerEnabled, setTimerEnabled] = useState(false);
 
   const [showSubModal, setShowSubModal] = useState(false);
-
-  const fetchQuizTypes = useCallback(async () => {
-    try {
-      setLoadingTypes(true);
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
-      const result = await tryFetchWithFallback(
-        `query QuizTypes { quizTypes { id name slug question_count is_default } }`,
-        undefined,
-        token,
-      );
-      if (result.data?.quizTypes) {
-        setQuizTypes(
-          result.data.quizTypes.map((qt: any) => ({
-            id: qt.id,
-            name: qt.name,
-            slug: qt.slug,
-            questionCount: qt.question_count,
-            isDefault: qt.is_default,
-          })),
-        );
-      }
-    } catch (err) {
-      console.error('Fetch quiz types error:', err);
-    } finally {
-      setLoadingTypes(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!passedQuizTypes || passedQuizTypes.length === 0) {
-      fetchQuizTypes();
-    }
-  }, [passedQuizTypes, fetchQuizTypes]);
 
   useEffect(() => {
     if (!selectedTypeId && quizTypes.length > 0) {

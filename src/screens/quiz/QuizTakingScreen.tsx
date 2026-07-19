@@ -12,12 +12,12 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useModal } from '../../context/ModalContext';
-import * as SecureStore from 'expo-secure-store';
+import { useQuery, useMutation } from '@apollo/client/react';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
-import { tryFetchWithFallback } from '../../config/api';
+import { QuizDocument, QuizQuery, SubmitQuizAnswersDocument } from '../../generated/graphql';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
 import useAndroidBack from '../../hooks/useAndroidBack';
 import { useTypography } from '../../hooks/useTypography';
@@ -32,28 +32,8 @@ import ReportQuestionModal from '../../components/ReportQuestionModal';
 
 const DESCRIPTIVE_TYPES = ['what_happens', 'give_a_reason'];
 
-interface QuizQuestion {
-  id: string;
-  question: string;
-  type: string;
-  answers: string[];
-  questionNumber: number;
-  explanation?: string;
-  difficulty: number;
-}
-
-interface Quiz {
-  id: string;
-  name: string;
-  subject: {
-    id: string;
-    name: string;
-    language?: string;
-  };
-  questions: QuizQuestion[];
-  isCompleted: boolean;
-  score?: number;
-}
+type Quiz = NonNullable<QuizQuery['quiz']>;
+type QuizQuestion = Quiz['questions'][number];
 
 const QuizTakingScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -68,9 +48,6 @@ const QuizTakingScreen: React.FC = () => {
   const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
 
-  const [quiz, setQuiz] = useState<Quiz | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<{ [questionId: string]: string }>({});
   const [submitting, setSubmitting] = useState(false);
@@ -114,73 +91,37 @@ const QuizTakingScreen: React.FC = () => {
   // Android hardware back → same leave-quiz popup
   useAndroidBack(handleBackPress);
 
+  const {
+    data: quizData,
+    loading,
+    error: quizQueryError,
+    refetch: refetchQuiz,
+  } = useQuery(QuizDocument, {
+    variables: { quizId },
+    skip: !quizId,
+    // An in-progress attempt must never be served from cache after e.g. a
+    // remount — the server owns the attempt state.
+    fetchPolicy: 'network-only',
+    notifyOnNetworkStatusChange: true,
+  });
+  const quiz = quizData?.quiz ?? null;
+  const error = !quizId
+    ? t('common.error')
+    : quizQueryError
+      ? quizQueryError.message || t('quiz_taking.error_loading_quiz')
+      : null;
+
+  const trackedQuizIdRef = React.useRef<string | null>(null);
   useEffect(() => {
-    if (quizId) {
-      fetchQuiz();
-    } else {
-      setError(t('common.error'));
-      setLoading(false);
-    }
-  }, [quizId]);
-
-  const fetchQuiz = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) {
-        setError(t('common.error'));
-        return;
-      }
-
-      const result = await tryFetchWithFallback(
-        `
-        query Quiz($quizId: ID!) {
-          quiz(quizId: $quizId) {
-            id
-            name
-            subject {
-              id
-              name
-              language
-            }
-            questions {
-              id
-              question
-              type
-              answers
-              questionNumber
-              explanation
-              difficulty
-            }
-            isCompleted
-            score
-          }
-        }
-      `,
-        { quizId },
-        token,
-      );
-
-      if (result.data?.quiz) {
-        setQuiz(result.data.quiz);
-        analytics.trackQuizStarted({
-          quiz_id: result.data.quiz.id,
-          quiz_title: result.data.quiz.name,
-          subject_id: result.data.quiz.subject?.id,
-          lesson_count: result.data.quiz.questions.length,
-        });
-      } else {
-        setError(result.errors?.[0]?.message || t('quiz_taking.error_loading_quiz'));
-      }
-    } catch (err: any) {
-      console.error('Fetch quiz error:', err);
-      setError(err.message || t('quiz_taking.error_loading_quiz'));
-    } finally {
-      setLoading(false);
-    }
-  };
+    if (!quiz || trackedQuizIdRef.current === quiz.id) return;
+    trackedQuizIdRef.current = quiz.id;
+    analytics.trackQuizStarted({
+      quiz_id: quiz.id,
+      quiz_title: quiz.name,
+      subject_id: quiz.subject?.id,
+      lesson_count: quiz.questions.length,
+    });
+  }, [quiz]);
 
   const handleAnswerSelect = (questionId: string, answer: string) => {
     setSelectedAnswers((prev) => ({
@@ -261,42 +202,20 @@ const QuizTakingScreen: React.FC = () => {
     submitAnswers();
   };
 
+  const [submitQuizAnswers] = useMutation(SubmitQuizAnswersDocument);
+
   const submitAnswers = async () => {
     if (!quiz || submitting) return;
 
     try {
       setSubmitting(true);
 
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) {
-        showConfirm({
-          title: t('common.error'),
-          message: t('common.error'),
-          showCancel: false,
-          onConfirm: () => {},
-        });
-        setSubmitting(false);
-        return;
-      }
-
       const answers = quiz.questions.map((question) => ({
         questionId: question.id,
         selectedAnswer: selectedAnswers[question.id] || null,
       }));
 
-      const result = await tryFetchWithFallback(
-        `
-        mutation SubmitQuizAnswers($quizId: ID!, $answers: [QuestionAnswerInput!]!) {
-          submitQuizAnswers(quizId: $quizId, answers: $answers) {
-            score
-            totalQuestions
-            isPassed
-          }
-        }
-      `,
-        { quizId: quiz.id, answers },
-        token,
-      );
+      const result = await submitQuizAnswers({ variables: { quizId: quiz.id, answers } });
 
       if (result.data?.submitQuizAnswers) {
         // Reset navigation stack to MainTabs, focusing on the Quiz tab with completed params
@@ -316,10 +235,9 @@ const QuizTakingScreen: React.FC = () => {
           ],
         });
       } else {
-        const errorMessage = result.errors?.[0]?.message || t('common.unexpected_error');
         showConfirm({
           title: t('common.error'),
-          message: errorMessage,
+          message: t('common.unexpected_error'),
           showCancel: false,
           onConfirm: () => {},
         });
@@ -374,7 +292,7 @@ const QuizTakingScreen: React.FC = () => {
     return (
       <View style={common.container}>
         <UnifiedHeader showBackButton title={t('quiz_taking.quiz_error')} />
-        <RetryView message={error} onRetry={fetchQuiz} />
+        <RetryView message={error} onRetry={() => refetchQuiz()} />
       </View>
     );
   }
@@ -409,7 +327,7 @@ const QuizTakingScreen: React.FC = () => {
         onBackPress={handleBackPress}
         title={
           <Text style={common.headerTitle} numberOfLines={1}>
-            {t('quiz_taking.quiz')} - {quiz.subject.name}
+            {t('quiz_taking.quiz')} - {quiz.subject?.name}
           </Text>
         }
       />

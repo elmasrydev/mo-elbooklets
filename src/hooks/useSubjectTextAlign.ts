@@ -36,7 +36,7 @@ import { useLanguage } from '../context/LanguageContext';
  *
  * @param subjectLanguage The language code of the subject ('ar' or 'en')
  */
-export const useSubjectTextAlign = (subjectLanguage?: string) => {
+export const useSubjectTextAlign = (subjectLanguage?: string | null) => {
   const { isRTL: isAppRTL } = useLanguage();
 
   return useMemo(() => {

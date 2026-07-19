@@ -11,12 +11,12 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
-import * as SecureStore from 'expo-secure-store';
+import { useQuery, useMutation } from '@apollo/client/react';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
-import { tryFetchWithFallback } from '../../config/api';
+import { PublishQuizToFeedDocument, QuizReviewDocument } from '../../generated/graphql';
 import { layout } from '../../config/layout';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
@@ -40,148 +40,86 @@ const QuizReviewScreen: React.FC = () => {
   const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
 
-  const [loading, setLoading] = useState(true);
-  const [result, setResult] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
   const [published, setPublished] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
   const [showReportModal, setShowReportModal] = useState(false);
   const [selectedReportQuestionId, setSelectedReportQuestionId] = useState<string | null>(null);
   const [currentFilter, setCurrentFilter] = useState<'all' | 'correct' | 'wrong'>('all');
   const [expandedQuestions, setExpandedQuestions] = useState<Record<string, boolean>>({});
 
-  const fetchResults = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
+  const {
+    data: reviewData,
+    loading,
+    error: queryError,
+    refetch,
+  } = useQuery(QuizReviewDocument, {
+    variables: { quizId },
+    skip: !quizId,
+    // isPublished can change from the results screen — confirm with the server.
+    fetchPolicy: 'network-only',
+    notifyOnNetworkStatusChange: true,
+  });
+  const error = !quizId
+    ? 'No quiz ID'
+    : queryError
+      ? queryError.message || t('common.error')
+      : null;
 
-      const query = `
-        query QuizReview($quizId: ID!) {
-          quizResults(quizId: $quizId) {
-            quiz {
-              id
-              name
-              subject {
-                id
-                name
-                language
-              }
-            }
-            isPublished
-            userAnswers {
-              question {
-                id
-                question
-                type
-                answer_1
-                answer_2
-                answer_3
-                answer_4
-                explanation
-              }
-              selected_answer
-              is_correct
-              score
-              explanation
-              descriptive_feedback {
-                coverage_percentage
-                score_out_of_10
-                covered_concepts
-                partially_covered
-                missing_concepts
-                contradictions
-                feedback
-              }
-            }
-          }
+  // Derive the per-question MCQ options once per response: descriptive types
+  // have none, true/false uses the first two, MCQ filters empty option slots.
+  const result = React.useMemo(() => {
+    const raw = reviewData?.quizResults;
+    if (!raw) return null;
+    return {
+      ...raw,
+      userAnswers: raw.userAnswers.map((ua: any) => {
+        const q = ua.question;
+        const isDescriptive = ['what_happens', 'give_a_reason'].includes(q.type);
+        const isTrueFalse = q.type === 'true_false';
+
+        let answers = isDescriptive
+          ? [] // No MCQ options for descriptive
+          : [q.answer_1, q.answer_2, q.answer_3, q.answer_4].filter(
+              (a) =>
+                a !== null && a !== undefined && a !== '' && String(a).toLowerCase() !== 'null',
+            );
+
+        if (isTrueFalse) {
+          answers = [q.answer_1, q.answer_2].filter(
+            (a) => a !== null && a !== undefined && a !== '' && String(a).toLowerCase() !== 'null',
+          );
         }
-      `;
 
-      const response = await tryFetchWithFallback(query, { quizId }, token);
-      if (response.data?.quizResults) {
-        setPublished(!!response.data.quizResults.isPublished);
-        const processed = {
-          ...response.data.quizResults,
-          userAnswers: response.data.quizResults.userAnswers.map((ua: any) => {
-            const q = ua.question;
-            const isDescriptive = ['what_happens', 'give_a_reason'].includes(q.type);
+        return { ...ua, question: { ...q, answers } };
+      }),
+    };
+  }, [reviewData]);
 
-            // Check if it's a True/False question
-            const isTrueFalse = q.type === 'true_false';
+  useEffect(() => {
+    if (reviewData?.quizResults) setPublished(!!reviewData.quizResults.isPublished);
+  }, [reviewData]);
 
-            let answers = isDescriptive
-              ? [] // No MCQ options for descriptive
-              : [q.answer_1, q.answer_2, q.answer_3, q.answer_4].filter(
-                  (a) =>
-                    a !== null && a !== undefined && a !== '' && String(a).toLowerCase() !== 'null',
-                );
-
-            if (isTrueFalse) {
-              answers = [q.answer_1, q.answer_2].filter(
-                (a) =>
-                  a !== null && a !== undefined && a !== '' && String(a).toLowerCase() !== 'null',
-              );
-            }
-
-            return { ...ua, question: { ...q, answers } };
-          }),
-        };
-        setResult(processed);
-      } else {
-        setError(response.errors?.[0]?.message || t('common.error'));
-      }
-    } catch (err: any) {
-      setError(err.message || t('common.error'));
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [publishQuizToFeed] = useMutation(PublishQuizToFeedDocument);
 
   const publishToFeed = async () => {
     if (isPublishing) return;
 
     try {
       setIsPublishing(true);
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
-
-      const mutation = `
-        mutation PublishQuizToFeed($quizId: ID!) {
-          publishQuizToFeed(quizId: $quizId) {
-            success
-            message
-          }
-        }
-      `;
-
-      const response = await tryFetchWithFallback(mutation, { quizId }, token);
-
+      setPublishError(null);
+      const response = await publishQuizToFeed({ variables: { quizId } });
       if (response.data?.publishQuizToFeed?.success) {
         setPublished(!published);
       } else {
-        const errMsg =
-          response.data?.publishQuizToFeed?.message ||
-          response.errors?.[0]?.message ||
-          t('common.error');
-        setError(errMsg);
+        setPublishError(response.data?.publishQuizToFeed?.message || t('common.error'));
       }
     } catch (err: any) {
-      setError(err.message || t('common.error'));
+      setPublishError(err.message || t('common.error'));
     } finally {
       setIsPublishing(false);
     }
   };
-
-  useEffect(() => {
-    if (quizId) {
-      fetchResults();
-    } else {
-      setError('No quiz ID');
-      setLoading(false);
-    }
-  }, [quizId]);
 
   const { contentAlign, contentRowDirection } = useSubjectTextAlign(
     result?.quiz?.subject?.language,
@@ -209,7 +147,7 @@ const QuizReviewScreen: React.FC = () => {
   }
 
   if (error || !result) {
-    return <RetryView message={error || t('common.error')} onRetry={fetchResults} />;
+    return <RetryView message={error || t('common.error')} onRetry={() => refetch()} />;
   }
 
   const totalQuestions = result.userAnswers?.length || 0;
@@ -954,6 +892,15 @@ const QuizReviewScreen: React.FC = () => {
             }
             size="lg"
           />
+          {/* Publish failures stay inline — the review itself loaded fine
+              (the old code blanked the whole screen into a retry view). */}
+          {publishError && (
+            <Text
+              style={[typography('caption'), { color: theme.colors.error, textAlign: 'center' }]}
+            >
+              {publishError}
+            </Text>
+          )}
 
           <View style={currentStyles.rowButtons}>
             <AppButton

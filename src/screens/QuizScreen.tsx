@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as SecureStore from 'expo-secure-store';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
+import { useQuery } from '@apollo/client/react';
 import { useTheme } from '../context/ThemeContext';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
 import { useLanguage } from '../context/LanguageContext';
 import { layout } from '../config/layout';
-import { tryFetchWithFallback } from '../config/api';
+import { UserQuizHistoryDocument, UserQuizHistoryQuery } from '../generated/graphql';
 import { useTranslation } from 'react-i18next';
 import RecentActivityCard from '../components/RecentActivityCard';
 import UnifiedHeader from '../components/UnifiedHeader';
@@ -16,15 +16,7 @@ import { GenericListSkeleton } from '../components/SkeletonLoader';
 import RetryView from '../components/RetryView';
 import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
 
-interface QuizHistory {
-  id: string;
-  name: string;
-  subject: { id: string; name: string; language?: string };
-  score: number;
-  totalQuestions: number;
-  completedAt: string;
-  isPassed: boolean;
-}
+type QuizHistory = UserQuizHistoryQuery['userQuizHistory'][number];
 
 const QuizScreen: React.FC = () => {
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
@@ -35,13 +27,14 @@ const QuizScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
 
-  const [quizHistory, setQuizHistory] = useState<QuizHistory[]>([]);
-  const [historyLoading, setHistoryLoading] = useState(true);
-  const [historyError, setHistoryError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchQuizHistory();
-  }, []);
+  const {
+    data: historyData,
+    loading: historyLoading,
+    error: historyErrorObj,
+    refetch: refetchHistory,
+  } = useQuery(UserQuizHistoryDocument, { notifyOnNetworkStatusChange: true });
+  const quizHistory = historyData?.userQuizHistory ?? [];
+  const historyError = historyErrorObj ? t('quiz_screen.error_loading_history') : null;
 
   useFocusEffect(
     useCallback(() => {
@@ -49,34 +42,15 @@ const QuizScreen: React.FC = () => {
         const completedId = route.params.completedQuizId;
         const passedTimeTaken = route.params.timeTaken;
         navigation.setParams({ completedQuizId: undefined, timeTaken: undefined });
-        fetchQuizHistory();
+        refetchHistory();
         navigation.navigate('QuizResults', { quizId: completedId, timeTaken: passedTimeTaken });
       } else {
-        fetchQuizHistory();
+        // A quiz may have been completed since the last visit.
+        refetchHistory();
       }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [route.params?.completedQuizId]),
   );
-
-  const fetchQuizHistory = async () => {
-    try {
-      setHistoryLoading(true);
-      setHistoryError(null);
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
-      const result = await tryFetchWithFallback(
-        `query UserQuizHistory { userQuizHistory { id name subject { id name language } score totalQuestions completedAt isPassed } }`,
-        undefined,
-        token,
-      );
-      if (result.data?.userQuizHistory) setQuizHistory(result.data.userQuizHistory);
-      else setHistoryError(t('quiz_screen.error_loading_history'));
-    } catch (err: any) {
-      // Error is handled by ListEmptyComponent showing RetryView
-      setHistoryError(t('quiz_screen.error_loading_history'));
-    } finally {
-      setHistoryLoading(false);
-    }
-  };
 
   const currentStyles = useMemo(
     () => styles(theme, common, fontSizes, spacing, borderRadius, typography, fontWeight, isRTL),
@@ -87,9 +61,9 @@ const QuizScreen: React.FC = () => {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchQuizHistory();
+    await refetchHistory();
     setRefreshing(false);
-  }, []);
+  }, [refetchHistory]);
 
   const renderHistoryItem = useCallback(
     ({ item: quiz }: { item: QuizHistory }) => (
@@ -127,7 +101,7 @@ const QuizScreen: React.FC = () => {
       return (
         <RetryView
           message={historyError || t('quiz_screen.error_loading_history')}
-          onRetry={fetchQuizHistory}
+          onRetry={() => refetchHistory()}
         />
       );
     return (
@@ -141,16 +115,7 @@ const QuizScreen: React.FC = () => {
         <Text style={currentStyles.emptyStateSubtitle}>{t('quiz_screen.take_first_quiz')}</Text>
       </View>
     );
-  }, [
-    historyLoading,
-    historyError,
-    refreshing,
-    currentStyles,
-    theme,
-    spacing,
-    t,
-    fetchQuizHistory,
-  ]);
+  }, [historyLoading, historyError, refreshing, currentStyles, theme, spacing, t, refetchHistory]);
 
   return (
     <View style={[common.container, { alignItems: 'stretch' }]}>

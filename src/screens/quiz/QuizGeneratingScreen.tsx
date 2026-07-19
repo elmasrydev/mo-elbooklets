@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, Dimensions, ActivityIndicator, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as SecureStore from 'expo-secure-store';
 import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
+import { useMutation } from '@apollo/client/react';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -16,7 +16,7 @@ import Animated, {
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { useTypography } from '../../hooks/useTypography';
-import { tryFetchWithFallback } from '../../config/api';
+import { StartQuizDocument } from '../../generated/graphql';
 import { ConfirmModal } from '../../components/ConfirmModal';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -52,6 +52,7 @@ const QuizGeneratingScreen: React.FC = () => {
   const [quizId, setQuizId] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   const [apiCompleted, setApiCompleted] = useState(false);
+  const [startQuizMutation] = useMutation(StartQuizDocument);
 
   // Start breathing (pulse) animations
   useEffect(() => {
@@ -79,6 +80,8 @@ const QuizGeneratingScreen: React.FC = () => {
 
   // API Call: mutation StartQuiz
   useEffect(() => {
+    // `active` keeps a late response from writing state after the user backed
+    // out of the generating screen mid-flight.
     let active = true;
     const startQuizApi = async () => {
       try {
@@ -87,21 +90,18 @@ const QuizGeneratingScreen: React.FC = () => {
           if (active) setApiError(t('quiz_screen.error_loading_history'));
           return;
         }
-        const token = await SecureStore.getItemAsync('auth_token');
-        if (!token) {
-          if (active) setApiError('No authentication token found');
-          return;
-        }
-        const result = await tryFetchWithFallback(
-          `mutation StartQuiz($subjectId: ID!, $lessonIds: [ID!]!, $quizTypeId: ID) { startQuiz(subjectId: $subjectId, lessonIds: $lessonIds, quizTypeId: $quizTypeId) { id } }`,
-          { subjectId: subject.id, lessonIds: selectedLessonIds, quizTypeId: selectedTypeId },
-          token,
-        );
+        const { data } = await startQuizMutation({
+          variables: {
+            subjectId: subject.id,
+            lessonIds: selectedLessonIds,
+            quizTypeId: selectedTypeId,
+          },
+        });
         if (!active) return;
-        if (result.data?.startQuiz) {
-          setQuizId(result.data.startQuiz.id);
+        if (data?.startQuiz) {
+          setQuizId(data.startQuiz.id);
         } else {
-          setApiError(result.errors?.[0]?.message || t('quiz_screen.error_loading_history'));
+          setApiError(t('quiz_screen.error_loading_history'));
         }
       } catch (err: any) {
         if (active) setApiError(err.message || t('quiz_screen.error_loading_history'));
@@ -113,6 +113,7 @@ const QuizGeneratingScreen: React.FC = () => {
     return () => {
       active = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subject?.id, selectedLessonIds, selectedTypeId]);
 
   // Combined timeline timer (exactly 6 seconds total: 4s animations + 2s pause)

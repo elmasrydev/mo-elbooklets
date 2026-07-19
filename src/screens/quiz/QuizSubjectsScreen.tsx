@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
+import { useQuery } from '@apollo/client/react';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../../context/LanguageContext';
@@ -9,20 +9,14 @@ import { useTypography } from '../../hooks/useTypography';
 import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
 import { layout } from '../../config/layout';
 import { useNavigation } from '@react-navigation/native';
-import { tryFetchWithFallback } from '../../config/api';
+import { SubjectsForUserGradeDocument, SubjectsForUserGradeQuery } from '../../generated/graphql';
 import QuizFlowHeader from '../../components/QuizFlowHeader';
 import SubjectIcon from '../../components/SubjectIcon';
 import { GenericListSkeleton } from '../../components/SkeletonLoader';
 import RetryView from '../../components/RetryView';
 import { getSubjectConfig } from '../../utils/subjectTheme';
 
-interface Subject {
-  id: string;
-  name: string;
-  description?: string;
-  language?: string;
-  chapters?: { id: string }[];
-}
+type Subject = SubjectsForUserGradeQuery['subjectsForUserGrade'][number];
 
 const QuizSubjectsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -31,45 +25,14 @@ const QuizSubjectsScreen: React.FC = () => {
   const { t } = useTranslation();
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchSubjects();
-  }, []);
-
-  const fetchSubjects = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) {
-        if (__DEV__) console.warn('[QuizSubjectsScreen] No auth token found');
-        return;
-      }
-      const result = await tryFetchWithFallback(
-        `query SubjectsForUserGrade { subjectsForUserGrade { id name description language chapters { id } } }`,
-        undefined,
-        token,
-      );
-      if (__DEV__)
-        console.log('[QuizSubjectsScreen] fetchSubjects result:', JSON.stringify(result));
-
-      if (result.data?.subjectsForUserGrade) {
-        setSubjects(result.data.subjectsForUserGrade);
-      } else {
-        if (__DEV__)
-          console.warn('[QuizSubjectsScreen] No subjectsForUserGrade in response:', result);
-        setError(t('quiz_subjects.error_loading_subjects'));
-      }
-    } catch (err: any) {
-      if (__DEV__) console.error('[QuizSubjectsScreen] fetchSubjects error:', err);
-      setError(t('quiz_subjects.error_loading_subjects'));
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    data,
+    loading,
+    error: queryError,
+    refetch,
+  } = useQuery(SubjectsForUserGradeDocument, { notifyOnNetworkStatusChange: true });
+  const subjects = data?.subjectsForUserGrade ?? [];
+  const error = queryError ? t('quiz_subjects.error_loading_subjects') : null;
 
   const currentStyles = styles(
     theme,
@@ -96,7 +59,7 @@ const QuizSubjectsScreen: React.FC = () => {
     return (
       <View style={currentStyles.container}>
         <QuizFlowHeader currentStep={1} />
-        <RetryView message={t('quiz_subjects.error_loading_subjects')} onRetry={fetchSubjects} />
+        <RetryView message={t('quiz_subjects.error_loading_subjects')} onRetry={() => refetch()} />
       </View>
     );
   }

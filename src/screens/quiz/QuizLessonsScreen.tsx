@@ -1,12 +1,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as SecureStore from 'expo-secure-store';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useQuery } from '@apollo/client/react';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
-import { tryFetchWithFallback } from '../../config/api';
+import {
+  LessonsForSubjectDocument,
+  LessonsForSubjectQuery,
+  QuizTypesDocument,
+} from '../../generated/graphql';
 import { Ionicons } from '@expo/vector-icons';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { layout } from '../../config/layout';
@@ -21,23 +25,8 @@ import { useModal } from '../../context/ModalContext';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import SubjectIcon from '../../components/SubjectIcon';
 
-interface Subject {
-  id: string;
-  name: string;
-  description?: string;
-  language?: string;
-}
-interface Lesson {
-  id: string;
-  name: string;
-  description?: string;
-  isLocked?: boolean;
-}
-interface Chapter {
-  id: string;
-  name: string;
-  lessons: Lesson[];
-}
+type Chapter = LessonsForSubjectQuery['lessonsForSubject'][number];
+type Lesson = Chapter['lessons'][number];
 interface QuizType {
   id: string;
   name: string;
@@ -65,60 +54,31 @@ const QuizLessonsScreen: React.FC = () => {
 
   const [showSubModal, setShowSubModal] = useState(false);
   const [selectedLessons, setSelectedLessons] = useState<Set<string>>(new Set());
-  const [chapters, setChapters] = useState<Chapter[]>([]);
-  const [quizTypes, setQuizTypes] = useState<QuizType[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!subject) {
-      navigation.navigate('QuizFlowSubjects');
-      return;
-    }
-    fetchData();
-  }, [subject]);
+    if (!subject) navigation.navigate('QuizFlowSubjects');
+  }, [subject, navigation]);
 
-  const fetchData = async () => {
-    try {
-      if (!subject?.id) return;
-      setLoading(true);
-      setError(null);
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
-      const [lessonsResult, quizTypesResult] = await Promise.all([
-        tryFetchWithFallback(
-          `query LessonsForSubject($subjectId: ID!) { lessonsForSubject(subjectId: $subjectId) { id name description lessons { id name description isLocked } } }`,
-          { subjectId: subject.id },
-          token,
-        ),
-        tryFetchWithFallback(
-          `query QuizTypes { quizTypes { id name slug question_count is_default } }`,
-          undefined,
-          token,
-        ),
-      ]);
-      if (lessonsResult.data?.lessonsForSubject) {
-        setChapters(lessonsResult.data.lessonsForSubject);
-      } else {
-        setError(lessonsResult.errors?.[0]?.message || t('quiz_lessons.error_loading_lessons'));
-      }
-      if (quizTypesResult.data?.quizTypes) {
-        setQuizTypes(
-          quizTypesResult.data.quizTypes.map((qt: any) => ({
-            id: qt.id,
-            name: qt.name,
-            slug: qt.slug,
-            questionCount: qt.question_count,
-            isDefault: qt.is_default,
-          })),
-        );
-      }
-    } catch (err: any) {
-      setError(t('quiz_lessons.error_loading_lessons'));
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: lessonsData, loading: lessonsLoading } = useQuery(LessonsForSubjectDocument, {
+    variables: { subjectId: subject?.id },
+    skip: !subject?.id,
+  });
+  // Quiz types ride along so the settings screen can receive them via params.
+  const { data: quizTypesData, loading: typesLoading } = useQuery(QuizTypesDocument);
+
+  const chapters = lessonsData?.lessonsForSubject ?? [];
+  const quizTypes: QuizType[] = useMemo(
+    () =>
+      (quizTypesData?.quizTypes ?? []).map((qt) => ({
+        id: qt.id,
+        name: qt.name,
+        slug: qt.slug,
+        questionCount: qt.question_count,
+        isDefault: qt.is_default,
+      })),
+    [quizTypesData],
+  );
+  const loading = lessonsLoading || typesLoading;
 
   // Tapping a unit selects/deselects all of its unlocked lessons.
   const handleChapterToggle = (chapter: Chapter) => {

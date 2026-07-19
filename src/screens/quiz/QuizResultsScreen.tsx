@@ -12,12 +12,12 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
-import * as SecureStore from 'expo-secure-store';
+import { useQuery, useMutation } from '@apollo/client/react';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
-import { tryFetchWithFallback } from '../../config/api';
+import { PublishQuizToFeedDocument, QuizResultsDocument } from '../../generated/graphql';
 import { layout } from '../../config/layout';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
@@ -27,48 +27,6 @@ import RetryView from '../../components/RetryView';
 import { GenericListSkeleton } from '../../components/SkeletonLoader';
 import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
 import { analytics } from '../../lib/analytics';
-
-interface UserQuizAnswer {
-  question: {
-    id: string;
-    question: string;
-    explanation?: string;
-    answer_1: string;
-  };
-  selected_answer: string;
-  is_correct: boolean;
-  score?: number;
-  explanation?: string;
-  descriptive_feedback?: {
-    coverage_percentage: number;
-    score_out_of_10: number;
-  };
-}
-
-interface QuizResult {
-  quiz: {
-    id: string;
-    name: string;
-    subject: {
-      id: string;
-      name: string;
-      language?: string;
-    };
-    lessons: {
-      id: string;
-      name: string;
-      chapter: {
-        name: string;
-      };
-    }[];
-  };
-  score: number;
-  totalQuestions: number;
-  xp?: number | null;
-  userAnswers: UserQuizAnswer[];
-  isPassed: boolean;
-  isPublished?: boolean;
-}
 
 interface QuizResultsScreenProps {
   quizId: string;
@@ -105,128 +63,58 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
-  const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
   const [published, setPublished] = useState(false);
 
+  const {
+    data: resultsData,
+    loading,
+    error: queryError,
+    refetch,
+  } = useQuery(QuizResultsDocument, {
+    variables: { quizId },
+    skip: !quizId,
+    // Results include isPublished, which the review screen can change —
+    // always confirm with the server.
+    fetchPolicy: 'network-only',
+    notifyOnNetworkStatusChange: true,
+  });
+  const quizResult = resultsData?.quizResults ?? null;
+  const error = queryError ? queryError.message || t('quiz_results.error_loading_results') : null;
+
+  const trackedQuizIdRef = React.useRef<string | null>(null);
   useEffect(() => {
-    fetchQuizResults();
-  }, [quizId]);
+    if (!quizResult) return;
+    setPublished(!!quizResult.isPublished);
+    if (trackedQuizIdRef.current === quizResult.quiz?.id) return;
+    trackedQuizIdRef.current = quizResult.quiz?.id ?? null;
+    analytics.trackQuizCompleted({
+      quiz_id: quizResult.quiz?.id,
+      quiz_title: quizResult.quiz?.name,
+      subject_id: quizResult.quiz?.subject?.id,
+      score: quizResult.score,
+      total_questions: quizResult.totalQuestions,
+      passed: quizResult.isPassed,
+    });
+  }, [quizResult]);
 
-  const fetchQuizResults = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) {
-        setError(t('common.error'));
-        return;
-      }
-
-      const result = await tryFetchWithFallback(
-        `
-        query QuizResults($quizId: ID!) {
-          quizResults(quizId: $quizId) {
-            quiz {
-              id
-              name
-              subject {
-                id
-                name
-                language
-              }
-              lessons {
-                id
-                name
-                chapter {
-                  name
-                }
-              }
-            }
-            score
-            totalQuestions
-            xp
-            userAnswers {
-              question {
-                id
-                question
-                type
-                answer_1
-                explanation
-              }
-              selected_answer
-              is_correct
-              score
-              explanation
-              descriptive_feedback {
-                coverage_percentage
-                score_out_of_10
-              }
-            }
-            isPassed
-            isPublished
-          }
-        }
-      `,
-        { quizId },
-        token,
-      );
-
-      if (result.data?.quizResults) {
-        setQuizResult(result.data.quizResults);
-        setPublished(!!result.data.quizResults.isPublished);
-        analytics.trackQuizCompleted({
-          quiz_id: result.data.quizResults.quiz?.id,
-          quiz_title: result.data.quizResults.quiz?.name,
-          subject_id: result.data.quizResults.quiz?.subject?.id,
-          score: result.data.quizResults.score,
-          total_questions: result.data.quizResults.totalQuestions,
-          passed: result.data.quizResults.isPassed,
-        });
-      } else {
-        setError(result.errors?.[0]?.message || t('quiz_results.error_loading_results'));
-      }
-    } catch (err: any) {
-      console.error('Fetch quiz results error:', err);
-      setError(err.message || t('quiz_results.error_loading_results'));
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [publishQuizToFeed] = useMutation(PublishQuizToFeedDocument);
+  const [publishError, setPublishError] = useState<string | null>(null);
 
   const publishToFeed = async () => {
     if (isPublishing) return;
 
     try {
       setIsPublishing(true);
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
-
-      const mutation = `
-        mutation PublishQuizToFeed($quizId: ID!) {
-          publishQuizToFeed(quizId: $quizId) {
-            success
-            message
-          }
-        }
-      `;
-
-      const response = await tryFetchWithFallback(mutation, { quizId }, token);
-
+      setPublishError(null);
+      const response = await publishQuizToFeed({ variables: { quizId } });
       if (response.data?.publishQuizToFeed?.success) {
         setPublished(!published);
       } else {
-        const errMsg =
-          response.data?.publishQuizToFeed?.message ||
-          response.errors?.[0]?.message ||
-          t('common.error');
-        setError(errMsg);
+        setPublishError(response.data?.publishQuizToFeed?.message || t('common.error'));
       }
     } catch (err: any) {
-      setError(err.message || t('common.error'));
+      setPublishError(err.message || t('common.error'));
     } finally {
       setIsPublishing(false);
     }
@@ -298,7 +186,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
           onBackPress={onBack}
           title={t('quiz_results.results_error')}
         />
-        <RetryView message={error} onRetry={fetchQuizResults} />
+        <RetryView message={error} onRetry={() => refetch()} />
       </View>
     );
   }
@@ -501,6 +389,15 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
             }
             textStyle={published ? { color: theme.colors.success } : undefined}
           />
+          {/* Publish failures stay inline — the results themselves loaded fine
+              (the old code blanked the whole screen into a retry view). */}
+          {publishError && (
+            <Text
+              style={[typography('caption'), { color: theme.colors.error, textAlign: 'center' }]}
+            >
+              {publishError}
+            </Text>
+          )}
 
           <AppButton
             title={t('quiz_results.back_to_home', 'Home')}

@@ -495,30 +495,74 @@ export type UserQuizHistoryQuery = {
     totalQuestions: number;
     completedAt: string;
     isPassed: boolean;
-    subject: { id: string; name: string };
+    subject: { id: string; name: string; language: string | null };
   }>;
 };
 
 export type SubjectsForUserGradeQueryVariables = Exact<{ [key: string]: never }>;
 
 export type SubjectsForUserGradeQuery = {
-  subjectsForUserGrade: Array<{ id: string; name: string; description: string | null }>;
+  subjectsForUserGrade: Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    language: string | null;
+    chapters: Array<{ id: string }>;
+  }>;
+};
+
+export type QuizTypesQueryVariables = Exact<{ [key: string]: never }>;
+
+export type QuizTypesQuery = {
+  quizTypes: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    question_count: number;
+    is_default: boolean;
+  }>;
+};
+
+export type LessonsForSubjectQueryVariables = Exact<{
+  subjectId: string;
+}>;
+
+export type LessonsForSubjectQuery = {
+  lessonsForSubject: Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    lessons: Array<{ id: string; name: string; description: string | null; isLocked: boolean }>;
+  }>;
 };
 
 export type StartQuizMutationVariables = Exact<{
   subjectId: string;
   lessonIds: Array<string> | string;
+  quizTypeId?: string | null | undefined;
 }>;
 
-export type StartQuizMutation = {
-  startQuiz: {
+export type StartQuizMutation = { startQuiz: { id: string } };
+
+export type QuizQueryVariables = Exact<{
+  quizId: string;
+}>;
+
+export type QuizQuery = {
+  quiz: {
     id: string;
     name: string;
+    isCompleted: boolean;
+    score: number | null;
+    subject: { id: string; name: string; language: string | null } | null;
     questions: Array<{
       id: string;
       question: string;
+      type: string;
       answers: Array<string>;
       questionNumber: number;
+      explanation: string | null;
+      difficulty: number;
     }>;
   };
 };
@@ -529,12 +573,89 @@ export type SubmitQuizAnswersMutationVariables = Exact<{
 }>;
 
 export type SubmitQuizAnswersMutation = {
-  submitQuizAnswers: {
+  submitQuizAnswers: { score: number; totalQuestions: number; isPassed: boolean };
+};
+
+export type QuizResultsQueryVariables = Exact<{
+  quizId: string;
+}>;
+
+export type QuizResultsQuery = {
+  quizResults: {
     score: number;
     totalQuestions: number;
+    xp: number;
     isPassed: boolean;
-    quiz: { id: string; name: string };
+    isPublished: boolean;
+    quiz: {
+      id: string;
+      name: string;
+      subject: { id: string; name: string; language: string | null } | null;
+      lessons: Array<{ id: string; name: string; chapter: { name: string } | null }>;
+    };
+    userAnswers: Array<{
+      selected_answer: string | null;
+      is_correct: boolean;
+      score: number | null;
+      explanation: string | null;
+      question: {
+        id: string;
+        question: string;
+        type: string;
+        answer_1: string;
+        explanation: string | null;
+      };
+      descriptive_feedback: { coverage_percentage: number; score_out_of_10: number } | null;
+    }>;
   };
+};
+
+export type QuizReviewQueryVariables = Exact<{
+  quizId: string;
+}>;
+
+export type QuizReviewQuery = {
+  quizResults: {
+    isPublished: boolean;
+    quiz: {
+      id: string;
+      name: string;
+      subject: { id: string; name: string; language: string | null } | null;
+    };
+    userAnswers: Array<{
+      selected_answer: string | null;
+      is_correct: boolean;
+      score: number | null;
+      explanation: string | null;
+      question: {
+        id: string;
+        question: string;
+        type: string;
+        answer_1: string;
+        answer_2: string | null;
+        answer_3: string | null;
+        answer_4: string | null;
+        explanation: string | null;
+      };
+      descriptive_feedback: {
+        coverage_percentage: number;
+        score_out_of_10: number;
+        covered_concepts: Array<string>;
+        partially_covered: Array<string>;
+        missing_concepts: Array<string>;
+        contradictions: Array<string>;
+        feedback: string | null;
+      } | null;
+    }>;
+  };
+};
+
+export type PublishQuizToFeedMutationVariables = Exact<{
+  quizId: string;
+}>;
+
+export type PublishQuizToFeedMutation = {
+  publishQuizToFeed: { success: boolean; message: string | null };
 };
 
 export type SocialTimelineQueryVariables = Exact<{ [key: string]: never }>;
@@ -2470,6 +2591,7 @@ export const UserQuizHistoryDocument = {
                     selections: [
                       { kind: 'Field', name: { kind: 'Name', value: 'id' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'language' } },
                     ],
                   },
                 },
@@ -2504,6 +2626,15 @@ export const SubjectsForUserGradeDocument = {
                 { kind: 'Field', name: { kind: 'Name', value: 'id' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'name' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'language' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'chapters' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [{ kind: 'Field', name: { kind: 'Name', value: 'id' } }],
+                  },
+                },
               ],
             },
           },
@@ -2512,6 +2643,92 @@ export const SubjectsForUserGradeDocument = {
     },
   ],
 } as unknown as DocumentNode<SubjectsForUserGradeQuery, SubjectsForUserGradeQueryVariables>;
+export const QuizTypesDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'QuizTypes' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'quizTypes' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'slug' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'question_count' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'is_default' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<QuizTypesQuery, QuizTypesQueryVariables>;
+export const LessonsForSubjectDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'LessonsForSubject' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'subjectId' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'lessonsForSubject' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'subjectId' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'subjectId' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'lessons' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'isLocked' } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<LessonsForSubjectQuery, LessonsForSubjectQueryVariables>;
 export const StartQuizDocument = {
   kind: 'Document',
   definitions: [
@@ -2542,6 +2759,11 @@ export const StartQuizDocument = {
             },
           },
         },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'quizTypeId' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+        },
       ],
       selectionSet: {
         kind: 'SelectionSet',
@@ -2560,6 +2782,51 @@ export const StartQuizDocument = {
                 name: { kind: 'Name', value: 'lessonIds' },
                 value: { kind: 'Variable', name: { kind: 'Name', value: 'lessonIds' } },
               },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'quizTypeId' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'quizTypeId' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [{ kind: 'Field', name: { kind: 'Name', value: 'id' } }],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<StartQuizMutation, StartQuizMutationVariables>;
+export const QuizDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'Quiz' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'quizId' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'quiz' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'quizId' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'quizId' } },
+              },
             ],
             selectionSet: {
               kind: 'SelectionSet',
@@ -2568,17 +2835,34 @@ export const StartQuizDocument = {
                 { kind: 'Field', name: { kind: 'Name', value: 'name' } },
                 {
                   kind: 'Field',
+                  name: { kind: 'Name', value: 'subject' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'language' } },
+                    ],
+                  },
+                },
+                {
+                  kind: 'Field',
                   name: { kind: 'Name', value: 'questions' },
                   selectionSet: {
                     kind: 'SelectionSet',
                     selections: [
                       { kind: 'Field', name: { kind: 'Name', value: 'id' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'question' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'type' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'answers' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'questionNumber' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'explanation' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'difficulty' } },
                     ],
                   },
                 },
+                { kind: 'Field', name: { kind: 'Name', value: 'isCompleted' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'score' } },
               ],
             },
           },
@@ -2586,7 +2870,7 @@ export const StartQuizDocument = {
       },
     },
   ],
-} as unknown as DocumentNode<StartQuizMutation, StartQuizMutationVariables>;
+} as unknown as DocumentNode<QuizQuery, QuizQueryVariables>;
 export const SubmitQuizAnswersDocument = {
   kind: 'Document',
   definitions: [
@@ -2639,17 +2923,6 @@ export const SubmitQuizAnswersDocument = {
             selectionSet: {
               kind: 'SelectionSet',
               selections: [
-                {
-                  kind: 'Field',
-                  name: { kind: 'Name', value: 'quiz' },
-                  selectionSet: {
-                    kind: 'SelectionSet',
-                    selections: [
-                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
-                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
-                    ],
-                  },
-                },
                 { kind: 'Field', name: { kind: 'Name', value: 'score' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'totalQuestions' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'isPassed' } },
@@ -2661,6 +2934,288 @@ export const SubmitQuizAnswersDocument = {
     },
   ],
 } as unknown as DocumentNode<SubmitQuizAnswersMutation, SubmitQuizAnswersMutationVariables>;
+export const QuizResultsDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'QuizResults' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'quizId' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'quizResults' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'quizId' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'quizId' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'quiz' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'subject' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'language' } },
+                          ],
+                        },
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'lessons' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                            {
+                              kind: 'Field',
+                              name: { kind: 'Name', value: 'chapter' },
+                              selectionSet: {
+                                kind: 'SelectionSet',
+                                selections: [
+                                  { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'score' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'totalQuestions' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'xp' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'userAnswers' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'question' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'question' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'type' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'answer_1' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'explanation' } },
+                          ],
+                        },
+                      },
+                      { kind: 'Field', name: { kind: 'Name', value: 'selected_answer' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'is_correct' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'score' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'explanation' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'descriptive_feedback' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'coverage_percentage' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'score_out_of_10' } },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'isPassed' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'isPublished' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<QuizResultsQuery, QuizResultsQueryVariables>;
+export const QuizReviewDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'QuizReview' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'quizId' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'quizResults' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'quizId' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'quizId' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'quiz' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'subject' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'language' } },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'isPublished' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'userAnswers' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'question' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'question' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'type' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'answer_1' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'answer_2' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'answer_3' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'answer_4' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'explanation' } },
+                          ],
+                        },
+                      },
+                      { kind: 'Field', name: { kind: 'Name', value: 'selected_answer' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'is_correct' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'score' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'explanation' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'descriptive_feedback' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'coverage_percentage' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'score_out_of_10' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'covered_concepts' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'partially_covered' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'missing_concepts' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'contradictions' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'feedback' } },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<QuizReviewQuery, QuizReviewQueryVariables>;
+export const PublishQuizToFeedDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'PublishQuizToFeed' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'quizId' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'publishQuizToFeed' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'quizId' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'quizId' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'message' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<PublishQuizToFeedMutation, PublishQuizToFeedMutationVariables>;
 export const SocialTimelineDocument = {
   kind: 'Document',
   definitions: [
