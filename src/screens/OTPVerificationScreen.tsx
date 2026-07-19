@@ -21,10 +21,7 @@ import { useTypography } from '../hooks/useTypography';
 import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
 import { tryFetchWithFallback } from '../config/api';
-import {
-  SEND_MOBILE_OTP_MUTATION,
-  VERIFY_MOBILE_OTP_MUTATION,
-} from '../graphql/mutations/otpMutations';
+import { SendMobileOtpDocument, VerifyMobileOtpDocument } from '../generated/graphql';
 import { useOtpTimer } from '../hooks/useOtpTimer';
 import * as SecureStore from 'expo-secure-store';
 import { layout } from '../config/layout';
@@ -135,7 +132,7 @@ const OTPVerificationScreen: React.FC = () => {
       const token = await SecureStore.getItemAsync('auth_token');
 
       const result = await tryFetchWithFallback(
-        SEND_MOBILE_OTP_MUTATION,
+        SendMobileOtpDocument,
         { mobile: user.mobile, country_code: user.country_code || '+20' },
         token || undefined,
       );
@@ -195,7 +192,7 @@ const OTPVerificationScreen: React.FC = () => {
       const token = await SecureStore.getItemAsync('auth_token');
 
       const result = await tryFetchWithFallback(
-        VERIFY_MOBILE_OTP_MUTATION,
+        VerifyMobileOtpDocument,
         { otp: otpCode },
         token || undefined,
       );

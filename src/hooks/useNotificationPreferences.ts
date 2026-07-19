@@ -3,12 +3,11 @@ import { tryFetchWithFallback } from '../config/api';
 import { useModal } from '../context/ModalContext';
 import { useTranslation } from 'react-i18next';
 import {
-  NOTIFICATION_PREFERENCES_QUERY,
-  UPDATE_NOTIFICATION_PREFERENCES_MUTATION,
-  PARENT_NOTIFICATION_PREFERENCES_QUERY,
-  PARENT_UPDATE_NOTIFICATION_PREFERENCES_MUTATION,
-} from '../graphql/notificationPreferences';
-import { print } from 'graphql';
+  GetNotificationPreferencesDocument,
+  UpdateNotificationPreferencesDocument,
+  GetParentNotificationPreferencesDocument,
+  ParentUpdateNotificationPreferencesDocument,
+} from '../generated/graphql';
 
 type UserRole = 'student' | 'parent';
 
@@ -31,8 +30,10 @@ export const useNotificationPreferences = (role: UserRole) => {
     try {
       setLoading(true);
       const query =
-        role === 'student' ? NOTIFICATION_PREFERENCES_QUERY : PARENT_NOTIFICATION_PREFERENCES_QUERY;
-      const result = await tryFetchWithFallback(print(query));
+        role === 'student'
+          ? GetNotificationPreferencesDocument
+          : GetParentNotificationPreferencesDocument;
+      const result = await tryFetchWithFallback(query);
 
       if (result?.data) {
         const data =
@@ -69,11 +70,11 @@ export const useNotificationPreferences = (role: UserRole) => {
       setUpdating(key);
       const mutation =
         role === 'student'
-          ? UPDATE_NOTIFICATION_PREFERENCES_MUTATION
-          : PARENT_UPDATE_NOTIFICATION_PREFERENCES_MUTATION;
+          ? UpdateNotificationPreferencesDocument
+          : ParentUpdateNotificationPreferencesDocument;
 
       const input = { [key]: value };
-      const result = await tryFetchWithFallback(print(mutation), { input });
+      const result = await tryFetchWithFallback(mutation, { input });
 
       if (result?.errors) {
         throw new Error(result.errors[0]?.message || 'Update failed');

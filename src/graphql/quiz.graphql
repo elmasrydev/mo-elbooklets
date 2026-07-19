@@ -1,4 +1,8 @@
-# Quiz-related Queries and Mutations
+# Quiz-related Queries and Mutations.
+# NOTE: the quiz screens still run inline strings via tryFetchWithFallback —
+# they adopt these typed documents when they migrate (phase 2). The stale
+# Quiz / QuizResults / LessonsForSubject documents that used to live here no
+# longer matched the live schema and had no consumers.
 
 query UserQuizHistory {
   userQuizHistory {
@@ -20,54 +24,6 @@ query SubjectsForUserGrade {
     id
     name
     description
-  }
-}
-
-query LessonsForSubject($subjectId: ID!) {
-  lessonsForSubject(subjectId: $subjectId) {
-    id
-    name
-    description
-    chapter {
-      id
-      name
-      order
-    }
-  }
-}
-
-query Quiz($quizId: ID!) {
-  quiz(id: $quizId) {
-    id
-    name
-    questions {
-      id
-      question
-      answers
-      questionNumber
-    }
-  }
-}
-
-query QuizResults($quizId: ID!) {
-  quizResults(quizId: $quizId) {
-    quiz {
-      id
-      name
-    }
-    score
-    totalQuestions
-    isPassed
-    answers {
-      question {
-        id
-        question
-        answer_1
-        explanation
-      }
-      selectedAnswer
-      isCorrect
-    }
   }
 }
 

@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { checkForAuthError, tryFetchWithFallback } from '../config/api';
-import { MY_LINKED_CHILDREN_QUERY, PARENT_CHILD_REQUESTS_QUERY } from '../graphql/parentingQueries';
+import { MyLinkedChildrenDocument, ParentChildRequestsDocument } from '../generated/graphql';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useModal } from '../context/ModalContext';
@@ -47,8 +47,8 @@ export const useParentDashboard = () => {
 
       try {
         const [childrenRes, requestsRes] = await Promise.all([
-          tryFetchWithFallback(MY_LINKED_CHILDREN_QUERY),
-          tryFetchWithFallback(PARENT_CHILD_REQUESTS_QUERY),
+          tryFetchWithFallback(MyLinkedChildrenDocument),
+          tryFetchWithFallback(ParentChildRequestsDocument),
         ]);
 
         if (childrenRes.data?.linkedChildren) {

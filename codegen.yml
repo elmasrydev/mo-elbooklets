@@ -1,28 +1,18 @@
 overwrite: true
+# schema.graphql is a committed snapshot of the live backend —
+# refresh with `npm run schema:pull` after backend deployments.
 schema:
   - "src/graphql/schema.graphql"
 documents: "src/graphql/**/*.graphql"
 generates:
-  src/generated/graphql.ts:
-    plugins:
-      - "typescript"
-      - "typescript-operations"
-      - "typescript-react-apollo"
+  src/generated/:
+    preset: "client"
+    presetConfig:
+      # Operations live in .graphql files and are consumed as plain typed
+      # documents (useQuery(XxxDocument) / tryFetchWithFallback(XxxDocument));
+      # fragment masking only benefits the gql-tag colocation style.
+      fragmentMasking: false
     config:
-      banner: "// @ts-nocheck"
-      withHooks: true
-      withComponent: false
-      withHOC: false
-      withMutationFn: true
-      skipTypename: false
-      reactApolloVersion: 4
-      apolloReactCommonImportFrom: "@apollo/client"
-      apolloReactHooksImportFrom: "@apollo/client/react"
-      withRefetchFn: false
-      withResultType: true
-      withMutationOptionsType: true
-      withSubscriptionOptionsType: true
-      addDocBlocks: true
       maybeValue: T | null
       inputMaybeValue: T | null
       scalars:

@@ -30,16 +30,17 @@ src/
 ├── components/    # Reusable UI (TabNavigator, ConfirmModal, AppButton, ...)
 ├── config/        # Design tokens (colors, spacing, layout, fonts) + api.ts + debug.ts
 ├── context/       # AuthContext, ThemeContext, LanguageContext, ModalContext, ForceUpdateContext
-├── generated/     # graphql.ts — codegen output, DO NOT EDIT (npm run codegen, config: codegen.yml)
-├── graphql/       # GraphQL documents
+├── generated/     # codegen output (client-preset), DO NOT EDIT (npm run codegen, config: codegen.yml)
+├── graphql/       # Domain .graphql operation files + schema.graphql (introspection snapshot — npm run schema:pull, do not hand-edit)
 ├── hooks/         # useXxx hooks (useOtpTimer, useNotifications, ...)
 ├── i18n/          # i18next setup; translations in /locales/{ar,en}.json
-├── lib/           # apollo.ts, graphqlClient.ts, analytics, rtl, date/score utils
+├── lib/           # apollo.ts, session.ts, analytics, rtl, date/score utils
 ├── screens/       # XxxScreen.tsx (+ quiz/, study/ subfolders)
 ├── services/      # notificationService, ...
 └── utils/         # logger, crashlyticsHelper, ...
 ```
-- **API calls**: most screens use `tryFetchWithFallback()` from `src/config/api.ts` (raw fetch GraphQL with URL fallback + auth-error handling), not Apollo hooks. Check the screen you're editing before assuming.
+- **API calls**: most screens use `tryFetchWithFallback()` from `src/config/api.ts` (raw fetch GraphQL with URL fallback + auth-error handling + 10s timeout), not Apollo hooks. Check the screen you're editing before assuming. Both transports funnel auth failures through `src/lib/session.ts` (`revokeSession`).
+- **GraphQL documents**: operations live in **domain `.graphql` files** under `src/graphql/` (`auth`, `parenting`, `notifications`, `quiz`, ...), validated by codegen against `schema.graphql` (a committed introspection snapshot — refresh with `npm run schema:pull` after backend deployments). Consume them as generated typed documents: `useQuery(XxxDocument)` via Apollo, or `tryFetchWithFallback(XxxDocument)` (it accepts strings or DocumentNodes). **Don't add new inline query strings** — legacy inline strings in screens migrate to `.graphql` files as they're touched (phase 2 of the GraphQL consolidation).
 - **Auth tokens** in `expo-secure-store` (`auth_token`); misc state in AsyncStorage.
 - **Modals**: global confirm/alert via `ModalContext`'s `showConfirm()` → renders `ConfirmModal` (`confirm-modal-ok` testID).
 - Design tokens from `src/config/` (`colors.ts`, `spacing.ts`, `layout.ts`, `fonts.ts`) — never hardcode colors/spacing.
@@ -50,11 +51,12 @@ src/
 | Command | What it does |
 |---|---|
 | `npm run ios` / `npm run android` | Build & run dev client |
-| `npm run codegen` | Regenerate `src/generated/graphql.ts` |
+| `npm run codegen` | Regenerate `src/generated/` from the `.graphql` documents (validates them against the schema) |
+| `npm run schema:pull` | Refresh `src/graphql/schema.graphql` from the live backend (PRS by default, `SCHEMA_URL=` to override) |
 | `npm run lint` | ESLint over `src/` |
 | `npm run test:prs` (also `:dev`, `:prod`) | Jest unit tests |
 | `npm run e2e:prs` (also `:dev`, `:prod`) | Maestro E2E via `scripts/run_maestro.py` |
-| `npm run guardme:prs` | Full gate: lint + `tsc --noEmit` + jest + docs check |
+| `npm run guardme:prs` | Full gate: codegen drift check + lint + `tsc --noEmit` + jest + docs check |
 | `npm run build:apk` / `build:aab` | Android release builds |
 
 ## Testing
@@ -94,7 +96,7 @@ There is **no automatic git hook**; run this gate **manually** before each commi
 
 ## Do NOT
 - ❌ Treat this as a bare RN CLI / Shopify project (it's Expo, education domain)
-- ❌ Edit `src/generated/graphql.ts` by hand
+- ❌ Edit `src/generated/*` or `src/graphql/schema.graphql` by hand (codegen + `schema:pull` own them)
 - ❌ Widen `isDebugMode()` or expose OTP skip outside `app.json > extra.debugMode`
 - ❌ Change production component behavior just to make an E2E test pass (e.g. replacing a native `<Modal>`) — add a testID or adjust the flow instead
 - ❌ Suppress logs globally (`LogBox.ignoreAllLogs`) or commit screenshots / `test.log` to the repo root

@@ -1,3 +1,5 @@
+import { parse } from 'graphql';
+
 import { tryFetchWithFallback, REQUEST_TIMEOUT_MS } from '../../config/api';
 
 // The transport timeout added in GraphQL phase 0: without it a stalled
@@ -24,6 +26,22 @@ describe('tryFetchWithFallback', () => {
     const outcome = expect(pending).rejects.toThrow('Aborted');
     await jest.advanceTimersByTimeAsync(REQUEST_TIMEOUT_MS + 1);
     await outcome;
+  });
+
+  it('accepts a typed DocumentNode and sends it as query text', async () => {
+    const sentBodies: any[] = [];
+    global.fetch = jest.fn((_url: any, init: any) => {
+      sentBodies.push(JSON.parse(init.body));
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: {} }) });
+    }) as any;
+
+    // Generated XxxDocuments arrive as DocumentNodes (GraphQL phase 1) — the
+    // transport must serialize them, not stringify the AST object.
+    await tryFetchWithFallback(parse('query Ping { __typename }'), { a: 1 });
+
+    expect(sentBodies[0].query).toContain('__typename');
+    expect(typeof sentBodies[0].query).toBe('string');
+    expect(sentBodies[0].variables).toEqual({ a: 1 });
   });
 
   it('returns the parsed payload and clears its timer on success', async () => {

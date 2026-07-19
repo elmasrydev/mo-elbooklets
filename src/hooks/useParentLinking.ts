@@ -1,12 +1,12 @@
 import { useQuery, useMutation } from '@apollo/client/react';
 import { useCallback } from 'react';
 import {
-  PARENT_LINK_REQUESTS_QUERY,
-  SEND_PARENT_LINK_REQUEST_MUTATION,
-  RESPOND_TO_PARENT_LINK_MUTATION,
-  CANCEL_PARENT_LINK_REQUEST_MUTATION,
-} from '../graphql/parentingQueries';
-import { ParentSlot } from '../types/parenting';
+  ParentLinkRequestsDocument,
+  SendParentLinkRequestDocument,
+  RespondToParentLinkDocument,
+  CancelParentLinkRequestDocument,
+} from '../generated/graphql';
+import { ParentLinkRequest, ParentSlot } from '../types/parenting';
 import { buildSlots } from '../utils/parentSlots';
 
 export interface UseParentLinkingReturn {
@@ -23,7 +23,7 @@ export interface UseParentLinkingReturn {
 }
 
 export const useParentLinking = (): UseParentLinkingReturn => {
-  const { data, loading, error, refetch } = useQuery<any>(PARENT_LINK_REQUESTS_QUERY, {
+  const { data, loading, error, refetch } = useQuery(ParentLinkRequestsDocument, {
     fetchPolicy: 'cache-and-network',
   });
 
@@ -31,15 +31,14 @@ export const useParentLinking = (): UseParentLinkingReturn => {
     console.error('GraphQL Error in parentLinkRequests:', JSON.stringify(error, null, 2));
   }
 
-  const [sendLink, { loading: isSending }] = useMutation<any>(SEND_PARENT_LINK_REQUEST_MUTATION);
-  const [respondLink, { loading: isResponding }] = useMutation<any>(
-    RESPOND_TO_PARENT_LINK_MUTATION,
-  );
-  const [cancelLink, { loading: isCancelling }] = useMutation<any>(
-    CANCEL_PARENT_LINK_REQUEST_MUTATION,
-  );
+  const [sendLink, { loading: isSending }] = useMutation(SendParentLinkRequestDocument);
+  const [respondLink, { loading: isResponding }] = useMutation(RespondToParentLinkDocument);
+  const [cancelLink, { loading: isCancelling }] = useMutation(CancelParentLinkRequestDocument);
 
-  const getSlots = (): [ParentSlot, ParentSlot] => buildSlots(data?.parentLinkRequests ?? []);
+  const getSlots = (): [ParentSlot, ParentSlot] =>
+    // The wire type is stringly (the schema declares String, not enums); the
+    // server upholds the ParentLinkStatus/InitiatedBy domains buildSlots needs.
+    buildSlots((data?.parentLinkRequests ?? []) as ParentLinkRequest[]);
 
   const sendLinkRequest = useCallback(
     async (mobile: string) => {

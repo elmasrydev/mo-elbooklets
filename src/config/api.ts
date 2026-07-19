@@ -12,6 +12,8 @@
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
+import { print } from 'graphql';
+import type { DocumentNode } from 'graphql';
 
 import { isDebugMode } from './debug';
 import { isUnauthenticatedError, revokeSession } from '../lib/session';
@@ -124,12 +126,17 @@ export { ApiUriManager };
 /**
  * Utility function to try fetching with fallback URLs
  * This provides network resilience by trying multiple URLs in sequence
+ *
+ * Accepts either a raw query string or a (Typed)DocumentNode from
+ * src/generated/graphql.ts, so codegen-validated documents work on this
+ * transport without a print() at every call site.
  */
 export const tryFetchWithFallback = async (
-  query: string,
+  query: string | DocumentNode,
   variables?: any,
   token?: string,
 ): Promise<any> => {
+  const queryText = typeof query === 'string' ? query : print(query);
   let lastError: Error | null = null;
 
   // Try to get token from AsyncStorage if not provided
@@ -165,13 +172,13 @@ export const tryFetchWithFallback = async (
         headers['Authorization'] = `Bearer ${authToken}`;
       }
       if (__DEV__) console.log('API HEADERS: ', headers);
-      if (__DEV__) console.log('API query: ', query, variables);
+      if (__DEV__) console.log('API query: ', queryText, variables);
 
       const response = await fetch(url, {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          query,
+          query: queryText,
           variables,
         }),
         signal: abort.signal,

@@ -17,7 +17,12 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTypography } from '../hooks/useTypography';
 import UnifiedHeader from '../components/UnifiedHeader';
-import { useGetBadgesScreenDataQuery, Badge } from '../generated/graphql';
+import { useQuery } from '@apollo/client/react';
+import { GetBadgesScreenDataDocument, GetBadgesScreenDataQuery } from '../generated/graphql';
+
+// Shaped by what this screen's query actually selects — narrower and safer
+// than the full schema type of the same name.
+type Badge = GetBadgesScreenDataQuery['allBadges'][number];
 
 const BadgesScreen: React.FC = () => {
   const { t } = useTranslation();
@@ -77,7 +82,7 @@ const BadgesScreen: React.FC = () => {
     return <MaterialIcons name={name as any} size={size} color={color} style={style} />;
   };
 
-  const { data, loading, error, refetch } = useGetBadgesScreenDataQuery();
+  const { data, loading, error, refetch } = useQuery(GetBadgesScreenDataDocument);
 
   const categories = data?.badgeCategories || [];
   const badges = data?.allBadges || [];

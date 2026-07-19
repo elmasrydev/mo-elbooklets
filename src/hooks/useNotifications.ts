@@ -3,15 +3,14 @@ import { useAuth } from '../context/AuthContext';
 import { tryFetchWithFallback } from '../config/api';
 import { AppNotification } from '../types/notification';
 import {
-  USER_NOTIFICATIONS_QUERY,
-  PARENT_NOTIFICATIONS_QUERY,
-  MARK_NOTIFICATION_READ_MUTATION,
-  MARK_ALL_NOTIFICATIONS_READ_MUTATION,
-  PARENT_MARK_NOTIFICATION_READ_MUTATION,
-  PARENT_MARK_ALL_NOTIFICATIONS_READ_MUTATION,
-} from '../graphql/notifications';
+  UserNotificationsDocument,
+  ParentNotificationsDocument,
+  MarkNotificationReadDocument,
+  MarkAllNotificationsReadDocument,
+  ParentMarkNotificationReadDocument,
+  ParentMarkAllNotificationsReadDocument,
+} from '../generated/graphql';
 import { useFocusEffect } from '@react-navigation/native';
-import { print } from 'graphql';
 
 const PER_PAGE = 20;
 
@@ -54,8 +53,8 @@ export const useNotifications = () => {
 
       try {
         const query =
-          userRole === 'student' ? USER_NOTIFICATIONS_QUERY : PARENT_NOTIFICATIONS_QUERY;
-        const result = await tryFetchWithFallback(print(query), {
+          userRole === 'student' ? UserNotificationsDocument : ParentNotificationsDocument;
+        const result = await tryFetchWithFallback(query, {
           page: targetPage,
           per_page: PER_PAGE,
         });
@@ -110,9 +109,9 @@ export const useNotifications = () => {
       try {
         const mutation =
           userRole === 'student'
-            ? MARK_NOTIFICATION_READ_MUTATION
-            : PARENT_MARK_NOTIFICATION_READ_MUTATION;
-        await tryFetchWithFallback(print(mutation), { id });
+            ? MarkNotificationReadDocument
+            : ParentMarkNotificationReadDocument;
+        await tryFetchWithFallback(mutation, { id });
       } catch (err) {
         // Revert if needed? Usually for simple read marks we don't revert to avoid flicker
         console.error('Failed to mark notification as read:', err);
@@ -134,9 +133,9 @@ export const useNotifications = () => {
     try {
       const mutation =
         userRole === 'student'
-          ? MARK_ALL_NOTIFICATIONS_READ_MUTATION
-          : PARENT_MARK_ALL_NOTIFICATIONS_READ_MUTATION;
-      await tryFetchWithFallback(print(mutation));
+          ? MarkAllNotificationsReadDocument
+          : ParentMarkAllNotificationsReadDocument;
+      await tryFetchWithFallback(mutation);
     } catch (err) {
       console.error('Failed to mark all notifications as read:', err);
     } finally {

@@ -1,50 +1,8 @@
-# Authentication Mutations
-
-mutation Login($email: String!, $password: String!) {
-  login(email: $email, password: $password) {
-    access_token
-    token_type
-    expires_in
-    user {
-      id
-      name
-      email
-      grade {
-        id
-        name
-      }
-    }
-  }
-}
-
-mutation Register(
-  $name: String!
-  $email: String!
-  $password: String!
-  $password_confirmation: String!
-  $grade_id: ID!
-) {
-  register(
-    name: $name
-    email: $email
-    password: $password
-    password_confirmation: $password_confirmation
-    grade_id: $grade_id
-  ) {
-    access_token
-    token_type
-    expires_in
-    user {
-      id
-      name
-      email
-      grade {
-        id
-        name
-      }
-    }
-  }
-}
+# Authentication operations.
+# NOTE: login/register/parentLogin/parentRegister still run as inline strings in
+# AuthContext — they get typed documents when AuthContext migrates (phase 2).
+# The stale email-based Login/Register documents that used to live here did not
+# match the live schema (login takes input: LoginInput!) and had no consumers.
 
 query GetGrades {
   grades {
@@ -71,5 +29,56 @@ mutation UpdatePassword($input: UpdatePasswordInput!) {
   updatePassword(input: $input) {
     success
     message
+  }
+}
+
+# WhatsApp OTP verification (OTPVerificationScreen).
+
+mutation SendMobileOtp($mobile: String!, $country_code: String) {
+  sendMobileOtp(mobile: $mobile, country_code: $country_code) {
+    success
+    message
+    expires_in
+  }
+}
+
+mutation VerifyMobileOtp($otp: String!) {
+  verifyMobileOtp(otp: $otp) {
+    success
+    message
+    user {
+      id
+      name
+      email
+      mobile
+      country_code
+      mobile_verified_at
+      gender
+      school_name
+      parent_mobile
+      grade_id
+      grade {
+        id
+        name
+      }
+      educational_system_id
+      educational_system {
+        id
+        name
+      }
+      governorate_id
+      governorate {
+        id
+        name_ar
+        name_en
+      }
+      city_id
+      city {
+        id
+        name_ar
+        name_en
+      }
+      is_subscribed
+    }
   }
 }

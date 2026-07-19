@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { tryFetchWithFallback } from '../config/api';
-import { GET_CHILD_DASHBOARD_QUERY } from '../graphql/parentingQueries';
+import { GetChildDashboardDocument } from '../generated/graphql';
 
 export interface ChildSubjectPerformance {
   subject_name: string;
@@ -42,7 +42,7 @@ export const useChildDashboard = (childId: string) => {
       else setLoading(true);
       setError(null);
       try {
-        const res = await tryFetchWithFallback(GET_CHILD_DASHBOARD_QUERY, { childId });
+        const res = await tryFetchWithFallback(GetChildDashboardDocument, { childId });
         if (res.errors) {
           // Surface every GraphQL error (e.g. all invalid fields), not just the first.
           throw new Error(res.errors.map((e: { message: string }) => e.message).join('; '));
