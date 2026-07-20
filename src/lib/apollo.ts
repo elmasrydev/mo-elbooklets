@@ -55,9 +55,8 @@ const authLink = setContext(async (_, { headers }) => {
 });
 
 /**
- * Auth failures funnel into the shared revokeSession (src/lib/session.ts) —
- * the same path tryFetchWithFallback uses — so both transports log the user
- * out identically.
+ * Auth failures funnel into the shared revokeSession (src/lib/session.ts), so
+ * an expired session tears down the same way wherever it is noticed.
  *
  * Apollo Client 4 hands the link a single `error` value (CombinedGraphQLErrors
  * for GraphQL errors, ServerError for non-2xx HTTP) instead of v3's

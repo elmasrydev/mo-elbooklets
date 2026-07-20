@@ -4,17 +4,15 @@ import RegisterScreen from '../../screens/RegisterScreen';
 import { renderWithProviders } from '../helpers/renderWithProviders';
 import { GetGradesDocument } from '../../generated/graphql';
 
-// The step-1 gate (BKLT-308) still runs on the raw-fetch transport; answer it
-// with "available" so Next isn't blocked.
-jest.mock('../../config/api', () => {
-  const actual = jest.requireActual('../../config/api');
-  return {
-    ...actual,
-    tryFetchWithFallback: jest.fn().mockResolvedValue({
+// Answer the step-1 availability gate (BKLT-308) with "available" so Next
+// isn't blocked.
+jest.mock('../../lib/apollo', () => ({
+  apolloClient: {
+    mutate: jest.fn().mockResolvedValue({
       data: { checkMobileAvailability: { available: true, message: '' } },
     }),
-  };
-});
+  },
+}));
 
 // The screen loads its step-2 reference data through Apollo; step-1 behaviour
 // (what these tests cover) does not depend on the result.

@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 
-import { tryFetchWithFallback } from '../config/api';
+import { apolloClient } from '../lib/apollo';
+import { CheckMobileAvailabilityDocument } from '../generated/graphql';
 import { EGYPT_MOBILE_REGEX } from '../utils/validators';
 import { logError } from '../utils/logger';
 
@@ -45,15 +46,6 @@ const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> =>
       },
     );
   });
-
-const CHECK_MOBILE_MUTATION = `
-  mutation CheckMobileAvailability($mobile: String!, $type: String) {
-    checkMobileAvailability(mobile: $mobile, type: $type) {
-      available
-      message
-    }
-  }
-`;
 
 /**
  * Early "is this mobile already registered?" check for the registration forms
@@ -103,7 +95,12 @@ export const useMobileAvailability = (type: MobileAvailabilityType) => {
       const pending = (async (): Promise<MobileAvailabilityResult> => {
         try {
           const res = await withTimeout(
-            tryFetchWithFallback(CHECK_MOBILE_MUTATION, { mobile: trimmed, type }),
+            apolloClient.mutate({
+              mutation: CheckMobileAvailabilityDocument,
+              variables: { mobile: trimmed, type },
+              // A stale "available" would let a taken number through the gate.
+              fetchPolicy: 'no-cache',
+            }),
             AVAILABILITY_CHECK_TIMEOUT_MS,
           );
           const data = res?.data?.checkMobileAvailability;

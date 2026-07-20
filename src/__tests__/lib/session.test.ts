@@ -2,9 +2,9 @@ import * as SecureStore from 'expo-secure-store';
 
 import { isUnauthenticatedError, revokeSession, setSessionRevokedHandler } from '../../lib/session';
 
-// The single session-revocation path both transports (Apollo error link and
-// tryFetchWithFallback) delegate to — a regression here logs users out wrongly
-// or, worse, leaves a dead session appearing signed-in.
+// The single session-revocation path the Apollo error link delegates to — a
+// regression here logs users out wrongly or, worse, leaves a dead session
+// appearing signed-in.
 describe('isUnauthenticatedError', () => {
   it.each([
     ['exact backend message', 'Unauthenticated.', undefined, true],

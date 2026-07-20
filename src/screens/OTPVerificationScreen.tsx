@@ -20,10 +20,9 @@ import { useLanguage } from '../context/LanguageContext';
 import { useTypography } from '../hooks/useTypography';
 import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
-import { tryFetchWithFallback } from '../config/api';
+import { apolloClient } from '../lib/apollo';
 import { SendMobileOtpDocument, VerifyMobileOtpDocument } from '../generated/graphql';
 import { useOtpTimer } from '../hooks/useOtpTimer';
-import * as SecureStore from 'expo-secure-store';
 import { layout } from '../config/layout';
 import { isDebugMode } from '../config/debug';
 
@@ -129,13 +128,11 @@ const OTPVerificationScreen: React.FC = () => {
     try {
       setIsSending(true);
       setErrorMsg('');
-      const token = await SecureStore.getItemAsync('auth_token');
 
-      const result = await tryFetchWithFallback(
-        SendMobileOtpDocument,
-        { mobile: user.mobile, country_code: user.country_code || '+20' },
-        token || undefined,
-      );
+      const result = await apolloClient.mutate({
+        mutation: SendMobileOtpDocument,
+        variables: { mobile: user.mobile, country_code: user.country_code || '+20' },
+      });
 
       if (result.data?.sendMobileOtp?.success) {
         const expiresIn = 120; // Enforce exactly 2 minutes (120s)
@@ -161,10 +158,7 @@ const OTPVerificationScreen: React.FC = () => {
       } else {
         showConfirm({
           title: t('common.error'),
-          message:
-            result.data?.sendMobileOtp?.message ||
-            result.errors?.[0]?.message ||
-            t('otp.whatsapp_failed'),
+          message: result.data?.sendMobileOtp?.message || t('otp.whatsapp_failed'),
           confirmLabel: t('common.ok'),
           showCancel: false,
           onConfirm: () => {},
@@ -189,13 +183,11 @@ const OTPVerificationScreen: React.FC = () => {
     try {
       setIsVerifying(true);
       setErrorMsg('');
-      const token = await SecureStore.getItemAsync('auth_token');
 
-      const result = await tryFetchWithFallback(
-        VerifyMobileOtpDocument,
-        { otp: otpCode },
-        token || undefined,
-      );
+      const result = await apolloClient.mutate({
+        mutation: VerifyMobileOtpDocument,
+        variables: { otp: otpCode },
+      });
 
       if (result.data?.verifyMobileOtp?.success) {
         clearTimer();
@@ -213,10 +205,7 @@ const OTPVerificationScreen: React.FC = () => {
           },
         });
       } else {
-        const errMsg =
-          result.data?.verifyMobileOtp?.message ||
-          result.errors?.[0]?.message ||
-          t('otp.invalid_code');
+        const errMsg = result.data?.verifyMobileOtp?.message || t('otp.invalid_code');
         setErrorMsg(errMsg);
         setOtpCode('');
         inputRef.current?.focus();
