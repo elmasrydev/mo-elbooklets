@@ -232,6 +232,9 @@ const HomeScreen: React.FC = () => {
   // Same rule as the leaderboard screen (BKLT-326): 0 XP is not a position.
   const leaderboardEntries = rankedEntries(leaderboardQuery.data?.leaderboard?.entries ?? []);
   const leaderboardUser = leaderboardQuery.data?.leaderboard?.userEntry ?? null;
+  const topEntries = leaderboardEntries.slice(0, 3);
+  const isUserInTopEntries =
+    !!leaderboardUser && topEntries.some((entry) => entry.id === leaderboardUser.id);
   const socialFeed = (socialQuery.data?.socialTimeline ?? []).slice(0, 2);
   const todaySchedule = scheduleQuery.data?.todaySchedule ?? null;
   const loading = homeQuery.loading;
@@ -580,10 +583,14 @@ const HomeScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
             <View style={s.leaderboardRowsContainer}>
-              {leaderboardEntries.slice(0, 3).map((entry, index) => (
+              {topEntries.map((entry, index) => (
                 <View
                   key={entry.id}
-                  style={[s.leaderboardRankRow, index === 0 && { backgroundColor: '#fff7ed' }]}
+                  style={[
+                    s.leaderboardRankRow,
+                    index === 0 && { backgroundColor: '#fff7ed' },
+                    entry.id === leaderboardUser?.id && s.leaderboardRankRowYou,
+                  ]}
                 >
                   <Text
                     style={[
@@ -604,15 +611,19 @@ const HomeScreen: React.FC = () => {
                   />
                   <View style={s.leaderboardRankInfo}>
                     <Text style={s.leaderboardRankName} numberOfLines={1}>
-                      {entry.name}
+                      {entry.id === leaderboardUser?.id
+                        ? `${entry.name} (${t('leaderboard_screen.you', 'You')})`
+                        : entry.name}
                     </Text>
                     <Text style={s.leaderboardRankXp}>{entry.xp} XP</Text>
                   </View>
                 </View>
               ))}
 
-              {/* Current User Highlighted */}
-              {leaderboardUser && (
+              {/* Only for a student ranked outside the rows above — otherwise
+                  they are already on screen and the card just repeats them
+                  (BKLT-325). */}
+              {leaderboardUser && !isUserInTopEntries && (
                 <View style={s.leaderboardUserRow}>
                   <Text style={s.leaderboardUserRankText}>
                     {isRanked(leaderboardUser) ? leaderboardUser.rank : '—'}
@@ -1034,6 +1045,12 @@ const getStyles = (
       ...typography('caption'),
       color: theme.colors.textTertiary,
       marginTop: 1,
+    },
+    // Marks the signed-in student's own row when they are on the board, so
+    // dropping the duplicate card below does not lose the "this is you" cue.
+    leaderboardRankRowYou: {
+      borderColor: theme.colors.primary,
+      borderWidth: 1.5,
     },
     leaderboardUserRow: {
       flexDirection: common.rowDirection,
