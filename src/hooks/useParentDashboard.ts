@@ -28,12 +28,17 @@ export const useParentDashboard = () => {
   const { t } = useTranslation();
   const { showConfirm } = useModal();
 
+  // cache-and-network: the dashboard tab has no focus refetch, and both lists
+  // change from elsewhere (the student accepts a link, the Requests tab acts on
+  // one). Render the cached copy immediately, but always confirm with the server.
   const childrenQuery = useQuery(MyLinkedChildrenDocument, {
     skip: !parentUser,
+    fetchPolicy: 'cache-and-network',
     notifyOnNetworkStatusChange: true,
   });
   const requestsQuery = useQuery(ParentChildRequestsDocument, {
     skip: !parentUser,
+    fetchPolicy: 'cache-and-network',
     notifyOnNetworkStatusChange: true,
   });
 
@@ -44,7 +49,12 @@ export const useParentDashboard = () => {
     // statuses (e.g. cancelled/expired) aren't surfaced as accept/declinable.
     (request) => request.status.toLowerCase() === 'pending',
   );
-  const loading = childrenQuery.loading || requestsQuery.loading;
+  // Only a first load blocks the UI: with cache-and-network `loading` stays true
+  // during the background refresh, and flashing a skeleton over rendered content
+  // would be worse than showing it slightly stale for a moment.
+  const loading =
+    (childrenQuery.loading && !childrenQuery.data) ||
+    (requestsQuery.loading && !requestsQuery.data);
 
   const fetchDashboardData = useCallback(async () => {
     await Promise.all([childrenQuery.refetch(), requestsQuery.refetch()]);

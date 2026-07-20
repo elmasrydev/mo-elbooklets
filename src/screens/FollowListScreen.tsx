@@ -35,13 +35,20 @@ const FollowListScreen: React.FC = () => {
   // One skip-paired query per list keeps each result fully typed; follow
   // toggles anywhere update these rows via the normalized cache, so there is
   // no local copy of the list to patch.
-  const followersQuery = useQuery(MyFollowersDocument, { skip: type === 'following' });
-  const followingQuery = useQuery(MyFollowingDocument, { skip: type !== 'following' });
+  const followersQuery = useQuery(MyFollowersDocument, {
+    skip: type === 'following',
+    fetchPolicy: 'cache-and-network',
+  });
+  const followingQuery = useQuery(MyFollowingDocument, {
+    skip: type !== 'following',
+    fetchPolicy: 'cache-and-network',
+  });
   const activeQuery = type === 'following' ? followingQuery : followersQuery;
   const data: Student[] =
     (type === 'following' ? followingQuery.data?.myFollowing : followersQuery.data?.myFollowers) ??
     [];
-  const loading = activeQuery.loading;
+  // Silent background refresh — don't replace a rendered list with a skeleton.
+  const loading = activeQuery.loading && !activeQuery.data;
 
   const onRefresh = async () => {
     setRefreshing(true);
