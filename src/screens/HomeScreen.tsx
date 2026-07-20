@@ -23,7 +23,6 @@ import { isRanked, rankedEntries } from '../utils/leaderboard';
 import {
   HomeDataDocument,
   HomeLeaderboardDocument,
-  SocialTimelineDocument,
   StudySubjectsDocument,
   TodayScheduleDocument,
 } from '../generated/graphql';
@@ -84,21 +83,6 @@ interface LeaderboardEntry {
   xp: number;
   rank: number;
   selectedAvatar?: { url?: string } | null;
-}
-
-interface SocialFeedItem {
-  id: string;
-  type: string;
-  user: { id: string; name: string; grade: { id: string; name: string } };
-  createdAt: string;
-  quizData?: {
-    quiz: { name: string; subject: { name: string } };
-    score: number;
-    totalQuestions: number;
-    isPassed: boolean;
-  };
-  likes: number;
-  comments: number;
 }
 
 interface TodayScheduleEntry {
@@ -218,12 +202,11 @@ const HomeScreen: React.FC = () => {
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
 
-  // Subjects, the feed and today's schedule reuse their own tabs' documents,
-  // so opening those tabs reads the same cache entry instead of refetching.
+  // Subjects and today's schedule reuse their own tabs' documents, so opening
+  // those tabs reads the same cache entry instead of refetching.
   const homeQuery = useQuery(HomeDataDocument, { notifyOnNetworkStatusChange: true });
   const subjectsQuery = useQuery(StudySubjectsDocument);
   const leaderboardQuery = useQuery(HomeLeaderboardDocument, { variables: { limit: 4 } });
-  const socialQuery = useQuery(SocialTimelineDocument);
   const scheduleQuery = useQuery(TodayScheduleDocument);
 
   const activitiesData = homeQuery.data?.activities ?? null;
@@ -235,7 +218,6 @@ const HomeScreen: React.FC = () => {
   const topEntries = leaderboardEntries.slice(0, 3);
   const isUserInTopEntries =
     !!leaderboardUser && topEntries.some((entry) => entry.id === leaderboardUser.id);
-  const socialFeed = (socialQuery.data?.socialTimeline ?? []).slice(0, 2);
   const todaySchedule = scheduleQuery.data?.todaySchedule ?? null;
   const loading = homeQuery.loading;
 
@@ -244,7 +226,6 @@ const HomeScreen: React.FC = () => {
       homeQuery.refetch(),
       subjectsQuery.refetch(),
       leaderboardQuery.refetch(),
-      socialQuery.refetch(),
       scheduleQuery.refetch(),
     ]);
     // Refetch functions are stable for the life of the hook.

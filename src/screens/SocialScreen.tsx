@@ -9,6 +9,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useModal } from '../context/ModalContext';
 import { useTranslation } from 'react-i18next';
 import { loadFailureMessage } from '../utils/queryError';
+import { resolveFeedCard } from '../utils/socialFeed';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
 import UnifiedHeader from '../components/UnifiedHeader';
@@ -30,6 +31,22 @@ import { CardListSkeleton, GenericListSkeleton } from '../components/SkeletonLoa
 import RetryView from '../components/RetryView';
 import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
 import { isRTL } from '../lib/rtl';
+
+/**
+ * An item the feed cannot render is dropped from the list, which looks exactly
+ * like the backend sending nothing — the ambiguity that made BKLT-317 hard to
+ * place. Say so once per unrecognised shape (per session, so a long feed does
+ * not repeat it on every re-render).
+ */
+const reportedFeedShapes = new Set<string>();
+const reportUnrenderableItem = (item: { id: string; type: string }) => {
+  if (!__DEV__ || reportedFeedShapes.has(item.type)) return;
+  reportedFeedShapes.add(item.type);
+  console.warn(
+    `[SocialScreen] Dropping feed item ${item.id}: no card renders type "${item.type}" ` +
+      '(or its payload is missing). The feed will look emptier than the server response.',
+  );
+};
 
 // Shaped by what the queries select — follow state inside the results is kept
 // fresh by the Apollo cache (see useFollowToggle), not by manual list patches.
@@ -158,15 +175,18 @@ const SocialScreen: React.FC = () => {
 
   const renderFeedItem = useCallback(
     ({ item }: { item: NewsFeedItem }) => {
-      if (item.type === 'quiz_completion' && item.quizData)
+      const kind = resolveFeedCard(item);
+      if (!kind) {
+        reportUnrenderableItem(item);
+        return null;
+      }
+      if (kind === 'quiz_completion')
         return <QuizCompletionCard item={item as any} onLike={() => handleLike(item)} />;
-      if (item.type === 'new_connection' && item.connectedUser)
+      if (kind === 'new_connection')
         return <ConnectionCard item={item as any} onLike={() => handleLike(item)} />;
-      if (item.type === 'rank_change' && item.rankData)
-        return <RankChangeCard item={item as any} onLike={() => handleLike(item)} />;
-      return null;
+      return <RankChangeCard item={item as any} onLike={() => handleLike(item)} />;
     },
-    [t, handleLike, showConfirm],
+    [handleLike],
   );
 
   const renderSearchItem = useCallback(
