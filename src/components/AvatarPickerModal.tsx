@@ -57,7 +57,27 @@ const AvatarPickerModal: React.FC<AvatarPickerModalProps> = ({ visible, onClose 
 
   // Pages are appended into local state, so the query runs imperatively.
   const [runAvatarsQuery] = useLazyQuery(AvatarsDocument);
-  const [updateProfile] = useMutation(UpdateProfileDocument);
+  const [updateProfile] = useMutation(UpdateProfileDocument, {
+    // The signed-in student is cached under several types, each normalized
+    // separately: writing User:5 leaves LeaderboardEntry:5 and TimelineUser:5
+    // holding the previous avatar until their own query refetches — which an
+    // already-mounted Home or Leaderboard won't do inside its stale window.
+    // Push the new avatar into those entities so the change shows immediately
+    // (a cache.modify on an entity that isn't cached is a no-op).
+    update: (cache, { data }) => {
+      const updated = data?.updateProfile;
+      if (!updated) return;
+      for (const __typename of ['LeaderboardEntry', 'TimelineUser'] as const) {
+        cache.modify({
+          id: cache.identify({ __typename, id: updated.id }),
+          fields: {
+            selectedAvatar: (_existing, { toReference }) =>
+              updated.selectedAvatar ? toReference(updated.selectedAvatar, true) : null,
+          },
+        });
+      }
+    },
+  });
 
   const fetchAvatars = useCallback(
     async (g: Gender, pageToLoad: number) => {

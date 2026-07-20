@@ -613,16 +613,21 @@ const HomeScreen: React.FC = () => {
               {leaderboardUser && (
                 <View style={s.leaderboardUserRow}>
                   <Text style={s.leaderboardUserRankText}>{leaderboardUser.rank}</Text>
+                  {/* Read the signed-in student from the leaderboard payload, the
+                      same source the rows above use. Reading the session user
+                      instead showed initials here while the row showed the real
+                      avatar, because `login` does not return selectedAvatar —
+                      only `me` does, so a fresh session has none (BKLT-324). */}
                   <Avatar
-                    uri={user?.selectedAvatar?.url}
-                    name={user?.name || ''}
+                    uri={leaderboardUser.selectedAvatar?.url}
+                    name={leaderboardUser.name}
                     size={36}
                     style={s.leaderboardAvatarGap}
                   />
                   <View style={s.leaderboardRankInfo}>
                     <Text style={s.leaderboardUserName} numberOfLines={1}>
-                      {user?.name
-                        ? `${user.name.split(' ')[0]} (${t('leaderboard_screen.your_rank', 'You')})`
+                      {leaderboardUser.name
+                        ? `${leaderboardUser.name.split(' ')[0]} (${t('leaderboard_screen.your_rank', 'You')})`
                         : t('leaderboard_screen.your_rank', 'You')}
                     </Text>
                     <Text style={s.leaderboardUserXp}>{leaderboardUser.xp} XP</Text>
