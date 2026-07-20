@@ -1,9 +1,10 @@
-import { ApolloClient, InMemoryCache, createHttpLink, from } from '@apollo/client';
+import { ApolloClient, ApolloLink, InMemoryCache, createHttpLink, from } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
 import { RetryLink } from '@apollo/client/link/retry';
 import { CombinedGraphQLErrors, ServerError } from '@apollo/client/errors';
-import { Kind, OperationTypeNode } from 'graphql';
+import { Kind, OperationTypeNode, print } from 'graphql';
+import { tap } from 'rxjs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { ApiUriManager, REQUEST_TIMEOUT_MS } from '../config/api';
@@ -55,6 +56,66 @@ const authLink = setContext(async (_, { headers }) => {
 });
 
 /**
+ * Enough of the credential to tell two sessions apart in a log, never enough
+ * to replay one — these logs get pasted into bug reports.
+ */
+const redactHeaders = (headers?: Record<string, string>) => {
+  if (!headers) return headers;
+  const { authorization, ...rest } = headers;
+  if (!authorization) return rest;
+  return { ...rest, authorization: `${authorization.slice(0, 19)}…` };
+};
+
+/**
+ * Dev-only request log, restoring what the old raw-fetch transport printed:
+ * the resolved url, the outgoing headers, the operation and its variables,
+ * then the response (or failure) with a duration.
+ *
+ * Gated on __DEV__ rather than the debugMode flag, so a release binary can
+ * never print request bodies even if it is built with debug features on.
+ * Sits after authLink so the headers it reports are the ones actually sent,
+ * and inside retryLink so a retried attempt shows up as its own entry.
+ */
+const loggerLink = new ApolloLink((operation, forward) => {
+  if (!__DEV__) return forward(operation);
+
+  const startedAt = Date.now();
+  const { headers } = operation.getContext() as { headers?: Record<string, string> };
+  const kind = operation.query.definitions.some(
+    (def) => def.kind === Kind.OPERATION_DEFINITION && def.operation === OperationTypeNode.MUTATION,
+  )
+    ? 'mutation'
+    : 'query';
+
+  console.log(`⇢ GraphQL ${kind} ${operation.operationName} → ${ApiUriManager.getActiveUrl()}`);
+  console.log('  headers:', redactHeaders(headers));
+  console.log('  variables:', operation.variables);
+  console.log('  document:', print(operation.query));
+
+  return forward(operation).pipe(
+    tap({
+      next: (result) => {
+        const elapsed = Date.now() - startedAt;
+        const errors = (result as { errors?: readonly { message: string }[] }).errors;
+        console.log(`⇠ GraphQL ${operation.operationName} (${elapsed}ms)`);
+        if (errors?.length) {
+          // Field-level errors arrive alongside data (errorPolicy: 'all'), so
+          // they are worth calling out even on an otherwise successful response.
+          console.log(`  ⚠️ ${errors.length} error(s):`, errors.map((e) => e.message).join(' | '));
+        }
+        console.log('  data:', result.data);
+      },
+      error: (error) => {
+        console.log(
+          `⇠ GraphQL ${operation.operationName} FAILED (${Date.now() - startedAt}ms):`,
+          error?.message ?? error,
+        );
+      },
+    }),
+  );
+});
+
+/**
  * Auth failures funnel into the shared revokeSession (src/lib/session.ts), so
  * an expired session tears down the same way wherever it is noticed.
  *
@@ -95,8 +156,9 @@ const retryLink = new RetryLink({
 
 const client = new ApolloClient({
   // Order matters: the error link sees the final outcome after retries are
-  // exhausted; auth + http sit innermost so every attempt carries fresh headers.
-  link: from([errorLink, retryLink, authLink, httpLink]),
+  // exhausted; auth + http sit innermost so every attempt carries fresh
+  // headers, and the logger sits between them to report what actually went out.
+  link: from([errorLink, retryLink, authLink, loggerLink, httpLink]),
   cache: new InMemoryCache(),
   defaultOptions: {
     watchQuery: {
