@@ -1,22 +1,20 @@
 /**
- * Centralized API Configuration
+ * Which backend the app talks to.
  *
- * The default API URL is determined by the `debugMode` flag in app.json:
+ * The default is chosen by the `debugMode` flag in app.json:
  *   debugMode: true  → https://prs.elbooklets.com/graphql
  *   debugMode: false → https://elbooklets.com/graphql
  *
- * This flag is read at build time via expo-constants and controls the entire
+ * The flag is read at build time via expo-constants and controls the entire
  * app behaviour (API URL, Firebase Remote Config keys, API URL Switcher).
+ * Requests themselves go through Apollo (src/lib/apollo.ts), which reads the
+ * active URL from ApiUriManager on every operation.
  */
 
 import Constants from 'expo-constants';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import { print } from 'graphql';
-import type { DocumentNode } from 'graphql';
 
 import { isDebugMode } from './debug';
-import { isUnauthenticatedError, revokeSession } from '../lib/session';
 
 const PRODUCTION_URL = 'https://elbooklets.com/graphql';
 const DEMO_URL = 'https://demo.elbooklets.com/graphql';
@@ -26,24 +24,14 @@ export const PRS_URL = 'https://prs.elbooklets.com/graphql';
 export const PRIMARY_API_URL =
   Constants.expoConfig?.extra?.debugMode === true ? PRS_URL : PRODUCTION_URL;
 
-// Fallback list starts with the primary URL
-export const POSSIBLE_URLS = [PRIMARY_API_URL];
-
 /**
- * Cap on every request from this module (and, via import, Apollo's fetch).
- * RN's fetch otherwise waits on the platform default — up to ~60s on iOS —
- * stranding every awaiting screen on a dead connection.
+ * Cap on every request Apollo makes. RN's fetch otherwise waits on the
+ * platform default — up to ~60s on iOS — stranding every awaiting screen on a
+ * dead connection.
  */
 export const REQUEST_TIMEOUT_MS = 10000;
 
 declare let __DEV__: boolean;
-
-/**
- * Check if response contains authentication error
- * (exported so callers can tell "session ended" apart from other GraphQL errors)
- */
-export const checkForAuthError = (data: any): boolean =>
-  !!data?.errors?.some((err: any) => isUnauthenticatedError(err.message, err.extensions?.code));
 
 // AsyncStorage key for API URL override
 export const CUSTOM_API_URL_KEY = 'custom_api_url_override';
@@ -122,95 +110,3 @@ class ApiUriManager {
 }
 
 export { ApiUriManager };
-
-/**
- * Utility function to try fetching with fallback URLs
- * This provides network resilience by trying multiple URLs in sequence
- *
- * Accepts either a raw query string or a (Typed)DocumentNode from
- * src/generated/graphql.ts, so codegen-validated documents work on this
- * transport without a print() at every call site.
- */
-export const tryFetchWithFallback = async (
-  query: string | DocumentNode,
-  variables?: any,
-  token?: string,
-): Promise<any> => {
-  const queryText = typeof query === 'string' ? query : print(query);
-  let lastError: Error | null = null;
-
-  // Try to get token from AsyncStorage if not provided
-  let authToken = token;
-  if (!authToken) {
-    authToken = (await SecureStore.getItemAsync('auth_token')) || undefined;
-  }
-
-  // Determine the sequence of URLs to try. Start with the active one from manager.
-  const activeUrl = ApiUriManager.getActiveUrl();
-  const urlsToTry = [activeUrl, ...POSSIBLE_URLS.filter((u) => u !== activeUrl)];
-
-  const lang = (await AsyncStorage.getItem('user_language')) || 'en';
-
-  for (const url of urlsToTry) {
-    // Abort the attempt at the shared timeout instead of waiting on the
-    // platform default; the next URL (if any) still gets its own attempt.
-    const abort = new AbortController();
-    const timer = setTimeout(() => abort.abort(), REQUEST_TIMEOUT_MS);
-    try {
-      if (__DEV__) console.log(`Trying to connect to: ${url}`);
-
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        // Backend persists `lang` from authenticated requests to users.language,
-        // which localizes push notifications (BKLT-273).
-        lang,
-        'Accept-Language': lang,
-      };
-
-      if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`;
-      }
-      if (__DEV__) console.log('API HEADERS: ', headers);
-      if (__DEV__) console.log('API query: ', queryText, variables);
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          query: queryText,
-          variables,
-        }),
-        signal: abort.signal,
-      });
-
-      if (response.ok) {
-        if (__DEV__) console.log(`Successfully connected to: ${url}`);
-        const data = await response.json();
-
-        // Check for authentication errors in GraphQL response
-        if (checkForAuthError(data)) {
-          if (__DEV__) console.log('Auth error detected in API - logging out...');
-          await revokeSession();
-        }
-
-        return data;
-      } else {
-        // Handle 401 HTTP status
-        if (response.status === 401) {
-          if (__DEV__) console.log('Auth error detected in API - logging out...');
-          await revokeSession();
-        }
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-    } catch (error: any) {
-      if (__DEV__) console.log(`Failed to connect to ${url}:`, error.message);
-      lastError = error;
-      continue;
-    } finally {
-      clearTimeout(timer);
-    }
-  }
-
-  throw lastError || new Error('All connection attempts failed');
-};

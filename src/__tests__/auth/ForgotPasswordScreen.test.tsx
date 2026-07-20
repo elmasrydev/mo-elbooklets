@@ -2,16 +2,13 @@ import React from 'react';
 import { fireEvent, screen } from '@testing-library/react-native';
 import ForgotPasswordScreen from '../../screens/ForgotPasswordScreen';
 import { renderWithProviders } from '../helpers/renderWithProviders';
-import { tryFetchWithFallback } from '../../config/api';
+import { apolloClient } from '../../lib/apollo';
 
 // Mock API
-jest.mock('../../config/api', () => {
-  const actual = jest.requireActual('../../config/api');
-  return {
-    ...actual,
-    tryFetchWithFallback: jest.fn(),
-  };
-});
+// AuthContext talks to the server through Apollo; clearStore runs on logout.
+jest.mock('../../lib/apollo', () => ({
+  apolloClient: { mutate: jest.fn(), query: jest.fn(), clearStore: jest.fn() },
+}));
 
 // Mock Modal
 const mockShowConfirm = jest.fn();
@@ -52,7 +49,7 @@ describe('ForgotPasswordScreen Integration Tests', () => {
   });
 
   it('submits forgotPassword mutation successfully on valid email', () => {
-    (tryFetchWithFallback as jest.Mock).mockResolvedValueOnce({
+    (apolloClient.mutate as jest.Mock).mockResolvedValueOnce({
       data: {
         forgotPassword: {
           status: 'Email Sent',
@@ -68,6 +65,6 @@ describe('ForgotPasswordScreen Integration Tests', () => {
     fireEvent.changeText(emailInput, 'student@test.com');
     fireEvent.press(submitBtn);
 
-    expect(tryFetchWithFallback).toHaveBeenCalled();
+    expect(apolloClient.mutate).toHaveBeenCalled();
   });
 });

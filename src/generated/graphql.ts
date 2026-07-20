@@ -6,6 +6,12 @@ export type Incremental<T> =
   | T
   | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
 import { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/core';
+/** Login input */
+export type LoginInput = {
+  mobile: string;
+  password: string;
+};
+
 /** A single match mapping submitted by the student */
 export type MatchPairInput = {
   leftId: string;
@@ -21,6 +27,25 @@ export type QuestionAnswerInput = {
   selectedAnswer?: string | null | undefined;
   /** paragraph question: answers to each ordered sub-question */
   subAnswers?: Array<QuestionAnswerInput> | null | undefined;
+};
+
+/** Register input */
+export type RegisterInput = {
+  avatar_id?: string | null | undefined;
+  country_code?: string | null | undefined;
+  educational_system_id?: string | null | undefined;
+  email?: string | null | undefined;
+  gender?: string | null | undefined;
+  grade_id: string;
+  mobile: string;
+  name: string;
+  parent_country_code?: string | null | undefined;
+  parent_country_code_2?: string | null | undefined;
+  parent_mobile?: string | null | undefined;
+  parent_mobile_2?: string | null | undefined;
+  password: string;
+  promo_code?: string | null | undefined;
+  school_name?: string | null | undefined;
 };
 
 /** Input for saving study schedule entries */
@@ -66,6 +91,127 @@ export type UpdateProfileInput = {
   parent_mobile_2?: string | null | undefined;
   school_id?: string | null | undefined;
   school_name?: string | null | undefined;
+};
+
+export type LoginMutationVariables = Exact<{
+  input: LoginInput;
+}>;
+
+export type LoginMutation = {
+  login: {
+    access_token: string;
+    user: {
+      id: string;
+      name: string;
+      email: string | null;
+      mobile: string;
+      country_code: string | null;
+      mobile_verified_at: string | null;
+      grade_id: string | null;
+      educational_system_id: string | null;
+      is_subscribed: boolean;
+      grade: { id: string; name: string } | null;
+      educational_system: { id: string; name: string } | null;
+    };
+  };
+};
+
+export type RegisterMutationVariables = Exact<{
+  input: RegisterInput;
+}>;
+
+export type RegisterMutation = {
+  register: {
+    access_token: string;
+    user: {
+      id: string;
+      name: string;
+      email: string | null;
+      mobile: string;
+      country_code: string | null;
+      mobile_verified_at: string | null;
+      grade_id: string | null;
+      educational_system_id: string | null;
+      is_subscribed: boolean;
+      grade: { id: string; name: string } | null;
+      educational_system: { id: string; name: string } | null;
+    };
+  };
+};
+
+export type MeQueryVariables = Exact<{ [key: string]: never }>;
+
+export type MeQuery = {
+  me: {
+    id: string;
+    name: string;
+    email: string | null;
+    mobile: string;
+    country_code: string | null;
+    mobile_verified_at: string | null;
+    gender: string | null;
+    school_name: string | null;
+    parent_mobile: string | null;
+    grade_id: string | null;
+    educational_system_id: string | null;
+    governorate_id: string | null;
+    city_id: string | null;
+    is_subscribed: boolean;
+    grade: { id: string; name: string } | null;
+    educational_system: { id: string; name: string } | null;
+    governorate: { id: string; name_ar: string; name_en: string } | null;
+    city: { id: string; name_ar: string; name_en: string } | null;
+    selectedAvatar: { id: string; name: string; url: string; gender: string | null } | null;
+  } | null;
+};
+
+export type ParentLoginMutationVariables = Exact<{
+  mobile: string;
+  password: string;
+}>;
+
+export type ParentLoginMutation = {
+  parentLogin: {
+    access_token: string;
+    parent: { id: string; name: string | null; mobile: string };
+  };
+};
+
+export type ParentRegisterMutationVariables = Exact<{
+  name: string;
+  mobile: string;
+  email: string;
+  password: string;
+}>;
+
+export type ParentRegisterMutation = {
+  parentRegister: {
+    access_token: string;
+    parent: { id: string; name: string | null; mobile: string; email: string | null };
+  };
+};
+
+export type ParentMeQueryVariables = Exact<{ [key: string]: never }>;
+
+export type ParentMeQuery = {
+  parentMe: { id: string; name: string | null; mobile: string; country_code: string | null };
+};
+
+export type ParentForgotPasswordMutationVariables = Exact<{
+  email: string;
+}>;
+
+export type ParentForgotPasswordMutation = {
+  parentForgotPassword: { success: boolean; message: string | null };
+};
+
+export type CheckMobileAvailabilityMutationVariables = Exact<{
+  mobile: string;
+  type?: string | null | undefined;
+}>;
+
+export type CheckMobileAvailabilityMutation = {
+  checkMobileAvailability: { available: boolean; message: string };
 };
 
 export type GetGradesQueryVariables = Exact<{ [key: string]: never }>;
@@ -1162,6 +1308,573 @@ export type ReportQuestionMutation = {
   reportQuestion: { success: boolean; message: string | null };
 };
 
+export const LoginDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'Login' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'LoginInput' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'login' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'access_token' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'user' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'mobile' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'country_code' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'mobile_verified_at' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'grade_id' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'grade' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                          ],
+                        },
+                      },
+                      { kind: 'Field', name: { kind: 'Name', value: 'educational_system_id' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'educational_system' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                          ],
+                        },
+                      },
+                      { kind: 'Field', name: { kind: 'Name', value: 'is_subscribed' } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<LoginMutation, LoginMutationVariables>;
+export const RegisterDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'Register' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'RegisterInput' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'register' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'access_token' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'user' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'mobile' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'country_code' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'mobile_verified_at' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'grade_id' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'grade' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                          ],
+                        },
+                      },
+                      { kind: 'Field', name: { kind: 'Name', value: 'educational_system_id' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'educational_system' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                          ],
+                        },
+                      },
+                      { kind: 'Field', name: { kind: 'Name', value: 'is_subscribed' } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<RegisterMutation, RegisterMutationVariables>;
+export const MeDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'Me' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'me' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'mobile' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'country_code' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'mobile_verified_at' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'gender' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'school_name' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'parent_mobile' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'grade_id' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'grade' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'educational_system_id' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'educational_system' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'governorate_id' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'governorate' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name_ar' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name_en' } },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'city_id' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'city' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name_ar' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name_en' } },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'is_subscribed' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'selectedAvatar' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'gender' } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<MeQuery, MeQueryVariables>;
+export const ParentLoginDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'ParentLogin' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'mobile' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'password' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'parentLogin' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: {
+                  kind: 'ObjectValue',
+                  fields: [
+                    {
+                      kind: 'ObjectField',
+                      name: { kind: 'Name', value: 'mobile' },
+                      value: { kind: 'Variable', name: { kind: 'Name', value: 'mobile' } },
+                    },
+                    {
+                      kind: 'ObjectField',
+                      name: { kind: 'Name', value: 'password' },
+                      value: { kind: 'Variable', name: { kind: 'Name', value: 'password' } },
+                    },
+                  ],
+                },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'access_token' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'parent' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'mobile' } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<ParentLoginMutation, ParentLoginMutationVariables>;
+export const ParentRegisterDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'ParentRegister' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'name' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'mobile' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'email' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'password' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'parentRegister' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: {
+                  kind: 'ObjectValue',
+                  fields: [
+                    {
+                      kind: 'ObjectField',
+                      name: { kind: 'Name', value: 'name' },
+                      value: { kind: 'Variable', name: { kind: 'Name', value: 'name' } },
+                    },
+                    {
+                      kind: 'ObjectField',
+                      name: { kind: 'Name', value: 'mobile' },
+                      value: { kind: 'Variable', name: { kind: 'Name', value: 'mobile' } },
+                    },
+                    {
+                      kind: 'ObjectField',
+                      name: { kind: 'Name', value: 'email' },
+                      value: { kind: 'Variable', name: { kind: 'Name', value: 'email' } },
+                    },
+                    {
+                      kind: 'ObjectField',
+                      name: { kind: 'Name', value: 'password' },
+                      value: { kind: 'Variable', name: { kind: 'Name', value: 'password' } },
+                    },
+                  ],
+                },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'access_token' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'parent' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'mobile' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<ParentRegisterMutation, ParentRegisterMutationVariables>;
+export const ParentMeDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'ParentMe' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'parentMe' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'mobile' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'country_code' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<ParentMeQuery, ParentMeQueryVariables>;
+export const ParentForgotPasswordDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'ParentForgotPassword' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'email' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'parentForgotPassword' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'email' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'email' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'message' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<ParentForgotPasswordMutation, ParentForgotPasswordMutationVariables>;
+export const CheckMobileAvailabilityDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'CheckMobileAvailability' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'mobile' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'type' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'checkMobileAvailability' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'mobile' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'mobile' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'type' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'type' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'available' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'message' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  CheckMobileAvailabilityMutation,
+  CheckMobileAvailabilityMutationVariables
+>;
 export const GetGradesDocument = {
   kind: 'Document',
   definitions: [

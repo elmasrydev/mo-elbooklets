@@ -203,6 +203,11 @@ const WheelOfSuccessSimple: React.FC<{
 };
 
 // ─── Home Screen ─────────────────────────────────────────────────────────────
+// Floor on adjustsFontSizeToFit for the hero stats: a long label (Arabic
+// "متوسط الدرجات" wrapped to two lines) used to squeeze its value down to a
+// few pixels. Labels are now single-line too, so neither can starve the other.
+const MIN_STAT_FONT_SCALE = 0.8;
+
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { user } = useAuth();
@@ -372,29 +377,57 @@ const HomeScreen: React.FC = () => {
               {/* Inline Stats Row */}
               <View style={s.bannerStatsRow}>
                 <View style={s.bannerStatItem}>
-                  <Text style={s.bannerStatLabel}>{t('common.quizzes')}</Text>
-                  <Text style={s.bannerStatValue} numberOfLines={1} adjustsFontSizeToFit>
+                  <Text style={s.bannerStatLabel} numberOfLines={1} adjustsFontSizeToFit>
+                    {t('common.quizzes')}
+                  </Text>
+                  <Text
+                    style={s.bannerStatValue}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={MIN_STAT_FONT_SCALE}
+                  >
                     {activitiesData.total_quizzes ?? 0}
                   </Text>
                 </View>
                 <View style={s.bannerStatDivider} />
                 <View style={s.bannerStatItem}>
-                  <Text style={s.bannerStatLabel}>{t('home_screen.avg_score_label', 'Avg')}</Text>
-                  <Text style={s.bannerStatValue} numberOfLines={1} adjustsFontSizeToFit>
-                    {activitiesData.avg_score ?? 0}%
+                  <Text style={s.bannerStatLabel} numberOfLines={1} adjustsFontSizeToFit>
+                    {t('home_screen.avg_score_label', 'Avg')}
+                  </Text>
+                  <Text
+                    style={s.bannerStatValue}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={MIN_STAT_FONT_SCALE}
+                  >
+                    {Math.round(activitiesData.avg_score ?? 0)}%
                   </Text>
                 </View>
                 <View style={s.bannerStatDivider} />
                 <View style={s.bannerStatItem}>
-                  <Text style={s.bannerStatLabel}>{t('home_screen.rank', 'Rank')}</Text>
-                  <Text style={s.bannerStatValue} numberOfLines={1} adjustsFontSizeToFit>
+                  <Text style={s.bannerStatLabel} numberOfLines={1} adjustsFontSizeToFit>
+                    {t('home_screen.rank', 'Rank')}
+                  </Text>
+                  <Text
+                    style={s.bannerStatValue}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={MIN_STAT_FONT_SCALE}
+                  >
                     {leaderboardUser?.rank ? `#${leaderboardUser.rank}` : '-'}
                   </Text>
                 </View>
                 <View style={s.bannerStatDivider} />
                 <View style={s.bannerStatItem}>
-                  <Text style={s.bannerStatLabel}>XP</Text>
-                  <Text style={s.bannerStatValue} numberOfLines={1} adjustsFontSizeToFit>
+                  <Text style={s.bannerStatLabel} numberOfLines={1} adjustsFontSizeToFit>
+                    XP
+                  </Text>
+                  <Text
+                    style={s.bannerStatValue}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={MIN_STAT_FONT_SCALE}
+                  >
                     {leaderboardUser?.xp != null ? leaderboardUser.xp.toLocaleString() : '-'}
                   </Text>
                 </View>

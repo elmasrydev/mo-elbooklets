@@ -39,8 +39,9 @@ src/
 ├── services/      # notificationService, ...
 └── utils/         # logger, crashlyticsHelper, ...
 ```
-- **API calls**: most screens use `tryFetchWithFallback()` from `src/config/api.ts` (raw fetch GraphQL with URL fallback + auth-error handling + 10s timeout), not Apollo hooks. Check the screen you're editing before assuming. Both transports funnel auth failures through `src/lib/session.ts` (`revokeSession`).
-- **GraphQL documents**: operations live in **domain `.graphql` files** under `src/graphql/` (`auth`, `parenting`, `notifications`, `quiz`, ...), validated by codegen against `schema.graphql` (a committed introspection snapshot — refresh with `npm run schema:pull` after backend deployments). Consume them as generated typed documents: `useQuery(XxxDocument)` via Apollo, or `tryFetchWithFallback(XxxDocument)` (it accepts strings or DocumentNodes). **Don't add new inline query strings** — legacy inline strings in screens migrate to `.graphql` files as they're touched (phase 2 of the GraphQL consolidation).
+- **API calls**: everything goes through **Apollo Client** (`src/lib/apollo.ts`) — `useQuery`/`useMutation`/`useLazyQuery` in components, `apolloClient.query/mutate` in non-React modules (services, contexts). The links supply the auth header, the app language, a 10s timeout, one retry for queries, and logout-on-auth-failure via `src/lib/session.ts` (`revokeSession`). `src/config/api.ts` is now only the environment/URL manager.
+- **Partial responses**: the client runs `errorPolicy: 'all'`, so a response can carry data *and* field-level errors. Gate error states with `loadFailureMessage()` (`src/utils/queryError.ts`) — only a response with **no** data is a load failure; never blank a screen that has something to render.
+- **GraphQL documents**: operations live in **domain `.graphql` files** under `src/graphql/` (`auth`, `parenting`, `notifications`, `quiz`, ...), validated by codegen against `schema.graphql` (a committed introspection snapshot — refresh with `npm run schema:pull` after backend deployments). Consume them as generated typed documents: `useQuery(XxxDocument)` / `useMutation(XxxDocument)` in components, `apolloClient.query/mutate({ query|mutation: XxxDocument })` elsewhere. **Never add inline query strings or `gql` tags in screens** — every operation lives in a domain `.graphql` file.
 - **Auth tokens** in `expo-secure-store` (`auth_token`); misc state in AsyncStorage.
 - **Modals**: global confirm/alert via `ModalContext`'s `showConfirm()` → renders `ConfirmModal` (`confirm-modal-ok` testID).
 - Design tokens from `src/config/` (`colors.ts`, `spacing.ts`, `layout.ts`, `fonts.ts`) — never hardcode colors/spacing.
@@ -64,7 +65,7 @@ src/
 ### Unit tests (Jest + React Native Testing Library)
 - Live in `src/__tests__/` (`auth/` for screens+context, `hooks/`, `lib/` for pure utils). Preset `jest-expo`, setup in `jest.setup.ts`.
 - Render through `src/__tests__/helpers/renderWithProviders.tsx`; shared mocks in `src/__tests__/__mocks__/` (navigation, expo-secure-store, react-i18next — `t()` returns the key, so assert on translation keys like `'auth.fill_all_fields'`).
-- Pattern: mock `tryFetchWithFallback` and `ModalContext`, assert user-visible behavior (validation errors, navigation, API called). Don't test styles or implementation details.
+- Pattern: mock `apolloClient` (or pass `apolloMocks` to `renderWithProviders`, which wraps every render in `MockedProvider`) plus `ModalContext`, then assert user-visible behavior — validation errors, navigation, what the user sees. Don't assert that a fetch happened, and don't test styles.
 - Prefer extracting pure logic into `src/utils/` and testing it directly over mock-heavy hook tests. Shared validators (`src/utils/validators.ts`) and the linking slot state-machine (`src/utils/parentSlots.ts`) are the single sources of truth — import them; never re-inline a copy.
 
 ### E2E tests (Maestro)

@@ -4,11 +4,11 @@ import {
   useMobileAvailability,
   AVAILABILITY_CHECK_TIMEOUT_MS,
 } from '../../hooks/useMobileAvailability';
-import { tryFetchWithFallback } from '../../config/api';
+import { apolloClient } from '../../lib/apollo';
 
-jest.mock('../../config/api', () => ({ tryFetchWithFallback: jest.fn() }));
+jest.mock('../../lib/apollo', () => ({ apolloClient: { mutate: jest.fn() } }));
 
-const mockFetch = tryFetchWithFallback as jest.Mock;
+const mockMutate = apolloClient.mutate as jest.Mock;
 
 const respond = (available: boolean, message = 'msg') => ({
   data: { checkMobileAvailability: { available, message } },
@@ -17,10 +17,10 @@ const respond = (available: boolean, message = 'msg') => ({
 // BKLT-308: the early "already registered?" check. It gates registration, so
 // the verdict must be correct and it must never block on a failed request.
 describe('useMobileAvailability', () => {
-  beforeEach(() => mockFetch.mockReset());
+  beforeEach(() => mockMutate.mockReset());
 
   it('reports a taken number with the backend message', async () => {
-    mockFetch.mockResolvedValue(respond(false, 'This mobile number is already registered.'));
+    mockMutate.mockResolvedValue(respond(false, 'This mobile number is already registered.'));
     const { result } = renderHook(() => useMobileAvailability('student'));
 
     await act(async () => {
@@ -36,11 +36,11 @@ describe('useMobileAvailability', () => {
     await act(async () => {
       expect((await result.current.ensureChecked('0101122')).status).toBe('idle');
     });
-    expect(mockFetch).not.toHaveBeenCalled();
+    expect(mockMutate).not.toHaveBeenCalled();
   });
 
   it('does not block registration when the check fails', async () => {
-    mockFetch.mockRejectedValue(new Error('network down'));
+    mockMutate.mockRejectedValue(new Error('network down'));
     const { result } = renderHook(() => useMobileAvailability('student'));
 
     await act(async () => {
@@ -50,7 +50,7 @@ describe('useMobileAvailability', () => {
   });
 
   it('un-caches a failed check so the next attempt re-requests', async () => {
-    mockFetch
+    mockMutate
       .mockRejectedValueOnce(new Error('network down'))
       .mockResolvedValueOnce(respond(false, 'taken after retry'));
     const { result } = renderHook(() => useMobileAvailability('student'));
@@ -63,14 +63,14 @@ describe('useMobileAvailability', () => {
     await act(async () => {
       expect((await result.current.ensureChecked('01011223344')).status).toBe('taken');
     });
-    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(mockMutate).toHaveBeenCalledTimes(2);
   });
 
   it('fails open when the check exceeds its timeout', async () => {
     jest.useFakeTimers();
     try {
       // A request that never settles — only the timeout can end it.
-      mockFetch.mockImplementation(() => new Promise(() => {}));
+      mockMutate.mockImplementation(() => new Promise(() => {}));
       const { result } = renderHook(() => useMobileAvailability('student'));
 
       let verdict;
@@ -90,18 +90,18 @@ describe('useMobileAvailability', () => {
   });
 
   it('reuses the verdict instead of re-requesting the same number', async () => {
-    mockFetch.mockResolvedValue(respond(true));
+    mockMutate.mockResolvedValue(respond(true));
     const { result } = renderHook(() => useMobileAvailability('student'));
 
     await act(async () => {
       await result.current.ensureChecked('01011223344');
       await result.current.ensureChecked('01011223344');
     });
-    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(mockMutate).toHaveBeenCalledTimes(1);
   });
 
   it('ignores a stale response after the number changed', async () => {
-    mockFetch.mockResolvedValueOnce(respond(false, 'taken'));
+    mockMutate.mockResolvedValueOnce(respond(false, 'taken'));
     const { result } = renderHook(() => useMobileAvailability('student'));
 
     let verdict;
@@ -122,7 +122,7 @@ describe('useMobileAvailability', () => {
     // A resolves last but was superseded by B — its verdict must be discarded.
     // Deferred resolve (not a timer) keeps the interleaving deterministic.
     let resolveA!: (value: unknown) => void;
-    mockFetch
+    mockMutate
       .mockImplementationOnce(() => new Promise((r) => (resolveA = r)))
       .mockResolvedValueOnce(respond(true, 'B free'));
     const { result } = renderHook(() => useMobileAvailability('student'));
@@ -142,15 +142,14 @@ describe('useMobileAvailability', () => {
   });
 
   it('sends the parent type for the parent form', async () => {
-    mockFetch.mockResolvedValue(respond(true));
+    mockMutate.mockResolvedValue(respond(true));
     const { result } = renderHook(() => useMobileAvailability('parent'));
 
     await act(async () => {
       await result.current.ensureChecked('01011223344');
     });
-    expect(mockFetch).toHaveBeenCalledWith(expect.any(String), {
-      mobile: '01011223344',
-      type: 'parent',
-    });
+    expect(mockMutate).toHaveBeenCalledWith(
+      expect.objectContaining({ variables: { mobile: '01011223344', type: 'parent' } }),
+    );
   });
 });
