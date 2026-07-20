@@ -156,7 +156,8 @@ const QuizLessonsScreen: React.FC = () => {
     subjectConfig,
   );
 
-  if (loading) {
+  // Only before the first payload — the background refresh stays silent.
+  if (loading && chapters.length === 0) {
     return (
       <View style={common.container}>
         <QuizFlowHeader currentStep={2} />

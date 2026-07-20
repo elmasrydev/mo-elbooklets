@@ -139,7 +139,7 @@ const StudentProfileScreen: React.FC = () => {
     <View style={common.container}>
       <UnifiedHeader title={displayName || t('common.profile', 'Profile')} showBackButton />
 
-      {loading ? (
+      {loading && !profile ? (
         <View style={{ padding: spacing.md }}>
           <GenericListSkeleton numItems={4} />
         </View>

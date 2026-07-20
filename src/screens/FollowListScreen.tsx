@@ -37,11 +37,9 @@ const FollowListScreen: React.FC = () => {
   // no local copy of the list to patch.
   const followersQuery = useQuery(MyFollowersDocument, {
     skip: type === 'following',
-    fetchPolicy: 'cache-and-network',
   });
   const followingQuery = useQuery(MyFollowingDocument, {
     skip: type !== 'following',
-    fetchPolicy: 'cache-and-network',
   });
   const activeQuery = type === 'following' ? followingQuery : followersQuery;
   const data: Student[] =

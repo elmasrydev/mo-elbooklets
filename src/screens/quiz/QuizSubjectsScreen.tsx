@@ -49,7 +49,8 @@ const QuizSubjectsScreen: React.FC = () => {
     borderRadius,
   );
 
-  if (loading) {
+  // Only before the first payload — the background refresh stays silent.
+  if (loading && subjects.length === 0) {
     return (
       <View style={currentStyles.container}>
         <QuizFlowHeader currentStep={1} />

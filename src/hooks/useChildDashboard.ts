@@ -23,9 +23,6 @@ export const useChildDashboard = (childId: string) => {
   } = useQuery(GetChildDashboardDocument, {
     variables: { childId },
     skip: !childId,
-    // The child keeps studying while the parent has the screen open, so a
-    // cached copy is a starting point, never the answer.
-    fetchPolicy: 'cache-and-network',
     notifyOnNetworkStatusChange: true,
   });
 

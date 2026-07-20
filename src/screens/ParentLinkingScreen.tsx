@@ -38,7 +38,8 @@ const ParentLinkingScreen: React.FC = () => {
   const currentStyles = styles(theme, spacing, isRTL, typography, fontWeight);
 
   const renderContent = () => {
-    if (loading) {
+    // Only before the first payload — the background refresh stays silent.
+    if (loading && !slots.some((slot) => slot.request)) {
       return (
         <View style={currentStyles.centerContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />

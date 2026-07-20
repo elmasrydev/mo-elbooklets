@@ -67,8 +67,6 @@ const StudyChaptersScreen: React.FC = () => {
   } = useQuery(StudyChaptersDocument, {
     variables: { subjectId: subject?.id },
     skip: !subject?.id,
-    // myInteraction (like/dislike) must be fresh when returning from the reader.
-    fetchPolicy: 'cache-and-network',
     notifyOnNetworkStatusChange: true,
   });
   const error = loadFailureMessage(
@@ -126,7 +124,8 @@ const StudyChaptersScreen: React.FC = () => {
     !!isContentRTL,
   );
 
-  if (loading) {
+  // Only before the first payload — the background refresh stays silent.
+  if (loading && chapters.length === 0) {
     return (
       <View style={common.container}>
         <UnifiedHeader showBackButton title={subject.name} />

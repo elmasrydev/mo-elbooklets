@@ -163,7 +163,8 @@ const StudyCalendarScreen: React.FC = () => {
 
   const currentStyles = styles(theme, typography, fontWeight, spacing, borderRadius);
 
-  if (loadingSchedule || loadingSubjects) {
+  // Only before the first payload — the background refresh stays silent.
+  if ((loadingSchedule || loadingSubjects) && subjects.length === 0) {
     return (
       <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
         <UnifiedHeader

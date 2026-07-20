@@ -28,7 +28,6 @@ const TodaysPlanWidget: React.FC = () => {
   }
 
   const { data, loading, error } = useQuery(TodayScheduleDocument, {
-    fetchPolicy: 'cache-and-network',
     pollInterval: 60000,
   });
 

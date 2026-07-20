@@ -95,7 +95,8 @@ const BadgesScreen: React.FC = () => {
     (a, b) => (a.displayOrder || 0) - (b.displayOrder || 0),
   );
 
-  if (loading) {
+  // Only before the first payload — the background refresh stays silent.
+  if (loading && !data) {
     return (
       <View style={[styles.mainContainer, { backgroundColor: theme.colors.background }]}>
         <UnifiedHeader title={t('badges_screen.header_title', 'Badges')} showBackButton />

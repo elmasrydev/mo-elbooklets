@@ -23,9 +23,7 @@ export interface UseParentLinkingReturn {
 }
 
 export const useParentLinking = (): UseParentLinkingReturn => {
-  const { data, loading, error, refetch } = useQuery(ParentLinkRequestsDocument, {
-    fetchPolicy: 'cache-and-network',
-  });
+  const { data, loading, error, refetch } = useQuery(ParentLinkRequestsDocument);
 
   if (error) {
     console.error('GraphQL Error in parentLinkRequests:', JSON.stringify(error, null, 2));

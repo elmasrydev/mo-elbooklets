@@ -100,9 +100,19 @@ const client = new ApolloClient({
   cache: new InMemoryCache(),
   defaultOptions: {
     watchQuery: {
+      // Every mount asks the server, so the user never reads stale data — but
+      // the cached copy paints immediately while that request is in flight,
+      // instead of blanking the screen to a skeleton on every visit.
+      // Screens that must not show a cached value at all (quiz attempts,
+      // results, saved-point state) opt up to 'network-only' individually.
+      // NOTE: render gates must be `loading && !data` — with this policy
+      // `loading` is true *while* cached data is already on screen.
+      fetchPolicy: 'cache-and-network',
       errorPolicy: 'all',
     },
     query: {
+      // client.query() rejects cache-and-network; imperative reads are one-off
+      // and already fetch when the cache misses.
       errorPolicy: 'all',
     },
   },
