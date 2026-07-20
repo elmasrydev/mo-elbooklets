@@ -180,11 +180,16 @@ const SocialScreen: React.FC = () => {
         reportUnrenderableItem(item);
         return null;
       }
-      if (kind === 'quiz_completion')
-        return <QuizCompletionCard item={item as any} onLike={() => handleLike(item)} />;
-      if (kind === 'new_connection')
-        return <ConnectionCard item={item as any} onLike={() => handleLike(item)} />;
-      return <RankChangeCard item={item as any} onLike={() => handleLike(item)} />;
+      // Exhaustive on purpose: adding a card kind without handling it here is
+      // a type error rather than a card silently rendering as the wrong one.
+      switch (kind) {
+        case 'quiz_completion':
+          return <QuizCompletionCard item={item as any} onLike={() => handleLike(item)} />;
+        case 'new_connection':
+          return <ConnectionCard item={item as any} onLike={() => handleLike(item)} />;
+        case 'rank_change':
+          return <RankChangeCard item={item as any} onLike={() => handleLike(item)} />;
+      }
     },
     [handleLike],
   );

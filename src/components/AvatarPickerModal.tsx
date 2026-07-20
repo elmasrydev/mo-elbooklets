@@ -63,7 +63,10 @@ const AvatarPickerModal: React.FC<AvatarPickerModalProps> = ({ visible, onClose 
     // holding the previous avatar until their own query refetches — which an
     // already-mounted Home or Leaderboard won't do inside its stale window.
     // Push the new avatar into those entities so the change shows immediately
-    // (a cache.modify on an entity that isn't cached is a no-op).
+    // (a cache.modify on an entity that isn't cached is a no-op). Six schema
+    // types carry selectedAvatar, but only these two ever hold the signed-in
+    // student on their own device — StudentSearchResult, StudentProfile and
+    // ParentLinkedChild describe other people.
     update: (cache, { data }) => {
       const updated = data?.updateProfile;
       if (!updated) return;

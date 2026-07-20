@@ -32,7 +32,7 @@ describe('leaderboard ranking eligibility', () => {
     expect(rankedEntries(entries)).toEqual([]);
   });
 
-  it('treats a single student as ranked once they score', () => {
+  it('counts a student as ranked only once they have XP', () => {
     expect(isRanked({ xp: 1 })).toBe(true);
     expect(isRanked({ xp: 0 })).toBe(false);
   });

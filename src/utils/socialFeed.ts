@@ -1,5 +1,5 @@
 /** The card kinds the community feed knows how to render. */
-export type FeedCardKind = 'quiz_completion' | 'new_connection' | 'rank_change';
+type FeedCardKind = 'quiz_completion' | 'new_connection' | 'rank_change';
 
 interface RenderableFeedItem {
   type: string;

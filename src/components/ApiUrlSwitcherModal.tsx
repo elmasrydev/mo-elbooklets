@@ -111,7 +111,13 @@ const ApiUrlSwitcherModal: React.FC<ApiUrlSwitcherModalProps> = ({ isVisible, on
       // below normally discards the client anyway, but its fallback path only
       // asks the user to restart — and until they do, the previous
       // environment's data would keep painting against the new URL.
-      await apolloClient.clearStore();
+      try {
+        await apolloClient.clearStore();
+      } catch (e) {
+        // Best-effort: the reload below discards the cache anyway. Never let
+        // this step be the reason the switch does not complete.
+        if (__DEV__) console.warn('Could not clear the Apollo cache before switching:', e);
+      }
       onClose();
       setTimeout(handleReload, 500);
     },
