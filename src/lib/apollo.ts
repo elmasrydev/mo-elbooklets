@@ -4,7 +4,6 @@ import { onError } from '@apollo/client/link/error';
 import { RetryLink } from '@apollo/client/link/retry';
 import { CombinedGraphQLErrors, ServerError } from '@apollo/client/errors';
 import { Kind, OperationTypeNode, print } from 'graphql';
-import { tap } from 'rxjs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { ApiUriManager, REQUEST_TIMEOUT_MS } from '../config/api';
@@ -56,63 +55,33 @@ const authLink = setContext(async (_, { headers }) => {
 });
 
 /**
- * Enough of the credential to tell two sessions apart in a log, never enough
- * to replay one — these logs get pasted into bug reports.
- */
-const redactHeaders = (headers?: Record<string, string>) => {
-  if (!headers) return headers;
-  const { authorization, ...rest } = headers;
-  if (!authorization) return rest;
-  return { ...rest, authorization: `${authorization.slice(0, 19)}…` };
-};
-
-/**
- * Dev-only request log, restoring what the old raw-fetch transport printed:
- * the resolved url, the outgoing headers, the operation and its variables,
- * then the response (or failure) with a duration.
+ * Dev-only request log: the resolved url, the exact headers going out (token
+ * included, so a request can be replayed verbatim in a playground or curl),
+ * the operation document and its variables. Responses are deliberately not
+ * logged — they bury the requests you are actually looking for.
  *
  * Gated on __DEV__ rather than the debugMode flag, so a release binary can
- * never print request bodies even if it is built with debug features on.
- * Sits after authLink so the headers it reports are the ones actually sent,
- * and inside retryLink so a retried attempt shows up as its own entry.
+ * never print credentials or request bodies even when built with debug
+ * features on. Sits after authLink so the headers it reports are the ones
+ * actually sent, and inside retryLink so a retried attempt logs again.
  */
 const loggerLink = new ApolloLink((operation, forward) => {
-  if (!__DEV__) return forward(operation);
+  if (__DEV__) {
+    const { headers } = operation.getContext() as { headers?: Record<string, string> };
+    const kind = operation.query.definitions.some(
+      (def) =>
+        def.kind === Kind.OPERATION_DEFINITION && def.operation === OperationTypeNode.MUTATION,
+    )
+      ? 'mutation'
+      : 'query';
 
-  const startedAt = Date.now();
-  const { headers } = operation.getContext() as { headers?: Record<string, string> };
-  const kind = operation.query.definitions.some(
-    (def) => def.kind === Kind.OPERATION_DEFINITION && def.operation === OperationTypeNode.MUTATION,
-  )
-    ? 'mutation'
-    : 'query';
+    console.log(`⇢ GraphQL ${kind} ${operation.operationName} → ${ApiUriManager.getActiveUrl()}`);
+    console.log('  headers:', headers);
+    console.log('  variables:', operation.variables);
+    console.log('  document:', print(operation.query));
+  }
 
-  console.log(`⇢ GraphQL ${kind} ${operation.operationName} → ${ApiUriManager.getActiveUrl()}`);
-  console.log('  headers:', redactHeaders(headers));
-  console.log('  variables:', operation.variables);
-  console.log('  document:', print(operation.query));
-
-  return forward(operation).pipe(
-    tap({
-      next: (result) => {
-        const elapsed = Date.now() - startedAt;
-        const errors = (result as { errors?: readonly { message: string }[] }).errors;
-        console.log(`⇠ GraphQL ${operation.operationName} (${elapsed}ms)`);
-        if (errors?.length) {
-          // Field-level errors arrive alongside data (errorPolicy: 'all'), so
-          // they are worth calling out even on an otherwise successful response.
-          console.log(`  ⚠️ ${errors.length} error(s):`, errors.map((e) => e.message).join(' | '));
-        }
-        console.log('  data:', result.data);
-      },
-      error: (error) => {
-        console.log(
-          `⇠ GraphQL ${operation.operationName} FAILED (${Date.now() - startedAt}ms):`,
-          error?.message ?? error,
-        );
-      },
-    }),
-  );
+  return forward(operation);
 });
 
 /**
