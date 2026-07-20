@@ -19,6 +19,7 @@ import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
 import { layout } from '../config/layout';
 import { useQuery } from '@apollo/client/react';
+import { isRanked, rankedEntries } from '../utils/leaderboard';
 import {
   HomeDataDocument,
   HomeLeaderboardDocument,
@@ -228,7 +229,8 @@ const HomeScreen: React.FC = () => {
   const activitiesData = homeQuery.data?.activities ?? null;
   const wheelData = homeQuery.data?.wheelOfSuccess ?? null;
   const subjects = subjectsQuery.data?.subjectsForUserGrade ?? [];
-  const leaderboardEntries = leaderboardQuery.data?.leaderboard?.entries ?? [];
+  // Same rule as the leaderboard screen (BKLT-326): 0 XP is not a position.
+  const leaderboardEntries = rankedEntries(leaderboardQuery.data?.leaderboard?.entries ?? []);
   const leaderboardUser = leaderboardQuery.data?.leaderboard?.userEntry ?? null;
   const socialFeed = (socialQuery.data?.socialTimeline ?? []).slice(0, 2);
   const todaySchedule = scheduleQuery.data?.todaySchedule ?? null;
@@ -612,7 +614,9 @@ const HomeScreen: React.FC = () => {
               {/* Current User Highlighted */}
               {leaderboardUser && (
                 <View style={s.leaderboardUserRow}>
-                  <Text style={s.leaderboardUserRankText}>{leaderboardUser.rank}</Text>
+                  <Text style={s.leaderboardUserRankText}>
+                    {isRanked(leaderboardUser) ? leaderboardUser.rank : '—'}
+                  </Text>
                   {/* Read the signed-in student from the leaderboard payload, the
                       same source the rows above use. Reading the session user
                       instead showed initials here while the row showed the real

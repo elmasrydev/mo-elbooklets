@@ -20,6 +20,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { loadFailureMessage } from '../utils/queryError';
+import { isRanked, rankedEntries } from '../utils/leaderboard';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
 import UnifiedHeader from '../components/UnifiedHeader';
@@ -183,7 +184,10 @@ const LeaderboardScreen: React.FC = () => {
     notifyOnNetworkStatusChange: true,
   });
   const leaderboard = {
-    entries: leaderboardData?.leaderboard?.entries ?? [],
+    // BKLT-326: the backend ranks everyone in scope, so a subject nobody has
+    // attempted arrives as a full board of 0 XP students ordered #1, #2, …
+    // Only students who have actually scored hold a position.
+    entries: rankedEntries(leaderboardData?.leaderboard?.entries ?? []),
     userEntry: leaderboardData?.leaderboard?.userEntry ?? null,
   };
   const leaderboardError = loadFailureMessage(
@@ -450,9 +454,11 @@ const LeaderboardScreen: React.FC = () => {
                 </View>
               </View>
               <View style={s.bannerRight}>
-                <Text style={s.bannerRankNum}>#{you.rank}</Text>
+                <Text style={s.bannerRankNum}>{isRanked(you) ? `#${you.rank}` : '—'}</Text>
                 <Text style={s.bannerRankLabel}>
-                  {t('leaderboard_screen.your_rank', 'Your Rank')}
+                  {isRanked(you)
+                    ? t('leaderboard_screen.your_rank', 'Your Rank')
+                    : t('leaderboard_screen.not_ranked_yet', 'Not ranked yet')}
                 </Text>
               </View>
             </LinearGradient>
