@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useLanguage } from '../context/LanguageContext';
+import { isArabicText } from '../config/fonts';
 
 /**
  * useSubjectTextAlign Hook
@@ -26,21 +27,39 @@ import { useLanguage } from '../context/LanguageContext';
  *       In EN app: `row-reverse` forces RTL for AR content.
  *       In AR app: `row-reverse` counteracts RN's auto-flip, resulting in LTR for EN content.
  *
- * - `textAlign`: Always set as `'right'` for AR subject, `'left'` for EN subject.
- *   This is because textAlign is NEVER auto-flipped by React Native.
+ * - `textAlign`: follows the same mismatch rule, because RN DOES flip
+ *   `left`/`right` for `<Text>` in RTL (only TextInput keeps them physical —
+ *   see src/lib/rtl.ts / BKLT-312). So in an Arabic UI, `'left'` renders on the
+ *   right; the mismatch value is what makes each of the four combinations land
+ *   on the correct edge.
  *
  * - `isContentRTL` (for explicit `marginLeft`/`marginRight` usage):
  *   Set to `directionsMismatch`, not `isSubjectRTL`. This is because:
  *   In RTL app mode, RN swaps physical marginLeft/marginRight, so we need
  *   to invert our margin logic to compensate.
  *
+ * ## Unknown subject language
+ * The backend often leaves `language` empty. Treating that as English made
+ * Arabic content mismatch the Arabic UI, which flipped it to the wrong edge —
+ * so fall back to the script of the content itself (CLAUDE.md: the script, not
+ * the UI language), and only then to the app's own direction.
+ *
  * @param subjectLanguage The language code of the subject ('ar' or 'en')
+ * @param sampleText Subject/lesson text used to detect the script when
+ *   `subjectLanguage` is missing
  */
-export const useSubjectTextAlign = (subjectLanguage?: string | null) => {
+export const useSubjectTextAlign = (
+  subjectLanguage?: string | null,
+  sampleText?: string | null,
+) => {
   const { isRTL: isAppRTL } = useLanguage();
 
   return useMemo(() => {
-    const isSubjectRTL = subjectLanguage?.toLowerCase() === 'ar';
+    const isSubjectRTL = subjectLanguage
+      ? subjectLanguage.toLowerCase() === 'ar'
+      : sampleText
+        ? isArabicText(sampleText)
+        : isAppRTL;
 
     // When subject direction differs from app direction, we must explicitly override.
     // When they match, React Native's built-in RTL handling is correct by default.
@@ -71,5 +90,5 @@ export const useSubjectTextAlign = (subjectLanguage?: string | null) => {
       // Result: isContentRTL === directionsMismatch ensures correct physical gaps in all 4 cases.
       isContentRTL: directionsMismatch,
     };
-  }, [subjectLanguage, isAppRTL]);
+  }, [subjectLanguage, sampleText, isAppRTL]);
 };

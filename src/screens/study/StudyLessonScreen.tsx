@@ -455,18 +455,11 @@ const StudyLessonScreen: React.FC = () => {
   const previousLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
   const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
 
-  const inferredLanguage = useMemo(() => {
-    if (subject?.language) return subject.language;
-    // Fall back to detecting Arabic in currentLesson name or chapter name
-    const hasArabic = (text?: string) => (text ? /[\u0600-\u06FF]/.test(text) : false);
-    if (hasArabic(currentLesson?.name) || hasArabic(currentLesson?.chapter?.name)) {
-      return 'ar';
-    }
-    // As a final fallback, check the app's current language/direction
-    return isRTL ? 'ar' : 'en';
-  }, [subject?.language, currentLesson?.name, currentLesson?.chapter?.name, isRTL]);
-
-  const { contentAlign, contentRowDirection } = useSubjectTextAlign(inferredLanguage);
+  // No language on the subject? The hook falls back to the content's script.
+  const { contentAlign, contentRowDirection } = useSubjectTextAlign(
+    subject?.language,
+    currentLesson?.name || currentLesson?.chapter?.name,
+  );
   const currentStyles = useMemo(
     () =>
       styles(

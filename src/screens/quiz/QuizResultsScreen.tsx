@@ -155,6 +155,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
 
   const { contentAlign, contentFlexAlign, contentRowDirection, isContentRTL } = useSubjectTextAlign(
     quizResult?.quiz?.subject?.language,
+    quizResult?.quiz?.subject?.name,
   );
 
   const currentStyles = createStyles(

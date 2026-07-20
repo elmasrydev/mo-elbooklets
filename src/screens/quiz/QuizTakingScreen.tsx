@@ -264,7 +264,10 @@ const QuizTakingScreen: React.FC = () => {
     };
   }, []);
 
-  const { contentAlign, contentRowDirection } = useSubjectTextAlign(quiz?.subject?.language);
+  const { contentAlign, contentRowDirection } = useSubjectTextAlign(
+    quiz?.subject?.language,
+    quiz?.subject?.name,
+  );
   const currentStyles = styles(
     theme,
     typography,

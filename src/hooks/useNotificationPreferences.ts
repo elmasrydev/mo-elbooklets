@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLazyQuery, useMutation } from '@apollo/client/react';
+import { isAbortError } from '../utils/queryError';
 import { useModal } from '../context/ModalContext';
 import { useTranslation } from 'react-i18next';
 import {
@@ -54,7 +55,8 @@ export const useNotificationPreferences = (role: UserRole) => {
         });
       }
     } catch (error) {
-      console.error('Error fetching notification preferences:', error);
+      // A language-switch reload or unmount aborts in-flight queries.
+      if (!isAbortError(error)) console.error('Error fetching notification preferences:', error);
     } finally {
       setLoading(false);
     }

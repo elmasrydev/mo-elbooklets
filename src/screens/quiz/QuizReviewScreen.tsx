@@ -122,6 +122,7 @@ const QuizReviewScreen: React.FC = () => {
 
   const { contentAlign, contentRowDirection } = useSubjectTextAlign(
     result?.quiz?.subject?.language,
+    result?.quiz?.subject?.name,
   );
 
   const currentStyles = styles(

@@ -122,7 +122,7 @@ interface SubjectCardProps {
 
 const SubjectCard: React.FC<SubjectCardProps> = ({ subject, currentStyles, theme, onPress }) => {
   const { t } = useTranslation();
-  const { contentAlign } = useSubjectTextAlign(subject.language);
+  const { contentAlign } = useSubjectTextAlign(subject.language, subject.name);
   const subjectConfig = getSubjectConfig(subject.name, theme);
 
   return (

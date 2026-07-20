@@ -19,3 +19,11 @@ export const loadFailureMessage = (
   if (!error) return null;
   return data === undefined || data === null ? message : null;
 };
+
+/**
+ * True for a request the app itself cancelled — a screen unmounting, the
+ * RTL language switch reloading the bundle, or the transport timeout firing.
+ * Not a failure, so it should not be logged as one.
+ */
+export const isAbortError = (error: unknown): boolean =>
+  !!error && typeof error === 'object' && (error as { name?: string }).name === 'AbortError';

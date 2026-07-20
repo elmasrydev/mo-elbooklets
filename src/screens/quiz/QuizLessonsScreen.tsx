@@ -135,6 +135,7 @@ const QuizLessonsScreen: React.FC = () => {
 
   const { contentAlign, contentFlexAlign, contentRowDirection, isContentRTL } = useSubjectTextAlign(
     subject?.language,
+    subject?.name,
   );
 
   const subjectConfig = getSubjectConfig(subject?.name || '', theme);

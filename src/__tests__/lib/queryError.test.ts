@@ -1,4 +1,4 @@
-import { loadFailureMessage } from '../../utils/queryError';
+import { isAbortError, loadFailureMessage } from '../../utils/queryError';
 
 // Regression: the study/chapters screen went blank behind a "Connection Error"
 // wall because the backend returned partial data plus one field-level error per
@@ -24,5 +24,19 @@ describe('loadFailureMessage', () => {
   it('stays silent when there is no error at all', () => {
     expect(loadFailureMessage(undefined, undefined, MESSAGE)).toBeNull();
     expect(loadFailureMessage(null, null, MESSAGE)).toBeNull();
+  });
+});
+
+describe('isAbortError', () => {
+  it('recognises a cancelled request', () => {
+    const aborted = new Error('The operation was aborted.');
+    aborted.name = 'AbortError';
+    expect(isAbortError(aborted)).toBe(true);
+  });
+
+  it('does not swallow real failures', () => {
+    expect(isAbortError(new Error('network down'))).toBe(false);
+    expect(isAbortError(undefined)).toBe(false);
+    expect(isAbortError('AbortError')).toBe(false);
   });
 });
