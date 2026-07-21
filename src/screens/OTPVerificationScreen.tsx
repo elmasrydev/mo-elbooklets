@@ -20,13 +20,9 @@ import { useLanguage } from '../context/LanguageContext';
 import { useTypography } from '../hooks/useTypography';
 import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
-import { tryFetchWithFallback } from '../config/api';
-import {
-  SEND_MOBILE_OTP_MUTATION,
-  VERIFY_MOBILE_OTP_MUTATION,
-} from '../graphql/mutations/otpMutations';
+import { apolloClient } from '../lib/apollo';
+import { SendMobileOtpDocument, VerifyMobileOtpDocument } from '../generated/graphql';
 import { useOtpTimer } from '../hooks/useOtpTimer';
-import * as SecureStore from 'expo-secure-store';
 import { layout } from '../config/layout';
 import { isDebugMode } from '../config/debug';
 
@@ -66,9 +62,10 @@ const OTPVerificationScreen: React.FC = () => {
       startTimer(120);
       setPhase('verify');
     } else if (otpShouldAutoRequest) {
-      // Login: backend did NOT auto-fire OTP — we must request it now
+      // Login of an unverified account: request the code now (auto mode so a
+      // cooldown response is handled gracefully instead of as an error). (BKLT-275)
       clearOtpShouldAutoRequest();
-      handleSendCode(); // fires mutation → startTimer(120) + setPhase('verify') on success
+      handleSendCode(true); // fires mutation → startTimer(120) + setPhase('verify') on success
     }
     // Otherwise: existing unverified user re-opens app — useOtpTimer restores persisted timer
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -125,31 +122,43 @@ const OTPVerificationScreen: React.FC = () => {
     });
   };
 
-  const handleSendCode = async () => {
+  const handleSendCode = async (isAuto = false) => {
     if (!user?.mobile) return;
 
     try {
       setIsSending(true);
       setErrorMsg('');
-      const token = await SecureStore.getItemAsync('auth_token');
 
-      const result = await tryFetchWithFallback(
-        SEND_MOBILE_OTP_MUTATION,
-        { mobile: user.mobile, country_code: user.country_code || '+20' },
-        token || undefined,
-      );
+      const result = await apolloClient.mutate({
+        mutation: SendMobileOtpDocument,
+        variables: { mobile: user.mobile, country_code: user.country_code || '+20' },
+      });
 
       if (result.data?.sendMobileOtp?.success) {
         const expiresIn = 120; // Enforce exactly 2 minutes (120s)
         startTimer(expiresIn);
         setPhase('verify');
+      } else if (isAuto) {
+        // Auto-request after an unverified login. The backend usually rejects here
+        // because a code was already sent (cooldown / rate-limit) — don't surface
+        // that raw "wait before requesting again" text as an error. Move to the
+        // verify step with a clear "your account isn't verified" message.
+        // We deliberately do NOT start the resend timer: we can't tell a cooldown
+        // (a code is already valid) from a genuine send failure (no code sent), and
+        // starting it would disable resend for 2 minutes with nothing arriving.
+        // Leaving resend available lets the user pull a fresh code either way. (BKLT-275)
+        setPhase('verify');
+        showConfirm({
+          title: t('otp.account_not_verified_title'),
+          message: t('otp.account_not_verified_message'),
+          confirmLabel: t('common.ok'),
+          showCancel: false,
+          onConfirm: () => {},
+        });
       } else {
         showConfirm({
           title: t('common.error'),
-          message:
-            result.data?.sendMobileOtp?.message ||
-            result.errors?.[0]?.message ||
-            t('otp.whatsapp_failed'),
+          message: result.data?.sendMobileOtp?.message || t('otp.whatsapp_failed'),
           confirmLabel: t('common.ok'),
           showCancel: false,
           onConfirm: () => {},
@@ -174,13 +183,11 @@ const OTPVerificationScreen: React.FC = () => {
     try {
       setIsVerifying(true);
       setErrorMsg('');
-      const token = await SecureStore.getItemAsync('auth_token');
 
-      const result = await tryFetchWithFallback(
-        VERIFY_MOBILE_OTP_MUTATION,
-        { otp: otpCode },
-        token || undefined,
-      );
+      const result = await apolloClient.mutate({
+        mutation: VerifyMobileOtpDocument,
+        variables: { otp: otpCode },
+      });
 
       if (result.data?.verifyMobileOtp?.success) {
         clearTimer();
@@ -198,10 +205,7 @@ const OTPVerificationScreen: React.FC = () => {
           },
         });
       } else {
-        const errMsg =
-          result.data?.verifyMobileOtp?.message ||
-          result.errors?.[0]?.message ||
-          t('otp.invalid_code');
+        const errMsg = result.data?.verifyMobileOtp?.message || t('otp.invalid_code');
         setErrorMsg(errMsg);
         setOtpCode('');
         inputRef.current?.focus();
@@ -320,7 +324,7 @@ const OTPVerificationScreen: React.FC = () => {
             borderRadius: borderRadius.xl,
           },
         ]}
-        onPress={handleSendCode}
+        onPress={() => handleSendCode()}
         disabled={isSending || isActive}
       >
         {isSending ? (
@@ -502,7 +506,7 @@ const OTPVerificationScreen: React.FC = () => {
         </Text>
         <TouchableOpacity
           testID="otp-resend-button"
-          onPress={handleSendCode}
+          onPress={() => handleSendCode()}
           disabled={isActive || isSending}
         >
           <Text

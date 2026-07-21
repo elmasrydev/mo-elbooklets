@@ -9,6 +9,7 @@ import {
   Dimensions,
   ActivityIndicator,
   Modal,
+  Platform,
 } from 'react-native';
 import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -16,12 +17,12 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTypography } from '../hooks/useTypography';
 import UnifiedHeader from '../components/UnifiedHeader';
-import { useGetBadgesScreenDataQuery, Badge } from '../generated/graphql';
+import { useQuery } from '@apollo/client/react';
+import { GetBadgesScreenDataDocument, GetBadgesScreenDataQuery } from '../generated/graphql';
 
-// Badge requirement text arrives with 2-decimal numbers (e.g. "5.00 quizzes");
-// render whole-number values as integers ("5 quizzes").
-const formatRequirement = (text?: string | null): string =>
-  (text || '').replace(/(\d+)\.0+(?!\d)/g, '$1');
+// Shaped by what this screen's query actually selects — narrower and safer
+// than the full schema type of the same name.
+type Badge = GetBadgesScreenDataQuery['allBadges'][number];
 
 const BadgesScreen: React.FC = () => {
   const { t } = useTranslation();
@@ -81,7 +82,7 @@ const BadgesScreen: React.FC = () => {
     return <MaterialIcons name={name as any} size={size} color={color} style={style} />;
   };
 
-  const { data, loading, error, refetch } = useGetBadgesScreenDataQuery();
+  const { data, loading, error, refetch } = useQuery(GetBadgesScreenDataDocument);
 
   const categories = data?.badgeCategories || [];
   const badges = data?.allBadges || [];
@@ -94,7 +95,8 @@ const BadgesScreen: React.FC = () => {
     (a, b) => (a.displayOrder || 0) - (b.displayOrder || 0),
   );
 
-  if (loading) {
+  // Only before the first payload — the background refresh stays silent.
+  if (loading && !data) {
     return (
       <View style={[styles.mainContainer, { backgroundColor: theme.colors.background }]}>
         <UnifiedHeader title={t('badges_screen.header_title', 'Badges')} showBackButton />
@@ -284,11 +286,16 @@ const BadgesScreen: React.FC = () => {
                           style={[
                             styles.badgeIconInner,
                             {
-                              backgroundColor: badge.awardedAt
-                                ? catColor + '15'
-                                : theme.colors.border + '30',
-                              borderColor: badge.awardedAt ? catColor : 'transparent',
-                              borderWidth: badge.awardedAt ? 1.5 : 0,
+                              // Earned/locked is conveyed by the background tint + icon
+                              // color only; no colored ring around earned badges. (BKLT-278)
+                              // Logo assets are opaque squares that carry their own plate —
+                              // a tint circle behind them bleeds out around the square, so
+                              // only tint the icon-fallback path. (BKLT-312)
+                              backgroundColor: badge.logoUrl
+                                ? 'transparent'
+                                : badge.awardedAt
+                                  ? catColor + '15'
+                                  : theme.colors.border + '30',
                             },
                           ]}
                         >
@@ -499,40 +506,6 @@ const BadgesScreen: React.FC = () => {
                           )}
                       </Text>
 
-                      <View
-                        style={[
-                          styles.criteriaBox,
-                          {
-                            backgroundColor: theme.colors.background,
-                            borderRadius: borderRadius.md,
-                            padding: spacing.md,
-                          },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            typography('caption'),
-                            fontWeight('700'),
-                            {
-                              color: theme.colors.textTertiary,
-                              marginBottom: 8,
-                              textTransform: 'uppercase',
-                              textAlign: 'left',
-                            },
-                          ]}
-                        >
-                          {t('badges_screen.requirement', 'REQUIREMENT')}
-                        </Text>
-                        <Text
-                          style={[
-                            typography('body'),
-                            { color: theme.colors.text, textAlign: 'left' },
-                          ]}
-                        >
-                          {formatRequirement(selectedBadge.rulesPreview)}
-                        </Text>
-                      </View>
-
                       {selectedBadge.awardedAt && (
                         <Text
                           style={[
@@ -664,11 +637,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    // iOS: soft subtle shadow. Android's elevation renders a much darker, wider
+    // gray halo (worsened by the tile's translucent bg) that doesn't match the
+    // iOS design — so drop elevation there and let the tile read via its bg. BKLT.
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+      },
+      android: { elevation: 0 },
+    }),
   },
   badgeIconInner: {
     width: 48,
@@ -753,9 +733,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
     marginBottom: 8,
-  },
-  criteriaBox: {
-    width: '100%',
   },
 });
 

@@ -47,15 +47,17 @@ export default function App() {
 
   const [fontsLoaded] = useFonts({
     Lexend: require('@expo-google-fonts/lexend/400Regular/Lexend_400Regular.ttf'),
-    Cairo: require('./assets/fonts/Cairo-Variable.ttf'),
     'Lexend-Regular': require('@expo-google-fonts/lexend/400Regular/Lexend_400Regular.ttf'),
     'Lexend-Medium': require('@expo-google-fonts/lexend/500Medium/Lexend_500Medium.ttf'),
     'Lexend-SemiBold': require('@expo-google-fonts/lexend/600SemiBold/Lexend_600SemiBold.ttf'),
     'Lexend-Bold': require('@expo-google-fonts/lexend/700Bold/Lexend_700Bold.ttf'),
-    'Cairo-Regular': require('./assets/fonts/static/Cairo-Regular.ttf'),
-    'Cairo-Medium': require('./assets/fonts/static/Cairo-Medium.ttf'),
-    'Cairo-SemiBold': require('./assets/fonts/static/Cairo-SemiBold.ttf'),
-    'Cairo-Bold': require('./assets/fonts/static/Cairo-Bold.ttf'),
+    // IBM Plex Sans Arabic ships static weights only (no variable font), so every
+    // platform resolves a weight-suffixed family — see resolveFontFamily in fonts.ts.
+    IBMPlexSansArabic: require('@expo-google-fonts/ibm-plex-sans-arabic/400Regular/IBMPlexSansArabic_400Regular.ttf'),
+    'IBMPlexSansArabic-Regular': require('@expo-google-fonts/ibm-plex-sans-arabic/400Regular/IBMPlexSansArabic_400Regular.ttf'),
+    'IBMPlexSansArabic-Medium': require('@expo-google-fonts/ibm-plex-sans-arabic/500Medium/IBMPlexSansArabic_500Medium.ttf'),
+    'IBMPlexSansArabic-SemiBold': require('@expo-google-fonts/ibm-plex-sans-arabic/600SemiBold/IBMPlexSansArabic_600SemiBold.ttf'),
+    'IBMPlexSansArabic-Bold': require('@expo-google-fonts/ibm-plex-sans-arabic/700Bold/IBMPlexSansArabic_700Bold.ttf'),
   });
   const [appReady, setAppReady] = useState(false);
   const [initialLanguage, setInitialLanguage] = useState<Language>('en');
@@ -161,12 +163,12 @@ export default function App() {
     <SafeAreaProvider>
       <AnalyticsProvider client={segmentClient}>
         <ApolloProvider client={apolloClient}>
-        <ThemeProvider>
-          <ForceUpdateProvider>
-            <ModalProvider>
-              <LanguageProvider initialLanguage={initialLanguage}>
-                <I18nextProvider i18n={i18n}>
-                  <AuthProvider>
+          <ThemeProvider>
+            <ForceUpdateProvider>
+              <ModalProvider>
+                <LanguageProvider initialLanguage={initialLanguage}>
+                  <I18nextProvider i18n={i18n}>
+                    <AuthProvider>
                       <NavigationContainer
                         ref={navigationRef}
                         onReady={() => {
@@ -188,24 +190,24 @@ export default function App() {
                           routeNameRef.current = currentRouteName;
                         }}
                       >
-                      <ErrorBoundary>
-                        <AppNavigator />
-                        <NotificationHandler />
-                      </ErrorBoundary>
-                    </NavigationContainer>
-                    <BokiFloatingButton navigationRef={navigationRef} />
-                    <ForceUpdateModal />
-                    <MaintenanceModal />
-                    <GlobalModalHandler />
-                    <ApiDomainChecker />
-                  </AuthProvider>
-                </I18nextProvider>
-              </LanguageProvider>
-            </ModalProvider>
-          </ForceUpdateProvider>
-        </ThemeProvider>
-      </ApolloProvider>
-    </AnalyticsProvider>
+                        <ErrorBoundary>
+                          <AppNavigator />
+                          <NotificationHandler />
+                        </ErrorBoundary>
+                      </NavigationContainer>
+                      <BokiFloatingButton navigationRef={navigationRef} />
+                      <ForceUpdateModal />
+                      <MaintenanceModal />
+                      <GlobalModalHandler />
+                      <ApiDomainChecker />
+                    </AuthProvider>
+                  </I18nextProvider>
+                </LanguageProvider>
+              </ModalProvider>
+            </ForceUpdateProvider>
+          </ThemeProvider>
+        </ApolloProvider>
+      </AnalyticsProvider>
       <StatusBar style="auto" />
     </SafeAreaProvider>
   );

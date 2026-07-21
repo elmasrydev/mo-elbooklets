@@ -2,22 +2,23 @@
  * Boki AI Assistant — data layer.
  *
  * The single seam between the app and the Boki backend. Every operation goes
- * through `tryFetchWithFallback` (raw GraphQL + URL fallback + auth handling)
- * and surfaces failures as a typed `BokiApiError`. Connectivity ("offline") is
- * decided by callers via NetInfo; this layer only distinguishes rate-limit vs
- * generic backend failures.
- *
- * Phase 1 exposes `sendMessage` only; history/report/feedback are added later.
+ * through the Apollo client (generated typed documents; the client links add
+ * the auth header, app language, timeout and retry) and surfaces failures as
+ * a typed `BokiApiError`. Connectivity ("offline") is decided by callers via
+ * NetInfo; this layer only distinguishes rate-limit vs generic backend
+ * failures.
  */
 
-import { tryFetchWithFallback } from '../config/api';
+import type { TypedDocumentNode } from '@apollo/client';
+
 import {
-  AI_CHAT_MUTATION,
-  AI_CHAT_REPORT_MUTATION,
-  AI_CHAT_FEEDBACK_MUTATION,
-  CONVERSATIONS_QUERY,
-  CONVERSATION_MESSAGES_QUERY,
-} from '../graphql/boki';
+  AiChatDocument,
+  AiChatFeedbackDocument,
+  AiChatReportDocument,
+  ConversationMessagesDocument,
+  ConversationsDocument,
+} from '../generated/graphql';
+import { apolloClient } from '../lib/apollo';
 import {
   AiChatFeedbackResult,
   AiChatFeedbackType,
@@ -34,24 +35,50 @@ import { logError } from '../utils/logger';
 
 export { BokiApiError } from '../utils/bokiErrors';
 
-/** Run an operation and normalize transport/GraphQL failures into BokiApiError. */
-const execute = async (query: string, variables: Record<string, unknown>): Promise<any> => {
-  let response: any;
+/**
+ * GraphQL errors arrive as `error.errors` (CombinedGraphQLErrors); transport
+ * failures only carry a message. classifyBokiError needs a list either way.
+ */
+const toErrorList = (error: unknown): { message?: string }[] => {
+  const errors = (error as { errors?: { message?: string }[] } | null)?.errors;
+  if (errors?.length) return errors;
+  return [{ message: (error as Error | null)?.message }];
+};
+
+const fail = (error: unknown): never => {
+  logError('[bokiApi] request failed', error);
+  throw new BokiApiError(classifyBokiError({ errors: toErrorList(error) }));
+};
+
+// Chat state lives on the screens and history is paginated newest-first, so a
+// cached page would only ever be stale — every call goes straight to the
+// network.
+const runQuery = async <TData, TVariables extends Record<string, unknown>>(
+  query: TypedDocumentNode<TData, TVariables>,
+  variables: TVariables,
+): Promise<TData> => {
+  let result;
   try {
-    response = await tryFetchWithFallback(query, variables);
+    result = await apolloClient.query({ query, variables, fetchPolicy: 'no-cache' });
   } catch (error) {
-    // All fallback URLs failed (transport-level). NetInfo already gates true
-    // "offline"; reaching here while connected means the server is unreachable.
-    logError('[bokiApi] request failed', error);
-    throw new BokiApiError({ kind: 'backend' });
+    return fail(error);
   }
+  if (result.error || !result.data) return fail(result.error);
+  return result.data;
+};
 
-  if (response?.errors?.length) {
-    logError('[bokiApi] GraphQL error', response.errors);
-    throw new BokiApiError(classifyBokiError({ errors: response.errors }));
+const runMutation = async <TData, TVariables extends Record<string, unknown>>(
+  mutation: TypedDocumentNode<TData, TVariables>,
+  variables: TVariables,
+): Promise<TData> => {
+  let result;
+  try {
+    result = await apolloClient.mutate({ mutation, variables, fetchPolicy: 'no-cache' });
+  } catch (error) {
+    return fail(error);
   }
-
-  return response?.data;
+  if (result.error || !result.data) return fail(result.error);
+  return result.data;
 };
 
 /**
@@ -59,7 +86,7 @@ const execute = async (query: string, variables: Record<string, unknown>): Promi
  * new conversation (the backend creates one and returns its id).
  */
 export const sendMessage = async (input: AiChatInput): Promise<AiChatResponse> => {
-  const data = await execute(AI_CHAT_MUTATION, { input });
+  const data = await runMutation(AiChatDocument, { input });
   return data.aiChat as AiChatResponse;
 };
 
@@ -68,7 +95,7 @@ export const fetchConversations = async (
   page = 1,
   perPage = 15,
 ): Promise<PaginatedResult<Conversation>> => {
-  const data = await execute(CONVERSATIONS_QUERY, { page, perPage });
+  const data = await runQuery(ConversationsDocument, { page, perPage });
   return data.conversations as PaginatedResult<Conversation>;
 };
 
@@ -78,7 +105,7 @@ export const fetchConversationMessages = async (
   page = 1,
   perPage = 20,
 ): Promise<PaginatedResult<ChatMessage>> => {
-  const data = await execute(CONVERSATION_MESSAGES_QUERY, { conversationId, page, perPage });
+  const data = await runQuery(ConversationMessagesDocument, { conversationId, page, perPage });
   return data.conversationMessages as PaginatedResult<ChatMessage>;
 };
 
@@ -88,7 +115,7 @@ export const reportAnswer = async (
   reason: BokiReportReason,
   description?: string,
 ): Promise<AiChatReportResult> => {
-  const data = await execute(AI_CHAT_REPORT_MUTATION, {
+  const data = await runMutation(AiChatReportDocument, {
     chatLogId,
     reason,
     description: description?.trim() ? description.trim() : null,
@@ -101,6 +128,6 @@ export const submitFeedback = async (
   chatLogId: string,
   feedback: AiChatFeedbackType,
 ): Promise<AiChatFeedbackResult> => {
-  const data = await execute(AI_CHAT_FEEDBACK_MUTATION, { chatLogId, feedback });
+  const data = await runMutation(AiChatFeedbackDocument, { chatLogId, feedback });
   return data.aiChatFeedback as AiChatFeedbackResult;
 };

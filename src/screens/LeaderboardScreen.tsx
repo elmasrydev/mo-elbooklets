@@ -14,11 +14,13 @@ import Animated, {
   useReducedMotion,
 } from 'react-native-reanimated';
 
-import * as SecureStore from 'expo-secure-store';
 import { useFocusEffect } from '@react-navigation/native';
+import { useQuery } from '@apollo/client/react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import { loadFailureMessage } from '../utils/queryError';
+import { isRanked, rankedEntries } from '../utils/leaderboard';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
 import UnifiedHeader from '../components/UnifiedHeader';
@@ -29,26 +31,62 @@ import Avatar from '../components/Avatar';
 import { avatarColor } from '../utils/avatar';
 import { useFollowToggle } from '../hooks/useFollowToggle';
 import { layout } from '../config/layout';
-import { tryFetchWithFallback } from '../config/api';
+import {
+  LeaderboardDocument,
+  LeaderboardQuery,
+  SubjectsForUserGradeDocument,
+} from '../generated/graphql';
 import { analytics } from '../lib/analytics';
 
-interface Subject {
-  id: string;
-  name: string;
-  description?: string;
-}
+// Entries and userEntry share the LeaderboardEntry shape; follow toggles
+// update these rows through the normalized cache (see useFollowToggle).
+type Student = NonNullable<LeaderboardQuery['leaderboard']>['entries'][number];
 
-interface Student {
-  id: string;
-  name: string;
-  grade: { id: string; name: string };
-  totalQuizzes: number;
-  avgScore: number;
-  xp: number;
-  isFollowing: boolean;
-  rank: number;
-  selectedAvatar?: { url?: string } | null;
-}
+// Scope filter (BKLT-172). The `filter` string values match the web frontend
+// (demo.elbooklets.com/en/leaderboard?filter=...). The backend derives the actual
+// area/school/governorate from the auth token — the client only sends the scope word.
+type ScopeId = 'global' | 'school' | 'area' | 'governorate' | 'followed';
+
+const SCOPES: {
+  id: ScopeId;
+  labelKey: string;
+  labelDefault: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}[] = [
+  {
+    id: 'global',
+    labelKey: 'leaderboard_screen.scope_global',
+    labelDefault: 'Global',
+    icon: 'globe-outline',
+  },
+  {
+    id: 'school',
+    labelKey: 'leaderboard_screen.scope_school',
+    labelDefault: 'My School',
+    icon: 'school-outline',
+  },
+  {
+    id: 'area',
+    labelKey: 'leaderboard_screen.scope_area',
+    labelDefault: 'My Area',
+    icon: 'location-outline',
+  },
+  {
+    id: 'governorate',
+    labelKey: 'leaderboard_screen.scope_governorate',
+    labelDefault: 'My Governorate',
+    icon: 'business-outline',
+  },
+  {
+    id: 'followed',
+    labelKey: 'leaderboard_screen.scope_following',
+    labelDefault: 'Following',
+    icon: 'people-outline',
+  },
+];
+
+// Global scope sends filter="all" (matches the web frontend's Global pill).
+const scopeToFilter = (scope: ScopeId): string => (scope === 'global' ? 'all' : scope);
 
 // Medal colours (intentionally literal — podium semantics, not theme surfaces).
 const GOLD = '#f59e0b';
@@ -82,13 +120,27 @@ const Pill = ({
   active,
   onPress,
   styles: s,
+  icon,
+  mutedColor,
+  testID,
 }: {
   label: string;
   active: boolean;
   onPress: () => void;
   styles: any;
+  icon?: keyof typeof Ionicons.glyphMap;
+  mutedColor?: string;
+  testID?: string;
 }) => (
-  <TouchableOpacity activeOpacity={0.8} onPress={onPress} style={[s.pill, active && s.pillActive]}>
+  <TouchableOpacity
+    testID={testID}
+    activeOpacity={0.8}
+    onPress={onPress}
+    style={[s.pill, active && s.pillActive]}
+  >
+    {icon ? (
+      <Ionicons name={icon} size={14} color={active ? '#fff' : mutedColor} style={s.pillIcon} />
+    ) : null}
     <Text style={[s.pillText, active && s.pillTextActive]} numberOfLines={1}>
       {label}
     </Text>
@@ -102,135 +154,91 @@ const LeaderboardScreen: React.FC = () => {
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
 
-  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [selectedTab, setSelectedTab] = useState<string>('all');
-  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
-  const [leaderboardError, setLeaderboardError] = useState<string | null>(null);
-  const [allLeaderboard, setAllLeaderboard] = useState<{
-    entries: Student[];
-    userEntry: Student | null;
-  }>({ entries: [], userEntry: null });
-  const [subjectLeaderboards, setSubjectLeaderboards] = useState<{
-    [key: string]: { entries: Student[]; userEntry: Student | null };
-  }>({});
+  const [selectedScope, setSelectedScope] = useState<ScopeId>('global');
 
   // Confetti plays once per screen visit, the first time a podium is shown.
   const [showConfetti, setShowConfetti] = useState(false);
   const confettiPlayed = useRef(false);
 
   useEffect(() => {
-    fetchSubjects();
     analytics.trackLeaderboardViewed();
   }, []);
 
-  useEffect(() => {
-    if (subjects.length > 0) fetchLeaderboard('all');
-  }, [subjects]);
+  const { data: subjectsData } = useQuery(SubjectsForUserGradeDocument);
+  const subjects = subjectsData?.subjectsForUserGrade ?? [];
 
-  useEffect(() => {
-    if (selectedTab && subjects.length > 0) fetchLeaderboard(selectedTab);
-  }, [selectedTab]);
+  // Filter changes just change the variables — Apollo refetches and discards
+  // out-of-order responses itself (the old manual requestKey guard is gone).
+  const {
+    data: leaderboardData,
+    loading: leaderboardLoading,
+    error: leaderboardErrorObj,
+    refetch: refetchLeaderboard,
+  } = useQuery(LeaderboardDocument, {
+    variables: {
+      subjectId: selectedTab === 'all' ? null : selectedTab,
+      filter: scopeToFilter(selectedScope),
+      limit: 50,
+    },
+    notifyOnNetworkStatusChange: true,
+  });
+  const leaderboard = {
+    // BKLT-326: the backend ranks everyone in scope, so a subject nobody has
+    // attempted arrives as a full board of 0 XP students ordered #1, #2, …
+    // Only students who have actually scored hold a position.
+    entries: rankedEntries(leaderboardData?.leaderboard?.entries ?? []),
+    userEntry: leaderboardData?.leaderboard?.userEntry ?? null,
+  };
+  const leaderboardError = loadFailureMessage(
+    leaderboardData?.leaderboard,
+    leaderboardErrorObj,
+    t('leaderboard_screen.error_loading_leaderboard'),
+  );
 
-  const lastFetchRef = React.useRef<number>(0);
+  // useQuery fetched on mount, so the first focus inside the stale window
+  // must not refetch again.
+  const lastFetchRef = React.useRef<number>(Date.now());
   const STALE_MS = 30_000;
 
   useFocusEffect(
     useCallback(() => {
-      const now = Date.now();
-      if (now - lastFetchRef.current < STALE_MS && allLeaderboard.entries.length > 0) return;
-      lastFetchRef.current = now;
-      if (selectedTab && subjects.length > 0) fetchLeaderboard(selectedTab);
-    }, [selectedTab, subjects.length, allLeaderboard]),
+      if (Date.now() - lastFetchRef.current < STALE_MS) return;
+      lastFetchRef.current = Date.now();
+      refetchLeaderboard();
+    }, [refetchLeaderboard]),
   );
 
-  const fetchSubjects = async () => {
-    try {
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
-      const result = await tryFetchWithFallback(
-        `query SubjectsForUserGrade { subjectsForUserGrade { id name description } }`,
-        undefined,
-        token,
-      );
-      if (result.data?.subjectsForUserGrade) setSubjects(result.data.subjectsForUserGrade);
-    } catch (err: any) {
-      console.error('Fetch subjects error:', err);
+  useEffect(() => {
+    if (!confettiPlayed.current && leaderboard.entries.length > 0) {
+      confettiPlayed.current = true;
+      setShowConfetti(true);
     }
-  };
-
-  const fetchLeaderboard = async (tabId: string) => {
-    try {
-      setLeaderboardLoading(true);
-      setLeaderboardError(null);
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
-
-      const subjectId = tabId === 'all' ? null : tabId;
-      const result = await tryFetchWithFallback(
-        `
-        query Leaderboard($subjectId: ID, $limit: Int) {
-          leaderboard(subjectId: $subjectId, limit: $limit) {
-            entries {
-              id name grade { id name } totalQuizzes avgScore xp isFollowing rank
-              selectedAvatar { url }
-            }
-            userEntry {
-              id name grade { id name } totalQuizzes avgScore xp isFollowing rank
-              selectedAvatar { url }
-            }
-          }
-        }
-      `,
-        { subjectId, limit: 10 },
-        token,
-      );
-
-      if (result.data?.leaderboard) {
-        const { entries, userEntry } = result.data.leaderboard;
-        const processedEntries = entries.map((st: any) => ({
-          ...st,
-          xp: st.xp || 0,
-          isFollowing: !!st.isFollowing,
-        }));
-        const processedUserEntry = userEntry
-          ? { ...userEntry, xp: userEntry.xp || 0, isFollowing: !!userEntry.isFollowing }
-          : null;
-
-        const resultData = { entries: processedEntries, userEntry: processedUserEntry };
-
-        if (tabId === 'all') setAllLeaderboard(resultData);
-        else setSubjectLeaderboards((prev) => ({ ...prev, [tabId]: resultData }));
-
-        if (!confettiPlayed.current && processedEntries.length > 0) {
-          confettiPlayed.current = true;
-          setShowConfetti(true);
-        }
-      } else {
-        setLeaderboardError(t('leaderboard_screen.error_loading_leaderboard'));
-      }
-    } finally {
-      setLeaderboardLoading(false);
-    }
-  };
+  }, [leaderboard.entries.length]);
 
   const { toggleFollow } = useFollowToggle();
 
+  // The cache write in useFollowToggle updates the LeaderboardEntry rows
+  // (entries and userEntry alike) — nothing to patch locally.
   const handleFollowToggle = async (studentId: string) => {
-    const result = await toggleFollow(studentId);
-    if (!result?.success) return;
-    const updateList = (lb: { entries: Student[]; userEntry: Student | null }) => ({
-      ...lb,
-      entries: lb.entries.map((st) =>
-        st.id === studentId ? { ...st, isFollowing: result.isFollowing } : st,
-      ),
+    await toggleFollow(studentId);
+  };
+
+  const onSelectScope = (scope: ScopeId) => {
+    if (scope === selectedScope) return;
+    setSelectedScope(scope);
+    analytics.trackLeaderboardFilterChanged({
+      scope,
+      subjectId: selectedTab === 'all' ? null : selectedTab,
     });
-    setAllLeaderboard(updateList);
-    setSubjectLeaderboards((prev) => {
-      const next = { ...prev };
-      Object.keys(next).forEach((tabId) => {
-        next[tabId] = updateList(next[tabId]);
-      });
-      return next;
+  };
+
+  const onSelectSubject = (tabId: string) => {
+    if (tabId === selectedTab) return;
+    setSelectedTab(tabId);
+    analytics.trackLeaderboardFilterChanged({
+      scope: selectedScope,
+      subjectId: tabId === 'all' ? null : tabId,
     });
   };
 
@@ -238,11 +246,6 @@ const LeaderboardScreen: React.FC = () => {
     () => styles(theme, common, spacing, borderRadius, typography, fontWeight),
     [theme, common, spacing, borderRadius, typography, fontWeight],
   );
-
-  const leaderboard =
-    selectedTab === 'all'
-      ? allLeaderboard
-      : subjectLeaderboards[selectedTab] || { entries: [], userEntry: null };
 
   const subjectLabel =
     selectedTab === 'all'
@@ -339,7 +342,9 @@ const LeaderboardScreen: React.FC = () => {
           </View>
           <View style={s.rowBarLine}>
             <AnimatedBar pct={Math.min(100, e.avgScore)} color={barColor} styles={s} />
-            <Text style={s.rowPct}>{e.avgScore}%</Text>
+            <Text style={s.rowPct} numberOfLines={1}>
+              {e.avgScore}%
+            </Text>
           </View>
         </View>
         <View style={s.rowXpCol}>
@@ -376,22 +381,36 @@ const LeaderboardScreen: React.FC = () => {
       );
 
     if (leaderboardError)
-      return <RetryView message={leaderboardError} onRetry={() => fetchLeaderboard(selectedTab)} />;
+      return <RetryView message={leaderboardError} onRetry={() => refetchLeaderboard()} />;
 
-    if (leaderboard.entries.length === 0)
+    if (leaderboard.entries.length === 0) {
+      const filtered = selectedScope !== 'global';
       return (
         <View style={s.emptyCard}>
-          <Ionicons name="trophy-outline" size={46} color={theme.colors.textTertiary} />
+          <Ionicons
+            name={filtered ? 'funnel-outline' : 'trophy-outline'}
+            size={46}
+            color={theme.colors.textTertiary}
+          />
           <Text style={s.emptyTitle}>
-            {t('leaderboard_screen.no_rankings_yet', { defaultValue: 'No rankings yet' })}
+            {filtered
+              ? t('leaderboard_screen.no_results_filtered', {
+                  defaultValue: 'No students match this filter',
+                })
+              : t('leaderboard_screen.no_rankings_yet', { defaultValue: 'No rankings yet' })}
           </Text>
           <Text style={s.emptySub}>
-            {t('leaderboard_screen.be_first_hint', {
-              defaultValue: 'Be the first to complete quizzes and appear here!',
-            })}
+            {filtered
+              ? t('leaderboard_screen.adjust_filters_hint', {
+                  defaultValue: 'Try a different filter to see more students.',
+                })
+              : t('leaderboard_screen.be_first_hint', {
+                  defaultValue: 'Be the first to complete quizzes and appear here!',
+                })}
           </Text>
         </View>
       );
+    }
 
     const top3 = [1, 2, 3].map((r) => leaderboard.entries.find((e) => e.rank === r));
     const rest = leaderboard.entries.filter((e) => e.rank > 3);
@@ -435,9 +454,11 @@ const LeaderboardScreen: React.FC = () => {
                 </View>
               </View>
               <View style={s.bannerRight}>
-                <Text style={s.bannerRankNum}>#{you.rank}</Text>
+                <Text style={s.bannerRankNum}>{isRanked(you) ? `#${you.rank}` : '—'}</Text>
                 <Text style={s.bannerRankLabel}>
-                  {t('leaderboard_screen.your_rank', 'Your Rank')}
+                  {isRanked(you)
+                    ? t('leaderboard_screen.your_rank', 'Your Rank')
+                    : t('leaderboard_screen.not_ranked_yet', 'Not ranked yet')}
                 </Text>
               </View>
             </LinearGradient>
@@ -478,7 +499,7 @@ const LeaderboardScreen: React.FC = () => {
         title={t('leaderboard_screen.header_title', { defaultValue: 'Leaderboard' })}
         showBackButton={true}
         rightContent={
-          <TouchableOpacity style={s.refreshButton} onPress={() => fetchLeaderboard(selectedTab)}>
+          <TouchableOpacity style={s.refreshButton} onPress={() => refetchLeaderboard()}>
             <Ionicons
               name="refresh-outline"
               size={spacing.icon.md}
@@ -496,29 +517,62 @@ const LeaderboardScreen: React.FC = () => {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Subject filter — pills only (grade is fixed to the user's grade; API has no grade filter) */}
+        {/* Filter card — scope row (BKLT-172) + subject row, single-select each */}
         <View style={s.filterCard}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={s.pillsRow}
-          >
-            <Pill
-              label={t('common.all', 'All')}
-              active={selectedTab === 'all'}
-              onPress={() => setSelectedTab('all')}
-              styles={s}
-            />
-            {subjects.map((subj) => (
+          <View style={s.filterRow}>
+            <Text style={s.filterRowLabel} numberOfLines={1}>
+              {t('leaderboard_screen.filter_label', 'Filter')}
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={s.pillsScroll}
+              contentContainerStyle={s.pillsRow}
+            >
+              {SCOPES.map((sc) => (
+                <Pill
+                  key={sc.id}
+                  testID={`leaderboard-scope-${sc.id}`}
+                  label={t(sc.labelKey, sc.labelDefault)}
+                  icon={sc.icon}
+                  mutedColor={theme.colors.textSecondary}
+                  active={selectedScope === sc.id}
+                  onPress={() => onSelectScope(sc.id)}
+                  styles={s}
+                />
+              ))}
+            </ScrollView>
+          </View>
+
+          <View style={[s.filterRow, s.filterRowLast]}>
+            <Text style={s.filterRowLabel} numberOfLines={1}>
+              {t('leaderboard_screen.subject_label', 'Subject')}
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={s.pillsScroll}
+              contentContainerStyle={s.pillsRow}
+            >
               <Pill
-                key={subj.id}
-                label={subj.name}
-                active={selectedTab === subj.id}
-                onPress={() => setSelectedTab(subj.id)}
+                testID="leaderboard-subject-all"
+                label={t('common.all', 'All')}
+                active={selectedTab === 'all'}
+                onPress={() => onSelectSubject('all')}
                 styles={s}
               />
-            ))}
-          </ScrollView>
+              {subjects.map((subj) => (
+                <Pill
+                  key={subj.id}
+                  testID={`leaderboard-subject-${subj.id}`}
+                  label={subj.name}
+                  active={selectedTab === subj.id}
+                  onPress={() => onSelectSubject(subj.id)}
+                  styles={s}
+                />
+              ))}
+            </ScrollView>
+          </View>
         </View>
 
         {renderBody()}
@@ -555,10 +609,31 @@ const styles = (
     filterCard: {
       backgroundColor: theme.colors.surface,
       borderRadius: borderRadius.lg,
-      paddingVertical: spacing.ssm,
+      paddingVertical: spacing.sm,
       paddingHorizontal: spacing.ssm,
       ...layout.shadow,
       shadowOpacity: 0.05,
+    },
+    filterRow: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      gap: spacing.sm,
+      marginBottom: spacing.sm,
+    },
+    filterRowLast: {
+      marginBottom: 0,
+    },
+    filterRowLabel: {
+      ...typography('label'),
+      ...fontWeight('bold'),
+      color: theme.colors.textTertiary,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      width: 78,
+      textAlign: common.textAlign,
+    },
+    pillsScroll: {
+      flex: 1,
     },
     pillsRow: {
       flexDirection: common.rowDirection,
@@ -567,6 +642,11 @@ const styles = (
       paddingEnd: spacing.xs,
     },
     pill: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      // Keep each pill at its natural content width so labels never get squeezed
+      // (a compressed pill was wrapping the last glyph of subject names).
+      flexShrink: 0,
       borderRadius: borderRadius.full,
       paddingHorizontal: 14,
       paddingVertical: 7,
@@ -577,6 +657,9 @@ const styles = (
     pillActive: {
       backgroundColor: theme.colors.primary,
       borderColor: theme.colors.primary,
+    },
+    pillIcon: {
+      marginEnd: 5,
     },
     pillText: {
       ...typography('caption'),
@@ -782,7 +865,7 @@ const styles = (
       borderRadius: 999,
     },
     rowPct: {
-      width: 34,
+      width: 52,
       textAlign: 'right',
       ...typography('caption'),
       ...fontWeight('bold'),

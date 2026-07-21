@@ -17,7 +17,8 @@ export interface UserListRowStudent {
   totalQuizzes?: number;
   avgScore?: number;
   isFollowing?: boolean;
-  selectedAvatar?: { url?: string } | null;
+  // `url: string | null` matches the generated StudentSearchResult shape.
+  selectedAvatar?: { url?: string | null } | null;
 }
 
 interface UserListRowProps {

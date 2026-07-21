@@ -28,8 +28,8 @@ import { lastFcmPayload } from '../services/notificationService';
 import * as Clipboard from 'expo-clipboard';
 import DeviceInfo from 'react-native-device-info';
 import Constants from 'expo-constants';
-import { tryFetchWithFallback } from '../config/api';
-import * as SecureStore from 'expo-secure-store';
+import { useMutation } from '@apollo/client/react';
+import { UpdateProfileDocument } from '../generated/graphql';
 const CrashTrigger = () => {
   throw new Error('Test React Render Error for ErrorBoundary');
 };
@@ -88,10 +88,10 @@ const InternalSettingsScreen: React.FC = () => {
   };
   // From OTP branch (main)
   const [isUnverifying, setIsUnverifying] = useState(false);
+  const [updateProfile] = useMutation(UpdateProfileDocument);
   const handleUnverifyMobile = async () => {
     try {
       setIsUnverifying(true);
-      const token = await SecureStore.getItemAsync('auth_token');
       const input = {
         name: user?.name,
         email: user?.email,
@@ -99,16 +99,7 @@ const InternalSettingsScreen: React.FC = () => {
         mobile_verified_at: 'reset',
       };
 
-      const result = await tryFetchWithFallback(
-        `mutation UpdateProfile($input: UpdateProfileInput!) {
-          updateProfile(input: $input) {
-            id
-            mobile_verified_at
-          }
-        }`,
-        { input },
-        token || undefined,
-      );
+      const result = await updateProfile({ variables: { input } });
 
       if (result.data?.updateProfile && user) {
         await updateUser({ ...user, mobile_verified_at: undefined });

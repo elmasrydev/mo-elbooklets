@@ -10,6 +10,8 @@ import {
   ImageStyle,
 } from 'react-native';
 import { avatarColor, getAvatarInitials } from '../utils/avatar';
+import { useTypography } from '../hooks/useTypography';
+import { isArabicText } from '../config/fonts';
 
 interface AvatarProps {
   /** Backend avatar image URL. When absent (or it fails to load), colored initials are shown. */
@@ -44,6 +46,7 @@ const Avatar: React.FC<AvatarProps> = ({
   showLoading = false,
   style,
 }) => {
+  const { fontWeight } = useTypography();
   const [errored, setErrored] = useState(false);
   const [loading, setLoading] = useState(!!uri);
 
@@ -83,7 +86,13 @@ const Avatar: React.FC<AvatarProps> = ({
         </>
       ) : (
         <Text
-          style={[styles.initials, { fontSize: Math.round(size * fontScale) }]}
+          style={[
+            styles.initials,
+            // Font follows the NAME's script, not the UI language — an Arabic
+            // name in an English UI still needs the Arabic family. (BKLT-312)
+            fontWeight('700', isArabicText(name)),
+            { fontSize: Math.round(size * fontScale) },
+          ]}
           numberOfLines={1}
         >
           {getAvatarInitials(name)}
@@ -95,7 +104,7 @@ const Avatar: React.FC<AvatarProps> = ({
 
 const styles = StyleSheet.create({
   imageWrap: { backgroundColor: '#DBEAFA', overflow: 'hidden' },
-  initials: { color: '#ffffff', fontWeight: '700' },
+  initials: { color: '#ffffff' },
 });
 
 export default React.memo(Avatar);

@@ -9,7 +9,6 @@ import {
   Image,
   Platform,
 } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
@@ -19,7 +18,14 @@ import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
 import { layout } from '../config/layout';
-import { tryFetchWithFallback } from '../config/api';
+import { useQuery } from '@apollo/client/react';
+import { isRanked, rankedEntries } from '../utils/leaderboard';
+import {
+  HomeDataDocument,
+  HomeLeaderboardDocument,
+  StudySubjectsDocument,
+  TodayScheduleDocument,
+} from '../generated/graphql';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
 import UnifiedHeader from '../components/UnifiedHeader';
@@ -77,21 +83,6 @@ interface LeaderboardEntry {
   xp: number;
   rank: number;
   selectedAvatar?: { url?: string } | null;
-}
-
-interface SocialFeedItem {
-  id: string;
-  type: string;
-  user: { id: string; name: string; grade: { id: string; name: string } };
-  createdAt: string;
-  quizData?: {
-    quiz: { name: string; subject: { name: string } };
-    score: number;
-    totalQuestions: number;
-    isPassed: boolean;
-  };
-  likes: number;
-  comments: number;
 }
 
 interface TodayScheduleEntry {
@@ -197,6 +188,11 @@ const WheelOfSuccessSimple: React.FC<{
 };
 
 // ─── Home Screen ─────────────────────────────────────────────────────────────
+// Floor on adjustsFontSizeToFit for the hero stats: a long label (Arabic
+// "متوسط الدرجات" wrapped to two lines) used to squeeze its value down to a
+// few pixels. Labels are now single-line too, so neither can starve the other.
+const MIN_STAT_FONT_SCALE = 0.8;
+
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { user } = useAuth();
@@ -206,119 +202,38 @@ const HomeScreen: React.FC = () => {
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
 
-  const [activitiesData, setActivitiesData] = useState<ActivitiesData | null>(null);
-  const [wheelData, setWheelData] = useState<WheelOfSuccessData | null>(null);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [leaderboardEntries, setLeaderboardEntries] = useState<LeaderboardEntry[]>([]);
-  const [leaderboardUser, setLeaderboardUser] = useState<LeaderboardEntry | null>(null);
-  const [socialFeed, setSocialFeed] = useState<SocialFeedItem[]>([]);
+  // Subjects and today's schedule reuse their own tabs' documents, so opening
+  // those tabs reads the same cache entry instead of refetching.
+  const homeQuery = useQuery(HomeDataDocument, { notifyOnNetworkStatusChange: true });
+  const subjectsQuery = useQuery(StudySubjectsDocument);
+  const leaderboardQuery = useQuery(HomeLeaderboardDocument, { variables: { limit: 4 } });
+  const scheduleQuery = useQuery(TodayScheduleDocument);
 
-  const [todaySchedule, setTodaySchedule] = useState<TodayScheduleData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const activitiesData = homeQuery.data?.activities ?? null;
+  const wheelData = homeQuery.data?.wheelOfSuccess ?? null;
+  const subjects = subjectsQuery.data?.subjectsForUserGrade ?? [];
+  // Same rule as the leaderboard screen (BKLT-326): 0 XP is not a position.
+  const leaderboardEntries = rankedEntries(leaderboardQuery.data?.leaderboard?.entries ?? []);
+  const leaderboardUser = leaderboardQuery.data?.leaderboard?.userEntry ?? null;
+  const topEntries = leaderboardEntries.slice(0, 3);
+  const isUserInTopEntries =
+    !!leaderboardUser && topEntries.some((entry) => entry.id === leaderboardUser.id);
+  const todaySchedule = scheduleQuery.data?.todaySchedule ?? null;
+  const loading = homeQuery.loading;
 
   const fetchHomeData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
-
-      // Fetch all data in parallel
-      const [activitiesResult, subjectsResult, leaderboardResult, socialResult, todayResult] =
-        await Promise.all([
-          tryFetchWithFallback(
-            `query HomeData {
-              activities {
-                total_quizzes avg_score performance_status performance_trend streak
-                activities { id name subject { id name } score totalQuestions completedAt isPassed }
-                weekly_performance { week score }
-              }
-              wheelOfSuccess {
-                arms { id name progress color type }
-                overallProgress
-              }
-            }`,
-            undefined,
-            token,
-          ),
-          tryFetchWithFallback(
-            `query SubjectsForUserGrade {
-              subjectsForUserGrade { 
-                id name description language study_progress quiz_progress 
-                chapters { id } 
-              }
-            }`,
-            undefined,
-            token,
-          ),
-          tryFetchWithFallback(
-            `query Leaderboard($limit: Int) {
-              leaderboard(limit: $limit) {
-                entries { id name xp rank selectedAvatar { url } }
-                userEntry { id name xp rank selectedAvatar { url } }
-              }
-            }`,
-            { limit: 4 },
-            token,
-          ),
-          tryFetchWithFallback(
-            `query SocialTimeline {
-              socialTimeline {
-                id type
-                user { id name grade { id name } }
-                createdAt
-                quizData {
-                  quiz { name subject { name } }
-                  score totalQuestions isPassed
-                }
-                connectedUser { id name grade { id name } }
-                rankData { previousRank newRank subject { id name } isOverall }
-                likes comments
-              }
-            }`,
-            undefined,
-            token,
-          ),
-          tryFetchWithFallback(
-            `query TodaySchedule {
-              todaySchedule {
-                date dayName dayOfWeek
-                schedule {
-                  id subject { name } lessonGoal quizGoal lessonsCompleted quizzesCompleted completionPercentage isComplete
-                }
-              }
-            }`,
-            undefined,
-            token,
-          ),
-        ]);
-
-      if (activitiesResult.data?.activities) {
-        setActivitiesData(activitiesResult.data.activities);
-      }
-      if (activitiesResult.data?.wheelOfSuccess) {
-        setWheelData(activitiesResult.data.wheelOfSuccess);
-      }
-      if (subjectsResult.data?.subjectsForUserGrade) {
-        setSubjects(subjectsResult.data.subjectsForUserGrade);
-      }
-      if (leaderboardResult.data?.leaderboard) {
-        setLeaderboardEntries(leaderboardResult.data.leaderboard.entries || []);
-        setLeaderboardUser(leaderboardResult.data.leaderboard.userEntry || null);
-      }
-      if (socialResult.data?.socialTimeline) {
-        setSocialFeed(socialResult.data.socialTimeline.slice(0, 2));
-      }
-      if (todayResult.data?.todaySchedule) {
-        setTodaySchedule(todayResult.data.todaySchedule);
-      }
-    } catch (err: any) {
-      console.error('Fetch home data error:', err);
-    } finally {
-      setLoading(false);
-    }
+    await Promise.all([
+      homeQuery.refetch(),
+      subjectsQuery.refetch(),
+      leaderboardQuery.refetch(),
+      scheduleQuery.refetch(),
+    ]);
+    // Refetch functions are stable for the life of the hook.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const lastFetchRef = React.useRef<number>(0);
+  // useQuery fetched on mount, so the first focus inside the window is a no-op.
+  const lastFetchRef = React.useRef<number>(Date.now());
   const STALE_MS = 30_000; // 30 seconds
 
   useFocusEffect(
@@ -448,29 +363,57 @@ const HomeScreen: React.FC = () => {
               {/* Inline Stats Row */}
               <View style={s.bannerStatsRow}>
                 <View style={s.bannerStatItem}>
-                  <Text style={s.bannerStatLabel}>{t('common.quizzes')}</Text>
-                  <Text style={s.bannerStatValue} numberOfLines={1} adjustsFontSizeToFit>
+                  <Text style={s.bannerStatLabel} numberOfLines={1} adjustsFontSizeToFit>
+                    {t('common.quizzes')}
+                  </Text>
+                  <Text
+                    style={s.bannerStatValue}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={MIN_STAT_FONT_SCALE}
+                  >
                     {activitiesData.total_quizzes ?? 0}
                   </Text>
                 </View>
                 <View style={s.bannerStatDivider} />
                 <View style={s.bannerStatItem}>
-                  <Text style={s.bannerStatLabel}>{t('home_screen.avg_score_label', 'Avg')}</Text>
-                  <Text style={s.bannerStatValue} numberOfLines={1} adjustsFontSizeToFit>
-                    {activitiesData.avg_score ?? 0}%
+                  <Text style={s.bannerStatLabel} numberOfLines={1} adjustsFontSizeToFit>
+                    {t('home_screen.avg_score_label', 'Avg')}
+                  </Text>
+                  <Text
+                    style={s.bannerStatValue}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={MIN_STAT_FONT_SCALE}
+                  >
+                    {Math.round(activitiesData.avg_score ?? 0)}%
                   </Text>
                 </View>
                 <View style={s.bannerStatDivider} />
                 <View style={s.bannerStatItem}>
-                  <Text style={s.bannerStatLabel}>{t('home_screen.rank', 'Rank')}</Text>
-                  <Text style={s.bannerStatValue} numberOfLines={1} adjustsFontSizeToFit>
+                  <Text style={s.bannerStatLabel} numberOfLines={1} adjustsFontSizeToFit>
+                    {t('home_screen.rank', 'Rank')}
+                  </Text>
+                  <Text
+                    style={s.bannerStatValue}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={MIN_STAT_FONT_SCALE}
+                  >
                     {leaderboardUser?.rank ? `#${leaderboardUser.rank}` : '-'}
                   </Text>
                 </View>
                 <View style={s.bannerStatDivider} />
                 <View style={s.bannerStatItem}>
-                  <Text style={s.bannerStatLabel}>XP</Text>
-                  <Text style={s.bannerStatValue} numberOfLines={1} adjustsFontSizeToFit>
+                  <Text style={s.bannerStatLabel} numberOfLines={1} adjustsFontSizeToFit>
+                    XP
+                  </Text>
+                  <Text
+                    style={s.bannerStatValue}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={MIN_STAT_FONT_SCALE}
+                  >
                     {leaderboardUser?.xp != null ? leaderboardUser.xp.toLocaleString() : '-'}
                   </Text>
                 </View>
@@ -621,10 +564,14 @@ const HomeScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
             <View style={s.leaderboardRowsContainer}>
-              {leaderboardEntries.slice(0, 3).map((entry, index) => (
+              {topEntries.map((entry, index) => (
                 <View
                   key={entry.id}
-                  style={[s.leaderboardRankRow, index === 0 && { backgroundColor: '#fff7ed' }]}
+                  style={[
+                    s.leaderboardRankRow,
+                    index === 0 && { backgroundColor: '#fff7ed' },
+                    entry.id === leaderboardUser?.id && s.leaderboardRankRowYou,
+                  ]}
                 >
                   <Text
                     style={[
@@ -645,27 +592,38 @@ const HomeScreen: React.FC = () => {
                   />
                   <View style={s.leaderboardRankInfo}>
                     <Text style={s.leaderboardRankName} numberOfLines={1}>
-                      {entry.name}
+                      {entry.id === leaderboardUser?.id
+                        ? `${entry.name} (${t('leaderboard_screen.you', 'You')})`
+                        : entry.name}
                     </Text>
                     <Text style={s.leaderboardRankXp}>{entry.xp} XP</Text>
                   </View>
                 </View>
               ))}
 
-              {/* Current User Highlighted */}
-              {leaderboardUser && (
+              {/* Only for a student ranked outside the rows above — otherwise
+                  they are already on screen and the card just repeats them
+                  (BKLT-325). */}
+              {leaderboardUser && !isUserInTopEntries && (
                 <View style={s.leaderboardUserRow}>
-                  <Text style={s.leaderboardUserRankText}>{leaderboardUser.rank}</Text>
+                  <Text style={s.leaderboardUserRankText}>
+                    {isRanked(leaderboardUser) ? leaderboardUser.rank : '—'}
+                  </Text>
+                  {/* Read the signed-in student from the leaderboard payload, the
+                      same source the rows above use. Reading the session user
+                      instead showed initials here while the row showed the real
+                      avatar, because `login` does not return selectedAvatar —
+                      only `me` does, so a fresh session has none (BKLT-324). */}
                   <Avatar
-                    uri={user?.selectedAvatar?.url}
-                    name={user?.name || ''}
+                    uri={leaderboardUser.selectedAvatar?.url}
+                    name={leaderboardUser.name}
                     size={36}
                     style={s.leaderboardAvatarGap}
                   />
                   <View style={s.leaderboardRankInfo}>
                     <Text style={s.leaderboardUserName} numberOfLines={1}>
-                      {user?.name
-                        ? `${user.name.split(' ')[0]} (${t('leaderboard_screen.your_rank', 'You')})`
+                      {leaderboardUser.name
+                        ? `${leaderboardUser.name.split(' ')[0]} (${t('leaderboard_screen.your_rank', 'You')})`
                         : t('leaderboard_screen.your_rank', 'You')}
                     </Text>
                     <Text style={s.leaderboardUserXp}>{leaderboardUser.xp} XP</Text>
@@ -1068,6 +1026,12 @@ const getStyles = (
       ...typography('caption'),
       color: theme.colors.textTertiary,
       marginTop: 1,
+    },
+    // Marks the signed-in student's own row when they are on the board, so
+    // dropping the duplicate card below does not lose the "this is you" cue.
+    leaderboardRankRowYou: {
+      borderColor: theme.colors.primary,
+      borderWidth: 1.5,
     },
     leaderboardUserRow: {
       flexDirection: common.rowDirection,

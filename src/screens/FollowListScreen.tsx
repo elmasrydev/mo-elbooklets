@@ -1,33 +1,21 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as SecureStore from 'expo-secure-store';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { useQuery } from '@apollo/client/react';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../context/ThemeContext';
 import { useTypography } from '../hooks/useTypography';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useFollowToggle } from '../hooks/useFollowToggle';
-import { subscribeFollowChange } from '../utils/followBus';
-import { tryFetchWithFallback } from '../config/api';
+import { MyFollowersDocument, MyFollowersQuery, MyFollowingDocument } from '../generated/graphql';
 import UnifiedHeader from '../components/UnifiedHeader';
 import UserListRow from '../components/UserListRow';
 import { GenericListSkeleton } from '../components/SkeletonLoader';
 import { layout } from '../config/layout';
 
-interface Student {
-  id: string;
-  name: string;
-  mobile: string;
-  grade: {
-    id: string;
-    name: string;
-  };
-  totalQuizzes: number;
-  avgScore: number;
-  isFollowing: boolean;
-  selectedAvatar?: { url?: string } | null;
-}
+// Followers and following share the StudentSearchResult shape.
+type Student = MyFollowersQuery['myFollowers'][number];
 
 const FollowListScreen: React.FC = () => {
   const route = useRoute<any>();
@@ -41,71 +29,39 @@ const FollowListScreen: React.FC = () => {
 
   const currentStyles = styles;
 
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<Student[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [followingId, setFollowingId] = useState<string | null>(null);
 
-  const fetchList = useCallback(async () => {
+  // One skip-paired query per list keeps each result fully typed; follow
+  // toggles anywhere update these rows via the normalized cache, so there is
+  // no local copy of the list to patch.
+  const followersQuery = useQuery(MyFollowersDocument, {
+    skip: type === 'following',
+  });
+  const followingQuery = useQuery(MyFollowingDocument, {
+    skip: type !== 'following',
+  });
+  const activeQuery = type === 'following' ? followingQuery : followersQuery;
+  const data: Student[] =
+    (type === 'following' ? followingQuery.data?.myFollowing : followersQuery.data?.myFollowers) ??
+    [];
+  // Silent background refresh — don't replace a rendered list with a skeleton.
+  const loading = activeQuery.loading && !activeQuery.data;
+
+  const onRefresh = async () => {
+    setRefreshing(true);
     try {
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
-
-      const query =
-        type === 'following'
-          ? `query MyFollowing { 
-            myFollowing { 
-              id name mobile grade { id name } totalQuizzes avgScore isFollowing selectedAvatar { url }
-            } 
-          }`
-          : `query MyFollowers { 
-            myFollowers { 
-              id name mobile grade { id name } totalQuizzes avgScore isFollowing selectedAvatar { url }
-            } 
-          }`;
-
-      const result = await tryFetchWithFallback(query, undefined, token);
-
-      const listData = type === 'following' ? result.data?.myFollowing : result.data?.myFollowers;
-      if (listData) {
-        setData(listData);
-      }
-    } catch (err) {
-      console.error('Fetch follow list error:', err);
+      await activeQuery.refetch();
     } finally {
-      setLoading(false);
       setRefreshing(false);
     }
-  }, [type]);
-
-  useEffect(() => {
-    fetchList();
-  }, [fetchList]);
-
-  // Reflect follow/unfollow done from the profile screen back into the list.
-  useEffect(
-    () =>
-      subscribeFollowChange((userId, isFollowing) => {
-        setData((prev) => prev.map((s) => (s.id === userId ? { ...s, isFollowing } : s)));
-      }),
-    [],
-  );
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchList();
   };
 
   const handleFollowToggle = async (student: Student) => {
     if (followingId) return;
     setFollowingId(student.id);
     try {
-      const result = await toggleFollow(student.id);
-      if (result?.success) {
-        setData((prev) =>
-          prev.map((s) => (s.id === student.id ? { ...s, isFollowing: result.isFollowing } : s)),
-        );
-      }
+      await toggleFollow(student.id);
     } finally {
       setFollowingId(null);
     }

@@ -5,24 +5,25 @@ import { logError, logInfo } from './logger';
 
 type UserRole = 'student' | 'parent' | 'guest';
 
+// `| null` mirrors the API shape these values come from (see AuthContext.User).
 interface CrashlyticsStudent {
   id: string;
   name: string;
-  email?: string;
+  email?: string | null;
   mobile: string;
-  country_code?: string;
-  gender?: string;
-  school_name?: string;
-  grade?: { id: string; name: string };
-  educational_system?: { id: string; name: string };
-  is_subscribed?: boolean;
+  country_code?: string | null;
+  gender?: string | null;
+  school_name?: string | null;
+  grade?: { id: string; name: string } | null;
+  educational_system?: { id: string; name: string } | null;
+  is_subscribed?: boolean | null;
 }
 
 interface CrashlyticsParent {
   id: string;
-  name: string;
+  name: string | null;
   mobile: string;
-  country_code?: string;
+  country_code?: string | null;
 }
 
 /**

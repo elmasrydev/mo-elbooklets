@@ -15,6 +15,7 @@ import * as Updates from 'expo-updates';
 import { useTheme } from '../context/ThemeContext';
 import { useTypography } from '../hooks/useTypography';
 import { ApiUriManager, PRS_URL } from '../config/api';
+import { apolloClient } from '../lib/apollo';
 import AppButton from './AppButton';
 import { useModal } from '../context/ModalContext';
 
@@ -106,6 +107,17 @@ const ApiUrlSwitcherModal: React.FC<ApiUrlSwitcherModalProps> = ({ isVisible, on
         return;
       }
       await ApiUriManager.updateUrl(url);
+      // Drop every cached entity before the switch takes effect: the reload
+      // below normally discards the client anyway, but its fallback path only
+      // asks the user to restart — and until they do, the previous
+      // environment's data would keep painting against the new URL.
+      try {
+        await apolloClient.clearStore();
+      } catch (e) {
+        // Best-effort: the reload below discards the cache anyway. Never let
+        // this step be the reason the switch does not complete.
+        if (__DEV__) console.warn('Could not clear the Apollo cache before switching:', e);
+      }
       onClose();
       setTimeout(handleReload, 500);
     },

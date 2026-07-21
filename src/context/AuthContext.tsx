@@ -8,8 +8,18 @@ import React, {
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import { tryFetchWithFallback, setAuthErrorHandler } from '../config/api';
-import { setLogoutHandler } from '../lib/apollo';
+import { apolloClient } from '../lib/apollo';
+import {
+  ForgotPasswordDocument,
+  LoginDocument,
+  MeDocument,
+  ParentForgotPasswordDocument,
+  ParentLoginDocument,
+  ParentMeDocument,
+  ParentRegisterDocument,
+  RegisterDocument,
+} from '../generated/graphql';
+import { setSessionRevokedHandler } from '../lib/session';
 import { analytics } from '../lib/analytics';
 import {
   configureCrashlyticsStudent,
@@ -26,37 +36,39 @@ import {
 import i18n from '../i18n';
 
 // Temporary types for testing
-interface User {
+// Optional fields are `| null` because that is what the API returns; the app
+// treats null and undefined alike ("not set").
+export interface User {
   id: string;
   name: string;
-  email?: string;
+  email?: string | null;
   mobile: string;
-  country_code?: string;
-  mobile_verified_at?: string;
-  gender?: string;
-  school_name?: string;
-  parent_mobile?: string;
-  grade_id?: string;
-  grade?: { id: string; name: string };
-  educational_system_id?: string;
-  educational_system?: { id: string; name: string };
-  governorate_id?: string | number;
-  governorate?: { id: string; name_ar: string; name_en: string };
-  city_id?: string | number;
-  city?: { id: string; name_ar: string; name_en: string };
-  is_subscribed?: boolean;
+  country_code?: string | null;
+  mobile_verified_at?: string | null;
+  gender?: string | null;
+  school_name?: string | null;
+  parent_mobile?: string | null;
+  grade_id?: string | null;
+  grade?: { id: string; name: string } | null;
+  educational_system_id?: string | null;
+  educational_system?: { id: string; name: string } | null;
+  governorate_id?: string | number | null;
+  governorate?: { id: string; name_ar: string; name_en: string } | null;
+  city_id?: string | number | null;
+  city?: { id: string; name_ar: string; name_en: string } | null;
+  is_subscribed?: boolean | null;
   role?: 'student' | 'parent';
   followers_count?: number;
   following_count?: number;
-  selectedAvatar?: { id: string; name?: string; url: string; gender?: string } | null;
+  selectedAvatar?: { id: string; name?: string | null; url: string; gender?: string | null } | null;
 }
 
 interface Parent {
   id: string;
-  name: string;
+  name: string | null;
   mobile: string;
-  email?: string;
-  country_code?: string;
+  email?: string | null;
+  country_code?: string | null;
 }
 
 interface ParentLoginInput {
@@ -101,16 +113,17 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (input: LoginInput) => Promise<{ success: boolean; user?: User; error?: string }>;
   register: (input: RegisterInput) => Promise<{ success: boolean; user?: User; error?: string }>;
-  forgotPassword: (email: string) => Promise<{ success: boolean; message?: string }>;
+  forgotPassword: (email: string) => Promise<{ success: boolean; message?: string | null }>;
   parentLogin: (input: ParentLoginInput) => Promise<{ success: boolean; error?: string }>;
   parentRegister: (input: ParentRegisterInput) => Promise<{ success: boolean; error?: string }>;
-  parentForgotPassword: (email: string) => Promise<{ success: boolean; message?: string }>;
+  parentForgotPassword: (email: string) => Promise<{ success: boolean; message?: string | null }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   updateUser: (userData: User) => Promise<void>;
   updateParentUser: (data: Partial<Parent>) => Promise<void>;
   isVerificationSkipped: boolean;
   skipVerification: () => void;
+  requestVerification: () => void;
   otpWasAutoSent: boolean;
   markOtpAutoSent: () => void;
   clearOtpAutoSent: () => void;
@@ -142,27 +155,41 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     checkAuthStatus();
 
     // Create logout function to share between handlers
-    const handleSessionExpired = () => {
-      logInfo('Session expired - logging out');
-      unregisterDeviceToken();
-      clearNotificationPromptedFlag();
-      // Clear persisted credentials too — otherwise the stale token/role are
-      // restored on next launch and the app re-authenticates into a session the
-      // server already rejected, looping back into 401s.
-      SecureStore.deleteItemAsync('auth_token');
-      SecureStore.deleteItemAsync('user_role');
-      SecureStore.deleteItemAsync('user_data');
-      SecureStore.deleteItemAsync('parent_data');
-      setUser(null);
-      setParentUser(null);
-      setUserRole(null);
+    // Callers invoke this without awaiting, so nothing observes a rejection here —
+    // it has to contain its own failures or they surface as unhandled rejections.
+    const handleSessionExpired = async (authToken?: string) => {
+      try {
+        logInfo('Session expired - logging out');
+        // Drop the session first so the app redirects to login straight away. The
+        // push-token cleanup below makes network calls with no timeout, which would
+        // otherwise strand the user on an authenticated screen until they fail.
+        setUser(null);
+        setParentUser(null);
+        setUserRole(null);
+        // Clear persisted credentials too — otherwise the stale token/role are
+        // restored on next launch and the app re-authenticates into a session the
+        // server already rejected, looping back into 401s.
+        await SecureStore.deleteItemAsync('auth_token');
+        await SecureStore.deleteItemAsync('user_role');
+        await SecureStore.deleteItemAsync('user_data');
+        await SecureStore.deleteItemAsync('parent_data');
+        // The Apollo cache still holds the revoked session's data (profile,
+        // notifications, badges) — drop it so the next sign-in can't see it.
+        await apolloClient.clearStore();
+        // `authToken` comes from whichever handler caught the auth failure, which
+        // captures it before revoking it. The trigger is often a still-valid session
+        // (the matcher fires on any error containing "unauthenticated"), so the
+        // unregister can genuinely succeed rather than silently failing auth.
+        await unregisterDeviceToken(authToken);
+        await clearNotificationPromptedFlag();
+      } catch (error) {
+        logError('Session expiry cleanup error', error);
+      }
     };
 
-    // Register logout handler for Apollo error link
-    setLogoutHandler(handleSessionExpired);
-
-    // Register logout handler for API fetch calls
-    setAuthErrorHandler(handleSessionExpired);
+    // Single registration point — both transports (the Apollo error link and
+    // the raw transport) funnel auth failures through lib/session.
+    setSessionRevokedHandler(handleSessionExpired);
   }, []);
 
   const checkAuthStatus = async () => {
@@ -217,29 +244,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = useCallback(
     async (input: LoginInput): Promise<{ success: boolean; user?: User; error?: string }> => {
       try {
-        const result = await tryFetchWithFallback(
-          `
-        mutation Login($input: LoginInput!) {
-          login(input: $input) {
-            access_token
-            user {
-              id
-              name
-              email
-              mobile
-              country_code
-              mobile_verified_at
-              grade_id
-              grade { id name }
-              educational_system_id
-              educational_system { id name }
-              is_subscribed
-            }
-          }
-        }
-      `,
-          { input },
-        );
+        const result = await apolloClient.mutate({
+          mutation: LoginDocument,
+          variables: { input },
+        });
 
         if (result.data?.login) {
           const authPayload = result.data.login;
@@ -265,7 +273,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return { success: true, user: authPayload.user };
         }
 
-        let errorMessage = result.errors?.[0]?.message || 'Login failed';
+        let errorMessage = 'Login failed';
         if (errorMessage === 'These credentials do not match our records.') {
           errorMessage = 'auth.invalid_credentials';
         }
@@ -282,29 +290,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const register = useCallback(
     async (input: RegisterInput): Promise<{ success: boolean; user?: User; error?: string }> => {
       try {
-        const result = await tryFetchWithFallback(
-          `
-        mutation Register($input: RegisterInput!) {
-          register(input: $input) {
-            access_token
-            user {
-              id
-              name
-              email
-              mobile
-              country_code
-              mobile_verified_at
-              grade_id
-              grade { id name }
-              educational_system_id
-              educational_system { id name }
-              is_subscribed
-            }
-          }
-        }
-      `,
-          { input },
-        );
+        const result = await apolloClient.mutate({
+          mutation: RegisterDocument,
+          variables: { input },
+        });
 
         if (result.data?.register) {
           const authPayload = result.data.register;
@@ -329,7 +318,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return { success: true, user: authPayload.user };
         }
 
-        let errorMessage = result.errors?.[0]?.message || 'Registration failed';
+        let errorMessage = 'Registration failed';
         if (errorMessage === 'The mobile has already been taken.') {
           errorMessage = 'auth.mobile_taken';
         }
@@ -344,19 +333,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   );
 
   const forgotPassword = useCallback(
-    async (email: string): Promise<{ success: boolean; message?: string }> => {
+    async (email: string): Promise<{ success: boolean; message?: string | null }> => {
       try {
-        const result = await tryFetchWithFallback(
-          `
-        mutation ForgotPassword($email: String!) {
-          forgotPassword(email: $email) {
-            success
-            message
-          }
-        }
-      `,
-          { email },
-        );
+        const result = await apolloClient.mutate({
+          mutation: ForgotPasswordDocument,
+          variables: { email },
+        });
 
         if (result.data?.forgotPassword) {
           return {
@@ -367,7 +349,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         return {
           success: false,
-          message: result.errors?.[0]?.message || 'Forgot password failed',
+          message: 'Forgot password failed',
         };
       } catch (error: any) {
         logError('Forgot password error', error);
@@ -380,24 +362,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const parentLogin = useCallback(
     async (input: ParentLoginInput): Promise<{ success: boolean; error?: string }> => {
       try {
-        const result = await tryFetchWithFallback(
-          `
-        mutation ParentLogin($mobile: String!, $password: String!) {
-          parentLogin(input: {
-            mobile: $mobile,
-            password: $password
-          }) {
-            access_token
-            parent {
-              id
-              name
-              mobile
-            }
-          }
-        }
-      `,
-          { mobile: input.mobile, password: input.password },
-        );
+        const result = await apolloClient.mutate({
+          mutation: ParentLoginDocument,
+          variables: { mobile: input.mobile, password: input.password },
+        });
 
         if (result.data?.parentLogin) {
           const authPayload = result.data.parentLogin;
@@ -414,7 +382,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return { success: true };
         }
 
-        return { success: false, error: result.errors?.[0]?.message || 'Login failed' };
+        return { success: false, error: 'Login failed' };
       } catch (error: any) {
         logError('Parent login error', error);
         return { success: false, error: error.message || 'An error occurred during parent login' };
@@ -426,27 +394,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const parentRegister = useCallback(
     async (input: ParentRegisterInput): Promise<{ success: boolean; error?: string }> => {
       try {
-        const result = await tryFetchWithFallback(
-          `
-        mutation ParentRegister($name: String!, $mobile: String!, $email: String!, $password: String!) {
-          parentRegister(input: {
-            name: $name,
-            mobile: $mobile,
-            email: $email,
-            password: $password
-          }) {
-            access_token
-            parent {
-              id
-              name
-              mobile
-              email
-            }
-          }
-        }
-      `,
-          { name: input.name, mobile: input.mobile, email: input.email, password: input.password },
-        );
+        const result = await apolloClient.mutate({
+          mutation: ParentRegisterDocument,
+          variables: {
+            name: input.name,
+            mobile: input.mobile,
+            email: input.email,
+            password: input.password,
+          },
+        });
 
         if (result.data?.parentRegister) {
           const authPayload = result.data.parentRegister;
@@ -463,7 +419,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return { success: true };
         }
 
-        return { success: false, error: result.errors?.[0]?.message || 'Registration failed' };
+        return { success: false, error: 'Registration failed' };
       } catch (error: any) {
         logError('Parent registration error', error);
         return {
@@ -476,19 +432,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   );
 
   const parentForgotPassword = useCallback(
-    async (email: string): Promise<{ success: boolean; message?: string }> => {
+    async (email: string): Promise<{ success: boolean; message?: string | null }> => {
       try {
-        const result = await tryFetchWithFallback(
-          `
-        mutation ParentForgotPassword($email: String!) {
-          parentForgotPassword(email: $email) {
-            success
-            message
-          }
-        }
-      `,
-          { email },
-        );
+        const result = await apolloClient.mutate({
+          mutation: ParentForgotPasswordDocument,
+          variables: { email },
+        });
 
         if (result.data?.parentForgotPassword) {
           return {
@@ -499,7 +448,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         return {
           success: false,
-          message: result.errors?.[0]?.message || 'Forgot password failed',
+          message: 'Forgot password failed',
         };
       } catch (error: any) {
         logError('Parent forgot password error', error);
@@ -511,17 +460,39 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = useCallback(async () => {
     try {
+      // Capture the credential before anything clears it. The unregister mutation
+      // is authenticated, and Apollo's auth link otherwise falls back to reading
+      // `auth_token` from SecureStore — which is how the request went out with no
+      // Authorization header, left the signed-out account's push token registered,
+      // and kept its notifications arriving on this device (BKLT-316).
+      const authToken = (await SecureStore.getItemAsync('auth_token')) || undefined;
+
+      // Tear the session down before the push cleanup below. That call makes
+      // network requests with no timeout, so awaiting it first would leave the user
+      // sitting on authenticated screens — credentials still on disk — for as long
+      // as a dead connection takes to fail. Holding the token in a local keeps the
+      // unregister authenticated regardless.
       await SecureStore.deleteItemAsync('auth_token');
       await SecureStore.deleteItemAsync('user_data');
       await SecureStore.deleteItemAsync('parent_data');
       await SecureStore.deleteItemAsync('user_role');
-      await unregisterDeviceToken();
-      await clearNotificationPromptedFlag();
       setUser(null);
       setParentUser(null);
       setUserRole(null);
+      // Reset session-scoped verification flags so they can't leak into the next
+      // account signed in without an app restart (e.g. a skipped unverified user
+      // logging out, then another unverified user logging in would otherwise
+      // bypass the OTP screen). (code-review)
+      setIsVerificationSkipped(false);
+      setOtpShouldAutoRequest(false);
       configureCrashlyticsGuest();
       analytics.trackLogout();
+
+      // Same reason as handleSessionExpired: the cached Apollo data belongs to
+      // the account that just signed out.
+      await apolloClient.clearStore();
+      await unregisterDeviceToken(authToken);
+      await clearNotificationPromptedFlag();
     } catch (error) {
       logError('Logout error', error);
     }
@@ -560,6 +531,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsVerificationSkipped(true);
   }, []);
 
+  const requestVerification = useCallback(() => {
+    // Reverse a prior skip so AppNavigator re-mounts the OTP screen, and flag it to
+    // auto-request a fresh code on mount. Entry point for the "Verify via WhatsApp"
+    // banner, which is the only way a Skip-OTP user can get back to verification. (BKLT-276)
+    setIsVerificationSkipped(false);
+    setOtpShouldAutoRequest(true);
+  }, []);
+
   const setRegistrationSuccessPending = useCallback(async (pending: boolean) => {
     setShowRegistrationSuccess(pending);
     if (pending) {
@@ -578,20 +557,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (!token || !role) return;
 
       if (role === 'student') {
-        const result = await tryFetchWithFallback(
-          `query Me { 
-            me { 
-              id name email mobile country_code mobile_verified_at gender school_name parent_mobile
-              grade_id grade { id name } educational_system_id educational_system { id name } 
-              governorate_id governorate { id name_ar name_en }
-              city_id city { id name_ar name_en }
-              is_subscribed
-              selectedAvatar { id name url gender }
-            }
-          }`,
-          undefined,
-          token,
-        );
+        const result = await apolloClient.query({
+          query: MeDocument,
+          fetchPolicy: 'network-only',
+        });
         if (result.data?.me) {
           await SecureStore.setItemAsync('user_data', JSON.stringify(result.data.me));
           setUser(result.data.me);
@@ -603,15 +572,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           });
         }
       } else {
-        const result = await tryFetchWithFallback(
-          `query ParentMe { 
-            parentMe { 
-              id name mobile country_code
-            } 
-          }`,
-          undefined,
-          token,
-        );
+        const result = await apolloClient.query({
+          query: ParentMeDocument,
+          fetchPolicy: 'network-only',
+        });
         if (result.data?.parentMe) {
           await SecureStore.setItemAsync('parent_data', JSON.stringify(result.data.parentMe));
           setParentUser(result.data.parentMe);
@@ -642,6 +606,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       updateParentUser,
       isVerificationSkipped,
       skipVerification,
+      requestVerification,
       otpWasAutoSent,
       markOtpAutoSent: () => setOtpWasAutoSent(true),
       clearOtpAutoSent: () => setOtpWasAutoSent(false),
@@ -667,6 +632,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       updateParentUser,
       isVerificationSkipped,
       skipVerification,
+      requestVerification,
       otpWasAutoSent,
       otpShouldAutoRequest,
       showRegistrationSuccess,

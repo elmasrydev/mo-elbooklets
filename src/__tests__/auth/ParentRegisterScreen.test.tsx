@@ -2,16 +2,16 @@ import React from 'react';
 import { fireEvent, screen, act } from '@testing-library/react-native';
 import ParentRegisterScreen from '../../screens/ParentRegisterScreen';
 import { renderWithProviders } from '../helpers/renderWithProviders';
-import { tryFetchWithFallback } from '../../config/api';
+import { apolloClient } from '../../lib/apollo';
 
 // Mock API
-jest.mock('../../config/api', () => {
-  const actual = jest.requireActual('../../config/api');
-  return {
-    ...actual,
-    tryFetchWithFallback: jest.fn(),
-  };
-});
+jest.mock('../../lib/apollo', () => ({
+  apolloClient: {
+    mutate: jest.fn().mockResolvedValue({
+      data: { checkMobileAvailability: { available: true, message: '' } },
+    }),
+  },
+}));
 
 // Mock Modal
 const mockShowConfirm = jest.fn();
@@ -61,7 +61,7 @@ describe('ParentRegisterScreen Integration Tests', () => {
   });
 
   it('registers parent user successfully and resets navigation route', async () => {
-    (tryFetchWithFallback as jest.Mock).mockResolvedValueOnce({
+    (apolloClient.mutate as jest.Mock).mockResolvedValueOnce({
       data: {
         parentRegister: {
           access_token: 'parent-token',
@@ -84,6 +84,6 @@ describe('ParentRegisterScreen Integration Tests', () => {
     });
 
     // Verify it triggers registration mutation
-    expect(tryFetchWithFallback).toHaveBeenCalled();
+    expect(apolloClient.mutate).toHaveBeenCalled();
   });
 });

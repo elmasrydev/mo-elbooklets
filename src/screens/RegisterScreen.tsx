@@ -15,8 +15,8 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
-import { tryFetchWithFallback } from '../config/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../context/LanguageContext';
@@ -25,8 +25,22 @@ import { useAutoReset } from '../hooks/useAutoReset';
 import { useModal } from '../context/ModalContext';
 import { useNavigation } from '@react-navigation/native';
 import { analytics } from '../lib/analytics';
+import { INPUT_TEXT_ALIGN } from '../lib/rtl';
 import { isDebugMode } from '../config/debug';
-import { EGYPT_MOBILE_REGEX as MOBILE_REGEX, STRONG_PASSWORD_REGEX } from '../utils/validators';
+import {
+  EGYPT_MOBILE_REGEX as MOBILE_REGEX,
+  PASSWORD_REGEX,
+  sanitizePersonName,
+  isValidPersonName,
+} from '../utils/validators';
+import { useQuery } from '@apollo/client/react';
+import {
+  GetAppConfigDocument,
+  GetEduSystemsDocument,
+  GetGradesDocument,
+} from '../generated/graphql';
+import { useMobileAvailability } from '../hooks/useMobileAvailability';
+import MobileAvailabilityHint from '../components/MobileAvailabilityHint';
 
 import BackButton from '../components/navigation/BackButton';
 import AppButton from '../components/AppButton';
@@ -69,9 +83,12 @@ const RegisterScreen: React.FC = () => {
   const { typography, fontWeight } = useTypography();
   const isRTL = language === 'ar';
 
-  const [gradesData, setGradesData] = useState<{ grades: any[] } | null>(null);
-  const [eduSystems, setEduSystems] = useState<any[]>([]);
-  const [campaignFreeAccess, setCampaignFreeAccess] = useState(false);
+  // Reference data for step 2 — all three load once on mount.
+  const { data: gradesData } = useQuery(GetGradesDocument);
+  const { data: eduSystemsData } = useQuery(GetEduSystemsDocument);
+  const { data: appConfigData } = useQuery(GetAppConfigDocument);
+  const eduSystems = eduSystemsData?.educationalSystems ?? [];
+  const campaignFreeAccess = appConfigData?.appConfig?.campaignFreeAccess ?? false;
 
   const messages = {
     no_referral: t(
@@ -80,56 +97,12 @@ const RegisterScreen: React.FC = () => {
     ),
   };
 
-  useEffect(() => {
-    fetchRegistrationData();
-  }, []);
-
-  const fetchRegistrationData = async () => {
-    fetchGrades();
-    fetchEduSystems();
-    fetchAppConfig();
-  };
-
-  const fetchAppConfig = async () => {
-    try {
-      const result = await tryFetchWithFallback(
-        `query GetAppConfig { appConfig { campaignFreeAccess } }`,
-      );
-      if (result.data?.appConfig) {
-        setCampaignFreeAccess(result.data.appConfig.campaignFreeAccess);
-      }
-    } catch (error) {
-      console.error('Error fetching app config:', error);
-    }
-  };
-
-  const fetchGrades = async () => {
-    try {
-      const result = await tryFetchWithFallback(`query GetGrades { grades { id name } }`);
-      if (result.data) setGradesData(result.data);
-    } catch (error) {
-      console.error('Error fetching grades:', error);
-    }
-  };
-
-  const fetchEduSystems = async () => {
-    try {
-      const result = await tryFetchWithFallback(
-        `query GetEduSystems { educationalSystems { id name } }`,
-      );
-      if (result.data?.educationalSystems) {
-        setEduSystems(result.data.educationalSystems);
-      }
-    } catch (error) {
-      console.error('Error fetching edu systems:', error);
-    }
-  };
-
   // Validation Flags
-  const isNameValid = name.trim().length >= 3;
+  const isNameValid = isValidPersonName(name);
   const isMobileValid = MOBILE_REGEX.test(mobile.trim());
-  // Strong password is enforced on every environment (no debug relaxation).
-  const isPasswordValid = STRONG_PASSWORD_REGEX.test(password);
+  const mobileAvailability = useMobileAvailability('student');
+  // Password policy: minimum 8 characters (BKLT-297). Same rule on every env.
+  const isPasswordValid = PASSWORD_REGEX.test(password);
   const isConfirmValid = isPasswordValid && password === confirmPassword;
 
   // Dynamic Border Color Helpers
@@ -152,7 +125,7 @@ const RegisterScreen: React.FC = () => {
           } else if (!isMobileValid && mobile.trim().length > 0) {
             errorMsg = t('auth.invalid_egyptian_mobile');
           } else if (!isPasswordValid && password.length > 0) {
-            errorMsg = t('auth.password_not_strong_enough');
+            errorMsg = t('auth.password_min_8');
           } else if (!isConfirmValid && confirmPassword.length > 0) {
             errorMsg = t('auth.passwords_not_match');
           }
@@ -183,13 +156,46 @@ const RegisterScreen: React.FC = () => {
     }
   };
 
-  const handleNext = () => {
-    if (validateStep(currentStep)) {
-      if (currentStep < 2) {
-        setCurrentStep(currentStep + 1);
-      } else {
-        handleRegister();
-      }
+  /**
+   * Blocks step 1 when the mobile is already registered (BKLT-308). Awaits the
+   * on-blur check (or starts one) so tapping Next straight after typing still
+   * gets a verdict. An inconclusive check never blocks — `register` re-validates
+   * uniqueness server-side.
+   */
+  const confirmMobileAvailable = async (): Promise<boolean> => {
+    // isLoading disables the Continue button for the duration, so a second tap
+    // can't stack modals or double-advance while the check is in flight.
+    setIsLoading(true);
+    let verdict;
+    try {
+      verdict = await mobileAvailability.ensureChecked(mobile);
+    } finally {
+      setIsLoading(false);
+    }
+    if (verdict.status !== 'taken') return true;
+
+    analytics.trackRegistrationBlocked('student');
+    showConfirm({
+      title: t('common.error'),
+      // Read from the resolved verdict, not the hook's state: this closure was
+      // captured before the await, so its `message` is still the pre-check value.
+      message: verdict.message || t('auth.mobile_already_registered'),
+      confirmLabel: t('auth.login'),
+      cancelLabel: t('common.ok'),
+      showCancel: true,
+      onConfirm: () => navigation.navigate('Login'),
+    });
+    return false;
+  };
+
+  const handleNext = async () => {
+    if (!validateStep(currentStep)) return;
+    if (currentStep === 1 && !(await confirmMobileAvailable())) return;
+
+    if (currentStep < 2) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      handleRegister();
     }
   };
 
@@ -331,6 +337,7 @@ const RegisterScreen: React.FC = () => {
                   touchedMobile={touchedMobile}
                   setTouchedMobile={setTouchedMobile}
                   isMobileValid={isMobileValid}
+                  mobileAvailability={mobileAvailability}
                   password={password}
                   setPassword={setPassword}
                   confirmPassword={confirmPassword}
@@ -369,7 +376,6 @@ const RegisterScreen: React.FC = () => {
                   isLoading={isLoading}
                   theme={theme}
                   t={t}
-                  isRTL={isRTL}
                   currentStyles={currentStyles}
                   campaignFreeAccess={campaignFreeAccess}
                   spacing={spacing}
@@ -464,6 +470,40 @@ const RegisterScreen: React.FC = () => {
   );
 };
 
+interface StepOneProps {
+  name: string;
+  setName: (value: string) => void;
+  mobile: string;
+  setMobile: (value: string) => void;
+  touchedName: boolean;
+  setTouchedName: (value: boolean) => void;
+  isNameValid: boolean;
+  touchedMobile: boolean;
+  setTouchedMobile: (value: boolean) => void;
+  isMobileValid: boolean;
+  mobileAvailability: ReturnType<typeof useMobileAvailability>;
+  password: string;
+  setPassword: (value: string) => void;
+  confirmPassword: string;
+  setConfirmPassword: (value: string) => void;
+  showPassword: boolean;
+  setShowPassword: (value: boolean) => void;
+  touchedPassword: boolean;
+  setTouchedPassword: (value: boolean) => void;
+  isPasswordValid: boolean;
+  touchedConfirm: boolean;
+  setTouchedConfirm: (value: boolean) => void;
+  isConfirmValid: boolean;
+  confirmPasswordRef: React.RefObject<TextInput | null>;
+  isLoading: boolean;
+  theme: ReturnType<typeof useTheme>['theme'];
+  t: TFunction;
+  isRTL: boolean;
+  currentStyles: ReturnType<typeof styles>;
+  getBorderColor: (touched: boolean, valid: boolean) => string;
+  spacing: ReturnType<typeof useTheme>['spacing'];
+}
+
 const StepOne = ({
   name,
   setName,
@@ -475,6 +515,7 @@ const StepOne = ({
   touchedMobile,
   setTouchedMobile,
   isMobileValid,
+  mobileAvailability,
   password,
   setPassword,
   confirmPassword,
@@ -495,7 +536,7 @@ const StepOne = ({
   currentStyles,
   getBorderColor,
   spacing,
-}: any) => {
+}: StepOneProps) => {
   return (
     <>
       <View
@@ -512,9 +553,9 @@ const StepOne = ({
         />
         <TextInput
           testID="register-name-input"
-          style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left', flex: 1 }]}
+          style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN, flex: 1 }]}
           value={name}
-          onChangeText={(val) => setName(val.replaceAll(/[^a-zA-Z\s\u0621-\u064A]/g, ''))}
+          onChangeText={(val) => setName(sanitizePersonName(val))}
           placeholder={t('auth.name_placeholder')}
           placeholderTextColor={theme.colors.textSecondary}
           autoCapitalize="none"
@@ -549,10 +590,14 @@ const StepOne = ({
           testID="register-mobile-input"
           style={[
             currentStyles.input,
-            { flex: 1, textAlign: isRTL ? 'right' : 'left', paddingHorizontal: 16 },
+            { flex: 1, textAlign: INPUT_TEXT_ALIGN, paddingHorizontal: 16 },
           ]}
           value={mobile}
-          onChangeText={(val) => setMobile(val.replaceAll(/\D/g, '').slice(0, 11))}
+          onChangeText={(val) => {
+            setMobile(val.replaceAll(/\D/g, '').slice(0, 11));
+            // Drop the previous verdict — it belongs to the old number.
+            mobileAvailability.reset();
+          }}
           maxLength={11}
           placeholder={t('auth.mobile_placeholder')}
           placeholderTextColor={theme.colors.textSecondary}
@@ -561,9 +606,23 @@ const StepOne = ({
           autoCorrect={false}
           editable={!isLoading}
           returnKeyType="next"
-          onBlur={() => setTouchedMobile(true)}
+          onBlur={() => {
+            setTouchedMobile(true);
+            mobileAvailability.check(mobile);
+          }}
+          onSubmitEditing={() => mobileAvailability.check(mobile)}
         />
       </View>
+
+      <MobileAvailabilityHint
+        status={mobileAvailability.status}
+        message={mobileAvailability.message}
+        // The mobile field already contributes spacing.md below itself, which
+        // left the hint hugging the password field. Pull it back up so the gap
+        // reads evenly on both sides.
+        style={{ marginTop: -spacing.sm, marginBottom: spacing.sm }}
+        testID="register-mobile-availability"
+      />
 
       <View
         style={[
@@ -579,7 +638,7 @@ const StepOne = ({
         />
         <TextInput
           testID="register-password-input"
-          style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left', flex: 1 }]}
+          style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN, flex: 1 }]}
           value={password}
           onChangeText={setPassword}
           placeholder={t('auth.password_placeholder')}
@@ -605,9 +664,9 @@ const StepOne = ({
         </TouchableOpacity>
       </View>
       {touchedPassword && !isPasswordValid && password.length > 0 ? (
-        <Text style={currentStyles.errorText}>{t('auth.password_not_strong_enough')}</Text>
+        <Text style={currentStyles.errorText}>{t('auth.password_min_8')}</Text>
       ) : (
-        <Text style={currentStyles.hintText}>{t('auth.password_strength_hint')}</Text>
+        <Text style={currentStyles.hintText}>{t('auth.password_min_8')}</Text>
       )}
 
       <View
@@ -626,7 +685,7 @@ const StepOne = ({
           testID="register-confirm-input"
           // @ts-ignore
           ref={confirmPasswordRef}
-          style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left', flex: 1 }]}
+          style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN, flex: 1 }]}
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           placeholder={t('auth.confirm_password_placeholder')}
@@ -657,7 +716,6 @@ const StepTwo = ({
   isLoading,
   theme,
   t,
-  isRTL,
   currentStyles,
   campaignFreeAccess,
   spacing,
@@ -741,7 +799,7 @@ const StepTwo = ({
               testID="register-promo-input"
               // @ts-ignore
               ref={promoCodeRef}
-              style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left', flex: 1 }]}
+              style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN, flex: 1 }]}
               value={promoCode}
               onChangeText={setPromoCode}
               placeholder={t('auth.promo_code_placeholder')}
@@ -898,8 +956,7 @@ const styles = (config: any) => {
       gap: 8,
     },
     inputIcon: {
-      marginRight: isRTL ? 0 : spacing.sm,
-      marginLeft: isRTL ? spacing.sm : 0,
+      marginEnd: spacing.sm,
     },
     input: {
       flex: 1,
@@ -911,7 +968,7 @@ const styles = (config: any) => {
       flex: 1,
       fontSize: 15,
       color: '#181c22',
-      textAlign: isRTL ? 'right' : 'left',
+      textAlign: 'left',
     },
     footer: {
       flexDirection: 'row',
@@ -944,8 +1001,7 @@ const styles = (config: any) => {
       fontSize: 14,
       ...fontWeight('600'),
       color: theme.colors.text,
-      marginLeft: isRTL ? 0 : spacing.sm,
-      marginRight: isRTL ? spacing.sm : 0,
+      marginStart: spacing.sm,
     },
     dividerRow: {
       flexDirection: 'row',
@@ -988,8 +1044,7 @@ const styles = (config: any) => {
       ...typography('button'),
       color: '#FFF',
       ...fontWeight('700'),
-      marginRight: isRTL ? 0 : spacing.sm,
-      marginLeft: isRTL ? spacing.sm : 0,
+      marginEnd: spacing.sm,
     },
     stepIndicatorContainer: {
       alignItems: 'center',
@@ -1057,9 +1112,9 @@ const styles = (config: any) => {
       }),
     },
     gridItemText: {
-      // Use the typography base so the Cairo font-family is applied on iOS too.
-      // fontWeight() alone has no fontFamily on iOS, which made the Arabic grade
-      // labels fall back to the system font and look inconsistent. (BKLT-255)
+      // Use the typography base so the Arabic font-family is applied on iOS too;
+      // grade labels previously fell back to the system font and looked
+      // inconsistent. (BKLT-255)
       ...typography('label', '700'),
       color: '#444653',
     },
@@ -1107,8 +1162,7 @@ const styles = (config: any) => {
     },
     checkIcon: {
       position: 'absolute',
-      right: isRTL ? undefined : spacing.md,
-      left: isRTL ? spacing.md : undefined,
+      end: spacing.md,
       top: 18, // (56 - 20) / 2
     },
     autocompleteContainer: {
@@ -1151,7 +1205,7 @@ const styles = (config: any) => {
       flex: 1,
       fontSize: fontSizes.base,
       color: theme.colors.text,
-      textAlign: isRTL ? 'right' : 'left',
+      textAlign: 'left',
     },
     autocompleteItem: {
       marginTop: spacing.sm,
@@ -1183,8 +1237,7 @@ const styles = (config: any) => {
       backgroundColor: theme.colors.primary + '08',
       justifyContent: 'center',
       alignItems: 'center',
-      marginRight: isRTL ? 0 : spacing.sm,
-      marginLeft: isRTL ? spacing.sm : 0,
+      marginEnd: spacing.sm,
     },
     schoolResultInfo: {
       flex: 1,
@@ -1250,9 +1303,9 @@ const styles = (config: any) => {
       marginBottom: spacing.md,
     },
     sectionLabel: {
-      // Use the typography base so the Cairo font-family is applied (fontWeight()
-      // alone has no fontFamily on iOS). In Arabic, drop uppercase/letterSpacing
-      // since they break the cursive letter joins. (BKLT grade-step font)
+      // Use the typography base so the Arabic font-family is applied. In Arabic,
+      // drop uppercase/letterSpacing since they break the cursive letter joins.
+      // (BKLT grade-step font)
       ...typography('label', '900'),
       fontSize: 14,
       color: theme.colors.textSecondary,

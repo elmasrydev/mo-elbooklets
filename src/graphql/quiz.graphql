@@ -1,4 +1,6 @@
-# Quiz-related Queries and Mutations
+# Quiz funnel: history → subjects → lessons → settings → generating → taking
+# → results → review. Selections mirror what the screens actually render.
+# SubjectsForUserGrade is shared (quiz, study, leaderboard) — superset selection.
 
 query UserQuizHistory {
   userQuizHistory {
@@ -7,6 +9,7 @@ query UserQuizHistory {
     subject {
       id
       name
+      language
     }
     score
     totalQuestions
@@ -20,6 +23,20 @@ query SubjectsForUserGrade {
     id
     name
     description
+    language
+    chapters {
+      id
+    }
+  }
+}
+
+query QuizTypes {
+  quizTypes {
+    id
+    name
+    slug
+    question_count
+    is_default
   }
 }
 
@@ -28,24 +45,49 @@ query LessonsForSubject($subjectId: ID!) {
     id
     name
     description
-    chapter {
+    lessons {
       id
       name
-      order
+      description
+      isLocked
     }
   }
 }
 
+mutation StartQuiz($subjectId: ID!, $lessonIds: [ID!]!, $quizTypeId: ID) {
+  startQuiz(subjectId: $subjectId, lessonIds: $lessonIds, quizTypeId: $quizTypeId) {
+    id
+  }
+}
+
 query Quiz($quizId: ID!) {
-  quiz(id: $quizId) {
+  quiz(quizId: $quizId) {
     id
     name
+    subject {
+      id
+      name
+      language
+    }
     questions {
       id
       question
+      type
       answers
       questionNumber
+      explanation
+      difficulty
     }
+    isCompleted
+    score
+  }
+}
+
+mutation SubmitQuizAnswers($quizId: ID!, $answers: [QuestionAnswerInput!]!) {
+  submitQuizAnswers(quizId: $quizId, answers: $answers) {
+    score
+    totalQuestions
+    isPassed
   }
 }
 
@@ -54,44 +96,89 @@ query QuizResults($quizId: ID!) {
     quiz {
       id
       name
+      subject {
+        id
+        name
+        language
+      }
+      lessons {
+        id
+        name
+        chapter {
+          name
+        }
+      }
     }
     score
     totalQuestions
-    isPassed
-    answers {
+    xp
+    userAnswers {
       question {
         id
         question
+        type
         answer_1
         explanation
       }
-      selectedAnswer
-      isCorrect
+      selected_answer
+      is_correct
+      score
+      explanation
+      descriptive_feedback {
+        coverage_percentage
+        score_out_of_10
+      }
     }
+    isPassed
+    isPublished
   }
 }
 
-mutation StartQuiz($subjectId: ID!, $lessonIds: [ID!]!) {
-  startQuiz(subjectId: $subjectId, lessonIds: $lessonIds) {
-    id
-    name
-    questions {
-      id
-      question
-      answers
-      questionNumber
-    }
-  }
-}
-
-mutation SubmitQuizAnswers($quizId: ID!, $answers: [QuestionAnswerInput!]!) {
-  submitQuizAnswers(quizId: $quizId, answers: $answers) {
+# Same root field as QuizResults with the deeper review selection (all four
+# answer options + full descriptive feedback).
+query QuizReview($quizId: ID!) {
+  quizResults(quizId: $quizId) {
     quiz {
       id
       name
+      subject {
+        id
+        name
+        language
+      }
     }
-    score
-    totalQuestions
-    isPassed
+    isPublished
+    userAnswers {
+      question {
+        id
+        question
+        type
+        answer_1
+        answer_2
+        answer_3
+        answer_4
+        explanation
+      }
+      selected_answer
+      is_correct
+      score
+      explanation
+      descriptive_feedback {
+        coverage_percentage
+        score_out_of_10
+        covered_concepts
+        partially_covered
+        missing_concepts
+        contradictions
+        feedback
+      }
+    }
+  }
+}
+
+mutation PublishQuizToFeed($quizId: ID!) {
+  publishQuizToFeed(quizId: $quizId) {
+    success
+    message
   }
 }

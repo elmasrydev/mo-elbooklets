@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTypography } from '../hooks/useTypography';
+import { INPUT_TEXT_ALIGN } from '../lib/rtl';
 import { layout } from '../config/layout';
 import { useParentDashboardContext } from '../context/ParentDashboardContext';
 
@@ -72,7 +73,7 @@ const AddChildModal: React.FC = () => {
 
           <TextInput
             testID="parent-dashboard-child-mobile-input"
-            style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
+            style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN }]}
             placeholder={t('parent_dashboard.child_mobile_placeholder')}
             placeholderTextColor={theme.colors.textTertiary}
             keyboardType="phone-pad"

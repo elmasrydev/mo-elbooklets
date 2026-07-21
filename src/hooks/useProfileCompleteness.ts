@@ -1,57 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
-import * as SecureStore from 'expo-secure-store';
-import { tryFetchWithFallback } from '../config/api';
+import { useQuery } from '@apollo/client/react';
+
+import { ProfileCompletenessDocument, ProfileCompletenessQuery } from '../generated/graphql';
 import { useAuth } from '../context/AuthContext';
 
-export interface ProfileCompleteness {
-  isComplete: boolean;
-  missingFields: string[];
-  percentage: number;
-  needsGender: boolean;
-  needsSchool: boolean;
-  needsParentMobile: boolean;
-  needsEmail: boolean;
-  needsGovernorate: boolean;
-  needsCity: boolean;
-}
+export type ProfileCompleteness = ProfileCompletenessQuery['profileCompleteness'];
 
 export const useProfileCompleteness = () => {
   const { user } = useAuth();
-  const [completeness, setCompleteness] = useState<ProfileCompleteness | null>(null);
-  const [loading, setLoading] = useState(false);
 
-  const checkCompleteness = useCallback(async () => {
-    try {
-      setLoading(true);
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
+  const { data, loading, refetch } = useQuery(ProfileCompletenessDocument, {
+    skip: !user,
+  });
 
-      const result = await tryFetchWithFallback(
-        `query ProfileCompleteness { 
-          profileCompleteness { 
-            isComplete missingFields percentage needsGender needsSchool 
-            needsParentMobile needsEmail needsGovernorate needsCity
-          } 
-        }`,
-        undefined,
-        token,
-      );
-
-      if (result.data?.profileCompleteness) {
-        setCompleteness(result.data.profileCompleteness);
-      }
-    } catch (err) {
-      console.error('Check completeness error:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (user) {
-      checkCompleteness();
-    }
-  }, [user, checkCompleteness]);
-
-  return { completeness, loading, refetch: checkCompleteness };
+  return { completeness: data?.profileCompleteness ?? null, loading, refetch };
 };

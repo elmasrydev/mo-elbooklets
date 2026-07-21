@@ -1,48 +1,145 @@
-# Authentication Mutations
+# Authentication operations for both roles (AuthContext + OTP screen).
 
-mutation Login($email: String!, $password: String!) {
-  login(email: $email, password: $password) {
+mutation Login($input: LoginInput!) {
+  login(input: $input) {
     access_token
-    token_type
-    expires_in
     user {
       id
       name
       email
+      mobile
+      country_code
+      mobile_verified_at
+      grade_id
       grade {
         id
         name
       }
+      educational_system_id
+      educational_system {
+        id
+        name
+      }
+      is_subscribed
     }
   }
 }
 
-mutation Register(
-  $name: String!
-  $email: String!
-  $password: String!
-  $password_confirmation: String!
-  $grade_id: ID!
-) {
-  register(
-    name: $name
-    email: $email
-    password: $password
-    password_confirmation: $password_confirmation
-    grade_id: $grade_id
-  ) {
+mutation Register($input: RegisterInput!) {
+  register(input: $input) {
     access_token
-    token_type
-    expires_in
     user {
       id
       name
       email
+      mobile
+      country_code
+      mobile_verified_at
+      grade_id
       grade {
         id
         name
       }
+      educational_system_id
+      educational_system {
+        id
+        name
+      }
+      is_subscribed
     }
+  }
+}
+
+# The signed-in student's full profile — the widest User selection in the app,
+# so a refresh leaves nothing stale.
+query Me {
+  me {
+    id
+    name
+    email
+    mobile
+    country_code
+    mobile_verified_at
+    gender
+    school_name
+    parent_mobile
+    grade_id
+    grade {
+      id
+      name
+    }
+    educational_system_id
+    educational_system {
+      id
+      name
+    }
+    governorate_id
+    governorate {
+      id
+      name_ar
+      name_en
+    }
+    city_id
+    city {
+      id
+      name_ar
+      name_en
+    }
+    is_subscribed
+    selectedAvatar {
+      id
+      name
+      url
+      gender
+    }
+  }
+}
+
+mutation ParentLogin($mobile: String!, $password: String!) {
+  parentLogin(input: { mobile: $mobile, password: $password }) {
+    access_token
+    parent {
+      id
+      name
+      mobile
+    }
+  }
+}
+
+mutation ParentRegister($name: String!, $mobile: String!, $email: String!, $password: String!) {
+  parentRegister(input: { name: $name, mobile: $mobile, email: $email, password: $password }) {
+    access_token
+    parent {
+      id
+      name
+      mobile
+      email
+    }
+  }
+}
+
+query ParentMe {
+  parentMe {
+    id
+    name
+    mobile
+    country_code
+  }
+}
+
+mutation ParentForgotPassword($email: String!) {
+  parentForgotPassword(email: $email) {
+    success
+    message
+  }
+}
+
+# Early "is this mobile already registered?" check on the registration forms
+# (BKLT-308). `message` comes back translated — display it as-is.
+mutation CheckMobileAvailability($mobile: String!, $type: String) {
+  checkMobileAvailability(mobile: $mobile, type: $type) {
+    available
+    message
   }
 }
 
@@ -71,5 +168,56 @@ mutation UpdatePassword($input: UpdatePasswordInput!) {
   updatePassword(input: $input) {
     success
     message
+  }
+}
+
+# WhatsApp OTP verification (OTPVerificationScreen).
+
+mutation SendMobileOtp($mobile: String!, $country_code: String) {
+  sendMobileOtp(mobile: $mobile, country_code: $country_code) {
+    success
+    message
+    expires_in
+  }
+}
+
+mutation VerifyMobileOtp($otp: String!) {
+  verifyMobileOtp(otp: $otp) {
+    success
+    message
+    user {
+      id
+      name
+      email
+      mobile
+      country_code
+      mobile_verified_at
+      gender
+      school_name
+      parent_mobile
+      grade_id
+      grade {
+        id
+        name
+      }
+      educational_system_id
+      educational_system {
+        id
+        name
+      }
+      governorate_id
+      governorate {
+        id
+        name_ar
+        name_en
+      }
+      city_id
+      city {
+        id
+        name_ar
+        name_en
+      }
+      is_subscribed
+    }
   }
 }

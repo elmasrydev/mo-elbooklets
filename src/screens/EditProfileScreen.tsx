@@ -15,9 +15,18 @@ import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../context/AuthContext';
-import { tryFetchWithFallback } from '../config/api';
-import * as SecureStore from 'expo-secure-store';
+import { useAuth, User } from '../context/AuthContext';
+import { useLazyQuery, useMutation } from '@apollo/client/react';
+import {
+  ForgotPasswordDocument,
+  GetEduSystemsDocument,
+  GetGovernoratesDocument,
+  SearchCitiesDocument,
+  SearchSchoolsDocument,
+  UpdatePasswordDocument,
+  UpdateProfileDocument,
+} from '../generated/graphql';
+import { addCity, addSchool } from '../services/locationService';
 import { Ionicons } from '@expo/vector-icons';
 import UnifiedHeader from '../components/UnifiedHeader';
 import AppButton from '../components/AppButton';
@@ -28,6 +37,7 @@ import { useModal } from '../context/ModalContext';
 import SearchablePickerModal from '../components/SearchablePickerModal';
 import Avatar from '../components/Avatar';
 import AvatarPickerModal from '../components/AvatarPickerModal';
+import { INPUT_TEXT_ALIGN } from '../lib/rtl';
 
 interface EducationalSystem {
   id: string;
@@ -75,10 +85,23 @@ const EditProfileScreen: React.FC = () => {
     governorate_id: (user as any)?.governorate_id || '',
   });
 
+  // Reference lookups run on demand (modal opens, debounced search boxes), so
+  // they're lazy; results stay in local state because the pickers merge in
+  // user-suggested entries (BKLT-318).
+  const [runGovernoratesQuery] = useLazyQuery(GetGovernoratesDocument);
+  const [runEduSystemsQuery] = useLazyQuery(GetEduSystemsDocument);
+  const [runCitiesQuery] = useLazyQuery(SearchCitiesDocument);
+  const [runSchoolsQuery] = useLazyQuery(SearchSchoolsDocument);
+  const [updateProfile] = useMutation(UpdateProfileDocument);
+  const [updatePassword] = useMutation(UpdatePasswordDocument);
+  const [forgotPassword] = useMutation(ForgotPasswordDocument);
+
   const [governorates, setGovernorates] = useState<any[]>([]);
   const [cities, setCities] = useState<City[]>([]);
   const [fetchingGov, setFetchingGov] = useState(false);
   const [fetchingCities, setFetchingCities] = useState(false);
+  const [addingCity, setAddingCity] = useState(false);
+  const [addingSchool, setAddingSchool] = useState(false);
 
   const [passwordState, setPasswordState] = useState({
     oldPassword: '',
@@ -133,9 +156,7 @@ const EditProfileScreen: React.FC = () => {
   const fetchGovernorates = async () => {
     try {
       setFetchingGov(true);
-      const result = await tryFetchWithFallback(
-        `query GetGovernorates { governorates { id name_ar name_en } }`,
-      );
+      const result = await runGovernoratesQuery();
       if (result.data?.governorates) {
         setGovernorates(result.data.governorates);
       }
@@ -162,20 +183,8 @@ const EditProfileScreen: React.FC = () => {
   const fetchCities = async (governorateId: string, search: string = '') => {
     try {
       setFetchingCities(true);
-      const query = `
-        query SearchCities($governorate_id: ID, $query: String!) {
-          searchCities(governorate_id: $governorate_id, query: $query) {
-            id
-            name_ar
-            name_en
-            governorate_id
-          }
-        }
-      `;
-
-      const result = await tryFetchWithFallback(query, {
-        governorate_id: governorateId,
-        query: search,
+      const result = await runCitiesQuery({
+        variables: { governorate_id: governorateId, query: search },
       });
 
       if (result.data?.searchCities) {
@@ -196,9 +205,7 @@ const EditProfileScreen: React.FC = () => {
   const fetchEduSystems = async () => {
     try {
       setFetchingEdu(true);
-      const result = await tryFetchWithFallback(
-        `query GetEduSystems { educationalSystems { id name } }`,
-      );
+      const result = await runEduSystemsQuery();
       if (result.data?.educationalSystems) {
         setEduSystems(result.data.educationalSystems);
       }
@@ -212,18 +219,7 @@ const EditProfileScreen: React.FC = () => {
   const fetchSchoolSuggestions = async (search: string) => {
     try {
       setLoadingSchools(true);
-      const query = `
-        query SearchSchools($search: String!) {
-          searchSchools(search: $search) {
-            id
-            name
-            name_en
-            is_verified
-          }
-        }
-      `;
-
-      const result = await tryFetchWithFallback(query, { search });
+      const result = await runSchoolsQuery({ variables: { search } });
 
       if (result.data?.searchSchools) {
         setSchoolSuggestions(result.data.searchSchools);
@@ -275,6 +271,47 @@ const EditProfileScreen: React.FC = () => {
       name: isRTL ? s.name || s.name_en : s.name_en || s.name,
     }));
   }, [schoolSuggestions, isRTL]);
+
+  const showAddFailed = () =>
+    showConfirm({
+      title: t('common.error'),
+      message: t('profile.add_failed', "Couldn't add that right now. Please try again."),
+      showCancel: false,
+      onConfirm: () => {},
+    });
+
+  // "Can't find your city? Add it" — create the typed city under the selected
+  // governorate, select it, and drop it into the local list so it renders.
+  const handleAddCity = async (name: string) => {
+    if (!formData.governorate_id) return;
+    setAddingCity(true);
+    const created = await addCity(formData.governorate_id, name);
+    setAddingCity(false);
+    if (!created) return showAddFailed();
+    const mapped = {
+      ...created,
+      name: isRTL ? created.name_ar || created.name_en : created.name_en || created.name_ar,
+    };
+    setCities((prev) => [mapped, ...prev.filter((c) => String(c.id) !== String(created.id))]);
+    setFormData((p) => ({ ...p, city_id: created.id }));
+    setShowCityModal(false);
+    setCitySearch('');
+  };
+
+  // Schools are stored on the profile by name, so just persist the created name.
+  const handleAddSchool = async (name: string) => {
+    setAddingSchool(true);
+    // Attach a canonical (English) governorate label so the same governorate isn't
+    // stored under different strings depending on the UI language. (code-review)
+    const gov = governorates.find((g) => String(g.id) === String(formData.governorate_id));
+    const govLabel = gov?.name_en || gov?.name_ar || user?.governorate?.name_en || undefined;
+    const created = await addSchool(name, govLabel);
+    setAddingSchool(false);
+    if (!created) return showAddFailed();
+    setFormData((p) => ({ ...p, school_name: created.name }));
+    setShowSchoolModal(false);
+    setSchoolSearch('');
+  };
 
   const isEmailValid =
     formData.email.trim() === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email);
@@ -337,8 +374,6 @@ const EditProfileScreen: React.FC = () => {
 
     try {
       setLoading(true);
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
 
       // Omit empty fields so we don't send empty-string ids (educational_system_id,
       // city_id, governorate_id, ...) which the backend expects as null/omitted.
@@ -349,28 +384,13 @@ const EditProfileScreen: React.FC = () => {
         }
       });
 
-      const mutation = `
-        mutation UpdateProfile($input: UpdateProfileInput!) {
-          updateProfile(input: $input) {
-            id 
-            name 
-            email 
-            gender 
-            school_name 
-            parent_mobile
-            governorate_id
-            governorate { id name_ar name_en }
-            city_id
-            city { id name_ar name_en }
-            educational_system { id name } 
-          }
-        }
-      `;
-
-      const result = await tryFetchWithFallback(mutation, { input }, token);
+      const result = await updateProfile({ variables: { input } });
 
       if (result.data?.updateProfile) {
-        await updateUser(result.data.updateProfile);
+        // Merge: the mutation returns the fields it can change, not the whole
+        // User. The cast bridges wire nulls to the model's optional fields —
+        // both read as "absent" everywhere this object is consumed.
+        await updateUser({ ...user, ...result.data.updateProfile } as User);
         showConfirm({
           title: t('common.success'),
           message: t('profile.update_success'),
@@ -378,10 +398,9 @@ const EditProfileScreen: React.FC = () => {
           onConfirm: () => navigation.goBack(),
         });
       } else {
-        const errorMsg = result.errors?.[0]?.message || t('common.error');
         showConfirm({
           title: t('common.error'),
-          message: errorMsg,
+          message: t('common.error'),
           showCancel: false,
           onConfirm: () => {},
         });
@@ -422,8 +441,6 @@ const EditProfileScreen: React.FC = () => {
 
     try {
       setLoading(true);
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
 
       const input = {
         current_password: passwordState.oldPassword,
@@ -431,16 +448,7 @@ const EditProfileScreen: React.FC = () => {
         password_confirmation: passwordState.confirmPassword,
       };
 
-      const mutation = `
-        mutation UpdatePassword($input: UpdatePasswordInput!) {
-          updatePassword(input: $input) {
-            success
-            message
-          }
-        }
-      `;
-
-      const result = await tryFetchWithFallback(mutation, { input }, token);
+      const result = await updatePassword({ variables: { input } });
 
       if (result.data?.updatePassword?.success) {
         showConfirm({
@@ -453,8 +461,7 @@ const EditProfileScreen: React.FC = () => {
           },
         });
       } else {
-        const errorMsg =
-          result.errors?.[0]?.message || result.data?.updatePassword?.message || t('common.error');
+        const errorMsg = result.data?.updatePassword?.message || t('common.error');
         showConfirm({
           title: t('common.error'),
           message: errorMsg,
@@ -480,16 +487,7 @@ const EditProfileScreen: React.FC = () => {
 
     try {
       setLoading(true);
-      const query = `
-        mutation ForgotPassword($email: String!) {
-          forgotPassword(email: $email) {
-            success
-            message
-          }
-        }
-      `;
-
-      const result = await tryFetchWithFallback(query, { email: user.email });
+      const result = await forgotPassword({ variables: { email: user.email } });
 
       if (result.data?.forgotPassword?.success) {
         showConfirm({
@@ -499,8 +497,7 @@ const EditProfileScreen: React.FC = () => {
           onConfirm: () => {},
         });
       } else {
-        const errorMsg =
-          result.errors?.[0]?.message || result.data?.forgotPassword?.message || t('common.error');
+        const errorMsg = result.data?.forgotPassword?.message || t('common.error');
         showConfirm({
           title: t('common.error'),
           message: errorMsg,
@@ -582,7 +579,7 @@ const EditProfileScreen: React.FC = () => {
                   color={theme.colors.textTertiary}
                   style={currentStyles.inputIconLeft}
                 />
-                <Text style={[currentStyles.readonlyText, { textAlign: isRTL ? 'right' : 'left' }]}>
+                <Text style={[currentStyles.readonlyText, { textAlign: 'left' }]}>
                   {user?.name}
                 </Text>
               </View>
@@ -615,7 +612,7 @@ const EditProfileScreen: React.FC = () => {
                   style={currentStyles.inputIconLeft}
                 />
                 <TextInput
-                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
+                  style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN }]}
                   value={formData.email}
                   onChangeText={(v) => setFormData((p) => ({ ...p, email: v }))}
                   placeholder="example@mail.com"
@@ -715,13 +712,12 @@ const EditProfileScreen: React.FC = () => {
                 />
                 <Text
                   style={[
-                    currentStyles.input,
+                    currentStyles.schoolText,
                     {
-                      textAlign: isRTL ? 'right' : 'left',
+                      textAlign: 'left',
                       color: formData.governorate_id
                         ? theme.colors.text
                         : theme.colors.textTertiary,
-                      paddingTop: 16, // To align with TextInput
                     },
                   ]}
                 >
@@ -792,11 +788,10 @@ const EditProfileScreen: React.FC = () => {
                 />
                 <Text
                   style={[
-                    currentStyles.input,
+                    currentStyles.schoolText,
                     {
-                      textAlign: isRTL ? 'right' : 'left',
+                      textAlign: 'left',
                       color: formData.city_id ? theme.colors.text : theme.colors.textTertiary,
-                      paddingTop: 16,
                     },
                   ]}
                 >
@@ -838,6 +833,8 @@ const EditProfileScreen: React.FC = () => {
                   setShowCityModal(false);
                   setCitySearch('');
                 }}
+                onAddNew={handleAddCity}
+                addingNew={addingCity}
               />
             </View>
 
@@ -882,7 +879,7 @@ const EditProfileScreen: React.FC = () => {
                           formData.school_name.length > 0
                             ? theme.colors.text
                             : theme.colors.textTertiary,
-                        textAlign: isRTL ? 'right' : 'left',
+                        textAlign: 'left',
                       },
                     ]}
                     numberOfLines={1}
@@ -916,42 +913,9 @@ const EditProfileScreen: React.FC = () => {
                 }}
                 emptyMessage={t('auth.no_schools_found')}
                 searchHelperText={t('auth.start_typing_school')}
+                onAddNew={handleAddSchool}
+                addingNew={addingSchool}
               />
-
-              <TouchableOpacity
-                style={currentStyles.addSchoolTrigger}
-                onPress={() => {
-                  showConfirm({
-                    title: t('profile.request_school_title', 'Request New School'),
-                    message: t(
-                      'profile.request_school_message',
-                      'Enter the name of the school you want to add',
-                    ),
-                    hasInput: true,
-                    inputPlaceholder: t('profile.school_name_placeholder', 'School name...'),
-                    onConfirm: async (schoolName) => {
-                      if (schoolName && schoolName.trim()) {
-                        console.log('Requesting school:', schoolName);
-
-                        // Show success message
-                        setTimeout(() => {
-                          showConfirm({
-                            title: t('common.success', 'Success'),
-                            message: t(
-                              'profile.school_request_sent',
-                              'Your request has been sent successfully. We will review it soon.',
-                            ),
-                            showCancel: false,
-                            onConfirm: () => {},
-                          });
-                        }, 500);
-                      }
-                    },
-                  });
-                }}
-              >
-                <Text style={currentStyles.addSchoolText}>{t('profile.add_school_request')}</Text>
-              </TouchableOpacity>
             </View>
 
             {/* Grade (Readonly) */}
@@ -969,7 +933,7 @@ const EditProfileScreen: React.FC = () => {
                 <View style={currentStyles.inputIconLeft}>
                   <Text style={{ fontSize: 18 }}>🎓</Text>
                 </View>
-                <Text style={[currentStyles.readonlyText, { textAlign: isRTL ? 'right' : 'left' }]}>
+                <Text style={[currentStyles.readonlyText, { textAlign: 'left' }]}>
                   {user?.grade?.name || user?.educational_system?.name || '---'}
                 </Text>
               </View>
@@ -1041,7 +1005,7 @@ const EditProfileScreen: React.FC = () => {
                       style={currentStyles.inputIconLeft}
                     />
                     <TextInput
-                      style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
+                      style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN }]}
                       secureTextEntry
                       value={passwordState.oldPassword}
                       onChangeText={(v) => setPasswordState((p) => ({ ...p, oldPassword: v }))}
@@ -1078,7 +1042,7 @@ const EditProfileScreen: React.FC = () => {
                       style={currentStyles.inputIconLeft}
                     />
                     <TextInput
-                      style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
+                      style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN }]}
                       secureTextEntry
                       value={passwordState.newPassword}
                       onChangeText={(v) => setPasswordState((p) => ({ ...p, newPassword: v }))}
@@ -1115,7 +1079,7 @@ const EditProfileScreen: React.FC = () => {
                       style={currentStyles.inputIconLeft}
                     />
                     <TextInput
-                      style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
+                      style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN }]}
                       secureTextEntry
                       value={passwordState.confirmPassword}
                       onChangeText={(v) => setPasswordState((p) => ({ ...p, confirmPassword: v }))}
@@ -1279,7 +1243,7 @@ const styles = (config: any) => {
       ...typography('caption'),
       color: theme.colors.textTertiary,
       marginTop: spacing.xs,
-      textAlign: isRTL ? 'right' : 'left',
+      textAlign: 'left',
     },
     gridContainer: {
       flexDirection: 'row',
@@ -1352,8 +1316,7 @@ const styles = (config: any) => {
       ...typography('button'),
       ...fontWeight('700'),
       color: '#FFFFFF',
-      marginRight: spacing.sm,
-      marginLeft: isRTL ? spacing.sm : 0,
+      marginEnd: spacing.sm,
     },
     modalOverlay: {
       flex: 1,
@@ -1404,15 +1367,6 @@ const styles = (config: any) => {
       borderTopWidth: 1,
       borderTopColor: theme.colors.border,
       marginTop: spacing.sm,
-    },
-    addSchoolTrigger: {
-      marginTop: spacing.sm,
-      padding: spacing.xs,
-    },
-    addSchoolText: {
-      ...typography('caption'),
-      color: theme.colors.primary,
-      textDecorationLine: 'underline',
     },
     errorText: {
       ...typography('caption'),
