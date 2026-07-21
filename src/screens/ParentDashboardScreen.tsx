@@ -20,6 +20,7 @@ import { useTypography } from '../hooks/useTypography';
 import { layout } from '../config/layout';
 import { PARENT_HERO_GRADIENT, HAIRLINE_BLUE } from '../config/colors';
 import UnifiedHeader from '../components/UnifiedHeader';
+import Avatar from '../components/Avatar';
 import { useAuth } from '../context/AuthContext';
 import NotificationBell from '../components/NotificationBell';
 import ParentDashboardDoodles from '../components/ParentDashboardDoodles';
@@ -56,9 +57,12 @@ const ParentDashboardScreen: React.FC = () => {
         }
         activeOpacity={0.7}
       >
-        <View style={currentStyles.childIconContainer}>
-          <Ionicons name="person" size={24} color={theme.colors.primary} />
-        </View>
+        <Avatar
+          uri={child.selectedAvatar?.url}
+          name={child.name}
+          size={48}
+          style={currentStyles.childAvatar}
+        />
         <View style={currentStyles.childInfo}>
           <Text
             style={[
@@ -262,13 +266,7 @@ const styles = (config: any) => {
       borderBottomWidth: 1,
       borderBottomColor: HAIRLINE_BLUE,
     },
-    childIconContainer: {
-      width: 48,
-      height: 48,
-      borderRadius: 24,
-      backgroundColor: theme.colors.primary100,
-      justifyContent: 'center',
-      alignItems: 'center',
+    childAvatar: {
       marginEnd: 12,
     },
     childInfo: {

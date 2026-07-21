@@ -1,0 +1,22 @@
+# Support: contact form and in-quiz question reports.
+
+mutation SendContactMessage($name: String!, $email: String!, $subject: String!, $message: String!) {
+  sendContactMessage(name: $name, email: $email, subject: $subject, message: $message) {
+    success
+    message
+  }
+}
+
+query QuestionReportTypes {
+  questionReportTypes {
+    id
+    name
+  }
+}
+
+mutation ReportQuestion($questionId: ID!, $reportTypeId: ID!, $comment: String) {
+  reportQuestion(questionId: $questionId, reportTypeId: $reportTypeId, comment: $comment) {
+    success
+    message
+  }
+}

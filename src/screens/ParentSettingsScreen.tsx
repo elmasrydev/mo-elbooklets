@@ -206,7 +206,7 @@ const ParentSettingsScreen: React.FC = () => {
               <Text
                 style={[
                   currentStyles.userSubtitle,
-                  { marginTop: 4, fontWeight: 'normal' as any, opacity: 0.8 },
+                  { marginTop: 4, ...fontWeight('normal'), opacity: 0.8 },
                 ]}
               >
                 {parentUser?.country_code ? `${parentUser.country_code} ` : ''}

@@ -2,17 +2,14 @@ import React from 'react';
 import { fireEvent, screen, act } from '@testing-library/react-native';
 import ParentLoginScreen from '../../screens/ParentLoginScreen';
 import { renderWithProviders } from '../helpers/renderWithProviders';
-import { tryFetchWithFallback } from '../../config/api';
+import { apolloClient } from '../../lib/apollo';
 import { mockNavigate } from '../__mocks__/navigation';
 
 // Mock API
-jest.mock('../../config/api', () => {
-  const actual = jest.requireActual('../../config/api');
-  return {
-    ...actual,
-    tryFetchWithFallback: jest.fn(),
-  };
-});
+// AuthContext talks to the server through Apollo; clearStore runs on logout.
+jest.mock('../../lib/apollo', () => ({
+  apolloClient: { mutate: jest.fn(), query: jest.fn(), clearStore: jest.fn() },
+}));
 
 // Mock Modal
 const mockShowConfirm = jest.fn();
@@ -60,7 +57,7 @@ describe('ParentLoginScreen Integration Tests', () => {
   });
 
   it('calls parentLogin mutation successfully when correct credentials entered', async () => {
-    (tryFetchWithFallback as jest.Mock).mockResolvedValueOnce({
+    (apolloClient.mutate as jest.Mock).mockResolvedValueOnce({
       data: {
         parentLogin: {
           access_token: 'parent-token',
@@ -81,7 +78,7 @@ describe('ParentLoginScreen Integration Tests', () => {
       fireEvent.press(submitBtn);
     });
 
-    expect(tryFetchWithFallback).toHaveBeenCalled();
+    expect(apolloClient.mutate).toHaveBeenCalled();
   });
 
   it('navigates to ParentForgotPassword when forgot link is tapped', () => {

@@ -1,19 +1,16 @@
 import React from 'react';
 import { renderHook, act, waitFor } from '@testing-library/react-native';
 import { AuthProvider, useAuth } from '../../context/AuthContext';
-import { tryFetchWithFallback } from '../../config/api';
+import { apolloClient } from '../../lib/apollo';
+import { unregisterDeviceToken } from '../../services/notificationService';
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Mock API module
-jest.mock('../../config/api', () => {
-  const actual = jest.requireActual('../../config/api');
-  return {
-    ...actual,
-    tryFetchWithFallback: jest.fn(),
-    setAuthErrorHandler: jest.fn(),
-  };
-});
+// AuthContext talks to the server through Apollo; clearStore runs on logout.
+jest.mock('../../lib/apollo', () => ({
+  apolloClient: { mutate: jest.fn(), query: jest.fn(), clearStore: jest.fn() },
+}));
 
 // Mock notification services to avoid side effects
 jest.mock('../../services/notificationService', () => ({
@@ -106,7 +103,7 @@ describe('AuthContext & AuthProvider', () => {
           },
         },
       };
-      (tryFetchWithFallback as jest.Mock).mockResolvedValueOnce(mockLoginResponse);
+      (apolloClient.mutate as jest.Mock).mockResolvedValueOnce(mockLoginResponse);
 
       const { result } = renderHook(() => useAuth(), { wrapper });
 
@@ -133,7 +130,7 @@ describe('AuthContext & AuthProvider', () => {
     });
 
     it('should fail login and return error message', async () => {
-      (tryFetchWithFallback as jest.Mock).mockRejectedValueOnce(
+      (apolloClient.mutate as jest.Mock).mockRejectedValueOnce(
         new Error('Invalid mobile or password'),
       );
 
@@ -160,7 +157,7 @@ describe('AuthContext & AuthProvider', () => {
           },
         },
       };
-      (tryFetchWithFallback as jest.Mock).mockResolvedValueOnce(mockRegisterResponse);
+      (apolloClient.mutate as jest.Mock).mockResolvedValueOnce(mockRegisterResponse);
 
       const { result } = renderHook(() => useAuth(), { wrapper });
 
@@ -193,7 +190,7 @@ describe('AuthContext & AuthProvider', () => {
           },
         },
       };
-      (tryFetchWithFallback as jest.Mock).mockResolvedValueOnce(mockParentLoginResponse);
+      (apolloClient.mutate as jest.Mock).mockResolvedValueOnce(mockParentLoginResponse);
 
       const { result } = renderHook(() => useAuth(), { wrapper });
 
@@ -227,7 +224,7 @@ describe('AuthContext & AuthProvider', () => {
           },
         },
       };
-      (tryFetchWithFallback as jest.Mock).mockResolvedValueOnce(mockParentRegisterResponse);
+      (apolloClient.mutate as jest.Mock).mockResolvedValueOnce(mockParentRegisterResponse);
 
       const { result } = renderHook(() => useAuth(), { wrapper });
 
@@ -280,8 +277,34 @@ describe('AuthContext & AuthProvider', () => {
       expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith('user_data');
     });
 
+    it('should unregister the push token before the credential is cleared (BKLT-316)', async () => {
+      // Seeded through the store rather than queued responses: logout has to read
+      // `auth_token` back out of storage, so clearing it first surfaces here as a
+      // missing credential instead of passing on a canned value.
+      const studentUser = { id: '1', name: 'Ali', mobile: '01007867184' };
+      await SecureStore.setItemAsync('auth_token', 'student-token');
+      await SecureStore.setItemAsync('user_role', 'student');
+      await SecureStore.setItemAsync('user_data', JSON.stringify(studentUser));
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isAuthenticated).toBe(true);
+      });
+
+      await act(async () => {
+        await result.current.logout();
+      });
+
+      // The unregister mutation is authenticated. Clearing `auth_token` ahead of
+      // it sent the request without an Authorization header, so the signed-out
+      // account's push token stayed registered and the device kept receiving its
+      // notifications.
+      expect(unregisterDeviceToken).toHaveBeenCalledWith('student-token');
+    });
+
     it('should invoke forgot password mutation for student', async () => {
-      (tryFetchWithFallback as jest.Mock).mockResolvedValueOnce({
+      (apolloClient.mutate as jest.Mock).mockResolvedValueOnce({
         data: { forgotPassword: { success: true, message: 'Success' } },
       });
 
@@ -293,11 +316,11 @@ describe('AuthContext & AuthProvider', () => {
       });
 
       expect(forgotResult).toEqual({ success: true, message: 'Success' });
-      expect(tryFetchWithFallback).toHaveBeenCalled();
+      expect(apolloClient.mutate).toHaveBeenCalled();
     });
 
     it('should invoke forgot password mutation for parent', async () => {
-      (tryFetchWithFallback as jest.Mock).mockResolvedValueOnce({
+      (apolloClient.mutate as jest.Mock).mockResolvedValueOnce({
         data: { parentForgotPassword: { success: true, message: 'Success' } },
       });
 
@@ -309,7 +332,7 @@ describe('AuthContext & AuthProvider', () => {
       });
 
       expect(forgotResult).toEqual({ success: true, message: 'Success' });
-      expect(tryFetchWithFallback).toHaveBeenCalled();
+      expect(apolloClient.mutate).toHaveBeenCalled();
     });
   });
 });

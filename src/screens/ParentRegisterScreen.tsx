@@ -22,7 +22,17 @@ import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAutoReset } from '../hooks/useAutoReset';
 import { isDebugMode } from '../config/debug';
-import { EGYPT_MOBILE_REGEX, EMAIL_REGEX, STRONG_PASSWORD_REGEX } from '../utils/validators';
+import {
+  EGYPT_MOBILE_REGEX,
+  EMAIL_REGEX,
+  PASSWORD_REGEX,
+  sanitizePersonName,
+  isValidPersonName,
+} from '../utils/validators';
+import { INPUT_TEXT_ALIGN } from '../lib/rtl';
+import { analytics } from '../lib/analytics';
+import { useMobileAvailability } from '../hooks/useMobileAvailability';
+import MobileAvailabilityHint from '../components/MobileAvailabilityHint';
 
 const ParentRegisterScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -56,11 +66,12 @@ const ParentRegisterScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
 
   // Validation Flags
-  const isNameValid = name.trim().length >= 3;
+  const isNameValid = isValidPersonName(name);
   const isMobileValid = EGYPT_MOBILE_REGEX.test(mobile.trim());
+  const mobileAvailability = useMobileAvailability('parent');
   const isEmailValid = EMAIL_REGEX.test(email.trim());
-  // Strong password is enforced on every environment (no debug relaxation).
-  const isPasswordStrong = STRONG_PASSWORD_REGEX.test(password);
+  // Password policy: minimum 8 characters (BKLT-297). Same rule on every env.
+  const isPasswordValid = PASSWORD_REGEX.test(password);
   const isConfirmValid = password === confirmPassword && password.length > 0;
 
   const getBorderColor = (touched: boolean, valid: boolean, value: string) => {
@@ -77,15 +88,14 @@ const ParentRegisterScreen: React.FC = () => {
     setTouchedPassword(true);
     setTouchedConfirm(true);
 
-    if (!isNameValid || !isMobileValid || !isEmailValid || !isPasswordStrong || !isConfirmValid) {
+    if (!isNameValid || !isMobileValid || !isEmailValid || !isPasswordValid || !isConfirmValid) {
       let errorMsg = t('auth.fill_all_fields');
 
       if (!isNameValid && name.trim().length > 0) errorMsg = t('auth.name_too_short');
       else if (!isMobileValid && mobile.trim().length > 0)
         errorMsg = t('auth.invalid_egyptian_mobile');
       else if (!isEmailValid && email.trim().length > 0) errorMsg = t('auth.invalid_email_format');
-      else if (!isPasswordStrong && password.length > 0)
-        errorMsg = t('auth.password_not_strong_enough');
+      else if (!isPasswordValid && password.length > 0) errorMsg = t('auth.password_min_8');
       else if (!isConfirmValid && confirmPassword.length > 0)
         errorMsg = t('auth.passwords_not_match');
 
@@ -98,8 +108,29 @@ const ParentRegisterScreen: React.FC = () => {
       return;
     }
 
+    // isLoading covers the availability check too, so the submit button stays
+    // disabled and a second tap can't fire a duplicate parentRegister.
     setIsLoading(true);
     try {
+      // BKLT-308: block submit when the mobile is already registered. Awaits the
+      // on-blur check (or starts one); an inconclusive check never blocks, since
+      // parentRegister re-validates uniqueness server-side.
+      const availability = await mobileAvailability.ensureChecked(mobile);
+      if (availability.status === 'taken') {
+        analytics.trackRegistrationBlocked('parent');
+        showConfirm({
+          title: t('common.error'),
+          // From the resolved verdict — the hook's `message` state isn't visible
+          // to this closure, which was captured before the await.
+          message: availability.message || t('auth.mobile_already_registered'),
+          confirmLabel: t('auth.login'),
+          cancelLabel: t('common.ok'),
+          showCancel: true,
+          onConfirm: () => navigation.navigate('ParentLogin'),
+        });
+        return;
+      }
+
       const result = await parentRegister({
         name: name.trim(),
         mobile: mobile.trim(),
@@ -203,9 +234,9 @@ const ParentRegisterScreen: React.FC = () => {
                 />
                 <TextInput
                   testID="parent-register-name"
-                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
+                  style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN }]}
                   value={name}
-                  onChangeText={(val) => setName(val.replace(/[^a-zA-Z\s\u0621-\u064A]/g, ''))}
+                  onChangeText={(val) => setName(sanitizePersonName(val))}
                   placeholder={t('auth.full_name_placeholder')}
                   placeholderTextColor={theme.colors.textTertiary}
                   editable={!isLoading}
@@ -237,22 +268,37 @@ const ParentRegisterScreen: React.FC = () => {
                 <TextInput
                   testID="parent-register-mobile"
                   ref={mobileRef}
-                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
+                  style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN }]}
                   value={mobile}
-                  onChangeText={(val) => setMobile(val.replace(/\D/g, '').slice(0, 11))}
+                  onChangeText={(val) => {
+                    setMobile(val.replace(/\D/g, '').slice(0, 11));
+                    // Drop the previous verdict — it belongs to the old number.
+                    mobileAvailability.reset();
+                  }}
                   maxLength={11}
                   placeholder={t('auth.mobile_number_eg_placeholder')}
                   placeholderTextColor={theme.colors.textTertiary}
                   keyboardType="phone-pad"
                   editable={!isLoading}
                   returnKeyType="next"
-                  onBlur={() => setTouchedMobile(true)}
-                  onSubmitEditing={() => emailRef.current?.focus()}
+                  onBlur={() => {
+                    setTouchedMobile(true);
+                    mobileAvailability.check(mobile);
+                  }}
+                  onSubmitEditing={() => {
+                    mobileAvailability.check(mobile);
+                    emailRef.current?.focus();
+                  }}
                 />
               </View>
               {touchedMobile && !isMobileValid && mobile.length > 0 && (
                 <Text style={currentStyles.errorText}>{t('auth.invalid_egyptian_mobile')}</Text>
               )}
+              <MobileAvailabilityHint
+                status={mobileAvailability.status}
+                message={mobileAvailability.message}
+                testID="parent-register-mobile-availability"
+              />
             </View>
 
             {/* Email Address */}
@@ -273,7 +319,7 @@ const ParentRegisterScreen: React.FC = () => {
                 <TextInput
                   testID="parent-register-email"
                   ref={emailRef}
-                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
+                  style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN }]}
                   value={email}
                   onChangeText={setEmail}
                   autoCapitalize="none"
@@ -297,21 +343,21 @@ const ParentRegisterScreen: React.FC = () => {
               <View
                 style={[
                   currentStyles.inputWrapper,
-                  { borderColor: getBorderColor(touchedPassword, isPasswordStrong, password) },
+                  { borderColor: getBorderColor(touchedPassword, isPasswordValid, password) },
                 ]}
               >
                 <Ionicons
                   name="lock-closed-outline"
                   size={20}
                   color={
-                    touchedPassword && !isPasswordStrong ? '#FF6B6B' : theme.colors.textTertiary
+                    touchedPassword && !isPasswordValid ? '#FF6B6B' : theme.colors.textTertiary
                   }
                   style={currentStyles.inputIcon}
                 />
                 <TextInput
                   testID="parent-register-password"
                   ref={passwordRef}
-                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
+                  style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN }]}
                   value={password}
                   onChangeText={setPassword}
                   placeholder={t('auth.password_placeholder')}
@@ -334,10 +380,10 @@ const ParentRegisterScreen: React.FC = () => {
                   />
                 </TouchableOpacity>
               </View>
-              {touchedPassword && !isPasswordStrong && password.length > 0 ? (
-                <Text style={currentStyles.errorText}>{t('auth.password_not_strong_enough')}</Text>
+              {touchedPassword && !isPasswordValid && password.length > 0 ? (
+                <Text style={currentStyles.errorText}>{t('auth.password_min_8')}</Text>
               ) : (
-                <Text style={currentStyles.hintText}>{t('auth.password_strength_hint')}</Text>
+                <Text style={currentStyles.hintText}>{t('auth.password_min_8')}</Text>
               )}
             </View>
 
@@ -359,7 +405,7 @@ const ParentRegisterScreen: React.FC = () => {
                 <TextInput
                   testID="parent-register-confirm"
                   ref={confirmPasswordRef}
-                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
+                  style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN }]}
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   placeholder={t('auth.confirm_password_placeholder')}

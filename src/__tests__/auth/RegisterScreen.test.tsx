@@ -2,23 +2,33 @@ import React from 'react';
 import { fireEvent, screen, act, waitFor } from '@testing-library/react-native';
 import RegisterScreen from '../../screens/RegisterScreen';
 import { renderWithProviders } from '../helpers/renderWithProviders';
-import { tryFetchWithFallback } from '../../config/api';
+import { GetGradesDocument } from '../../generated/graphql';
 
-// Mock API
-jest.mock('../../config/api', () => {
-  const actual = jest.requireActual('../../config/api');
-  return {
-    ...actual,
-    tryFetchWithFallback: jest.fn().mockResolvedValue({
+// Answer the step-1 availability gate (BKLT-308) with "available" so Next
+// isn't blocked.
+jest.mock('../../lib/apollo', () => ({
+  apolloClient: {
+    mutate: jest.fn().mockResolvedValue({
+      data: { checkMobileAvailability: { available: true, message: '' } },
+    }),
+  },
+}));
+
+// The screen loads its step-2 reference data through Apollo; step-1 behaviour
+// (what these tests cover) does not depend on the result.
+const apolloMocks = [
+  {
+    request: { query: GetGradesDocument },
+    result: {
       data: {
         grades: [
           { id: 'grade_1', name: 'Grade 10' },
           { id: 'grade_2', name: 'Grade 11' },
         ],
       },
-    }),
-  };
-});
+    },
+  },
+];
 
 // Mock Modal
 const mockShowConfirm = jest.fn();
@@ -30,25 +40,18 @@ jest.mock('../../context/ModalContext', () => ({
 }));
 
 describe('RegisterScreen Integration Tests', () => {
-  beforeEach(async () => {
+  beforeEach(() => {
     jest.clearAllMocks();
-
-    // Mock the initial grades query fetched in useEffect
-    (tryFetchWithFallback as jest.Mock).mockResolvedValue({
-      data: {
-        grades: [
-          { id: 'grade_1', name: 'Grade 10' },
-          { id: 'grade_2', name: 'Grade 11' },
-        ],
-      },
-    });
   });
 
+  const renderScreen = async () => {
+    renderWithProviders(<RegisterScreen />, { apolloMocks });
+    // Wait on what the user sees rather than on a fetch having happened.
+    await waitFor(() => expect(screen.getByTestId('register-name-input')).toBeDefined());
+  };
+
   it('renders Step 1 form fields correctly', async () => {
-    renderWithProviders(<RegisterScreen />);
-    await waitFor(() => {
-      expect(tryFetchWithFallback).toHaveBeenCalled();
-    });
+    await renderScreen();
 
     expect(screen.getByTestId('register-name-input')).toBeDefined();
     expect(screen.getByTestId('register-mobile-input')).toBeDefined();
@@ -58,10 +61,7 @@ describe('RegisterScreen Integration Tests', () => {
   });
 
   it('rejects empty inputs with confirmation error alert', async () => {
-    renderWithProviders(<RegisterScreen />);
-    await waitFor(() => {
-      expect(tryFetchWithFallback).toHaveBeenCalled();
-    });
+    await renderScreen();
 
     const nextBtn = screen.getByTestId('register-submit-button');
     await act(async () => {
@@ -77,10 +77,7 @@ describe('RegisterScreen Integration Tests', () => {
   });
 
   it('transitions from Step 1 to Step 2 upon valid credentials', async () => {
-    renderWithProviders(<RegisterScreen />);
-    await waitFor(() => {
-      expect(tryFetchWithFallback).toHaveBeenCalled();
-    });
+    await renderScreen();
 
     const nameInput = screen.getByTestId('register-name-input');
     const mobileInput = screen.getByTestId('register-mobile-input');
@@ -103,10 +100,7 @@ describe('RegisterScreen Integration Tests', () => {
   });
 
   it('blocks final step registration if grade is not selected', async () => {
-    renderWithProviders(<RegisterScreen />);
-    await waitFor(() => {
-      expect(tryFetchWithFallback).toHaveBeenCalled();
-    });
+    await renderScreen();
 
     // Fill Step 1
     fireEvent.changeText(screen.getByTestId('register-name-input'), 'Ahmed Ali');

@@ -1,54 +1,51 @@
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import * as Haptics from 'expo-haptics';
-import * as SecureStore from 'expo-secure-store';
-import { tryFetchWithFallback } from '../config/api';
+import { useMutation } from '@apollo/client/react';
+
+import { FollowUserDocument, FollowUserMutation } from '../generated/graphql';
 import { useAuth } from '../context/AuthContext';
 import { emitFollowChange } from '../utils/followBus';
 
-interface FollowResult {
-  success: boolean;
-  isFollowing: boolean;
-  message: string;
-}
+type FollowResult = FollowUserMutation['followUser'];
 
 export const useFollowToggle = () => {
-  const [isToggling, setIsToggling] = useState(false);
   const { refreshUser } = useAuth();
+
+  const [followUser, { loading: isToggling }] = useMutation(FollowUserDocument, {
+    // StudentSearchResult and LeaderboardEntry are normalized by id, so one
+    // cache write flips isFollowing in every mounted list at once (search
+    // results, follow lists, leaderboard entries + userEntry).
+    update: (cache, { data }, { variables }) => {
+      const result = data?.followUser;
+      if (!result?.success || !variables) return;
+      for (const __typename of ['StudentSearchResult', 'LeaderboardEntry'] as const) {
+        cache.modify({
+          id: cache.identify({ __typename, id: variables.userId }),
+          fields: { isFollowing: () => result.isFollowing },
+        });
+      }
+    },
+  });
 
   const toggleFollow = useCallback(
     async (userId: string): Promise<FollowResult | null> => {
       try {
-        setIsToggling(true);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-        const token = await SecureStore.getItemAsync('auth_token');
-        if (!token) return null;
-
-        const result = await tryFetchWithFallback(
-          `
-        mutation FollowUser($userId: ID!) {
-          followUser(userId: $userId) { success isFollowing message }
-        }
-      `,
-          { userId },
-          token,
-        );
-
-        if (result.data?.followUser?.success) {
-          // Broadcast so every mounted screen showing this user updates instantly.
-          emitFollowChange(userId, result.data.followUser.isFollowing);
+        const { data } = await followUser({ variables: { userId } });
+        const result = data?.followUser;
+        if (result?.success) {
+          // Broadcast for screens whose follow state lives outside the cache
+          // (StudentProfile's own type, legacy local-state screens).
+          emitFollowChange(userId, result.isFollowing);
           await refreshUser();
         }
-
-        return result.data?.followUser || null;
+        return result ?? null;
       } catch (err) {
         console.error('Follow toggle error:', err);
         return null;
-      } finally {
-        setIsToggling(false);
       }
     },
-    [refreshUser],
+    [followUser, refreshUser],
   );
 
   return { toggleFollow, isToggling };

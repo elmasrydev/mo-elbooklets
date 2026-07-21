@@ -1,0 +1,64 @@
+# Home dashboard. Subjects, the social feed and today's schedule reuse the
+# documents their own tabs own (StudySubjects, SocialTimeline, TodaySchedule)
+# so both places read one cache entry; only these two are home-specific.
+
+query HomeData {
+  activities {
+    total_quizzes
+    avg_score
+    performance_status
+    performance_trend
+    streak
+    activities {
+      id
+      name
+      subject {
+        id
+        name
+      }
+      score
+      totalQuestions
+      completedAt
+      isPassed
+    }
+    weekly_performance {
+      week
+      score
+    }
+  }
+  wheelOfSuccess {
+    arms {
+      id
+      name
+      progress
+      color
+      type
+    }
+    overallProgress
+  }
+}
+
+# The home rail shows a short top-N with no scope filter, so it keeps its own
+# thin document (and its own cache entry) rather than the leaderboard screen's.
+query HomeLeaderboard($limit: Int) {
+  leaderboard(limit: $limit) {
+    entries {
+      id
+      name
+      xp
+      rank
+      selectedAvatar {
+        url
+      }
+    }
+    userEntry {
+      id
+      name
+      xp
+      rank
+      selectedAvatar {
+        url
+      }
+    }
+  }
+}

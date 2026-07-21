@@ -17,48 +17,17 @@ import { useTypography } from '../hooks/useTypography';
 import { layout } from '../config/layout';
 
 import { useTranslation } from 'react-i18next';
-import { gql } from '@apollo/client';
 import { useQuery, useMutation } from '@apollo/client/react';
+import {
+  SaveStudyScheduleDocument,
+  StudyScheduleDocument,
+  SubjectsForUserGradeDocument,
+} from '../generated/graphql';
 import { Ionicons } from '@expo/vector-icons';
 import UnifiedHeader from '../components/UnifiedHeader';
 import AppButton from '../components/AppButton';
 import { GenericListSkeleton } from '../components/SkeletonLoader';
-import { textAlign } from '../lib/rtl';
-
-const STUDY_SCHEDULE_QUERY = gql`
-  query StudySchedule {
-    studySchedule {
-      id
-      subject {
-        id
-        name
-      }
-      dayOfWeek
-      dayName
-      lessonGoal
-      quizGoal
-      notes
-    }
-  }
-`;
-
-const SUBJECTS_QUERY = gql`
-  query SubjectsForUserGrade {
-    subjectsForUserGrade {
-      id
-      name
-    }
-  }
-`;
-
-const SAVE_SCHEDULE_MUTATION = gql`
-  mutation SaveStudySchedule($entries: [StudyScheduleInput!]!) {
-    saveStudySchedule(entries: $entries) {
-      id
-      dayOfWeek
-    }
-  }
-`;
+import { textAlign, INPUT_TEXT_ALIGN } from '../lib/rtl';
 
 interface Subject {
   id: string;
@@ -91,13 +60,13 @@ const StudyCalendarScreen: React.FC = () => {
     data: scheduleResult,
     loading: loadingSchedule,
     refetch,
-  } = useQuery<any>(STUDY_SCHEDULE_QUERY, {
+  } = useQuery(StudyScheduleDocument, {
     fetchPolicy: 'network-only',
   });
 
-  const { data: subjectsResult, loading: loadingSubjects } = useQuery<any>(SUBJECTS_QUERY);
+  const { data: subjectsResult, loading: loadingSubjects } = useQuery(SubjectsForUserGradeDocument);
 
-  const [saveSchedule, { loading: saving }] = useMutation(SAVE_SCHEDULE_MUTATION, {
+  const [saveSchedule, { loading: saving }] = useMutation(SaveStudyScheduleDocument, {
     onCompleted: () => {
       showConfirm({
         title: t('common.success', 'Success'),
@@ -192,9 +161,10 @@ const StudyCalendarScreen: React.FC = () => {
     saveSchedule({ variables: { entries: allEntries } });
   };
 
-  const currentStyles = styles(theme, isRTL, typography, fontWeight, spacing, borderRadius);
+  const currentStyles = styles(theme, typography, fontWeight, spacing, borderRadius);
 
-  if (loadingSchedule || loadingSubjects) {
+  // Only before the first payload — the background refresh stays silent.
+  if ((loadingSchedule || loadingSubjects) && subjects.length === 0) {
     return (
       <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
         <UnifiedHeader
@@ -434,14 +404,7 @@ const StudyCalendarScreen: React.FC = () => {
   );
 };
 
-const styles = (
-  theme: any,
-  isRTL: boolean,
-  typography: any,
-  fontWeight: any,
-  spacing: any,
-  borderRadius: any,
-) =>
+const styles = (theme: any, typography: any, fontWeight: any, spacing: any, borderRadius: any) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -620,7 +583,7 @@ const styles = (
       paddingTop: spacing.md,
       ...typography('body'),
       color: theme.colors.text,
-      textAlign: isRTL ? 'right' : 'left',
+      textAlign: INPUT_TEXT_ALIGN,
       textAlignVertical: 'top',
       borderWidth: 1,
       borderColor: theme.colors.border,

@@ -21,6 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EMAIL_REGEX } from '../utils/validators';
+import { INPUT_TEXT_ALIGN } from '../lib/rtl';
 
 const ForgotPasswordScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -139,7 +140,7 @@ const ForgotPasswordScreen: React.FC = () => {
                 />
                 <TextInput
                   testID="forgot-email-input"
-                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
+                  style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN }]}
                   value={email}
                   onChangeText={setEmail}
                   autoCapitalize="none"
@@ -244,7 +245,7 @@ const styles = (config: any) => {
         },
       }),
     },
-    title: { fontSize: 24, fontWeight: '700', color: '#005ab4', textAlign: 'center' },
+    title: { fontSize: 24, ...fontWeight('700'), color: '#005ab4', textAlign: 'center' },
     subtitle: {
       ...typography('bodySmall'),
       color: theme.colors.textSecondary,

@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
   ScrollView,
   Modal,
   ActivityIndicator,
@@ -17,6 +16,9 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { useTypography } from '../hooks/useTypography';
+import SearchBar from './SearchBar';
+import { shouldOfferAddNew, shouldWarnInvalidName } from '../utils/pickerAddRow';
+import { NAME_MAX_LENGTH } from '../utils/validators';
 
 interface SearchablePickerModalProps {
   visible: boolean;
@@ -31,6 +33,13 @@ interface SearchablePickerModalProps {
   selectedId?: string | number;
   emptyMessage?: string;
   searchHelperText?: string;
+  /**
+   * When provided, a "Can't find it? Add <typed>" row is shown once the user has
+   * typed something with no exact match, letting them create their own entry.
+   */
+  onAddNew?: (typedName: string) => void;
+  /** Shows a spinner + disables the add row while the create request is in flight. */
+  addingNew?: boolean;
 }
 
 const SearchablePickerModal: React.FC<SearchablePickerModalProps> = ({
@@ -46,11 +55,20 @@ const SearchablePickerModal: React.FC<SearchablePickerModalProps> = ({
   selectedId,
   emptyMessage,
   searchHelperText,
+  onAddNew,
+  addingNew,
 }) => {
   const { theme, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const { typography, fontWeight } = useTypography();
+
+  const trimmedSearch = searchValue.trim();
+  const canAdd = !!onAddNew && !loading;
+  const showAddRow = canAdd && shouldOfferAddNew(data, searchValue);
+  // The search box is deliberately unfiltered so any existing entry stays
+  // findable; this tells the user why "Add …" didn't appear (BKLT-318).
+  const showInvalidNameHint = canAdd && shouldWarnInvalidName(data, searchValue);
 
   return (
     <Modal visible={visible} transparent={true} animationType="slide" onRequestClose={onClose}>
@@ -73,38 +91,16 @@ const SearchablePickerModal: React.FC<SearchablePickerModalProps> = ({
           </View>
 
           <View style={styles.searchContainer}>
-            <View
-              style={[
-                styles.inputWrapper,
-                { backgroundColor: theme.colors.background, borderColor: theme.colors.border },
-              ]}
-            >
-              <Ionicons
-                name="search"
-                size={20}
-                color={theme.colors.textTertiary}
-                style={styles.inputIconLeft}
-              />
-              <TextInput
-                style={[
-                  styles.input,
-                  typography('body'),
-                  { color: theme.colors.text, textAlign: 'left' },
-                ]}
-                placeholder={placeholder}
-                placeholderTextColor={theme.colors.textTertiary}
-                value={searchValue}
-                onChangeText={onSearchChange}
-                autoFocus={true}
-                returnKeyType="done"
-                onSubmitEditing={Keyboard.dismiss}
-              />
-              {searchValue.length > 0 && (
-                <TouchableOpacity onPress={() => onSearchChange('')} style={styles.clearButton}>
-                  <Ionicons name="close-circle" size={18} color={theme.colors.textTertiary} />
-                </TouchableOpacity>
-              )}
-            </View>
+            <SearchBar
+              value={searchValue}
+              onChangeText={onSearchChange}
+              placeholder={placeholder}
+              autoFocus
+              maxLength={onAddNew ? NAME_MAX_LENGTH : undefined}
+              returnKeyType="done"
+              onSubmitEditing={Keyboard.dismiss}
+              style={[styles.searchBox, { backgroundColor: theme.colors.background }]}
+            />
           </View>
 
           <FlatList
@@ -123,7 +119,7 @@ const SearchablePickerModal: React.FC<SearchablePickerModalProps> = ({
                   />
                 )}
 
-                {!loading && data.length === 0 && (
+                {!loading && data.length === 0 && !showAddRow && !showInvalidNameHint && (
                   <View style={styles.emptyContainer}>
                     <Text
                       style={[
@@ -140,6 +136,47 @@ const SearchablePickerModal: React.FC<SearchablePickerModalProps> = ({
                   </View>
                 )}
               </>
+            }
+            ListFooterComponent={
+              showAddRow ? (
+                <TouchableOpacity
+                  style={[styles.addRow, { borderTopColor: theme.colors.border }]}
+                  onPress={() => !addingNew && onAddNew?.(trimmedSearch)}
+                  disabled={addingNew}
+                  testID="picker-add-new"
+                >
+                  {addingNew ? (
+                    <ActivityIndicator size="small" color={theme.colors.primary} />
+                  ) : (
+                    <Ionicons name="add-circle-outline" size={22} color={theme.colors.primary} />
+                  )}
+                  <Text
+                    style={[
+                      styles.addText,
+                      typography('body'),
+                      fontWeight('600'),
+                      { color: theme.colors.primary },
+                    ]}
+                    numberOfLines={2}
+                  >
+                    {t('profile.cant_find_add', 'Can\'t find it? Add "{{name}}"', {
+                      name: trimmedSearch,
+                    })}
+                  </Text>
+                </TouchableOpacity>
+              ) : showInvalidNameHint ? (
+                <View style={styles.emptyContainer} testID="picker-invalid-name">
+                  <Text
+                    style={[
+                      styles.emptyText,
+                      typography('body'),
+                      { color: theme.colors.textTertiary },
+                    ]}
+                  >
+                    {t('profile.name_invalid_chars')}
+                  </Text>
+                </View>
+              ) : null
             }
             renderItem={({ item }) => (
               <TouchableOpacity
@@ -210,30 +247,9 @@ const styles = StyleSheet.create({
   searchContainer: {
     padding: 16,
   },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  // Only the height differs from <SearchBar>'s defaults; background is themed inline.
+  searchBox: {
     height: 50,
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-  },
-  inputIconLeft: {
-    marginEnd: 8,
-  },
-  input: {
-    flex: 1,
-    // fontSize handled by typography('body'). Tight height + lineHeight so the
-    // glyphs fill the frame and stay vertically centered with the search/clear
-    // icons on iOS (a height:'100%' here made the text sit low). (BKLT search-align)
-    height: 24,
-    lineHeight: 22,
-    paddingVertical: 0,
-    textAlignVertical: 'center',
-    includeFontPadding: false,
-  },
-  clearButton: {
-    padding: 4,
   },
   list: {
     flex: 1,
@@ -262,6 +278,18 @@ const styles = StyleSheet.create({
   pickerItemText: {
     flex: 1,
     // fontSize handled by typography('body')
+  },
+  addRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderTopWidth: 1,
+  },
+  addText: {
+    flex: 1,
+    marginStart: 10, // logical → flips with RTL
+    textAlign: 'left', // native RTL flips to right
   },
 });
 

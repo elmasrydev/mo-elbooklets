@@ -1,0 +1,121 @@
+# Parent↔child linking + parent dashboard.
+# Student side: useParentLinking (Apollo). Parent side: useParentDashboard /
+# useChildDashboard (tryFetchWithFallback). See e2e/PARENT_JOURNEY.md.
+
+query ParentLinkRequests {
+  parentLinkRequests {
+    id
+    status
+    initiated_by
+    parent {
+      name
+      mobile
+    }
+    created_at
+  }
+}
+
+mutation SendParentLinkRequest($mobile: String!) {
+  sendParentLinkRequest(parent_mobile: $mobile) {
+    id
+    status
+    initiated_by
+    parent {
+      name
+    }
+  }
+}
+
+mutation RespondToParentLink($requestId: ID!, $action: String!) {
+  respondToParentLink(request_id: $requestId, action: $action) {
+    id
+    status
+  }
+}
+
+mutation CancelParentLinkRequest($requestId: ID!) {
+  cancelParentLinkRequest(request_id: $requestId) {
+    success
+    message
+  }
+}
+
+query MyLinkedChildren {
+  linkedChildren {
+    id
+    name
+    mobile
+    selectedAvatar {
+      url
+    }
+    grade {
+      name
+    }
+    educational_system {
+      name
+    }
+  }
+}
+
+query ParentChildRequests {
+  parentChildRequests {
+    id
+    status
+    initiated_by
+    created_at
+    child {
+      name
+      mobile
+      school_name
+    }
+  }
+}
+
+query GetChildDashboard($childId: ID!) {
+  childDashboard(child_id: $childId) {
+    child {
+      name
+      selectedAvatar {
+        url
+      }
+    }
+    quizzes_solved
+    average_score
+    started_subjects_count
+
+    subject_performance {
+      subject_name
+      quiz_count
+      avg_score
+    }
+
+    recent_activity {
+      subject_name
+      score
+      total_questions
+      is_passed
+      completed_at
+    }
+  }
+}
+
+mutation ParentSendLinkRequest($mobile: String!) {
+  parentSendLinkRequest(child_mobile: $mobile) {
+    id
+    status
+  }
+}
+
+mutation ParentRespondToLink($requestId: ID!, $action: String!) {
+  parentRespondToLink(request_id: $requestId, action: $action) {
+    id
+    status
+  }
+}
+
+mutation ParentCancelLinkRequest($requestId: ID!) {
+  parentCancelLinkRequest(request_id: $requestId) {
+    success
+    message
+  }
+}

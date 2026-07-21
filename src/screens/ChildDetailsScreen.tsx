@@ -17,6 +17,7 @@ import { useTypography } from '../hooks/useTypography';
 import { layout } from '../config/layout';
 import { PARENT_HERO_GRADIENT, HAIRLINE_BLUE } from '../config/colors';
 import UnifiedHeader from '../components/UnifiedHeader';
+import Avatar from '../components/Avatar';
 import CircularProgress from '../components/CircularProgress';
 import {
   useChildDashboard,
@@ -48,7 +49,6 @@ const ChildDetailsScreen: React.FC = () => {
   );
 
   const displayName = data?.child?.name || childName || '';
-  const initial = displayName.trim().charAt(0).toUpperCase();
 
   const statusMeta = (key: SubjectStatus): { color: string; label: string } => {
     if (key === 'on_track') {
@@ -186,9 +186,12 @@ const ChildDetailsScreen: React.FC = () => {
             end={{ x: 1, y: 1 }}
             style={styles.heroGradient}
           >
-            <View style={styles.avatar}>
-              <Text style={styles.heroInitial}>{initial}</Text>
-            </View>
+            <Avatar
+              uri={data?.child?.selectedAvatar?.url}
+              name={displayName}
+              size={46}
+              style={styles.heroAvatar}
+            />
             <View style={styles.flex1}>
               <Text style={styles.heroName} numberOfLines={1}>
                 {displayName}
@@ -306,16 +309,9 @@ const createStyles = (config: any) => {
       ...layout.shadow,
     },
     heroGradient: { flexDirection: 'row', alignItems: 'center', padding: 16 },
-    avatar: {
-      width: 46,
-      height: 46,
-      borderRadius: 23,
-      backgroundColor: 'rgba(255,255,255,0.18)',
-      alignItems: 'center',
-      justifyContent: 'center',
+    heroAvatar: {
       marginEnd: 12,
     },
-    heroInitial: { ...typography('body'), ...fontWeight('bold'), fontSize: 18, color: '#FFFFFF' },
     heroName: {
       ...typography('caption'),
       ...fontWeight('bold'),

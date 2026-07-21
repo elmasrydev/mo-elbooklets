@@ -23,6 +23,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isDebugMode } from '../config/debug';
 import { EGYPT_MOBILE_REGEX } from '../utils/validators';
+import { INPUT_TEXT_ALIGN } from '../lib/rtl';
 
 const ParentLoginScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -186,7 +187,7 @@ const ParentLoginScreen: React.FC = () => {
                 />
                 <TextInput
                   testID="parent-login-mobile"
-                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
+                  style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN }]}
                   value={mobile}
                   onChangeText={(val) => setMobile(val.replace(/\D/g, '').slice(0, 11))}
                   maxLength={11}
@@ -229,7 +230,7 @@ const ParentLoginScreen: React.FC = () => {
                 <TextInput
                   testID="parent-login-password"
                   ref={passwordRef}
-                  style={[currentStyles.input, { textAlign: isRTL ? 'right' : 'left' }]}
+                  style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN }]}
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}

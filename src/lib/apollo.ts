@@ -1,85 +1,149 @@
-import { ApolloClient, InMemoryCache, createHttpLink, from } from '@apollo/client';
+import { ApolloClient, ApolloLink, InMemoryCache, createHttpLink, from } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
+import { RetryLink } from '@apollo/client/link/retry';
+import { CombinedGraphQLErrors, ServerError } from '@apollo/client/errors';
+import { Kind, OperationTypeNode, print } from 'graphql';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import { PRIMARY_API_URL, ApiUriManager } from '../config/api';
+import { ApiUriManager, REQUEST_TIMEOUT_MS } from '../config/api';
+import { isUnauthenticatedError, revokeSession } from './session';
 
-// Logout handler to be set by AuthContext
-let logoutHandler: (() => void) | null = null;
-export const setLogoutHandler = (handler: () => void) => {
-  logoutHandler = handler;
+/**
+ * Cap each request at the shared transport timeout — RN's fetch otherwise
+ * waits on the platform default (up to ~60s on iOS). Apollo passes its own
+ * abort signal for query cancellation, so the two signals are chained: either
+ * one aborts the request.
+ */
+const fetchWithTimeout: typeof fetch = (input, init = {}) => {
+  const abort = new AbortController();
+  const timer = setTimeout(() => abort.abort(), REQUEST_TIMEOUT_MS);
+  const upstreamSignal = init.signal;
+  if (upstreamSignal) {
+    if (upstreamSignal.aborted) abort.abort();
+    else upstreamSignal.addEventListener('abort', () => abort.abort(), { once: true });
+  }
+  return fetch(input, { ...init, signal: abort.signal }).finally(() => clearTimeout(timer));
 };
 
-// Create a dynamic link that selects the active URL from the manager
+// The uri is resolved per request so the debug API switcher takes effect
+// without rebuilding the client.
 const httpLink = createHttpLink({
-  // uri can be a function that returns the URI string
-  uri: (operation) => {
-    // If a custom URL is set, use it, otherwise use PRIMARY_API_URL
-    return ApiUriManager.getActiveUrl();
-  },
+  uri: () => ApiUriManager.getActiveUrl(),
+  fetch: fetchWithTimeout,
 });
 
 const authLink = setContext(async (_, { headers }) => {
-  // Get the authentication token from AsyncStorage
   const token = await SecureStore.getItemAsync('auth_token');
   const lang = (await AsyncStorage.getItem('user_language')) || 'en';
 
   return {
     headers: {
       ...headers,
-      authorization: token ? `Bearer ${token}` : '',
+      // An operation may carry its own credential: logout retires the push
+      // token using the token it has just revoked, so the stored one is
+      // already gone by then (BKLT-316). Never clobber an explicit header.
+      authorization: headers?.authorization ?? (token ? `Bearer ${token}` : ''),
       'Content-Type': 'application/json',
       Accept: 'application/json',
+      // Backend persists `lang` from authenticated requests to users.language,
+      // which localizes push notifications (BKLT-273).
+      lang,
       'Accept-Language': lang,
     },
   };
 });
 
-// Error link to handle authentication failures
-const errorLink = onError((errorResponse: any) => {
-  const graphQLErrors = errorResponse.graphQLErrors;
-  const networkError = errorResponse.networkError;
+/**
+ * Dev-only request log: the resolved url, the exact headers going out (token
+ * included, so a request can be replayed verbatim in a playground or curl),
+ * the operation document and its variables. Responses are deliberately not
+ * logged — they bury the requests you are actually looking for.
+ *
+ * Gated on __DEV__ rather than the debugMode flag, so a release binary can
+ * never print credentials or request bodies even when built with debug
+ * features on. Sits after authLink so the headers it reports are the ones
+ * actually sent, and inside retryLink so a retried attempt logs again.
+ */
+const loggerLink = new ApolloLink((operation, forward) => {
+  if (__DEV__) {
+    const { headers } = operation.getContext() as { headers?: Record<string, string> };
+    const kind = operation.query.definitions.some(
+      (def) =>
+        def.kind === Kind.OPERATION_DEFINITION && def.operation === OperationTypeNode.MUTATION,
+    )
+      ? 'mutation'
+      : 'query';
 
-  if (graphQLErrors) {
-    for (const err of graphQLErrors) {
-      // Check for unauthenticated error
-      if (
-        err.message === 'Unauthenticated.' ||
-        err.message?.toLowerCase().includes('unauthenticated') ||
-        (err.extensions && err.extensions.code === 'UNAUTHENTICATED')
-      ) {
-        if (__DEV__) console.log('Auth error detected, logging out...');
-        // Clear stored auth data
-        SecureStore.deleteItemAsync('auth_token');
-        SecureStore.deleteItemAsync('user_data');
-        // Trigger logout in AuthContext
-        if (logoutHandler) {
-          logoutHandler();
-        }
-        break;
-      }
-    }
+    console.log(`⇢ GraphQL ${kind} ${operation.operationName} → ${ApiUriManager.getActiveUrl()}`);
+    console.log('  headers:', headers);
+    console.log('  variables:', operation.variables);
+    console.log('  document:', print(operation.query));
   }
-  // Also handle 401 network errors
-  if (networkError && 'statusCode' in networkError && (networkError as any).statusCode === 401) {
-    if (__DEV__) console.log('401 error detected, logging out...');
-    SecureStore.deleteItemAsync('auth_token');
-    SecureStore.deleteItemAsync('user_data');
-    if (logoutHandler) {
-      logoutHandler();
-    }
+
+  return forward(operation);
+});
+
+/**
+ * Auth failures funnel into the shared revokeSession (src/lib/session.ts), so
+ * an expired session tears down the same way wherever it is noticed.
+ *
+ * Apollo Client 4 hands the link a single `error` value (CombinedGraphQLErrors
+ * for GraphQL errors, ServerError for non-2xx HTTP) instead of v3's
+ * `graphQLErrors`/`networkError` pair.
+ */
+const errorLink = onError(({ error }) => {
+  const isAuthFailure = CombinedGraphQLErrors.is(error)
+    ? error.errors.some((err) => isUnauthenticatedError(err.message, err.extensions?.code))
+    : ServerError.is(error) && error.statusCode === 401;
+
+  if (isAuthFailure) {
+    if (__DEV__) console.log('Auth error detected, logging out...');
+    // Deliberately not awaited — `onError` must stay synchronous so Apollo
+    // does not mistake a returned promise for a retry observable.
+    void revokeSession();
   }
 });
 
+const retryLink = new RetryLink({
+  delay: { initial: 300, max: 2000, jitter: true },
+  attempts: {
+    // `max` includes the initial request — i.e. a single retry.
+    max: 2,
+    retryIf: (error, operation) => {
+      // Retrying a mutation could double-submit (register twice, send two link
+      // requests). And GraphQL errors are deterministic — retrying just repeats
+      // the same failure. Only queries, only on transport-level errors.
+      const isMutation = operation.query.definitions.some(
+        (def) =>
+          def.kind === Kind.OPERATION_DEFINITION && def.operation === OperationTypeNode.MUTATION,
+      );
+      return !isMutation && !CombinedGraphQLErrors.is(error);
+    },
+  },
+});
+
 const client = new ApolloClient({
-  link: from([errorLink, authLink, httpLink]),
+  // Order matters: the error link sees the final outcome after retries are
+  // exhausted; auth + http sit innermost so every attempt carries fresh
+  // headers, and the logger sits between them to report what actually went out.
+  link: from([errorLink, retryLink, authLink, loggerLink, httpLink]),
   cache: new InMemoryCache(),
   defaultOptions: {
     watchQuery: {
+      // Every mount asks the server, so the user never reads stale data — but
+      // the cached copy paints immediately while that request is in flight,
+      // instead of blanking the screen to a skeleton on every visit.
+      // Screens that must not show a cached value at all (quiz attempts,
+      // results, saved-point state) opt up to 'network-only' individually.
+      // NOTE: render gates must be `loading && !data` — with this policy
+      // `loading` is true *while* cached data is already on screen.
+      fetchPolicy: 'cache-and-network',
       errorPolicy: 'all',
     },
     query: {
+      // client.query() rejects cache-and-network; imperative reads are one-off
+      // and already fetch when the cache misses.
       errorPolicy: 'all',
     },
   },

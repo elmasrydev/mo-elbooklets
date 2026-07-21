@@ -1,123 +1,111 @@
-import { useState, useCallback, useEffect } from 'react';
-import { tryFetchWithFallback } from '../config/api';
-import { useAuth } from '../context/AuthContext';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useMutation, useQuery } from '@apollo/client/react';
 import { useTranslation } from 'react-i18next';
+
+import {
+  MyLinkedChildrenDocument,
+  MyLinkedChildrenQuery,
+  ParentCancelLinkRequestDocument,
+  ParentChildRequestsDocument,
+  ParentChildRequestsQuery,
+  ParentRespondToLinkDocument,
+  ParentSendLinkRequestDocument,
+} from '../generated/graphql';
+import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
+import { loadFailureMessage } from '../utils/queryError';
 
-export interface Child {
-  id: string;
-  name: string;
-  mobile: string;
-  grade?: { name: string };
-  educational_system?: { name: string };
-}
-
-export interface LinkRequest {
-  id: string;
-  status: 'pending' | 'accepted' | 'rejected' | 'DECLINED' | 'ACCEPTED';
-  initiated_by: 'student' | 'parent';
-  child: {
-    name: string;
-    mobile: string;
-    school_name?: string;
-  };
-  created_at: string;
-}
+export type Child = MyLinkedChildrenQuery['linkedChildren'][number];
+export type LinkRequest = ParentChildRequestsQuery['parentChildRequests'][number];
 
 export const useParentDashboard = () => {
-  const [children, setChildren] = useState<Child[]>([]);
-  const [incomingRequests, setIncomingRequests] = useState<LinkRequest[]>([]);
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  // Separate from `loading` so submitting the add-child modal never flips the
-  // dashboard's empty-state spinner (and vice-versa).
+  // Separate from the query's `loading` so submitting the add-child modal never
+  // flips the dashboard's empty-state spinner (and vice-versa).
   const [adding, setAdding] = useState(false);
   const [respondingId, setRespondingId] = useState<string | null>(null);
   const { parentUser } = useAuth();
   const { t } = useTranslation();
   const { showConfirm } = useModal();
 
-  const fetchDashboardData = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
+  // Both lists change from elsewhere — the student accepts a link, the Requests
+  // tab acts on one — and this tab has no focus refetch, so it leans on the
+  // client's default cache-and-network to re-check the server on every mount.
+  const childrenQuery = useQuery(MyLinkedChildrenDocument, {
+    skip: !parentUser,
+    notifyOnNetworkStatusChange: true,
+  });
+  const requestsQuery = useQuery(ParentChildRequestsDocument, {
+    skip: !parentUser,
+    notifyOnNetworkStatusChange: true,
+  });
 
-    try {
-      const [childrenRes, requestsRes] = await Promise.all([
-        tryFetchWithFallback(`
-          query MyLinkedChildren {
-            linkedChildren {
-              id
-              name
-              mobile
-              grade {
-                name
-              }
-              educational_system {
-                name
-              }
-            }
-          }
-        `),
-        tryFetchWithFallback(`
-          query ParentChildRequests {
-            parentChildRequests {
-              id
-              status
-              initiated_by
-              created_at
-              child {
-                name
-                mobile
-                school_name
-              }
-            }
-          }
-        `),
-      ]);
+  const children = childrenQuery.data?.linkedChildren ?? [];
+  const incomingRequests = (requestsQuery.data?.parentChildRequests ?? []).filter(
+    // Only genuinely pending requests are actionable. Allow-list 'pending'
+    // instead of excluding known terminal states, so unexpected backend
+    // statuses (e.g. cancelled/expired) aren't surfaced as accept/declinable.
+    (request) => request.status.toLowerCase() === 'pending',
+  );
+  // Only a first load blocks the UI: `loading` stays true during the background
+  // refresh, and flashing a skeleton over rendered content would be worse than
+  // showing it slightly stale for a moment.
+  const loading =
+    (childrenQuery.loading && !childrenQuery.data) ||
+    (requestsQuery.loading && !requestsQuery.data);
 
-      if (childrenRes.data?.linkedChildren) {
-        setChildren(childrenRes.data.linkedChildren);
-      }
-
-      if (requestsRes.data?.parentChildRequests) {
-        setIncomingRequests(
-          requestsRes.data.parentChildRequests.filter(
-            // Only genuinely pending requests are actionable. Allow-list 'pending'
-            // instead of excluding known terminal states, so unexpected backend
-            // statuses (e.g. cancelled/expired) aren't surfaced as accept/declinable.
-            (r: LinkRequest) => r.status.toLowerCase() === 'pending',
-          ),
-        );
-      }
-    } catch (err) {
-      console.error('Error fetching parent dashboard data:', err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
+  const fetchDashboardData = useCallback(async () => {
+    await Promise.all([childrenQuery.refetch(), requestsQuery.refetch()]);
+    // Refetch functions are stable for the life of the hook.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleRefresh = () => fetchDashboardData(true);
+  // Surface a load failure once per failed attempt, and only when nothing
+  // usable arrived — a partial response still renders (see utils/queryError).
+  const loadError =
+    loadFailureMessage(
+      childrenQuery.data?.linkedChildren,
+      childrenQuery.error,
+      t('parent_dashboard.load_failed'),
+    ) ??
+    loadFailureMessage(
+      requestsQuery.data?.parentChildRequests,
+      requestsQuery.error,
+      t('parent_dashboard.load_failed'),
+    );
+  const reportedErrorRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!loadError) {
+      reportedErrorRef.current = null;
+      return;
+    }
+    if (reportedErrorRef.current === loadError) return;
+    reportedErrorRef.current = loadError;
+    showConfirm({
+      title: t('common.error'),
+      message: loadError,
+      showCancel: false,
+      onConfirm: () => {},
+    });
+  }, [loadError, showConfirm, t]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await fetchDashboardData();
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const [sendLinkRequest] = useMutation(ParentSendLinkRequestDocument);
+  const [respondToLink] = useMutation(ParentRespondToLinkDocument);
+  const [cancelLinkRequest] = useMutation(ParentCancelLinkRequestDocument);
 
   const handleAddChild = async (childMobile: string) => {
     setAdding(true);
     try {
-      const result = await tryFetchWithFallback(
-        `
-        mutation ParentSendLinkRequest($mobile: String!) {
-          parentSendLinkRequest(child_mobile: $mobile) {
-            id
-            status
-          }
-        }
-      `,
-        { mobile: childMobile },
-      );
-
-      if (result.errors) {
-        throw new Error(result.errors[0].message);
-      }
-
+      await sendLinkRequest({ variables: { mobile: childMobile } });
       showConfirm({
         title: t('common.success'),
         message: t('parent_dashboard.invite_sent_success'),
@@ -129,6 +117,8 @@ export const useParentDashboard = () => {
       console.error('Error sending invitation:', err);
       showConfirm({
         title: t('common.error'),
+        // The backend's message is localized and actionable here ("no student
+        // with this mobile"), unlike a load failure — show it as-is.
         message: err.message || t('parent_dashboard.invite_error'),
         showCancel: false,
         onConfirm: () => {},
@@ -143,30 +133,13 @@ export const useParentDashboard = () => {
     setRespondingId(requestId);
     const action = status === 'ACCEPTED' ? 'accept' : 'decline';
     try {
-      const result = await tryFetchWithFallback(
-        `
-        mutation ParentRespondToLink($requestId: ID!, $action: String!) {
-          parentRespondToLink(request_id: $requestId, action: $action) {
-            id
-            status
-          }
-        }
-      `,
-        { requestId, action },
-      );
-
-      if (result.errors) {
-        throw new Error(result.errors[0].message);
-      }
-
-      const successMsg =
-        status === 'ACCEPTED'
-          ? t('parent_dashboard.request_accepted')
-          : t('parent_dashboard.request_declined');
-
+      await respondToLink({ variables: { requestId, action } });
       showConfirm({
         title: t('common.success'),
-        message: successMsg,
+        message:
+          status === 'ACCEPTED'
+            ? t('parent_dashboard.request_accepted')
+            : t('parent_dashboard.request_declined'),
         showCancel: false,
         onConfirm: () => fetchDashboardData(),
       });
@@ -188,22 +161,7 @@ export const useParentDashboard = () => {
   const handleCancelRequest = async (requestId: string) => {
     setRespondingId(requestId);
     try {
-      const result = await tryFetchWithFallback(
-        `
-        mutation ParentCancelLinkRequest($requestId: ID!) {
-          parentCancelLinkRequest(request_id: $requestId) {
-            success
-            message
-          }
-        }
-      `,
-        { requestId },
-      );
-
-      if (result.errors) {
-        throw new Error(result.errors[0].message);
-      }
-
+      await cancelLinkRequest({ variables: { requestId } });
       showConfirm({
         title: t('common.success'),
         message: t('parent_dashboard.request_cancelled'),
@@ -224,12 +182,6 @@ export const useParentDashboard = () => {
       setRespondingId(null);
     }
   };
-
-  useEffect(() => {
-    if (parentUser) {
-      fetchDashboardData();
-    }
-  }, [parentUser, fetchDashboardData]);
 
   return {
     children,

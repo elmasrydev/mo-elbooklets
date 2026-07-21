@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet, Text } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
-import { useLanguage } from '../context/LanguageContext';
+import { useTypography } from '../hooks/useTypography';
 import { ColorTheme, COLOR_THEME_DISPLAY_COLORS } from '../config/colors';
 
 interface ColorThemePickerProps {
@@ -12,7 +12,7 @@ const COLOR_THEMES: ColorTheme[] = ['green', 'purple', 'blue', 'orange'];
 
 const ColorThemePicker: React.FC<ColorThemePickerProps> = ({ compact = false }) => {
   const { theme, colorTheme, setColorTheme } = useTheme();
-  const { isRTL } = useLanguage();
+  const { fontWeight } = useTypography();
 
   const handleSelectTheme = (newTheme: ColorTheme) => {
     if (newTheme !== colorTheme) {
@@ -21,7 +21,7 @@ const ColorThemePicker: React.FC<ColorThemePickerProps> = ({ compact = false }) 
   };
 
   return (
-    <View style={[styles.container, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+    <View style={styles.container}>
       {COLOR_THEMES.map((themeOption) => {
         const isSelected = colorTheme === themeOption;
         const displayColor = COLOR_THEME_DISPLAY_COLORS[themeOption];
@@ -39,7 +39,7 @@ const ColorThemePicker: React.FC<ColorThemePickerProps> = ({ compact = false }) 
             onPress={() => handleSelectTheme(themeOption)}
             activeOpacity={0.7}
           >
-            {isSelected && <Text style={styles.checkmark}>✓</Text>}
+            {isSelected && <Text style={[styles.checkmark, fontWeight('bold')]}>✓</Text>}
           </TouchableOpacity>
         );
       })}
@@ -85,7 +85,6 @@ const styles = StyleSheet.create({
   checkmark: {
     color: '#ffffff',
     fontSize: 18,
-    fontWeight: 'bold',
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,

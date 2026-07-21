@@ -1,86 +1,57 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TextInput,
-  TouchableOpacity,
-  Keyboard,
-} from 'react-native';
+import { View, Text, StyleSheet, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import * as SecureStore from 'expo-secure-store';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useLazyQuery, useMutation, useQuery } from '@apollo/client/react';
 import { useFollowToggle } from '../hooks/useFollowToggle';
 import { useTheme } from '../context/ThemeContext';
 import { useModal } from '../context/ModalContext';
 import { useTranslation } from 'react-i18next';
+import { loadFailureMessage } from '../utils/queryError';
+import { resolveFeedCard } from '../utils/socialFeed';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
 import UnifiedHeader from '../components/UnifiedHeader';
 import { useAuth } from '../context/AuthContext';
 import { layout } from '../config/layout';
-import { tryFetchWithFallback } from '../config/api';
+import {
+  LikeActivityDocument,
+  LikeActivityMutation,
+  SearchStudentsDocument,
+  SearchStudentsQuery,
+  SocialTimelineDocument,
+  SocialTimelineQuery,
+} from '../generated/graphql';
 import { QuizCompletionCard, ConnectionCard, RankChangeCard } from '../components/feed';
 import PeopleYouMayKnow from '../components/feed/PeopleYouMayKnow';
 import UserListRow from '../components/UserListRow';
+import SearchBar from '../components/SearchBar';
 import { CardListSkeleton, GenericListSkeleton } from '../components/SkeletonLoader';
 import RetryView from '../components/RetryView';
 import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
 import { isRTL } from '../lib/rtl';
-import { subscribeFollowChange } from '../utils/followBus';
 
-interface Student {
-  id: string;
-  name: string;
-  mobile: string;
-  grade: {
-    id: string;
-    name: string;
-  };
-  totalQuizzes: number;
-  avgScore: number;
-  isFollowing: boolean;
-  selectedAvatar?: { url?: string } | null;
-}
+/**
+ * An item the feed cannot render is dropped from the list, which looks exactly
+ * like the backend sending nothing — the ambiguity that made BKLT-317 hard to
+ * place. Say so once per unrecognised shape (per session, so a long feed does
+ * not repeat it on every re-render).
+ */
+const reportedFeedShapes = new Set<string>();
+const reportUnrenderableItem = (item: { id: string; type: string }) => {
+  if (!__DEV__ || reportedFeedShapes.has(item.type)) return;
+  reportedFeedShapes.add(item.type);
+  console.warn(
+    `[SocialScreen] Dropping feed item ${item.id}: no card renders type "${item.type}" ` +
+      '(or its payload is missing). The feed will look emptier than the server response.',
+  );
+};
 
-interface NewsFeedItem {
-  id: string;
-  type: 'quiz_completion' | 'new_connection' | 'rank_change';
-  user: {
-    id: string;
-    name: string;
-    grade: {
-      id: string;
-      name: string;
-    };
-    selectedAvatar?: { url?: string } | null;
-  };
-  createdAt: string;
-  quizData?: {
-    quizUserId: string;
-    quiz: { id: string; name: string; subject: { id: string; name: string }; type: string };
-    score: number;
-    totalQuestions: number;
-    isPassed: boolean;
-  };
-  connectedUser?: {
-    id: string;
-    name: string;
-    grade: { id: string; name: string };
-    selectedAvatar?: { url?: string } | null;
-  };
-  rankData?: {
-    previousRank?: number;
-    newRank: number;
-    subject?: { id: string; name: string };
-    isOverall: boolean;
-  };
-  likes: number;
-  comments: number;
-  isLiked: boolean;
-}
+// Shaped by what the queries select — follow state inside the results is kept
+// fresh by the Apollo cache (see useFollowToggle), not by manual list patches.
+type Student = SearchStudentsQuery['searchStudents'][number];
+type NewsFeedItem = SocialTimelineQuery['socialTimeline'][number];
 
 const SocialScreen: React.FC = () => {
   const { theme, spacing } = useTheme();
@@ -92,64 +63,25 @@ const SocialScreen: React.FC = () => {
   const navigation = useNavigation<any>();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<Student[]>([]);
   const [followingId, setFollowingId] = useState<string | null>(null);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [feedItems, setFeedItems] = useState<NewsFeedItem[]>([]);
-  const [timelineLoading, setTimelineLoading] = useState(true);
-  const [timelineError, setTimelineError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchTimeline = useCallback(async () => {
-    try {
-      setTimelineLoading(true);
-      setTimelineError(null);
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) {
-        setTimelineError(t('common.error'));
-        return;
-      }
+  const {
+    data: timelineData,
+    loading: timelineLoading,
+    error: timelineErrorObj,
+    refetch: refetchTimeline,
+  } = useQuery(SocialTimelineDocument, { notifyOnNetworkStatusChange: true });
+  const feedItems = timelineData?.socialTimeline ?? [];
+  const timelineError = loadFailureMessage(
+    timelineData?.socialTimeline,
+    timelineErrorObj,
+    t('social_screen.error_loading_timeline'),
+  );
 
-      const result = await tryFetchWithFallback(
-        `
-        query SocialTimeline {
-          socialTimeline {
-            id
-            type
-            user { id name grade { id name } selectedAvatar { url } }
-            createdAt
-            quizData {
-              quizUserId
-              quiz { id name subject { id name } type }
-              score
-              totalQuestions
-              isPassed
-            }
-            connectedUser { id name grade { id name } selectedAvatar { url } }
-            rankData { previousRank newRank subject { id name } isOverall }
-            likes
-            comments
-            isLiked
-          }
-        }
-      `,
-        undefined,
-        token,
-      );
-      if (result.data?.socialTimeline) {
-        setFeedItems(result.data.socialTimeline);
-      } else {
-        setTimelineError(result.errors?.[0]?.message || t('social_screen.error_loading_timeline'));
-      }
-    } catch (err: any) {
-      console.error('Fetch timeline error:', err);
-      setTimelineError(err.message || t('social_screen.error_loading_timeline'));
-    } finally {
-      setTimelineLoading(false);
-    }
-  }, [t]);
-
-  const lastFetchRef = React.useRef<number>(0);
+  // useQuery already fetched on mount, so the first focus within the stale
+  // window must not refetch.
+  const lastFetchRef = React.useRef<number>(Date.now());
   const STALE_MS = 30_000;
 
   useFocusEffect(
@@ -158,54 +90,19 @@ const SocialScreen: React.FC = () => {
       const now = Date.now();
       if (now - lastFetchRef.current < STALE_MS && feedItems.length > 0) return;
       lastFetchRef.current = now;
-      fetchTimeline();
-    }, [searchQuery, fetchTimeline, feedItems.length]),
+      refetchTimeline();
+    }, [searchQuery, refetchTimeline, feedItems.length]),
   );
+
+  const [runSearch, { data: searchData, loading: searchLoading }] =
+    useLazyQuery(SearchStudentsDocument);
+  const searchResults = searchQuery.length >= 2 ? (searchData?.searchStudents ?? []) : [];
 
   useEffect(() => {
-    if (searchQuery.length < 2) {
-      setSearchResults([]);
-      return;
-    }
-    const timeoutId = setTimeout(() => performSearch(searchQuery), 300);
+    if (searchQuery.length < 2) return;
+    const timeoutId = setTimeout(() => runSearch({ variables: { query: searchQuery } }), 300);
     return () => clearTimeout(timeoutId);
-  }, [searchQuery]);
-
-  // Reflect follow/unfollow done from the profile screen back into the list.
-  useEffect(
-    () =>
-      subscribeFollowChange((userId, isFollowing) => {
-        setSearchResults((prev) => prev.map((s) => (s.id === userId ? { ...s, isFollowing } : s)));
-      }),
-    [],
-  );
-
-  const performSearch = async (query: string) => {
-    try {
-      setSearchLoading(true);
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
-
-      const result = await tryFetchWithFallback(
-        `
-        query SearchStudents($query: String!) {
-          searchStudents(query: $query) {
-            id name mobile grade { id name } totalQuizzes avgScore isFollowing
-            selectedAvatar { url }
-          }
-        }
-      `,
-        { query },
-        token,
-      );
-
-      if (result.data?.searchStudents) setSearchResults(result.data.searchStudents);
-    } catch (err: any) {
-      console.error('Search error:', err);
-    } finally {
-      setSearchLoading(false);
-    }
-  };
+  }, [searchQuery, runSearch]);
 
   const { toggleFollow } = useFollowToggle();
 
@@ -213,86 +110,54 @@ const SocialScreen: React.FC = () => {
     if (followingId) return;
     setFollowingId(student.id);
     try {
+      // The cache write in useFollowToggle flips isFollowing in the search
+      // results; the timeline is refetched for a possible new connection card.
       const result = await toggleFollow(student.id);
-      if (result?.success) {
-        setSearchResults((prev) =>
-          prev.map((s) => (s.id === student.id ? { ...s, isFollowing: result.isFollowing } : s)),
-        );
-        if (searchQuery.length === 0) fetchTimeline();
-      }
+      if (result?.success && searchQuery.length === 0) refetchTimeline();
     } finally {
       setFollowingId(null);
     }
   };
 
+  const [likeActivity] = useMutation(LikeActivityDocument);
+
   const handleLike = async (feedItem: NewsFeedItem) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // Use quizUserId for quiz_completion posts if available (legacy), newsFeedId for all others
+    const isLegacyQuiz = feedItem.type === 'quiz_completion' && feedItem.quizData?.quizUserId;
+    const variables = isLegacyQuiz
+      ? { quizUserId: feedItem.quizData?.quizUserId }
+      : { newsFeedId: feedItem.id };
+
     try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
-
-      // Optimistic update
-      setFeedItems((prev) =>
-        prev.map((item) =>
-          item.id === feedItem.id
-            ? {
-                ...item,
-                isLiked: !item.isLiked,
-                likes: item.isLiked ? item.likes - 1 : item.likes + 1,
-              }
-            : item,
-        ),
-      );
-
-      // Use quizUserId for quiz_completion posts if available (legacy), newsFeedId for all others
-      const isLegacyQuiz = feedItem.type === 'quiz_completion' && feedItem.quizData?.quizUserId;
-      const variables = isLegacyQuiz
-        ? { quizUserId: feedItem.quizData!.quizUserId }
-        : { newsFeedId: feedItem.id };
-
-      const result = await tryFetchWithFallback(
-        `mutation LikeActivity($quizUserId: ID, $newsFeedId: ID) {
-          likeActivity(quizUserId: $quizUserId, newsFeedId: $newsFeedId) {
-            success isLiked likeCount message
-          }
-        }`,
+      await likeActivity({
         variables,
-        token,
-      );
-
-      if (result.data?.likeActivity?.success) {
-        // Confirm with server values
-        setFeedItems((prev) =>
-          prev.map((item) =>
-            item.id === feedItem.id
-              ? {
-                  ...item,
-                  isLiked: result.data.likeActivity.isLiked,
-                  likes: result.data.likeActivity.likeCount,
-                }
-              : item,
-          ),
-        );
-      } else {
-        // Rollback optimistic update on failure
-        setFeedItems((prev) =>
-          prev.map((item) =>
-            item.id === feedItem.id
-              ? { ...item, isLiked: feedItem.isLiked, likes: feedItem.likes }
-              : item,
-          ),
-        );
-      }
-    } catch (err: any) {
+        // The cast adds __typename, which the runtime cache write expects but
+        // the generated operation type does not carry.
+        optimisticResponse: {
+          likeActivity: {
+            __typename: 'LikeResult',
+            success: true,
+            isLiked: !feedItem.isLiked,
+            likeCount: feedItem.isLiked ? feedItem.likes - 1 : feedItem.likes + 1,
+            message: '',
+          },
+        } as LikeActivityMutation,
+        // Runs for the optimistic layer and again with the server result; a
+        // success:false response writes nothing, so removing the optimistic
+        // layer rolls the flip back — no manual revert bookkeeping.
+        update: (cache, { data }) => {
+          const result = data?.likeActivity;
+          if (!result?.success) return;
+          cache.modify({
+            id: cache.identify({ __typename: 'NewsFeedItem', id: feedItem.id }),
+            fields: { isLiked: () => result.isLiked, likes: () => result.likeCount },
+          });
+        },
+      });
+    } catch (err) {
+      // Optimistic layer is already rolled back by Apollo.
       console.error('Like error:', err);
-      // Rollback on error
-      setFeedItems((prev) =>
-        prev.map((item) =>
-          item.id === feedItem.id
-            ? { ...item, isLiked: feedItem.isLiked, likes: feedItem.likes }
-            : item,
-        ),
-      );
     }
   };
 
@@ -303,22 +168,30 @@ const SocialScreen: React.FC = () => {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    lastFetchRef.current = 0;
-    await fetchTimeline();
+    lastFetchRef.current = Date.now();
+    await refetchTimeline();
     setRefreshing(false);
-  }, [fetchTimeline]);
+  }, [refetchTimeline]);
 
   const renderFeedItem = useCallback(
     ({ item }: { item: NewsFeedItem }) => {
-      if (item.type === 'quiz_completion' && item.quizData)
-        return <QuizCompletionCard item={item as any} onLike={() => handleLike(item)} />;
-      if (item.type === 'new_connection' && item.connectedUser)
-        return <ConnectionCard item={item as any} onLike={() => handleLike(item)} />;
-      if (item.type === 'rank_change' && item.rankData)
-        return <RankChangeCard item={item as any} onLike={() => handleLike(item)} />;
-      return null;
+      const kind = resolveFeedCard(item);
+      if (!kind) {
+        reportUnrenderableItem(item);
+        return null;
+      }
+      // Exhaustive on purpose: adding a card kind without handling it here is
+      // a type error rather than a card silently rendering as the wrong one.
+      switch (kind) {
+        case 'quiz_completion':
+          return <QuizCompletionCard item={item as any} onLike={() => handleLike(item)} />;
+        case 'new_connection':
+          return <ConnectionCard item={item as any} onLike={() => handleLike(item)} />;
+        case 'rank_change':
+          return <RankChangeCard item={item as any} onLike={() => handleLike(item)} />;
+      }
     },
-    [t, handleLike, showConfirm],
+    [handleLike],
   );
 
   const renderSearchItem = useCallback(
@@ -374,7 +247,10 @@ const SocialScreen: React.FC = () => {
 
     if (timelineError)
       return (
-        <RetryView message={t('social_screen.error_loading_timeline')} onRetry={fetchTimeline} />
+        <RetryView
+          message={t('social_screen.error_loading_timeline')}
+          onRetry={() => refetchTimeline()}
+        />
       );
 
     return (
@@ -397,7 +273,7 @@ const SocialScreen: React.FC = () => {
     currentStyles,
     theme,
     t,
-    fetchTimeline,
+    refetchTimeline,
   ]);
 
   const FeedHeader = useMemo(() => {
@@ -437,35 +313,18 @@ const SocialScreen: React.FC = () => {
       />
 
       <View style={currentStyles.searchWrapper}>
-        <View style={currentStyles.searchInputBox}>
-          <Ionicons
-            name="search"
-            size={20}
-            color={theme.colors.primary}
-            style={currentStyles.searchIcon}
-          />
-          <TextInput
-            style={currentStyles.searchInput}
-            placeholder={t('social_screen.search_placeholder')}
-            placeholderTextColor={theme.colors.textTertiary}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            textAlign={isRTL() ? 'right' : 'left'}
-            returnKeyType="search"
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity
-              onPress={() => {
-                setSearchQuery('');
-                setSearchResults([]);
-                Keyboard.dismiss();
-              }}
-              style={currentStyles.clearBtn}
-            >
-              <Ionicons name="close-circle" size={20} color={theme.colors.textTertiary} />
-            </TouchableOpacity>
-          )}
-        </View>
+        <SearchBar
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder={t('social_screen.search_placeholder')}
+          iconColor={theme.colors.primary}
+          style={currentStyles.searchBox}
+          inputStyle={currentStyles.searchInputText}
+          dismissKeyboardOnClear
+          // Clearing the query is enough — searchResults derives from it.
+          onClear={() => setSearchQuery('')}
+          testID="community-search-input"
+        />
       </View>
 
       {isSearchMode ? (
@@ -506,38 +365,18 @@ const styles = (theme: any, common: any, spacing: any, typography: any, fontWeig
       paddingVertical: spacing.md,
       backgroundColor: theme.colors.background,
     },
-    searchInputBox: {
-      flexDirection: common.rowDirection,
-      alignItems: 'center',
+    // Visual overrides for the shared <SearchBar>; the RTL-correct row/input
+    // structure lives in the component. Community look: rounded, tinted, shadow.
+    searchBox: {
       backgroundColor: theme.mode === 'light' ? theme.colors.surface : theme.colors.card,
       borderRadius: 16,
-      paddingHorizontal: 12,
-      // Size to content (icon row + input) with vertical padding instead of a
-      // fixed height, so alignItems:'center' truly centers the text with the
-      // icons on iOS (a fixed height left the input text sitting low). ~52px tall.
+      // Size to content with vertical padding instead of a fixed height, so the
+      // text stays centered with the icons on iOS. ~52px tall.
       paddingVertical: 15,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
       ...layout.shadow,
     },
-    searchIcon: {
-      marginHorizontal: 4,
-    },
-    searchInput: {
-      flex: 1,
-      ...typography('body'),
-      color: theme.colors.text,
+    searchInputText: {
       ...fontWeight('500'),
-      // Tight line-height + zero padding so the glyphs fill the input's frame
-      // and the row's alignItems:'center' lines the text up with the icons.
-      height: 24,
-      lineHeight: 22,
-      paddingVertical: 0,
-      textAlignVertical: 'center',
-      includeFontPadding: false,
-    },
-    clearBtn: {
-      padding: 4,
     },
     content: {
       flex: 1,

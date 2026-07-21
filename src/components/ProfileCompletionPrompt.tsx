@@ -17,8 +17,17 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
-import { tryFetchWithFallback } from '../config/api';
-import * as SecureStore from 'expo-secure-store';
+import { useLazyQuery, useMutation } from '@apollo/client/react';
+import {
+  GetEduSystemsDocument,
+  GetGovernoratesDocument,
+  ProfileCompletenessDocument,
+  ProfileCompletenessQuery,
+  SearchCitiesDocument,
+  SearchSchoolsDocument,
+  UpdateProfileDocument,
+} from '../generated/graphql';
+import { addCity, addSchool } from '../services/locationService';
 import AppButton from './AppButton';
 import { useTypography } from '../hooks/useTypography';
 import { useIsFocused, useNavigation } from '@react-navigation/native';
@@ -26,18 +35,7 @@ import SearchablePickerModal from './SearchablePickerModal';
 
 const EGYPTIAN_PHONE_REGEX = /^01[0125]\d{8}$/;
 
-interface ProfileCompleteness {
-  isComplete: boolean;
-  missingFields: string[];
-  percentage: number;
-  needsGender: boolean;
-  needsSchool: boolean;
-  needsParentMobile: boolean;
-  needsEmail: boolean;
-  needsEducationalSystem: boolean;
-  needsGovernorate: boolean;
-  needsCity: boolean;
-}
+type ProfileCompleteness = ProfileCompletenessQuery['profileCompleteness'];
 
 interface EducationalSystem {
   id: string;
@@ -120,6 +118,16 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
   const [cityId, setCityId] = useState('');
 
   const [schoolSuggestions, setSchoolSuggestions] = useState<School[]>([]);
+  // Lookups run on demand as the prompt walks the user field by field.
+  const [runCompletenessQuery] = useLazyQuery(ProfileCompletenessDocument, {
+    fetchPolicy: 'network-only',
+  });
+  const [runEduSystemsQuery] = useLazyQuery(GetEduSystemsDocument);
+  const [runGovernoratesQuery] = useLazyQuery(GetGovernoratesDocument);
+  const [runCitiesQuery] = useLazyQuery(SearchCitiesDocument);
+  const [runSchoolsQuery] = useLazyQuery(SearchSchoolsDocument);
+  const [updateProfile] = useMutation(UpdateProfileDocument);
+
   const [eduSystems, setEduSystems] = useState<EducationalSystem[]>([]);
   const [governorates, setGovernorates] = useState<Location[]>([]);
   const [cities, setCities] = useState<Location[]>([]);
@@ -127,6 +135,8 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
   const [fetchingEdu, setFetchingEdu] = useState(false);
   const [fetchingGov, setFetchingGov] = useState(false);
   const [fetchingCities, setFetchingCities] = useState(false);
+  const [addingCity, setAddingCity] = useState(false);
+  const [addingSchool, setAddingSchool] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const [showGovModal, setShowGovModal] = useState(false);
@@ -182,19 +192,7 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
     if (isFocused && !autoShow && isVisible === undefined && !oneTimeAutoShow) return;
 
     try {
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
-
-      const result = await tryFetchWithFallback(
-        `query ProfileCompleteness { 
-          profileCompleteness { 
-            isComplete missingFields percentage needsGender needsSchool 
-            needsParentMobile needsEmail
-          } 
-        }`,
-        undefined,
-        token,
-      );
+      const result = await runCompletenessQuery();
 
       if (result.data?.profileCompleteness) {
         const data = result.data.profileCompleteness;
@@ -225,12 +223,7 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
   const fetchEduSystems = async () => {
     try {
       setFetchingEdu(true);
-      const token = await SecureStore.getItemAsync('auth_token');
-      const result = await tryFetchWithFallback(
-        `query GetEduSystems { educationalSystems { id name } }`,
-        undefined,
-        token || undefined,
-      );
+      const result = await runEduSystemsQuery();
       if (result.data?.educationalSystems) {
         setEduSystems(result.data.educationalSystems);
       }
@@ -244,8 +237,7 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
   const fetchGovernorates = async () => {
     try {
       setFetchingGov(true);
-      const query = `query GetGovernorates { governorates { id name_ar name_en } }`;
-      const result = await tryFetchWithFallback(query);
+      const result = await runGovernoratesQuery();
       if (result.data?.governorates) {
         const mapped = result.data.governorates.map((g: any) => ({
           ...g,
@@ -273,14 +265,9 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
   const fetchCities = async (govId: string, search: string = '') => {
     try {
       setFetchingCities(true);
-      const query = `
-        query SearchCities($governorate_id: ID, $query: String!) {
-          searchCities(governorate_id: $governorate_id, query: $query) {
-            id name_ar name_en governorate_id
-          }
-        }
-      `;
-      const result = await tryFetchWithFallback(query, { governorate_id: govId, query: search });
+      const result = await runCitiesQuery({
+        variables: { governorate_id: govId, query: search },
+      });
       if (result.data?.searchCities) {
         const mapped = result.data.searchCities.map((c: any) => ({
           ...c,
@@ -369,14 +356,7 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
 
     try {
       setLoadingSchools(true);
-      const token = await SecureStore.getItemAsync('auth_token');
-      const result = await tryFetchWithFallback(
-        `query SearchSchools($search: String!) { 
-          searchSchools(search: $search) { id name name_en } 
-        }`,
-        { search },
-        token || undefined,
-      );
+      const result = await runSchoolsQuery({ variables: { search } });
 
       if (result.data?.searchSchools) {
         const mapped = result.data.searchSchools.map((s: any) => ({
@@ -409,16 +389,8 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
     try {
       setUpdating(true);
       setError(null);
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (!token) return;
 
-      const result = await tryFetchWithFallback(
-        `mutation UpdateProfile($input: UpdateProfileInput!) { 
-          updateProfile(input: $input) { id name } 
-        }`,
-        { input: { [currentField]: value } },
-        token,
-      );
+      const result = await updateProfile({ variables: { input: { [currentField]: value } } });
 
       if (result.data?.updateProfile) {
         Keyboard.dismiss();
@@ -438,6 +410,47 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
     } finally {
       setUpdating(false);
     }
+  };
+
+  // "Can't find your city? Add it" — create it under the selected governorate,
+  // select it, and add it to the local list so it renders immediately.
+  const handleAddCity = async (name: string) => {
+    const gId = governorateId || (user as any)?.governorate_id || user?.governorate?.id;
+    if (!gId) return;
+    setAddingCity(true);
+    const created = await addCity(String(gId), name);
+    setAddingCity(false);
+    if (!created) {
+      setError(t('profile.add_failed', "Couldn't add that right now. Please try again."));
+      return;
+    }
+    const mapped: Location = {
+      id: String(created.id),
+      name: isRTL ? created.name_ar || created.name_en : created.name_en || created.name_ar,
+      name_ar: created.name_ar,
+      name_en: created.name_en,
+    };
+    setCities((prev) => [mapped, ...prev.filter((c) => String(c.id) !== String(created.id))]);
+    setCityId(String(created.id));
+    setShowCityModal(false);
+    setCitySearch('');
+  };
+
+  // Schools are saved on the profile by name, so just persist the created name.
+  const handleAddSchool = async (name: string) => {
+    setAddingSchool(true);
+    // Canonical English governorate label (avoid language-dependent values). (code-review)
+    const gov = governorates.find((g) => String(g.id) === String(governorateId));
+    const govLabel = gov?.name_en || gov?.name_ar || undefined;
+    const created = await addSchool(name, govLabel);
+    setAddingSchool(false);
+    if (!created) {
+      setError(t('profile.add_failed', "Couldn't add that right now. Please try again."));
+      return;
+    }
+    setSchoolName(created.name);
+    setShowSchoolModal(false);
+    setSchoolSearch('');
   };
 
   const skipField = () => {
@@ -672,6 +685,8 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
                     setShowSchoolModal(false);
                     setSchoolSearch('');
                   }}
+                  onAddNew={handleAddSchool}
+                  addingNew={addingSchool}
                 />
               </View>
             )}
@@ -912,6 +927,8 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
                     setShowCityModal(false);
                     setCitySearch('');
                   }}
+                  onAddNew={handleAddCity}
+                  addingNew={addingCity}
                 />
               </View>
             )}

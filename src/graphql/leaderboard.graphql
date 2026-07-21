@@ -1,0 +1,40 @@
+# Leaderboard with scope filter (BKLT-172): global/school/area/governorate/
+# following, optionally per subject. Entries are LeaderboardEntry (normalized
+# by id) so follow toggles update them via the cache.
+
+query Leaderboard($subjectId: ID, $filter: String, $limit: Int) {
+  leaderboard(subjectId: $subjectId, filter: $filter, limit: $limit) {
+    entries {
+      id
+      name
+      grade {
+        id
+        name
+      }
+      totalQuizzes
+      avgScore
+      xp
+      isFollowing
+      rank
+      selectedAvatar {
+        url
+      }
+    }
+    userEntry {
+      id
+      name
+      grade {
+        id
+        name
+      }
+      totalQuizzes
+      avgScore
+      xp
+      isFollowing
+      rank
+      selectedAvatar {
+        url
+      }
+    }
+  }
+}

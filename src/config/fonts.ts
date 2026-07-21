@@ -5,20 +5,26 @@ import { COLORS } from './colors';
  * Font and Typography Configuration for El-Booklets
  *
  * Defines font families, sizes, and styles matching the UI guide.
- * Uses Lexend (Latin) and Cairo (Arabic) variable fonts.
+ * Uses Lexend (Latin) and IBM Plex Sans Arabic (Arabic).
  */
 
-// Font family names
-export const fontFamilies = {
-  regular: 'Lexend',
-  medium: 'Lexend',
-  semiBold: 'Lexend',
-  bold: 'Lexend',
+// Base family names. IBM Plex Sans Arabic ships static weights only (no
+// variable font), so Arabic text always resolves a weight-suffixed family on
+// BOTH platforms — see resolveFontFamily below.
+export const ARABIC_FONT = 'IBMPlexSansArabic';
+const LATIN_FONT = 'Lexend';
 
-  arabicRegular: 'Cairo',
-  arabicMedium: 'Cairo',
-  arabicSemiBold: 'Cairo',
-  arabicBold: 'Cairo',
+// Arabic tuning knobs. Cairo (the previous Arabic font) needed a −1.6px size
+// compensation for its oversized glyphs and shipped huge built-in leading;
+// Plex Arabic tracks the Latin optical size, so the delta starts at 0 and the
+// line height is set explicitly (same 1.5 ratio as Latin, which also leaves
+// headroom for diacritics). Adjust these two values to retune Arabic app-wide.
+export const ARABIC_FONT_SIZE_DELTA = 0;
+export const ARABIC_LINE_HEIGHT_RATIO = 1.5;
+
+export const fontFamilies = {
+  latin: LATIN_FONT,
+  arabic: ARABIC_FONT,
 };
 
 // Font weights matching the guide reference
@@ -75,54 +81,100 @@ export const textStyles = {
   },
 } as const;
 
+export type FontWeightInput = 'normal' | '500' | '600' | '700' | '800' | '900' | 'bold' | 'black';
+
 /**
- * Returns a complete text style object including font family and
- * Arabic adjustments (+2px as per guide).
+ * True when `text` contains Arabic script, i.e. it needs the Arabic family
+ * regardless of the app's UI language (an Arabic name in an English UI still
+ * has to render in Plex Arabic — Lexend has no Arabic glyphs).
+ * Single source of truth: pass the result as `forceArabic` to useTypography.
+ * Covers Arabic (0600-06FF), Supplement (0750-077F), Extended-A (08A0-08FF)
+ * and the Presentation Forms blocks (FB50-FDFF, FE70-FEFF).
+ */
+export const isArabicText = (text?: string | null): boolean =>
+  !!text && /[؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿]/.test(text);
+
+// Weight → static file suffix. Plex Arabic and Lexend both ship
+// Regular/Medium/SemiBold/Bold, so 800/900/black clamp to Bold.
+const weightSuffix = (weight: string): string => {
+  switch (weight) {
+    case '700':
+    case '800':
+    case '900':
+    case 'bold':
+    case 'black':
+      return 'Bold';
+    case '600':
+      return 'SemiBold';
+    case '500':
+      return 'Medium';
+    default:
+      return 'Regular';
+  }
+};
+
+/**
+ * Weight → concrete font-family, shared by getTextStyle and useTypography.
+ * Arabic always gets the weight-suffixed family (static files on both
+ * platforms — Plex Arabic has no variable font). Latin suffixes on Android
+ * only; iOS resolves Lexend faces natively from family + fontWeight.
+ */
+export const resolveFontFamily = (weight: string, isArabic: boolean): string => {
+  if (isArabic) return `${ARABIC_FONT}-${weightSuffix(weight)}`;
+  return Platform.OS === 'android' ? `${LATIN_FONT}-${weightSuffix(weight)}` : LATIN_FONT;
+};
+
+/**
+ * fontWeight to pair with resolveFontFamily's result.
+ * Android: always 'normal' — the weight is encoded in the family name, and any
+ * other value makes Android synthesize bold on top of the static file.
+ * iOS Arabic: the numeric weight of the face the suffix picked, so the render
+ * is identical whether iOS uses the exact PostScript face or traverses the
+ * family (both land on the same file). iOS Latin: the requested weight.
+ */
+export const resolveFontWeight = (weight: string, isArabic: boolean) => {
+  if (Platform.OS === 'android') return 'normal' as const;
+  if (isArabic) {
+    switch (weightSuffix(weight)) {
+      case 'Bold':
+        return '700' as const;
+      case 'SemiBold':
+        return '600' as const;
+      case 'Medium':
+        return '500' as const;
+      default:
+        return 'normal' as const;
+    }
+  }
+  return weight === 'black' ? ('900' as const) : (weight as FontWeightInput);
+};
+
+/**
+ * Returns a complete text style object (family, size, weight, line height)
+ * for the given named style, adjusted for Arabic when requested.
  */
 export const getTextStyle = (style: keyof typeof textStyles, isArabic: boolean = false) => {
   const baseStyle = textStyles[style] || textStyles.body;
   const weight = (baseStyle as any).fontWeight || fontWeights.regular;
 
-  // Resolve precise font-family for Android static fonts
-  let resolvedFontFamily = isArabic ? 'Cairo' : 'Lexend';
-  if (Platform.OS === 'android') {
-    if (isArabic) {
-      if (weight === '700' || weight === 'bold') resolvedFontFamily = 'Cairo-Bold';
-      else if (weight === '600') resolvedFontFamily = 'Cairo-SemiBold';
-      else if (weight === '500') resolvedFontFamily = 'Cairo-Medium';
-      else resolvedFontFamily = 'Cairo-Regular';
-    } else {
-      if (weight === '700' || weight === 'bold') resolvedFontFamily = 'Lexend-Bold';
-      else if (weight === '600') resolvedFontFamily = 'Lexend-SemiBold';
-      else if (weight === '500') resolvedFontFamily = 'Lexend-Medium';
-      else resolvedFontFamily = 'Lexend-Regular';
-    }
-  }
-
-  // On Android with static named font files, fontWeight MUST be 'normal'.
-  // The weight is already encoded in the fontFamily (e.g. 'Cairo-Bold').
-  // Setting fontWeight:'bold' causes Android to apply synthetic bold on top,
-  // distorting the glyph or silently falling back to the system font.
-  const resolvedWeight = Platform.OS === 'android' ? ('normal' as const) : weight;
+  const fontFamily = resolveFontFamily(weight, isArabic);
+  const fontWeight = resolveFontWeight(weight, isArabic);
 
   if (isArabic) {
+    const fontSize = baseStyle.fontSize + ARABIC_FONT_SIZE_DELTA;
     return {
       ...baseStyle,
-      fontFamily: resolvedFontFamily,
-      fontWeight: resolvedWeight,
-      // Decrease size by 2px as requested
-      fontSize: baseStyle.fontSize - 1.6,
-      // Adjust line height
-      lineHeight: (baseStyle as any).lineHeight
-        ? Math.round((baseStyle as any).lineHeight * 1.15)
-        : undefined,
+      fontFamily,
+      fontWeight,
+      fontSize,
+      lineHeight: Math.round(fontSize * ARABIC_LINE_HEIGHT_RATIO),
     };
   }
 
   return {
     ...baseStyle,
-    fontFamily: resolvedFontFamily,
-    fontWeight: resolvedWeight,
+    fontFamily,
+    fontWeight,
     lineHeight: Math.round(baseStyle.fontSize * 1.5),
   };
 };

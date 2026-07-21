@@ -23,6 +23,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { analytics } from '../lib/analytics';
+import { INPUT_TEXT_ALIGN } from '../lib/rtl';
 import { isDebugMode } from '../config/debug';
 
 const LoginScreen: React.FC = () => {
@@ -114,7 +115,9 @@ const LoginScreen: React.FC = () => {
   });
 
   const isMobileValid = /^01[0125]\d{8}$/.test(mobile.trim());
-  const isPasswordValid = password.length >= 8;
+  // Min 6 to match the registration policy (BKLT-284), so a valid password never
+  // flags red at login. This only drives the border colour; submit isn't gated on it.
+  const isPasswordValid = password.length >= 6;
 
   const getMobileBorderColor = () => {
     if (touchedMobile && !isMobileValid) return '#FF6B6B'; // Red-500
@@ -190,7 +193,7 @@ const LoginScreen: React.FC = () => {
                   keyboardType="phone-pad"
                   autoCapitalize="none"
                   editable={!isLoading}
-                  textAlign={isRTL ? 'right' : 'left'}
+                  textAlign={INPUT_TEXT_ALIGN}
                   returnKeyType="next"
                   onSubmitEditing={() => passwordRef.current?.focus()}
                   onBlur={() => setTouchedMobile(true)}
@@ -228,7 +231,7 @@ const LoginScreen: React.FC = () => {
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   editable={!isLoading}
-                  textAlign={isRTL ? 'right' : 'left'}
+                  textAlign={INPUT_TEXT_ALIGN}
                   returnKeyType="done"
                   onSubmitEditing={handleLogin}
                   onBlur={() => setTouchedPassword(true)}
@@ -434,7 +437,9 @@ const styles = (config: any) => {
       fontSize: 15,
       color: '#181c22',
       height: '100%',
-      textAlign: isRTL ? 'right' : 'left',
+      // No textAlign here — the fields set it via the INPUT_TEXT_ALIGN prop.
+      // A value here would win over that prop wherever it resolves to
+      // undefined (Android), reviving the manual flip. (BKLT-312)
     },
     signInButton: {
       height: 56,
@@ -460,8 +465,7 @@ const styles = (config: any) => {
       ...typography('button'),
       ...fontWeight('700'),
       color: '#FFFFFF',
-      marginRight: spacing.sm,
-      marginLeft: isRTL ? spacing.sm : 0,
+      marginEnd: spacing.sm,
     },
     footerContainer: {
       marginTop: spacing.md,
@@ -496,8 +500,7 @@ const styles = (config: any) => {
       fontSize: 14,
       ...fontWeight('600'),
       color: theme.colors.text,
-      marginLeft: spacing.sm,
-      marginRight: isRTL ? spacing.sm : 0,
+      marginStart: spacing.sm,
     },
     footer: {
       flexDirection: 'row',

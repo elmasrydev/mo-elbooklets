@@ -21,9 +21,10 @@ import { layout } from '../config/layout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useModal } from '../context/ModalContext';
 import AppButton from '../components/AppButton';
-import { tryFetchWithFallback } from '../config/api';
-import * as SecureStore from 'expo-secure-store';
+import { useMutation } from '@apollo/client/react';
+import { SendContactMessageDocument } from '../generated/graphql';
 import { analytics } from '../lib/analytics';
+import { INPUT_TEXT_ALIGN } from '../lib/rtl';
 
 const ContactUsScreen = ({ navigation }: any) => {
   const { t } = useTranslation();
@@ -39,6 +40,7 @@ const ContactUsScreen = ({ navigation }: any) => {
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [sendContactMessage] = useMutation(SendContactMessageDocument);
 
   const scrollViewRef = useRef<ScrollView>(null);
   const emailRef = useRef<TextInput>(null);
@@ -80,21 +82,9 @@ const ContactUsScreen = ({ navigation }: any) => {
 
     setLoading(true);
     try {
-      const token = await SecureStore.getItemAsync('auth_token');
-      const mutation = `
-        mutation SendContactMessage($name: String!, $email: String!, $subject: String!, $message: String!) {
-          sendContactMessage(name: $name, email: $email, subject: $subject, message: $message) {
-            success
-            message
-          }
-        }
-      `;
-
-      const response = await tryFetchWithFallback(
-        mutation,
-        { name, email, subject, message },
-        token || undefined,
-      );
+      const response = await sendContactMessage({
+        variables: { name, email, subject, message },
+      });
 
       if (response.data?.sendContactMessage?.success) {
         analytics.trackContactSupport(subject);
@@ -105,10 +95,7 @@ const ContactUsScreen = ({ navigation }: any) => {
           onConfirm: () => navigation.goBack(),
         });
       } else {
-        const errMsg =
-          response.data?.sendContactMessage?.message ||
-          response.errors?.[0]?.message ||
-          t('common.error');
+        const errMsg = response.data?.sendContactMessage?.message || t('common.error');
         showConfirm({
           title: t('common.error'),
           message: errMsg,
@@ -445,7 +432,8 @@ const styles = (config: any) => {
       ...typography('body'),
       color: theme.colors.text,
       height: '100%',
-      textAlign: 'left',
+      // Platform-split TextInput alignment — see INPUT_TEXT_ALIGN in lib/rtl.ts (BKLT-312).
+      textAlign: INPUT_TEXT_ALIGN,
     },
     textArea: {
       height: 120,
