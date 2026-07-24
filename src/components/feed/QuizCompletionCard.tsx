@@ -8,6 +8,7 @@ import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useTypography } from '../../hooks/useTypography';
 import { layout } from '../../config/layout';
 import { getTimeAgo } from '../../lib/dateUtils';
+import { formatScore } from '../../lib/scoreUtils';
 import { getSubjectConfig } from '../../utils/subjectTheme';
 import SubjectIcon from '../SubjectIcon';
 import Avatar from '../Avatar';
@@ -105,14 +106,17 @@ const QuizCompletionCard: React.FC<QuizCompletionCardProps> = ({ item, onLike })
         </View>
       </View>
 
-      {/* Stat chips: questions + accuracy */}
+      {/* Stat chips: score + accuracy. `totalQuestions` is a UNIT total (a match
+          counts each pair, a paragraph each child), so it is shown as a score,
+          never labelled "questions". */}
       <View style={s.statsRow}>
         <View style={[s.chip, s.chipNeutral]}>
-          <Ionicons name="list-outline" size={15} color={theme.colors.textSecondary} />
+          <Ionicons name="ribbon-outline" size={15} color={theme.colors.textSecondary} />
           <Text numberOfLines={1} style={[s.chipText, { color: theme.colors.textSecondary }]}>
-            {t('social_screen.questions_count', {
-              count: totalQuestions,
-              defaultValue: `${totalQuestions} Questions`,
+            {t('social_screen.score_chip', {
+              score: formatScore(item.quizData.score),
+              total: totalQuestions,
+              defaultValue: `Score ${formatScore(item.quizData.score)}/${totalQuestions}`,
             })}
           </Text>
         </View>

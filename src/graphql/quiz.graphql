@@ -75,8 +75,34 @@ query Quiz($quizId: ID!) {
       type
       answers
       questionNumber
-      explanation
       difficulty
+
+      # Image attachment — orthogonal to type; may appear on any question.
+      imageUrl
+
+      # type == "match": two independently shuffled columns to connect.
+      # ids ("L0"/"R0"…) are echoed back verbatim on submit.
+      matchPairs {
+        left {
+          id
+          text
+        }
+        right {
+          id
+          text
+        }
+      }
+
+      # type == "paragraph": ordered sub-questions (always mcq/true_false).
+      # Each is a fully-formed question that can carry its own imageUrl.
+      subQuestions {
+        id
+        questionNumber
+        type
+        question
+        answers
+        imageUrl
+      }
     }
     isCompleted
     score
@@ -158,11 +184,45 @@ query QuizReview($quizId: ID!) {
         answer_3
         answer_4
         explanation
+
+        # Image attachment (any question, including paragraph children).
+        imageUrl
+
+        # type == "match": canonical unshuffled columns (left[i] ↔ right[i]),
+        # to resolve match_results ids to text and show the correct pairing.
+        matchColumns {
+          left {
+            id
+            text
+          }
+          right {
+            id
+            text
+          }
+        }
+
+        # Paragraph passage carrier — set on sub-question rows so review can
+        # group children under their passage text.
+        parent {
+          id
+          question
+        }
       }
       selected_answer
       is_correct
       score
       explanation
+
+      # type == "paragraph": groups sub-question rows under their parent.
+      parent_question_id
+
+      # type == "match": per-pair correctness (same leftId/rightId as matchColumns).
+      match_results {
+        leftId
+        rightId
+        isCorrect
+      }
+
       descriptive_feedback {
         coverage_percentage
         score_out_of_10

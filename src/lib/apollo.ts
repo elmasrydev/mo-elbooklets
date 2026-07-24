@@ -10,20 +10,29 @@ import { ApiUriManager, REQUEST_TIMEOUT_MS } from '../config/api';
 import { isUnauthenticatedError, revokeSession } from './session';
 
 /**
+ * A per-operation timeout override, threaded through Apollo's
+ * `context: { fetchOptions: { timeoutMs } }`. HttpLink merges fetchOptions into
+ * the init passed to our custom fetch, so an operation can opt into a longer cap
+ * than the default (e.g. `submitQuizAnswers` with synchronous AI grading).
+ */
+type TimeoutInit = RequestInit & { timeoutMs?: number };
+
+/**
  * Cap each request at the shared transport timeout — RN's fetch otherwise
  * waits on the platform default (up to ~60s on iOS). Apollo passes its own
  * abort signal for query cancellation, so the two signals are chained: either
- * one aborts the request.
+ * one aborts the request. An operation may raise the cap via `timeoutMs`.
  */
 const fetchWithTimeout: typeof fetch = (input, init = {}) => {
+  const { timeoutMs = REQUEST_TIMEOUT_MS, ...rest } = init as TimeoutInit;
   const abort = new AbortController();
-  const timer = setTimeout(() => abort.abort(), REQUEST_TIMEOUT_MS);
-  const upstreamSignal = init.signal;
+  const timer = setTimeout(() => abort.abort(), timeoutMs);
+  const upstreamSignal = rest.signal;
   if (upstreamSignal) {
     if (upstreamSignal.aborted) abort.abort();
     else upstreamSignal.addEventListener('abort', () => abort.abort(), { once: true });
   }
-  return fetch(input, { ...init, signal: abort.signal }).finally(() => clearTimeout(timer));
+  return fetch(input, { ...rest, signal: abort.signal }).finally(() => clearTimeout(timer));
 };
 
 // The uri is resolved per request so the debug API switcher takes effect
@@ -128,7 +137,14 @@ const client = new ApolloClient({
   // exhausted; auth + http sit innermost so every attempt carries fresh
   // headers, and the logger sits between them to report what actually went out.
   link: from([errorLink, retryLink, authLink, loggerLink, httpLink]),
-  cache: new InMemoryCache(),
+  cache: new InMemoryCache({
+    typePolicies: {
+      // Match-column items carry ids that are unique only *within* one question
+      // ("L0"/"R0"/… repeat across every match question). Normalizing by id would
+      // let one question's columns overwrite another's, so keep them embedded.
+      MatchColumnItem: { keyFields: false },
+    },
+  }),
   defaultOptions: {
     watchQuery: {
       // Every mount asks the server, so the user never reads stale data — but

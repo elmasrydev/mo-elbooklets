@@ -218,7 +218,11 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
   const percentage = quizResult.totalQuestions
     ? Math.round((quizResult.score / quizResult.totalQuestions) * 100)
     : 0;
-  const correctAnswers = quizResult.userAnswers.filter((answer) => answer.is_correct).length;
+  // Score is counted in units (a match is worth N pairs, a paragraph the sum of
+  // its children), and a partially-correct match/descriptive answer earns
+  // partial credit — so a row-count of `is_correct` undercounts. `score` already
+  // is the number of correct units; round it for a clean "correct" figure.
+  const correctAnswers = Math.round(quizResult.score);
   const timeTaken = props.timeTaken ?? route.params?.timeTaken;
 
   const formatTime = (seconds?: number) => {

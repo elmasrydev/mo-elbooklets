@@ -1044,8 +1044,20 @@ export type QuizQuery = {
       type: string;
       answers: Array<string>;
       questionNumber: number;
-      explanation: string | null;
       difficulty: number;
+      imageUrl: string | null;
+      matchPairs: {
+        left: Array<{ id: string; text: string }>;
+        right: Array<{ id: string; text: string }>;
+      } | null;
+      subQuestions: Array<{
+        id: string;
+        questionNumber: number;
+        type: string;
+        question: string;
+        answers: Array<string>;
+        imageUrl: string | null;
+      }> | null;
     }>;
   };
 };
@@ -1085,7 +1097,7 @@ export type QuizResultsQuery = {
         id: string;
         question: string;
         type: string;
-        answer_1: string;
+        answer_1: string | null;
         explanation: string | null;
       };
       descriptive_feedback: { coverage_percentage: number; score_out_of_10: number } | null;
@@ -1110,16 +1122,24 @@ export type QuizReviewQuery = {
       is_correct: boolean;
       score: number | null;
       explanation: string | null;
+      parent_question_id: string | null;
       question: {
         id: string;
         question: string;
         type: string;
-        answer_1: string;
+        answer_1: string | null;
         answer_2: string | null;
         answer_3: string | null;
         answer_4: string | null;
         explanation: string | null;
+        imageUrl: string | null;
+        matchColumns: {
+          left: Array<{ id: string; text: string }>;
+          right: Array<{ id: string; text: string }>;
+        } | null;
+        parent: { id: string; question: string } | null;
       };
+      match_results: Array<{ leftId: string; rightId: string; isCorrect: boolean }> | null;
       descriptive_feedback: {
         coverage_percentage: number;
         score_out_of_10: number;
@@ -5327,8 +5347,54 @@ export const QuizDocument = {
                       { kind: 'Field', name: { kind: 'Name', value: 'type' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'answers' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'questionNumber' } },
-                      { kind: 'Field', name: { kind: 'Name', value: 'explanation' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'difficulty' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'imageUrl' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'matchPairs' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            {
+                              kind: 'Field',
+                              name: { kind: 'Name', value: 'left' },
+                              selectionSet: {
+                                kind: 'SelectionSet',
+                                selections: [
+                                  { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                                  { kind: 'Field', name: { kind: 'Name', value: 'text' } },
+                                ],
+                              },
+                            },
+                            {
+                              kind: 'Field',
+                              name: { kind: 'Name', value: 'right' },
+                              selectionSet: {
+                                kind: 'SelectionSet',
+                                selections: [
+                                  { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                                  { kind: 'Field', name: { kind: 'Name', value: 'text' } },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'subQuestions' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'questionNumber' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'type' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'question' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'answers' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'imageUrl' } },
+                          ],
+                        },
+                      },
                     ],
                   },
                 },
@@ -5610,6 +5676,49 @@ export const QuizReviewDocument = {
                             { kind: 'Field', name: { kind: 'Name', value: 'answer_3' } },
                             { kind: 'Field', name: { kind: 'Name', value: 'answer_4' } },
                             { kind: 'Field', name: { kind: 'Name', value: 'explanation' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'imageUrl' } },
+                            {
+                              kind: 'Field',
+                              name: { kind: 'Name', value: 'matchColumns' },
+                              selectionSet: {
+                                kind: 'SelectionSet',
+                                selections: [
+                                  {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'left' },
+                                    selectionSet: {
+                                      kind: 'SelectionSet',
+                                      selections: [
+                                        { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                                        { kind: 'Field', name: { kind: 'Name', value: 'text' } },
+                                      ],
+                                    },
+                                  },
+                                  {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'right' },
+                                    selectionSet: {
+                                      kind: 'SelectionSet',
+                                      selections: [
+                                        { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                                        { kind: 'Field', name: { kind: 'Name', value: 'text' } },
+                                      ],
+                                    },
+                                  },
+                                ],
+                              },
+                            },
+                            {
+                              kind: 'Field',
+                              name: { kind: 'Name', value: 'parent' },
+                              selectionSet: {
+                                kind: 'SelectionSet',
+                                selections: [
+                                  { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                                  { kind: 'Field', name: { kind: 'Name', value: 'question' } },
+                                ],
+                              },
+                            },
                           ],
                         },
                       },
@@ -5617,6 +5726,19 @@ export const QuizReviewDocument = {
                       { kind: 'Field', name: { kind: 'Name', value: 'is_correct' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'score' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'explanation' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'parent_question_id' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'match_results' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'leftId' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'rightId' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'isCorrect' } },
+                          ],
+                        },
+                      },
                       {
                         kind: 'Field',
                         name: { kind: 'Name', value: 'descriptive_feedback' },

@@ -133,7 +133,9 @@
     "unexpected_error": "An unexpected error occurred",
     "unknown_unit": "Unknown Unit",
     "version": "Version",
-    "yes": "Yes"
+    "yes": "Yes",
+    "close": "Close",
+    "clear": "Clear"
   },
   "subscription": {
     "required_message": "You must subscribe to access all features. Please subscribe to continue.",
@@ -365,7 +367,23 @@
     "select_answer_last": "Please select an answer for this question before submitting the quiz.",
     "unanswered_questions": "You have {{count}} unanswered question(s). Please answer all questions before submitting.",
     "what_happens": "What Happens?",
-    "write_your_answer": "Write your answer here..."
+    "write_your_answer": "Write your answer here...",
+    "match_helper_base": "Tap an item, then tap its match in the other column.",
+    "match_helper_hint": "Now tap its match. Tap a connected item to undo.",
+    "match_helper_done": "All connected — review, then tap Next.",
+    "match_helper_slots": "Tap a slot, then pick its answer.",
+    "match_choose_answer": "Choose the answer",
+    "match_sheet_title": "Choose the answer for:",
+    "clear_all": "Clear all",
+    "passage": "Reading passage",
+    "passage_fab": "Passage",
+    "min_read": "~{{count}} min read",
+    "reading_helper_base": "Read the passage, then answer all {{count}} questions.",
+    "reading_helper_done": "All answered — review, then tap Next.",
+    "unsupported_question": "This question type isn't supported yet",
+    "unsupported_question_hint": "Please update the app to answer it.",
+    "image_open": "Question image. Tap to enlarge.",
+    "image_retry": "Image failed to load. Tap to retry."
   },
   "quiz_results": {
     "accuracy_label": "Accuracy",
@@ -428,7 +446,16 @@
     "filter_wrong": "Wrong",
     "wrong": "Wrong",
     "new_quiz": "New Quiz",
-    "back_to_results": "Back to Results"
+    "back_to_results": "Back to Results",
+    "question_score": "Question score",
+    "connections": "Connections",
+    "sub_questions": "Questions",
+    "n_correct": "{{count}} correct",
+    "n_wrong": "{{count}} wrong",
+    "correct_answer": "Correct answer",
+    "swap_insight": "Heads up — you swapped the answers of items {{a}} and {{b}}.",
+    "pairs_summary": "{{correct}}/{{total}} pairs correct",
+    "view_passage": "View passage"
   },
   "social_screen": {
     "aced_quiz": "Aced the {{subject}} Quiz",
@@ -470,10 +497,10 @@
     "search_results": "Search Results",
     "searching": "Searching...",
     "try_different_search": "Try searching with a different name or mobile number",
-    "questions_count": "{{count}} Questions",
     "accuracy": "{{percent}}% Accuracy",
     "passed": "Passed",
-    "failed": "Failed"
+    "failed": "Failed",
+    "score_chip": "Score {{score}}/{{total}}"
   },
   "leaderboard_screen": {
     "adjust_filters_hint": "Try a different filter to see more students.",
