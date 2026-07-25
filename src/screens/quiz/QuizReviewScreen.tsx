@@ -30,6 +30,7 @@ import ReportQuestionModal from '../../components/ReportQuestionModal';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import MatchReviewCard from '../../components/quiz/MatchReviewCard';
 import ParagraphReviewGroup from '../../components/quiz/ParagraphReviewGroup';
+import QuestionImage from '../../components/quiz/QuestionImage';
 import { groupUserAnswers } from '../../utils/quizResultGroups';
 import { isMatchType } from '../../utils/quizQuestionTypes';
 
@@ -451,6 +452,14 @@ const QuizReviewScreen: React.FC = () => {
                 {/* Expanded State Content */}
                 {isExpanded && (
                   <View style={currentStyles.expandedContent}>
+                    {/* Image attachment — orthogonal to type; the review query
+                        fetches question.imageUrl the same as the taking screen. */}
+                    {ua.question.imageUrl && (
+                      <QuestionImage
+                        uri={ua.question.imageUrl}
+                        testID={`review-question-image-${ua.question.id}`}
+                      />
+                    )}
                     <Text style={[currentStyles.questionText, { textAlign: contentAlign }]}>
                       {ua.question.question}
                     </Text>
