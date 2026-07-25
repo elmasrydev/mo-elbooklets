@@ -69,8 +69,6 @@ const Wire: React.FC<{ p1: Port; p2: Port; color: string; reducedMotion: boolean
 }) => {
   const { d, length } = buildWire(p1, p2);
   const progress = useSharedValue(reducedMotion ? 1 : 0);
-  const lengthSV = useSharedValue(length);
-  lengthSV.value = length;
 
   // Draw-in once when this wire first mounts (a new pair was formed).
   useEffect(() => {
@@ -80,8 +78,11 @@ const Wire: React.FC<{ p1: Port; p2: Port; color: string; reducedMotion: boolean
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // `length` is a plain JS number the worklet captures as a dependency; reading it
+  // directly (instead of mirroring it into a shared value written during render)
+  // keeps the offset in sync when the endpoints move, without the render-time write.
   const animatedProps = useAnimatedProps(() => ({
-    strokeDashoffset: lengthSV.value * (1 - progress.value),
+    strokeDashoffset: length * (1 - progress.value),
   }));
 
   return (

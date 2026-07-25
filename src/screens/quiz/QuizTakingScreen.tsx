@@ -505,7 +505,10 @@ const QuizTakingScreen: React.FC = () => {
             </View>
           ) : isMatch ? (
             currentQuestion.matchPairs ? (
+              // Key by question id so the armed-card (`pending`) state can't leak
+              // into the next match question — each question remounts fresh.
               <MatchQuestion
+                key={currentQuestion.id}
                 matchPairs={currentQuestion.matchPairs}
                 pairs={matchPairsOf(currentQuestion.id)}
                 onChange={(pairs) => setMatchPairs(currentQuestion.id, pairs)}
@@ -515,7 +518,9 @@ const QuizTakingScreen: React.FC = () => {
               unsupportedCard
             )
           ) : isParagraph ? (
+            // Key by question id so the passage-collapse state resets per question.
             <ParagraphQuestion
+              key={currentQuestion.id}
               passage={currentQuestion.question}
               childQuestions={currentQuestion.subQuestions ?? []}
               answers={childAnswersOf(currentQuestion.id)}
