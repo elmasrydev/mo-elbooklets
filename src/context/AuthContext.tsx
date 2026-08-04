@@ -69,6 +69,8 @@ interface Parent {
   mobile: string;
   email?: string | null;
   country_code?: string | null;
+  /** Null until the parent confirms the number with a WhatsApp code. */
+  mobile_verified_at?: string | null;
 }
 
 interface ParentLoginInput {
@@ -224,6 +226,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const parsedParent = JSON.parse(parentData);
             setParentUser(parsedParent);
             configureCrashlyticsParent(parsedParent);
+
+            // Builds before the parent OTP gate never stored `mobile_verified_at`,
+            // so a blob without the key says nothing about verification. Pull the
+            // truth before the gate can act on the absence and strand an already
+            // verified parent on the code screen.
+            if (!('mobile_verified_at' in parsedParent)) {
+              refreshParentFromServer();
+            }
           }
         }
 
@@ -267,8 +277,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setTimeout(() => triggerNotificationPrompt(), 10000);
 
           if (!authPayload.user.mobile_verified_at) {
-            // Login: backend does NOT auto-fire OTP — screen must request it on mount
-            setOtpShouldAutoRequest(true);
+            // `login` auto-sends a fresh code when the number is unverified
+            // (mobile-otp-guide.md section 3), so the screen must not send a
+            // second one — it would burn the user's 3-per-hour budget.
+            setOtpWasAutoSent(true);
           }
           return { success: true, user: authPayload.user };
         }
@@ -379,6 +391,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           registerDeviceToken('parent');
           setTimeout(() => triggerNotificationPrompt(), 10000);
 
+          if (!authPayload.parent.mobile_verified_at) {
+            // `parentLogin` auto-sends a fresh code when the number is
+            // unverified (mobile-otp-guide.md section 3).
+            setOtpWasAutoSent(true);
+          }
           return { success: true };
         }
 
@@ -416,6 +433,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           registerDeviceToken('parent');
           setTimeout(() => triggerNotificationPrompt(), 10000);
 
+          if (!authPayload.parent.mobile_verified_at) {
+            // `parentRegister` auto-sends the first code, same as `register`.
+            setOtpWasAutoSent(true);
+          }
           return { success: true };
         }
 
@@ -549,6 +570,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await AsyncStorage.removeItem('just_registered_pending_success');
     }
   }, []);
+
+  /**
+   * Fills in a parent record restored from a pre-gate build, which predates
+   * `mobile_verified_at`. Best-effort: a failure just leaves the record as-is,
+   * and the field arrives on the next login.
+   */
+  const refreshParentFromServer = async () => {
+    try {
+      const result = await apolloClient.query({
+        query: ParentMeDocument,
+        fetchPolicy: 'network-only',
+      });
+      if (result.data?.parentMe) {
+        await SecureStore.setItemAsync('parent_data', JSON.stringify(result.data.parentMe));
+        setParentUser(result.data.parentMe);
+      }
+    } catch (error) {
+      logError('Parent verification-state backfill failed', error);
+    }
+  };
 
   const refreshUser = useCallback(async () => {
     try {

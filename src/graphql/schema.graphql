@@ -348,6 +348,11 @@ type Lesson {
   description: String
   id: ID!
   isLocked: Boolean!
+
+  """
+  Key points for the lesson. Untitled rows are filtered out: `LessonPoint.title`
+  is non-nullable, so one blank row would otherwise fail the whole query.
+  """
   lessonPoints: [LessonPoint!]!
   mindMapUrl: String
   myInteraction: String
@@ -576,6 +581,24 @@ type Mutation {
   """Report a question"""
   reportQuestion(comment: String, questionId: ID!, reportTypeId: ID!): QuestionReportResult!
 
+  """
+  Set a new parent password using the code from `sendParentPasswordResetOtp`.
+  
+  Codes are scoped to the parent account specifically: a student reset code
+  for the same number is rejected, as is a mobile-verification code. On
+  success every existing parent access token is revoked.
+  """
+  resetParentPasswordWithOtp(country_code: String, mobile: String!, otp: String!, password: String!, password_confirmation: String!): SocialActionResponse!
+
+  """
+  Set a new password using the code from `sendPasswordResetOtp`.
+  
+  Only accepts a code issued by that mutation — a mobile-verification code is
+  rejected. On success every existing access token for the account is revoked,
+  so the client must send the user back to login rather than reusing its token.
+  """
+  resetPasswordWithOtp(country_code: String, mobile: String!, otp: String!, password: String!, password_confirmation: String!): SocialActionResponse!
+
   """Student responds to an incoming request from a parent"""
   respondToParentLink(action: String!, request_id: ID!): ParentLinkRequest!
 
@@ -595,9 +618,46 @@ type Mutation {
   sendParentLinkRequest(parent_country_code: String, parent_mobile: String!): ParentLinkRequest!
 
   """
-  Create or find existing quiz for selected lessons. calculateTime records the actual time spent (for record only); ON by default.
+  Send a parent mobile-verification code over WhatsApp.
+  
+  Call after `parentRegister`, and again whenever `parentLogin` reports the
+  number is unverified. Codes are scoped to the parent account: verifying a
+  child's number on the same handset does not verify the parent.
   """
-  startQuiz(calculateTime: Boolean, lessonIds: [ID!]!, quizTypeId: ID, subjectId: ID!): Quiz!
+  sendParentMobileOtp(country_code: String, mobile: String!): OtpResponse!
+
+  """
+  Send a parent password-reset code over WhatsApp. Use this rather than
+  `parentForgotPassword` — parents sign in by mobile on the web too.
+  
+  Same enumeration guarantee as `sendPasswordResetOtp`: always reports success
+  whether or not the number has a parent account, and `success: false` means
+  the request was rate limited.
+  """
+  sendParentPasswordResetOtp(country_code: String, mobile: String!): OtpResponse!
+
+  """
+  Send a password-reset code over WhatsApp. Use this rather than `forgotPassword`
+  for students: they sign in by mobile and most have no email on file.
+  
+  Always reports success, whether or not the number is registered, so the
+  endpoint cannot be used to discover who has an account — do not treat a
+  `true` here as confirmation that the number exists. `success: false` means
+  the request was rate limited and `message` says when to retry.
+  """
+  sendPasswordResetOtp(country_code: String, mobile: String!): OtpResponse!
+
+  """
+  Create or find existing quiz for selected lessons.
+  
+  calculateTime records the actual time spent (for record only); ON by default.
+  
+  questionTypes restricts the quiz to the chosen question types — omit it (or
+  send every type) for the default of all types. When given, at least 2 types
+  are required. Allowed: mcq, true_false, image, match, paragraph,
+  what_happens, give_a_reason.
+  """
+  startQuiz(calculateTime: Boolean, lessonIds: [ID!]!, questionTypes: [String!], quizTypeId: ID, subjectId: ID!): Quiz!
 
   """Submit quiz answers and get results"""
   submitQuizAnswers(answers: [QuestionAnswerInput!]!, postToFeed: Boolean, quizId: ID!): QuizResult!
@@ -622,6 +682,14 @@ type Mutation {
 
   """Verify a WhatsApp OTP for the authenticated user"""
   verifyMobileOtp(otp: String!): OtpVerifyResponse!
+
+  """
+  Verify the authenticated parent's mobile number.
+  
+  The number is taken from the signed-in account, not from the request, so
+  only the code matters here.
+  """
+  verifyParentMobileOtp(otp: String!): ParentOtpVerifyResponse!
 }
 
 """News feed item - polymorphic based on type"""
@@ -789,6 +857,13 @@ input ParentLoginInput {
   password: String!
 }
 
+"""Result of verifying a parent's mobile number"""
+type ParentOtpVerifyResponse {
+  message: String!
+  parent: ParentUser
+  success: Boolean!
+}
+
 """Parent register input"""
 input ParentRegisterInput {
   country_code: String
@@ -805,6 +880,11 @@ type ParentUser {
   email: String
   id: ID!
   mobile: String!
+
+  """
+  Null until the parent confirms the number with a WhatsApp code. Branch on this after parentLogin / parentRegister.
+  """
+  mobile_verified_at: DateTime
   name: String
   updated_at: DateTime!
 }
@@ -822,12 +902,40 @@ type PaymobCheckout {
   publicKey: String
 
   """
+  Payment attempt reference. Poll `paymentIntentStatus(reference)` with this after the webview closes to confirm success/failure. Null for a free order (already active).
+  """
+  reference: String
+
+  """
   "pending" while awaiting payment, or "active" for a free/fully-discounted order.
   """
   status: String!
 
   """
   The subscription id — only present for a free/fully-discounted order, which is activated immediately. Null for a paid order, whose subscription is created only after the payment webhook confirms.
+  """
+  subscriptionId: ID
+}
+
+"""
+The outcome of a specific Paymob payment attempt, identified by its reference. Poll this after the checkout webview closes instead of relying on the global `me.is_subscribed` flag, which cannot tell whether *this* purchase succeeded.
+"""
+type PaymobPaymentStatus {
+  """Human-readable failure reason when status is "failed". Null otherwise."""
+  failureReason: String
+
+  """
+  The payment reference this status is for (the `reference` from createPaymobCheckout).
+  """
+  reference: String!
+
+  """
+  "pending" while awaiting the webhook, "completed" once the payment succeeded, "failed" if it was declined or cancelled.
+  """
+  status: String!
+
+  """
+  The subscription id, present once status is "completed". Null otherwise.
   """
   subscriptionId: ID
 }
@@ -916,6 +1024,14 @@ type Query {
   """Get DOD progress for a lesson"""
   lessonDODProgress(lessonId: ID!): LessonDODProgress!
 
+  """
+  Question types available in the chosen lessons, with how many questions each
+  holds. Call this after the student picks lessons and before showing the type
+  picker: only offer the types that come back, and validate the quiz size
+  against their counts.
+  """
+  lessonQuestionTypes(lessonIds: [ID!]!): QuestionTypeAvailability!
+
   """Get chapters and lessons for a subject"""
   lessonsForSubject(subjectId: ID!): [Chapter!]!
 
@@ -963,6 +1079,11 @@ type Query {
 
   """Get authenticated parent's notifications with pagination"""
   parentNotifications(page: Int, per_page: Int): NotificationPage!
+
+  """
+  Check the status of a Paymob payment attempt by its reference (from createPaymobCheckout). Poll this after the checkout webview closes to confirm whether *this* purchase succeeded — unlike `me.is_subscribed`, which is a global flag. Returns null if the reference is unknown or not owned by the authenticated user.
+  """
+  paymentIntentStatus(reference: String!): PaymobPaymentStatus
 
   """Get people you may know suggestions based on shared school or city"""
   peopleYouMayKnow(limit: Int): PeopleYouMayKnowResult!
@@ -1090,6 +1211,33 @@ type QuestionReportType {
   name_en: String
 }
 
+"""
+What the selected lessons can be quizzed on. Types with no questions are left
+out entirely — do not render them.
+"""
+type QuestionTypeAvailability {
+  """
+  How many types a custom selection must contain. Send none for the default of all types.
+  """
+  minSelectedTypes: Int!
+
+  """Questions available across every listed type."""
+  total: Int!
+  types: [QuestionTypeCount!]!
+}
+
+"""One selectable question type and what the chosen lessons hold of it."""
+type QuestionTypeCount {
+  """Questions available for this type in the chosen lessons."""
+  count: Int!
+
+  """Localised name, ready to display."""
+  label: String!
+
+  """Send this value in startQuiz(questionTypes:)."""
+  type: String!
+}
+
 """Quiz type"""
 type Quiz {
   created_at: DateTime!
@@ -1099,6 +1247,9 @@ type Quiz {
   name: String!
   name_ar: String
   name_en: String
+
+  """Question types this quiz was restricted to. Null means every type."""
+  question_types: [String!]
   questions: [QuizQuestion!]!
   quizType: QuizType
   quiz_type_id: ID

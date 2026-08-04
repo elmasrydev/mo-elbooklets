@@ -30,6 +30,7 @@ import {
   isValidPersonName,
 } from '../utils/validators';
 import { INPUT_TEXT_ALIGN } from '../lib/rtl';
+import { digitsOnly } from '../utils/digits';
 import { analytics } from '../lib/analytics';
 import { useMobileAvailability } from '../hooks/useMobileAvailability';
 import MobileAvailabilityHint from '../components/MobileAvailabilityHint';
@@ -144,13 +145,10 @@ const ParentRegisterScreen: React.FC = () => {
           showCancel: false,
           onConfirm: () => {},
         });
-      } else {
-        // Redirect to parent dashboard and show success
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'ParentStack' }],
-        });
       }
+      // On success there is nothing to navigate to: AuthContext flips the
+      // session, and AppNavigator swaps the whole stack to either the parent
+      // OTP gate or the dashboard depending on `mobile_verified_at`.
     } catch (error) {
       console.error('Parent registration screen error:', error);
       showConfirm({
@@ -271,7 +269,7 @@ const ParentRegisterScreen: React.FC = () => {
                   style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN }]}
                   value={mobile}
                   onChangeText={(val) => {
-                    setMobile(val.replace(/\D/g, '').slice(0, 11));
+                    setMobile(digitsOnly(val).slice(0, 11));
                     // Drop the previous verdict — it belongs to the old number.
                     mobileAvailability.reset();
                   }}

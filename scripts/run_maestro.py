@@ -89,11 +89,16 @@ def main():
         "e2e/auth/02_student-login-validation.yaml",
         "e2e/auth/03_student-login.yaml",
         "e2e/auth/06_logout.yaml",
-        "e2e/auth/07_forgot-password.yaml",
         # Parent auth (04 registers the run's random parent; 05/08 reuse that mobile)
         "e2e/auth/04_parent-register.yaml",
         "e2e/auth/05_parent-login.yaml",
         "e2e/auth/08_parent-logout.yaml",
+        # Password-reset smoke flows. Each spends a WhatsApp message against the
+        # shared per-number quota (1/60s, 3/hour, 10/day across all four OTP
+        # flows), so they run last — a reset send earlier would rate-limit the
+        # verification codes the register/login flows depend on.
+        "e2e/auth/07_forgot-password.yaml",
+        "e2e/auth/10_parent-forgot-password.yaml",
     ]
 
     # Parent<->child linking reuses the student (01) + parent (04) registered this

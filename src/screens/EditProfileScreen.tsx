@@ -18,13 +18,12 @@ import { useTranslation } from 'react-i18next';
 import { useAuth, User } from '../context/AuthContext';
 import { useLazyQuery, useMutation } from '@apollo/client/react';
 import {
-  ForgotPasswordDocument,
   GetEduSystemsDocument,
   GetGovernoratesDocument,
   SearchCitiesDocument,
   SearchSchoolsDocument,
-  UpdatePasswordDocument,
   UpdateProfileDocument,
+  UpdatePasswordDocument,
 } from '../generated/graphql';
 import { addCity, addSchool } from '../services/locationService';
 import { Ionicons } from '@expo/vector-icons';
@@ -38,6 +37,7 @@ import SearchablePickerModal from '../components/SearchablePickerModal';
 import Avatar from '../components/Avatar';
 import AvatarPickerModal from '../components/AvatarPickerModal';
 import { INPUT_TEXT_ALIGN } from '../lib/rtl';
+import { validatePasswordChange } from '../utils/passwordChange';
 
 interface EducationalSystem {
   id: string;
@@ -94,7 +94,6 @@ const EditProfileScreen: React.FC = () => {
   const [runSchoolsQuery] = useLazyQuery(SearchSchoolsDocument);
   const [updateProfile] = useMutation(UpdateProfileDocument);
   const [updatePassword] = useMutation(UpdatePasswordDocument);
-  const [forgotPassword] = useMutation(ForgotPasswordDocument);
 
   const [governorates, setGovernorates] = useState<any[]>([]);
   const [cities, setCities] = useState<City[]>([]);
@@ -108,8 +107,8 @@ const EditProfileScreen: React.FC = () => {
     newPassword: '',
     confirmPassword: '',
   });
-
   const [showPasswordSection, setShowPasswordSection] = useState(false);
+
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const [touchedEmail, setTouchedEmail] = useState(false);
@@ -327,9 +326,77 @@ const EditProfileScreen: React.FC = () => {
     return theme.colors.border;
   };
 
-  const getPasswordInputBorderColor = (fieldName: string, value: string) => {
+  const getPasswordInputBorderColor = (fieldName: string) => {
     if (focusedField === fieldName) return theme.colors.primary;
     return theme.colors.border;
+  };
+
+  const handleUpdatePassword = async () => {
+    const validationError = validatePasswordChange({
+      currentPassword: passwordState.oldPassword,
+      newPassword: passwordState.newPassword,
+      confirmPassword: passwordState.confirmPassword,
+    });
+    if (validationError) {
+      showConfirm({
+        title: t('common.error'),
+        message: t(validationError),
+        showCancel: false,
+        onConfirm: () => {},
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const result = await updatePassword({
+        variables: {
+          input: {
+            current_password: passwordState.oldPassword,
+            password: passwordState.newPassword,
+            password_confirmation: passwordState.confirmPassword,
+          },
+        },
+      });
+
+      if (result.data?.updatePassword?.success) {
+        // A password change can invalidate sibling sessions server-side, and
+        // `updatePassword` returns no replacement token, so the only way to know
+        // this device's token survived is to spend one authenticated request on
+        // it. If it was revoked, the Apollo error link routes through
+        // `revokeSession` and signs the user out instead of leaving them on a
+        // dead session that fails at the next random screen.
+        await refreshUser();
+
+        showConfirm({
+          title: t('common.success'),
+          message: result.data.updatePassword.message || t('profile.password_changed_success'),
+          showCancel: false,
+          onConfirm: () => {
+            setShowPasswordSection(false);
+            setPasswordState({ oldPassword: '', newPassword: '', confirmPassword: '' });
+          },
+        });
+      } else {
+        showConfirm({
+          title: t('common.error'),
+          message: result.data?.updatePassword?.message || t('common.error'),
+          showCancel: false,
+          onConfirm: () => {},
+        });
+      }
+    } catch (err: any) {
+      console.error('Update password error:', err);
+      showConfirm({
+        title: t('common.error'),
+        message: err.message || t('common.error'),
+        showCancel: false,
+        onConfirm: () => {},
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSave = async () => {
@@ -407,106 +474,6 @@ const EditProfileScreen: React.FC = () => {
       }
     } catch (err: any) {
       console.error('Update profile error:', err);
-      showConfirm({
-        title: t('common.error'),
-        message: err.message || t('common.error'),
-        showCancel: false,
-        onConfirm: () => {},
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUpdatePassword = async () => {
-    if (!passwordState.oldPassword || !passwordState.newPassword) {
-      showConfirm({
-        title: t('common.error'),
-        message: t('auth.fill_all_fields'),
-        showCancel: false,
-        onConfirm: () => {},
-      });
-      return;
-    }
-
-    if (passwordState.newPassword !== passwordState.confirmPassword) {
-      showConfirm({
-        title: t('common.error'),
-        message: t('profile.passwords_dont_match'),
-        showCancel: false,
-        onConfirm: () => {},
-      });
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      const input = {
-        current_password: passwordState.oldPassword,
-        password: passwordState.newPassword,
-        password_confirmation: passwordState.confirmPassword,
-      };
-
-      const result = await updatePassword({ variables: { input } });
-
-      if (result.data?.updatePassword?.success) {
-        showConfirm({
-          title: t('common.success'),
-          message: result.data.updatePassword.message || t('profile.password_changed_success'),
-          showCancel: false,
-          onConfirm: () => {
-            setShowPasswordSection(false);
-            setPasswordState({ oldPassword: '', newPassword: '', confirmPassword: '' });
-          },
-        });
-      } else {
-        const errorMsg = result.data?.updatePassword?.message || t('common.error');
-        showConfirm({
-          title: t('common.error'),
-          message: errorMsg,
-          showCancel: false,
-          onConfirm: () => {},
-        });
-      }
-    } catch (err: any) {
-      console.error('Update password error:', err);
-      showConfirm({
-        title: t('common.error'),
-        message: err.message || t('common.error'),
-        showCancel: false,
-        onConfirm: () => {},
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleForgotPassword = async () => {
-    if (!user?.email) return;
-
-    try {
-      setLoading(true);
-      const result = await forgotPassword({ variables: { email: user.email } });
-
-      if (result.data?.forgotPassword?.success) {
-        showConfirm({
-          title: t('common.success'),
-          message: result.data.forgotPassword.message || t('common.success'),
-          showCancel: false,
-          onConfirm: () => {},
-        });
-      } else {
-        const errorMsg = result.data?.forgotPassword?.message || t('common.error');
-        showConfirm({
-          title: t('common.error'),
-          message: errorMsg,
-          showCancel: false,
-          onConfirm: () => {},
-        });
-      }
-    } catch (err: any) {
-      console.error('Forgot password error:', err);
       showConfirm({
         title: t('common.error'),
         message: err.message || t('common.error'),
@@ -963,6 +930,7 @@ const EditProfileScreen: React.FC = () => {
           {/* Security & Password Card */}
           <View style={currentStyles.card}>
             <TouchableOpacity
+              testID="profile-change-password-toggle"
               style={currentStyles.passwordToggle}
               onPress={() => setShowPasswordSection(!showPasswordSection)}
               activeOpacity={0.7}
@@ -980,18 +948,12 @@ const EditProfileScreen: React.FC = () => {
 
             {showPasswordSection && (
               <View style={currentStyles.passwordSection}>
-                {/* Old Password */}
                 <View style={currentStyles.inputGroup}>
                   <Text style={currentStyles.inputLabel}>{t('profile.old_password')}</Text>
                   <View
                     style={[
                       currentStyles.inputWrapper,
-                      {
-                        borderColor: getPasswordInputBorderColor(
-                          'oldPassword',
-                          passwordState.oldPassword,
-                        ),
-                      },
+                      { borderColor: getPasswordInputBorderColor('oldPassword') },
                     ]}
                   >
                     <Ionicons
@@ -1005,6 +967,7 @@ const EditProfileScreen: React.FC = () => {
                       style={currentStyles.inputIconLeft}
                     />
                     <TextInput
+                      testID="profile-old-password-input"
                       style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN }]}
                       secureTextEntry
                       value={passwordState.oldPassword}
@@ -1017,18 +980,12 @@ const EditProfileScreen: React.FC = () => {
                   </View>
                 </View>
 
-                {/* New Password */}
                 <View style={currentStyles.inputGroup}>
                   <Text style={currentStyles.inputLabel}>{t('profile.new_password')}</Text>
                   <View
                     style={[
                       currentStyles.inputWrapper,
-                      {
-                        borderColor: getPasswordInputBorderColor(
-                          'newPassword',
-                          passwordState.newPassword,
-                        ),
-                      },
+                      { borderColor: getPasswordInputBorderColor('newPassword') },
                     ]}
                   >
                     <Ionicons
@@ -1042,6 +999,7 @@ const EditProfileScreen: React.FC = () => {
                       style={currentStyles.inputIconLeft}
                     />
                     <TextInput
+                      testID="profile-new-password-input"
                       style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN }]}
                       secureTextEntry
                       value={passwordState.newPassword}
@@ -1054,18 +1012,12 @@ const EditProfileScreen: React.FC = () => {
                   </View>
                 </View>
 
-                {/* Confirm New Password */}
                 <View style={currentStyles.inputGroup}>
                   <Text style={currentStyles.inputLabel}>{t('profile.confirm_new_password')}</Text>
                   <View
                     style={[
                       currentStyles.inputWrapper,
-                      {
-                        borderColor: getPasswordInputBorderColor(
-                          'confirmPassword',
-                          passwordState.confirmPassword,
-                        ),
-                      },
+                      { borderColor: getPasswordInputBorderColor('confirmPassword') },
                     ]}
                   >
                     <Ionicons
@@ -1079,6 +1031,7 @@ const EditProfileScreen: React.FC = () => {
                       style={currentStyles.inputIconLeft}
                     />
                     <TextInput
+                      testID="profile-confirm-password-input"
                       style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN }]}
                       secureTextEntry
                       value={passwordState.confirmPassword}
@@ -1091,33 +1044,45 @@ const EditProfileScreen: React.FC = () => {
                   </View>
                 </View>
 
+                <Text style={currentStyles.resetPasswordHint}>{t('auth.password_min_8')}</Text>
+
                 <View style={{ marginTop: spacing.md }}>
                   <AppButton
-                    title={t('profile.update_password', 'Update Password')}
+                    testID="profile-update-password-button"
+                    title={t('profile.update_password')}
                     onPress={handleUpdatePassword}
                     loading={loading}
                     variant="primary"
                     fullWidth={true}
                   />
-
-                  <TouchableOpacity
-                    onPress={handleForgotPassword}
-                    disabled={loading}
-                    style={{ marginTop: spacing.md, alignItems: 'center' }}
-                  >
-                    <Text
-                      style={{
-                        ...typography('caption'),
-                        color: theme.colors.primary,
-                        textDecorationLine: 'underline',
-                      }}
-                    >
-                      {t('auth.forgot_password', 'Forgot Password?')}
-                    </Text>
-                  </TouchableOpacity>
                 </View>
               </View>
             )}
+          </View>
+
+          {/* Forgot the current password? That path cannot use the form above —
+              it needs the WhatsApp code flow, which ends signed out because the
+              server revokes every token on reset. */}
+          <View style={currentStyles.card}>
+            <TouchableOpacity
+              testID="profile-reset-password-button"
+              style={currentStyles.passwordToggle}
+              onPress={() => navigation.navigate('ResetPassword')}
+              activeOpacity={0.7}
+            >
+              <View style={currentStyles.passwordToggleLeft}>
+                <Ionicons name="key-outline" size={20} color={theme.colors.primary} />
+                <Text style={currentStyles.passwordToggleText}>
+                  {t('auth.reset_password_button')}
+                </Text>
+              </View>
+              <Ionicons
+                name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                size={20}
+                color={theme.colors.primary}
+              />
+            </TouchableOpacity>
+            <Text style={currentStyles.resetPasswordHint}>{t('profile.reset_password_hint')}</Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -1367,6 +1332,13 @@ const styles = (config: any) => {
       borderTopWidth: 1,
       borderTopColor: theme.colors.border,
       marginTop: spacing.sm,
+    },
+    resetPasswordHint: {
+      ...typography('caption'),
+      color: theme.colors.textSecondary,
+      textAlign: 'left',
+      paddingHorizontal: spacing.md,
+      paddingBottom: spacing.md,
     },
     errorText: {
       ...typography('caption'),

@@ -54,8 +54,35 @@ query LessonsForSubject($subjectId: ID!) {
   }
 }
 
-mutation StartQuiz($subjectId: ID!, $lessonIds: [ID!]!, $quizTypeId: ID) {
-  startQuiz(subjectId: $subjectId, lessonIds: $lessonIds, quizTypeId: $quizTypeId) {
+# What the chosen lessons can actually be quizzed on. Run this after the lessons
+# are picked and before rendering the type picker: types with no questions are
+# omitted from `types` entirely, so never pad the list from a hardcoded set.
+query LessonQuestionTypes($lessonIds: [ID!]!) {
+  lessonQuestionTypes(lessonIds: $lessonIds) {
+    total
+    minSelectedTypes
+    types {
+      type
+      label
+      count
+    }
+  }
+}
+
+# `questionTypes` restricts the quiz to the chosen types. Omit it for the
+# default mix — sending every type means the same thing with more code.
+mutation StartQuiz(
+  $subjectId: ID!
+  $lessonIds: [ID!]!
+  $quizTypeId: ID
+  $questionTypes: [String!]
+) {
+  startQuiz(
+    subjectId: $subjectId
+    lessonIds: $lessonIds
+    quizTypeId: $quizTypeId
+    questionTypes: $questionTypes
+  ) {
     id
   }
 }

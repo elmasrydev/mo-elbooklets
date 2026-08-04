@@ -26,7 +26,7 @@ type StepStatus = 'pending' | 'loading' | 'done';
 const QuizGeneratingScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { subject, selectedLessonIds, selectedTypeId, timedMode, questionCount } =
+  const { subject, selectedLessonIds, selectedTypeId, timedMode, questionCount, questionTypes } =
     route.params || {};
 
   const { theme, spacing, fontSizes } = useTheme();
@@ -95,6 +95,9 @@ const QuizGeneratingScreen: React.FC = () => {
             subjectId: subject.id,
             lessonIds: selectedLessonIds,
             quizTypeId: selectedTypeId,
+            // Undefined for the default mix — omitting the argument is what
+            // asks for "every type", and it keeps the stored selection honest.
+            questionTypes,
           },
         });
         if (!active) return;
@@ -114,7 +117,7 @@ const QuizGeneratingScreen: React.FC = () => {
       active = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [subject?.id, selectedLessonIds, selectedTypeId]);
+  }, [subject?.id, selectedLessonIds, selectedTypeId, questionTypes]);
 
   // Combined timeline timer (exactly 6 seconds total: 4s animations + 2s pause)
   useEffect(() => {

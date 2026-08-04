@@ -177,6 +177,52 @@ describe('AuthContext & AuthProvider', () => {
       });
       expect(result.current.user).toEqual(mockRegisterResponse.data.register.user);
       expect(result.current.isAuthenticated).toBe(true);
+      expect(result.current.otpWasAutoSent).toBe(true);
+    });
+
+    it('should treat the code as already sent when an unverified student logs in', async () => {
+      (apolloClient.mutate as jest.Mock).mockResolvedValueOnce({
+        data: {
+          login: {
+            access_token: 'student-token',
+            user: { id: '1', name: 'Ali', mobile: '01007867184', mobile_verified_at: null },
+          },
+        },
+      });
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      await act(async () => {
+        await result.current.login({ mobile: '01007867184', password: 'Password1!' });
+      });
+
+      // `login` auto-sends; requesting a second code would burn the hourly budget.
+      expect(result.current.otpWasAutoSent).toBe(true);
+      expect(result.current.otpShouldAutoRequest).toBe(false);
+    });
+
+    it('should not flag an OTP send when the student is already verified', async () => {
+      (apolloClient.mutate as jest.Mock).mockResolvedValueOnce({
+        data: {
+          login: {
+            access_token: 'student-token',
+            user: {
+              id: '1',
+              name: 'Ali',
+              mobile: '01007867184',
+              mobile_verified_at: '2026-01-01T00:00:00Z',
+            },
+          },
+        },
+      });
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      await act(async () => {
+        await result.current.login({ mobile: '01007867184', password: 'Password1!' });
+      });
+
+      expect(result.current.otpWasAutoSent).toBe(false);
     });
   });
 
@@ -186,7 +232,12 @@ describe('AuthContext & AuthProvider', () => {
         data: {
           parentLogin: {
             access_token: 'parent-token',
-            parent: { id: '2', name: 'Nasser', mobile: '01007867181' },
+            parent: {
+              id: '2',
+              name: 'Nasser',
+              mobile: '01007867181',
+              mobile_verified_at: '2026-01-01T00:00:00Z',
+            },
           },
         },
       };
@@ -213,6 +264,32 @@ describe('AuthContext & AuthProvider', () => {
         'parent_data',
         JSON.stringify(mockParentLoginResponse.data.parentLogin.parent),
       );
+      // Already verified — no gate, no code.
+      expect(result.current.otpWasAutoSent).toBe(false);
+    });
+
+    it('should flag the auto-sent code when an unverified parent logs in', async () => {
+      (apolloClient.mutate as jest.Mock).mockResolvedValueOnce({
+        data: {
+          parentLogin: {
+            access_token: 'parent-token',
+            parent: {
+              id: '2',
+              name: 'Nasser',
+              mobile: '01007867181',
+              mobile_verified_at: null,
+            },
+          },
+        },
+      });
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      await act(async () => {
+        await result.current.parentLogin({ mobile: '01007867181', password: 'Password1!' });
+      });
+
+      expect(result.current.otpWasAutoSent).toBe(true);
     });
 
     it('should successfully register a parent user', async () => {
@@ -220,7 +297,13 @@ describe('AuthContext & AuthProvider', () => {
         data: {
           parentRegister: {
             access_token: 'parent-token',
-            parent: { id: '2', name: 'Nasser', mobile: '01007867181', email: 'parent@test.com' },
+            parent: {
+              id: '2',
+              name: 'Nasser',
+              mobile: '01007867181',
+              email: 'parent@test.com',
+              mobile_verified_at: null,
+            },
           },
         },
       };
@@ -243,6 +326,8 @@ describe('AuthContext & AuthProvider', () => {
         mockParentRegisterResponse.data.parentRegister.parent,
       );
       expect(result.current.userRole).toBe('parent');
+      // parentRegister auto-sends the first code, so the gate opens on 'verify'.
+      expect(result.current.otpWasAutoSent).toBe(true);
     });
   });
 

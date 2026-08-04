@@ -102,6 +102,9 @@ mutation ParentLogin($mobile: String!, $password: String!) {
       id
       name
       mobile
+      email
+      country_code
+      mobile_verified_at
     }
   }
 }
@@ -114,6 +117,8 @@ mutation ParentRegister($name: String!, $mobile: String!, $email: String!, $pass
       name
       mobile
       email
+      country_code
+      mobile_verified_at
     }
   }
 }
@@ -123,7 +128,9 @@ query ParentMe {
     id
     name
     mobile
+    email
     country_code
+    mobile_verified_at
   }
 }
 
@@ -171,7 +178,7 @@ mutation UpdatePassword($input: UpdatePasswordInput!) {
   }
 }
 
-# WhatsApp OTP verification (OTPVerificationScreen).
+# WhatsApp OTP — student number verification (OTPVerificationScreen).
 
 mutation SendMobileOtp($mobile: String!, $country_code: String) {
   sendMobileOtp(mobile: $mobile, country_code: $country_code) {
@@ -219,5 +226,89 @@ mutation VerifyMobileOtp($otp: String!) {
       }
       is_subscribed
     }
+  }
+}
+
+# WhatsApp OTP — parent number verification. A code issued for the student never
+# works for the parent even on a shared handset (mobile-otp-guide.md section 2).
+
+mutation SendParentMobileOtp($mobile: String!, $country_code: String) {
+  sendParentMobileOtp(mobile: $mobile, country_code: $country_code) {
+    success
+    message
+    expires_in
+  }
+}
+
+mutation VerifyParentMobileOtp($otp: String!) {
+  verifyParentMobileOtp(otp: $otp) {
+    success
+    message
+    parent {
+      id
+      name
+      mobile
+      email
+      country_code
+      mobile_verified_at
+    }
+  }
+}
+
+# WhatsApp OTP — password reset. The send mutations are unauthenticated and
+# anti-enumeration: an identical payload comes back whether or not the account
+# exists, so never render one as "we found your account".
+
+mutation SendPasswordResetOtp($mobile: String!, $country_code: String) {
+  sendPasswordResetOtp(mobile: $mobile, country_code: $country_code) {
+    success
+    message
+    expires_in
+  }
+}
+
+mutation ResetPasswordWithOtp(
+  $mobile: String!
+  $country_code: String
+  $otp: String!
+  $password: String!
+  $password_confirmation: String!
+) {
+  resetPasswordWithOtp(
+    mobile: $mobile
+    country_code: $country_code
+    otp: $otp
+    password: $password
+    password_confirmation: $password_confirmation
+  ) {
+    success
+    message
+  }
+}
+
+mutation SendParentPasswordResetOtp($mobile: String!, $country_code: String) {
+  sendParentPasswordResetOtp(mobile: $mobile, country_code: $country_code) {
+    success
+    message
+    expires_in
+  }
+}
+
+mutation ResetParentPasswordWithOtp(
+  $mobile: String!
+  $country_code: String
+  $otp: String!
+  $password: String!
+  $password_confirmation: String!
+) {
+  resetParentPasswordWithOtp(
+    mobile: $mobile
+    country_code: $country_code
+    otp: $otp
+    password: $password
+    password_confirmation: $password_confirmation
+  ) {
+    success
+    message
   }
 }
