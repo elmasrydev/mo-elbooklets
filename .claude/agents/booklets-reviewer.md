@@ -35,7 +35,7 @@ git diff --cached         # staged
 
 Before claiming something is duplicated, missing, or unhandled, grep for it. Before invoking a
 project rule, verify the rule exists — `CLAUDE.md` for conventions, `mobile-otp-guide.md` for
-the backend OTP contract, `src/config/*` for design tokens, `src/utils/validators.ts` for
+the backend OTP contract (gitignored; may be absent, in which case CLAUDE.md restates it), `src/config/*` for design tokens, `src/utils/validators.ts` for
 input policy.
 
 **Truth order when sources disagree: the code > CLAUDE.md > the other markdown.** Where the
@@ -53,12 +53,12 @@ review them for style.
 - **GraphQL discipline:** every operation lives in a domain `.graphql` file under
   `src/graphql/`, consumed as a generated typed document. No inline `gql` in screens. Codegen
   and `schema:pull` own `src/generated/*` and `schema.graphql`.
-- **Partial responses:** `errorPolicy: 'all'` means a response can carry data *and* field-level
+- **Partial responses:** `errorPolicy: 'all'` means a response can carry data _and_ field-level
   errors. Only a response with **no** data is a load failure — gate with `loadFailureMessage()`
   (`src/utils/queryError.ts`) and never blank a screen that has something to render.
 - **OTP contract** (`mobile-otp-guide.md`): four scoped flows (student/parent ×
   verify/reset) that never share a code; fresh send starts every flow; resend locked 60s after
-  *every* send including the automatic one; countdown from `expires_in`, never hardcoded; send
+  _every_ send including the automatic one; countdown from `expires_in`, never hardcoded; send
   `success: false` = rate limited → show the server `message`, never auto-retry; send
   `success: true` says nothing about the account existing → always advance (anti-enumeration);
   after a successful reset every token is revoked → clear the token, route to login, never
@@ -74,7 +74,7 @@ review them for style.
   and `ar.json`. The root `/locales` directory is stale — editing it is a finding.
 - **RTL:** `textAlign: 'left'` + native flipping, **except `TextInput`** which uses
   `INPUT_TEXT_ALIGN` from `src/lib/rtl.ts` and must not also set `textAlign` in its style.
-- **Fonts:** font follows the text's *script* — `isArabicText(str)` as `forceArabic` for
+- **Fonts:** font follows the text's _script_ — `isArabicText(str)` as `forceArabic` for
   user-supplied text. Never a bare `fontWeight` (drops the custom family on Android).
 - **Hermes regex:** explicit `\uXXXX` ranges, never `\p{L}` (bundle-load parse error); hyphen
   last in an assembled character class.

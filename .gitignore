@@ -69,6 +69,10 @@ handover_summary.md
 booki-graphql-api.md
 mobile-availability-check-mutation.md
 notification-localization-mobile-guide.md
+mobile-otp-guide.md
+mobile-quiz-question-type-selection.md
+mobile-question-types-paragraph-image-match.md
+mobile-question-types-implementation-plan.md
 
 # Bug-report screenshots (CLAUDE.md: never commit screenshots to the repo root)
 simulator_screenshot_*.png

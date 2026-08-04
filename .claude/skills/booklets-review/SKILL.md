@@ -127,7 +127,8 @@ workflow's dimension prompts — keep both in sync if you edit either.
   *and* field-level errors. Gate error states with `loadFailureMessage()`
   (`src/utils/queryError.ts`) — only a response with **no** data is a load failure. Never
   blank a screen that has something to render.
-- **OTP contract** (`mobile-otp-guide.md`): codes are scoped to purpose+audience, so every
+- **OTP contract** (`mobile-otp-guide.md` when present locally; otherwise CLAUDE.md's OTP
+  section restates all of this): codes are scoped to purpose+audience, so every
   flow starts with a fresh send; resend is locked 60s after *every* send including the
   automatic one; countdowns come from `expires_in`, never hardcoded; a send's
   `success: false` means rate-limited — show the server `message` and never auto-retry; a
@@ -167,5 +168,6 @@ workflow's dimension prompts — keep both in sync if you edit either.
 
 `CLAUDE.md` is the project's single source of truth for conventions; when it disagrees with
 the code, the **code wins** and the drift is itself a `docs-guard` finding.
-`mobile-otp-guide.md` is the backend OTP contract. `e2e/PARENT_JOURNEY.md` maps the parent
-flow.
+`mobile-otp-guide.md` is the backend OTP contract — it is **gitignored** (a local copy from
+the backend team), so read it when the developer has it and fall back to CLAUDE.md's OTP
+section when they do not. `e2e/PARENT_JOURNEY.md` maps the parent flow.
