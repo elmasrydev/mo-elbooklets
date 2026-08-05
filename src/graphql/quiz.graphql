@@ -191,6 +191,11 @@ query QuizResults($quizId: ID!) {
 # answer options + full descriptive feedback).
 query QuizReview($quizId: ID!) {
   quizResults(quizId: $quizId) {
+    # Unit-based, same numbers the results screen shows. `userAnswers` is flat in
+    # units — a match is ONE row worth many units and a paragraph parent has no
+    # row at all — so counting rows here would contradict the results screen.
+    score
+    totalQuestions
     quiz {
       id
       name

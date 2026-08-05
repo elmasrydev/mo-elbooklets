@@ -33,6 +33,7 @@ import ParagraphReviewGroup from '../../components/quiz/ParagraphReviewGroup';
 import QuestionImage from '../../components/quiz/QuestionImage';
 import { groupUserAnswers } from '../../utils/quizResultGroups';
 import { isMatchType } from '../../utils/quizQuestionTypes';
+import { formatScore } from '../../lib/scoreUtils';
 
 const QuizReviewScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -155,11 +156,26 @@ const QuizReviewScreen: React.FC = () => {
     return <RetryView message={error || t('common.error')} onRetry={() => refetch()} />;
   }
 
-  const totalQuestions = result.userAnswers?.length || 0;
+  // The score is unit-based and comes from the server, exactly as the results
+  // screen reads it. `userAnswers` is flat in units — a match is ONE row worth
+  // many units, a paragraph parent has no row — so counting rows here would make
+  // this header disagree with the results screen for the same attempt.
+  const unitScore = result.score ?? 0;
+  const unitTotal = result.totalQuestions ?? 0;
+
+  // Row counts, on the other hand, are what the chips filter: they say how many
+  // cards each tab will show, not what the student scored.
   const correctAnswersList = result.userAnswers?.filter((a: any) => a.is_correct) || [];
   const wrongAnswersList = result.userAnswers?.filter((a: any) => !a.is_correct) || [];
+  const totalCards = result.userAnswers?.length || 0;
   const correctCount = correctAnswersList.length;
   const incorrectCount = wrongAnswersList.length;
+
+  // Scores per passage come from the unfiltered rows; see ParagraphReviewGroup.
+  const allChildrenByParent: Record<string, any[]> = {};
+  groupUserAnswers(result.userAnswers || []).forEach((group: any) => {
+    if (group.kind !== 'single') allChildrenByParent[group.parentId] = group.children;
+  });
 
   const displayedAnswers = (result.userAnswers || []).filter((ua: any) => {
     if (currentFilter === 'correct') return ua.is_correct;
@@ -185,7 +201,7 @@ const QuizReviewScreen: React.FC = () => {
             currentFilter === 'all' ? currentStyles.chipTextActive : currentStyles.chipTextIdle,
           ]}
         >
-          {t('quiz_review.filter_all', 'All')} {totalQuestions}
+          {t('quiz_review.filter_all', 'All')} {totalCards}
         </Text>
       </TouchableOpacity>
 
@@ -267,7 +283,7 @@ const QuizReviewScreen: React.FC = () => {
                 textAlign: 'center',
               }}
             >
-              {result.quiz?.subject?.name} · {correctCount}/{totalQuestions}{' '}
+              {result.quiz?.subject?.name} · {formatScore(unitScore)}/{unitTotal}{' '}
               {t('quiz_review.correct')}
             </Text>
           </View>
@@ -921,6 +937,7 @@ const QuizReviewScreen: React.FC = () => {
                 key={`paragraph-${group.parentId}`}
                 passage={group.passage}
                 childRows={group.children}
+                scoreRows={allChildrenByParent[group.parentId] ?? group.children}
                 renderChildCard={renderAnswerCard}
                 contentAlign={contentAlign}
               />

@@ -1215,6 +1215,8 @@ export type QuizReviewQueryVariables = Exact<{
 
 export type QuizReviewQuery = {
   quizResults: {
+    score: number;
+    totalQuestions: number;
     isPublished: boolean;
     quiz: {
       id: string;
@@ -6230,6 +6232,8 @@ export const QuizReviewDocument = {
             selectionSet: {
               kind: 'SelectionSet',
               selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'score' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'totalQuestions' } },
                 {
                   kind: 'Field',
                   name: { kind: 'Name', value: 'quiz' },

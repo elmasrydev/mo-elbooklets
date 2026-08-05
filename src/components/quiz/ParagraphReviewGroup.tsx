@@ -19,7 +19,14 @@ import QuizBottomSheet from './QuizBottomSheet';
 
 type ParagraphReviewGroupProps = {
   passage: string;
+  /** The children to render — already narrowed by the active filter. */
   childRows: ReviewUserAnswer[];
+  /**
+   * Every child of this passage, unfiltered. The score has to come from these:
+   * derived from `childRows` it would follow the filter, so the Correct tab
+   * would show a passage as full marks and the Wrong tab as zero.
+   */
+  scoreRows: ReviewUserAnswer[];
   renderChildCard: (row: ReviewUserAnswer) => React.ReactNode;
   contentAlign: 'left' | 'right';
 };
@@ -27,6 +34,7 @@ type ParagraphReviewGroupProps = {
 const ParagraphReviewGroup: React.FC<ParagraphReviewGroupProps> = ({
   passage,
   childRows,
+  scoreRows,
   renderChildCard,
   contentAlign,
 }) => {
@@ -35,9 +43,9 @@ const ParagraphReviewGroup: React.FC<ParagraphReviewGroupProps> = ({
   const { typography } = useTypography();
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  const total = childRows.length;
-  const correctCount = childRows.filter((r) => r.is_correct).length;
-  const score = childRows.reduce((sum, r) => sum + (r.score ?? (r.is_correct ? 1 : 0)), 0);
+  const total = scoreRows.length;
+  const correctCount = scoreRows.filter((r) => r.is_correct).length;
+  const score = scoreRows.reduce((sum, r) => sum + (r.score ?? (r.is_correct ? 1 : 0)), 0);
 
   return (
     // One grouped box (passage header + score + its sub-question cards) so the
