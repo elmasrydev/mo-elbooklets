@@ -35,7 +35,7 @@ git diff --cached         # staged
 
 Before claiming something is duplicated, missing, or unhandled, grep for it. Before invoking a
 project rule, verify the rule exists — `CLAUDE.md` for conventions, `mobile-otp-guide.md` for
-the backend OTP contract (gitignored; may be absent, in which case CLAUDE.md restates it), `src/config/*` for design tokens, `src/utils/validators.ts` for
+the backend OTP contract (local-only, may be absent — CLAUDE.md restates it), `src/config/*` for design tokens, `src/utils/validators.ts` for
 input policy.
 
 **Truth order when sources disagree: the code > CLAUDE.md > the other markdown.** Where the

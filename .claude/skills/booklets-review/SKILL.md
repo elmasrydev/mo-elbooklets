@@ -168,6 +168,6 @@ workflow's dimension prompts — keep both in sync if you edit either.
 
 `CLAUDE.md` is the project's single source of truth for conventions; when it disagrees with
 the code, the **code wins** and the drift is itself a `docs-guard` finding.
-`mobile-otp-guide.md` is the backend OTP contract — it is **gitignored** (a local copy from
-the backend team), so read it when the developer has it and fall back to CLAUDE.md's OTP
+`mobile-otp-guide.md` is the backend OTP contract — a local copy from the backend team that
+is **not committed**, so read it when the developer has it and fall back to CLAUDE.md's OTP
 section when they do not. `e2e/PARENT_JOURNEY.md` maps the parent flow.
