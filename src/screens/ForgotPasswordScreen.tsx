@@ -111,20 +111,19 @@ const ForgotPasswordScreen: React.FC = () => {
       onConfirm: () => {},
     });
 
+  /**
+   * Sends a code and moves to the code step.
+   *
+   * Deliberately NOT shared with the mobile-step Continue button: that one may
+   * reuse a live code, this one must always spend a message. Wiring resend
+   * through the reuse shortcut makes it a silent no-op for the code's whole
+   * 10-minute life — the user taps it, nothing happens, and they cannot recover
+   * their account.
+   */
   const handleSendCode = async () => {
     setTouchedMobile(true);
     if (!isMobileValid) {
       showError(t('auth.invalid_egyptian_mobile'));
-      return;
-    }
-
-    // A live code for this very number is already waiting — go use it instead of
-    // spending another message. Without this, stepping back to change nothing and
-    // tapping Continue again burns one of 3 per hour AND strands the user, since
-    // the code step is only reachable from a successful send (guide §5).
-    if (hasLiveCode && sentTo === mobile) {
-      setErrorMsg('');
-      setStep('code');
       return;
     }
 
@@ -156,6 +155,28 @@ const ForgotPasswordScreen: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  /**
+   * Mobile-step Continue. If a live code for this exact number is already
+   * waiting, walk to the code step instead of spending another message — the
+   * code step is only reachable from a send, so without this a user who stepped
+   * back would strand the code they already have (guide §5).
+   */
+  const handleContinue = async () => {
+    setTouchedMobile(true);
+    if (!isMobileValid) {
+      showError(t('auth.invalid_egyptian_mobile'));
+      return;
+    }
+
+    if (hasLiveCode && sentTo === mobile) {
+      setErrorMsg('');
+      setStep('code');
+      return;
+    }
+
+    await handleSendCode();
   };
 
   const handleResetPassword = async () => {
@@ -377,7 +398,7 @@ const ForgotPasswordScreen: React.FC = () => {
           <TouchableOpacity
             testID="forgot-send-button"
             style={[currentStyles.submitButton, isLoading && { opacity: 0.7 }]}
-            onPress={handleSendCode}
+            onPress={handleContinue}
             disabled={isLoading}
           >
             <Text style={currentStyles.submitButtonText}>{t('common.continue')}</Text>
@@ -596,7 +617,11 @@ const ForgotPasswordScreen: React.FC = () => {
         keyboardShouldPersistTaps="handled"
       >
         <View style={currentStyles.headerTop}>
-          <TouchableOpacity onPress={handleBack} style={currentStyles.backButton}>
+          <TouchableOpacity
+            testID="forgot-back-button"
+            onPress={handleBack}
+            style={currentStyles.backButton}
+          >
             <Ionicons
               name={isRTL ? 'arrow-forward' : 'arrow-back'}
               size={22}

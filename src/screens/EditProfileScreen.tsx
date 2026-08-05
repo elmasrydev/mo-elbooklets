@@ -369,14 +369,18 @@ const EditProfileScreen: React.FC = () => {
         // dead session that fails at the next random screen.
         await refreshUser();
 
+        // Clear before the modal, not inside its onConfirm: the modal is
+        // dismissible by its ✕/backdrop, and that path skips onConfirm — which
+        // would leave the plaintext old and new passwords sitting in state with
+        // the form still open, reading as if nothing had happened.
+        setShowPasswordSection(false);
+        setPasswordState({ oldPassword: '', newPassword: '', confirmPassword: '' });
+
         showConfirm({
           title: t('common.success'),
           message: result.data.updatePassword.message || t('profile.password_changed_success'),
           showCancel: false,
-          onConfirm: () => {
-            setShowPasswordSection(false);
-            setPasswordState({ oldPassword: '', newPassword: '', confirmPassword: '' });
-          },
+          onConfirm: () => {},
         });
       } else {
         showConfirm({

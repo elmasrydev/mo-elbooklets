@@ -2,6 +2,7 @@ import React from 'react';
 import { fireEvent, screen, act, waitFor } from '@testing-library/react-native';
 import ForgotPasswordScreen from '../../screens/ForgotPasswordScreen';
 import { renderWithProviders } from '../helpers/renderWithProviders';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apolloClient } from '../../lib/apollo';
 import { mockNavigate } from '../__mocks__/navigation';
 import {
@@ -71,8 +72,12 @@ const reachCodeStep = async (audience: 'student' | 'parent' = 'student', expires
 };
 
 describe('ForgotPasswordScreen', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks();
+    // useOtpTimer persists the send stamp, so without this a code sent by one
+    // test is still "live" in the next and the screen reuses it instead of
+    // sending — which silently swallows that test's mutation.
+    await AsyncStorage.clear();
     mockRouteParams = {};
     mockAuthState.user = null;
     mockAuthState.parentUser = null;
@@ -163,6 +168,54 @@ describe('ForgotPasswordScreen', () => {
           variables: { mobile: VALID_MOBILE, country_code: '+2' },
         }),
       );
+      expect(screen.getByTestId('forgot-reset-button')).toBeDefined();
+    });
+  });
+
+  describe('resend', () => {
+    it('actually sends a new code, even while the current one is still alive', async () => {
+      jest.useFakeTimers();
+      try {
+        renderWithProviders(<ForgotPasswordScreen />);
+        await reachCodeStep();
+
+        // Past the 60s resend lock, but well inside the code's 10-minute life —
+        // the window where the reuse shortcut used to make this button dead.
+        await act(async () => {
+          jest.advanceTimersByTime(61_000);
+        });
+
+        (apolloClient.mutate as jest.Mock).mockResolvedValueOnce({
+          data: { sendPasswordResetOtp: { success: true, expires_in: 600 } },
+        });
+
+        await act(async () => {
+          fireEvent.press(screen.getByTestId('forgot-resend-button'));
+        });
+
+        // The whole point of resend is the message that never arrived. Routing
+        // it through the mobile-step "reuse the live code" shortcut makes it a
+        // silent no-op for ten minutes.
+        expect(apolloClient.mutate).toHaveBeenCalledTimes(2);
+        expect(apolloClient.mutate).toHaveBeenLastCalledWith(
+          expect.objectContaining({ mutation: SendPasswordResetOtpDocument }),
+        );
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it('reuses a live code rather than spending a message when Continue is re-tapped', async () => {
+      renderWithProviders(<ForgotPasswordScreen />);
+      await reachCodeStep();
+
+      // Step back to the mobile screen and continue again with the same number.
+      fireEvent.press(screen.getByTestId('forgot-back-button'));
+      await act(async () => {
+        fireEvent.press(screen.getByTestId('forgot-send-button'));
+      });
+
+      expect(apolloClient.mutate).toHaveBeenCalledTimes(1);
       expect(screen.getByTestId('forgot-reset-button')).toBeDefined();
     });
   });

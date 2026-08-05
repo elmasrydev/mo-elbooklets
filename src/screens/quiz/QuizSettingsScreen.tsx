@@ -121,7 +121,11 @@ const QuizSettingsScreen: React.FC = () => {
       })),
     [questionTypesData],
   );
-  const minSelectedTypes = questionTypesData?.lessonQuestionTypes?.minSelectedTypes ?? 2;
+  // No literal fallback — CLAUDE.md forbids hardcoding 2. Until the response
+  // lands there is no availability to judge (`hasAvailability` is false), so the
+  // value is unused; 0 keeps `canOfferTypePicker` false rather than inventing a
+  // rule the server never stated.
+  const minSelectedTypes = questionTypesData?.lessonQuestionTypes?.minSelectedTypes ?? 0;
   const totalAvailable = questionTypesData?.lessonQuestionTypes?.total ?? 0;
 
   // `null` means "no restriction" — the classic random quiz, and the default.
@@ -132,6 +136,12 @@ const QuizSettingsScreen: React.FC = () => {
   // A lesson change can retire a type that was selected; drop it rather than
   // sending a value the server will reject.
   useEffect(() => {
+    // Only prune against a real response. When `typeOptions` is empty because
+    // the query has not resolved (or a refetch failed), pruning would clear the
+    // whole selection — which reads as "you unchecked everything" and blocks
+    // Start, instead of leaving the student's choice alone.
+    if (typeOptions.length === 0) return;
+
     setSelectedQuestionTypes((current) => {
       const pruned = pruneSelection(current, typeOptions);
       if (current === null || pruned === null) return current;

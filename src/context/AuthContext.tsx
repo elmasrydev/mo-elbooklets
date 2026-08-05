@@ -232,7 +232,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             // truth before the gate can act on the absence and strand an already
             // verified parent on the code screen.
             if (!('mobile_verified_at' in parsedParent)) {
-              refreshParentFromServer();
+              // Awaited: `checkAuthStatus` clears `isLoading` in its finally, and
+              // letting that happen first renders the dashboard on the unknown
+              // value, then yanks the parent to the OTP gate mid-interaction
+              // when the backfill lands.
+              await refreshParentFromServer();
             }
           }
         }
@@ -391,7 +395,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           registerDeviceToken('parent');
           setTimeout(() => triggerNotificationPrompt(), 10000);
 
-          if (!authPayload.parent.mobile_verified_at) {
+          // `=== null` rather than falsy, to match the navigator's gate exactly:
+          // an absent field means "unknown", and flagging it here would strand a
+          // 60s resend lock on a screen that never mounts to clear it.
+          if (authPayload.parent.mobile_verified_at === null) {
             // `parentLogin` auto-sends a fresh code when the number is
             // unverified (mobile-otp-guide.md section 3).
             setOtpWasAutoSent(true);
@@ -433,7 +440,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           registerDeviceToken('parent');
           setTimeout(() => triggerNotificationPrompt(), 10000);
 
-          if (!authPayload.parent.mobile_verified_at) {
+          if (authPayload.parent.mobile_verified_at === null) {
             // `parentRegister` auto-sends the first code, same as `register`.
             setOtpWasAutoSent(true);
           }
@@ -506,6 +513,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // bypass the OTP screen). (code-review)
       setIsVerificationSkipped(false);
       setOtpShouldAutoRequest(false);
+      // Load-bearing for both roles since the parent gate landed: left set, the
+      // next sign-in jumps straight to the code step and locks resend for 60s
+      // for a code that was never sent.
+      setOtpWasAutoSent(false);
       configureCrashlyticsGuest();
       analytics.trackLogout();
 

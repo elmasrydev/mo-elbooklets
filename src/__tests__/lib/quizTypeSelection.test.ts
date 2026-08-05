@@ -58,6 +58,33 @@ describe('isDefaultSelection', () => {
   });
 });
 
+describe('stale selection entries', () => {
+  it('does not let a retired type pad a narrowed selection into "the default"', () => {
+    // One render can pass a selection containing a type the newest response no
+    // longer offers, before the prune effect commits. Counting it would make a
+    // one-type selection look complete, skip the min-types check, and validate
+    // against the whole pool.
+    const shrunk: QuestionTypeOption[] = [{ type: 'mcq', label: 'Multiple Choice', count: 10 }];
+    expect(isDefaultSelection(['match'], shrunk)).toBe(false);
+
+    const status = evaluateSelection({
+      selected: ['match'],
+      options: shrunk,
+      minSelectedTypes: 2,
+      total: 10,
+      neededQuestions: 5,
+    });
+    expect(status.canStart).toBe(false);
+    expect(status.tooFewTypes).toBe(true);
+  });
+
+  it('agrees with questionTypesArgument about the same selection', () => {
+    const shrunk: QuestionTypeOption[] = [{ type: 'mcq', label: 'Multiple Choice', count: 10 }];
+    expect(isDefaultSelection(['match'], shrunk)).toBe(false);
+    expect(questionTypesArgument(['match'], shrunk)).toBeUndefined();
+  });
+});
+
 describe('questionTypesArgument', () => {
   it('omits the argument for the default mix rather than listing every type', () => {
     expect(questionTypesArgument(['mcq', 'true_false', 'image', 'match'], OPTIONS)).toBeUndefined();

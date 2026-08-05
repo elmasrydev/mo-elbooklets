@@ -45,7 +45,11 @@ const OtpCodeInput: React.FC<OtpCodeInputProps> = ({
         // code typed with Arabic-Indic numerals (mobile-otp-guide.md section 1).
         onChangeText={(text) => onChange(digitsOnly(text).slice(0, length))}
         keyboardType="number-pad"
-        maxLength={length}
+        // Deliberately NOT maxLength={length}: RN clips the raw text before
+        // onChangeText runs, so pasting "Your ElBooklets code is 123456" would
+        // be cut to "Your c" and normalize to an empty field. `.slice()` above
+        // enforces the real cap after the digits are extracted.
+        maxLength={length * 8}
         autoFocus={false}
         textContentType="oneTimeCode"
         autoComplete="sms-otp"
@@ -94,6 +98,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 12,
+    // Numerals read left-to-right in Arabic too, but Yoga flips `row` under RTL,
+    // which would put value[0] in the right-most box and render the code
+    // mirrored. Pin the row physical.
+    direction: 'ltr',
   },
   box: {
     width: 45,

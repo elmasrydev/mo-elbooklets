@@ -53,7 +53,15 @@ export const availableForSelection = (selected: string[], options: QuestionTypeO
 export const isDefaultSelection = (
   selection: TypeSelection,
   options: QuestionTypeOption[],
-): boolean => selection === null || selection.length >= options.length;
+): boolean => {
+  if (selection === null) return true;
+  // Count only types the server actually offers. A stale entry surviving one
+  // render would otherwise pad the length until a narrowed selection looked
+  // like the full set — and `questionTypesArgument` already intersects, so the
+  // two would disagree about the same selection.
+  const offered = selection.filter((type) => options.some((o) => o.type === type));
+  return offered.length > 0 && offered.length >= options.length;
+};
 
 /**
  * The `questionTypes` argument for `startQuiz`, or `undefined` to omit it.
@@ -72,8 +80,10 @@ export const questionTypesArgument = (
   const chosen = options
     .filter((option) => selection.includes(option.type))
     .map((option) => option.type);
-  // An empty or complete list both mean "no restriction" to the server, which is
-  // the default — express that by omitting the argument.
+  // A complete list means "no restriction" to the server, so express it by
+  // omitting the argument. An emptied list reaches here only if Start were
+  // wrongly enabled — `evaluateSelection` blocks it — and omitting is the safe
+  // read either way, since sending `[]` would silently mean "all types".
   return chosen.length === 0 || chosen.length >= options.length ? undefined : chosen;
 };
 
