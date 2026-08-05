@@ -1,11 +1,5 @@
 # CLAUDE.md — mo-elbooklets (ElBooklets)
 
-> ⚙️ **Agents, read this first.** Before every commit run the [review gate](#review-gate--run-before-every-commit-agents-included).
-> Its review step is the **`booklets-review` skill** — invoke it with the Skill tool.
-> Do **not** try to run `/code-review`: it is a built-in only the *user* can trigger, and an
-> agent that skips it commits through a gate it never executed. The skill runs `npm run guardme`,
-> the three guard skills, a verified multi-dimension review fan-out, and then fixes the findings.
-
 ## What this app is
 **ElBooklets** is an **educational platform** for Egyptian students (quizzes, study plans, leaderboards, badges) with a separate **parent** role that links to student accounts and monitors them.
 Bilingual **Arabic/English with RTL**. App id: `com.elbooklets.app`.
@@ -109,20 +103,15 @@ Four **scoped** flows — student/parent × verify/reset. A code only works with
 - The only living, git-tracked agent docs are: **this file** + **`e2e/PARENT_JOURNEY.md`** (parent-flow map). `README.md` stays for humans.
 - Do NOT add narrative / handover / one-off status docs to git — keep them local (gitignored, like `handover_summary.md`). Don't create a second architecture doc; fold it here instead.
 
-## Review gate — run before every commit (agents included)
-There is **no automatic git hook**; run this gate **manually** before each commit. Any agent making code changes must run it too.
-
-**The whole gate is one skill: `booklets-review`** (`.claude/skills/booklets-review/`). Invoke it with the Skill tool and it runs every step below in order, then fixes what it confirms:
-1. **`npm run guardme`** (codegen drift check + lint + `tsc --noEmit` + jest + docs-link check) — must pass.
-2. The relevant guard skill on what changed, and fix its findings:
+## Review gate — run before every commit
+There is **no automatic git hook**; the developer runs this gate **manually** before each commit:
+1. **`npm run guardme`** (codegen drift check + lint + `tsc --noEmit` + jest + docs-link check) — must pass. **Agents must run this on what they change** — never hand back a tree that fails it.
+2. **`/code-review`** on the changes — address its findings before committing. This is a built-in only the *developer* can trigger; the model cannot invoke it, so an agent must say plainly that this step is still outstanding rather than implying the diff has been reviewed.
+3. Run the relevant guard skill on what changed and fix its findings:
    - **clean-code-guard** → changed production code
    - **test-guard** → changed test files
    - **docs-guard** → changed `.md` docs (catches docs-vs-code drift)
-3. **Multi-dimension review fan-out** (`.claude/workflows/booklets-review.js`) — one max-effort reviewer per applicable dimension (debug gate, GraphQL contract, OTP/auth flows, correctness, quiz invariants, i18n/RTL/design, tests, simplification), each finding then put through a 3-voter adversarial refutation panel; only findings surviving ≥2 of 3 are reported. Falls back to parallel `booklets-reviewer` agents (`.claude/agents/`) if `Workflow` is unavailable.
-4. Fix the confirmed findings highest-severity first, then **re-run `npm run guardme`** and report the real result.
-5. Keep Prettier-only reformatting in a separate `STYLE:` commit.
-
-**`/code-review` is user-only** — the model cannot invoke it, so an agent relying on it silently skips step 3. Use the skill. The built-in stays available for the *developer* to run on top.
+4. Keep Prettier-only reformatting in a separate `STYLE:` commit.
 
 **E2E is NOT part of this gate.** `npm run e2e:*` (Maestro) is **run manually by the developer** — it needs a device/emulator and real accounts. **Agents must never run E2E**; leave it to the developer.
 
