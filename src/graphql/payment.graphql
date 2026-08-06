@@ -1,0 +1,66 @@
+# Payment domain: buying a subscription plan with Paymob's hosted checkout.
+#
+# The flow is: list plans -> start a checkout -> open `checkoutUrl` in a webview
+# -> poll `paymentIntentStatus(reference)` once it closes. The subscription is
+# created server-side by Paymob's webhook, never by the mutation, so the only
+# trustworthy confirmation is the poll on the attempt's own `reference`.
+# `me.is_subscribed` is a global flag and cannot confirm a specific purchase.
+
+# Everything the packages screen needs in one round trip: the plans this student
+# may buy (their own grade + educational system), the subjects a per_subject plan
+# can be applied to, and the surrounding ownership state. Always re-fetched right
+# before checkout — a stale planId or a meanwhile-subscribed subject is rejected.
+query SubscriptionPlans {
+  subscriptionPlans {
+    currency
+    hasFullAccess
+    hasPendingOrder
+    subscribedSubjectIds
+    plans {
+      id
+      name
+      description
+      nameAr
+      nameEn
+      descriptionAr
+      descriptionEn
+      type
+      requiresSubjectSelection
+      cost
+      currency
+      durationDays
+      endsAt
+      lessonLimit
+      quizLimitPerDay
+      allowedSubjectsCount
+    }
+    selectableSubjects {
+      id
+      name
+    }
+  }
+}
+
+# Creates a fresh payment intent every call, so a retry after a failure must call
+# this again and poll the NEW reference rather than reopening the old URL.
+# `status: "active"` means a free/fully-discounted order that is already live —
+# there is no `checkoutUrl` to open in that case.
+mutation StartPaymobCheckout($planId: ID!, $subjectIds: [ID!], $promoCode: String) {
+  createPaymobCheckout(planId: $planId, subjectIds: $subjectIds, promoCode: $promoCode) {
+    subscriptionId
+    status
+    checkoutUrl
+    reference
+  }
+}
+
+# Polled after the checkout webview closes. Null means the reference is unknown
+# or not ours, which is treated as "still pending" rather than a failure.
+query PaymentIntentStatus($reference: String!) {
+  paymentIntentStatus(reference: $reference) {
+    reference
+    status
+    failureReason
+    subscriptionId
+  }
+}

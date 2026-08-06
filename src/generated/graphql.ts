@@ -940,6 +940,64 @@ export type ParentCancelLinkRequestMutation = {
   parentCancelLinkRequest: { success: boolean; message: string | null };
 };
 
+export type SubscriptionPlansQueryVariables = Exact<{ [key: string]: never }>;
+
+export type SubscriptionPlansQuery = {
+  subscriptionPlans: {
+    currency: string;
+    hasFullAccess: boolean;
+    hasPendingOrder: boolean;
+    subscribedSubjectIds: Array<string>;
+    plans: Array<{
+      id: string;
+      name: string;
+      description: string | null;
+      nameAr: string | null;
+      nameEn: string | null;
+      descriptionAr: string | null;
+      descriptionEn: string | null;
+      type: string;
+      requiresSubjectSelection: boolean;
+      cost: number;
+      currency: string;
+      durationDays: number | null;
+      endsAt: string | null;
+      lessonLimit: number | null;
+      quizLimitPerDay: number | null;
+      allowedSubjectsCount: number | null;
+    }>;
+    selectableSubjects: Array<{ id: string; name: string }>;
+  };
+};
+
+export type StartPaymobCheckoutMutationVariables = Exact<{
+  planId: string;
+  subjectIds?: Array<string> | string | null | undefined;
+  promoCode?: string | null | undefined;
+}>;
+
+export type StartPaymobCheckoutMutation = {
+  createPaymobCheckout: {
+    subscriptionId: string | null;
+    status: string;
+    checkoutUrl: string | null;
+    reference: string | null;
+  };
+};
+
+export type PaymentIntentStatusQueryVariables = Exact<{
+  reference: string;
+}>;
+
+export type PaymentIntentStatusQuery = {
+  paymentIntentStatus: {
+    reference: string;
+    status: string;
+    failureReason: string | null;
+    subscriptionId: string | null;
+  } | null;
+};
+
 export type ProfileCompletenessQueryVariables = Exact<{ [key: string]: never }>;
 
 export type ProfileCompletenessQuery = {
@@ -4957,6 +5015,186 @@ export const ParentCancelLinkRequestDocument = {
   ParentCancelLinkRequestMutation,
   ParentCancelLinkRequestMutationVariables
 >;
+export const SubscriptionPlansDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'SubscriptionPlans' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'subscriptionPlans' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'currency' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'hasFullAccess' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'hasPendingOrder' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'subscribedSubjectIds' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'plans' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'nameAr' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'nameEn' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'descriptionAr' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'descriptionEn' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'type' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'requiresSubjectSelection' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'cost' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'currency' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'durationDays' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'endsAt' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'lessonLimit' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'quizLimitPerDay' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'allowedSubjectsCount' } },
+                    ],
+                  },
+                },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'selectableSubjects' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<SubscriptionPlansQuery, SubscriptionPlansQueryVariables>;
+export const StartPaymobCheckoutDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'StartPaymobCheckout' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'planId' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'subjectIds' } },
+          type: {
+            kind: 'ListType',
+            type: {
+              kind: 'NonNullType',
+              type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+            },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'promoCode' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'createPaymobCheckout' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'planId' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'planId' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'subjectIds' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'subjectIds' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'promoCode' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'promoCode' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'subscriptionId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'checkoutUrl' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'reference' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<StartPaymobCheckoutMutation, StartPaymobCheckoutMutationVariables>;
+export const PaymentIntentStatusDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'PaymentIntentStatus' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'reference' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'paymentIntentStatus' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'reference' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'reference' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'reference' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'failureReason' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'subscriptionId' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<PaymentIntentStatusQuery, PaymentIntentStatusQueryVariables>;
 export const ProfileCompletenessDocument = {
   kind: 'Document',
   definitions: [
