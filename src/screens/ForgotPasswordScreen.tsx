@@ -120,11 +120,11 @@ const ForgotPasswordScreen: React.FC = () => {
    * 10-minute life — the user taps it, nothing happens, and they cannot recover
    * their account.
    */
-  const handleSendCode = async () => {
+  const handleSendCode = async (): Promise<boolean> => {
     setTouchedMobile(true);
     if (!isMobileValid) {
       showError(t('auth.invalid_egyptian_mobile'));
-      return;
+      return false;
     }
 
     setIsLoading(true);
@@ -145,6 +145,7 @@ const ForgotPasswordScreen: React.FC = () => {
         // leak exactly what that shared response exists to hide (guide section 4).
         setOtpCode('');
         setStep('code');
+        return true;
       } else {
         // A send only ever fails because of a rate limit, and `message` arrives
         // pre-translated. Show it and stop — retrying lengthens the lockout.
@@ -155,28 +156,26 @@ const ForgotPasswordScreen: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+    return false;
   };
 
   /**
-   * Mobile-step Continue. If a live code for this exact number is already
-   * waiting, walk to the code step instead of spending another message — the
-   * code step is only reachable from a send, so without this a user who stepped
-   * back would strand the code they already have (guide §5).
+   * Mobile-step Continue. Always attempts a send — silently skipping it because
+   * a code already exists makes the button look broken, which is exactly what a
+   * user tapping "Continue" is not expecting.
+   *
+   * When the server refuses because one was sent moments ago, we still walk to
+   * the code step IF we know a live code exists for this number: the server's
+   * message explains the wait, and the code they already hold stays reachable.
+   * Without that, a rate-limited send left them stranded on this step with no
+   * route to the code field (guide §5).
    */
   const handleContinue = async () => {
-    setTouchedMobile(true);
-    if (!isMobileValid) {
-      showError(t('auth.invalid_egyptian_mobile'));
-      return;
-    }
-
-    if (hasLiveCode && sentTo === mobile) {
+    const sent = await handleSendCode();
+    if (!sent && hasLiveCode && sentTo === mobile) {
       setErrorMsg('');
       setStep('code');
-      return;
     }
-
-    await handleSendCode();
   };
 
   const handleResetPassword = async () => {

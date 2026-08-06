@@ -205,17 +205,31 @@ describe('ForgotPasswordScreen', () => {
       }
     });
 
-    it('reuses a live code rather than spending a message when Continue is re-tapped', async () => {
+    it('still reaches the code step when a re-tapped Continue is rate limited', async () => {
       renderWithProviders(<ForgotPasswordScreen />);
       await reachCodeStep();
 
-      // Step back to the mobile screen and continue again with the same number.
+      // Step back, then continue again with the same number inside the 60s lock.
       fireEvent.press(screen.getByTestId('forgot-back-button'));
+      (apolloClient.mutate as jest.Mock).mockResolvedValueOnce({
+        data: {
+          sendPasswordResetOtp: {
+            success: false,
+            message: 'auth.please_wait_before_requesting_another_otp',
+          },
+        },
+      });
       await act(async () => {
         fireEvent.press(screen.getByTestId('forgot-send-button'));
       });
 
-      expect(apolloClient.mutate).toHaveBeenCalledTimes(1);
+      // The send is always attempted — skipping it silently makes Continue look
+      // broken. The server explains the wait, and because a live code exists for
+      // this number the student can still go and type it.
+      expect(apolloClient.mutate).toHaveBeenCalledTimes(2);
+      expect(mockShowConfirm).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'auth.please_wait_before_requesting_another_otp' }),
+      );
       expect(screen.getByTestId('forgot-reset-button')).toBeDefined();
     });
   });
