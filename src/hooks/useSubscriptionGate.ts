@@ -1,12 +1,21 @@
 import { useCallback } from 'react';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
+import { usePaymentAccess } from '../context/PaymentAccessContext';
 import { useTranslation } from 'react-i18next';
 
 export const useSubscriptionGate = () => {
   const { user } = useAuth();
   const { showConfirm } = useModal();
   const { t } = useTranslation();
+  const navigation = useNavigation<any>();
+  const { isPaymentAllowed } = usePaymentAccess();
+
+  /** Send the student to the plan picker. Only ever offered when the backend allows buying. */
+  const openPackages = useCallback(() => {
+    navigation.navigate('Packages');
+  }, [navigation]);
 
   const checkSubscription = useCallback(
     (options?: { skipModal?: boolean }) => {
@@ -26,16 +35,19 @@ export const useSubscriptionGate = () => {
               'subscription.required_message',
               'You must subscribe to access all features. Please subscribe to continue.',
             ),
-            showCancel: false,
-            onConfirm: () => {}, // Just dismiss the popup
+            // Buying is only offered where the backend permits it; everywhere
+            // else this stays the informational notice it has always been.
+            confirmLabel: isPaymentAllowed ? t('payment.subscribe_now') : undefined,
+            showCancel: isPaymentAllowed,
+            onConfirm: isPaymentAllowed ? openPackages : () => {},
           });
         }
         return false; // Not allowed
       }
       return true; // Allowed (either subscribed or field not present yet)
     },
-    [user, showConfirm, t],
+    [user, showConfirm, t, isPaymentAllowed, openPackages],
   );
 
-  return { checkSubscription };
+  return { checkSubscription, isPaymentAllowed, openPackages };
 };

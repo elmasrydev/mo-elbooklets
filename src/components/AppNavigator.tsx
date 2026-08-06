@@ -15,6 +15,8 @@ import InternalSettingsScreen from '../screens/InternalSettingsScreen';
 import OTPVerificationScreen from '../screens/OTPVerificationScreen';
 import ProfileCompletionPrompt from './ProfileCompletionPrompt';
 import RegistrationSuccessScreen from '../screens/RegistrationSuccessScreen';
+import PackagesScreen from '../screens/payment/PackagesScreen';
+import PaymobCheckoutScreen from '../screens/payment/PaymobCheckoutScreen';
 
 const RootStack = createNativeStackNavigator();
 
@@ -76,6 +78,14 @@ const AppNavigator: React.FC = () => {
             <RootStack.Group>
               <RootStack.Screen name="MainTabs" component={TabNavigator} />
               <RootStack.Screen name="InternalSettings" component={InternalSettingsScreen} />
+              {/* Purchase surface: reachable only while `isPaymentAllowed` is on,
+                  which each entry point checks and PackagesScreen re-checks. */}
+              <RootStack.Screen name="Packages" component={PackagesScreen} />
+              <RootStack.Screen
+                name="PaymobCheckout"
+                component={PaymobCheckoutScreen}
+                options={{ gestureEnabled: false }}
+              />
               <RootStack.Screen
                 name="ResetPassword"
                 component={ForgotPasswordScreen}

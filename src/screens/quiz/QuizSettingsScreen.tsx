@@ -89,7 +89,7 @@ const QuizSettingsScreen: React.FC = () => {
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
-  const { checkSubscription } = useSubscriptionGate();
+  const { checkSubscription, isPaymentAllowed, openPackages } = useSubscriptionGate();
 
   // Settings State
   const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null);
@@ -478,9 +478,13 @@ const QuizSettingsScreen: React.FC = () => {
         icon={<Ionicons name="lock-closed" size={50} color={theme.colors.primary} />}
         title={t('subscription.required_title')}
         message={t('subscription.required_message')}
-        confirmLabel={t('common.ok')}
+        confirmLabel={isPaymentAllowed ? t('payment.subscribe_now') : t('common.ok')}
         onConfirm={() => {
           setShowSubModal(false);
+          if (isPaymentAllowed) {
+            openPackages();
+            return;
+          }
           navigation.navigate('MainTabs', { screen: 'SettingsTab' });
         }}
         showCancel={true}

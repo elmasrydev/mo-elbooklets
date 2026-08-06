@@ -45,7 +45,7 @@ const QuizLessonsScreen: React.FC = () => {
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
-  const { checkSubscription } = useSubscriptionGate();
+  const { checkSubscription, isPaymentAllowed, openPackages } = useSubscriptionGate();
   const { showConfirm } = useModal();
 
   const showLockedDisclaimer = () => {
@@ -366,11 +366,12 @@ const QuizLessonsScreen: React.FC = () => {
           'quiz_flow.locked_lessons_message',
           'Some lessons in this unit are locked. Upgrade to the Pro Plan to unlock all content!',
         )}
-        confirmLabel={t('common.ok', 'OK')}
+        confirmLabel={isPaymentAllowed ? t('payment.subscribe_now') : t('common.ok', 'OK')}
         onConfirm={() => {
           setShowSubModal(false);
+          if (isPaymentAllowed) openPackages();
         }}
-        showCancel={false}
+        showCancel={isPaymentAllowed}
         onCancel={() => setShowSubModal(false)}
       />
     </View>

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -21,6 +21,8 @@ import UnifiedHeader from '../components/UnifiedHeader';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { isDebugMode } from '../config/debug';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { DEBUG_PAYMENTS_OVERRIDE_KEY } from '../context/PaymentAccessContext';
 import ApiUrlSwitcherModal from '../components/ApiUrlSwitcherModal';
 import crashlytics from '@react-native-firebase/crashlytics';
 import messaging from '@react-native-firebase/messaging';
@@ -86,6 +88,20 @@ const InternalSettingsScreen: React.FC = () => {
       alert('FCM Token copied to clipboard');
     }
   };
+  const [forcePayments, setForcePayments] = useState(false);
+
+  useEffect(() => {
+    if (!isDebugMode()) return;
+    AsyncStorage.getItem(DEBUG_PAYMENTS_OVERRIDE_KEY)
+      .then((value) => setForcePayments(value === 'true'))
+      .catch(() => setForcePayments(false));
+  }, []);
+
+  const handleForcePaymentsToggle = async (value: boolean) => {
+    setForcePayments(value);
+    await AsyncStorage.setItem(DEBUG_PAYMENTS_OVERRIDE_KEY, value ? 'true' : 'false');
+  };
+
   // From OTP branch (main)
   const [isUnverifying, setIsUnverifying] = useState(false);
   const [updateProfile] = useMutation(UpdateProfileDocument);
@@ -258,6 +274,22 @@ const InternalSettingsScreen: React.FC = () => {
                   </>
                 )}
               </TouchableOpacity>
+
+              {/* Stands in for the backend `isPaymentAllowed` flag so the purchase
+                  flow can be exercised before it ships. Debug builds only —
+                  a release build never reads this. Takes effect on restart. */}
+              <Text style={currentStyles.crashTestSubtitle}>
+                Force the subscription plans surface on (backend flag override).
+              </Text>
+              <View style={currentStyles.crashTestHeader}>
+                <Switch
+                  testID="internal-force-payments-toggle"
+                  value={forcePayments}
+                  onValueChange={handleForcePaymentsToggle}
+                  trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
+                />
+                <Text style={currentStyles.crashTestSubtitle}>Show payment flow</Text>
+              </View>
             </View>
           </View>
         )}

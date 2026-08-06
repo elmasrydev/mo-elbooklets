@@ -13,6 +13,7 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
+import { usePaymentAccess } from '../context/PaymentAccessContext';
 
 import { useTheme } from '../context/ThemeContext';
 import { useCommonStyles } from '../hooks/useCommonStyles';
@@ -58,6 +59,7 @@ const ProfileScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { user, logout, refreshUser, requestVerification } = useAuth();
   const { showConfirm } = useModal();
+  const { isPaymentAllowed } = usePaymentAccess();
   const { theme, spacing, borderRadius } = useTheme();
   const common = useCommonStyles();
   const { isRTL, setLanguage, language } = useLanguage();
@@ -421,6 +423,15 @@ const ProfileScreen: React.FC = () => {
             title: t('profile_screen.badges'),
             onPress: () => navigation.navigate('Badges'),
           })}
+          {isPaymentAllowed
+            ? renderRow({
+                icon: 'card-outline',
+                title: t('payment.packages_title'),
+                subtitle: t('payment.packages_subtitle'),
+                onPress: () => navigation.navigate('Packages'),
+                testID: 'profile-packages-row',
+              })
+            : null}
           {renderRow({
             icon: 'bookmark-outline',
             title: t('more_screen.bookmarks_notes', 'Bookmarks & Notes'),
