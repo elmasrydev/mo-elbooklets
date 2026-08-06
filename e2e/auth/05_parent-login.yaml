@@ -56,7 +56,9 @@ appId: com.elbooklets.app
             id: "confirm-modal-ok"
           timeout: 3000
 
-# Parents land directly on ParentDashboard (no OTP)
+# A no-op for an already-verified parent; handles the gate when unverified.
+- runFlow: ../utils/otp-handle.yaml
+
 - extendedWaitUntil:
     visible:
       id: "parent-tab-add-child"

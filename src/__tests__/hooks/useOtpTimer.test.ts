@@ -1,8 +1,9 @@
 import { renderHook, act } from '@testing-library/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useOtpTimer } from '../../hooks/useOtpTimer';
+import { useOtpTimer, RESEND_LOCK_SECONDS } from '../../hooks/useOtpTimer';
 
-const OTP_TIMER_STORAGE_KEY = '@otp_timer_state';
+const key = (scope: string) => `@otp_timer_state:${scope}`;
+const LEGACY_STORAGE_KEY = '@otp_timer_state';
 
 describe('useOtpTimer Hook', () => {
   beforeEach(async () => {
@@ -15,77 +16,86 @@ describe('useOtpTimer Hook', () => {
   });
 
   it('should initialize with default idle state', () => {
-    const { result } = renderHook(() => useOtpTimer());
+    const { result } = renderHook(() => useOtpTimer('student-verify'));
     expect(result.current.timeLeft).toBe(0);
     expect(result.current.isActive).toBe(false);
+    expect(result.current.isExpired).toBe(false);
     expect(result.current.formattedTime).toBe('0:00');
   });
 
-  it('should start timer with specified duration and format time', async () => {
-    const { result } = renderHook(() => useOtpTimer());
+  it('should lock resend for 60s and count the code lifetime separately', async () => {
+    const { result } = renderHook(() => useOtpTimer('student-verify'));
 
     await act(async () => {
-      await result.current.startTimer(120);
+      await result.current.startTimer(600);
     });
 
-    expect(result.current.timeLeft).toBe(120);
+    // The resend lock is always 60s, regardless of how long the code lives.
+    expect(result.current.timeLeft).toBe(RESEND_LOCK_SECONDS);
     expect(result.current.isActive).toBe(true);
-    expect(result.current.formattedTime).toBe('2:00');
+    expect(result.current.formattedTime).toBe('1:00');
+    expect(result.current.expiresLeft).toBe(600);
+    expect(result.current.isExpired).toBe(false);
 
-    const stored = await AsyncStorage.getItem(OTP_TIMER_STORAGE_KEY);
-    expect(stored).toBeDefined();
+    const stored = await AsyncStorage.getItem(key('student-verify'));
     expect(JSON.parse(stored!)).toHaveProperty('sentAt');
-    expect(JSON.parse(stored!).expiresIn).toBe(120);
+    expect(JSON.parse(stored!).expiresIn).toBe(600);
   });
 
-  it('should decrement timeLeft every second when active', async () => {
-    const { result } = renderHook(() => useOtpTimer());
+  it('should decrement both countdowns every second while active', async () => {
+    const { result } = renderHook(() => useOtpTimer('student-verify'));
 
     await act(async () => {
-      await result.current.startTimer(65);
+      await result.current.startTimer(600);
     });
-
-    expect(result.current.timeLeft).toBe(65);
-    expect(result.current.formattedTime).toBe('1:05');
 
     act(() => {
       jest.advanceTimersByTime(1000);
     });
 
-    expect(result.current.timeLeft).toBe(64);
-    expect(result.current.formattedTime).toBe('1:04');
-
-    act(() => {
-      jest.advanceTimersByTime(4000);
-    });
-
-    expect(result.current.timeLeft).toBe(60);
-    expect(result.current.formattedTime).toBe('1:00');
+    expect(result.current.timeLeft).toBe(59);
+    expect(result.current.formattedTime).toBe('0:59');
+    expect(result.current.expiresLeft).toBe(599);
   });
 
-  it('should auto-deactivate when timer expires', async () => {
-    const { result } = renderHook(() => useOtpTimer());
+  it('should release the resend lock at 60s while the code is still alive', async () => {
+    const { result } = renderHook(() => useOtpTimer('student-reset'));
 
     await act(async () => {
-      await result.current.startTimer(2);
+      await result.current.startTimer(600);
     });
 
-    expect(result.current.isActive).toBe(true);
-
     act(() => {
-      jest.advanceTimersByTime(2000);
+      jest.advanceTimersByTime(RESEND_LOCK_SECONDS * 1000);
     });
 
     expect(result.current.timeLeft).toBe(0);
     expect(result.current.isActive).toBe(false);
-    expect(result.current.formattedTime).toBe('0:00');
+    expect(result.current.expiresLeft).toBe(540);
+    expect(result.current.isExpired).toBe(false);
+  });
+
+  it('should report the code as expired once expires_in elapses', async () => {
+    const { result } = renderHook(() => useOtpTimer('student-reset'));
+
+    await act(async () => {
+      await result.current.startTimer(120);
+    });
+
+    act(() => {
+      jest.advanceTimersByTime(120_000);
+    });
+
+    expect(result.current.expiresLeft).toBe(0);
+    expect(result.current.isExpired).toBe(true);
+    expect(result.current.isActive).toBe(false);
   });
 
   it('should clear timer state on clearTimer call', async () => {
-    const { result } = renderHook(() => useOtpTimer());
+    const { result } = renderHook(() => useOtpTimer('student-verify'));
 
     await act(async () => {
-      await result.current.startTimer(60);
+      await result.current.startTimer(600);
     });
 
     expect(result.current.isActive).toBe(true);
@@ -96,54 +106,171 @@ describe('useOtpTimer Hook', () => {
 
     expect(result.current.timeLeft).toBe(0);
     expect(result.current.isActive).toBe(false);
-    expect(result.current.formattedTime).toBe('0:00');
-
-    const stored = await AsyncStorage.getItem(OTP_TIMER_STORAGE_KEY);
-    expect(stored).toBeNull();
+    expect(result.current.isExpired).toBe(false);
+    expect(await AsyncStorage.getItem(key('student-verify'))).toBeNull();
   });
 
-  it('should restore persisted state on hook mount', async () => {
-    const sentAt = Date.now();
-    const state = {
-      sentAt,
-      expiresIn: 60,
-    };
-    await AsyncStorage.setItem(OTP_TIMER_STORAGE_KEY, JSON.stringify(state));
+  it('should keep scopes isolated from one another', async () => {
+    const verify = renderHook(() => useOtpTimer('parent-verify'));
+    const reset = renderHook(() => useOtpTimer('parent-reset'));
 
-    const { result } = renderHook(() => useOtpTimer());
+    await act(async () => {
+      await verify.result.current.startTimer(600);
+    });
 
-    // Allow loadTimer async flow to finish
+    expect(verify.result.current.isActive).toBe(true);
+    // A verification countdown must not gate the reset screen's resend button.
+    expect(reset.result.current.isActive).toBe(false);
+    expect(await AsyncStorage.getItem(key('parent-reset'))).toBeNull();
+  });
+
+  it('should restore a live persisted state on mount', async () => {
+    await AsyncStorage.setItem(
+      key('student-verify'),
+      JSON.stringify({ sentAt: Date.now(), expiresIn: 600 }),
+    );
+
+    const { result } = renderHook(() => useOtpTimer('student-verify'));
+
     await act(async () => {
       await Promise.resolve();
     });
 
     expect(result.current.isActive).toBe(true);
-    expect(result.current.timeLeft).toBeLessThanOrEqual(60);
+    expect(result.current.timeLeft).toBeLessThanOrEqual(RESEND_LOCK_SECONDS);
   });
 
-  it('should compute remaining time correctly after app resumes from background', async () => {
-    const realDateNow = Date.now;
-    let mockTime = Date.now();
-    global.Date.now = jest.fn(() => mockTime);
+  it('should discard a persisted state whose code already died', async () => {
+    await AsyncStorage.setItem(
+      key('student-verify'),
+      JSON.stringify({ sentAt: Date.now() - 700_000, expiresIn: 600 }),
+    );
 
-    const { result } = renderHook(() => useOtpTimer());
+    const { result } = renderHook(() => useOtpTimer('student-verify'));
 
     await act(async () => {
-      await result.current.startTimer(60);
+      await Promise.resolve();
     });
 
-    expect(result.current.timeLeft).toBe(60);
+    expect(result.current.isActive).toBe(false);
+    expect(await AsyncStorage.getItem(key('student-verify'))).toBeNull();
+  });
 
-    // Simulate background elapsed time (30 seconds) without setInterval firing
-    mockTime += 30000;
+  it('should keep the lock for a code sent during mount, not the stale stored one', async () => {
+    // The screen's own mount effect calls startTimer while the hook's restore
+    // read is still in flight. If the resolved read won, the resend button
+    // would unlock the instant a fresh code was sent.
+    await AsyncStorage.setItem(
+      key('student-verify'),
+      JSON.stringify({ sentAt: Date.now() - 300_000, expiresIn: 600 }),
+    );
 
-    // Simulate reload state (like returning from background app state)
+    const { result } = renderHook(() => useOtpTimer('student-verify'));
+
+    await act(async () => {
+      await result.current.startTimer(600);
+      await Promise.resolve();
+    });
+
+    expect(result.current.timeLeft).toBe(RESEND_LOCK_SECONDS);
+    expect(result.current.isActive).toBe(true);
+    expect(result.current.isExpired).toBe(false);
+  });
+
+  it('should not delete a just-sent record when the stored one had already died', async () => {
+    await AsyncStorage.setItem(
+      key('student-verify'),
+      JSON.stringify({ sentAt: Date.now() - 700_000, expiresIn: 600 }),
+    );
+
+    const { result } = renderHook(() => useOtpTimer('student-verify'));
+
+    await act(async () => {
+      await result.current.startTimer(600);
+      await Promise.resolve();
+    });
+
+    expect(result.current.isActive).toBe(true);
+    // The fresh stamp must survive for the next mount to restore.
+    expect(await AsyncStorage.getItem(key('student-verify'))).not.toBeNull();
+  });
+
+  it('should keep a code usable after the resend lock releases', async () => {
+    const { result } = renderHook(() => useOtpTimer('student-reset'));
+
+    await act(async () => {
+      await result.current.startTimer(600, '01039890331');
+    });
+
+    act(() => {
+      jest.advanceTimersByTime(180_000);
+    });
+
+    // The 60s lock is long gone, but the code lives for ten minutes — anything
+    // offering "I already have a code" must stay available for all of it.
+    expect(result.current.isActive).toBe(false);
+    expect(result.current.hasLiveCode).toBe(true);
+    expect(result.current.sentTo).toBe('01039890331');
+  });
+
+  it('should stop reporting a live code once it expires', async () => {
+    const { result } = renderHook(() => useOtpTimer('student-reset'));
+
+    await act(async () => {
+      await result.current.startTimer(120, '01039890331');
+    });
+
+    act(() => {
+      jest.advanceTimersByTime(120_000);
+    });
+
+    expect(result.current.hasLiveCode).toBe(false);
+    expect(result.current.isExpired).toBe(true);
+  });
+
+  it('should report no live code before anything is sent', () => {
+    const { result } = renderHook(() => useOtpTimer('student-reset'));
+    expect(result.current.hasLiveCode).toBe(false);
+    expect(result.current.sentTo).toBeNull();
+  });
+
+  it('should drop the pre-scoping legacy key so a stale lock cannot strand a user', async () => {
+    await AsyncStorage.setItem(
+      LEGACY_STORAGE_KEY,
+      JSON.stringify({ sentAt: Date.now(), expiresIn: 120 }),
+    );
+
+    renderHook(() => useOtpTimer('student-verify'));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(await AsyncStorage.getItem(LEGACY_STORAGE_KEY)).toBeNull();
+  });
+
+  it('should recompute remaining time after the app resumes from background', async () => {
+    const realDateNow = Date.now;
+    let mockTime = realDateNow();
+    global.Date.now = jest.fn(() => mockTime);
+
+    const { result } = renderHook(() => useOtpTimer('student-verify'));
+
+    await act(async () => {
+      await result.current.startTimer(600);
+    });
+
+    expect(result.current.timeLeft).toBe(RESEND_LOCK_SECONDS);
+
+    // 30s pass with the app backgrounded, so no interval tick fires.
+    mockTime += 30_000;
+
     await act(async () => {
       (global as any).simulateAppStateChange('active');
     });
 
-    // The remaining time should adjust to 29 (elapsed 30 secs + 1 sec timer tick)
-    expect(result.current.timeLeft).toBeLessThanOrEqual(30);
+    expect(result.current.timeLeft).toBe(30);
+    expect(result.current.expiresLeft).toBe(570);
 
     global.Date.now = realDateNow;
   });

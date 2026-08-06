@@ -3,6 +3,7 @@ import { fireEvent, screen, act } from '@testing-library/react-native';
 import ParentRegisterScreen from '../../screens/ParentRegisterScreen';
 import { renderWithProviders } from '../helpers/renderWithProviders';
 import { apolloClient } from '../../lib/apollo';
+import { mockReset } from '../__mocks__/navigation';
 
 // Mock API
 jest.mock('../../lib/apollo', () => ({
@@ -60,12 +61,17 @@ describe('ParentRegisterScreen Integration Tests', () => {
     );
   });
 
-  it('registers parent user successfully and resets navigation route', async () => {
+  it('registers parent user without navigating — the navigator swaps stacks itself', async () => {
     (apolloClient.mutate as jest.Mock).mockResolvedValueOnce({
       data: {
         parentRegister: {
           access_token: 'parent-token',
-          parent: { id: '2', name: 'Nasser Ali', mobile: '01007867181' },
+          parent: {
+            id: '2',
+            name: 'Nasser Ali',
+            mobile: '01007867181',
+            mobile_verified_at: null,
+          },
         },
       },
     });
@@ -85,5 +91,8 @@ describe('ParentRegisterScreen Integration Tests', () => {
 
     // Verify it triggers registration mutation
     expect(apolloClient.mutate).toHaveBeenCalled();
+    // A reset here would target a route that does not exist; the OTP gate or the
+    // dashboard is chosen by AppNavigator from the session state instead.
+    expect(mockReset).not.toHaveBeenCalled();
   });
 });

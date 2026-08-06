@@ -31,6 +31,14 @@ export const PRIMARY_API_URL =
  */
 export const REQUEST_TIMEOUT_MS = 10000;
 
+/**
+ * Longer cap for submitting a quiz. Descriptive questions (what_happens /
+ * give_a_reason) are graded by AI synchronously inside the mutation, so the
+ * response can take far longer than a normal request. Passed per-operation via
+ * `context: { fetchOptions: { timeoutMs: SUBMIT_QUIZ_TIMEOUT_MS } }`.
+ */
+export const SUBMIT_QUIZ_TIMEOUT_MS = 60000;
+
 declare let __DEV__: boolean;
 
 // AsyncStorage key for API URL override

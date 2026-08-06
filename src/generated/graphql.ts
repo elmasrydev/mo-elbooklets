@@ -184,7 +184,14 @@ export type ParentLoginMutationVariables = Exact<{
 export type ParentLoginMutation = {
   parentLogin: {
     access_token: string;
-    parent: { id: string; name: string | null; mobile: string };
+    parent: {
+      id: string;
+      name: string | null;
+      mobile: string;
+      email: string | null;
+      country_code: string | null;
+      mobile_verified_at: string | null;
+    };
   };
 };
 
@@ -198,14 +205,28 @@ export type ParentRegisterMutationVariables = Exact<{
 export type ParentRegisterMutation = {
   parentRegister: {
     access_token: string;
-    parent: { id: string; name: string | null; mobile: string; email: string | null };
+    parent: {
+      id: string;
+      name: string | null;
+      mobile: string;
+      email: string | null;
+      country_code: string | null;
+      mobile_verified_at: string | null;
+    };
   };
 };
 
 export type ParentMeQueryVariables = Exact<{ [key: string]: never }>;
 
 export type ParentMeQuery = {
-  parentMe: { id: string; name: string | null; mobile: string; country_code: string | null };
+  parentMe: {
+    id: string;
+    name: string | null;
+    mobile: string;
+    email: string | null;
+    country_code: string | null;
+    mobile_verified_at: string | null;
+  };
 };
 
 export type ParentForgotPasswordMutationVariables = Exact<{
@@ -287,6 +308,76 @@ export type VerifyMobileOtpMutation = {
       city: { id: string; name_ar: string; name_en: string } | null;
     } | null;
   };
+};
+
+export type SendParentMobileOtpMutationVariables = Exact<{
+  mobile: string;
+  country_code?: string | null | undefined;
+}>;
+
+export type SendParentMobileOtpMutation = {
+  sendParentMobileOtp: { success: boolean; message: string; expires_in: number };
+};
+
+export type VerifyParentMobileOtpMutationVariables = Exact<{
+  otp: string;
+}>;
+
+export type VerifyParentMobileOtpMutation = {
+  verifyParentMobileOtp: {
+    success: boolean;
+    message: string;
+    parent: {
+      id: string;
+      name: string | null;
+      mobile: string;
+      email: string | null;
+      country_code: string | null;
+      mobile_verified_at: string | null;
+    } | null;
+  };
+};
+
+export type SendPasswordResetOtpMutationVariables = Exact<{
+  mobile: string;
+  country_code?: string | null | undefined;
+}>;
+
+export type SendPasswordResetOtpMutation = {
+  sendPasswordResetOtp: { success: boolean; message: string; expires_in: number };
+};
+
+export type ResetPasswordWithOtpMutationVariables = Exact<{
+  mobile: string;
+  country_code?: string | null | undefined;
+  otp: string;
+  password: string;
+  password_confirmation: string;
+}>;
+
+export type ResetPasswordWithOtpMutation = {
+  resetPasswordWithOtp: { success: boolean; message: string | null };
+};
+
+export type SendParentPasswordResetOtpMutationVariables = Exact<{
+  mobile: string;
+  country_code?: string | null | undefined;
+}>;
+
+export type SendParentPasswordResetOtpMutation = {
+  sendParentPasswordResetOtp: { success: boolean; message: string; expires_in: number };
+};
+
+export type ResetParentPasswordWithOtpMutationVariables = Exact<{
+  mobile: string;
+  country_code?: string | null | undefined;
+  otp: string;
+  password: string;
+  password_confirmation: string;
+}>;
+
+export type ResetParentPasswordWithOtpMutation = {
+  resetParentPasswordWithOtp: { success: boolean; message: string | null };
 };
 
 export type GetBadgesScreenDataQueryVariables = Exact<{ [key: string]: never }>;
@@ -1112,10 +1203,23 @@ export type LessonsForSubjectQuery = {
   }>;
 };
 
+export type LessonQuestionTypesQueryVariables = Exact<{
+  lessonIds: Array<string> | string;
+}>;
+
+export type LessonQuestionTypesQuery = {
+  lessonQuestionTypes: {
+    total: number;
+    minSelectedTypes: number;
+    types: Array<{ type: string; label: string; count: number }>;
+  };
+};
+
 export type StartQuizMutationVariables = Exact<{
   subjectId: string;
   lessonIds: Array<string> | string;
   quizTypeId?: string | null | undefined;
+  questionTypes?: Array<string> | string | null | undefined;
 }>;
 
 export type StartQuizMutation = { startQuiz: { id: string } };
@@ -1137,8 +1241,20 @@ export type QuizQuery = {
       type: string;
       answers: Array<string>;
       questionNumber: number;
-      explanation: string | null;
       difficulty: number;
+      imageUrl: string | null;
+      matchPairs: {
+        left: Array<{ id: string; text: string }>;
+        right: Array<{ id: string; text: string }>;
+      } | null;
+      subQuestions: Array<{
+        id: string;
+        questionNumber: number;
+        type: string;
+        question: string;
+        answers: Array<string>;
+        imageUrl: string | null;
+      }> | null;
     }>;
   };
 };
@@ -1178,7 +1294,7 @@ export type QuizResultsQuery = {
         id: string;
         question: string;
         type: string;
-        answer_1: string;
+        answer_1: string | null;
         explanation: string | null;
       };
       descriptive_feedback: { coverage_percentage: number; score_out_of_10: number } | null;
@@ -1192,6 +1308,8 @@ export type QuizReviewQueryVariables = Exact<{
 
 export type QuizReviewQuery = {
   quizResults: {
+    score: number;
+    totalQuestions: number;
     isPublished: boolean;
     quiz: {
       id: string;
@@ -1203,16 +1321,24 @@ export type QuizReviewQuery = {
       is_correct: boolean;
       score: number | null;
       explanation: string | null;
+      parent_question_id: string | null;
       question: {
         id: string;
         question: string;
         type: string;
-        answer_1: string;
+        answer_1: string | null;
         answer_2: string | null;
         answer_3: string | null;
         answer_4: string | null;
         explanation: string | null;
+        imageUrl: string | null;
+        matchColumns: {
+          left: Array<{ id: string; text: string }>;
+          right: Array<{ id: string; text: string }>;
+        } | null;
+        parent: { id: string; question: string } | null;
       };
+      match_results: Array<{ leftId: string; rightId: string; isCorrect: boolean }> | null;
       descriptive_feedback: {
         coverage_percentage: number;
         score_out_of_10: number;
@@ -1727,6 +1853,9 @@ export const ParentLoginDocument = {
                       { kind: 'Field', name: { kind: 'Name', value: 'id' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'name' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'mobile' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'country_code' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'mobile_verified_at' } },
                     ],
                   },
                 },
@@ -1830,6 +1959,8 @@ export const ParentRegisterDocument = {
                       { kind: 'Field', name: { kind: 'Name', value: 'name' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'mobile' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'country_code' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'mobile_verified_at' } },
                     ],
                   },
                 },
@@ -1860,7 +1991,9 @@ export const ParentMeDocument = {
                 { kind: 'Field', name: { kind: 'Name', value: 'id' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'name' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'mobile' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'email' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'country_code' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'mobile_verified_at' } },
               ],
             },
           },
@@ -2272,6 +2405,416 @@ export const VerifyMobileOtpDocument = {
     },
   ],
 } as unknown as DocumentNode<VerifyMobileOtpMutation, VerifyMobileOtpMutationVariables>;
+export const SendParentMobileOtpDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'SendParentMobileOtp' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'mobile' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'country_code' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'sendParentMobileOtp' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'mobile' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'mobile' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'country_code' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'country_code' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'message' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'expires_in' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<SendParentMobileOtpMutation, SendParentMobileOtpMutationVariables>;
+export const VerifyParentMobileOtpDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'VerifyParentMobileOtp' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'otp' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'verifyParentMobileOtp' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'otp' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'otp' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'message' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'parent' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'mobile' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'country_code' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'mobile_verified_at' } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<VerifyParentMobileOtpMutation, VerifyParentMobileOtpMutationVariables>;
+export const SendPasswordResetOtpDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'SendPasswordResetOtp' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'mobile' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'country_code' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'sendPasswordResetOtp' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'mobile' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'mobile' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'country_code' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'country_code' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'message' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'expires_in' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<SendPasswordResetOtpMutation, SendPasswordResetOtpMutationVariables>;
+export const ResetPasswordWithOtpDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'ResetPasswordWithOtp' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'mobile' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'country_code' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'otp' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'password' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'password_confirmation' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'resetPasswordWithOtp' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'mobile' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'mobile' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'country_code' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'country_code' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'otp' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'otp' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'password' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'password' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'password_confirmation' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'password_confirmation' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'message' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<ResetPasswordWithOtpMutation, ResetPasswordWithOtpMutationVariables>;
+export const SendParentPasswordResetOtpDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'SendParentPasswordResetOtp' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'mobile' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'country_code' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'sendParentPasswordResetOtp' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'mobile' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'mobile' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'country_code' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'country_code' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'message' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'expires_in' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  SendParentPasswordResetOtpMutation,
+  SendParentPasswordResetOtpMutationVariables
+>;
+export const ResetParentPasswordWithOtpDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'ResetParentPasswordWithOtp' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'mobile' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'country_code' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'otp' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'password' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'password_confirmation' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'resetParentPasswordWithOtp' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'mobile' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'mobile' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'country_code' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'country_code' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'otp' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'otp' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'password' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'password' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'password_confirmation' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'password_confirmation' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'message' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  ResetParentPasswordWithOtpMutation,
+  ResetParentPasswordWithOtpMutationVariables
+>;
 export const GetBadgesScreenDataDocument = {
   kind: 'Document',
   definitions: [
@@ -5648,6 +6191,67 @@ export const LessonsForSubjectDocument = {
     },
   ],
 } as unknown as DocumentNode<LessonsForSubjectQuery, LessonsForSubjectQueryVariables>;
+export const LessonQuestionTypesDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'LessonQuestionTypes' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'lessonIds' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'ListType',
+              type: {
+                kind: 'NonNullType',
+                type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+              },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'lessonQuestionTypes' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'lessonIds' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'lessonIds' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'total' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'minSelectedTypes' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'types' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'type' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'count' } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<LessonQuestionTypesQuery, LessonQuestionTypesQueryVariables>;
 export const StartQuizDocument = {
   kind: 'Document',
   definitions: [
@@ -5683,6 +6287,17 @@ export const StartQuizDocument = {
           variable: { kind: 'Variable', name: { kind: 'Name', value: 'quizTypeId' } },
           type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
         },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'questionTypes' } },
+          type: {
+            kind: 'ListType',
+            type: {
+              kind: 'NonNullType',
+              type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+            },
+          },
+        },
       ],
       selectionSet: {
         kind: 'SelectionSet',
@@ -5705,6 +6320,11 @@ export const StartQuizDocument = {
                 kind: 'Argument',
                 name: { kind: 'Name', value: 'quizTypeId' },
                 value: { kind: 'Variable', name: { kind: 'Name', value: 'quizTypeId' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'questionTypes' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'questionTypes' } },
               },
             ],
             selectionSet: {
@@ -5775,8 +6395,54 @@ export const QuizDocument = {
                       { kind: 'Field', name: { kind: 'Name', value: 'type' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'answers' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'questionNumber' } },
-                      { kind: 'Field', name: { kind: 'Name', value: 'explanation' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'difficulty' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'imageUrl' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'matchPairs' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            {
+                              kind: 'Field',
+                              name: { kind: 'Name', value: 'left' },
+                              selectionSet: {
+                                kind: 'SelectionSet',
+                                selections: [
+                                  { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                                  { kind: 'Field', name: { kind: 'Name', value: 'text' } },
+                                ],
+                              },
+                            },
+                            {
+                              kind: 'Field',
+                              name: { kind: 'Name', value: 'right' },
+                              selectionSet: {
+                                kind: 'SelectionSet',
+                                selections: [
+                                  { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                                  { kind: 'Field', name: { kind: 'Name', value: 'text' } },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'subQuestions' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'questionNumber' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'type' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'question' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'answers' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'imageUrl' } },
+                          ],
+                        },
+                      },
                     ],
                   },
                 },
@@ -6014,6 +6680,8 @@ export const QuizReviewDocument = {
             selectionSet: {
               kind: 'SelectionSet',
               selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'score' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'totalQuestions' } },
                 {
                   kind: 'Field',
                   name: { kind: 'Name', value: 'quiz' },
@@ -6058,6 +6726,49 @@ export const QuizReviewDocument = {
                             { kind: 'Field', name: { kind: 'Name', value: 'answer_3' } },
                             { kind: 'Field', name: { kind: 'Name', value: 'answer_4' } },
                             { kind: 'Field', name: { kind: 'Name', value: 'explanation' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'imageUrl' } },
+                            {
+                              kind: 'Field',
+                              name: { kind: 'Name', value: 'matchColumns' },
+                              selectionSet: {
+                                kind: 'SelectionSet',
+                                selections: [
+                                  {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'left' },
+                                    selectionSet: {
+                                      kind: 'SelectionSet',
+                                      selections: [
+                                        { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                                        { kind: 'Field', name: { kind: 'Name', value: 'text' } },
+                                      ],
+                                    },
+                                  },
+                                  {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'right' },
+                                    selectionSet: {
+                                      kind: 'SelectionSet',
+                                      selections: [
+                                        { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                                        { kind: 'Field', name: { kind: 'Name', value: 'text' } },
+                                      ],
+                                    },
+                                  },
+                                ],
+                              },
+                            },
+                            {
+                              kind: 'Field',
+                              name: { kind: 'Name', value: 'parent' },
+                              selectionSet: {
+                                kind: 'SelectionSet',
+                                selections: [
+                                  { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                                  { kind: 'Field', name: { kind: 'Name', value: 'question' } },
+                                ],
+                              },
+                            },
                           ],
                         },
                       },
@@ -6065,6 +6776,19 @@ export const QuizReviewDocument = {
                       { kind: 'Field', name: { kind: 'Name', value: 'is_correct' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'score' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'explanation' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'parent_question_id' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'match_results' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'leftId' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'rightId' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'isCorrect' } },
+                          ],
+                        },
+                      },
                       {
                         kind: 'Field',
                         name: { kind: 'Name', value: 'descriptive_feedback' },

@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@apollo/client/react';
-import { QuizTypesDocument } from '../../generated/graphql';
+import { QuizTypesDocument, LessonQuestionTypesDocument } from '../../generated/graphql';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
@@ -26,6 +26,14 @@ import { ConfirmModal } from '../../components/ConfirmModal';
 import SubjectIcon from '../../components/SubjectIcon';
 import { useSubscriptionGate } from '../../hooks/useSubscriptionGate';
 import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
+import {
+  canOfferTypePicker,
+  evaluateSelection,
+  pruneSelection,
+  questionTypesArgument,
+  QuestionTypeOption,
+  TypeSelection,
+} from '../../utils/quizTypeSelection';
 
 interface QuizType {
   id: string;
@@ -89,6 +97,74 @@ const QuizSettingsScreen: React.FC = () => {
 
   const [showSubModal, setShowSubModal] = useState(false);
 
+  // What the chosen lessons can actually be quizzed on. Counts are per lesson
+  // set, so this rides on `selectedLessonIds` and re-runs when they change.
+  const { data: questionTypesData } = useQuery(LessonQuestionTypesDocument, {
+    variables: { lessonIds: selectedLessonIds },
+    skip: selectedLessonIds.length === 0,
+  });
+
+  // Presence of data, not absence of `loading`: the client runs
+  // `cache-and-network`, so `loading` stays true while a cached answer is
+  // already on screen — gating on it would switch validation off during every
+  // background refetch and let a rejected selection through. A *resolved* empty
+  // response is itself a real answer (these lessons hold no questions) and must
+  // block Start, which it does because `total` is then 0.
+  const hasAvailability = !!questionTypesData?.lessonQuestionTypes;
+
+  const typeOptions: QuestionTypeOption[] = useMemo(
+    () =>
+      (questionTypesData?.lessonQuestionTypes?.types ?? []).map((option) => ({
+        type: option.type,
+        label: option.label,
+        count: option.count,
+      })),
+    [questionTypesData],
+  );
+  // No literal fallback — CLAUDE.md forbids hardcoding 2. Until the response
+  // lands there is no availability to judge (`hasAvailability` is false), so the
+  // value is unused; 0 keeps `canOfferTypePicker` false rather than inventing a
+  // rule the server never stated.
+  const minSelectedTypes = questionTypesData?.lessonQuestionTypes?.minSelectedTypes ?? 0;
+  const totalAvailable = questionTypesData?.lessonQuestionTypes?.total ?? 0;
+
+  // `null` means "no restriction" — the classic random quiz, and the default.
+  // An empty array is a student who unchecked every box, which is not the same
+  // thing and must be corrected rather than silently treated as "all".
+  const [selectedQuestionTypes, setSelectedQuestionTypes] = useState<TypeSelection>(null);
+
+  // A lesson change can retire a type that was selected; drop it rather than
+  // sending a value the server will reject.
+  useEffect(() => {
+    // Only prune against a real response. When `typeOptions` is empty because
+    // the query has not resolved (or a refetch failed), pruning would clear the
+    // whole selection — which reads as "you unchecked everything" and blocks
+    // Start, instead of leaving the student's choice alone.
+    if (typeOptions.length === 0) return;
+
+    setSelectedQuestionTypes((current) => {
+      const pruned = pruneSelection(current, typeOptions);
+      if (current === null || pruned === null) return current;
+      return pruned.length === current.length ? current : pruned;
+    });
+  }, [typeOptions]);
+
+  const showTypePicker = canOfferTypePicker(typeOptions, minSelectedTypes);
+
+  const toggleQuestionType = useCallback(
+    (type: string) => {
+      setSelectedQuestionTypes((current) => {
+        // No explicit selection yet means every type is in play, so the first
+        // tap narrows from "all" to "all but this one". Unchecking the last box
+        // leaves an empty list, never `null` — the student asked to remove a
+        // type, not to go back to the full random mix.
+        const base = current === null ? typeOptions.map((option) => option.type) : current;
+        return base.includes(type) ? base.filter((value) => value !== type) : [...base, type];
+      });
+    },
+    [typeOptions],
+  );
+
   useEffect(() => {
     if (!selectedTypeId && quizTypes.length > 0) {
       const defaultType = quizTypes.find((qt: QuizType) => qt.isDefault) || quizTypes[0];
@@ -110,12 +186,47 @@ const QuizSettingsScreen: React.FC = () => {
     return quizTypes.find((qt) => qt.id === selectedTypeId);
   }, [quizTypes, selectedTypeId]);
 
+  // Re-checked on every toggle so Start reflects the current selection, and the
+  // student learns about a shortfall here rather than from a server error.
+  const selectionStatus = useMemo(
+    () =>
+      evaluateSelection({
+        selected: selectedQuestionTypes,
+        options: typeOptions,
+        minSelectedTypes,
+        total: totalAvailable,
+        neededQuestions: currentQuizType?.questionCount ?? 0,
+      }),
+    [selectedQuestionTypes, typeOptions, minSelectedTypes, totalAvailable, currentQuizType],
+  );
+
+  // Only gate on availability once the counts have actually arrived; until then
+  // the server stays the backstop.
+  const canStart = !!selectedTypeId && (!hasAvailability || selectionStatus.canStart);
+
+  // Why Start is blocked. Lives outside the picker card because the shortfall
+  // can bite when the picker is hidden — a lesson set with a single type still
+  // has to cover the chosen quiz size.
+  const selectionMessage = useMemo(() => {
+    if (!hasAvailability) return null;
+    if (selectionStatus.tooFewTypes) {
+      return t('quiz_flow.question_types_min', { count: minSelectedTypes });
+    }
+    if (selectionStatus.shortfall > 0) {
+      return t('quiz_flow.question_types_shortfall', {
+        available: selectionStatus.available,
+        needed: currentQuizType?.questionCount ?? 0,
+      });
+    }
+    return null;
+  }, [hasAvailability, selectionStatus, minSelectedTypes, currentQuizType, t]);
+
   const handleStartQuiz = () => {
     if (!checkSubscription({ skipModal: true })) {
       setShowSubModal(true);
       return;
     }
-    if (!selectedTypeId || !subject) return;
+    if (!selectedTypeId || !subject || !canStart) return;
 
     // Navigate to Generating animation screen
     navigation.navigate('QuizGenerating', {
@@ -129,6 +240,7 @@ const QuizSettingsScreen: React.FC = () => {
       instantFeedback: false,
       soundEffects: true,
       questionCount: currentQuizType?.questionCount || 10,
+      questionTypes: questionTypesArgument(selectedQuestionTypes, typeOptions),
     });
   };
 
@@ -242,6 +354,90 @@ const QuizSettingsScreen: React.FC = () => {
           </View>
         </View>
 
+        {/* Question Types — only the types these lessons actually hold, with the
+            live count for each. Hidden when there is nothing to choose between. */}
+        {showTypePicker && (
+          <View style={currentStyles.card}>
+            <View style={currentStyles.settingHeader}>
+              <View>
+                <Text style={currentStyles.cardLabel}>{t('quiz_flow.question_types')}</Text>
+                <Text style={currentStyles.cardSublabel}>{t('quiz_flow.question_types_desc')}</Text>
+              </View>
+            </View>
+
+            {/* Explicit "all types" row so the default mix is a visible choice
+                rather than an empty state the student has to infer. It sits apart
+                from the checkboxes because it is a different kind of choice —
+                one replaces the whole selection, the others refine it. */}
+            <View style={currentStyles.typeDefaultGroup}>
+              <TouchableOpacity
+                testID="quiz-type-all"
+                style={[
+                  currentStyles.typeRow,
+                  selectedQuestionTypes === null && currentStyles.typeRowSelected,
+                ]}
+                onPress={() => setSelectedQuestionTypes(null)}
+                activeOpacity={0.7}
+              >
+                <View style={currentStyles.typeRowMain}>
+                  <Ionicons
+                    name={selectedQuestionTypes === null ? 'radio-button-on' : 'radio-button-off'}
+                    size={20}
+                    color={selectedQuestionTypes === null ? '#004A9A' : '#94A3B8'}
+                  />
+                  <View style={currentStyles.typeRowText}>
+                    <Text style={currentStyles.typeLabel}>{t('quiz_flow.question_types_all')}</Text>
+                    <Text style={currentStyles.typeSublabel}>
+                      {t('quiz_flow.question_types_all_desc')}
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            <View style={currentStyles.typeDivider}>
+              <View style={currentStyles.typeDividerLine} />
+              <Text style={currentStyles.typeDividerText}>{t('quiz_flow.question_types_or')}</Text>
+              <View style={currentStyles.typeDividerLine} />
+            </View>
+
+            <View style={currentStyles.typeList}>
+              {typeOptions.map((option) => {
+                // The default mix has no explicit list, so every row reads as on.
+                const isSelected =
+                  selectedQuestionTypes === null || selectedQuestionTypes.includes(option.type);
+                return (
+                  <TouchableOpacity
+                    key={option.type}
+                    testID={`quiz-type-${option.type}`}
+                    style={[currentStyles.typeRow, isSelected && currentStyles.typeRowSelected]}
+                    onPress={() => toggleQuestionType(option.type)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={currentStyles.typeRowMain}>
+                      <Ionicons
+                        name={isSelected ? 'checkbox' : 'square-outline'}
+                        size={20}
+                        color={isSelected ? '#004A9A' : '#94A3B8'}
+                      />
+                      <View style={currentStyles.typeRowText}>
+                        <Text style={currentStyles.typeLabel}>{option.label}</Text>
+                      </View>
+                    </View>
+                    <Text style={currentStyles.typeCount}>{option.count}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
+        {selectionMessage && (
+          <Text testID="quiz-type-error" style={currentStyles.selectionMessage}>
+            {selectionMessage}
+          </Text>
+        )}
+
         {/* Timer Card */}
         <View style={currentStyles.card}>
           <View style={currentStyles.rowSpace}>
@@ -269,7 +465,7 @@ const QuizSettingsScreen: React.FC = () => {
         <AppButton
           title={t('quiz_flow.start_quiz')}
           onPress={handleStartQuiz}
-          disabled={!selectedTypeId}
+          disabled={!canStart}
           style={currentStyles.startBtn}
           textStyle={currentStyles.startBtnText}
           icon={<Ionicons name="play" size={18} color="#ffffff" />}
@@ -414,6 +610,81 @@ const styles = (
       fontSize: 10,
       ...fontWeight('850'),
       color: '#004A9A',
+    },
+    typeDefaultGroup: {
+      marginTop: spacing.md,
+    },
+    typeDivider: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      marginVertical: spacing.md,
+    },
+    typeDividerLine: {
+      flex: 1,
+      height: 1,
+      backgroundColor: '#E2E8F0',
+    },
+    typeDividerText: {
+      ...typography('caption'),
+      ...fontWeight('600'),
+      color: '#94A3B8',
+    },
+    typeList: {
+      gap: spacing.sm,
+      marginBottom: spacing.xs,
+    },
+    typeRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.md,
+      borderRadius: borderRadius.lg,
+      borderWidth: 1,
+      borderColor: '#E2E8F0',
+      backgroundColor: '#FFFFFF',
+    },
+    typeRowSelected: {
+      borderColor: '#004A9A',
+      backgroundColor: '#EFF6FF',
+    },
+    typeRowMain: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      flex: 1,
+    },
+    typeRowText: {
+      flex: 1,
+    },
+    typeLabel: {
+      ...typography('body'),
+      ...fontWeight('600'),
+      color: '#0F172A',
+      textAlign: 'left',
+    },
+    typeSublabel: {
+      ...typography('caption'),
+      color: '#94A3B8',
+      textAlign: 'left',
+      marginTop: 2,
+    },
+    typeCount: {
+      ...typography('caption'),
+      ...fontWeight('700'),
+      color: '#475569',
+      // Logical margins so the count keeps its breathing room from the row's
+      // trailing edge under RTL, where "right" becomes the leading side.
+      marginStart: spacing.md,
+      marginEnd: spacing.xs,
+    },
+    selectionMessage: {
+      ...typography('caption'),
+      color: theme.colors.error,
+      marginBottom: spacing.md,
+      marginHorizontal: spacing.xs,
+      textAlign: 'left',
     },
     pillContainer: {
       flexDirection: 'row',

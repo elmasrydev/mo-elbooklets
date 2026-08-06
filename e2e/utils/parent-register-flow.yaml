@@ -54,7 +54,7 @@ appId: com.elbooklets.app
 - tapOn:
     id: "parent-register-submit"
 
-# Parents land directly on ParentDashboard (no OTP, no profile prompt).
+# Parents now verify their number with a WhatsApp code, same as students.
 # Dismiss a rate-limit / error popup if the backend returns one.
 - extendedWaitUntil:
     optional: true
@@ -72,6 +72,9 @@ appId: com.elbooklets.app
           notVisible:
             id: "confirm-modal-ok"
           timeout: 3000
+
+# parentRegister auto-sends the code, so the gate opens on the entry step.
+- runFlow: otp-handle.yaml
 
 - extendedWaitUntil:
     visible:

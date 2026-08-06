@@ -11,7 +11,7 @@ import {
   ScrollView,
   BackHandler,
 } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, useRoute, RouteProp } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import UnifiedHeader from '../components/UnifiedHeader';
@@ -21,12 +21,45 @@ import { useTypography } from '../hooks/useTypography';
 import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
 import { apolloClient } from '../lib/apollo';
-import { SendMobileOtpDocument, VerifyMobileOtpDocument } from '../generated/graphql';
-import { useOtpTimer } from '../hooks/useOtpTimer';
+import {
+  SendMobileOtpDocument,
+  VerifyMobileOtpDocument,
+  SendParentMobileOtpDocument,
+  VerifyParentMobileOtpDocument,
+} from '../generated/graphql';
+import { useOtpTimer, DEFAULT_OTP_EXPIRY_SECONDS } from '../hooks/useOtpTimer';
+import OtpCodeInput, { OTP_LENGTH } from '../components/OtpCodeInput';
 import { layout } from '../config/layout';
 import { isDebugMode } from '../config/debug';
 
-const OTP_LENGTH = 6;
+type OtpAudience = 'student' | 'parent';
+
+type OtpRouteParams = {
+  OTPVerification: { audience?: OtpAudience } | undefined;
+};
+
+/**
+ * The student and parent operations return identically shaped payloads under
+ * different field names, so the audience picks both the document and the key.
+ * Typing the mutation by that shape keeps one code path for both roles without
+ * casting the generated union apart.
+ */
+interface OtpSendPayload {
+  success: boolean;
+  message?: string | null;
+  expires_in?: number | null;
+}
+
+interface OtpVerifyPayload {
+  success: boolean;
+  message?: string | null;
+  /* eslint-disable @typescript-eslint/no-explicit-any --
+     The two audiences return different account shapes under different keys;
+     both are handed straight to AuthContext's own typed updater. */
+  user?: any;
+  parent?: any;
+  /* eslint-enable @typescript-eslint/no-explicit-any */
+}
 
 const OTPVerificationScreen: React.FC = () => {
   const { theme, spacing, borderRadius } = useTheme();
@@ -34,9 +67,13 @@ const OTPVerificationScreen: React.FC = () => {
   const { typography, fontWeight } = useTypography();
   const { t } = useTranslation();
   const navigation = useNavigation();
+  const route = useRoute<RouteProp<OtpRouteParams, 'OTPVerification'>>();
   const {
     user,
+    parentUser,
     refreshUser,
+    updateUser,
+    updateParentUser,
     logout,
     skipVerification,
     otpWasAutoSent,
@@ -45,7 +82,21 @@ const OTPVerificationScreen: React.FC = () => {
     clearOtpShouldAutoRequest,
   } = useAuth();
   const { showConfirm } = useModal();
-  const { timeLeft, isActive, formattedTime, startTimer, clearTimer } = useOtpTimer();
+
+  const audience: OtpAudience = route.params?.audience ?? 'student';
+  const isParent = audience === 'parent';
+
+  // The account whose number is being verified — the two roles never coexist in
+  // one session, but the code is scoped to the audience either way (guide §2).
+  const account = isParent ? parentUser : user;
+  const sendDocument = isParent ? SendParentMobileOtpDocument : SendMobileOtpDocument;
+  const verifyDocument = isParent ? VerifyParentMobileOtpDocument : VerifyMobileOtpDocument;
+  const sendField = isParent ? 'sendParentMobileOtp' : 'sendMobileOtp';
+  const verifyField = isParent ? 'verifyParentMobileOtp' : 'verifyMobileOtp';
+
+  const { isActive, formattedTime, isExpired, hasLiveCode, startTimer, clearTimer } = useOtpTimer(
+    isParent ? 'parent-verify' : 'student-verify',
+  );
 
   const [phase, setPhase] = useState<'send' | 'verify'>('send');
   const [isSending, setIsSending] = useState(false);
@@ -57,15 +108,17 @@ const OTPVerificationScreen: React.FC = () => {
   // On mount: determine initial state based on how user arrived
   useEffect(() => {
     if (otpWasAutoSent) {
-      // Register: backend already sent OTP automatically
+      // register / login already had the backend send a code. No `expires_in`
+      // rides along on the auth payload, so fall back to the documented 10min
+      // lifetime; the 60s resend lock is derived from the send stamp regardless.
       clearOtpAutoSent();
-      startTimer(120);
+      startTimer(DEFAULT_OTP_EXPIRY_SECONDS);
       setPhase('verify');
     } else if (otpShouldAutoRequest) {
       // Login of an unverified account: request the code now (auto mode so a
       // cooldown response is handled gracefully instead of as an error). (BKLT-275)
       clearOtpShouldAutoRequest();
-      handleSendCode(true); // fires mutation → startTimer(120) + setPhase('verify') on success
+      handleSendCode(true); // fires mutation → startTimer(expires_in) + setPhase('verify') on success
     }
     // Otherwise: existing unverified user re-opens app — useOtpTimer restores persisted timer
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -123,20 +176,22 @@ const OTPVerificationScreen: React.FC = () => {
   };
 
   const handleSendCode = async (isAuto = false) => {
-    if (!user?.mobile) return;
+    if (!account?.mobile) return;
 
     try {
       setIsSending(true);
       setErrorMsg('');
 
-      const result = await apolloClient.mutate({
-        mutation: SendMobileOtpDocument,
-        variables: { mobile: user.mobile, country_code: user.country_code || '+20' },
+      const result = await apolloClient.mutate<Record<string, OtpSendPayload | null>>({
+        mutation: sendDocument,
+        variables: { mobile: account.mobile, country_code: account.country_code || '+2' },
       });
 
-      if (result.data?.sendMobileOtp?.success) {
-        const expiresIn = 120; // Enforce exactly 2 minutes (120s)
-        startTimer(expiresIn);
+      const response = result.data?.[sendField];
+
+      if (response?.success) {
+        // Countdown comes from the server, never a hardcoded guess (guide §1).
+        startTimer(response.expires_in ?? DEFAULT_OTP_EXPIRY_SECONDS);
         setPhase('verify');
       } else if (isAuto) {
         // Auto-request after an unverified login. The backend usually rejects here
@@ -145,7 +200,7 @@ const OTPVerificationScreen: React.FC = () => {
         // verify step with a clear "your account isn't verified" message.
         // We deliberately do NOT start the resend timer: we can't tell a cooldown
         // (a code is already valid) from a genuine send failure (no code sent), and
-        // starting it would disable resend for 2 minutes with nothing arriving.
+        // starting it would lock resend with nothing arriving.
         // Leaving resend available lets the user pull a fresh code either way. (BKLT-275)
         setPhase('verify');
         showConfirm({
@@ -156,9 +211,11 @@ const OTPVerificationScreen: React.FC = () => {
           onConfirm: () => {},
         });
       } else {
+        // The only reason a send fails is a rate limit, and `message` arrives
+        // pre-translated — show it as-is and never auto-retry (guide §5).
         showConfirm({
           title: t('common.error'),
-          message: result.data?.sendMobileOtp?.message || t('otp.whatsapp_failed'),
+          message: response?.message || t('otp.whatsapp_failed'),
           confirmLabel: t('common.ok'),
           showCancel: false,
           onConfirm: () => {},
@@ -184,15 +241,30 @@ const OTPVerificationScreen: React.FC = () => {
       setIsVerifying(true);
       setErrorMsg('');
 
-      const result = await apolloClient.mutate({
-        mutation: VerifyMobileOtpDocument,
+      const result = await apolloClient.mutate<Record<string, OtpVerifyPayload | null>>({
+        mutation: verifyDocument,
         variables: { otp: otpCode },
       });
 
-      if (result.data?.verifyMobileOtp?.success) {
+      const response = result.data?.[verifyField];
+
+      if (response?.success) {
         clearTimer();
 
-        // Refresh user data directly to get updated profile completeness
+        // The response carries the freshly verified account. Apply it before
+        // anything else: `refreshUser` swallows its own failures, so relying on
+        // it alone leaves the navigator's gate closed on a flaky connection and
+        // strands the user on this screen with a code they have already burnt.
+        const verifiedAccount = response.parent ?? response.user;
+        if (verifiedAccount) {
+          if (isParent) {
+            await updateParentUser(verifiedAccount);
+          } else {
+            await updateUser(verifiedAccount);
+          }
+        }
+
+        // Best-effort: pulls the wider profile (completeness, avatar, ...).
         await refreshUser();
 
         showConfirm({
@@ -205,7 +277,7 @@ const OTPVerificationScreen: React.FC = () => {
           },
         });
       } else {
-        const errMsg = result.data?.verifyMobileOtp?.message || t('otp.invalid_code');
+        const errMsg = response?.message || t('otp.invalid_code');
         setErrorMsg(errMsg);
         setOtpCode('');
         inputRef.current?.focus();
@@ -217,53 +289,18 @@ const OTPVerificationScreen: React.FC = () => {
     }
   };
 
-  const renderOtpInput = () => {
-    return (
-      <View style={styles.otpInputContainer}>
-        <TextInput
-          testID="otp-hidden-input"
-          ref={inputRef}
-          style={styles.hiddenInput}
-          value={otpCode}
-          onChangeText={(text) => {
-            setErrorMsg('');
-            setOtpCode(text.replace(/[^0-9]/g, '').slice(0, OTP_LENGTH));
-          }}
-          keyboardType="number-pad"
-          maxLength={OTP_LENGTH}
-          autoFocus={false}
-          textContentType="oneTimeCode"
-          autoComplete="sms-otp"
-          importantForAutofill="yes"
-        />
-        <View style={styles.otpBoxesContainer} pointerEvents="none">
-          {[...Array(OTP_LENGTH)].map((_, index) => (
-            <View
-              key={index}
-              style={[
-                styles.otpBox,
-                {
-                  borderColor:
-                    otpCode.length === index
-                      ? theme.colors.primary
-                      : otpCode.length > index
-                        ? theme.colors.border
-                        : theme.colors.border + '50',
-                  backgroundColor: theme.colors.card,
-                  borderRadius: borderRadius.md,
-                },
-                errorMsg ? { borderColor: theme.colors.error } : null,
-              ]}
-            >
-              <Text style={[typography('h2'), fontWeight('bold'), { color: theme.colors.text }]}>
-                {otpCode[index] || ''}
-              </Text>
-            </View>
-          ))}
-        </View>
-      </View>
-    );
-  };
+  const renderOtpInput = () => (
+    <OtpCodeInput
+      testID="otp-hidden-input"
+      inputRef={inputRef}
+      value={otpCode}
+      hasError={!!errorMsg}
+      onChange={(code) => {
+        setErrorMsg('');
+        setOtpCode(code);
+      }}
+    />
+  );
 
   const renderPhase1 = () => (
     <View style={styles.phaseContainer}>
@@ -311,7 +348,7 @@ const OTPVerificationScreen: React.FC = () => {
         ]}
       >
         <Text style={[typography('body'), fontWeight('bold'), { color: theme.colors.text }]}>
-          {(user?.country_code || '') + ' ' + (user?.mobile || '')}
+          {(account?.country_code || '') + ' ' + (account?.mobile || '')}
         </Text>
       </View>
 
@@ -342,7 +379,10 @@ const OTPVerificationScreen: React.FC = () => {
         )}
       </TouchableOpacity>
 
-      {isActive && (
+      {/* Gated on the code's own life, not the 60s resend lock: a code stays
+          usable for ten minutes, and hiding this would force the user to spend
+          another message from a 3-per-hour budget to reach the same field. */}
+      {hasLiveCode && (
         <TouchableOpacity
           testID="otp-enter-code-button"
           style={[
@@ -437,7 +477,7 @@ const OTPVerificationScreen: React.FC = () => {
         ]}
       >
         <Ionicons name="logo-whatsapp" size={14} color="#25D366" />{' '}
-        {(user?.country_code || '') + ' ' + (user?.mobile || '')}
+        {(account?.country_code || '') + ' ' + (account?.mobile || '')}
       </Text>
 
       <TouchableOpacity
@@ -456,6 +496,15 @@ const OTPVerificationScreen: React.FC = () => {
           ]}
         >
           {errorMsg}
+        </Text>
+      ) : isExpired ? (
+        <Text
+          style={[
+            typography('caption'),
+            { color: theme.colors.error, marginTop: spacing.md, textAlign: 'center' },
+          ]}
+        >
+          {t('otp.code_expired')}
         </Text>
       ) : null}
 
@@ -596,27 +645,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 32,
-  },
-  otpInputContainer: {
-    alignItems: 'center',
-  },
-  hiddenInput: {
-    position: 'absolute',
-    opacity: 0,
-    width: '100%',
-    height: '100%',
-  },
-  otpBoxesContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 12,
-  },
-  otpBox: {
-    width: 45,
-    height: 55,
-    borderWidth: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 });
 

@@ -30,6 +30,7 @@ import {
 import { addCity, addSchool } from '../services/locationService';
 import AppButton from './AppButton';
 import { useTypography } from '../hooks/useTypography';
+import { digitsOnly } from '../utils/digits';
 import { useIsFocused, useNavigation } from '@react-navigation/native';
 import SearchablePickerModal from './SearchablePickerModal';
 
@@ -711,7 +712,7 @@ const ProfileCompletionPrompt: React.FC<ProfileCompletionPromptProps> = ({
                       { color: theme.colors.text, textAlign: 'left' },
                     ]}
                     value={parentMobile}
-                    onChangeText={(val) => setParentMobile(val.replaceAll(/\D/g, '').slice(0, 11))}
+                    onChangeText={(val) => setParentMobile(digitsOnly(val).slice(0, 11))}
                     placeholder="01xxxxxxxxx"
                     keyboardType="phone-pad"
                     maxLength={11}

@@ -10,7 +10,6 @@ import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 
 import ParentLoginScreen from '../screens/ParentLoginScreen';
 import ParentRegisterScreen from '../screens/ParentRegisterScreen';
-import ParentForgotPasswordScreen from '../screens/ParentForgotPasswordScreen';
 import ParentTabNavigator from './ParentTabNavigator';
 import InternalSettingsScreen from '../screens/InternalSettingsScreen';
 import OTPVerificationScreen from '../screens/OTPVerificationScreen';
@@ -25,6 +24,7 @@ const AppNavigator: React.FC = () => {
     isAuthenticated,
     userRole,
     user,
+    parentUser,
     isVerificationSkipped,
     showRegistrationSuccess,
   } = useAuth();
@@ -44,12 +44,29 @@ const AppNavigator: React.FC = () => {
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
         {isAuthenticated ? (
           userRole === 'parent' ? (
-            <RootStack.Group>
-              <RootStack.Screen name="ParentMain" component={ParentTabNavigator} />
-            </RootStack.Group>
+            // `null` is the server saying "not verified"; `undefined` means the
+            // record predates the gate and is being backfilled — gating on that
+            // would lock every already-verified parent out after an upgrade.
+            parentUser?.mobile_verified_at === null && !isVerificationSkipped ? (
+              <RootStack.Group>
+                <RootStack.Screen
+                  name="OTPVerification"
+                  component={OTPVerificationScreen}
+                  initialParams={{ audience: 'parent' }}
+                />
+              </RootStack.Group>
+            ) : (
+              <RootStack.Group>
+                <RootStack.Screen name="ParentMain" component={ParentTabNavigator} />
+              </RootStack.Group>
+            )
           ) : !user?.mobile_verified_at && !isVerificationSkipped ? (
             <RootStack.Group>
-              <RootStack.Screen name="OTPVerification" component={OTPVerificationScreen} />
+              <RootStack.Screen
+                name="OTPVerification"
+                component={OTPVerificationScreen}
+                initialParams={{ audience: 'student' }}
+              />
             </RootStack.Group>
           ) : showRegistrationSuccess ? (
             <RootStack.Group>
@@ -59,6 +76,11 @@ const AppNavigator: React.FC = () => {
             <RootStack.Group>
               <RootStack.Screen name="MainTabs" component={TabNavigator} />
               <RootStack.Screen name="InternalSettings" component={InternalSettingsScreen} />
+              <RootStack.Screen
+                name="ResetPassword"
+                component={ForgotPasswordScreen}
+                initialParams={{ audience: 'student', fromProfile: true }}
+              />
             </RootStack.Group>
           )
         ) : (
@@ -66,10 +88,18 @@ const AppNavigator: React.FC = () => {
             <RootStack.Screen name="Onboarding" component={OnboardingScreen} />
             <RootStack.Screen name="Login" component={LoginScreen} />
             <RootStack.Screen name="Register" component={RegisterScreen} />
-            <RootStack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+            <RootStack.Screen
+              name="ForgotPassword"
+              component={ForgotPasswordScreen}
+              initialParams={{ audience: 'student' }}
+            />
             <RootStack.Screen name="ParentLogin" component={ParentLoginScreen} />
             <RootStack.Screen name="ParentRegister" component={ParentRegisterScreen} />
-            <RootStack.Screen name="ParentForgotPassword" component={ParentForgotPasswordScreen} />
+            <RootStack.Screen
+              name="ParentForgotPassword"
+              component={ForgotPasswordScreen}
+              initialParams={{ audience: 'parent' }}
+            />
           </RootStack.Group>
         )}
       </RootStack.Navigator>

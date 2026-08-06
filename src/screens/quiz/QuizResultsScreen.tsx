@@ -28,6 +28,7 @@ import RetryView from '../../components/RetryView';
 import { GenericListSkeleton } from '../../components/SkeletonLoader';
 import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
 import { analytics } from '../../lib/analytics';
+import { formatScore } from '../../lib/scoreUtils';
 
 interface QuizResultsScreenProps {
   quizId: string;
@@ -218,7 +219,13 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
   const percentage = quizResult.totalQuestions
     ? Math.round((quizResult.score / quizResult.totalQuestions) * 100)
     : 0;
-  const correctAnswers = quizResult.userAnswers.filter((answer) => answer.is_correct).length;
+  // Score is counted in units (a match is worth N pairs, a paragraph the sum of
+  // its children), and a partially-correct match/descriptive answer earns
+  // partial credit — so a row-count of `is_correct` undercounts. `score` already
+  // is the number of correct units. Format rather than round: `score` is a Float
+  // and partial credit is real, so Math.round would report 9.5/10 as a perfect
+  // 10 next to an accuracy tile reading 95%.
+  const correctAnswers = formatScore(quizResult.score);
   const timeTaken = props.timeTaken ?? route.params?.timeTaken;
 
   const formatTime = (seconds?: number) => {

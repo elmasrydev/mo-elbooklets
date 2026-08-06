@@ -28,6 +28,12 @@ import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
 import RetryView from '../../components/RetryView';
 import ReportQuestionModal from '../../components/ReportQuestionModal';
 import UnifiedHeader from '../../components/UnifiedHeader';
+import MatchReviewCard from '../../components/quiz/MatchReviewCard';
+import ParagraphReviewGroup from '../../components/quiz/ParagraphReviewGroup';
+import QuestionImage from '../../components/quiz/QuestionImage';
+import { groupUserAnswers } from '../../utils/quizResultGroups';
+import { isMatchType, isDescriptiveType, QUESTION_TYPES } from '../../utils/quizQuestionTypes';
+import { formatScore } from '../../lib/scoreUtils';
 
 const QuizReviewScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -74,7 +80,7 @@ const QuizReviewScreen: React.FC = () => {
       ...raw,
       userAnswers: raw.userAnswers.map((ua: any) => {
         const q = ua.question;
-        const isDescriptive = ['what_happens', 'give_a_reason'].includes(q.type);
+        const isDescriptive = isDescriptiveType(q.type);
         const isTrueFalse = q.type === 'true_false';
 
         let answers = isDescriptive
@@ -150,19 +156,39 @@ const QuizReviewScreen: React.FC = () => {
     return <RetryView message={error || t('common.error')} onRetry={() => refetch()} />;
   }
 
-  const totalQuestions = result.userAnswers?.length || 0;
+  // The score is unit-based and comes from the server, exactly as the results
+  // screen reads it. `userAnswers` is flat in units — a match is ONE row worth
+  // many units, a paragraph parent has no row — so counting rows here would make
+  // this header disagree with the results screen for the same attempt.
+  const unitScore = result.score ?? 0;
+  const unitTotal = result.totalQuestions ?? 0;
+
+  // Row counts, on the other hand, are what the chips filter: they say how many
+  // cards each tab will show, not what the student scored.
   const correctAnswersList = result.userAnswers?.filter((a: any) => a.is_correct) || [];
   const wrongAnswersList = result.userAnswers?.filter((a: any) => !a.is_correct) || [];
+  const totalCards = result.userAnswers?.length || 0;
   const correctCount = correctAnswersList.length;
   const incorrectCount = wrongAnswersList.length;
+
+  // One pass instead of a findIndex per rendered card: the old form was O(n²)
+  // per render, and every filter tap or card expand re-ran it for all rows.
+  const rowIndexById: Record<string, number> = {};
+  (result.userAnswers || []).forEach((ans: any, i: number) => {
+    if (rowIndexById[ans.question.id] === undefined) rowIndexById[ans.question.id] = i;
+  });
+
+  // Scores per passage come from the unfiltered rows; see ParagraphReviewGroup.
+  const allChildrenByParent: Record<string, any[]> = {};
+  groupUserAnswers(result.userAnswers || []).forEach((group: any) => {
+    if (group.kind !== 'single') allChildrenByParent[group.parentId] = group.children;
+  });
 
   const displayedAnswers = (result.userAnswers || []).filter((ua: any) => {
     if (currentFilter === 'correct') return ua.is_correct;
     if (currentFilter === 'wrong') return !ua.is_correct;
     return true;
   });
-
-  const isDescriptiveType = (type: string) => ['what_happens', 'give_a_reason'].includes(type);
 
   const renderFilterChips = () => (
     <View style={currentStyles.chipsContainer}>
@@ -180,7 +206,7 @@ const QuizReviewScreen: React.FC = () => {
             currentFilter === 'all' ? currentStyles.chipTextActive : currentStyles.chipTextIdle,
           ]}
         >
-          {t('quiz_review.filter_all', 'All')} {totalQuestions}
+          {t('quiz_review.filter_all', 'All')} {totalCards}
         </Text>
       </TouchableOpacity>
 
@@ -262,7 +288,7 @@ const QuizReviewScreen: React.FC = () => {
                 textAlign: 'center',
               }}
             >
-              {result.quiz?.subject?.name} · {correctCount}/{totalQuestions}{' '}
+              {result.quiz?.subject?.name} · {formatScore(unitScore)}/{unitTotal}{' '}
               {t('quiz_review.correct')}
             </Text>
           </View>
@@ -300,255 +326,485 @@ const QuizReviewScreen: React.FC = () => {
           </View>
         )}
 
-        {displayedAnswers.map((ua: any) => {
-          const isDescriptive = isDescriptiveType(ua.question.type);
-          const isTrueFalse = ua.question.type === 'true_false';
-          const isCorrect = ua.is_correct;
+        {(() => {
+          // Render one result card. Extracted so paragraph groups can reuse it
+          // for their child rows (see the grouped map below).
+          const renderAnswerCard = (ua: any) => {
+            const isDescriptive = isDescriptiveType(ua.question.type);
+            const isMatch = isMatchType(ua.question.type);
+            const isTrueFalse = ua.question.type === 'true_false';
+            const isCorrect = ua.is_correct;
 
-          // Find the original index in the full result list
-          const originalIndex = result.userAnswers.findIndex(
-            (ans: any) => ans.question.id === ua.question.id,
-          );
+            // Position in the full result list, looked up rather than scanned.
+            const originalIndex = rowIndexById[ua.question.id] ?? 0;
 
-          const isExpanded =
-            expandedQuestions[ua.question.id] !== undefined
-              ? expandedQuestions[ua.question.id]
-              : !isCorrect; // wrong expanded by default, correct collapsed by default
+            const isExpanded =
+              expandedQuestions[ua.question.id] !== undefined
+                ? expandedQuestions[ua.question.id]
+                : !isCorrect; // wrong expanded by default, correct collapsed by default
 
-          const toggleExpand = () => {
-            setExpandedQuestions((prev) => ({
-              ...prev,
-              [ua.question.id]: !isExpanded,
-            }));
-          };
+            const toggleExpand = () => {
+              setExpandedQuestions((prev) => ({
+                ...prev,
+                [ua.question.id]: !isExpanded,
+              }));
+            };
 
-          return (
-            <View
-              key={ua.question.id}
-              style={[
-                currentStyles.questionCard,
-                {
-                  borderStartWidth: 4,
-                  borderStartColor: isCorrect ? '#16a34a' : '#ef4444',
-                },
-              ]}
-            >
-              {/* Card Header Row */}
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={toggleExpand}
-                style={currentStyles.cardHeaderRow}
+            return (
+              <View
+                key={ua.question.id}
+                style={[
+                  currentStyles.questionCard,
+                  {
+                    borderStartWidth: 4,
+                    borderStartColor: isCorrect ? '#16a34a' : '#ef4444',
+                  },
+                ]}
               >
-                <View style={currentStyles.cardHeaderLeft}>
-                  <Text style={currentStyles.questionNumberText}>
-                    {t('quiz_taking.question_number', { number: originalIndex + 1 })}
-                  </Text>
-
-                  {isCorrect ? (
-                    <View style={currentStyles.correctBadge}>
-                      <Ionicons name="checkmark-circle" size={16} color="#16a34a" />
-                    </View>
-                  ) : (
-                    <View style={currentStyles.wrongBadge}>
-                      <Ionicons name="close-circle" size={12} color="#b91c1c" />
-                      <Text style={currentStyles.wrongBadgeText}>
-                        {t('quiz_review.wrong', 'Wrong')}
-                      </Text>
-                    </View>
-                  )}
-
-                  {isDescriptive && (
-                    <View style={currentStyles.descriptiveTypeBadge}>
-                      <Text style={currentStyles.descriptiveTypeBadgeText}>
-                        {ua.question.type === 'what_happens'
-                          ? t('quiz_taking.what_happens', 'What Happens?')
-                          : t('quiz_taking.give_a_reason', 'Give a Reason')}
-                      </Text>
-                    </View>
-                  )}
-
-                  {isDescriptive && ua.score !== undefined && (
-                    <View
-                      style={[
-                        currentStyles.descriptiveScoreBadge,
-                        { backgroundColor: isCorrect ? '#ECFDF5' : '#FEF2F2' },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          currentStyles.descriptiveScoreText,
-                          { color: isCorrect ? '#10B981' : '#FF6B6B' },
-                        ]}
-                      >
-                        {ua.descriptive_feedback?.coverage_percentage !== undefined
-                          ? Math.round(ua.descriptive_feedback.coverage_percentage)
-                          : Math.round((ua.score || 0) * 100)}
-                        %
-                      </Text>
-                    </View>
-                  )}
-                </View>
-
-                <View style={currentStyles.cardHeaderRight}>
-                  <Ionicons
-                    name={isExpanded ? 'chevron-up' : 'chevron-down'}
-                    size={20}
-                    color="#94a3b8"
-                  />
-                </View>
-              </TouchableOpacity>
-
-              {/* Collapsed State Summary */}
-              {!isExpanded && (
+                {/* Card Header Row */}
                 <TouchableOpacity
                   activeOpacity={0.7}
                   onPress={toggleExpand}
-                  style={currentStyles.collapsedContent}
+                  style={currentStyles.cardHeaderRow}
                 >
-                  <Text numberOfLines={1} style={currentStyles.collapsedQuestionText}>
-                    {ua.question.question}
-                  </Text>
-                  {isCorrect ? (
-                    <Text style={currentStyles.collapsedCorrectAnswer}>
-                      ✓ {ua.question.answer_1}
+                  <View style={currentStyles.cardHeaderLeft}>
+                    <Text style={currentStyles.questionNumberText}>
+                      {t('quiz_taking.question_number', { number: originalIndex + 1 })}
                     </Text>
-                  ) : (
-                    <View style={currentStyles.collapsedAnswerRow}>
-                      <Text style={currentStyles.collapsedWrongAnswer}>
-                        ✗ {ua.selected_answer || t('quiz_review.no_answer', 'No answer')}
+
+                    {isCorrect ? (
+                      <View style={currentStyles.correctBadge}>
+                        <Ionicons name="checkmark-circle" size={16} color="#16a34a" />
+                      </View>
+                    ) : (
+                      <View style={currentStyles.wrongBadge}>
+                        <Ionicons name="close-circle" size={12} color="#b91c1c" />
+                        <Text style={currentStyles.wrongBadgeText}>
+                          {t('quiz_review.wrong', 'Wrong')}
+                        </Text>
+                      </View>
+                    )}
+
+                    {isDescriptive && (
+                      <View style={currentStyles.descriptiveTypeBadge}>
+                        <Text style={currentStyles.descriptiveTypeBadgeText}>
+                          {ua.question.type === QUESTION_TYPES.WHAT_HAPPENS
+                            ? t('quiz_taking.what_happens', 'What Happens?')
+                            : t('quiz_taking.give_a_reason', 'Give a Reason')}
+                        </Text>
+                      </View>
+                    )}
+
+                    {isDescriptive && ua.score !== undefined && (
+                      <View
+                        style={[
+                          currentStyles.descriptiveScoreBadge,
+                          { backgroundColor: isCorrect ? '#ECFDF5' : '#FEF2F2' },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            currentStyles.descriptiveScoreText,
+                            { color: isCorrect ? '#10B981' : '#FF6B6B' },
+                          ]}
+                        >
+                          {ua.descriptive_feedback?.coverage_percentage !== undefined
+                            ? Math.round(ua.descriptive_feedback.coverage_percentage)
+                            : Math.round((ua.score || 0) * 100)}
+                          %
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  <View style={currentStyles.cardHeaderRight}>
+                    <Ionicons
+                      name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                      size={20}
+                      color="#94a3b8"
+                    />
+                  </View>
+                </TouchableOpacity>
+
+                {/* Collapsed State Summary */}
+                {!isExpanded && (
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={toggleExpand}
+                    style={currentStyles.collapsedContent}
+                  >
+                    <Text numberOfLines={1} style={currentStyles.collapsedQuestionText}>
+                      {ua.question.question}
+                    </Text>
+                    {isMatch ? (
+                      // Match has no single answer_1 — summarise correct pairs.
+                      <Text
+                        numberOfLines={1}
+                        style={
+                          isCorrect
+                            ? currentStyles.collapsedCorrectAnswer
+                            : currentStyles.collapsedWrongAnswer
+                        }
+                      >
+                        {t('quiz_review.pairs_summary', '{{correct}}/{{total}} pairs correct', {
+                          correct: Math.round(ua.score ?? 0),
+                          total: ua.match_results?.length ?? 0,
+                        })}
                       </Text>
-                      <Text style={currentStyles.collapsedCorrectAnswer}>
+                    ) : isCorrect ? (
+                      <Text numberOfLines={1} style={currentStyles.collapsedCorrectAnswer}>
                         ✓ {ua.question.answer_1}
                       </Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              )}
-
-              {/* Expanded State Content */}
-              {isExpanded && (
-                <View style={currentStyles.expandedContent}>
-                  <Text style={[currentStyles.questionText, { textAlign: contentAlign }]}>
-                    {ua.question.question}
-                  </Text>
-
-                  {/* Report button */}
-                  <TouchableOpacity
-                    style={[currentStyles.reportBtn, { borderColor: theme.colors.border }]}
-                    onPress={() => {
-                      setSelectedReportQuestionId(ua.question.id);
-                      setShowReportModal(true);
-                    }}
-                    activeOpacity={0.75}
-                  >
-                    <Ionicons name="flag" size={14} color={theme.colors.error} />
-                    <Text
-                      style={[currentStyles.reportBtnText, { color: theme.colors.textSecondary }]}
-                    >
-                      {t('report_question.report_btn', 'Report')}
-                    </Text>
+                    ) : (
+                      <View style={currentStyles.collapsedAnswerRow}>
+                        <Text numberOfLines={1} style={currentStyles.collapsedWrongAnswer}>
+                          ✗ {ua.selected_answer || t('quiz_review.no_answer', 'No answer')}
+                        </Text>
+                        <Text numberOfLines={1} style={currentStyles.collapsedCorrectAnswer}>
+                          ✓ {ua.question.answer_1}
+                        </Text>
+                      </View>
+                    )}
                   </TouchableOpacity>
+                )}
 
-                  {isDescriptive ? (
-                    /* Descriptive review comparison */
-                    <View style={{ gap: 16 }}>
-                      <View
-                        style={{
-                          backgroundColor: theme.colors.background,
-                          borderRadius: 16,
-                          overflow: 'hidden',
-                        }}
+                {/* Expanded State Content */}
+                {isExpanded && (
+                  <View style={currentStyles.expandedContent}>
+                    {/* Image attachment — orthogonal to type; the review query
+                        fetches question.imageUrl the same as the taking screen. */}
+                    {ua.question.imageUrl && (
+                      <QuestionImage
+                        uri={ua.question.imageUrl}
+                        testID={`review-question-image-${ua.question.id}`}
+                      />
+                    )}
+                    <Text style={[currentStyles.questionText, { textAlign: contentAlign }]}>
+                      {ua.question.question}
+                    </Text>
+
+                    {/* Report button */}
+                    <TouchableOpacity
+                      style={[currentStyles.reportBtn, { borderColor: theme.colors.border }]}
+                      onPress={() => {
+                        setSelectedReportQuestionId(ua.question.id);
+                        setShowReportModal(true);
+                      }}
+                      activeOpacity={0.75}
+                    >
+                      <Ionicons name="flag" size={14} color={theme.colors.error} />
+                      <Text
+                        style={[currentStyles.reportBtnText, { color: theme.colors.textSecondary }]}
                       >
-                        <View style={{ flexDirection: common.rowDirection }}>
-                          {/* Your Answer */}
-                          <View style={{ flex: 1, padding: 14 }}>
-                            <View
-                              style={{
-                                flexDirection: common.rowDirection,
-                                alignItems: 'center',
-                                marginBottom: 10,
-                                gap: 6,
-                              }}
-                            >
-                              <Ionicons name="person-outline" size={14} color="#FF6B6B" />
-                              <Text
+                        {t('report_question.report_btn', 'Report')}
+                      </Text>
+                    </TouchableOpacity>
+
+                    {isDescriptive ? (
+                      /* Descriptive review comparison */
+                      <View style={{ gap: 16 }}>
+                        <View
+                          style={{
+                            backgroundColor: theme.colors.background,
+                            borderRadius: 16,
+                            overflow: 'hidden',
+                          }}
+                        >
+                          <View style={{ flexDirection: common.rowDirection }}>
+                            {/* Your Answer */}
+                            <View style={{ flex: 1, padding: 14 }}>
+                              <View
                                 style={{
-                                  ...typography('label'),
-                                  ...fontWeight('700'),
-                                  color: '#FF6B6B',
-                                  textTransform: 'uppercase' as any,
+                                  flexDirection: common.rowDirection,
+                                  alignItems: 'center',
+                                  marginBottom: 10,
+                                  gap: 6,
                                 }}
                               >
-                                {t('quiz_review.your_answer', 'Your Answer')}
-                              </Text>
-                            </View>
-                            <Text
-                              style={{
-                                ...typography('bodySmall'),
-                                color: theme.colors.text,
-                                lineHeight: 20,
-                                textAlign: contentAlign,
-                              }}
-                            >
-                              {ua.selected_answer ||
-                                t('quiz_review.no_answer', 'No answer provided')}
-                            </Text>
-                          </View>
-
-                          {/* Divider */}
-                          <View
-                            style={{
-                              width: 1,
-                              backgroundColor: theme.colors.border,
-                              marginVertical: 12,
-                            }}
-                          />
-
-                          {/* Model Answer */}
-                          <View style={{ flex: 1, padding: 14 }}>
-                            <View
-                              style={{
-                                flexDirection: common.rowDirection,
-                                alignItems: 'center',
-                                marginBottom: 10,
-                                gap: 6,
-                              }}
-                            >
-                              <Ionicons name="checkmark-circle-outline" size={14} color="#10B981" />
+                                <Ionicons name="person-outline" size={14} color="#FF6B6B" />
+                                <Text
+                                  style={{
+                                    ...typography('label'),
+                                    ...fontWeight('700'),
+                                    color: '#FF6B6B',
+                                    textTransform: 'uppercase' as any,
+                                  }}
+                                >
+                                  {t('quiz_review.your_answer', 'Your Answer')}
+                                </Text>
+                              </View>
                               <Text
                                 style={{
-                                  ...typography('label'),
-                                  ...fontWeight('700'),
-                                  color: '#10B981',
-                                  textTransform: 'uppercase' as any,
+                                  ...typography('bodySmall'),
+                                  color: theme.colors.text,
+                                  lineHeight: 20,
+                                  textAlign: contentAlign,
                                 }}
                               >
-                                {t('quiz_review.model_answer', 'Model Answer')}
+                                {ua.selected_answer ||
+                                  t('quiz_review.no_answer', 'No answer provided')}
                               </Text>
                             </View>
-                            <Text
+
+                            {/* Divider */}
+                            <View
                               style={{
-                                ...typography('bodySmall'),
-                                color: theme.colors.text,
-                                lineHeight: 20,
-                                textAlign: contentAlign,
+                                width: 1,
+                                backgroundColor: theme.colors.border,
+                                marginVertical: 12,
                               }}
-                            >
-                              {ua.question.answer_1}
-                            </Text>
+                            />
+
+                            {/* Model Answer */}
+                            <View style={{ flex: 1, padding: 14 }}>
+                              <View
+                                style={{
+                                  flexDirection: common.rowDirection,
+                                  alignItems: 'center',
+                                  marginBottom: 10,
+                                  gap: 6,
+                                }}
+                              >
+                                <Ionicons
+                                  name="checkmark-circle-outline"
+                                  size={14}
+                                  color="#10B981"
+                                />
+                                <Text
+                                  style={{
+                                    ...typography('label'),
+                                    ...fontWeight('700'),
+                                    color: '#10B981',
+                                    textTransform: 'uppercase' as any,
+                                  }}
+                                >
+                                  {t('quiz_review.model_answer', 'Model Answer')}
+                                </Text>
+                              </View>
+                              <Text
+                                style={{
+                                  ...typography('bodySmall'),
+                                  color: theme.colors.text,
+                                  lineHeight: 20,
+                                  textAlign: contentAlign,
+                                }}
+                              >
+                                {ua.question.answer_1}
+                              </Text>
+                            </View>
                           </View>
                         </View>
-                      </View>
 
-                      {/* Concept Analysis */}
-                      {ua.descriptive_feedback &&
-                        (ua.descriptive_feedback.covered_concepts?.length > 0 ||
-                          ua.descriptive_feedback.partially_covered?.length > 0 ||
-                          ua.descriptive_feedback.missing_concepts?.length > 0 ||
-                          ua.descriptive_feedback.contradictions?.length > 0) && (
+                        {/* Concept Analysis */}
+                        {ua.descriptive_feedback &&
+                          (ua.descriptive_feedback.covered_concepts?.length > 0 ||
+                            ua.descriptive_feedback.partially_covered?.length > 0 ||
+                            ua.descriptive_feedback.missing_concepts?.length > 0 ||
+                            ua.descriptive_feedback.contradictions?.length > 0) && (
+                            <View
+                              style={{
+                                backgroundColor: theme.colors.background,
+                                borderRadius: 16,
+                                padding: 16,
+                              }}
+                            >
+                              <View
+                                style={{
+                                  flexDirection: common.rowDirection,
+                                  alignItems: 'center',
+                                  marginBottom: 14,
+                                  gap: 8,
+                                }}
+                              >
+                                <Ionicons
+                                  name="analytics-outline"
+                                  size={18}
+                                  color={theme.colors.textSecondary}
+                                />
+                                <Text
+                                  style={{
+                                    ...typography('bodySmall'),
+                                    ...fontWeight('700'),
+                                    color: theme.colors.text,
+                                  }}
+                                >
+                                  {t('quiz_review.concept_analysis', 'Concept Analysis')}
+                                </Text>
+                              </View>
+
+                              <View style={{ gap: 8 }}>
+                                {/* Covered */}
+                                {ua.descriptive_feedback.covered_concepts?.map(
+                                  (concept: string, i: number) => (
+                                    <View
+                                      key={`c-${i}`}
+                                      style={{
+                                        flexDirection: common.rowDirection,
+                                        alignItems: 'flex-start',
+                                        gap: 10,
+                                      }}
+                                    >
+                                      <Ionicons
+                                        name="checkmark-circle"
+                                        size={18}
+                                        color="#10B981"
+                                        style={{ marginTop: 1 }}
+                                      />
+                                      <View style={{ flex: 1 }}>
+                                        <Text
+                                          style={{
+                                            ...typography('label'),
+                                            ...fontWeight('700'),
+                                            color: '#10B981',
+                                            marginBottom: 2,
+                                            textAlign: common.textAlign as any,
+                                          }}
+                                        >
+                                          {t('quiz_review.covered_concepts', 'Covered')}
+                                        </Text>
+                                        <Text
+                                          style={{
+                                            ...typography('bodySmall'),
+                                            color: '#065F46',
+                                            lineHeight: 20,
+                                            textAlign: contentAlign,
+                                          }}
+                                        >
+                                          {concept}
+                                        </Text>
+                                      </View>
+                                    </View>
+                                  ),
+                                )}
+
+                                {/* Partially Covered */}
+                                {ua.descriptive_feedback.partially_covered?.map(
+                                  (concept: string, i: number) => (
+                                    <View
+                                      key={`p-${i}`}
+                                      style={{
+                                        flexDirection: common.rowDirection,
+                                        alignItems: 'flex-start',
+                                        gap: 10,
+                                      }}
+                                    >
+                                      <Ionicons
+                                        name="alert-circle"
+                                        size={18}
+                                        color="#F59E0B"
+                                        style={{ marginTop: 1 }}
+                                      />
+                                      <View style={{ flex: 1 }}>
+                                        <Text
+                                          style={{
+                                            ...typography('label'),
+                                            ...fontWeight('700'),
+                                            color: '#D97706',
+                                            marginBottom: 2,
+                                            textAlign: common.textAlign as any,
+                                          }}
+                                        >
+                                          {t('quiz_review.partially_covered', 'Partially Covered')}
+                                        </Text>
+                                        <Text
+                                          style={{
+                                            ...typography('bodySmall'),
+                                            color: '#92400E',
+                                            lineHeight: 20,
+                                            textAlign: contentAlign,
+                                          }}
+                                        >
+                                          {concept}
+                                        </Text>
+                                      </View>
+                                    </View>
+                                  ),
+                                )}
+
+                                {/* Missing */}
+                                {ua.descriptive_feedback.missing_concepts?.map(
+                                  (concept: string, i: number) => (
+                                    <View
+                                      key={`m-${i}`}
+                                      style={{
+                                        flexDirection: common.rowDirection,
+                                        alignItems: 'flex-start',
+                                        gap: 10,
+                                      }}
+                                    >
+                                      <Ionicons
+                                        name="close-circle"
+                                        size={18}
+                                        color="#FF6B6B"
+                                        style={{ marginTop: 1 }}
+                                      />
+                                      <View style={{ flex: 1 }}>
+                                        <Text
+                                          style={{
+                                            ...typography('label'),
+                                            ...fontWeight('700'),
+                                            color: '#FF6B6B',
+                                            marginBottom: 2,
+                                            textAlign: common.textAlign as any,
+                                          }}
+                                        >
+                                          {t('quiz_review.missing_concepts', 'Missing')}
+                                        </Text>
+                                        <Text
+                                          style={{
+                                            ...typography('bodySmall'),
+                                            color: '#991B1B',
+                                            lineHeight: 20,
+                                            textAlign: contentAlign,
+                                          }}
+                                        >
+                                          {concept}
+                                        </Text>
+                                      </View>
+                                    </View>
+                                  ),
+                                )}
+
+                                {/* Contradictions */}
+                                {ua.descriptive_feedback.contradictions?.map(
+                                  (item: string, i: number) => (
+                                    <View
+                                      key={`x-${i}`}
+                                      style={{
+                                        flexDirection: common.rowDirection,
+                                        alignItems: 'flex-start',
+                                        gap: 10,
+                                      }}
+                                    >
+                                      <Ionicons
+                                        name="warning"
+                                        size={18}
+                                        color="#DC2626"
+                                        style={{ marginTop: 1 }}
+                                      />
+                                      <Text
+                                        style={{
+                                          ...typography('bodySmall'),
+                                          color: '#7F1D1D',
+                                          lineHeight: 20,
+                                          flex: 1,
+                                          textAlign: contentAlign,
+                                        }}
+                                      >
+                                        {item}
+                                      </Text>
+                                    </View>
+                                  ),
+                                )}
+                              </View>
+                            </View>
+                          )}
+
+                        {/* Feedback */}
+                        {ua.descriptive_feedback?.feedback && (
                           <View
                             style={{
-                              backgroundColor: theme.colors.background,
+                              backgroundColor: '#F0F9FF',
                               borderRadius: 16,
                               padding: 16,
                             }}
@@ -557,323 +813,140 @@ const QuizReviewScreen: React.FC = () => {
                               style={{
                                 flexDirection: common.rowDirection,
                                 alignItems: 'center',
-                                marginBottom: 14,
+                                marginBottom: 10,
                                 gap: 8,
                               }}
                             >
-                              <Ionicons
-                                name="analytics-outline"
-                                size={18}
-                                color={theme.colors.textSecondary}
-                              />
+                              <View
+                                style={{
+                                  width: 28,
+                                  height: 28,
+                                  borderRadius: 14,
+                                  backgroundColor: '#DBEAFE',
+                                  justifyContent: 'center',
+                                  alignItems: 'center',
+                                }}
+                              >
+                                <Ionicons name="bulb-outline" size={16} color="#2563EB" />
+                              </View>
                               <Text
                                 style={{
                                   ...typography('bodySmall'),
                                   ...fontWeight('700'),
-                                  color: theme.colors.text,
+                                  color: theme.colors.primary,
+                                  textAlign: common.textAlign as any,
                                 }}
                               >
-                                {t('quiz_review.concept_analysis', 'Concept Analysis')}
+                                {t('quiz_review.feedback', 'Feedback')}
                               </Text>
-                            </View>
-
-                            <View style={{ gap: 8 }}>
-                              {/* Covered */}
-                              {ua.descriptive_feedback.covered_concepts?.map(
-                                (concept: string, i: number) => (
-                                  <View
-                                    key={`c-${i}`}
-                                    style={{
-                                      flexDirection: common.rowDirection,
-                                      alignItems: 'flex-start',
-                                      gap: 10,
-                                    }}
-                                  >
-                                    <Ionicons
-                                      name="checkmark-circle"
-                                      size={18}
-                                      color="#10B981"
-                                      style={{ marginTop: 1 }}
-                                    />
-                                    <View style={{ flex: 1 }}>
-                                      <Text
-                                        style={{
-                                          ...typography('label'),
-                                          ...fontWeight('700'),
-                                          color: '#10B981',
-                                          marginBottom: 2,
-                                          textAlign: common.textAlign as any,
-                                        }}
-                                      >
-                                        {t('quiz_review.covered_concepts', 'Covered')}
-                                      </Text>
-                                      <Text
-                                        style={{
-                                          ...typography('bodySmall'),
-                                          color: '#065F46',
-                                          lineHeight: 20,
-                                          textAlign: contentAlign,
-                                        }}
-                                      >
-                                        {concept}
-                                      </Text>
-                                    </View>
-                                  </View>
-                                ),
-                              )}
-
-                              {/* Partially Covered */}
-                              {ua.descriptive_feedback.partially_covered?.map(
-                                (concept: string, i: number) => (
-                                  <View
-                                    key={`p-${i}`}
-                                    style={{
-                                      flexDirection: common.rowDirection,
-                                      alignItems: 'flex-start',
-                                      gap: 10,
-                                    }}
-                                  >
-                                    <Ionicons
-                                      name="alert-circle"
-                                      size={18}
-                                      color="#F59E0B"
-                                      style={{ marginTop: 1 }}
-                                    />
-                                    <View style={{ flex: 1 }}>
-                                      <Text
-                                        style={{
-                                          ...typography('label'),
-                                          ...fontWeight('700'),
-                                          color: '#D97706',
-                                          marginBottom: 2,
-                                          textAlign: common.textAlign as any,
-                                        }}
-                                      >
-                                        {t('quiz_review.partially_covered', 'Partially Covered')}
-                                      </Text>
-                                      <Text
-                                        style={{
-                                          ...typography('bodySmall'),
-                                          color: '#92400E',
-                                          lineHeight: 20,
-                                          textAlign: contentAlign,
-                                        }}
-                                      >
-                                        {concept}
-                                      </Text>
-                                    </View>
-                                  </View>
-                                ),
-                              )}
-
-                              {/* Missing */}
-                              {ua.descriptive_feedback.missing_concepts?.map(
-                                (concept: string, i: number) => (
-                                  <View
-                                    key={`m-${i}`}
-                                    style={{
-                                      flexDirection: common.rowDirection,
-                                      alignItems: 'flex-start',
-                                      gap: 10,
-                                    }}
-                                  >
-                                    <Ionicons
-                                      name="close-circle"
-                                      size={18}
-                                      color="#FF6B6B"
-                                      style={{ marginTop: 1 }}
-                                    />
-                                    <View style={{ flex: 1 }}>
-                                      <Text
-                                        style={{
-                                          ...typography('label'),
-                                          ...fontWeight('700'),
-                                          color: '#FF6B6B',
-                                          marginBottom: 2,
-                                          textAlign: common.textAlign as any,
-                                        }}
-                                      >
-                                        {t('quiz_review.missing_concepts', 'Missing')}
-                                      </Text>
-                                      <Text
-                                        style={{
-                                          ...typography('bodySmall'),
-                                          color: '#991B1B',
-                                          lineHeight: 20,
-                                          textAlign: contentAlign,
-                                        }}
-                                      >
-                                        {concept}
-                                      </Text>
-                                    </View>
-                                  </View>
-                                ),
-                              )}
-
-                              {/* Contradictions */}
-                              {ua.descriptive_feedback.contradictions?.map(
-                                (item: string, i: number) => (
-                                  <View
-                                    key={`x-${i}`}
-                                    style={{
-                                      flexDirection: common.rowDirection,
-                                      alignItems: 'flex-start',
-                                      gap: 10,
-                                    }}
-                                  >
-                                    <Ionicons
-                                      name="warning"
-                                      size={18}
-                                      color="#DC2626"
-                                      style={{ marginTop: 1 }}
-                                    />
-                                    <Text
-                                      style={{
-                                        ...typography('bodySmall'),
-                                        color: '#7F1D1D',
-                                        lineHeight: 20,
-                                        flex: 1,
-                                        textAlign: contentAlign,
-                                      }}
-                                    >
-                                      {item}
-                                    </Text>
-                                  </View>
-                                ),
-                              )}
-                            </View>
-                          </View>
-                        )}
-
-                      {/* Feedback */}
-                      {ua.descriptive_feedback?.feedback && (
-                        <View
-                          style={{
-                            backgroundColor: '#F0F9FF',
-                            borderRadius: 16,
-                            padding: 16,
-                          }}
-                        >
-                          <View
-                            style={{
-                              flexDirection: common.rowDirection,
-                              alignItems: 'center',
-                              marginBottom: 10,
-                              gap: 8,
-                            }}
-                          >
-                            <View
-                              style={{
-                                width: 28,
-                                height: 28,
-                                borderRadius: 14,
-                                backgroundColor: '#DBEAFE',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                              }}
-                            >
-                              <Ionicons name="bulb-outline" size={16} color="#2563EB" />
                             </View>
                             <Text
                               style={{
                                 ...typography('bodySmall'),
-                                ...fontWeight('700'),
-                                color: theme.colors.primary,
-                                textAlign: common.textAlign as any,
+                                color: '#1E3A5F',
+                                lineHeight: 21,
+                                textAlign: contentAlign,
                               }}
                             >
-                              {t('quiz_review.feedback', 'Feedback')}
+                              {ua.descriptive_feedback.feedback}
                             </Text>
                           </View>
-                          <Text
-                            style={{
-                              ...typography('bodySmall'),
-                              color: '#1E3A5F',
-                              lineHeight: 21,
-                              textAlign: contentAlign,
-                            }}
-                          >
-                            {ua.descriptive_feedback.feedback}
+                        )}
+                      </View>
+                    ) : isMatch ? (
+                      <MatchReviewCard row={ua} contentAlign={contentAlign} />
+                    ) : (
+                      /* MCQ options rendering */
+                      <View style={currentStyles.optionsContainer}>
+                        {ua.question.answers?.map((opt: string, optIndex: number) => {
+                          const isSelected = ua.selected_answer === opt;
+                          const isAnswerCorrect = ua.question.answer_1 === opt;
+                          let optStyle = currentStyles.optionDefault;
+                          let letterCircleStyle = currentStyles.optionLetterCircleDefault;
+                          let letterTextStyle = currentStyles.optionLetterDefault;
+                          let textStyle: any = null;
+
+                          if (isAnswerCorrect) {
+                            optStyle = currentStyles.optionCorrect;
+                            letterCircleStyle = currentStyles.optionLetterCircleCorrect;
+                            letterTextStyle = currentStyles.optionLetterCorrect;
+                            textStyle = currentStyles.optionTextCorrect;
+                          } else if (isSelected && !isCorrect) {
+                            optStyle = currentStyles.optionIncorrect;
+                            letterCircleStyle = currentStyles.optionLetterCircleIncorrect;
+                            letterTextStyle = currentStyles.optionLetterIncorrect;
+                            textStyle = currentStyles.optionTextIncorrect;
+                          }
+
+                          return (
+                            <View key={optIndex} style={[currentStyles.optionItem, optStyle]}>
+                              <View style={[currentStyles.optionLetterCircle, letterCircleStyle]}>
+                                <Text style={[currentStyles.optionLetter, letterTextStyle]}>
+                                  {String.fromCharCode(65 + optIndex)}
+                                </Text>
+                              </View>
+                              <Text style={[currentStyles.optionText, textStyle]}>
+                                {isTrueFalse && opt.toLowerCase() === 'true'
+                                  ? t('common.true')
+                                  : isTrueFalse && opt.toLowerCase() === 'false'
+                                    ? t('common.false')
+                                    : opt}
+                              </Text>
+                              <View style={currentStyles.dotIconContainer}>
+                                {isAnswerCorrect ? (
+                                  <Ionicons name="checkmark-circle" size={24} color="#10B981" />
+                                ) : isSelected && !isCorrect ? (
+                                  <Ionicons name="close" size={24} color="#FF6B6B" />
+                                ) : null}
+                              </View>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    )}
+
+                    {/* Explanation box */}
+                    {!!(ua.question.explanation || ua.explanation) && (
+                      <View style={currentStyles.explanationBox}>
+                        <View
+                          style={{
+                            flexDirection: common.rowDirection,
+                            alignItems: 'center',
+                            marginBottom: 8,
+                            gap: 8,
+                          }}
+                        >
+                          <Ionicons name="bulb" size={20} color="#004A9A" />
+                          <Text style={currentStyles.explanationTitle}>
+                            {t('quiz_results.explanation')}
                           </Text>
                         </View>
-                      )}
-                    </View>
-                  ) : (
-                    /* MCQ options rendering */
-                    <View style={currentStyles.optionsContainer}>
-                      {ua.question.answers?.map((opt: string, optIndex: number) => {
-                        const isSelected = ua.selected_answer === opt;
-                        const isAnswerCorrect = ua.question.answer_1 === opt;
-                        let optStyle = currentStyles.optionDefault;
-                        let letterCircleStyle = currentStyles.optionLetterCircleDefault;
-                        let letterTextStyle = currentStyles.optionLetterDefault;
-                        let textStyle: any = null;
-
-                        if (isAnswerCorrect) {
-                          optStyle = currentStyles.optionCorrect;
-                          letterCircleStyle = currentStyles.optionLetterCircleCorrect;
-                          letterTextStyle = currentStyles.optionLetterCorrect;
-                          textStyle = currentStyles.optionTextCorrect;
-                        } else if (isSelected && !isCorrect) {
-                          optStyle = currentStyles.optionIncorrect;
-                          letterCircleStyle = currentStyles.optionLetterCircleIncorrect;
-                          letterTextStyle = currentStyles.optionLetterIncorrect;
-                          textStyle = currentStyles.optionTextIncorrect;
-                        }
-
-                        return (
-                          <View key={optIndex} style={[currentStyles.optionItem, optStyle]}>
-                            <View style={[currentStyles.optionLetterCircle, letterCircleStyle]}>
-                              <Text style={[currentStyles.optionLetter, letterTextStyle]}>
-                                {String.fromCharCode(65 + optIndex)}
-                              </Text>
-                            </View>
-                            <Text style={[currentStyles.optionText, textStyle]}>
-                              {isTrueFalse && opt.toLowerCase() === 'true'
-                                ? t('common.true')
-                                : isTrueFalse && opt.toLowerCase() === 'false'
-                                  ? t('common.false')
-                                  : opt}
-                            </Text>
-                            <View style={currentStyles.dotIconContainer}>
-                              {isAnswerCorrect ? (
-                                <Ionicons name="checkmark-circle" size={24} color="#10B981" />
-                              ) : isSelected && !isCorrect ? (
-                                <Ionicons name="close" size={24} color="#FF6B6B" />
-                              ) : null}
-                            </View>
-                          </View>
-                        );
-                      })}
-                    </View>
-                  )}
-
-                  {/* Explanation box */}
-                  {!!(ua.question.explanation || ua.explanation) && (
-                    <View style={currentStyles.explanationBox}>
-                      <View
-                        style={{
-                          flexDirection: common.rowDirection,
-                          alignItems: 'center',
-                          marginBottom: 8,
-                          gap: 8,
-                        }}
-                      >
-                        <Ionicons name="bulb" size={20} color="#004A9A" />
-                        <Text style={currentStyles.explanationTitle}>
-                          {t('quiz_results.explanation')}
+                        <Text style={currentStyles.explanationText}>
+                          {ua.question.explanation || ua.explanation}
                         </Text>
                       </View>
-                      <Text style={currentStyles.explanationText}>
-                        {ua.question.explanation || ua.explanation}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              )}
-            </View>
+                    )}
+                  </View>
+                )}
+              </View>
+            );
+          };
+
+          return groupUserAnswers(displayedAnswers).map((group) =>
+            group.kind === 'single' ? (
+              renderAnswerCard(group.row)
+            ) : (
+              <ParagraphReviewGroup
+                key={`paragraph-${group.parentId}`}
+                passage={group.passage}
+                childRows={group.children}
+                scoreRows={allChildrenByParent[group.parentId] ?? group.children}
+                renderChildCard={renderAnswerCard}
+                contentAlign={contentAlign}
+              />
+            ),
           );
-        })}
+        })()}
 
         <View style={{ gap: 12, marginBottom: 12, marginTop: 12 }}>
           <AppButton
@@ -1099,14 +1172,15 @@ const styles = (
       textAlign: contentAlign,
     },
     collapsedAnswerRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
+      flexDirection: 'column',
+      alignItems: 'stretch',
+      gap: 2,
     },
     collapsedWrongAnswer: {
       ...typography('caption'),
       ...fontWeight('500'),
       color: '#ef4444',
+      textAlign: contentAlign,
     },
     expandedContent: {
       marginTop: 12,
