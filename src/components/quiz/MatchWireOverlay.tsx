@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import Svg, { Path, Circle } from 'react-native-svg';
 import Animated, {
   useSharedValue,
@@ -67,7 +67,13 @@ const Wire: React.FC<{ p1: Port; p2: Port; color: string; reducedMotion: boolean
   color,
   reducedMotion,
 }) => {
-  const { d, length } = buildWire(p1, p2);
+  // The geometry only changes when an endpoint moves, but this component
+  // re-renders on every card tap and every 1Hz quiz-timer tick — without the
+  // memo each of those re-sampled the curve at 24 points and rebuilt the path.
+  const { d, length } = useMemo(
+    () => buildWire(p1, p2),
+    [p1.x, p1.y, p2.x, p2.y], // eslint-disable-line react-hooks/exhaustive-deps
+  );
   const progress = useSharedValue(reducedMotion ? 1 : 0);
 
   // Draw-in once when this wire first mounts (a new pair was formed).

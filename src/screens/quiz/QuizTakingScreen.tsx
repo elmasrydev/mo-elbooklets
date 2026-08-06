@@ -48,6 +48,7 @@ import {
 import { isArabicText } from '../../config/fonts';
 import { QUIZ_COLORS } from '../../config/colors';
 import { SUBMIT_QUIZ_TIMEOUT_MS } from '../../config/api';
+import { INPUT_TEXT_ALIGN } from '../../lib/rtl';
 
 const QuizTakingScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -299,6 +300,12 @@ const QuizTakingScreen: React.FC = () => {
     } finally {
       if (mountedRef.current) {
         setSubmitting(false);
+        // Only a successful submit navigates away. On failure the student stays
+        // on the quiz and may retry minutes later, so the clock has to resume —
+        // left paused it freezes the badge and under-reports the time taken.
+        if (isTimed) {
+          setIsTimerPaused(false);
+        }
       }
     }
   };
@@ -373,8 +380,12 @@ const QuizTakingScreen: React.FC = () => {
     );
   }
 
-  const currentQuestion = quiz.questions[currentQuestionIndex];
-  const progress = ((currentQuestionIndex + 1) / quiz.questions.length) * 100;
+  // Clamped: `currentQuestionIndex` is not reset when the quiz re-resolves, so a
+  // refetch returning fewer questions would leave it out of range and crash the
+  // render on the very next line.
+  const safeIndex = Math.min(currentQuestionIndex, quiz.questions.length - 1);
+  const currentQuestion = quiz.questions[safeIndex];
+  const progress = ((safeIndex + 1) / quiz.questions.length) * 100;
   const isDescriptive = isDescriptiveType(currentQuestion.type);
   const isMatch = isMatchType(currentQuestion.type);
   const isParagraph = isParagraphType(currentQuestion.type);
@@ -489,7 +500,10 @@ const QuizTakingScreen: React.FC = () => {
             /* Descriptive answer: multi-line text input */
             <View style={currentStyles.descriptiveContainer}>
               <TextInput
-                style={[currentStyles.descriptiveInput, { textAlign: contentAlign }]}
+                // INPUT_TEXT_ALIGN, not contentAlign: `left`/`right` stay
+                // physical on TextInput, so the subject-derived value would pin
+                // Arabic answers to the wrong edge (BKLT-312).
+                style={[currentStyles.descriptiveInput, { textAlign: INPUT_TEXT_ALIGN }]}
                 value={textValueOf(currentQuestion.id)}
                 onChangeText={(text) => setTextAnswer(currentQuestion.id, text)}
                 placeholder={t('quiz_taking.write_your_answer', 'Write your answer here...')}

@@ -137,7 +137,6 @@ const MatchQuestion: React.FC<MatchQuestionProps> = ({
           pending={pending}
           onTap={handleTap}
           colorForLeftId={colorForLeftId}
-          contentAlign={contentAlign}
         />
       )}
 

@@ -73,9 +73,10 @@ export const useOtpTimer = (scope: OtpTimerScope) => {
    */
   const hasLiveCode = state !== null && expiresLeft > 0;
   const sentTo = state?.sentTo ?? null;
-  // A boolean rather than the countdowns themselves, so the ticking effect below
-  // is not torn down and rebuilt on every single tick.
-  const isTicking = state !== null && (timeLeft > 0 || expiresLeft > 0);
+  // Only the resend lock is rendered per-second (`timeLeft`/`formattedTime`).
+  // `isExpired` flips once, so it gets a single timeout rather than 540 more
+  // ticks that re-render the host screen while the user is typing their code.
+  const isTicking = state !== null && timeLeft > 0;
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -137,6 +138,15 @@ export const useOtpTimer = (scope: OtpTimerScope) => {
     const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
   }, [isTicking]);
+
+  // One-shot wake-up so `isExpired` flips exactly when the code dies, without
+  // holding a 1Hz interval open for the rest of its life.
+  useEffect(() => {
+    if (!state || expiresLeft <= 0) return;
+
+    const timeout = setTimeout(() => setNow(Date.now()), expiresLeft * 1000);
+    return () => clearTimeout(timeout);
+  }, [state, expiresLeft]);
 
   const startTimer = useCallback(
     async (expiresInSeconds: number = DEFAULT_OTP_EXPIRY_SECONDS, target?: string) => {

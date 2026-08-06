@@ -28,11 +28,9 @@ const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 type MatchCardProps = {
   item: MatchItem;
-  side: MatchSide;
   chipLabel: string;
   state: CardState;
   color: string;
-  contentAlign: 'left' | 'right';
   onPress: () => void;
   onMeasure: (id: string, rect: CardRect) => void;
   testID: string;
@@ -40,11 +38,9 @@ type MatchCardProps = {
 
 const MatchCard: React.FC<MatchCardProps> = ({
   item,
-  side,
   chipLabel,
   state,
   color,
-  contentAlign,
   onPress,
   onMeasure,
   testID,
@@ -126,7 +122,6 @@ type MatchBoardProps = {
   pending: MatchPending;
   onTap: (side: MatchSide, id: string) => void;
   colorForLeftId: (leftId: string) => string;
-  contentAlign: 'left' | 'right';
 };
 
 const MatchBoard: React.FC<MatchBoardProps> = ({
@@ -136,7 +131,6 @@ const MatchBoard: React.FC<MatchBoardProps> = ({
   pending,
   onTap,
   colorForLeftId,
-  contentAlign,
 }) => {
   const [board, setBoard] = useState({ width: 0, height: 0 });
   const [layouts, setLayouts] = useState<Record<string, CardRect>>({});
@@ -185,11 +179,9 @@ const MatchBoard: React.FC<MatchBoardProps> = ({
         <MatchCard
           key={`L-${l.id}`}
           item={l}
-          side="left"
           chipLabel={String(i + 1)}
           state={stateFor('left', l.id)}
           color={colorForLeftId(l.id)}
-          contentAlign={contentAlign}
           onPress={() => onTap('left', l.id)}
           onMeasure={onMeasure}
           testID={`match-left-${l.id}`}
@@ -203,11 +195,9 @@ const MatchBoard: React.FC<MatchBoardProps> = ({
         <MatchCard
           key={`R-${r.id}`}
           item={r}
-          side="right"
           chipLabel={LETTERS[i] ?? String(i + 1)}
           state={stateFor('right', r.id)}
           color={rightColorByLeft[r.id] ?? QUIZ_COLORS.navy}
-          contentAlign={contentAlign}
           onPress={() => onTap('right', r.id)}
           onMeasure={onMeasure}
           testID={`match-right-${r.id}`}

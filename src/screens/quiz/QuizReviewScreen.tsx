@@ -32,7 +32,7 @@ import MatchReviewCard from '../../components/quiz/MatchReviewCard';
 import ParagraphReviewGroup from '../../components/quiz/ParagraphReviewGroup';
 import QuestionImage from '../../components/quiz/QuestionImage';
 import { groupUserAnswers } from '../../utils/quizResultGroups';
-import { isMatchType } from '../../utils/quizQuestionTypes';
+import { isMatchType, isDescriptiveType, QUESTION_TYPES } from '../../utils/quizQuestionTypes';
 import { formatScore } from '../../lib/scoreUtils';
 
 const QuizReviewScreen: React.FC = () => {
@@ -80,7 +80,7 @@ const QuizReviewScreen: React.FC = () => {
       ...raw,
       userAnswers: raw.userAnswers.map((ua: any) => {
         const q = ua.question;
-        const isDescriptive = ['what_happens', 'give_a_reason'].includes(q.type);
+        const isDescriptive = isDescriptiveType(q.type);
         const isTrueFalse = q.type === 'true_false';
 
         let answers = isDescriptive
@@ -171,6 +171,13 @@ const QuizReviewScreen: React.FC = () => {
   const correctCount = correctAnswersList.length;
   const incorrectCount = wrongAnswersList.length;
 
+  // One pass instead of a findIndex per rendered card: the old form was O(n²)
+  // per render, and every filter tap or card expand re-ran it for all rows.
+  const rowIndexById: Record<string, number> = {};
+  (result.userAnswers || []).forEach((ans: any, i: number) => {
+    if (rowIndexById[ans.question.id] === undefined) rowIndexById[ans.question.id] = i;
+  });
+
   // Scores per passage come from the unfiltered rows; see ParagraphReviewGroup.
   const allChildrenByParent: Record<string, any[]> = {};
   groupUserAnswers(result.userAnswers || []).forEach((group: any) => {
@@ -182,8 +189,6 @@ const QuizReviewScreen: React.FC = () => {
     if (currentFilter === 'wrong') return !ua.is_correct;
     return true;
   });
-
-  const isDescriptiveType = (type: string) => ['what_happens', 'give_a_reason'].includes(type);
 
   const renderFilterChips = () => (
     <View style={currentStyles.chipsContainer}>
@@ -330,10 +335,8 @@ const QuizReviewScreen: React.FC = () => {
             const isTrueFalse = ua.question.type === 'true_false';
             const isCorrect = ua.is_correct;
 
-            // Find the original index in the full result list
-            const originalIndex = result.userAnswers.findIndex(
-              (ans: any) => ans.question.id === ua.question.id,
-            );
+            // Position in the full result list, looked up rather than scanned.
+            const originalIndex = rowIndexById[ua.question.id] ?? 0;
 
             const isExpanded =
               expandedQuestions[ua.question.id] !== undefined
@@ -385,7 +388,7 @@ const QuizReviewScreen: React.FC = () => {
                     {isDescriptive && (
                       <View style={currentStyles.descriptiveTypeBadge}>
                         <Text style={currentStyles.descriptiveTypeBadgeText}>
-                          {ua.question.type === 'what_happens'
+                          {ua.question.type === QUESTION_TYPES.WHAT_HAPPENS
                             ? t('quiz_taking.what_happens', 'What Happens?')
                             : t('quiz_taking.give_a_reason', 'Give a Reason')}
                         </Text>

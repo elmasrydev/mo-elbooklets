@@ -45,7 +45,13 @@ const ScoreStrip: React.FC<ScoreStripProps> = ({
       <View style={styles.badge}>
         <Text style={[styles.badgeValue, typography('h2', '800'), { color: badgeColor }]}>
           {formatScore(score)}
-          <Text style={[styles.badgeDenominator, { color: theme.colors.textTertiary }]}>
+          <Text
+            style={[
+              typography('caption', '700'),
+              styles.badgeDenominator,
+              { color: theme.colors.textTertiary },
+            ]}
+          >
             /{total}
           </Text>
         </Text>
@@ -113,8 +119,10 @@ const styles = StyleSheet.create({
     writingDirection: 'ltr',
   },
   badgeDenominator: {
-    fontSize: 13,
-    fontWeight: '700',
+    // No bare `fontWeight`/`fontSize` here — the family+weight pair comes from
+    // typography() above, because a raw fontWeight drops the custom family on
+    // Android and the denominator would render in a different face from the
+    // numerator beside it.
   },
   badgeLabel: {
     marginTop: 3,

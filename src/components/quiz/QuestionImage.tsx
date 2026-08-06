@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
 import { SvgUri } from 'react-native-svg';
@@ -36,6 +36,16 @@ const QuestionImage: React.FC<QuestionImageProps> = ({ uri, testID }) => {
   const [viewerOpen, setViewerOpen] = useState(false);
   // Bumped to force a re-request of the same URL after a failure.
   const [attempt, setAttempt] = useState(0);
+
+  // The initialiser only runs on mount, but the quiz renders one instance and
+  // swaps `uri` as the student moves between questions — so without this a
+  // failed image leaves the next question showing "failed to load", and a
+  // loaded one suppresses the next skeleton.
+  useEffect(() => {
+    setStatus(svg ? 'loaded' : 'loading');
+    setAttempt(0);
+    setViewerOpen(false);
+  }, [uri, svg]);
 
   const retry = () => {
     setStatus(svg ? 'loaded' : 'loading');
