@@ -11,3 +11,13 @@ export const getScoreStatusKey = (percentage: number) => {
   if (percentage >= 50) return 'passed';
   return 'failed';
 };
+
+/**
+ * Format a unit-based quiz score for display. `score` is a Float — descriptive
+ * questions produce partial values like 6.5 — so show one decimal when needed
+ * and a plain integer otherwise: 7 → "7", 6.5 → "6.5", 6.666 → "6.7".
+ */
+export const formatScore = (score: number): string => {
+  const rounded = Math.round(score * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+};

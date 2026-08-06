@@ -26,6 +26,7 @@ import { useModal } from '../context/ModalContext';
 import { useNavigation } from '@react-navigation/native';
 import { analytics } from '../lib/analytics';
 import { INPUT_TEXT_ALIGN } from '../lib/rtl';
+import { digitsOnly } from '../utils/digits';
 import { isDebugMode } from '../config/debug';
 import {
   EGYPT_MOBILE_REGEX as MOBILE_REGEX,
@@ -594,7 +595,7 @@ const StepOne = ({
           ]}
           value={mobile}
           onChangeText={(val) => {
-            setMobile(val.replaceAll(/\D/g, '').slice(0, 11));
+            setMobile(digitsOnly(val).slice(0, 11));
             // Drop the previous verdict — it belongs to the old number.
             mobileAvailability.reset();
           }}

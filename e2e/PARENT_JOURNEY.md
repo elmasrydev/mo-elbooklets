@@ -9,7 +9,7 @@
 
 | | Student | Parent |
 |---|---|---|
-| OTP screen | Yes (skip via `otp-skip-debug`/`-2`) | **NO — never** ✅ (`AppNavigator.tsx:47` routes `userRole === 'parent'` straight to dashboard; `parentLogin`/`parentRegister` in AuthContext have no verification redirect) |
+| OTP screen | Yes (skip via `otp-skip-debug`/`-2`) | **Yes** — same screen and same testIDs, gated on `parentUser.mobile_verified_at` in `AppNavigator` with `initialParams={{ audience: 'parent' }}`. Flows reuse `e2e/utils/otp-handle.yaml` unchanged. |
 | Profile-completion prompt | Yes (`profile-completion-skip-button`) | **NO — never** ✅ (`AppNavigator.tsx:91` excludes parents) |
 | Registration success screen | Possible | No (non-parent only) ✅ |
 | Post-auth landing | Home tabs (`tab-home`) | `ParentDashboardScreen` ✅ |
@@ -20,9 +20,9 @@
 ```
 Onboarding (onboarding-parent-tab)
  ├─ Get Started → ParentRegister (all testIDs exist: parent-register-name/-mobile/-email/-password/-confirm/-submit)
- │    └─ submit → authenticated → ParentDashboard  (NO OTP, NO disclaimer modal in code ❓ confirm)
+ │    └─ submit → authenticated → OTP gate (code auto-sent) → ParentDashboard  (NO disclaimer modal in code ❓ confirm)
  ├─ Sign In → ParentLogin (testIDs exist: parent-login-mobile/-password/-submit)
- │    └─ submit → ParentDashboard
+ │    └─ submit → OTP gate when unverified → ParentDashboard
  └─ Forgot → ParentForgotPassword
 
 Parent bottom tabs (ParentTabNavigator): Dashboard · Requests · Add Child · Settings
@@ -83,7 +83,10 @@ All three were fixed when flows 04/05/08 were wired up and verified green on PRS
 ## Walkthrough answers (confirmed by product owner, 2026-06-12)
 
 1. Parent register on PRS: **no popup/disclaimer after submit** ✅
-2. Backend does **not** send WhatsApp OTP to parents ✅
+2. ~~Backend does **not** send WhatsApp OTP to parents~~ — **superseded**: the backend now
+   ships `sendParentMobileOtp` / `verifyParentMobileOtp` and auto-sends on
+   `parentRegister` / `parentLogin` when unverified (`mobile-otp-guide.md` flow 2).
+   Existing parents are gated at their next login until they verify.
 3. Add child with non-existent mobile → **unknown error UI; discover during first test run**
    (flows must tolerate `confirm-modal-ok` conditionally)
 4. Duplicate add-child request → **unknown; discover during first test run**

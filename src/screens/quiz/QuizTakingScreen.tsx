@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  Switch,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -18,30 +17,45 @@ import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { loadFailureMessage } from '../../utils/queryError';
-import { QuizDocument, QuizQuery, SubmitQuizAnswersDocument } from '../../generated/graphql';
+import { QuizDocument, SubmitQuizAnswersDocument } from '../../generated/graphql';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
 import useAndroidBack from '../../hooks/useAndroidBack';
 import { useTypography } from '../../hooks/useTypography';
 import { layout } from '../../config/layout';
 import UnifiedHeader from '../../components/UnifiedHeader';
-import AppButton from '../../components/AppButton';
 import RetryView from '../../components/RetryView';
 import { QuizScreenSkeleton } from '../../components/SkeletonLoader';
 import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
 import { analytics } from '../../lib/analytics';
 import ReportQuestionModal from '../../components/ReportQuestionModal';
-
-const DESCRIPTIVE_TYPES = ['what_happens', 'give_a_reason'];
-
-type Quiz = NonNullable<QuizQuery['quiz']>;
-type QuizQuestion = Quiz['questions'][number];
+import ChoiceOptions from '../../components/quiz/ChoiceOptions';
+import QuestionImage from '../../components/quiz/QuestionImage';
+import MatchQuestion from '../../components/quiz/MatchQuestion';
+import ParagraphQuestion from '../../components/quiz/ParagraphQuestion';
+import QuizBottomSheet from '../../components/quiz/QuizBottomSheet';
+import {
+  buildSubmitPayload,
+  isQuestionComplete,
+  countIncompleteQuestions,
+  type QuizDraft,
+} from '../../utils/quizAnswers';
+import {
+  isDescriptiveType,
+  isMatchType,
+  isParagraphType,
+  isChoiceType,
+} from '../../utils/quizQuestionTypes';
+import { isArabicText } from '../../config/fonts';
+import { QUIZ_COLORS } from '../../config/colors';
+import { SUBMIT_QUIZ_TIMEOUT_MS } from '../../config/api';
+import { INPUT_TEXT_ALIGN } from '../../lib/rtl';
 
 const QuizTakingScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { quizId, isTimed } = route.params || {};
 
-  const { theme, fontSizes, spacing, borderRadius } = useTheme();
+  const { theme, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const { showConfirm } = useModal();
@@ -50,11 +64,19 @@ const QuizTakingScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedAnswers, setSelectedAnswers] = useState<{ [questionId: string]: string }>({});
+  const [draft, setDraft] = useState<QuizDraft>({});
   const [submitting, setSubmitting] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isTimerPaused, setIsTimerPaused] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [passageSheetOpen, setPassageSheetOpen] = useState(false);
+
+  // Reset scroll to the top on every question change, so a new question never
+  // opens mid-scroll from where the previous one was left.
+  const scrollRef = React.useRef<ScrollView>(null);
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [currentQuestionIndex]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -122,22 +144,38 @@ const QuizTakingScreen: React.FC = () => {
     });
   }, [quiz]);
 
-  const handleAnswerSelect = (questionId: string, answer: string) => {
-    setSelectedAnswers((prev) => ({
-      ...prev,
-      [questionId]: answer,
-    }));
+  const setTextAnswer = (questionId: string, value: string) => {
+    setDraft((prev) => ({ ...prev, [questionId]: { kind: 'text', value } }));
   };
 
-  const handleDescriptiveAnswer = (questionId: string, text: string) => {
-    setSelectedAnswers((prev) => ({
-      ...prev,
-      [questionId]: text,
-    }));
+  const setMatchPairs = (questionId: string, pairs: Record<string, string>) => {
+    setDraft((prev) => ({ ...prev, [questionId]: { kind: 'match', pairs } }));
   };
 
-  const isDescriptiveQuestion = (question: QuizQuestion): boolean => {
-    return DESCRIPTIVE_TYPES.includes(question.type);
+  const setChildAnswer = (questionId: string, childId: string, value: string) => {
+    setDraft((prev) => {
+      const entry = prev[questionId];
+      const children = entry?.kind === 'paragraph' ? entry.children : {};
+      return {
+        ...prev,
+        [questionId]: { kind: 'paragraph', children: { ...children, [childId]: value } },
+      };
+    });
+  };
+
+  const textValueOf = (questionId: string): string => {
+    const entry = draft[questionId];
+    return entry?.kind === 'text' ? entry.value : '';
+  };
+
+  const matchPairsOf = (questionId: string): Record<string, string> => {
+    const entry = draft[questionId];
+    return entry?.kind === 'match' ? entry.pairs : {};
+  };
+
+  const childAnswersOf = (questionId: string): Record<string, string> => {
+    const entry = draft[questionId];
+    return entry?.kind === 'paragraph' ? entry.children : {};
   };
 
   const handleNextQuestion = () => {
@@ -145,7 +183,7 @@ const QuizTakingScreen: React.FC = () => {
 
     const currentQuestion = quiz.questions[currentQuestionIndex];
 
-    if (!selectedAnswers[currentQuestion.id] || selectedAnswers[currentQuestion.id].trim() === '') {
+    if (!isQuestionComplete(currentQuestion, draft)) {
       showConfirm({
         title: t('quiz_taking.answer_required'),
         message: t('quiz_taking.select_answer_first'),
@@ -171,7 +209,7 @@ const QuizTakingScreen: React.FC = () => {
 
     const currentQuestion = quiz.questions[currentQuestionIndex];
 
-    if (!selectedAnswers[currentQuestion.id] || selectedAnswers[currentQuestion.id].trim() === '') {
+    if (!isQuestionComplete(currentQuestion, draft)) {
       showConfirm({
         title: t('quiz_taking.answer_required'),
         message: t('quiz_taking.select_answer_last'),
@@ -181,13 +219,11 @@ const QuizTakingScreen: React.FC = () => {
       return;
     }
 
-    const unansweredQuestions = quiz.questions.filter(
-      (q) => !selectedAnswers[q.id] || selectedAnswers[q.id].trim() === '',
-    );
-    if (unansweredQuestions.length > 0) {
+    const incompleteCount = countIncompleteQuestions(quiz.questions, draft);
+    if (incompleteCount > 0) {
       showConfirm({
         title: t('quiz_taking.incomplete_quiz'),
-        message: t('quiz_taking.unanswered_questions', { count: unansweredQuestions.length }),
+        message: t('quiz_taking.unanswered_questions', { count: incompleteCount }),
         showCancel: false,
         onConfirm: () => {},
       });
@@ -203,36 +239,41 @@ const QuizTakingScreen: React.FC = () => {
 
   const [submitQuizAnswers] = useMutation(SubmitQuizAnswersDocument);
 
+  // Post-completion navigation: the Quiz tab picks up `completedQuizId` on focus
+  // and forwards to QuizResults. Shared by the submit success path, the
+  // already-completed guard, and the on-load redirect for a finished attempt.
+  const redirectToResults = useCallback(
+    (completedQuizId: string, timeTaken?: number) => {
+      navigation.reset({
+        index: 0,
+        routes: [
+          {
+            name: 'MainTabs',
+            params: { screen: 'Quiz', params: { completedQuizId, timeTaken } },
+          },
+        ],
+      });
+    },
+    [navigation],
+  );
+
   const submitAnswers = async () => {
     if (!quiz || submitting) return;
 
     try {
       setSubmitting(true);
 
-      const answers = quiz.questions.map((question) => ({
-        questionId: question.id,
-        selectedAnswer: selectedAnswers[question.id] || null,
-      }));
+      const answers = buildSubmitPayload(quiz.questions, draft);
 
-      const result = await submitQuizAnswers({ variables: { quizId: quiz.id, answers } });
+      const result = await submitQuizAnswers({
+        variables: { quizId: quiz.id, answers },
+        // Descriptive questions are AI-graded synchronously inside the mutation,
+        // so allow far longer than the default 10s transport cap.
+        context: { fetchOptions: { timeoutMs: SUBMIT_QUIZ_TIMEOUT_MS } },
+      });
 
       if (result.data?.submitQuizAnswers) {
-        // Reset navigation stack to MainTabs, focusing on the Quiz tab with completed params
-        navigation.reset({
-          index: 0,
-          routes: [
-            {
-              name: 'MainTabs',
-              params: {
-                screen: 'Quiz',
-                params: {
-                  completedQuizId: quiz.id,
-                  timeTaken: isTimed ? elapsedSeconds : undefined,
-                },
-              },
-            },
-          ],
-        });
+        redirectToResults(quiz.id, isTimed ? elapsedSeconds : undefined);
       } else {
         showConfirm({
           title: t('common.error'),
@@ -243,15 +284,28 @@ const QuizTakingScreen: React.FC = () => {
       }
     } catch (err: any) {
       console.error('Submit quiz error:', err);
+      const message: string = err?.message ?? '';
+      // A completed attempt can't be resubmitted; send the student to their
+      // results instead of surfacing the raw backend error.
+      if (message.includes('quiz_already_completed')) {
+        redirectToResults(quiz.id);
+        return;
+      }
       showConfirm({
         title: t('common.error'),
-        message: err.message || t('common.unexpected_error'),
+        message: message || t('common.unexpected_error'),
         showCancel: false,
         onConfirm: () => {},
       });
     } finally {
       if (mountedRef.current) {
         setSubmitting(false);
+        // Only a successful submit navigates away. On failure the student stays
+        // on the quiz and may retry minutes later, so the clock has to resume —
+        // left paused it freezes the badge and under-reports the time taken.
+        if (isTimed) {
+          setIsTimerPaused(false);
+        }
       }
     }
   };
@@ -263,6 +317,16 @@ const QuizTakingScreen: React.FC = () => {
       mountedRef.current = false;
     };
   }, []);
+
+  // A finished attempt must never render as answerable (e.g. navigating back
+  // into a completed quiz, or a stale back-stack entry) — forward to results.
+  const redirectedRef = React.useRef(false);
+  useEffect(() => {
+    if (quiz?.isCompleted && !redirectedRef.current) {
+      redirectedRef.current = true;
+      redirectToResults(quiz.id);
+    }
+  }, [quiz?.isCompleted, quiz?.id, redirectToResults]);
 
   const { contentAlign, contentRowDirection } = useSubjectTextAlign(
     quiz?.subject?.language,
@@ -276,7 +340,6 @@ const QuizTakingScreen: React.FC = () => {
     borderRadius,
     common,
     contentAlign,
-    contentRowDirection,
   );
 
   if (loading) {
@@ -317,9 +380,28 @@ const QuizTakingScreen: React.FC = () => {
     );
   }
 
-  const currentQuestion = quiz.questions[currentQuestionIndex];
-  const progress = ((currentQuestionIndex + 1) / quiz.questions.length) * 100;
-  const isDescriptive = isDescriptiveQuestion(currentQuestion);
+  // Clamped: `currentQuestionIndex` is not reset when the quiz re-resolves, so a
+  // refetch returning fewer questions would leave it out of range and crash the
+  // render on the very next line.
+  const safeIndex = Math.min(currentQuestionIndex, quiz.questions.length - 1);
+  const currentQuestion = quiz.questions[safeIndex];
+  const progress = ((safeIndex + 1) / quiz.questions.length) * 100;
+  const isDescriptive = isDescriptiveType(currentQuestion.type);
+  const isMatch = isMatchType(currentQuestion.type);
+  const isParagraph = isParagraphType(currentQuestion.type);
+  const currentComplete = isQuestionComplete(currentQuestion, draft);
+
+  const unsupportedCard = (
+    <View style={currentStyles.unsupportedCard} testID="quiz-unsupported-card">
+      <Ionicons name="alert-circle-outline" size={22} color={QUIZ_COLORS.muted} />
+      <Text style={currentStyles.unsupportedTitle}>
+        {t('quiz_taking.unsupported_question', "This question type isn't supported yet")}
+      </Text>
+      <Text style={currentStyles.unsupportedHint}>
+        {t('quiz_taking.unsupported_question_hint', 'Please update the app to answer it.')}
+      </Text>
+    </View>
+  );
 
   return (
     <View style={[common.container, currentStyles.screenContainer]}>
@@ -374,6 +456,7 @@ const QuizTakingScreen: React.FC = () => {
       </View>
 
       <ScrollView
+        ref={scrollRef}
         style={currentStyles.content}
         contentContainerStyle={currentStyles.contentContainer}
         showsVerticalScrollIndicator={false}
@@ -390,13 +473,22 @@ const QuizTakingScreen: React.FC = () => {
             </View>
           )}
 
-          <Text style={currentStyles.questionText}>{currentQuestion.question}</Text>
+          {/* Image attachment — orthogonal to type; may sit on any question. */}
+          {currentQuestion.imageUrl && (
+            <QuestionImage uri={currentQuestion.imageUrl} testID="question-image" />
+          )}
+
+          {/* Paragraph renders its own passage card, so skip the top prompt. */}
+          {!isParagraph && (
+            <Text style={currentStyles.questionText}>{currentQuestion.question}</Text>
+          )}
 
           {/* Report button */}
           <TouchableOpacity
             style={[currentStyles.reportBtn, { borderColor: theme.colors.border }]}
             onPress={() => setShowReportModal(true)}
             activeOpacity={0.75}
+            testID="quiz-report-button"
           >
             <Ionicons name="flag" size={15} color={theme.colors.error} />
             <Text style={[currentStyles.reportBtnText, { color: theme.colors.textSecondary }]}>
@@ -408,81 +500,98 @@ const QuizTakingScreen: React.FC = () => {
             /* Descriptive answer: multi-line text input */
             <View style={currentStyles.descriptiveContainer}>
               <TextInput
-                style={[currentStyles.descriptiveInput, { textAlign: contentAlign }]}
-                value={selectedAnswers[currentQuestion.id] || ''}
-                onChangeText={(text) => handleDescriptiveAnswer(currentQuestion.id, text)}
+                // INPUT_TEXT_ALIGN, not contentAlign: `left`/`right` stay
+                // physical on TextInput, so the subject-derived value would pin
+                // Arabic answers to the wrong edge (BKLT-312).
+                style={[currentStyles.descriptiveInput, { textAlign: INPUT_TEXT_ALIGN }]}
+                value={textValueOf(currentQuestion.id)}
+                onChangeText={(text) => setTextAnswer(currentQuestion.id, text)}
                 placeholder={t('quiz_taking.write_your_answer', 'Write your answer here...')}
                 placeholderTextColor={theme.colors.textSecondary}
                 multiline
                 textAlignVertical="top"
                 maxLength={2000}
+                testID="quiz-descriptive-input"
               />
               <Text style={currentStyles.charCount}>
-                {(selectedAnswers[currentQuestion.id] || '').length} / 2000
+                {textValueOf(currentQuestion.id).length} / 2000
               </Text>
             </View>
+          ) : isMatch ? (
+            currentQuestion.matchPairs ? (
+              // Key by question id so the armed-card (`pending`) state can't leak
+              // into the next match question — each question remounts fresh.
+              <MatchQuestion
+                key={currentQuestion.id}
+                matchPairs={currentQuestion.matchPairs}
+                pairs={matchPairsOf(currentQuestion.id)}
+                onChange={(pairs) => setMatchPairs(currentQuestion.id, pairs)}
+                contentAlign={contentAlign}
+              />
+            ) : (
+              unsupportedCard
+            )
+          ) : isParagraph ? (
+            // Key by question id so the passage-collapse state resets per question.
+            <ParagraphQuestion
+              key={currentQuestion.id}
+              passage={currentQuestion.question}
+              childQuestions={currentQuestion.subQuestions ?? []}
+              answers={childAnswersOf(currentQuestion.id)}
+              onChildChange={(childId, value) => setChildAnswer(currentQuestion.id, childId, value)}
+              contentAlign={contentAlign}
+              contentRowDirection={contentRowDirection}
+            />
+          ) : isChoiceType(currentQuestion.type) ? (
+            <ChoiceOptions
+              questionType={currentQuestion.type}
+              options={currentQuestion.answers}
+              selectedAnswer={textValueOf(currentQuestion.id)}
+              onSelect={(answer) => setTextAnswer(currentQuestion.id, answer)}
+              contentAlign={contentAlign}
+              contentRowDirection={contentRowDirection}
+              testIDPrefix="quiz-answer"
+            />
           ) : (
-            /* MCQ / True-False answer buttons */
-            <View style={currentStyles.answersContainer}>
-              {currentQuestion.answers.map((answer, index) => {
-                const isSelected = selectedAnswers[currentQuestion.id] === answer;
-                // Basic split strategy if the text clearly has a title and description
-                // Using newline if available, else we just use the text as title layout
-                const parts = answer.split('\n');
-                const hasSubtitle = parts.length > 1;
-
-                return (
-                  <TouchableOpacity
-                    key={index}
-                    style={[
-                      currentStyles.answerCard,
-                      isSelected && currentStyles.selectedAnswerCard,
-                    ]}
-                    onPress={() => handleAnswerSelect(currentQuestion.id, answer)}
-                    activeOpacity={0.8}
-                  >
-                    <View style={currentStyles.radioContainer}>
-                      <View
-                        style={[
-                          currentStyles.radioCircle,
-                          isSelected && currentStyles.selectedRadioCircle,
-                        ]}
-                      >
-                        {isSelected && <View style={currentStyles.radioDot} />}
-                      </View>
-                    </View>
-                    <View style={currentStyles.answerTextContainer}>
-                      <Text
-                        style={[
-                          currentStyles.answerTitle,
-                          isSelected && currentStyles.selectedAnswerTitle,
-                        ]}
-                      >
-                        {currentQuestion.type === 'true_false' && parts[0].toLowerCase() === 'true'
-                          ? t('common.true')
-                          : currentQuestion.type === 'true_false' &&
-                              parts[0].toLowerCase() === 'false'
-                            ? t('common.false')
-                            : parts[0]}
-                      </Text>
-                      {hasSubtitle && (
-                        <Text
-                          style={[
-                            currentStyles.answerSubtitle,
-                            isSelected && currentStyles.selectedAnswerSubtitle,
-                          ]}
-                        >
-                          {parts.slice(1).join('\n')}
-                        </Text>
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+            unsupportedCard
           )}
         </View>
       </ScrollView>
+
+      {/* Paragraph passage stays one tap away via a floating pill + sheet. */}
+      {isParagraph && (
+        <TouchableOpacity
+          style={[currentStyles.passageFab, { bottom: Math.max(insets.bottom, 24) + 78 }]}
+          onPress={() => setPassageSheetOpen(true)}
+          activeOpacity={0.9}
+          testID="paragraph-passage-fab"
+        >
+          <Ionicons name="book" size={16} color="#FFFFFF" />
+          <Text style={currentStyles.passageFabText}>
+            {t('quiz_taking.passage_fab', 'Passage')}
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      {isParagraph && (
+        <QuizBottomSheet
+          visible={passageSheetOpen}
+          onClose={() => setPassageSheetOpen(false)}
+          chipIcon="book-outline"
+          chipLabel={t('quiz_taking.passage', 'Reading passage')}
+          testID="paragraph-passage-sheet"
+        >
+          <Text
+            style={[
+              currentStyles.passageSheetText,
+              typography('bodySmall', '600', isArabicText(currentQuestion.question)),
+              { textAlign: contentAlign },
+            ]}
+          >
+            {currentQuestion.question}
+          </Text>
+        </QuizBottomSheet>
+      )}
 
       {/* Navigation Footer */}
       <View style={[currentStyles.footerContainer, { paddingBottom: Math.max(insets.bottom, 24) }]}>
@@ -516,10 +625,12 @@ const QuizTakingScreen: React.FC = () => {
             style={[
               currentStyles.navButton,
               currentStyles.nextButton,
+              !currentComplete && currentStyles.navButtonIdle,
               submitting && currentStyles.navButtonDisabled,
             ]}
             onPress={handleSubmitQuiz}
             disabled={submitting}
+            testID="quiz-finish-button"
           >
             {submitting ? (
               <ActivityIndicator color="#FFFFFF" size="small" />
@@ -534,8 +645,13 @@ const QuizTakingScreen: React.FC = () => {
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
-            style={[currentStyles.navButton, currentStyles.nextButton]}
+            style={[
+              currentStyles.navButton,
+              currentStyles.nextButton,
+              !currentComplete && currentStyles.navButtonIdle,
+            ]}
             onPress={handleNextQuestion}
+            testID="quiz-next-button"
           >
             <Text style={[currentStyles.navButtonText, currentStyles.nextButtonText]}>
               {t('common.next', 'Next')}
@@ -565,7 +681,6 @@ const styles = (
   borderRadius: any,
   common: any,
   contentAlign: 'left' | 'right',
-  contentRowDirection: 'row' | 'row-reverse',
 ) =>
   StyleSheet.create({
     screenContainer: {
@@ -652,70 +767,6 @@ const styles = (
       lineHeight: 34,
       textAlign: contentAlign,
     },
-    // Options
-    answersContainer: {
-      gap: 16,
-    },
-    answerCard: {
-      flexDirection: contentRowDirection,
-      alignItems: 'center',
-      backgroundColor: '#FFFFFF',
-      padding: 16,
-      borderRadius: 24, // High rounding per Calm Design mockup
-      borderWidth: 1.5,
-      borderColor: '#E5E7EB',
-      gap: 7,
-    },
-    selectedAnswerCard: {
-      backgroundColor: '#F8FAFF',
-      borderColor: '#284196',
-    },
-    radioContainer: {
-      justifyContent: 'center',
-      alignItems: 'center',
-      //...common.marginEnd(16),
-    },
-    radioCircle: {
-      width: 24,
-      height: 24,
-      borderRadius: 12,
-      borderWidth: 2,
-      borderColor: '#D1D5DB',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    selectedRadioCircle: {
-      borderColor: '#284196',
-    },
-    radioDot: {
-      width: 10,
-      height: 10,
-      borderRadius: 5,
-      backgroundColor: '#284196',
-    },
-    answerTextContainer: {
-      flex: 1,
-      justifyContent: 'center',
-    },
-    answerTitle: {
-      ...typography('body'),
-      color: '#374151',
-      ...fontWeight('bold'),
-      textAlign: contentAlign,
-    },
-    selectedAnswerTitle: {
-      color: '#284196',
-    },
-    answerSubtitle: {
-      ...typography('caption'),
-      color: '#6B7280',
-      marginTop: 4,
-      lineHeight: 20,
-      textAlign: contentAlign,
-    },
-    selectedAnswerSubtitle: {
-      color: '#4B5563',
-    },
     // Descriptive answers styling
     descriptiveBadge: {
       flexDirection: 'row',
@@ -780,6 +831,10 @@ const styles = (
     nextButton: {
       backgroundColor: '#284196',
     },
+    navButtonIdle: {
+      // Muted look while the current question isn't fully answered yet.
+      backgroundColor: '#9AA7C7',
+    },
     navButtonDisabled: {
       opacity: 0.5,
     },
@@ -796,16 +851,50 @@ const styles = (
     navButtonTextDisabled: {
       color: '#9CA3AF',
     },
-    postToFeedRow: {
+    passageFab: {
+      position: 'absolute',
+      insetInlineEnd: 18,
       flexDirection: common.rowDirection,
       alignItems: 'center',
-      justifyContent: 'center',
-      gap: 12,
+      gap: 6,
+      backgroundColor: QUIZ_COLORS.navy,
+      paddingHorizontal: 16,
+      paddingVertical: 11,
+      borderRadius: 999,
+      shadowColor: QUIZ_COLORS.navy,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.35,
+      shadowRadius: 12,
+      elevation: 6,
     },
-    postToFeedText: {
-      ...typography('label'),
-      ...fontWeight('600'),
-      color: '#6B7280',
+    passageFabText: {
+      ...typography('label', '700'),
+      color: '#FFFFFF',
+    },
+    passageSheetText: {
+      color: QUIZ_COLORS.ink,
+      lineHeight: 26,
+      paddingBottom: 8,
+    },
+    unsupportedCard: {
+      alignItems: 'center',
+      gap: 8,
+      backgroundColor: QUIZ_COLORS.cardBg,
+      borderWidth: 1.5,
+      borderColor: QUIZ_COLORS.line,
+      borderRadius: 18,
+      paddingVertical: 28,
+      paddingHorizontal: 20,
+    },
+    unsupportedTitle: {
+      ...typography('body', '700'),
+      color: QUIZ_COLORS.ink,
+      textAlign: 'center',
+    },
+    unsupportedHint: {
+      ...typography('caption'),
+      color: QUIZ_COLORS.secondary,
+      textAlign: 'center',
     },
 
     // Legacy placeholders to ensure no crash if common uses them

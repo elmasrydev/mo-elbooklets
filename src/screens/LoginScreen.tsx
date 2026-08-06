@@ -24,6 +24,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { analytics } from '../lib/analytics';
 import { INPUT_TEXT_ALIGN } from '../lib/rtl';
+import { digitsOnly } from '../utils/digits';
 import { isDebugMode } from '../config/debug';
 
 const LoginScreen: React.FC = () => {
@@ -186,7 +187,7 @@ const LoginScreen: React.FC = () => {
                   testID="login-mobile-input"
                   style={currentStyles.input}
                   value={mobile}
-                  onChangeText={(val) => setMobile(val.replaceAll(/\D/g, '').slice(0, 11))}
+                  onChangeText={(val) => setMobile(digitsOnly(val).slice(0, 11))}
                   maxLength={11}
                   placeholder={t('auth.mobile_placeholder')}
                   placeholderTextColor={theme.colors.textTertiary}

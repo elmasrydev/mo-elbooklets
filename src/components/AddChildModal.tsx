@@ -15,6 +15,7 @@ import { useTypography } from '../hooks/useTypography';
 import { INPUT_TEXT_ALIGN } from '../lib/rtl';
 import { layout } from '../config/layout';
 import { useParentDashboardContext } from '../context/ParentDashboardContext';
+import { digitsOnly } from '../utils/digits';
 
 /**
  * Shared add-child modal. Rendered once at the parent tab navigator level so it can
@@ -78,7 +79,7 @@ const AddChildModal: React.FC = () => {
             placeholderTextColor={theme.colors.textTertiary}
             keyboardType="phone-pad"
             value={childMobile}
-            onChangeText={(val) => setChildMobile(val.replace(/\D/g, '').slice(0, 11))}
+            onChangeText={(val) => setChildMobile(digitsOnly(val).slice(0, 11))}
             maxLength={11}
           />
 
