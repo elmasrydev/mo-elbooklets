@@ -252,7 +252,10 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
     subtitle: t('quiz_results.mastered_perfectly', "You've mastered this topic perfectly."),
   };
 
-  if (percentage < 60) {
+  // The fail state follows the server's verdict so the encouragement copy can
+  // never contradict the Pass/Fail badge; the "good job" tier stays a purely
+  // visual band on top of a pass.
+  if (!quizResult.isPassed) {
     stateTheme = {
       color: '#FF6B6B', // red
       bg: '#FEE2E2',
@@ -310,7 +313,10 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
                 </Text>
               </View>
               <Text style={currentStyles.passStatusValue}>
-                {percentage >= 60
+                {/* The server owns the pass threshold — re-deriving it from a
+                    hardcoded 60% would disagree with the score the backend
+                    recorded the moment that threshold changes. */}
+                {quizResult.isPassed
                   ? t('home_screen.passed', 'Passed')
                   : t('home_screen.failed', 'Failed')}
               </Text>

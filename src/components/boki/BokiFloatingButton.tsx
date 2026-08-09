@@ -25,6 +25,7 @@ const BOKI_HIDDEN_ROUTES = new Set<string>([
   'Login',
   'Register',
   'ForgotPassword',
+  'ResetPassword',
   'ParentLogin',
   'ParentRegister',
   'ParentForgotPassword',
