@@ -74,6 +74,7 @@ mobile-otp-guide.md
 mobile-quiz-question-type-selection.md
 mobile-paymob-*.md
 backend-issues-from-audit.md
+test-notes-claude-reviews1.md
 
 # Bug-report screenshots (CLAUDE.md: never commit screenshots to the repo root)
 simulator_screenshot_*.png
