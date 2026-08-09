@@ -22,7 +22,7 @@ import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { isDebugMode } from '../config/debug';
 import ApiUrlSwitcherModal from '../components/ApiUrlSwitcherModal';
-import crashlytics from '@react-native-firebase/crashlytics';
+import { getCrashlytics, crash, log, recordError } from '@react-native-firebase/crashlytics';
 import messaging from '@react-native-firebase/messaging';
 import { lastFcmPayload } from '../services/notificationService';
 import * as Clipboard from 'expo-clipboard';
@@ -112,11 +112,13 @@ const InternalSettingsScreen: React.FC = () => {
     }
   };
   const handleTestCrash = () => {
-    crashlytics().crash();
+    crash(getCrashlytics());
   };
   const handleTestLogError = () => {
-    crashlytics().log('Test log from Internal Settings Screen');
-    crashlytics().recordError(
+    const instance = getCrashlytics();
+    log(instance, 'Test log from Internal Settings Screen');
+    recordError(
+      instance,
       new Error('Test error from Internal Settings Screen at ' + new Date().toISOString()),
     );
   };

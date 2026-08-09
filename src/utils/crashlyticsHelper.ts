@@ -1,4 +1,4 @@
-import crashlytics from '@react-native-firebase/crashlytics';
+import { getCrashlytics, setAttributes, setUserId } from '@react-native-firebase/crashlytics';
 import DeviceInfo from 'react-native-device-info';
 import i18n from '../i18n';
 import { logError, logInfo } from './logger';
@@ -42,8 +42,11 @@ const deviceAttributes = (): Record<string, string> => ({
 });
 
 const configure = async (role: UserRole, id: string, extra: Record<string, string> = {}) => {
-  await crashlytics().setUserId(id);
-  await crashlytics().setAttributes({ role, ...deviceAttributes(), ...extra });
+  // Modular API: the namespaced `crashlytics()` form is deprecated and warns on
+  // every call.
+  const instance = getCrashlytics();
+  await setUserId(instance, id);
+  await setAttributes(instance, { role, ...deviceAttributes(), ...extra });
   logInfo(`[Crashlytics] ${role} context configured (${id})`);
 };
 
