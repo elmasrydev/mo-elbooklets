@@ -487,14 +487,16 @@ const StudyLessonScreen: React.FC = () => {
   );
 
   // Open local leave-disclaimer (works inside iOS native fullScreenModal).
+  // Skipped for deep-link entries (bookmarks, Boki reference) — same as
+  // Bookmarks & Notes, there's no allLessons/study-session context to lose.
   const handleLeaveLesson = useCallback(() => {
-    if (route.params?.fromBookmarks) {
+    if (route.params?.fromBookmarks || route.params?.fromBoki) {
       navigation.goBack();
       return true;
     }
     setShowLeaveModal(true);
     return true; // block Android default back action
-  }, [navigation, route.params?.fromBookmarks]);
+  }, [navigation, route.params?.fromBookmarks, route.params?.fromBoki]);
 
   // Android hardware back → leave disclaimer
   useAndroidBack(handleLeaveLesson);
@@ -1339,6 +1341,11 @@ const StudyLessonScreen: React.FC = () => {
         totalCount={allLessons.length}
         onPrevious={previousLesson ? () => handleNavigateLesson(previousLesson as Lesson) : null}
         onNext={nextLesson ? () => handleNavigateLesson(nextLesson as Lesson) : null}
+        // Deep-link entries (bookmarks, Boki reference) have no chapters list to
+        // return to — same reasoning as skipping the leave-disclaimer for them.
+        finishLabel={
+          route.params?.fromBookmarks || route.params?.fromBoki ? t('common.close') : undefined
+        }
         onFinish={() => {
           analytics.trackLessonCompleted({
             lesson_id: currentLesson.id,

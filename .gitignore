@@ -67,6 +67,7 @@ handover_summary.md
 
 # Local backend reference docs (CLAUDE.md: keep narrative/one-off docs out of git)
 booki-graphql-api.md
+avatars.md
 mobile-availability-check-mutation.md
 notification-localization-mobile-guide.md
 

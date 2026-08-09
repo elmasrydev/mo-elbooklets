@@ -6,6 +6,17 @@ export type Incremental<T> =
   | T
   | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
 import { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/core';
+/** Feedback type for AI chat answers */
+export type AiChatFeedbackType = 'DISLIKE' | 'LIKE' | 'NONE';
+
+/** Input for AI chatbot question */
+export type AiChatInput = {
+  conversationId?: string | null | undefined;
+  lessonId?: string | null | undefined;
+  message: string;
+  subjectId?: string | null | undefined;
+};
+
 /** Login input */
 export type LoginInput = {
   mobile: string;
@@ -397,6 +408,88 @@ export type GetBadgesScreenDataQuery = {
   }>;
 };
 
+export type AiChatMutationVariables = Exact<{
+  input: AiChatInput;
+}>;
+
+export type AiChatMutation = {
+  aiChat: {
+    chatLogId: string | null;
+    answer: string;
+    confidenceScore: number;
+    conversationId: string | null;
+    sources: Array<{ lessonId: string; title: string; similarityScore: number }>;
+  };
+};
+
+export type ConversationsQueryVariables = Exact<{
+  page?: number | null | undefined;
+  perPage?: number | null | undefined;
+}>;
+
+export type ConversationsQuery = {
+  conversations: {
+    total: number;
+    perPage: number;
+    currentPage: number;
+    lastPage: number;
+    hasMore: boolean;
+    data: Array<{
+      id: string;
+      title: string | null;
+      messagesCount: number;
+      createdAt: string;
+      updatedAt: string;
+      latestMessage: { id: string; message: string; response: string; createdAt: string } | null;
+    }>;
+  };
+};
+
+export type ConversationMessagesQueryVariables = Exact<{
+  conversationId: string;
+  page?: number | null | undefined;
+  perPage?: number | null | undefined;
+}>;
+
+export type ConversationMessagesQuery = {
+  conversationMessages: {
+    total: number;
+    perPage: number;
+    currentPage: number;
+    lastPage: number;
+    hasMore: boolean;
+    data: Array<{
+      id: string;
+      conversationId: string;
+      message: string;
+      response: string;
+      confidenceScore: number;
+      subjectId: string | null;
+      lessonId: string | null;
+      createdAt: string;
+      updatedAt: string;
+      sources: Array<{ lessonId: string; title: string; similarityScore: number }>;
+    }>;
+  };
+};
+
+export type AiChatReportMutationVariables = Exact<{
+  chatLogId: string;
+  reason: string;
+  description?: string | null | undefined;
+}>;
+
+export type AiChatReportMutation = { aiChatReport: { success: boolean; message: string } };
+
+export type AiChatFeedbackMutationVariables = Exact<{
+  chatLogId: string;
+  feedback: AiChatFeedbackType;
+}>;
+
+export type AiChatFeedbackMutation = {
+  aiChatFeedback: { success: boolean; feedback: AiChatFeedbackType };
+};
+
 export type StudyScheduleQueryVariables = Exact<{ [key: string]: never }>;
 
 export type StudyScheduleQuery = {
@@ -601,6 +694,34 @@ export type MySavedPointsQuery = {
     };
     lessonPoint: { id: string; title: string; explanation: string | null; order: number };
   }>;
+};
+
+export type BokiLessonByIdQueryVariables = Exact<{
+  id: string;
+}>;
+
+export type BokiLessonByIdQuery = {
+  lesson: {
+    id: string;
+    name: string;
+    summary: string | null;
+    points: Array<string> | null;
+    videoUrl: string | null;
+    myInteraction: string | null;
+    isLocked: boolean;
+    lessonPoints: Array<{
+      id: string;
+      title: string;
+      explanation: string | null;
+      order: number;
+      is_viewed: boolean;
+    }>;
+    chapter: {
+      id: string;
+      name: string;
+      subject: { id: string; name: string; language: string | null } | null;
+    } | null;
+  } | null;
 };
 
 export type LessonDodProgressQueryVariables = Exact<{
@@ -2781,6 +2902,361 @@ export const GetBadgesScreenDataDocument = {
     },
   ],
 } as unknown as DocumentNode<GetBadgesScreenDataQuery, GetBadgesScreenDataQueryVariables>;
+export const AiChatDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'AiChat' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'AiChatInput' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'aiChat' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'chatLogId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'answer' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'sources' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'lessonId' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'similarityScore' } },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'confidenceScore' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'conversationId' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<AiChatMutation, AiChatMutationVariables>;
+export const ConversationsDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'Conversations' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'page' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'perPage' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'conversations' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'page' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'page' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'perPage' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'perPage' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'data' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'messagesCount' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'latestMessage' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'message' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'response' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                          ],
+                        },
+                      },
+                      { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'total' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'perPage' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'currentPage' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'lastPage' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'hasMore' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<ConversationsQuery, ConversationsQueryVariables>;
+export const ConversationMessagesDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'ConversationMessages' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'conversationId' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'page' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'perPage' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'conversationMessages' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'conversationId' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'conversationId' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'page' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'page' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'perPage' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'perPage' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'data' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'conversationId' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'message' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'response' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'sources' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'lessonId' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'similarityScore' } },
+                          ],
+                        },
+                      },
+                      { kind: 'Field', name: { kind: 'Name', value: 'confidenceScore' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'subjectId' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'lessonId' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'total' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'perPage' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'currentPage' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'lastPage' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'hasMore' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<ConversationMessagesQuery, ConversationMessagesQueryVariables>;
+export const AiChatReportDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'AiChatReport' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'chatLogId' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'reason' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'description' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'aiChatReport' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'chatLogId' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'chatLogId' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'reason' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'reason' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'description' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'description' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'message' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<AiChatReportMutation, AiChatReportMutationVariables>;
+export const AiChatFeedbackDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'AiChatFeedback' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'chatLogId' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'feedback' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'AiChatFeedbackType' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'aiChatFeedback' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'chatLogId' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'chatLogId' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'feedback' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'feedback' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'feedback' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<AiChatFeedbackMutation, AiChatFeedbackMutationVariables>;
 export const StudyScheduleDocument = {
   kind: 'Document',
   definitions: [
@@ -3447,6 +3923,91 @@ export const MySavedPointsDocument = {
     },
   ],
 } as unknown as DocumentNode<MySavedPointsQuery, MySavedPointsQueryVariables>;
+export const BokiLessonByIdDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'BokiLessonById' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'id' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'lesson' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'id' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'id' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'summary' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'points' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'videoUrl' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'myInteraction' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'lessonPoints' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'explanation' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'order' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'is_viewed' } },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'isLocked' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'chapter' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'subject' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'language' } },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<BokiLessonByIdQuery, BokiLessonByIdQueryVariables>;
 export const LessonDodProgressDocument = {
   kind: 'Document',
   definitions: [

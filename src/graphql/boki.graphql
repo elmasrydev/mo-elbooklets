@@ -1,0 +1,78 @@
+# Boki AI Assistant — chat, history, report & feedback.
+
+mutation AiChat($input: AiChatInput!) {
+  aiChat(input: $input) {
+    chatLogId
+    answer
+    sources {
+      lessonId
+      title
+      similarityScore
+    }
+    confidenceScore
+    conversationId
+  }
+}
+
+query Conversations($page: Int, $perPage: Int) {
+  conversations(page: $page, perPage: $perPage) {
+    data {
+      id
+      title
+      messagesCount
+      latestMessage {
+        id
+        message
+        response
+        createdAt
+      }
+      createdAt
+      updatedAt
+    }
+    total
+    perPage
+    currentPage
+    lastPage
+    hasMore
+  }
+}
+
+query ConversationMessages($conversationId: ID!, $page: Int, $perPage: Int) {
+  conversationMessages(conversationId: $conversationId, page: $page, perPage: $perPage) {
+    data {
+      id
+      conversationId
+      message
+      response
+      sources {
+        lessonId
+        title
+        similarityScore
+      }
+      confidenceScore
+      subjectId
+      lessonId
+      createdAt
+      updatedAt
+    }
+    total
+    perPage
+    currentPage
+    lastPage
+    hasMore
+  }
+}
+
+mutation AiChatReport($chatLogId: ID!, $reason: String!, $description: String) {
+  aiChatReport(chatLogId: $chatLogId, reason: $reason, description: $description) {
+    success
+    message
+  }
+}
+
+mutation AiChatFeedback($chatLogId: ID!, $feedback: AiChatFeedbackType!) {
+  aiChatFeedback(chatLogId: $chatLogId, feedback: $feedback) {
+    success
+    feedback
+  }
+}
