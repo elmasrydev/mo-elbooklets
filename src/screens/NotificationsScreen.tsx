@@ -20,6 +20,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { GenericListSkeleton } from '../components/SkeletonLoader';
+import RetryView from '../components/RetryView';
 import { parseISO, isToday, isYesterday, subDays, isAfter } from 'date-fns';
 
 const NotificationsScreen: React.FC = () => {
@@ -40,6 +41,7 @@ const NotificationsScreen: React.FC = () => {
     markAllAsRead,
     markingAllRead,
     unreadCount,
+    error,
   } = useNotifications();
 
   const handlePress = useCallback(
@@ -174,6 +176,20 @@ const NotificationsScreen: React.FC = () => {
         <View style={styles.skeletonContainer}>
           <GenericListSkeleton numItems={6} />
         </View>
+      </View>
+    );
+  }
+
+  // A failed load with nothing cached must not fall through to the empty state —
+  // "no notifications yet" would hide a pending parent-link request.
+  if (error && notifications.length === 0) {
+    return (
+      <View style={common.container}>
+        <UnifiedHeader title={t('notifications_center.title')} showBackButton />
+        <RetryView
+          message={t('notifications_center.error_loading', 'Could not load your notifications.')}
+          onRetry={refresh}
+        />
       </View>
     );
   }

@@ -208,8 +208,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setUser(parsedUser);
             configureCrashlyticsStudent(parsedUser);
             analytics.identify(parsedUser.id, {
-              name: parsedUser.name,
-              mobile: parsedUser.mobile,
               grade: parsedUser.grade?.name,
             });
           }
@@ -272,8 +270,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setUserRole('student');
           configureCrashlyticsStudent(authPayload.user);
           analytics.identify(authPayload.user.id, {
-            name: authPayload.user.name,
-            mobile: authPayload.user.mobile,
             grade: authPayload.user.grade?.name,
           });
 
@@ -320,8 +316,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setUserRole('student');
           configureCrashlyticsStudent(authPayload.user);
           analytics.identify(authPayload.user.id, {
-            name: authPayload.user.name,
-            mobile: authPayload.user.mobile,
             grade: authPayload.user.grade?.name,
           });
 
@@ -538,9 +532,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(updatedUser);
         configureCrashlyticsStudent(updatedUser);
         analytics.identify(updatedUser.id, {
-          name: updatedUser.name,
-          email: updatedUser.email,
-          mobile: updatedUser.mobile,
           grade: updatedUser.grade?.name,
         });
       } catch (error) {
@@ -618,8 +609,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setUser(result.data.me);
           configureCrashlyticsStudent(result.data.me);
           analytics.identify(result.data.me.id, {
-            name: result.data.me.name,
-            mobile: result.data.me.mobile,
             grade: result.data.me.grade?.name,
           });
         }

@@ -78,8 +78,6 @@ const LoginScreen: React.FC = () => {
       if (result.success && result.user) {
         analytics.trackLogin('phone');
         analytics.identify(result.user.id, {
-          name: result.user.name,
-          mobile: result.user.mobile,
           grade: result.user.grade?.name,
         });
       } else if (!result.success) {

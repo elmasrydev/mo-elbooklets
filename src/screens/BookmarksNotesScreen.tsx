@@ -27,6 +27,8 @@ import {
 } from '../generated/graphql';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { GenericListSkeleton } from '../components/SkeletonLoader';
+import RetryView from '../components/RetryView';
+import { loadFailureMessage } from '../utils/queryError';
 import { INPUT_TEXT_ALIGN } from '../lib/rtl';
 
 type SavedPoint = MySavedPointsQuery['mySavedPoints'][number];
@@ -140,10 +142,22 @@ const BookmarksNotesScreen: React.FC = () => {
   const [noteModalVisible, setNoteModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState<SavedPoint | null>(null);
 
-  const { data, loading, refetch } = useQuery(MySavedPointsDocument, {
+  const {
+    data,
+    loading,
+    error: queryError,
+    refetch,
+  } = useQuery(MySavedPointsDocument, {
     notifyOnNetworkStatusChange: true,
   });
   const savedPoints = data?.mySavedPoints ?? [];
+  // Without this the empty state doubles as the error state, and a student whose
+  // request timed out is told their bookmarks don't exist.
+  const loadError = loadFailureMessage(
+    data?.mySavedPoints,
+    queryError,
+    t('bookmarks.error_loading', 'Could not load your bookmarks and notes.'),
+  );
 
   // Notes and bookmarks can be edited inside the lesson reader, so re-check on
   // every focus.
@@ -348,6 +362,8 @@ const BookmarksNotesScreen: React.FC = () => {
         <View style={{ flex: 1, paddingTop: 20 }}>
           <GenericListSkeleton numItems={6} />
         </View>
+      ) : loadError ? (
+        <RetryView message={loadError} onRetry={() => refetch()} />
       ) : (
         <FlatList
           data={filteredData}

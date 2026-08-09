@@ -135,6 +135,30 @@ describe('isQuestionComplete', () => {
   it('treats an unknown type as complete so the student is never trapped', () => {
     expect(isQuestionComplete({ id: 'x', type: 'ordering' }, {})).toBe(true);
   });
+
+  // Malformed backend data used to dead-end the attempt: the card renders as
+  // unsupported, but Next and Finish demanded an answer that could never be
+  // given, so the student could neither advance nor submit.
+  it('treats a match with no left column as complete', () => {
+    expect(isQuestionComplete({ id: 'm', type: 'match' }, {})).toBe(true);
+    expect(isQuestionComplete({ id: 'm', type: 'match', matchPairs: null }, {})).toBe(true);
+    expect(isQuestionComplete({ id: 'm', type: 'match', matchPairs: { left: [] } }, {})).toBe(true);
+  });
+
+  it('treats a paragraph with no sub-questions as complete', () => {
+    expect(isQuestionComplete({ id: 'p', type: 'paragraph' }, {})).toBe(true);
+    expect(isQuestionComplete({ id: 'p', type: 'paragraph', subQuestions: null }, {})).toBe(true);
+    expect(isQuestionComplete({ id: 'p', type: 'paragraph', subQuestions: [] }, {})).toBe(true);
+  });
+
+  it('still blocks a well-formed match that is only partly paired', () => {
+    const q: AnswerableQuestion = {
+      id: 'm',
+      type: 'match',
+      matchPairs: { left: [{ id: 'L0' }, { id: 'L1' }] },
+    };
+    expect(isQuestionComplete(q, {})).toBe(false);
+  });
 });
 
 describe('countIncompleteQuestions', () => {

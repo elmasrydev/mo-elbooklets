@@ -918,7 +918,8 @@
     "today": "Today",
     "unread_count": "unread notifications",
     "unread_only": "Unread only",
-    "yesterday": "Yesterday"
+    "yesterday": "Yesterday",
+    "error_loading": "Could not load your notifications."
   },
   "report_question": {
     "comment_label": "Additional comments (optional)",
@@ -941,7 +942,8 @@
   },
   "bookmarks": {
     "empty_subtitle": "Bookmark key points to find them here later.",
-    "empty_title": "No bookmarks yet"
+    "empty_title": "No bookmarks yet",
+    "error_loading": "Could not load your bookmarks and notes."
   },
   "notes": {
     "empty_subtitle": "Add notes to key points while revising.",

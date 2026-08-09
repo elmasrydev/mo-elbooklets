@@ -1,3 +1,5 @@
+import type { UserTraits } from '@segment/analytics-react-native';
+
 import { segmentClient } from './segmentClient';
 
 /**
@@ -33,13 +35,34 @@ export interface QuizAnalyticsParams {
  * NOTE: This service currently uses Segment SDK as a local router
  * to send events natively to Firebase and other local plugins.
  */
+/**
+ * The only user traits allowed to leave the device.
+ *
+ * PRIVACY RULE — this app's users are minors. Traits become Firebase *user
+ * properties*, which are readable by anyone with console access and which
+ * Google's own terms forbid from carrying PII. `userId` is the account id, a
+ * pseudonymous key that already ties every session to the account, so nothing
+ * identifying needs to travel alongside it.
+ *
+ * NEVER widen this type with name, email, mobile, school, gender or address.
+ */
+export interface SafeUserTraits {
+  grade?: string;
+  educational_system?: string;
+  is_subscribed?: boolean;
+}
+
 export const analytics = {
   /**
-   * Identify a user and set their traits
+   * Identify a user by account id, with strictly non-identifying traits.
+   * See {@link SafeUserTraits} before adding anything to the trait set.
    */
-  identify: (userId: string, traits?: Record<string, any>) => {
+  identify: (userId: string, traits?: SafeUserTraits) => {
     if (__DEV__) console.log('👤 [Analytics] Identify:', userId, traits);
-    segmentClient.identify(userId, traits);
+    // Segment types traits as an open JsonMap; SafeUserTraits is deliberately
+    // closed so the compiler rejects PII at the call site, so widen it here —
+    // this cast is the only place the two shapes meet.
+    segmentClient.identify(userId, traits as UserTraits | undefined);
   },
 
   /**
