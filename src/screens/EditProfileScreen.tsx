@@ -446,13 +446,15 @@ const EditProfileScreen: React.FC = () => {
     try {
       setLoading(true);
 
-      // Omit empty fields so we don't send empty-string ids (educational_system_id,
-      // city_id, governorate_id, ...) which the backend expects as null/omitted.
-      const input: Record<string, any> = {};
+      // Send an explicit null for a cleared field rather than omitting the key.
+      // formData is seeded from the user's current values, so '' means "the user
+      // emptied this", not "untouched" — omitting it made the server keep the old
+      // value, so no field could ever be cleared, and picking a new governorate
+      // (which resets city_id to '') left the previous governorate's city
+      // attached. Every field on UpdateProfileInput is nullable.
+      const input: Record<string, string | null> = {};
       Object.entries(formData).forEach(([key, value]) => {
-        if (value !== '' && value !== null && value !== undefined) {
-          input[key] = value;
-        }
+        input[key] = value === '' || value === undefined ? null : value;
       });
 
       const result = await updateProfile({ variables: { input } });

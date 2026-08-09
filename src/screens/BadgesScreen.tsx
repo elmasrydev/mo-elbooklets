@@ -19,6 +19,7 @@ import { useTypography } from '../hooks/useTypography';
 import UnifiedHeader from '../components/UnifiedHeader';
 import { useQuery } from '@apollo/client/react';
 import { GetBadgesScreenDataDocument, GetBadgesScreenDataQuery } from '../generated/graphql';
+import { resolveAssetUrl } from '../config/api';
 
 // Shaped by what this screen's query actually selects — narrower and safer
 // than the full schema type of the same name.
@@ -302,9 +303,7 @@ const BadgesScreen: React.FC = () => {
                           {badge.logoUrl ? (
                             <Image
                               source={{
-                                uri: badge.logoUrl.startsWith('/')
-                                  ? `https://prs.elbooklets.com${badge.logoUrl}`
-                                  : badge.logoUrl,
+                                uri: resolveAssetUrl(badge.logoUrl),
                               }}
                               style={[styles.badgeImage, !badge.awardedAt && styles.grayscaleImage]}
                             />
@@ -414,9 +413,7 @@ const BadgesScreen: React.FC = () => {
                         {selectedBadge.logoUrl && !modalImageError ? (
                           <Image
                             source={{
-                              uri: selectedBadge.logoUrl.startsWith('/')
-                                ? `https://prs.elbooklets.com${selectedBadge.logoUrl}`
-                                : selectedBadge.logoUrl,
+                              uri: resolveAssetUrl(selectedBadge.logoUrl),
                             }}
                             style={[
                               styles.modalBadgeImage,

@@ -126,3 +126,19 @@ class ApiUriManager {
 }
 
 export { ApiUriManager };
+
+/**
+ * Resolve a server-relative asset path (badge logos, avatars — the API returns
+ * them as "/storage/…") against the *active* backend.
+ *
+ * Must never be replaced with a hardcoded host: pinning one would make a
+ * production build fetch its images from the PRS test server, which is both a
+ * broken-image risk and a leak of test infrastructure into the store build.
+ * An absolute URL is passed through untouched.
+ */
+export const resolveAssetUrl = (path?: string | null): string | undefined => {
+  if (!path) return undefined;
+  if (!path.startsWith('/')) return path;
+  // Every known API URL ends in /graphql; the asset origin is what precedes it.
+  return ApiUriManager.getActiveUrl().replace(/\/graphql\/?$/, '') + path;
+};

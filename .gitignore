@@ -70,6 +70,10 @@ booki-graphql-api.md
 avatars.md
 mobile-availability-check-mutation.md
 notification-localization-mobile-guide.md
+mobile-otp-guide.md
+mobile-quiz-question-type-selection.md
+mobile-paymob-*.md
+backend-issues-from-audit.md
 
 # Bug-report screenshots (CLAUDE.md: never commit screenshots to the repo root)
 simulator_screenshot_*.png
