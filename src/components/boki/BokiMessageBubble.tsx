@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../context/ThemeContext';
 import { useTypography } from '../../hooks/useTypography';
+import { isArabicText } from '../../config/fonts';
 import { spacing, borderRadius } from '../../config/spacing';
 import { AiChatSource, BokiErrorKind, BokiTurn } from '../../types/boki';
 import BokiTypingIndicator from './BokiTypingIndicator';
@@ -15,6 +16,8 @@ interface BokiMessageBubbleProps {
   onSourcePress: (source: AiChatSource) => void;
   onReport: (chatLogId: string) => void;
   onFeedback: (chatLogId: string, feedback: 'like' | 'dislike') => void;
+  /** lessonId of the source currently being resolved for navigation, if any. */
+  resolvingLessonId?: string | null;
 }
 
 const ERROR_KEY_BY_KIND: Record<BokiErrorKind, string> = {
@@ -38,27 +41,36 @@ const BokiMessageBubble: React.FC<BokiMessageBubbleProps> = ({
   onSourcePress,
   onReport,
   onFeedback,
+  resolvingLessonId = null,
 }) => {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { typography } = useTypography();
 
   const handleRetry = useCallback(() => onRetry(turn.id), [onRetry, turn.id]);
-  const handleReport = useCallback(() => {
-    if (turn.chatLogId) onReport(turn.chatLogId);
-  }, [onReport, turn.chatLogId]);
-  const handleLike = useCallback(() => {
-    if (turn.chatLogId) onFeedback(turn.chatLogId, 'like');
-  }, [onFeedback, turn.chatLogId]);
-  const handleDislike = useCallback(() => {
-    if (turn.chatLogId) onFeedback(turn.chatLogId, 'dislike');
-  }, [onFeedback, turn.chatLogId]);
+  // chatLogId is guaranteed here — these are only reachable via the actions
+  // row below, which is itself gated on `turn.chatLogId &&`.
+  const handleReport = useCallback(() => onReport(turn.chatLogId!), [onReport, turn.chatLogId]);
+  const handleLike = useCallback(
+    () => onFeedback(turn.chatLogId!, 'like'),
+    [onFeedback, turn.chatLogId],
+  );
+  const handleDislike = useCallback(
+    () => onFeedback(turn.chatLogId!, 'dislike'),
+    [onFeedback, turn.chatLogId],
+  );
 
   return (
     <View style={styles.turn}>
       <View style={[styles.row, styles.userRow]}>
         <View style={[styles.bubble, { backgroundColor: theme.colors.primary }]}>
-          <Text style={[typography('body'), styles.text, { color: theme.colors.textOnDark }]}>
+          <Text
+            style={[
+              typography('body', undefined, isArabicText(turn.userText)),
+              styles.text,
+              { color: theme.colors.textOnDark },
+            ]}
+          >
             {turn.userText}
           </Text>
         </View>
@@ -100,13 +112,25 @@ const BokiMessageBubble: React.FC<BokiMessageBubbleProps> = ({
 
           {turn.status === 'complete' && turn.answer !== null && (
             <View>
-              <Text style={[typography('body'), styles.text, { color: theme.colors.text }]}>
+              <Text
+                style={[
+                  typography('body', undefined, isArabicText(turn.answer)),
+                  styles.text,
+                  { color: theme.colors.text },
+                ]}
+              >
                 {turn.answer}
               </Text>
               {turn.sources.length > 0 && (
                 <View style={styles.sources}>
                   {turn.sources.map((source) => (
-                    <BokiSourceLink key={source.lessonId} source={source} onPress={onSourcePress} />
+                    <BokiSourceLink
+                      key={source.lessonId}
+                      source={source}
+                      onPress={onSourcePress}
+                      loading={resolvingLessonId === source.lessonId}
+                      disabled={resolvingLessonId !== null && resolvingLessonId !== source.lessonId}
+                    />
                   ))}
                 </View>
               )}

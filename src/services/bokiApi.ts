@@ -19,6 +19,7 @@ import {
   ConversationsDocument,
 } from '../generated/graphql';
 import { apolloClient } from '../lib/apollo';
+import { AI_CHAT_TIMEOUT_MS } from '../config/api';
 import {
   AiChatFeedbackResult,
   AiChatFeedbackType,
@@ -70,10 +71,11 @@ const runQuery = async <TData, TVariables extends Record<string, unknown>>(
 const runMutation = async <TData, TVariables extends Record<string, unknown>>(
   mutation: TypedDocumentNode<TData, TVariables>,
   variables: TVariables,
+  context?: Record<string, unknown>,
 ): Promise<TData> => {
   let result;
   try {
-    result = await apolloClient.mutate({ mutation, variables, fetchPolicy: 'no-cache' });
+    result = await apolloClient.mutate({ mutation, variables, fetchPolicy: 'no-cache', context });
   } catch (error) {
     return fail(error);
   }
@@ -86,7 +88,11 @@ const runMutation = async <TData, TVariables extends Record<string, unknown>>(
  * new conversation (the backend creates one and returns its id).
  */
 export const sendMessage = async (input: AiChatInput): Promise<AiChatResponse> => {
-  const data = await runMutation(AiChatDocument, { input });
+  const data = await runMutation(
+    AiChatDocument,
+    { input },
+    { fetchOptions: { timeoutMs: AI_CHAT_TIMEOUT_MS } },
+  );
   return data.aiChat as AiChatResponse;
 };
 

@@ -3,6 +3,7 @@ import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type { NavigationContainerRef } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { analytics } from '../../lib/analytics';
@@ -52,15 +53,24 @@ const BOKI_HIDDEN_ROUTES = new Set<string>([
  * tracks the live route via the navigation container ref and opens the chat.
  */
 const BokiFloatingButton: React.FC<BokiFloatingButtonProps> = ({ navigationRef }) => {
+  const { t } = useTranslation();
   const { isAuthenticated, userRole } = useAuth();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
-  const [routeName, setRouteName] = useState<string | undefined>(undefined);
+  // Defaults to 'Splash' (a hidden route) rather than undefined — the navigation
+  // ref has no current route for as long as AppNavigator's early-return keeps
+  // RootStack.Navigator unmounted (the whole splash window), and an unknown
+  // route must fail closed or the FAB shows over the splash screen for a
+  // returning, already-authenticated student. `sync` mirrors the same
+  // fallback — it re-fires once NavigationContainer itself mounts, which
+  // happens before RootStack.Navigator does, and would otherwise overwrite
+  // this default with `undefined` and reopen the same gap.
+  const [routeName, setRouteName] = useState<string | undefined>('Splash');
 
   useEffect(() => {
     const ref = navigationRef.current;
     if (!ref) return undefined;
-    const sync = () => setRouteName(ref.getCurrentRoute()?.name);
+    const sync = () => setRouteName(ref.getCurrentRoute()?.name ?? 'Splash');
     sync();
     return ref.addListener('state', sync);
   }, [navigationRef, isAuthenticated]);
@@ -78,7 +88,7 @@ const BokiFloatingButton: React.FC<BokiFloatingButtonProps> = ({ navigationRef }
       <TouchableOpacity
         testID="boki-fab"
         accessibilityRole="button"
-        accessibilityLabel="Boki"
+        accessibilityLabel={t('boki.title')}
         activeOpacity={0.85}
         onPress={handlePress}
         style={[

@@ -1038,6 +1038,7 @@
     "sources_label": "Sources",
     "source_info_title": "Reference",
     "source_info_message": "This answer references the lesson: {{title}}",
+    "source_open_error": "Couldn't open this lesson. Please try again.",
     "error_connection": "No internet connection. Check your connection and try again.",
     "error_backend": "Something went wrong. Please try again.",
     "error_rate_limit": "You're sending messages too quickly. Please wait a moment and try again.",

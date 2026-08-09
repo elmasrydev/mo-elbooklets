@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { analytics } from '../lib/analytics';
 import {
   sendMessage,
@@ -41,15 +41,13 @@ export const useBokiChat = () => {
   const historyPageRef = useRef(1);
   const isFetchingHistoryRef = useRef(false);
   // Mirrors used inside async callbacks so we always read the latest value.
+  // Assigned directly in the render body, not an effect — refs don't trigger
+  // renders, so there's no risk of a stray extra render, and it avoids the
+  // one-tick lag between a commit and an effect-based mirror update.
   const isConnectedRef = useRef(isConnected);
+  isConnectedRef.current = isConnected;
   const turnsRef = useRef<BokiTurn[]>(turns);
-
-  useEffect(() => {
-    isConnectedRef.current = isConnected;
-  }, [isConnected]);
-  useEffect(() => {
-    turnsRef.current = turns;
-  }, [turns]);
+  turnsRef.current = turns;
 
   const updateTurn = useCallback((id: string, transform: (turn: BokiTurn) => BokiTurn) => {
     setTurns((prev) => prev.map((turn) => (turn.id === id ? transform(turn) : turn)));

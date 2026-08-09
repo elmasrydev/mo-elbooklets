@@ -14,6 +14,8 @@ interface LessonNavBarProps {
   onPrevious: (() => void) | null;
   onNext: (() => void) | null;
   onFinish?: () => void;
+  /** Overrides the finish button's label — defaults to "Back to Chapters". */
+  finishLabel?: string;
 }
 
 const LessonNavBar: React.FC<LessonNavBarProps> = ({
@@ -22,6 +24,7 @@ const LessonNavBar: React.FC<LessonNavBarProps> = ({
   onPrevious,
   onNext,
   onFinish,
+  finishLabel,
 }) => {
   const { theme, borderRadius, spacing } = useTheme();
   const { isRTL } = useLanguage();
@@ -88,7 +91,7 @@ const LessonNavBar: React.FC<LessonNavBarProps> = ({
         />
       ) : (
         <AppButton
-          title={t('study_lesson.back_to_chapters')}
+          title={finishLabel ?? t('study_lesson.back_to_chapters')}
           onPress={onFinish}
           variant="primary"
           size="sm"

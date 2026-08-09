@@ -5,6 +5,8 @@ import BokiChatScreen from '../../screens/boki/BokiChatScreen';
 import { sendMessage, submitFeedback, BokiApiError } from '../../services/bokiApi';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { analytics } from '../../lib/analytics';
+import { BokiLessonByIdDocument } from '../../generated/graphql';
+import { mockNavigate } from '../__mocks__/navigation';
 
 // Keep the real BokiApiError (so `instanceof` works in the hook); mock only the calls.
 jest.mock('../../services/bokiApi', () => {
@@ -16,9 +18,44 @@ jest.mock('../../hooks/useNetworkStatus', () => ({
   useNetworkStatus: jest.fn(() => ({ isConnected: true })),
 }));
 
+jest.mock('@react-navigation/native', () => {
+  const actual = jest.requireActual('@react-navigation/native');
+  const navigationMock = jest.requireActual('../__mocks__/navigation');
+  return {
+    ...actual,
+    useNavigation: navigationMock.useNavigation,
+    useRoute: navigationMock.useRoute,
+  };
+});
+
+const mockShowConfirm = jest.fn();
+jest.mock('../../context/ModalContext', () => ({
+  useModal: () => ({ showConfirm: mockShowConfirm }),
+  ModalProvider: ({ children }: any) => children,
+}));
+
 const mockedSend = sendMessage as jest.Mock;
 const mockedFeedback = submitFeedback as jest.Mock;
 const mockedNetwork = useNetworkStatus as jest.Mock;
+
+const lessonSource = (lessonId: string, title: string) => ({
+  lessonId,
+  title,
+  similarityScore: 0.8,
+});
+
+const lessonPayload = (id: string, overrides = {}) => ({
+  id,
+  name: `Lesson ${id}`,
+  summary: null,
+  points: null,
+  videoUrl: null,
+  myInteraction: null,
+  isLocked: false,
+  lessonPoints: [],
+  chapter: { id: 'c1', name: 'Chapter 1', subject: { id: 's1', name: 'Science', language: 'en' } },
+  ...overrides,
+});
 
 const answer = (text: string, overrides = {}) => ({
   chatLogId: '1',
@@ -117,5 +154,127 @@ describe('BokiChatScreen', () => {
     });
 
     expect(mockedFeedback).toHaveBeenCalledWith('1', 'LIKE');
+  });
+
+  describe('reference-link navigation (BKLT-314)', () => {
+    const sendAnswerWithSource = async (lessonId = '162', title = 'Lesson 1') => {
+      mockedSend.mockResolvedValueOnce(
+        answer('Here is your answer.', { sources: [lessonSource(lessonId, title)] }),
+      );
+      fireEvent.changeText(screen.getByTestId('boki-chat-input'), 'question');
+      await act(async () => {
+        fireEvent.press(screen.getByTestId('boki-send-button'));
+      });
+      await waitFor(() => expect(screen.getByTestId('boki-source-link')).toBeTruthy());
+    };
+
+    it('navigates to StudyLesson once the lesson resolves', async () => {
+      const lesson = lessonPayload('162');
+      const apolloMocks = [
+        {
+          request: { query: BokiLessonByIdDocument, variables: { id: '162' } },
+          result: { data: { lesson } },
+        },
+      ];
+      renderWithProviders(<BokiChatScreen />, { apolloMocks });
+      await sendAnswerWithSource();
+
+      await act(async () => {
+        fireEvent.press(screen.getByTestId('boki-source-link'));
+      });
+
+      await waitFor(() =>
+        expect(mockNavigate).toHaveBeenCalledWith('StudyLesson', {
+          lesson,
+          subject: lesson.chapter.subject,
+          fromBoki: true,
+        }),
+      );
+    });
+
+    it('shows a locked message and does not navigate when the lesson is locked', async () => {
+      const lesson = lessonPayload('162', { isLocked: true });
+      const apolloMocks = [
+        {
+          request: { query: BokiLessonByIdDocument, variables: { id: '162' } },
+          result: { data: { lesson } },
+        },
+      ];
+      renderWithProviders(<BokiChatScreen />, { apolloMocks });
+      await sendAnswerWithSource();
+
+      await act(async () => {
+        fireEvent.press(screen.getByTestId('boki-source-link'));
+      });
+
+      await waitFor(() =>
+        expect(mockShowConfirm).toHaveBeenCalledWith(
+          expect.objectContaining({ title: 'study_lesson.locked_title' }),
+        ),
+      );
+      expect(mockNavigate).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['the lesson is not found', { result: { data: { lesson: null } } }],
+      ['the lookup fails', { error: new Error('network error') }],
+    ])('shows an error message and does not navigate when %s', async (_scenario, response) => {
+      const apolloMocks = [
+        { request: { query: BokiLessonByIdDocument, variables: { id: '162' } }, ...response },
+      ];
+      renderWithProviders(<BokiChatScreen />, { apolloMocks });
+      await sendAnswerWithSource();
+
+      await act(async () => {
+        fireEvent.press(screen.getByTestId('boki-source-link'));
+      });
+
+      await waitFor(() =>
+        expect(mockShowConfirm).toHaveBeenCalledWith(
+          expect.objectContaining({ message: 'boki.source_open_error' }),
+        ),
+      );
+      expect(mockNavigate).not.toHaveBeenCalled();
+    });
+
+    it('ignores a second source tap while the first is still resolving', async () => {
+      const lessonA = lessonPayload('162');
+      const apolloMocks = [
+        {
+          request: { query: BokiLessonByIdDocument, variables: { id: '162' } },
+          result: { data: { lesson: lessonA } },
+          delay: 20,
+        },
+      ];
+      mockedSend.mockResolvedValueOnce(
+        answer('Here is your answer.', {
+          sources: [lessonSource('162', 'Lesson A'), lessonSource('163', 'Lesson B')],
+        }),
+      );
+      const clickSpy = jest.spyOn(analytics, 'trackBokiReferenceLinkClicked');
+      renderWithProviders(<BokiChatScreen />, { apolloMocks });
+      fireEvent.changeText(screen.getByTestId('boki-chat-input'), 'question');
+      await act(async () => {
+        fireEvent.press(screen.getByTestId('boki-send-button'));
+      });
+      const chips = await waitFor(() => screen.getAllByTestId('boki-source-link'));
+      expect(chips).toHaveLength(2);
+
+      await act(async () => {
+        fireEvent.press(chips[0]);
+      });
+      // The second chip is disabled (not just internally no-op'd) — it must
+      // never even fire onPress, or the click would still be tracked despite
+      // producing no visible action.
+      fireEvent.press(chips[1]);
+      expect(clickSpy).toHaveBeenCalledTimes(1);
+
+      await waitFor(() => expect(mockNavigate).toHaveBeenCalledTimes(1));
+      expect(mockNavigate).toHaveBeenCalledWith('StudyLesson', {
+        lesson: lessonA,
+        subject: lessonA.chapter.subject,
+        fromBoki: true,
+      });
+    });
   });
 });

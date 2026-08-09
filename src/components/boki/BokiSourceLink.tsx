@@ -1,23 +1,34 @@
 import React, { useCallback } from 'react';
-import { StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useTypography } from '../../hooks/useTypography';
+import { isArabicText } from '../../config/fonts';
 import { spacing, borderRadius } from '../../config/spacing';
 import { AiChatSource } from '../../types/boki';
 
 interface BokiSourceLinkProps {
   source: AiChatSource;
   onPress: (source: AiChatSource) => void;
+  /** This exact source is being resolved — shows a spinner in place of the icon. */
+  loading?: boolean;
+  /** Another source is being resolved — blocks taps without a spinner on this chip. */
+  disabled?: boolean;
 }
 
 /**
- * A tappable chip for one RAG source ("reference link") on an answer.
- * Deep navigation to the exact lesson is gated on a backend `lesson(id)` query
- * (see BKLT-221 known gaps); the press handler surfaces the reference and fires
- * the Reference Link Clicked analytics event.
+ * A tappable chip for one RAG source ("reference link") on an answer — tapping
+ * it resolves and opens the referenced lesson (BKLT-314). Only one lookup runs
+ * at a time (see BokiChatScreen's `resolvingLessonId`), so every other chip is
+ * disabled while one is in flight — otherwise a second tap would silently
+ * no-op instead of giving the student any feedback.
  */
-const BokiSourceLink: React.FC<BokiSourceLinkProps> = ({ source, onPress }) => {
+const BokiSourceLink: React.FC<BokiSourceLinkProps> = ({
+  source,
+  onPress,
+  loading = false,
+  disabled = false,
+}) => {
   const { theme } = useTheme();
   const { typography } = useTypography();
 
@@ -27,16 +38,29 @@ const BokiSourceLink: React.FC<BokiSourceLinkProps> = ({ source, onPress }) => {
     <TouchableOpacity
       testID="boki-source-link"
       onPress={handlePress}
+      disabled={loading || disabled}
       activeOpacity={0.7}
       style={[
         styles.chip,
         { backgroundColor: theme.colors.primary50, borderColor: theme.colors.border },
       ]}
     >
-      <Ionicons name="document-text-outline" size={spacing.icon.sm} color={theme.colors.primary} />
+      {loading ? (
+        <ActivityIndicator size="small" color={theme.colors.primary} />
+      ) : (
+        <Ionicons
+          name="document-text-outline"
+          size={spacing.icon.sm}
+          color={theme.colors.primary}
+        />
+      )}
       <Text
         numberOfLines={1}
-        style={[typography('caption'), styles.label, { color: theme.colors.primary }]}
+        style={[
+          typography('caption', undefined, isArabicText(source.title)),
+          styles.label,
+          { color: theme.colors.primary },
+        ]}
       >
         {source.title}
       </Text>

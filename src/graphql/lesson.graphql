@@ -82,6 +82,37 @@ query MySavedPoints($lessonId: ID) {
   }
 }
 
+# Boki reference-link navigation (BKLT-314): a source chip only carries a
+# lessonId, so resolve the full lesson (same shape StudyChapters gives the
+# reader) plus its subject so StudyLesson can render without a second query.
+query BokiLessonById($id: ID!) {
+  lesson(id: $id) {
+    id
+    name
+    summary
+    points
+    videoUrl
+    myInteraction
+    lessonPoints {
+      id
+      title
+      explanation
+      order
+      is_viewed
+    }
+    isLocked
+    chapter {
+      id
+      name
+      subject {
+        id
+        name
+        language
+      }
+    }
+  }
+}
+
 query LessonDODProgress($lessonId: ID!) {
   lessonDODProgress(lessonId: $lessonId) {
     lessonId

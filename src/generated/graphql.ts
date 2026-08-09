@@ -696,6 +696,34 @@ export type MySavedPointsQuery = {
   }>;
 };
 
+export type BokiLessonByIdQueryVariables = Exact<{
+  id: string;
+}>;
+
+export type BokiLessonByIdQuery = {
+  lesson: {
+    id: string;
+    name: string;
+    summary: string | null;
+    points: Array<string> | null;
+    videoUrl: string | null;
+    myInteraction: string | null;
+    isLocked: boolean;
+    lessonPoints: Array<{
+      id: string;
+      title: string;
+      explanation: string | null;
+      order: number;
+      is_viewed: boolean;
+    }>;
+    chapter: {
+      id: string;
+      name: string;
+      subject: { id: string; name: string; language: string | null } | null;
+    } | null;
+  } | null;
+};
+
 export type LessonDodProgressQueryVariables = Exact<{
   lessonId: string;
 }>;
@@ -3895,6 +3923,91 @@ export const MySavedPointsDocument = {
     },
   ],
 } as unknown as DocumentNode<MySavedPointsQuery, MySavedPointsQueryVariables>;
+export const BokiLessonByIdDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'BokiLessonById' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'id' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'lesson' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'id' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'id' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'summary' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'points' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'videoUrl' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'myInteraction' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'lessonPoints' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'explanation' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'order' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'is_viewed' } },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'isLocked' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'chapter' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'subject' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'language' } },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<BokiLessonByIdQuery, BokiLessonByIdQueryVariables>;
 export const LessonDodProgressDocument = {
   kind: 'Document',
   definitions: [

@@ -13,21 +13,27 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useLazyQuery } from '@apollo/client/react';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../context/ThemeContext';
 import { useTypography } from '../../hooks/useTypography';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
 import { useModal } from '../../context/ModalContext';
+import { useSubscriptionGate } from '../../hooks/useSubscriptionGate';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import RetryView from '../../components/RetryView';
 import BokiMessageBubble from '../../components/boki/BokiMessageBubble';
 import BokiReportSheet from '../../components/boki/BokiReportSheet';
 import { useBokiChat } from '../../hooks/useBokiChat';
+import { useKeyboardVisible } from '../../hooks/useKeyboardVisible';
+import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { analytics } from '../../lib/analytics';
 import { spacing, borderRadius } from '../../config/spacing';
 import { layout } from '../../config/layout';
 import { AiChatSource, BokiTurn } from '../../types/boki';
+import { BokiLessonByIdDocument } from '../../generated/graphql';
+import { INPUT_TEXT_ALIGN } from '../../lib/rtl';
 
 /**
  * Boki chat thread (BKLT-221, Phases 1–3).
@@ -44,9 +50,16 @@ const BokiChatScreen: React.FC = () => {
   const { typography } = useTypography();
   const common = useCommonStyles();
   const insets = useSafeAreaInsets();
+  const keyboardVisible = useKeyboardVisible();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { showConfirm } = useModal();
+  const { checkSubscription } = useSubscriptionGate();
+  const { isConnected } = useNetworkStatus();
+  const [fetchLesson, { loading: lessonLoading }] = useLazyQuery(BokiLessonByIdDocument, {
+    fetchPolicy: 'network-only',
+  });
+  const [resolvingLessonId, setResolvingLessonId] = useState<string | null>(null);
 
   const conversationIdParam = route.params?.conversationId as string | undefined;
   const {
@@ -93,20 +106,71 @@ const BokiChatScreen: React.FC = () => {
     setReportChatLogId(chatLogId);
   }, []);
 
-  // Reference-link tap: exact-lesson navigation needs a backend `lesson(id)`
-  // query that doesn't exist yet (see BKLT-221 known gaps), so for now we
-  // surface the referenced lesson and record the analytics event.
+  // Offline gets the same connection message the chat send flow already
+  // shows (ERROR_KEY_BY_KIND in BokiMessageBubble) instead of the generic
+  // lookup-failed one, so a student isn't told "something's wrong with this
+  // lesson" when it's actually their connection.
+  const showSourceOpenError = useCallback(() => {
+    showConfirm({
+      title: t('boki.source_info_title'),
+      message: t(isConnected ? 'boki.source_open_error' : 'boki.error_connection'),
+      showCancel: false,
+      onConfirm: () => {},
+    });
+  }, [showConfirm, t, isConnected]);
+
+  const showLessonLocked = useCallback(() => {
+    showConfirm({
+      title: t('study_lesson.locked_title'),
+      message: t('study_chapters.locked_lesson'),
+      showCancel: false,
+      onConfirm: () => {},
+    });
+  }, [showConfirm, t]);
+
+  // Reference-link tap (BKLT-314): resolve the source's lessonId to a full
+  // lesson via `lesson(id)` and open StudyLesson — mirrors the gating
+  // StudyChaptersScreen applies before opening a lesson from the chapter list.
   const handleSourcePress = useCallback(
-    (source: AiChatSource) => {
+    async (source: AiChatSource) => {
       analytics.trackBokiReferenceLinkClicked({ lesson_id: source.lessonId });
-      showConfirm({
-        title: t('boki.source_info_title'),
-        message: t('boki.source_info_message', { title: source.title }),
-        showCancel: false,
-        onConfirm: () => {},
-      });
+      if (!checkSubscription()) return;
+      // Guard on Apollo's own in-flight flag rather than a second hand-rolled
+      // boolean — resolvingLessonId only needs to track *which* chip to show
+      // as loading, not whether a lookup is running.
+      if (lessonLoading) return;
+
+      setResolvingLessonId(source.lessonId);
+      try {
+        const { data } = await fetchLesson({ variables: { id: source.lessonId } });
+        const lesson = data?.lesson;
+        if (!lesson) {
+          showSourceOpenError();
+          return;
+        }
+        if (lesson.isLocked) {
+          showLessonLocked();
+          return;
+        }
+        navigation.navigate('StudyLesson', {
+          lesson,
+          subject: lesson.chapter?.subject,
+          fromBoki: true,
+        });
+      } catch {
+        showSourceOpenError();
+      } finally {
+        setResolvingLessonId(null);
+      }
     },
-    [showConfirm, t],
+    [
+      checkSubscription,
+      lessonLoading,
+      fetchLesson,
+      showSourceOpenError,
+      showLessonLocked,
+      navigation,
+    ],
   );
 
   const renderItem = useCallback(
@@ -117,9 +181,10 @@ const BokiChatScreen: React.FC = () => {
         onSourcePress={handleSourcePress}
         onReport={handleReport}
         onFeedback={submitFeedback}
+        resolvingLessonId={resolvingLessonId}
       />
     ),
-    [retry, handleSourcePress, handleReport, submitFeedback],
+    [retry, handleSourcePress, handleReport, submitFeedback, resolvingLessonId],
   );
 
   const keyExtractor = useCallback((item: BokiTurn) => item.id, []);
@@ -205,7 +270,6 @@ const BokiChatScreen: React.FC = () => {
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 54 : 0}
       >
         {renderBody()}
 
@@ -215,7 +279,7 @@ const BokiChatScreen: React.FC = () => {
             {
               backgroundColor: theme.colors.surface,
               borderTopColor: theme.colors.border,
-              paddingBottom: Math.max(insets.bottom, spacing.sm),
+              paddingBottom: keyboardVisible ? spacing.sm : Math.max(insets.bottom, spacing.sm),
             },
           ]}
         >
@@ -226,6 +290,7 @@ const BokiChatScreen: React.FC = () => {
               styles.input,
               { color: theme.colors.text, backgroundColor: theme.colors.background },
             ]}
+            textAlign={INPUT_TEXT_ALIGN}
             value={input}
             onChangeText={setInput}
             placeholder={t('boki.input_placeholder')}
@@ -306,7 +371,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.ssm,
     paddingVertical: spacing.sm,
     borderRadius: borderRadius.lg,
-    textAlign: 'left',
   },
   sendButton: {
     width: 44,

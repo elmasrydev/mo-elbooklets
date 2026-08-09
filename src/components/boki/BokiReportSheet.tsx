@@ -20,6 +20,7 @@ import { analytics } from '../../lib/analytics';
 import { spacing, borderRadius } from '../../config/spacing';
 import { layout } from '../../config/layout';
 import { BokiReportReason } from '../../types/boki';
+import { INPUT_TEXT_ALIGN } from '../../lib/rtl';
 
 interface BokiReportSheetProps {
   visible: boolean;
@@ -159,6 +160,7 @@ const BokiReportSheet: React.FC<BokiReportSheetProps> = ({ visible, chatLogId, o
                   borderColor: theme.colors.border,
                 },
               ]}
+              textAlign={INPUT_TEXT_ALIGN}
               value={notes}
               onChangeText={setNotes}
               placeholder={t('boki.report_notes_placeholder')}
@@ -235,7 +237,6 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     padding: spacing.ssm,
     marginTop: spacing.sm,
-    textAlign: 'left',
   },
   submit: {
     height: 50,
