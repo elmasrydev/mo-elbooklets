@@ -466,6 +466,7 @@ export type ConversationMessagesQuery = {
       confidenceScore: number;
       subjectId: string | null;
       lessonId: string | null;
+      feedback: string | null;
       createdAt: string;
       updatedAt: string;
       sources: Array<{ lessonId: string; title: string; similarityScore: number }>;
@@ -951,6 +952,14 @@ export type ParentUnregisterDeviceTokenMutationVariables = Exact<{
 }>;
 
 export type ParentUnregisterDeviceTokenMutation = { parentUnregisterDeviceToken: boolean };
+
+export type UserNotificationsUnreadCountQueryVariables = Exact<{ [key: string]: never }>;
+
+export type UserNotificationsUnreadCountQuery = { userNotifications: { unread_count: number } };
+
+export type ParentNotificationsUnreadCountQueryVariables = Exact<{ [key: string]: never }>;
+
+export type ParentNotificationsUnreadCountQuery = { parentNotifications: { unread_count: number } };
 
 export type ParentLinkRequestsQueryVariables = Exact<{ [key: string]: never }>;
 
@@ -3117,6 +3126,7 @@ export const ConversationMessagesDocument = {
                       { kind: 'Field', name: { kind: 'Name', value: 'confidenceScore' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'subjectId' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'lessonId' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'feedback' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
                     ],
@@ -5000,6 +5010,82 @@ export const ParentUnregisterDeviceTokenDocument = {
 } as unknown as DocumentNode<
   ParentUnregisterDeviceTokenMutation,
   ParentUnregisterDeviceTokenMutationVariables
+>;
+export const UserNotificationsUnreadCountDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'UserNotificationsUnreadCount' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'userNotifications' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'page' },
+                value: { kind: 'IntValue', value: '1' },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'per_page' },
+                value: { kind: 'IntValue', value: '1' },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [{ kind: 'Field', name: { kind: 'Name', value: 'unread_count' } }],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  UserNotificationsUnreadCountQuery,
+  UserNotificationsUnreadCountQueryVariables
+>;
+export const ParentNotificationsUnreadCountDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'ParentNotificationsUnreadCount' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'parentNotifications' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'page' },
+                value: { kind: 'IntValue', value: '1' },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'per_page' },
+                value: { kind: 'IntValue', value: '1' },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [{ kind: 'Field', name: { kind: 'Name', value: 'unread_count' } }],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  ParentNotificationsUnreadCountQuery,
+  ParentNotificationsUnreadCountQueryVariables
 >;
 export const ParentLinkRequestsDocument = {
   kind: 'Document',

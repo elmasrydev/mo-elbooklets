@@ -107,3 +107,17 @@ mutation UnregisterDeviceToken($token: String!) {
 mutation ParentUnregisterDeviceToken($token: String!) {
   parentUnregisterDeviceToken(token: $token)
 }
+
+# The bell only renders a badge. Selecting the full 20-item page just to read
+# unread_count cost a network-only list query per mount and per screen focus.
+query UserNotificationsUnreadCount {
+  userNotifications(page: 1, per_page: 1) {
+    unread_count
+  }
+}
+
+query ParentNotificationsUnreadCount {
+  parentNotifications(page: 1, per_page: 1) {
+    unread_count
+  }
+}

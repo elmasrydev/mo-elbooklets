@@ -8,6 +8,7 @@ import { useFollowToggle } from '../hooks/useFollowToggle';
 import { useTheme } from '../context/ThemeContext';
 import { useModal } from '../context/ModalContext';
 import { useTranslation } from 'react-i18next';
+import { logError } from '../utils/logger';
 import { loadFailureMessage } from '../utils/queryError';
 import { resolveFeedCard } from '../utils/socialFeed';
 import { useCommonStyles } from '../hooks/useCommonStyles';
@@ -106,64 +107,79 @@ const SocialScreen: React.FC = () => {
 
   const { toggleFollow } = useFollowToggle();
 
-  const handleFollowToggle = async (student: Student) => {
-    if (followingId) return;
-    setFollowingId(student.id);
-    try {
-      // The cache write in useFollowToggle flips isFollowing in the search
-      // results; the timeline is refetched for a possible new connection card.
-      const result = await toggleFollow(student.id);
-      if (result?.success && searchQuery.length === 0) refetchTimeline();
-    } finally {
-      setFollowingId(null);
-    }
-  };
+  const handleFollowToggle = useCallback(
+    async (student: Student) => {
+      if (followingId) return;
+      setFollowingId(student.id);
+      try {
+        // The cache write in useFollowToggle flips isFollowing in the search
+        // results; the timeline is refetched for a possible new connection card.
+        const result = await toggleFollow(student.id);
+        if (result?.success && searchQuery.length === 0) refetchTimeline();
+      } finally {
+        setFollowingId(null);
+      }
+      // followingId is read as a re-entrancy guard only; including it would rebuild
+      // the handler on every toggle and re-render the whole list again.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    },
+    [toggleFollow, searchQuery.length, refetchTimeline],
+  );
 
   const [likeActivity] = useMutation(LikeActivityDocument);
 
-  const handleLike = async (feedItem: NewsFeedItem) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // Use quizUserId for quiz_completion posts if available (legacy), newsFeedId for all others
-    const isLegacyQuiz = feedItem.type === 'quiz_completion' && feedItem.quizData?.quizUserId;
-    const variables = isLegacyQuiz
-      ? { quizUserId: feedItem.quizData?.quizUserId }
-      : { newsFeedId: feedItem.id };
+  const handleLike = useCallback(
+    async (feedItem: NewsFeedItem) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      // Use quizUserId for quiz_completion posts if available (legacy), newsFeedId for all others
+      const isLegacyQuiz = feedItem.type === 'quiz_completion' && feedItem.quizData?.quizUserId;
+      const variables = isLegacyQuiz
+        ? { quizUserId: feedItem.quizData?.quizUserId }
+        : { newsFeedId: feedItem.id };
 
-    try {
-      await likeActivity({
-        variables,
-        // The cast adds __typename, which the runtime cache write expects but
-        // the generated operation type does not carry.
-        optimisticResponse: {
-          likeActivity: {
-            __typename: 'LikeResult',
-            success: true,
-            isLiked: !feedItem.isLiked,
-            likeCount: feedItem.isLiked ? feedItem.likes - 1 : feedItem.likes + 1,
-            message: '',
+      try {
+        await likeActivity({
+          variables,
+          // The cast adds __typename, which the runtime cache write expects but
+          // the generated operation type does not carry.
+          optimisticResponse: {
+            likeActivity: {
+              __typename: 'LikeResult',
+              success: true,
+              isLiked: !feedItem.isLiked,
+              likeCount: feedItem.isLiked ? feedItem.likes - 1 : feedItem.likes + 1,
+              message: '',
+            },
+          } as LikeActivityMutation,
+          // Runs for the optimistic layer and again with the server result; a
+          // success:false response writes nothing, so removing the optimistic
+          // layer rolls the flip back — no manual revert bookkeeping.
+          update: (cache, { data }) => {
+            const result = data?.likeActivity;
+            if (!result?.success) return;
+            cache.modify({
+              id: cache.identify({ __typename: 'NewsFeedItem', id: feedItem.id }),
+              fields: { isLiked: () => result.isLiked, likes: () => result.likeCount },
+            });
           },
-        } as LikeActivityMutation,
-        // Runs for the optimistic layer and again with the server result; a
-        // success:false response writes nothing, so removing the optimistic
-        // layer rolls the flip back — no manual revert bookkeeping.
-        update: (cache, { data }) => {
-          const result = data?.likeActivity;
-          if (!result?.success) return;
-          cache.modify({
-            id: cache.identify({ __typename: 'NewsFeedItem', id: feedItem.id }),
-            fields: { isLiked: () => result.isLiked, likes: () => result.likeCount },
-          });
-        },
-      });
-    } catch (err) {
-      // Optimistic layer is already rolled back by Apollo.
-      console.error('Like error:', err);
-    }
-  };
+        });
+      } catch (err) {
+        // Optimistic layer is already rolled back by Apollo.
+        logError('Like activity failed', err);
+      }
+    },
+    [likeActivity],
+  );
 
   const currentStyles = useMemo(
     () => styles(theme, common, spacing, typography, fontWeight),
     [theme, common, spacing, typography, fontWeight],
+  );
+
+  // A fresh object literal here changed the row's props on every render.
+  const searchRowSpacing = useMemo(
+    () => ({ marginBottom: spacing.sectionGap }),
+    [spacing.sectionGap],
   );
 
   const onRefresh = useCallback(async () => {
@@ -198,7 +214,7 @@ const SocialScreen: React.FC = () => {
     ({ item: student }: { item: Student }) => (
       <UserListRow
         student={student}
-        containerStyle={{ marginBottom: spacing.sectionGap }}
+        containerStyle={searchRowSpacing}
         followLoading={followingId === student.id}
         onPress={() =>
           navigation.navigate('StudentProfile', {

@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
+  SectionList,
   ActivityIndicator,
   TouchableOpacity,
 } from 'react-native';
@@ -96,12 +96,11 @@ const NotificationsScreen: React.FC = () => {
     return sections;
   }, [notifications, t]);
 
-  const renderSection = ({
-    item: section,
-  }: {
-    item: { title: string; data: AppNotification[] };
-  }) => (
-    <View style={styles.section}>
+  // SectionList virtualizes the individual notifications. The previous FlatList
+  // held only 4 section rows, each .map-ing every notification it owned, so
+  // windowing never applied and a long history rendered in full.
+  const renderSectionHeader = useCallback(
+    ({ section }: { section: { title: string } }) => (
       <Text
         style={[
           typography('label'),
@@ -117,20 +116,49 @@ const NotificationsScreen: React.FC = () => {
       >
         {section.title}
       </Text>
-      <View
-        style={[
-          styles.card,
-          { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
-        ]}
-      >
-        {section.data.map((n, i) => (
-          <View key={n.id}>
-            {i > 0 && <View style={[styles.separator, { backgroundColor: theme.colors.border }]} />}
-            <NotificationItem notification={n} onPress={handlePress} />
-          </View>
-        ))}
-      </View>
-    </View>
+    ),
+    [typography, fontWeight, theme.colors.textTertiary, common.textAlign, common.isRTL],
+  );
+
+  const renderNotification = useCallback(
+    ({
+      item,
+      index,
+      section,
+    }: {
+      item: AppNotification;
+      index: number;
+      section: { data: AppNotification[] };
+    }) => {
+      // The section used to be one card wrapping every row. Rows must be their
+      // own list items to virtualize, so the card chrome is rebuilt per row and
+      // only the first/last row carries the rounded corners.
+      const isFirst = index === 0;
+      const isLast = index === section.data.length - 1;
+      return (
+        <View
+          style={[
+            styles.cardRow,
+            {
+              backgroundColor: theme.colors.card,
+              borderColor: theme.colors.border,
+              borderTopWidth: isFirst ? 1 : 0,
+              borderBottomWidth: isLast ? 1 : 0,
+              borderTopLeftRadius: isFirst ? 20 : 0,
+              borderTopRightRadius: isFirst ? 20 : 0,
+              borderBottomLeftRadius: isLast ? 20 : 0,
+              borderBottomRightRadius: isLast ? 20 : 0,
+            },
+          ]}
+        >
+          {!isFirst && (
+            <View style={[styles.separator, { backgroundColor: theme.colors.border }]} />
+          )}
+          <NotificationItem notification={item} onPress={handlePress} />
+        </View>
+      );
+    },
+    [theme.colors.card, theme.colors.border, handlePress],
   );
 
   const ListEmptyComponent = useMemo(() => {
@@ -240,10 +268,12 @@ const NotificationsScreen: React.FC = () => {
         </View>
       )}
 
-      <FlatList
-        data={groupedNotifications}
-        renderItem={renderSection}
-        keyExtractor={(item) => item.title}
+      <SectionList
+        sections={groupedNotifications}
+        renderItem={renderNotification}
+        renderSectionHeader={renderSectionHeader}
+        stickySectionHeadersEnabled={false}
+        keyExtractor={(item) => item.id}
         contentContainerStyle={[
           styles.listContent,
           groupedNotifications.length === 0 && { flex: 1 },
@@ -285,9 +315,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     borderRadius: 999,
   },
-  section: {
-    marginTop: 6,
-  },
   glabel: {
     textTransform: 'uppercase',
     letterSpacing: 0.6,
@@ -295,15 +322,10 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     paddingBottom: 8,
   },
-  card: {
-    borderRadius: 20,
-    borderWidth: 1,
+  cardRow: {
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
     overflow: 'hidden',
-    shadowColor: '#004A9A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 1,
   },
   separator: {
     height: 1,

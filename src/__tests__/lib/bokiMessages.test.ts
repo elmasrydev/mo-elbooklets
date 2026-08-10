@@ -5,6 +5,7 @@ import {
   markTurnPending,
   messageToTurn,
   messagesToTurns,
+  normalizeFeedback,
   withFeedback,
 } from '../../utils/bokiMessages';
 import { AiChatResponse, ChatMessage } from '../../types/boki';
@@ -121,5 +122,36 @@ describe('markTurnError / markTurnPending', () => {
     const pendingAgain = markTurnPending(errored);
     expect(pendingAgain.status).toBe('pending');
     expect(pendingAgain.errorKind).toBeNull();
+  });
+});
+
+describe('normalizeFeedback', () => {
+  it('accepts the backend enum casing', () => {
+    expect(normalizeFeedback('LIKE')).toBe('like');
+    expect(normalizeFeedback('DISLIKE')).toBe('dislike');
+  });
+
+  it('treats NONE, unknown values and absence as no rating', () => {
+    expect(normalizeFeedback('NONE')).toBeNull();
+    expect(normalizeFeedback('whatever')).toBeNull();
+    expect(normalizeFeedback(null)).toBeNull();
+    expect(normalizeFeedback(undefined)).toBeNull();
+  });
+
+  it('carries a reopened conversation’s rating onto the turn', () => {
+    const [turn] = messagesToTurns([
+      {
+        id: 'm1',
+        conversationId: 'c1',
+        message: 'q',
+        response: 'a',
+        sources: [],
+        confidenceScore: 1,
+        feedback: 'LIKE',
+        createdAt: '2026-01-01T00:00:00Z',
+        updatedAt: '2026-01-01T00:00:00Z',
+      },
+    ]);
+    expect(turn.feedback).toBe('like');
   });
 });

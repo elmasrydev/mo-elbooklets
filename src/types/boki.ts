@@ -60,7 +60,8 @@ export interface ChatMessage {
   confidenceScore: number;
   subjectId?: string | null;
   lessonId?: string | null;
-  feedback?: 'like' | 'dislike' | null;
+  /** Raw wire value (e.g. 'LIKE' | 'DISLIKE' | 'NONE'); normalize with `normalizeFeedback`. */
+  feedback?: string | null;
   createdAt: string;
   updatedAt: string;
 }

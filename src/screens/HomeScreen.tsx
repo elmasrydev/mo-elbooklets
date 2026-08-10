@@ -240,10 +240,14 @@ const HomeScreen: React.FC = () => {
   useFocusEffect(
     useCallback(() => {
       const now = Date.now();
-      if (now - lastFetchRef.current < STALE_MS && activitiesData) return;
+      // The `&& activitiesData` clause defeated the guard on a cold cache: the
+      // first focus fires before any payload lands, so Home refetched all four
+      // queries it had just fired on mount. The timestamp alone is the guard —
+      // it is seeded at mount for exactly this reason.
+      if (now - lastFetchRef.current < STALE_MS) return;
       lastFetchRef.current = now;
       fetchHomeData();
-    }, [fetchHomeData, activitiesData]),
+    }, [fetchHomeData]),
   );
 
   // continueSubject memo removed since "Where You Left Off" was removed

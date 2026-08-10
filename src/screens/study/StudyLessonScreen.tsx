@@ -148,7 +148,12 @@ const LessonVideoPlayer: React.FC<{
     }
   };
 
-  const currentVideoStyles = videoStyles(theme, spacing, borderRadius, typography);
+  // Rebuilt on every playback-status callback before this — the control tree
+  // re-rendered several times a second during playback.
+  const currentVideoStyles = React.useMemo(
+    () => videoStyles(theme, spacing, borderRadius, typography),
+    [theme, spacing, borderRadius, typography],
+  );
 
   return (
     <View style={currentVideoStyles.container}>
@@ -750,6 +755,25 @@ const StudyLessonScreen: React.FC = () => {
     }
   }, [route.params?.initialPointId, currentLesson.lessonPoints]);
 
+  // trackLessonCompleted used to fire on every Next/Previous tap and on Close,
+  // with no completion condition, which inflated lesson-completion metrics for
+  // anyone merely paging through. Fire only on a real completion signal, and at
+  // most once per lesson per session.
+  const completedLessonsRef = React.useRef<Set<string>>(new Set());
+  const reportLessonCompleted = React.useCallback(() => {
+    if (!dodProgress?.isComplete) return;
+    if (completedLessonsRef.current.has(currentLesson.id)) return;
+    completedLessonsRef.current.add(currentLesson.id);
+    analytics.trackLessonCompleted({
+      lesson_id: currentLesson.id,
+      lesson_title: currentLesson.name,
+      chapter_id: currentLesson.chapter?.id,
+      chapter_title: currentLesson.chapter?.name,
+      subject_id: subject?.id,
+      subject_title: subject?.name,
+    });
+  }, [dodProgress?.isComplete, currentLesson, subject]);
+
   const handleNavigateLesson = (lesson: Lesson) => {
     // Locked lessons aren't navigable (mirror the lessons list).
     if (lesson?.isLocked) {
@@ -760,14 +784,7 @@ const StudyLessonScreen: React.FC = () => {
       });
       return;
     }
-    analytics.trackLessonCompleted({
-      lesson_id: currentLesson.id,
-      lesson_title: currentLesson.name,
-      chapter_id: currentLesson.chapter?.id,
-      chapter_title: currentLesson.chapter?.name,
-      subject_id: subject?.id,
-      subject_title: subject?.name,
-    });
+    reportLessonCompleted();
     // Persist the current lesson's checks before leaving it.
     viewedCacheRef.current.set(currentLesson.id, viewedPoints);
 
@@ -1347,14 +1364,7 @@ const StudyLessonScreen: React.FC = () => {
           route.params?.fromBookmarks || route.params?.fromBoki ? t('common.close') : undefined
         }
         onFinish={() => {
-          analytics.trackLessonCompleted({
-            lesson_id: currentLesson.id,
-            lesson_title: currentLesson.name,
-            chapter_id: currentLesson.chapter?.id,
-            chapter_title: currentLesson.chapter?.name,
-            subject_id: subject?.id,
-            subject_title: subject?.name,
-          });
+          reportLessonCompleted();
           navigation.goBack();
         }}
       />
@@ -1651,11 +1661,12 @@ const styles = (
     },
     pointText: {
       flex: 1,
-      ...typography('body'),
+      // typography(style, weight) — a bare fontWeight drops the custom family
+      // on Android and makes iOS synthesize the face.
+      ...typography('body', '600'),
       marginStart: spacing.sm,
       color: theme.colors.text,
       textAlign: contentAlign,
-      fontWeight: '600',
     },
     explanationContainer: {
       marginTop: spacing.sm,

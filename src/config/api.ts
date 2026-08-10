@@ -107,6 +107,14 @@ class ApiUriManager {
    * If the URL matches PRIMARY_API_URL, clears the override from storage.
    */
   static async updateUrl(url: string): Promise<void> {
+    // Defence in depth: only the *menu rows* leading here were debug-gated, so
+    // the switcher itself would still repoint a production build if it were ever
+    // reachable another way (deep link, stale screen, a future caller).
+    if (!isDebugMode()) {
+      if (__DEV__) console.warn('[ApiUriManager] Refused URL switch outside debug mode');
+      return;
+    }
+
     // Safety: only accept known URLs
     if (!KNOWN_API_URLS.includes(url as (typeof KNOWN_API_URLS)[number])) {
       if (__DEV__) console.warn('[ApiUriManager] Rejected unknown URL:', url);

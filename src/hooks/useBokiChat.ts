@@ -87,7 +87,14 @@ export const useBokiChat = () => {
         analytics.trackBokiResponseReceived({ source_count: response.sources?.length ?? 0 });
       } catch (error) {
         if (threadEpochRef.current !== epoch) return;
-        const kind: BokiErrorKind = error instanceof BokiApiError ? error.kind : 'backend';
+        // Connectivity is checked before sending, but a request can also lose the
+        // connection in flight — that is an offline failure, not a backend one,
+        // and the two surface different copy and different retry advice.
+        const kind: BokiErrorKind = !isConnectedRef.current
+          ? 'offline'
+          : error instanceof BokiApiError
+            ? error.kind
+            : 'backend';
         updateTurn(turnId, (turn) => markTurnError(turn, kind));
         if (kind === 'offline') {
           analytics.trackBokiConnectionError();
@@ -176,7 +183,14 @@ export const useBokiChat = () => {
       const result = await fetchConversationMessages(conversationId, page, HISTORY_PER_PAGE);
       if (threadEpochRef.current !== epoch) return;
       const olderTurns = messagesToTurns(result.data);
-      setTurns((prev) => (isInitial ? olderTurns : [...prev, ...olderTurns]));
+      setTurns((prev) => {
+        if (isInitial) return olderTurns;
+        // Paging by page NUMBER shifts as soon as a new message is sent, so a
+        // later page can repeat turns already on screen — which React renders
+        // as duplicate keys. Drop anything we already hold.
+        const seen = new Set(prev.map((turn) => turn.id));
+        return [...prev, ...olderTurns.filter((turn) => !seen.has(turn.id))];
+      });
       setHasMoreHistory(result.hasMore);
       historyPageRef.current = page;
     } catch {

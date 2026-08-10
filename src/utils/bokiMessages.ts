@@ -7,6 +7,16 @@
 
 import { AiChatResponse, BokiErrorKind, BokiTurn, ChatMessage } from '../types/boki';
 
+/**
+ * The backend stores feedback as a free-form string using the enum casing of
+ * `aiChatFeedback` ('LIKE' / 'DISLIKE' / 'NONE'), while the UI models it as a
+ * lowercase union. Anything unrecognised (including 'NONE') means "no rating".
+ */
+export const normalizeFeedback = (value?: string | null): 'like' | 'dislike' | null => {
+  const v = value?.toLowerCase();
+  return v === 'like' || v === 'dislike' ? v : null;
+};
+
 /** Map a persisted chat-log entry into a completed turn (chat-log id is the turn id). */
 export const messageToTurn = (message: ChatMessage): BokiTurn => ({
   id: message.id,
@@ -15,7 +25,7 @@ export const messageToTurn = (message: ChatMessage): BokiTurn => ({
   answer: message.response,
   sources: message.sources ?? [],
   confidenceScore: message.confidenceScore ?? null,
-  feedback: message.feedback ?? null,
+  feedback: normalizeFeedback(message.feedback),
   status: 'complete',
   errorKind: null,
   createdAt: message.createdAt,
