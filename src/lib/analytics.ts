@@ -125,6 +125,20 @@ export const analytics = {
     analytics.track('Lesson Completed', params);
   },
 
+  /**
+   * BKLT-174 AC 5. Fired when the mind map is actually on screen (not merely
+   * present on the lesson), at most once per lesson per session. `map_type`
+   * distinguishes AI-generated SVGs from editor-uploaded rasters.
+   */
+  trackMindMapViewed: (params: LessonAnalyticsParams & { map_type?: string }) => {
+    analytics.track('Mind Map Viewed', params);
+  },
+
+  /** Fired when the student opens the zoomable fullscreen mind map. */
+  trackMindMapZoomed: (params: LessonAnalyticsParams & { map_type?: string }) => {
+    analytics.track('Mind Map Zoomed', params);
+  },
+
   trackQuizStarted: (params: QuizAnalyticsParams) => {
     analytics.track('Quiz Started', params);
   },

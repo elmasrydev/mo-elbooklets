@@ -653,6 +653,8 @@ export type StudyChaptersQuery = {
       summary: string | null;
       points: Array<string> | null;
       videoUrl: string | null;
+      mindMapUrl: string | null;
+      mindMapMimeType: string | null;
       myInteraction: string | null;
       isLocked: boolean;
       lessonPoints: Array<{
@@ -683,6 +685,8 @@ export type MySavedPointsQuery = {
       summary: string | null;
       points: Array<string> | null;
       videoUrl: string | null;
+      mindMapUrl: string | null;
+      mindMapMimeType: string | null;
       myInteraction: string | null;
       lessonPoints: Array<{
         id: string;
@@ -708,6 +712,8 @@ export type BokiLessonByIdQuery = {
     summary: string | null;
     points: Array<string> | null;
     videoUrl: string | null;
+    mindMapUrl: string | null;
+    mindMapMimeType: string | null;
     myInteraction: string | null;
     isLocked: boolean;
     lessonPoints: Array<{
@@ -3810,6 +3816,8 @@ export const StudyChaptersDocument = {
                       { kind: 'Field', name: { kind: 'Name', value: 'summary' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'points' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'videoUrl' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'mindMapUrl' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'mindMapMimeType' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'myInteraction' } },
                       {
                         kind: 'Field',
@@ -3883,6 +3891,8 @@ export const MySavedPointsDocument = {
                       { kind: 'Field', name: { kind: 'Name', value: 'summary' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'points' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'videoUrl' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'mindMapUrl' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'mindMapMimeType' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'myInteraction' } },
                       {
                         kind: 'Field',
@@ -3971,6 +3981,8 @@ export const BokiLessonByIdDocument = {
                 { kind: 'Field', name: { kind: 'Name', value: 'summary' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'points' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'videoUrl' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'mindMapUrl' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'mindMapMimeType' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'myInteraction' } },
                 {
                   kind: 'Field',

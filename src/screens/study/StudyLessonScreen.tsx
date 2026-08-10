@@ -39,6 +39,8 @@ import { useTypography } from '../../hooks/useTypography';
 import useAndroidBack from '../../hooks/useAndroidBack';
 import AppButton from '../../components/AppButton';
 import { ConfirmModal } from '../../components/ConfirmModal';
+import LessonMindMap from '../../components/study/LessonMindMap';
+import { resolveMindMapKind } from '../../utils/mindMap';
 import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
 import { isRTL, textAlign, INPUT_TEXT_ALIGN } from '../../lib/rtl';
 
@@ -73,6 +75,8 @@ interface Lesson {
   points?: string[] | null;
   lessonPoints?: LessonPoint[];
   videoUrl?: string | null;
+  mindMapUrl?: string | null;
+  mindMapMimeType?: string | null;
   myInteraction?: string | null;
   chapter?: {
     id: string;
@@ -755,6 +759,36 @@ const StudyLessonScreen: React.FC = () => {
     }
   }, [route.params?.initialPointId, currentLesson.lessonPoints]);
 
+  const mindMapKind = resolveMindMapKind(currentLesson.mindMapUrl, currentLesson.mindMapMimeType);
+
+  // BKLT-174 AC 5. "Viewed" fires when the map is actually on screen, once per
+  // lesson per session — the reader keeps one component mounted and swaps
+  // lessons through it, so without the ref every re-render would re-report.
+  const viewedMindMapsRef = React.useRef<Set<string>>(new Set());
+  const mindMapParams = React.useCallback(
+    () => ({
+      lesson_id: currentLesson.id,
+      lesson_title: currentLesson.name,
+      chapter_id: currentLesson.chapter?.id,
+      chapter_title: currentLesson.chapter?.name,
+      subject_id: subject?.id,
+      subject_title: subject?.name,
+      map_type: mindMapKind,
+    }),
+    [currentLesson, subject, mindMapKind],
+  );
+
+  const reportMindMapViewed = React.useCallback(() => {
+    if (viewedMindMapsRef.current.has(currentLesson.id)) return;
+    viewedMindMapsRef.current.add(currentLesson.id);
+    analytics.trackMindMapViewed(mindMapParams());
+  }, [currentLesson.id, mindMapParams]);
+
+  // Not deduped: each zoom is a distinct engagement signal.
+  const reportMindMapZoomed = React.useCallback(() => {
+    analytics.trackMindMapZoomed(mindMapParams());
+  }, [mindMapParams]);
+
   // trackLessonCompleted used to fire on every Next/Previous tap and on Close,
   // with no completion condition, which inflated lesson-completion metrics for
   // anyone merely paging through. Fire only on a real completion signal, and at
@@ -1014,6 +1048,36 @@ const StudyLessonScreen: React.FC = () => {
                 <Text style={currentStyles.noContentText}>{t('study_lesson.no_summary')}</Text>
               )}
             </View>
+
+            {mindMapKind !== 'none' && (
+              <View style={currentStyles.section}>
+                <View style={currentStyles.sectionHeader}>
+                  <View
+                    style={[
+                      currentStyles.sectionIcon,
+                      { backgroundColor: theme.colors.primary + '1A' },
+                    ]}
+                  >
+                    <Ionicons name="git-network-outline" size={20} color={theme.colors.primary} />
+                  </View>
+                  <Text
+                    style={[
+                      currentStyles.sectionTitle,
+                      { color: theme.colors.primary, fontSize: 20 },
+                    ]}
+                  >
+                    {' '}
+                    {t('study_lesson.mind_map')}
+                  </Text>
+                </View>
+                <LessonMindMap
+                  url={currentLesson.mindMapUrl}
+                  mimeType={currentLesson.mindMapMimeType}
+                  onViewed={reportMindMapViewed}
+                  onZoomed={reportMindMapZoomed}
+                />
+              </View>
+            )}
 
             <View
               style={currentStyles.section}

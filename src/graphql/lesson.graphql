@@ -30,6 +30,8 @@ query StudyChapters($subjectId: ID!) {
       summary
       points
       videoUrl
+      mindMapUrl
+      mindMapMimeType
       myInteraction
       lessonPoints {
         id
@@ -58,6 +60,8 @@ query MySavedPoints($lessonId: ID) {
       summary
       points
       videoUrl
+      mindMapUrl
+      mindMapMimeType
       myInteraction
       lessonPoints {
         id
@@ -92,6 +96,8 @@ query BokiLessonById($id: ID!) {
     summary
     points
     videoUrl
+    mindMapUrl
+    mindMapMimeType
     myInteraction
     lessonPoints {
       id

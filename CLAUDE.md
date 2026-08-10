@@ -58,6 +58,27 @@ src/
 - **Reference-link deep-nav (BKLT-314)**: a source chip's `onPress` resolves `source.lessonId` via `BokiLessonById` (`lesson(id)` in `lesson.graphql`, plain `useLazyQuery` in `BokiChatScreen` — not part of the isolated `bokiApi.ts` layer, since it's a Lesson-domain op) and navigates to `StudyLesson` with `{ lesson, subject: lesson.chapter?.subject, fromBoki: true }`. Same `checkSubscription()` gate as `StudyChaptersScreen`'s chapter-list tap, but an `isLocked` lesson here surfaces `study_lesson.locked_title`/`study_chapters.locked_lesson` (there's no chapter-list lock badge to fall back on, unlike `StudyChaptersScreen`, which just no-ops). A null `lesson` or a failed query falls back to `boki.source_open_error`. `fromBoki` (like `fromBookmarks`) skips `StudyLesson`'s leave-disclaimer — there's no `allLessons`/study-session context to lose.
 - **Status**: Phases 1–3 shipped (chat + errors/retry + history + new conversation + report + like/dislike + reference-link deep-nav). Backend exposes `conversations`/`conversationMessages` as queries, `aiChat*` as mutations (introspect before adding ops — the contract doc has been wrong once).
 
+### Lesson mind map (BKLT-174, contract: `mobile-lesson-mindmap-svg.md` — local-only)
+`Lesson.mindMapUrl` is **either** an AI-generated SVG **or** an editor-uploaded raster, and
+`Lesson.mindMapMimeType` is the only way to tell — `<Image>` renders *nothing* for an SVG, so
+picking the branch by file extension is a silent-blank bug (a generated map's storage URL need not
+end in `.svg`). Branch via `resolveMindMapKind()` (`src/utils/mindMap.ts`): exact
+`image/svg+xml` → `SvgUri`, anything else with a URL → **raster** (the safe fallback for payloads
+cached before the field existed), no URL → `'none'` and the section is not rendered at all.
+- **Both fields must be selected by every query that can feed the reader** — `StudyChapters`,
+  `MySavedPoints` and `BokiLessonById`. Miss one and that path silently falls back to the raster
+  renderer, which draws nothing for a generated map.
+- UI is `src/components/study/LessonMindMap.tsx` (fitted preview + pinch/pan/double-tap fullscreen
+  viewer; the viewer needs its own `GestureHandlerRootView` because a `Modal` sits outside the
+  app's root one). Analytics: `trackMindMapViewed` fires when the map is actually on screen, once
+  per lesson per session; `trackMindMapZoomed` per fullscreen open. testIDs: `study-mindmap`,
+  `study-mindmap-retry`, `study-mindmap-viewer`, `study-mindmap-viewer-close`.
+- ⚠️ **Release gate**: `mindMapMimeType` is live on PRS + demo but **not production** (checked
+  2026-08-10). A query selecting an unknown field fails *entirely*, so shipping this before the
+  prod deploy breaks the whole study flow. Re-introspect prod before any store build.
+- Generation is async: a new lesson can return `mindMapUrl: null` and get one minutes later — never
+  cache "this lesson has no map".
+
 ## WhatsApp OTP (backend contract: `mobile-otp-guide.md` — a local copy from the backend team, deliberately not committed)
 Four **scoped** flows — student/parent × verify/reset. A code only works with its matching consume mutation, so **every flow starts with a fresh send**; never reuse one across screens. On non-prod the code is always `123456`.
 - **Screens**: `OTPVerificationScreen` (signup verification, both roles) and `ForgotPasswordScreen` (password reset, both roles) each take an `audience: 'student' | 'parent'` route param that selects the account, the documents, and the timer scope. `ForgotPasswordScreen` also takes `fromProfile` and serves three routes: `ForgotPassword`, `ParentForgotPassword`, and the authenticated `ResetPassword`. The 6-digit field is the shared `src/components/OtpCodeInput.tsx`.

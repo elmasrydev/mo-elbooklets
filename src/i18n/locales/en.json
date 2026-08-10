@@ -195,7 +195,10 @@
     "summary": "Summary",
     "tab_overview": "Summary & Points",
     "take_quiz": "Take Quiz",
-    "test_your_knowledge": "Test your knowledge on this lesson"
+    "test_your_knowledge": "Test your knowledge on this lesson",
+    "mind_map": "Mind Map",
+    "mind_map_hint": "Tap to open the full map",
+    "mind_map_error": "Couldn't load the mind map"
   },
   "more_screen": {
     "about_content": "ElBooklets Mobile App\nVersion 1.0.0\n\nYour digital learning companion for interactive education.",
