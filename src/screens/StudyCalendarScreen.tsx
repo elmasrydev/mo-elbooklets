@@ -17,6 +17,7 @@ import { useTypography } from '../hooks/useTypography';
 import { layout } from '../config/layout';
 
 import { useTranslation } from 'react-i18next';
+import { digitsOnly } from '../utils/digits';
 import { useQuery, useMutation } from '@apollo/client/react';
 import {
   SaveStudyScheduleDocument,
@@ -286,7 +287,12 @@ const StudyCalendarScreen: React.FC = () => {
                     keyboardType="numeric"
                     value={String(entry.lessonGoal)}
                     onChangeText={(text) =>
-                      updateEntry(selectedDay, index, 'lessonGoal', parseInt(text) || 0)
+                      updateEntry(
+                        selectedDay,
+                        index,
+                        'lessonGoal',
+                        parseInt(digitsOnly(text), 10) || 0,
+                      )
                     }
                   />
                   {entry.lessonGoal > 0 && (
@@ -321,7 +327,12 @@ const StudyCalendarScreen: React.FC = () => {
                     keyboardType="numeric"
                     value={String(entry.quizGoal)}
                     onChangeText={(text) =>
-                      updateEntry(selectedDay, index, 'quizGoal', parseInt(text) || 0)
+                      updateEntry(
+                        selectedDay,
+                        index,
+                        'quizGoal',
+                        parseInt(digitsOnly(text), 10) || 0,
+                      )
                     }
                   />
                   {entry.quizGoal > 0 && (

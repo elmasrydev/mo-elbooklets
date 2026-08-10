@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, Animated, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { useModal } from '../context/ModalContext';
+import { logError } from '../utils/logger';
 import { INPUT_TEXT_ALIGN } from '../lib/rtl';
 import { EGYPT_MOBILE_REGEX } from '../utils/validators';
 import { digitsOnly } from '../utils/digits';
@@ -35,6 +37,7 @@ const ParentSlotCard: React.FC<ParentSlotCardProps> = ({
   const { theme, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
+  const { showConfirm } = useModal();
   const { typography, fontWeight } = useTypography();
 
   const [mobileInput, setMobileInput] = useState('');
@@ -59,12 +62,25 @@ const ParentSlotCard: React.FC<ParentSlotCardProps> = ({
     }
   };
 
+  // A failed accept/decline/cancel used to vanish into console.error: the card
+  // simply stayed as it was, so the student could not tell whether their tap had
+  // done anything.
+  const reportFailure = (error: unknown, context: string) => {
+    logError(`[ParentSlotCard] ${context} failed`, error);
+    showConfirm({
+      title: t('common.error'),
+      message: (error as Error)?.message || t('common.unexpected_error'),
+      showCancel: false,
+      onConfirm: () => {},
+    });
+  };
+
   const handleRespond = async (action: 'accept' | 'decline') => {
     if (!slot.request) return;
     try {
       await onRespond(slot.request.id, action);
-    } catch (e: any) {
-      console.error(e);
+    } catch (e) {
+      reportFailure(e, action);
     }
   };
 
@@ -72,8 +88,8 @@ const ParentSlotCard: React.FC<ParentSlotCardProps> = ({
     if (!slot.request) return;
     try {
       await onCancel(slot.request.id);
-    } catch (e: any) {
-      console.error(e);
+    } catch (e) {
+      reportFailure(e, 'cancel');
     }
   };
 

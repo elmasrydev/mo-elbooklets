@@ -373,7 +373,7 @@ const LeaderboardScreen: React.FC = () => {
   };
 
   const renderBody = () => {
-    if (leaderboardLoading)
+    if (leaderboardLoading && !leaderboardData)
       return (
         <View style={{ paddingTop: spacing.md }}>
           <GenericListSkeleton numItems={6} />
@@ -415,7 +415,10 @@ const LeaderboardScreen: React.FC = () => {
     const top3 = [1, 2, 3].map((r) => leaderboard.entries.find((e) => e.rank === r));
     const rest = leaderboard.entries.filter((e) => e.rank > 3);
     const you = leaderboard.userEntry;
-    if (you && you.rank > 3 && !rest.some((e) => e.id === you.id)) {
+    // isRanked guards the 0-XP case: such a student is filtered out of the
+    // board, so re-inserting them with a rank number contradicted their own
+    // "not ranked yet" banner.
+    if (you && isRanked(you) && you.rank > 3 && !rest.some((e) => e.id === you.id)) {
       rest.push(you);
       rest.sort((a, b) => a.rank - b.rank);
     }

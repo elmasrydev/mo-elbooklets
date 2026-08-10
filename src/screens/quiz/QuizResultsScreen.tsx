@@ -115,7 +115,9 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
       setPublishError(null);
       const response = await publishQuizToFeed({ variables: { quizId } });
       if (response.data?.publishQuizToFeed?.success) {
-        setPublished(!published);
+        // There is no unpublish mutation — toggling made a second tap claim the
+        // post had been removed when it was still on the feed.
+        setPublished(true);
       } else {
         setPublishError(response.data?.publishQuizToFeed?.message || t('common.error'));
       }

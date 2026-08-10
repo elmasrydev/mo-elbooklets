@@ -106,11 +106,14 @@ export const useParentDashboard = () => {
     setAdding(true);
     try {
       await sendLinkRequest({ variables: { mobile: childMobile } });
+      // Refresh immediately: hanging this off the dialog's OK button meant a
+      // dismissed dialog left the dashboard stale.
+      await fetchDashboardData();
       showConfirm({
         title: t('common.success'),
         message: t('parent_dashboard.invite_sent_success'),
         showCancel: false,
-        onConfirm: () => fetchDashboardData(),
+        onConfirm: () => {},
       });
       return true;
     } catch (err: any) {
@@ -134,6 +137,9 @@ export const useParentDashboard = () => {
     const action = status === 'ACCEPTED' ? 'accept' : 'decline';
     try {
       await respondToLink({ variables: { requestId, action } });
+      // Refresh immediately: hanging this off the dialog's OK button meant a
+      // dismissed dialog left the dashboard stale.
+      await fetchDashboardData();
       showConfirm({
         title: t('common.success'),
         message:
@@ -141,7 +147,7 @@ export const useParentDashboard = () => {
             ? t('parent_dashboard.request_accepted')
             : t('parent_dashboard.request_declined'),
         showCancel: false,
-        onConfirm: () => fetchDashboardData(),
+        onConfirm: () => {},
       });
       return true;
     } catch (err: any) {
@@ -162,11 +168,14 @@ export const useParentDashboard = () => {
     setRespondingId(requestId);
     try {
       await cancelLinkRequest({ variables: { requestId } });
+      // Refresh immediately: hanging this off the dialog's OK button meant a
+      // dismissed dialog left the dashboard stale.
+      await fetchDashboardData();
       showConfirm({
         title: t('common.success'),
         message: t('parent_dashboard.request_cancelled'),
         showCancel: false,
-        onConfirm: () => fetchDashboardData(),
+        onConfirm: () => {},
       });
       return true;
     } catch (err: any) {

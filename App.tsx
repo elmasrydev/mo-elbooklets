@@ -45,7 +45,7 @@ export default function App() {
   const routeNameRef = useRef<string>(undefined as any);
   const navigationRef = useRef<any>(null);
 
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     Lexend: require('@expo-google-fonts/lexend/400Regular/Lexend_400Regular.ttf'),
     'Lexend-Regular': require('@expo-google-fonts/lexend/400Regular/Lexend_400Regular.ttf'),
     'Lexend-Medium': require('@expo-google-fonts/lexend/500Medium/Lexend_500Medium.ttf'),
@@ -151,7 +151,10 @@ export default function App() {
   }, []);
 
   // Show loading screen while fonts and i18n are loading
-  if (!fontsLoaded || !appReady) {
+  // Proceed on a font *error* too: useFonts never flips fontsLoaded when a face
+  // fails to load, so gating on it alone leaves the app stuck on the boot spinner
+  // forever. System fonts are a far better outcome than a dead launch.
+  if ((!fontsLoaded && !fontError) || !appReady) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#1E40AF" />
