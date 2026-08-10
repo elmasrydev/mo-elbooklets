@@ -354,6 +354,13 @@ type Lesson {
   is non-nullable, so one blank row would otherwise fail the whole query.
   """
   lessonPoints: [LessonPoint!]!
+
+  """
+  Media type of `mindMapUrl` — `image/svg+xml` for a generated map, an image
+  type for one uploaded by an editor. Null whenever `mindMapUrl` is null.
+  Clients must branch on this: an SVG will not render in a bitmap image view.
+  """
+  mindMapMimeType: String
   mindMapUrl: String
   myInteraction: String
   name: String!
@@ -853,6 +860,10 @@ type ParentLinkedChild {
 
 """Parent login input"""
 input ParentLoginInput {
+  """
+  Defaults to +2. Sent in any form ('+2', '+20', '2', '20') — the server canonicalises it.
+  """
+  country_code: String
   mobile: String!
   password: String!
 }
@@ -1134,6 +1145,16 @@ type Query {
 
   """Get subjects for authenticated user's grade"""
   subjectsForUserGrade: [Subject!]!
+
+  """
+  Subscription plans the authenticated student can buy, for their own grade and
+  educational system, with prices and limits. Call this to build the plan picker
+  before `createPaymobCheckout` — a plan's `id` is the mutation's `planId`, and
+  `selectableSubjects` are the subjects a `per_subject` plan may be applied to
+  (the ones with lessons that the student is not already subscribed to).
+  Plan `name`/`description` follow the request's `lang` header.
+  """
+  subscriptionPlans: SubscriptionPlansResult!
 
   """Get today's study schedule with live completion data"""
   todaySchedule: TodayScheduleResult!
@@ -1498,6 +1519,90 @@ type SubjectPerformanceEntry {
   avg_score: Float!
   quiz_count: Int!
   subject_name: String!
+}
+
+"""A subscription plan offered to the student, with its price and limits."""
+type SubscriptionPlanOption {
+  """
+  How many subjects this plan unlocks — the max length of `subjectIds`. Null for full-access plans.
+  """
+  allowedSubjectsCount: Int
+
+  """Price before any promo code, in `currency`."""
+  cost: Float!
+
+  """Currency of `cost`, e.g. "EGP"."""
+  currency: String!
+
+  """Localized description, per the request's `lang` header."""
+  description: String
+  descriptionAr: String
+  descriptionEn: String
+
+  """Length of the subscription term in days."""
+  durationDays: Int
+
+  """
+  Hard end date for the term, if the plan has one. The term is clamped to it, so a plan bought near this date runs shorter than `durationDays`.
+  """
+  endsAt: DateTime
+
+  """Pass this as `planId` to createPaymobCheckout."""
+  id: ID!
+
+  """Max lessons per subject; null or 0 means unlimited."""
+  lessonLimit: Int
+
+  """Localized name, per the request's `lang` header."""
+  name: String!
+  nameAr: String
+  nameEn: String
+
+  """Max quizzes per day; null or 0 means unlimited."""
+  quizLimitPerDay: Int
+
+  """True for `per_subject` plans: `subjectIds` is required at checkout."""
+  requiresSubjectSelection: Boolean!
+
+  """
+  "per_subject" (student picks subjects) or "full_access" (everything in the grade).
+  """
+  type: String!
+}
+
+"""
+Everything the subscription screen needs: the buyable plans for this student's
+grade + educational system, and the surrounding state (what they already own,
+whether an order is still being processed).
+"""
+type SubscriptionPlansResult {
+  """Currency all `cost` values are in, e.g. "EGP"."""
+  currency: String!
+
+  """
+  True when an active full-access subscription already covers every subject.
+  """
+  hasFullAccess: Boolean!
+
+  """
+  True while an earlier order awaits admin approval — checkout is blocked until it is resolved, so hide the buy actions.
+  """
+  hasPendingOrder: Boolean!
+
+  """
+  Buyable plans, cheapest first. `per_subject` plans are omitted when the student already owns every subject.
+  """
+  plans: [SubscriptionPlanOption!]!
+
+  """
+  Subjects a `per_subject` plan can be applied to — has lessons, not already covered by an active subscription. Pass their ids as `subjectIds` to createPaymobCheckout.
+  """
+  selectableSubjects: [Subject!]!
+
+  """
+  Subject ids already covered by an active subscription (a full-access subscription lists them all). Buying these again is rejected.
+  """
+  subscribedSubjectIds: [ID!]!
 }
 
 """A suggested user in People You May Know"""
