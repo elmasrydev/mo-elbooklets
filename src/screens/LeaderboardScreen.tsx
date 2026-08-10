@@ -450,7 +450,9 @@ const LeaderboardScreen: React.FC = () => {
                 </Text>
                 <View style={s.bannerXpRow}>
                   <Ionicons name="flash" size={13} color={GOLD} />
-                  <Text style={s.bannerXpText}>{`${you.xp.toLocaleString()} ${t('student_profile.xp')}`}</Text>
+                  <Text
+                    style={s.bannerXpText}
+                  >{`${you.xp.toLocaleString()} ${t('student_profile.xp')}`}</Text>
                 </View>
               </View>
               <View style={s.bannerRight}>

@@ -595,7 +595,9 @@ const HomeScreen: React.FC = () => {
                         ? `${entry.name} (${t('leaderboard_screen.you', 'You')})`
                         : entry.name}
                     </Text>
-                    <Text style={s.leaderboardRankXp}>{`${entry.xp} ${t('student_profile.xp')}`}</Text>
+                    <Text
+                      style={s.leaderboardRankXp}
+                    >{`${entry.xp} ${t('student_profile.xp')}`}</Text>
                   </View>
                 </View>
               ))}
@@ -625,7 +627,9 @@ const HomeScreen: React.FC = () => {
                         ? `${leaderboardUser.name.split(' ')[0]} (${t('leaderboard_screen.your_rank', 'You')})`
                         : t('leaderboard_screen.your_rank', 'You')}
                     </Text>
-                    <Text style={s.leaderboardUserXp}>{`${leaderboardUser.xp} ${t('student_profile.xp')}`}</Text>
+                    <Text
+                      style={s.leaderboardUserXp}
+                    >{`${leaderboardUser.xp} ${t('student_profile.xp')}`}</Text>
                   </View>
                 </View>
               )}
