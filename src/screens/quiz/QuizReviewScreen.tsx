@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
+import { isArabicText } from '../../config/fonts';
 import { loadFailureMessage } from '../../utils/queryError';
 import { PublishQuizToFeedDocument, QuizReviewDocument } from '../../generated/graphql';
 import { layout } from '../../config/layout';
@@ -479,7 +480,14 @@ const QuizReviewScreen: React.FC = () => {
                         testID={`review-question-image-${ua.question.id}`}
                       />
                     )}
-                    <Text style={[currentStyles.questionText, { textAlign: contentAlign }]}>
+                    <Text
+                      style={[
+                        currentStyles.questionText,
+                        { textAlign: contentAlign },
+                        typography('h3', '700', isArabicText(ua.question.question)),
+                        { fontSize: 16, lineHeight: 24 },
+                      ]}
+                    >
                       {ua.question.question}
                     </Text>
 
@@ -885,7 +893,13 @@ const QuizReviewScreen: React.FC = () => {
                                   {String.fromCharCode(65 + optIndex)}
                                 </Text>
                               </View>
-                              <Text style={[currentStyles.optionText, textStyle]}>
+                              <Text
+                                style={[
+                                  currentStyles.optionText,
+                                  textStyle,
+                                  typography('bodySmall', '500', isArabicText(opt)),
+                                ]}
+                              >
                                 {isTrueFalse && opt.toLowerCase() === 'true'
                                   ? t('common.true')
                                   : isTrueFalse && opt.toLowerCase() === 'false'

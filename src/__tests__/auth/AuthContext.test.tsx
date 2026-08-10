@@ -129,7 +129,9 @@ describe('AuthContext & AuthProvider', () => {
       );
     });
 
-    it('should fail login and return error message', async () => {
+    // The error must be a translation KEY, not the server's English text — the
+    // screens render it with t(), so a raw message reaches Arabic users as-is.
+    it('should fail login and return a translation key', async () => {
       (apolloClient.mutate as jest.Mock).mockRejectedValueOnce(
         new Error('Invalid mobile or password'),
       );
@@ -144,8 +146,21 @@ describe('AuthContext & AuthProvider', () => {
         });
       });
 
-      expect(loginResult).toEqual({ success: false, error: 'Invalid mobile or password' });
+      expect(loginResult).toEqual({ success: false, error: 'auth.invalid_credentials' });
       expect(result.current.isAuthenticated).toBe(false);
+    });
+
+    it('reports a transport failure separately from bad credentials', async () => {
+      (apolloClient.mutate as jest.Mock).mockRejectedValueOnce(new Error('Network request failed'));
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      let loginResult;
+      await act(async () => {
+        loginResult = await result.current.login({ mobile: '01007867184', password: 'pw' });
+      });
+
+      expect(loginResult).toEqual({ success: false, error: 'common.unexpected_error' });
     });
 
     it('should register a new student user and trigger OTP state if unverified', async () => {

@@ -142,6 +142,27 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+/**
+ * Map a thrown auth error to a translation KEY. Screens render these with t(),
+ * so returning the raw server/transport message leaves an Arabic user reading
+ * English. A transport failure is not a credentials problem, so it gets its own
+ * message; anything else falls back to the caller's domain default.
+ */
+const authErrorKey = (error: unknown, fallbackKey: string): string => {
+  const message = error instanceof Error ? error.message.toLowerCase() : '';
+  if (!message) return fallbackKey;
+  if (message.includes('already been taken')) return 'auth.mobile_already_registered';
+  if (
+    message.includes('network') ||
+    message.includes('timeout') ||
+    message.includes('abort') ||
+    message.includes('failed to fetch')
+  ) {
+    return 'common.unexpected_error';
+  }
+  return fallbackKey;
+};
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [parentUser, setParentUser] = useState<Parent | null>(null);
@@ -285,15 +306,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return { success: true, user: authPayload.user };
         }
 
-        let errorMessage = 'Login failed';
-        if (errorMessage === 'These credentials do not match our records.') {
-          errorMessage = 'auth.invalid_credentials';
-        }
-
-        return { success: false, error: errorMessage };
-      } catch (error: any) {
+        // The screens pass this straight to t(), so it must be a translation
+        // KEY. A mutation that returns no payload without throwing means the
+        // credentials were rejected.
+        return { success: false, error: 'auth.invalid_credentials' };
+      } catch (error) {
         logError('Login error', error);
-        return { success: false, error: error.message || 'An error occurred during login' };
+        return { success: false, error: authErrorKey(error, 'auth.invalid_credentials') };
       }
     },
     [],
@@ -328,15 +347,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return { success: true, user: authPayload.user };
         }
 
-        let errorMessage = 'Registration failed';
-        if (errorMessage === 'The mobile has already been taken.') {
-          errorMessage = 'auth.mobile_taken';
-        }
-
-        return { success: false, error: errorMessage };
-      } catch (error: any) {
+        return { success: false, error: 'auth.registration_error' };
+      } catch (error) {
         logError('Registration error', error);
-        return { success: false, error: error.message || 'An error occurred during registration' };
+        return { success: false, error: authErrorKey(error, 'auth.registration_error') };
       }
     },
     [],

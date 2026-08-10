@@ -487,7 +487,14 @@ const QuizTakingScreen: React.FC = () => {
 
           {/* Paragraph renders its own passage card, so skip the top prompt. */}
           {!isParagraph && (
-            <Text style={currentStyles.questionText}>{currentQuestion.question}</Text>
+            <Text
+              style={[
+                currentStyles.questionText,
+                typography('h1', 'bold', isArabicText(currentQuestion.question)),
+              ]}
+            >
+              {currentQuestion.question}
+            </Text>
           )}
 
           {/* Report button */}

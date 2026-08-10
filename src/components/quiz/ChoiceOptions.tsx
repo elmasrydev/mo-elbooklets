@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTypography } from '../../hooks/useTypography';
 import { QUIZ_COLORS } from '../../config/colors';
+import { isArabicText } from '../../config/fonts';
 
 /**
  * The pick-one option list for `mcq` / `true_false` questions — extracted
@@ -78,11 +79,23 @@ const ChoiceOptions: React.FC<ChoiceOptionsProps> = ({
               </View>
             </View>
             <View style={styles.textContainer}>
-              <Text style={[styles.title, isSelected && styles.titleSelected]}>
+              <Text
+                style={[
+                  styles.title,
+                  isSelected && styles.titleSelected,
+                  typography(compact ? 'bodySmall' : 'body', undefined, isArabicText(parts[0])),
+                ]}
+              >
                 {labelFor(parts[0])}
               </Text>
               {hasSubtitle && (
-                <Text style={[styles.subtitle, isSelected && styles.subtitleSelected]}>
+                <Text
+                  style={[
+                    styles.subtitle,
+                    isSelected && styles.subtitleSelected,
+                    typography('caption', undefined, isArabicText(parts.slice(1).join('\n'))),
+                  ]}
+                >
                   {parts.slice(1).join('\n')}
                 </Text>
               )}
