@@ -11,6 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { formatDate } from '../lib/dateUtils';
 import { useTranslation } from 'react-i18next';
 import { useTypography } from '../hooks/useTypography';
 import { useCommonStyles } from '../hooks/useCommonStyles';
@@ -126,7 +127,7 @@ const NoteModal: React.FC<{
 
 const BookmarksNotesScreen: React.FC = () => {
   const { theme, spacing, borderRadius } = useTheme();
-  const { isRTL } = useLanguage();
+  const { isRTL, language } = useLanguage();
   const { t } = useTranslation();
   const { typography, fontWeight } = useTypography();
   const common = useCommonStyles();
@@ -311,7 +312,7 @@ const BookmarksNotesScreen: React.FC = () => {
         </View>
       )}
 
-      <Text style={currentStyles.dateText}>{new Date(item.created_at).toLocaleDateString()}</Text>
+      <Text style={currentStyles.dateText}>{formatDate(item.created_at, language)}</Text>
     </TouchableOpacity>
   );
 

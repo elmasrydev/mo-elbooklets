@@ -416,7 +416,9 @@ const RegisterScreen: React.FC = () => {
                 activeOpacity={0.7}
               >
                 <Ionicons name="language-outline" size={20} color={theme.colors.primary} />
-                <Text style={currentStyles.languageButtonText}>
+                <Text
+                  style={[currentStyles.languageButtonText, fontWeight('600', language !== 'ar')]}
+                >
                   {language === 'ar' ? 'English' : 'عربي'}
                 </Text>
               </TouchableOpacity>

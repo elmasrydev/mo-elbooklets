@@ -305,7 +305,7 @@ const LeaderboardScreen: React.FC = () => {
         <Text style={[s.spotScore, { fontSize: cfg.sc, color: cfg.platText }]}>
           {student.avgScore}%
         </Text>
-        <Text style={s.spotXp}>{student.xp.toLocaleString()} XP</Text>
+        <Text style={s.spotXp}>{`${student.xp.toLocaleString()} ${t('student_profile.xp')}`}</Text>
         <View style={[s.platform, { height: cfg.h, backgroundColor: cfg.plat }]}>
           <Text style={[s.platformNum, { color: cfg.platText, fontSize: place === 1 ? 28 : 22 }]}>
             {place}
@@ -349,7 +349,7 @@ const LeaderboardScreen: React.FC = () => {
         </View>
         <View style={s.rowXpCol}>
           <Text style={s.rowXp}>{e.xp.toLocaleString()}</Text>
-          <Text style={s.rowXpLabel}>XP</Text>
+          <Text style={s.rowXpLabel}>{t('student_profile.xp')}</Text>
         </View>
         {!isYou ? (
           <TouchableOpacity
@@ -450,7 +450,7 @@ const LeaderboardScreen: React.FC = () => {
                 </Text>
                 <View style={s.bannerXpRow}>
                   <Ionicons name="flash" size={13} color={GOLD} />
-                  <Text style={s.bannerXpText}>{you.xp.toLocaleString()} XP</Text>
+                  <Text style={s.bannerXpText}>{`${you.xp.toLocaleString()} ${t('student_profile.xp')}`}</Text>
                 </View>
               </View>
               <View style={s.bannerRight}>

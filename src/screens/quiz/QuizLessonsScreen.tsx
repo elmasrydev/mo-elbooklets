@@ -170,13 +170,13 @@ const QuizLessonsScreen: React.FC = () => {
 
   const unitsText =
     selectedUnits.length === 1
-      ? t('quiz_flow.units_count')
-      : t('quiz_flow.units_count_plural', { count: selectedUnits.length });
+      ? t('quiz_flow.units_count', { count: 1 })
+      : t('quiz_flow.units_count', { count: selectedUnits.length });
 
   const lessonsText =
     selectedLessons.size === 1
-      ? t('quiz_flow.x_lessons')
-      : t('quiz_flow.x_lessons_plural', { count: selectedLessons.size });
+      ? t('quiz_flow.x_lessons', { count: 1 })
+      : t('quiz_flow.x_lessons', { count: selectedLessons.size });
 
   const selectionText = isRTL ? `${unitsText}، ${lessonsText}` : `${unitsText}, ${lessonsText}`;
 

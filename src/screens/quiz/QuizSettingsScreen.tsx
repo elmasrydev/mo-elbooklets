@@ -308,7 +308,9 @@ const QuizSettingsScreen: React.FC = () => {
                 </Text>
               ))}
               {selectedUnits.length > 3 && (
-                <Text style={currentStyles.unitItemMore}>+ {selectedUnits.length - 3} more</Text>
+                <Text style={currentStyles.unitItemMore}>
+                  {t('quiz_flow.units_more', { count: selectedUnits.length - 3 })}
+                </Text>
               )}
             </View>
           </View>

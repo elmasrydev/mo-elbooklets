@@ -281,7 +281,8 @@
     "view_all": "عرض الكل",
     "weekly_leaderboard": "لوحة الأوائل الأسبوعية",
     "welcome_back": "أهلاً بعودتك،",
-    "wheel_of_success": "عجلة النجاح"
+    "wheel_of_success": "عجلة النجاح",
+    "recent": "مؤخرًا"
   },
   "quiz_screen": {
     "error_loading_history": "خطأ في تحميل السجل",
@@ -326,9 +327,13 @@
     "select_quiz_type": "اختر نوع الاختبار",
     "settings_info_text": "المزيد من الإعدادات قريباً!",
     "start_quiz": "ابدأ الاختبار",
-    "start_quiz_count": "ابدأ الاختبار ({{count}} درس)",
-    "start_quiz_count_plural": "ابدأ الاختبار ({{count}} دروس)",
-    "timed_mode": "الوضع المحدد بوقت"
+    "timed_mode": "الوضع المحدد بوقت",
+    "start_quiz_count_zero": "ابدأ الاختبار",
+    "start_quiz_count_one": "ابدأ الاختبار (درس واحد)",
+    "start_quiz_count_two": "ابدأ الاختبار (درسان)",
+    "start_quiz_count_few": "ابدأ الاختبار ({{count}} دروس)",
+    "start_quiz_count_many": "ابدأ الاختبار ({{count}} درسًا)",
+    "start_quiz_count_other": "ابدأ الاختبار ({{count}} درس)"
   },
   "quiz_start": {
     "go_back": "رجوع",
@@ -1024,11 +1029,24 @@
     "step_x_of_y": "الخطوة {{current}} من {{total}}",
     "time_limit": "الوقت المحدد",
     "unit_locked": "الوحدة مغلقة",
-    "units_count": "وحدة واحدة",
-    "units_count_plural": "{{count}} وحدات",
-    "x_lessons": "درس واحد",
-    "x_lessons_plural": "{{count}} دروس",
-    "x_selected": "تم تحديد {{count}}"
+    "x_selected": "تم تحديد {{count}}",
+    "units_count_zero": "لا وحدات",
+    "units_count_one": "وحدة واحدة",
+    "units_count_two": "وحدتان",
+    "units_count_few": "{{count}} وحدات",
+    "units_count_many": "{{count}} وحدة",
+    "units_count_other": "{{count}} وحدة",
+    "x_lessons_zero": "لا دروس",
+    "x_lessons_one": "درس واحد",
+    "x_lessons_two": "درسان",
+    "x_lessons_few": "{{count}} دروس",
+    "x_lessons_many": "{{count}} درسًا",
+    "x_lessons_other": "{{count}} درس",
+    "units_more_one": "+ وحدة أخرى",
+    "units_more_two": "+ وحدتان أخريان",
+    "units_more_few": "+ {{count}} وحدات أخرى",
+    "units_more_many": "+ {{count}} وحدة أخرى",
+    "units_more_other": "+ {{count}} وحدة أخرى"
   },
   "boki": {
     "title": "بوكي",
@@ -1052,8 +1070,6 @@
     "history_empty_subtitle": "ابدأ الدردشة مع بوكي وستظهر محادثاتك هنا.",
     "history_error": "تعذّر تحميل محادثاتك.",
     "load_error": "تعذّر تحميل هذه المحادثة.",
-    "message_count": "{{count}} رسالة",
-    "message_count_plural": "{{count}} رسائل",
     "like": "مفيدة",
     "dislike": "غير مفيدة",
     "report": "إبلاغ",
@@ -1067,6 +1083,12 @@
     "report_submit": "إرسال البلاغ",
     "report_success_title": "شكراً لك",
     "report_success": "تم إرسال بلاغك.",
-    "report_error": "تعذّر إرسال البلاغ. يرجى المحاولة مرة أخرى."
+    "report_error": "تعذّر إرسال البلاغ. يرجى المحاولة مرة أخرى.",
+    "message_count_zero": "لا رسائل",
+    "message_count_one": "رسالة واحدة",
+    "message_count_two": "رسالتان",
+    "message_count_few": "{{count}} رسائل",
+    "message_count_many": "{{count}} رسالة",
+    "message_count_other": "{{count}} رسالة"
   }
 }

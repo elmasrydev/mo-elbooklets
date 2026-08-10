@@ -87,7 +87,9 @@ const OnboardingScreen: React.FC = () => {
             style={currentStyles.chip}
             activeOpacity={0.8}
           >
-            <Text style={currentStyles.chipText}>{language === 'ar' ? 'English' : 'عربي'}</Text>
+            <Text style={[currentStyles.chipText, fontWeight('700', language !== 'ar')]}>
+              {language === 'ar' ? 'English' : 'عربي'}
+            </Text>
             <Ionicons name="language-outline" size={16} color={theme.colors.primary} />
           </TouchableOpacity>
         </View>

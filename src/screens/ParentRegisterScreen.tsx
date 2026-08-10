@@ -461,7 +461,9 @@ const ParentRegisterScreen: React.FC = () => {
             activeOpacity={0.7}
           >
             <Ionicons name="language-outline" size={18} color={'#005ab4'} />
-            <Text style={currentStyles.langText}>{language === 'ar' ? 'English' : 'عربي'}</Text>
+            <Text style={[currentStyles.langText, fontWeight('600', language !== 'ar')]}>
+              {language === 'ar' ? 'English' : 'عربي'}
+            </Text>
           </TouchableOpacity>
 
           <View style={currentStyles.footer}>

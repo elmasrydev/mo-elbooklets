@@ -344,7 +344,7 @@ const ProfileScreen: React.FC = () => {
               {xp != null ? (
                 <View style={s.xpInline}>
                   <Ionicons name="flash" size={13} color={theme.colors.warning} />
-                  <Text style={s.xpInlineText}>{xp.toLocaleString()} XP</Text>
+                  <Text style={s.xpInlineText}>{`${xp.toLocaleString()} ${t('student_profile.xp')}`}</Text>
                 </View>
               ) : null}
             </View>

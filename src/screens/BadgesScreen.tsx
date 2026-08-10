@@ -15,6 +15,7 @@ import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { formatDate } from '../lib/dateUtils';
 import { useTypography } from '../hooks/useTypography';
 import UnifiedHeader from '../components/UnifiedHeader';
 import { useQuery } from '@apollo/client/react';
@@ -515,7 +516,7 @@ const BadgesScreen: React.FC = () => {
                           ]}
                         >
                           {t('badges_screen.awarded_at', 'Awarded on {{date}}', {
-                            date: new Date(selectedBadge.awardedAt).toLocaleDateString(),
+                            date: formatDate(selectedBadge.awardedAt, language),
                           })}
                         </Text>
                       )}

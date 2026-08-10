@@ -14,6 +14,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { formatDate } from '../lib/dateUtils';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
@@ -197,7 +198,7 @@ const HomeScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { user } = useAuth();
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
-  const { isRTL } = useLanguage();
+  const { isRTL, language } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
@@ -355,9 +356,7 @@ const HomeScreen: React.FC = () => {
                 {user?.grade?.name?.toUpperCase() || t('more_screen.grade').toUpperCase()}
               </Text>
               <Text style={s.bannerStreakText}>
-                {isRTL
-                  ? `${activitiesData.streak || 0} ${t('home_screen.streak_title')} 🔥`
-                  : `${activitiesData.streak || 0} day streak 🔥`}
+                {`${activitiesData.streak || 0} ${t('home_screen.streak_title')}`}
               </Text>
 
               {/* Inline Stats Row */}
@@ -406,7 +405,7 @@ const HomeScreen: React.FC = () => {
                 <View style={s.bannerStatDivider} />
                 <View style={s.bannerStatItem}>
                   <Text style={s.bannerStatLabel} numberOfLines={1} adjustsFontSizeToFit>
-                    XP
+                    {t('student_profile.xp')}
                   </Text>
                   <Text
                     style={s.bannerStatValue}
@@ -525,8 +524,8 @@ const HomeScreen: React.FC = () => {
                       </Text>
                       <Text style={s.recentQuizTime}>
                         {activity.completedAt
-                          ? new Date(activity.completedAt).toLocaleDateString()
-                          : 'Recent'}
+                          ? formatDate(activity.completedAt, language)
+                          : t('home_screen.recent')}
                       </Text>
                     </View>
                     <Text
@@ -596,7 +595,7 @@ const HomeScreen: React.FC = () => {
                         ? `${entry.name} (${t('leaderboard_screen.you', 'You')})`
                         : entry.name}
                     </Text>
-                    <Text style={s.leaderboardRankXp}>{entry.xp} XP</Text>
+                    <Text style={s.leaderboardRankXp}>{`${entry.xp} ${t('student_profile.xp')}`}</Text>
                   </View>
                 </View>
               ))}
@@ -626,7 +625,7 @@ const HomeScreen: React.FC = () => {
                         ? `${leaderboardUser.name.split(' ')[0]} (${t('leaderboard_screen.your_rank', 'You')})`
                         : t('leaderboard_screen.your_rank', 'You')}
                     </Text>
-                    <Text style={s.leaderboardUserXp}>{leaderboardUser.xp} XP</Text>
+                    <Text style={s.leaderboardUserXp}>{`${leaderboardUser.xp} ${t('student_profile.xp')}`}</Text>
                   </View>
                 </View>
               )}

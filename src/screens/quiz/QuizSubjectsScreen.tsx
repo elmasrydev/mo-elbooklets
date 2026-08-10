@@ -145,11 +145,7 @@ const SubjectCard: React.FC<SubjectCardProps> = ({ subject, currentStyles, theme
       </Text>
 
       <Text style={currentStyles.subjectUnitsCount}>
-        {subject.chapters?.length === 1
-          ? t('quiz_flow.units_count')
-          : t('quiz_flow.units_count_plural', {
-              count: subject.chapters?.length || 0,
-            })}
+        {t('quiz_flow.units_count', { count: subject.chapters?.length || 0 })}
       </Text>
     </TouchableOpacity>
   );
