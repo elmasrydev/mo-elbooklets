@@ -74,7 +74,7 @@ const RegisterScreen: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
 
-  const { register } = useAuth();
+  const { register, setRegistrationSuccessPending } = useAuth();
   const { showConfirm } = useModal();
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { language, setLanguage } = useLanguage();
@@ -236,6 +236,10 @@ const RegisterScreen: React.FC = () => {
         analytics.identify(result.user.id, {
           grade: result.user.grade?.name,
         });
+        // Arms the success screen AppNavigator renders once the OTP gate is
+        // cleared. Nothing called this before, so the screen — fully built and
+        // routed — could never appear.
+        await setRegistrationSuccessPending(true);
       } else if (!result.success) {
         showConfirm({
           title: t('auth.registration_failed'),
