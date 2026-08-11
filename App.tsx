@@ -26,6 +26,8 @@ import { GlobalModalHandler } from './src/components/GlobalModalHandler';
 import { ApiDomainChecker } from './src/components/ApiDomainChecker';
 import { NotificationHandler } from './src/components/NotificationHandler';
 
+import * as ScreenOrientation from 'expo-screen-orientation';
+
 import { ForceUpdateProvider } from './src/context/ForceUpdateContext';
 import ForceUpdateModal from './src/components/ForceUpdateModal';
 import MaintenanceModal from './src/components/MaintenanceModal';
@@ -61,6 +63,13 @@ export default function App() {
   });
   const [appReady, setAppReady] = useState(false);
   const [initialLanguage, setInitialLanguage] = useState<Language>('en');
+
+  // The native manifests advertise landscape so the mind-map viewer can rotate
+  // (BKLT-174) — everything else stays portrait, held here at runtime rather
+  // than in app.json. Failure is non-fatal: worst case a screen can rotate.
+  useEffect(() => {
+    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const bootstrap = async () => {

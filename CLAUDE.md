@@ -70,7 +70,15 @@ cached before the field existed), no URL → `'none'` and the section is not ren
   renderer, which draws nothing for a generated map.
 - UI is `src/components/study/LessonMindMap.tsx` (fitted preview + pinch/pan/double-tap fullscreen
   viewer; the viewer needs its own `GestureHandlerRootView` because a `Modal` sits outside the
-  app's root one). Analytics: `trackMindMapViewed` fires when the map is actually on screen, once
+  app's root one).
+- **Orientation**: the generated canvas is ~2:1, so a portrait "fullscreen" letterboxes to barely
+  more than the inline preview. `app.json > orientation` is therefore `"default"` (the native
+  manifests advertise landscape) and the app is held portrait **at runtime** by a
+  `ScreenOrientation.lockAsync(PORTRAIT_UP)` in `App.tsx`. Only the mind-map viewer unlocks to
+  `LANDSCAPE`, restoring portrait on close *and* on unmount (a hardware-back dismiss never reaches
+  the close handler, and leaving the lock set would strand the whole app sideways). Never move the
+  portrait lock back into `app.json` — that removes landscape from the plist and the viewer
+  silently stops rotating. Analytics: `trackMindMapViewed` fires when the map is actually on screen, once
   per lesson per session; `trackMindMapZoomed` per fullscreen open. testIDs: `study-mindmap`,
   `study-mindmap-retry`, `study-mindmap-viewer`, `study-mindmap-viewer-close`.
 - ⚠️ **Release gate**: `mindMapMimeType` is live on PRS + demo but **not production** (checked

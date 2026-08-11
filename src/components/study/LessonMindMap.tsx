@@ -6,6 +6,7 @@ import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-g
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import * as ScreenOrientation from 'expo-screen-orientation';
 
 import { useTheme } from '../../context/ThemeContext';
 import { useTypography } from '../../hooks/useTypography';
@@ -94,16 +95,36 @@ const LessonMindMap: React.FC<LessonMindMapProps> = ({
     savedY.value = 0;
   }, [scale, savedScale, translateX, translateY, savedX, savedY]);
 
+  // The generated canvas is 1800 wide against a height of ~900 — roughly 2:1.
+  // Fitted into a portrait phone that letterboxes down to a strip barely taller
+  // than the inline preview, which defeats the point of a "full" view. Rotating
+  // the device to landscape gives the map the long edge of the screen, roughly
+  // 2.5x the usable area, before any pinch-zoom.
   const openViewer = () => {
     resetZoom();
     setViewerOpen(true);
+    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE).catch(() => {
+      // Orientation is a nicety — a device that refuses to rotate (iPad
+      // multitasking, accessibility lock) still gets the zoomable viewer.
+    });
     onZoomed?.();
   };
 
   const closeViewer = () => {
     setViewerOpen(false);
     resetZoom();
+    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
   };
+
+  // The viewer can be dismissed without closeViewer (hardware back, unmount
+  // mid-lesson-swap); portrait must be restored either way or the whole app is
+  // left sideways.
+  useEffect(
+    () => () => {
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
+    },
+    [],
+  );
 
   const retry = () => {
     setStatus(isSvg ? 'loaded' : 'loading');
@@ -340,10 +361,11 @@ const styles = (theme: any, spacing: any, borderRadius: any) =>
       overflow: 'hidden',
     },
     viewerCanvas: {
-      width: '96%',
-      height: '82%',
+      // Full-bleed: in landscape the map's 2:1 ratio nearly matches the screen,
+      // so any inset is wasted map. Rounded corners/padding would only shrink it.
+      width: '100%',
+      height: '100%',
       backgroundColor: '#FFFFFF',
-      borderRadius: 16,
       overflow: 'hidden',
     },
     viewerClose: {
