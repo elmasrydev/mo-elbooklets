@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Image } from 'expo-image';
 import { SvgUri } from 'react-native-svg';
@@ -95,36 +95,45 @@ const LessonMindMap: React.FC<LessonMindMapProps> = ({
     savedY.value = 0;
   }, [scale, savedScale, translateX, translateY, savedX, savedY]);
 
-  // The generated canvas is 1800 wide against a height of ~900 — roughly 2:1.
-  // Fitted into a portrait phone that letterboxes down to a strip barely taller
-  // than the inline preview, which defeats the point of a "full" view. Rotating
-  // the device to landscape gives the map the long edge of the screen, roughly
-  // 2.5x the usable area, before any pinch-zoom.
+  /**
+   * Orientation follows `viewerOpen` **declaratively**, and must stay that way.
+   *
+   * The generated canvas is 1800 wide against a height of ~900 — roughly 2:1.
+   * Fitted into a portrait phone that letterboxes down to a strip barely taller
+   * than the inline preview, defeating the point of a "full" view. Landscape
+   * gives the map the long edge of the screen before any pinch-zoom.
+   *
+   * Driving this from the open/close *handlers* instead leaks: the viewer is
+   * also dismissed by Android's hardware back (via `onRequestClose`) and by the
+   * lesson-swap effect above, neither of which runs `closeViewer` — and a
+   * missed unlock strands the entire app sideways. Keying on state covers every
+   * path, and the cleanup covers unmount.
+   */
+  useEffect(() => {
+    const lock = viewerOpen
+      ? ScreenOrientation.OrientationLock.LANDSCAPE
+      : ScreenOrientation.OrientationLock.PORTRAIT_UP;
+    // Orientation is a nicety — a device that refuses to rotate (iPad
+    // multitasking, accessibility rotation lock) still gets the zoomable viewer.
+    ScreenOrientation.lockAsync(lock).catch(() => {});
+
+    return () => {
+      if (viewerOpen) {
+        ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
+      }
+    };
+  }, [viewerOpen]);
+
   const openViewer = () => {
     resetZoom();
     setViewerOpen(true);
-    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE).catch(() => {
-      // Orientation is a nicety — a device that refuses to rotate (iPad
-      // multitasking, accessibility lock) still gets the zoomable viewer.
-    });
     onZoomed?.();
   };
 
   const closeViewer = () => {
     setViewerOpen(false);
     resetZoom();
-    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
   };
-
-  // The viewer can be dismissed without closeViewer (hardware back, unmount
-  // mid-lesson-swap); portrait must be restored either way or the whole app is
-  // left sideways.
-  useEffect(
-    () => () => {
-      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
-    },
-    [],
-  );
 
   const retry = () => {
     setStatus(isSvg ? 'loaded' : 'loading');
@@ -182,7 +191,7 @@ const LessonMindMap: React.FC<LessonMindMapProps> = ({
     ],
   }));
 
-  const s = styles(theme, spacing, borderRadius);
+  const s = useMemo(() => styles(theme, spacing, borderRadius), [theme, spacing, borderRadius]);
 
   if (kind === 'none') return null;
 
