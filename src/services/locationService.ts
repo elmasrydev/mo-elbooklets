@@ -36,7 +36,9 @@ export const addCity = async (governorateId: string, name: string): Promise<Adde
   // invalid name, so reaching here means a caller skipped that check — log it,
   // otherwise the bypass is invisible.
   if (!isValidPlaceName(trimmed)) {
-    logError('addCity rejected an invalid name', trimmed);
+    // Never log `trimmed` — it is the student's free text and would land in
+    // the Crashlytics console (see the privacy rule in logger.ts).
+    logError('addCity rejected an invalid name');
     return null;
   }
   try {
@@ -62,7 +64,8 @@ export const addSchool = async (
 ): Promise<AddedSchool | null> => {
   const trimmed = name.trim();
   if (!isValidPlaceName(trimmed)) {
-    logError('addSchool rejected an invalid name', trimmed);
+    // Never log `trimmed` — see the privacy rule in logger.ts.
+    logError('addSchool rejected an invalid name');
     return null;
   }
   try {

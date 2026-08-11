@@ -484,8 +484,7 @@ const QuizReviewScreen: React.FC = () => {
                       style={[
                         currentStyles.questionText,
                         { textAlign: contentAlign },
-                        typography('h3', '700', isArabicText(ua.question.question)),
-                        { fontSize: 16, lineHeight: 24 },
+                        fontWeight('700', isArabicText(ua.question.question)),
                       ]}
                     >
                       {ua.question.question}
@@ -897,7 +896,11 @@ const QuizReviewScreen: React.FC = () => {
                                 style={[
                                   currentStyles.optionText,
                                   textStyle,
-                                  typography('bodySmall', '500', isArabicText(opt)),
+                                  // fontWeight, not typography: textStyle sets
+                                  // ONLY a colour (green/red), and typography
+                                  // would re-supply its own and flatten the
+                                  // correct/incorrect distinction to one grey.
+                                  fontWeight('500', isArabicText(opt)),
                                 ]}
                               >
                                 {isTrueFalse && opt.toLowerCase() === 'true'

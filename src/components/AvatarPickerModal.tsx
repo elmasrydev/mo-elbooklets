@@ -14,6 +14,7 @@ import { useLazyQuery, useMutation } from '@apollo/client/react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import { patchCachedLeaderboardEntries } from '../utils/leaderboardCache';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
 import { AvatarsDocument, UpdateProfileDocument } from '../generated/graphql';
@@ -70,15 +71,24 @@ const AvatarPickerModal: React.FC<AvatarPickerModalProps> = ({ visible, onClose 
     update: (cache, { data }) => {
       const updated = data?.updateProfile;
       if (!updated) return;
-      for (const __typename of ['LeaderboardEntry', 'TimelineUser'] as const) {
-        cache.modify({
-          id: cache.identify({ __typename, id: updated.id }),
-          fields: {
-            selectedAvatar: (_existing, { toReference }) =>
-              updated.selectedAvatar ? toReference(updated.selectedAvatar, true) : null,
-          },
-        });
-      }
+
+      // TimelineUser is still normalized by id, so one write reaches every copy.
+      cache.modify({
+        id: cache.identify({ __typename: 'TimelineUser', id: updated.id }),
+        fields: {
+          selectedAvatar: (_existing, { toReference }) =>
+            updated.selectedAvatar ? toReference(updated.selectedAvatar, true) : null,
+        },
+      });
+
+      // LeaderboardEntry is NOT normalized (typePolicies keyFields:false — its
+      // rank/xp are relative to the board that produced them), so cache.identify
+      // returns undefined and a modify keyed on it silently does nothing. Each
+      // cached board has to be patched in place.
+      patchCachedLeaderboardEntries(cache, updated.id, (entry) => ({
+        ...entry,
+        selectedAvatar: updated.selectedAvatar ?? null,
+      }));
     },
   });
 

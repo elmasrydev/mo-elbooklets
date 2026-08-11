@@ -113,7 +113,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 
 // Mock NetInfo (connected by default; override per-test where needed)
 jest.mock('@react-native-community/netinfo', () =>
-  require('@react-native-community/netinfo/jest/netinfo-mock.js')
+  require('@react-native-community/netinfo/jest/netinfo-mock.js'),
 );
 
 // Mock Expo SecureStore
@@ -191,9 +191,21 @@ jest.mock('@react-native-firebase/crashlytics', () => {
     setUserId: jest.fn(() => Promise.resolve()),
     setAttributes: jest.fn(() => Promise.resolve()),
   });
+  // logger.ts and crashlyticsHelper.ts use the modular API (the namespaced
+  // form warns on every call); without these named exports they throw
+  // "getCrashlytics is not a function" and the integration is untestable.
+  const instance = mockCrashlytics();
   return {
     __esModule: true,
     default: mockCrashlytics,
+    getCrashlytics: jest.fn(() => instance),
+    log: jest.fn(),
+    recordError: jest.fn(),
+    crash: jest.fn(),
+    setUserId: jest.fn(() => Promise.resolve()),
+    setAttribute: jest.fn(() => Promise.resolve()),
+    setAttributes: jest.fn(() => Promise.resolve()),
+    setCrashlyticsCollectionEnabled: jest.fn(() => Promise.resolve()),
   };
 });
 

@@ -69,7 +69,9 @@ const ParentSlotCard: React.FC<ParentSlotCardProps> = ({
     logError(`[ParentSlotCard] ${context} failed`, error);
     showConfirm({
       title: t('common.error'),
-      message: (error as Error)?.message || t('common.unexpected_error'),
+      // The server's message is untranslated English; the app's own copy is the
+      // only thing an Arabic student can read.
+      message: t('common.unexpected_error'),
       showCancel: false,
       onConfirm: () => {},
     });

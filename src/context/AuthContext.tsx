@@ -521,6 +521,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // bypass the OTP screen). (code-review)
       setIsVerificationSkipped(false);
       setOtpShouldAutoRequest(false);
+      // The post-registration success flag is per-account. Left set, a student
+      // who registers, abandons at the OTP gate and logs out hands the
+      // celebration screen to whoever signs in next on this device — and
+      // checkAuthStatus re-reads the AsyncStorage keys with no ownership check,
+      // so it would re-arm on their next cold start too.
+      setShowRegistrationSuccess(false);
+      await AsyncStorage.removeItem('just_registered_pending_success');
+      await AsyncStorage.removeItem('has_seen_success_screen');
       // Load-bearing for both roles since the parent gate landed: left set, the
       // next sign-in jumps straight to the code step and locks resend for 60s
       // for a code that was never sent.

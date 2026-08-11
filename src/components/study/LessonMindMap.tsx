@@ -56,11 +56,12 @@ const LessonMindMap: React.FC<LessonMindMapProps> = ({
   const kind = resolveMindMapKind(url, mimeType);
   const isSvg = kind === 'svg';
 
-  // SvgUri's onLoad is unreliable for remote files, so SVGs start "loaded" and
-  // rely on onError for the failure path — same trade-off as QuestionImage.
-  const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>(
-    isSvg ? 'loaded' : 'loading',
-  );
+  // Both kinds start 'loading' and are driven by real load events. SvgUri does
+  // call onLoad once its fetch resolves (react-native-svg xml.tsx), so seeding
+  // SVGs as already-loaded — as QuestionImage does — would emit "Mind Map
+  // Viewed" at mount: before the file is fetched, while the section is still
+  // below the fold, and even for a map that then 404s.
+  const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
   const [viewerOpen, setViewerOpen] = useState(false);
   // Bumped to force a re-request of the same URL after a failure.
   const [attempt, setAttempt] = useState(0);
@@ -75,13 +76,16 @@ const LessonMindMap: React.FC<LessonMindMapProps> = ({
   // The reader swaps lessons in place, so reset per URL or a previous failure
   // would stick to the next lesson's map.
   useEffect(() => {
-    setStatus(isSvg ? 'loaded' : 'loading');
+    setStatus('loading');
     setAttempt(0);
     setViewerOpen(false);
-  }, [url, isSvg]);
+  }, [url]);
 
-  // "Viewed" means the map reached the screen, not merely that the lesson had
-  // one — a failed load must not count.
+  // "Viewed" means the map actually rendered — a failed load must not count.
+  // NOTE: this is load-based, not viewport-based; a student who never scrolls
+  // down to the section still counts once the file arrives. Real visibility
+  // tracking would need onLayout + scroll offset, which the reader has no
+  // infrastructure for today.
   useEffect(() => {
     if (status === 'loaded') onViewed?.();
   }, [status, onViewed]);
@@ -135,10 +139,21 @@ const LessonMindMap: React.FC<LessonMindMapProps> = ({
     resetZoom();
   };
 
+  const handleLoad = useCallback(() => setStatus('loaded'), []);
+  const handleError = useCallback(() => setStatus('error'), []);
+
   const retry = () => {
-    setStatus(isSvg ? 'loaded' : 'loading');
+    setStatus('loading');
     setAttempt((n) => n + 1);
   };
+
+  // A load failure replaces the whole component with the retry card, which
+  // unmounts the Modal. Closing the viewer state too is what releases the
+  // landscape lock — otherwise the app is stranded sideways with no close
+  // button, and tapping retry would pop the viewer open unbidden.
+  useEffect(() => {
+    if (status === 'error') setViewerOpen(false);
+  }, [status]);
 
   const pinch = Gesture.Pinch()
     .onUpdate((e) => {
@@ -181,7 +196,12 @@ const LessonMindMap: React.FC<LessonMindMapProps> = ({
       }
     });
 
-  const composed = Gesture.Simultaneous(pinch, pan, doubleTap);
+  // Memoised: RNGH re-attaches handlers when the gesture object identity
+  // changes, and this component re-renders with its parent screen.
+  const composed = useMemo(
+    () => Gesture.Simultaneous(pinch, pan, doubleTap),
+    [pinch, pan, doubleTap],
+  );
 
   const zoomStyle = useAnimatedStyle(() => ({
     transform: [
@@ -229,8 +249,8 @@ const LessonMindMap: React.FC<LessonMindMapProps> = ({
           uri={url as string}
           width="100%"
           height="100%"
-          onLoad={() => setStatus('loaded')}
-          onError={() => setStatus('error')}
+          onLoad={handleLoad}
+          onError={handleError}
         />
       </View>
     ) : (
@@ -241,8 +261,8 @@ const LessonMindMap: React.FC<LessonMindMapProps> = ({
         contentFit="contain"
         cachePolicy="memory-disk"
         transition={fit === 'preview' ? 150 : 0}
-        onLoad={() => setStatus('loaded')}
-        onError={() => setStatus('error')}
+        onLoad={handleLoad}
+        onError={handleError}
       />
     );
 
@@ -256,7 +276,7 @@ const LessonMindMap: React.FC<LessonMindMapProps> = ({
         accessibilityLabel={t('study_lesson.mind_map_hint')}
         testID={testID}
       >
-        {renderMap('preview')}
+        {!viewerOpen && renderMap('preview')}
         {status === 'loading' && (
           <View style={[s.skeleton, { backgroundColor: theme.colors.background }]}>
             <ActivityIndicator color={theme.colors.primary} />

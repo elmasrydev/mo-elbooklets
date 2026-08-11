@@ -84,6 +84,9 @@ const EditProfileScreen: React.FC = () => {
     city_id: (user as any)?.city_id || '',
     governorate_id: (user as any)?.governorate_id || '',
   });
+  // Snapshot of the seed, so save can tell "the student emptied this" from
+  // "this was never loaded" — see the diff in handleSave.
+  const initialFormRef = useRef(formData);
 
   // Reference lookups run on demand (modal opens, debounced search boxes), so
   // they're lazy; results stay in local state because the pickers merge in
@@ -446,16 +449,31 @@ const EditProfileScreen: React.FC = () => {
     try {
       setLoading(true);
 
-      // Send an explicit null for a cleared field rather than omitting the key.
-      // formData is seeded from the user's current values, so '' means "the user
-      // emptied this", not "untouched" — omitting it made the server keep the old
-      // value, so no field could ever be cleared, and picking a new governorate
-      // (which resets city_id to '') left the previous governorate's city
-      // attached. Every field on UpdateProfileInput is nullable.
+      // Send ONLY the fields this session actually changed.
+      //
+      // Omitting every empty field meant nothing could ever be cleared — picking
+      // a new governorate (which resets city_id to '') left the previous
+      // governorate's city attached. But blanket-nulling every empty field is
+      // destructive: `Login`/`Register` do not select gender, school_name,
+      // parent_mobile, governorate_id or city_id, so after a cold start those
+      // seed to '' because they were never loaded — not because the student
+      // cleared them — and sending null would wipe a populated profile.
+      //
+      // Diffing against the seed distinguishes the two: a key the student never
+      // touched is omitted (unchanged), and a key they emptied goes as explicit
+      // null (cleared). Every field on UpdateProfileInput is nullable.
       const input: Record<string, string | null> = {};
       Object.entries(formData).forEach(([key, value]) => {
+        const initial = initialFormRef.current[key as keyof typeof formData] ?? '';
+        if (value === initial) return;
         input[key] = value === '' || value === undefined ? null : value;
       });
+
+      if (Object.keys(input).length === 0) {
+        setLoading(false);
+        navigation.goBack();
+        return;
+      }
 
       const result = await updateProfile({ variables: { input } });
 

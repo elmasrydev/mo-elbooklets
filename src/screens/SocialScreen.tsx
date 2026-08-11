@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -107,9 +107,17 @@ const SocialScreen: React.FC = () => {
 
   const { toggleFollow } = useFollowToggle();
 
+  // A ref, not the state: this callback is memoised on referentially stable
+  // deps, so reading `followingId` inside it would capture the initial null for
+  // the component's whole life and the re-entrancy guard would never fire —
+  // tapping Follow on two students in a row would run both mutations at once,
+  // and the first one finishing would clear the second's spinner mid-flight.
+  const followingIdRef = useRef<string | null>(null);
+
   const handleFollowToggle = useCallback(
     async (student: Student) => {
-      if (followingId) return;
+      if (followingIdRef.current) return;
+      followingIdRef.current = student.id;
       setFollowingId(student.id);
       try {
         // The cache write in useFollowToggle flips isFollowing in the search
@@ -117,11 +125,9 @@ const SocialScreen: React.FC = () => {
         const result = await toggleFollow(student.id);
         if (result?.success && searchQuery.length === 0) refetchTimeline();
       } finally {
+        followingIdRef.current = null;
         setFollowingId(null);
       }
-      // followingId is read as a re-entrancy guard only; including it would rebuild
-      // the handler on every toggle and re-render the whole list again.
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     },
     [toggleFollow, searchQuery.length, refetchTimeline],
   );
@@ -228,7 +234,7 @@ const SocialScreen: React.FC = () => {
         onFollowToggle={() => handleFollowToggle(student)}
       />
     ),
-    [spacing, handleFollowToggle, navigation, followingId],
+    [searchRowSpacing, handleFollowToggle, navigation, followingId],
   );
 
   const isSearchMode = searchQuery.length >= 2;

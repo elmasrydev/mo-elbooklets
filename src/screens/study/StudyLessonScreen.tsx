@@ -819,6 +819,11 @@ const StudyLessonScreen: React.FC = () => {
       return;
     }
     reportLessonCompleted();
+    // Clear the outgoing lesson's progress: it is only replaced once the new
+    // lesson's fetchDodProgress resolves, and until then a stale isComplete
+    // would report a completion against the lesson just opened — and mark it
+    // in completedLessonsRef, silently dropping its real completion later.
+    setDodProgress(null);
     // Persist the current lesson's checks before leaving it.
     viewedCacheRef.current.set(currentLesson.id, viewedPoints);
 

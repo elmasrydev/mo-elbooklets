@@ -240,12 +240,11 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
   const formattedTime = formatTime(timeTaken);
 
   // Determine state based on percentage and determine icon asset
-  const celebrationIcon =
-    percentage < 60
-      ? require('../../../assets/images/quizzLowIcon.png')
-      : percentage < 80
-        ? require('../../../assets/images/quizzNormalIcon.png')
-        : require('../../../assets/images/quizzSucessIcon.png');
+  const celebrationIcon = !quizResult.isPassed
+    ? require('../../../assets/images/quizzLowIcon.png')
+    : percentage < 80
+      ? require('../../../assets/images/quizzNormalIcon.png')
+      : require('../../../assets/images/quizzSucessIcon.png');
 
   let stateTheme = {
     color: '#10B981', // green
@@ -345,7 +344,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
                 </Text>
               </View>
               <Text style={[currentStyles.statValueText, { color: theme.colors.warning }]}>
-                +{quizResult.xp.toLocaleString()} XP
+                {`+${quizResult.xp.toLocaleString()} ${t('student_profile.xp')}`}
               </Text>
             </View>
           )}

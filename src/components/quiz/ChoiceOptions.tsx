@@ -83,7 +83,12 @@ const ChoiceOptions: React.FC<ChoiceOptionsProps> = ({
                 style={[
                   styles.title,
                   isSelected && styles.titleSelected,
-                  typography(compact ? 'bodySmall' : 'body', undefined, isArabicText(parts[0])),
+                  // fontWeight (not typography) — typography re-supplies the
+                  // preset's colour and regular weight, which would strip the
+                  // bold and the selected-state navy. Tested against the
+                  // RENDERED label: a true_false answer arrives as 'True' but
+                  // renders as 'صح'.
+                  fontWeight('bold', isArabicText(labelFor(parts[0]))),
                 ]}
               >
                 {labelFor(parts[0])}
@@ -93,7 +98,7 @@ const ChoiceOptions: React.FC<ChoiceOptionsProps> = ({
                   style={[
                     styles.subtitle,
                     isSelected && styles.subtitleSelected,
-                    typography('caption', undefined, isArabicText(parts.slice(1).join('\n'))),
+                    fontWeight('normal', isArabicText(parts.slice(1).join('\n'))),
                   ]}
                 >
                   {parts.slice(1).join('\n')}
