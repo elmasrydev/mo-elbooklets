@@ -44,12 +44,17 @@ const lessonSource = (lessonId: string, title: string) => ({
   similarityScore: 0.8,
 });
 
+// Must mirror BokiLessonById's full selection set — a missing field makes Apollo
+// drop the whole normalized result and the screen sees nothing, which is exactly
+// the failure mode this suite exists to catch.
 const lessonPayload = (id: string, overrides = {}) => ({
   id,
   name: `Lesson ${id}`,
   summary: null,
   points: null,
   videoUrl: null,
+  mindMapUrl: null,
+  mindMapMimeType: null,
   myInteraction: null,
   isLocked: false,
   lessonPoints: [],
