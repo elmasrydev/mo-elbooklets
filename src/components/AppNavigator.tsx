@@ -15,6 +15,7 @@ import InternalSettingsScreen from '../screens/InternalSettingsScreen';
 import OTPVerificationScreen from '../screens/OTPVerificationScreen';
 import ProfileCompletionPrompt from './ProfileCompletionPrompt';
 import RegistrationSuccessScreen from '../screens/RegistrationSuccessScreen';
+import { parentVerificationState } from '../utils/parentVerification';
 
 const RootStack = createNativeStackNavigator();
 
@@ -47,7 +48,8 @@ const AppNavigator: React.FC = () => {
             // `null` is the server saying "not verified"; `undefined` means the
             // record predates the gate and is being backfilled — gating on that
             // would lock every already-verified parent out after an upgrade.
-            parentUser?.mobile_verified_at === null && !isVerificationSkipped ? (
+            parentVerificationState(parentUser?.mobile_verified_at) === 'unverified' &&
+            !isVerificationSkipped ? (
               <RootStack.Group>
                 <RootStack.Screen
                   name="OTPVerification"

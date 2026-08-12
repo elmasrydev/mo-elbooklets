@@ -36,6 +36,7 @@ import {
   DeleteAccountMutationVariables,
 } from '../generated/graphql';
 import { isDebugMode } from '../config/debug';
+import { parentVerificationState } from '../utils/parentVerification';
 import crashlytics from '@react-native-firebase/crashlytics';
 import { useNotificationPreferences } from '../hooks/useNotificationPreferences';
 
@@ -45,15 +46,49 @@ const CrashTrigger = () => {
   throw new Error('Test React Render Error for ErrorBoundary');
 };
 
+// WhatsApp / verify accent greens — kept identical to ProfileScreen so the
+// parent and student verification surfaces read as one feature (the theme's
+// `success` green is a different shade).
+const WHATSAPP_GREEN = '#25D366';
+const VERIFY_BG = '#f0fdf4';
+const VERIFY_BORDER = 'rgba(22,163,74,0.18)';
+const VERIFY_TEXT = '#166534';
+const VERIFY_CHEVRON = '#16a34a';
+
 const ParentSettingsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
-  const { parentUser, logout } = useAuth();
+  const { parentUser, logout, requestVerification } = useAuth();
   const { showConfirm } = useModal();
   const { theme, spacing, fontSizes, borderRadius, isDark, toggleTheme } = useTheme();
   const common = useCommonStyles();
   const { isRTL, setLanguage, language } = useLanguage();
   const { typography, fontWeight } = useTypography();
   const { t } = useTranslation();
+
+  // Tri-state, matching AppNavigator's parent gate: a real timestamp means
+  // verified; explicit `null` means the server says "not verified" (reachable
+  // here only after a debug skip, since the gate otherwise holds them on the OTP
+  // screen); `undefined` means the record predates the gate and is being
+  // backfilled — the gate deliberately does not judge that case, so neither do
+  // we. Claiming "Verified" for undefined would be a lie, and offering "Verify"
+  // would route nowhere because the gate only fires on `=== null`.
+  const verification = parentVerificationState(parentUser?.mobile_verified_at);
+  const isParentVerified = verification === 'verified';
+  const isParentUnverified = verification === 'unverified';
+
+  const handleVerifyPress = () => {
+    showConfirm({
+      title: t('otp.verify_mobile', 'Verify mobile'),
+      message: t(
+        'profile_screen.verify_mobile_msg',
+        'Verify your mobile number via WhatsApp to secure your account and unlock all features.',
+      ),
+      confirmLabel: t('common.ok', 'OK'),
+      // Un-skip + auto-request, so AppNavigator re-mounts the parent OTP screen
+      // with a code already on its way.
+      onConfirm: () => requestVerification(),
+    });
+  };
 
   const [deleteAccountMutation, { loading: isDeletingAccount }] = useMutation<
     DeleteAccountMutation,
@@ -213,7 +248,36 @@ const ParentSettingsScreen: React.FC = () => {
                 {parentUser.mobile}
               </Text>
             ) : null}
+
+            {isParentVerified ? (
+              <View style={currentStyles.verifiedInline} testID="parent-verified-badge">
+                <Ionicons name="checkmark-circle" size={13} color={theme.colors.success} />
+                <Text style={currentStyles.verifiedInlineText}>
+                  {t('otp.mobile_verified', 'Verified')}
+                </Text>
+              </View>
+            ) : null}
           </View>
+
+          {isParentUnverified ? (
+            <TouchableOpacity
+              testID="parent-verify-mobile"
+              style={currentStyles.verifyBtn}
+              activeOpacity={0.8}
+              onPress={handleVerifyPress}
+            >
+              <Ionicons name="logo-whatsapp" size={18} color={WHATSAPP_GREEN} />
+              <Text style={currentStyles.verifyText} numberOfLines={1}>
+                {t('otp.verify_mobile', 'Verify your mobile via WhatsApp')}
+              </Text>
+              <Ionicons
+                name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                size={18}
+                color={VERIFY_CHEVRON}
+                style={{ marginStart: 'auto' }}
+              />
+            </TouchableOpacity>
+          ) : null}
         </View>
 
         {/* Menu Section */}
@@ -516,6 +580,37 @@ const styles = (
       ...fontWeight('bold'),
       color: theme.colors.textSecondary,
       textAlign: 'center',
+    },
+    verifiedInline: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      gap: 4,
+      marginTop: 6,
+    },
+    verifiedInlineText: {
+      ...typography('label'),
+      ...fontWeight('bold'),
+      color: theme.colors.success,
+    },
+    verifyBtn: {
+      flexDirection: common.rowDirection,
+      alignItems: 'center',
+      alignSelf: 'stretch',
+      gap: 10,
+      marginTop: spacing.md,
+      marginHorizontal: layout.screenPadding,
+      paddingVertical: 10,
+      paddingHorizontal: 14,
+      borderRadius: borderRadius.lg,
+      backgroundColor: VERIFY_BG,
+      borderWidth: 1,
+      borderColor: VERIFY_BORDER,
+    },
+    verifyText: {
+      ...typography('caption'),
+      ...fontWeight('bold'),
+      color: VERIFY_TEXT,
+      flexShrink: 1,
     },
     menuSection: {
       marginTop: spacing.sm,
