@@ -15,6 +15,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { formatDate } from '../lib/dateUtils';
+import { STUDY_PLAN_ENABLED } from '../config/features';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
@@ -208,7 +209,9 @@ const HomeScreen: React.FC = () => {
   const homeQuery = useQuery(HomeDataDocument, { notifyOnNetworkStatusChange: true });
   const subjectsQuery = useQuery(StudySubjectsDocument);
   const leaderboardQuery = useQuery(HomeLeaderboardDocument, { variables: { limit: 4 } });
-  const scheduleQuery = useQuery(TodayScheduleDocument);
+  // Study plan is not launched — skip the request entirely rather than fetch a
+  // payload nothing renders (see STUDY_PLAN_ENABLED).
+  const scheduleQuery = useQuery(TodayScheduleDocument, { skip: !STUDY_PLAN_ENABLED });
 
   const activitiesData = homeQuery.data?.activities ?? null;
   const wheelData = homeQuery.data?.wheelOfSuccess ?? null;
@@ -227,7 +230,9 @@ const HomeScreen: React.FC = () => {
       homeQuery.refetch(),
       subjectsQuery.refetch(),
       leaderboardQuery.refetch(),
-      scheduleQuery.refetch(),
+      // refetch() ignores `skip`, so this has to be gated too or the unlaunched
+      // study plan would still hit the network on every focus refresh.
+      ...(STUDY_PLAN_ENABLED ? [scheduleQuery.refetch()] : []),
     ]);
     // Refetch functions are stable for the life of the hook.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -642,7 +647,9 @@ const HomeScreen: React.FC = () => {
         )}
 
         {/* ─── 6. Today's Plan Card (Study Schedule) ─────────────── */}
-        {todaySchedule && todaySchedule.schedule.length > 0 && (
+        {/* Hidden behind STUDY_PLAN_ENABLED — the feature is complete but not
+            launching yet. Flip the flag in src/config/features.ts to restore. */}
+        {STUDY_PLAN_ENABLED && todaySchedule && todaySchedule.schedule.length > 0 && (
           <TouchableOpacity
             style={s.planCard}
             activeOpacity={0.8}

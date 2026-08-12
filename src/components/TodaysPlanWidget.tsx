@@ -9,6 +9,7 @@ import { useTypography } from '../hooks/useTypography';
 import { layout } from '../config/layout';
 import { useQuery } from '@apollo/client/react';
 import { TodayScheduleDocument } from '../generated/graphql';
+import { STUDY_PLAN_ENABLED } from '../config/features';
 import { GenericListSkeleton } from './SkeletonLoader';
 
 const TodaysPlanWidget: React.FC = () => {
@@ -27,9 +28,16 @@ const TodaysPlanWidget: React.FC = () => {
     };
   }
 
+  // This widget is currently mounted nowhere, but it polls every 60s and
+  // navigates to StudyCalendar — a route that is not registered while the study
+  // plan is unlaunched. Gate it so mounting it can only ever be inert, never
+  // broken (and never a background poll for a hidden feature).
   const { data, loading, error } = useQuery(TodayScheduleDocument, {
     pollInterval: 60000,
+    skip: !STUDY_PLAN_ENABLED,
   });
+
+  if (!STUDY_PLAN_ENABLED) return null;
 
   const currentStyles = styles(
     theme,

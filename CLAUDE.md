@@ -108,6 +108,30 @@ Four **scoped** flows — student/parent × verify/reset. A code only works with
 - **Choosing question types at setup** (backend contract: `mobile-quiz-question-type-selection.md`, local-only like the OTP guide): `QuizSettingsScreen` runs `lessonQuestionTypes(lessonIds:)` and renders **only** the types it returns, each with its `count` — a type with no questions is omitted from the response, never returned as `count: 0`, so **never pad the picker from a hardcoded list**. Read `minSelectedTypes` from the response, never hardcode 2. Selecting **every** type is the default "all types" mix, and `startQuiz` then **omits** `questionTypes` entirely rather than listing them. Not choosing at all is `null`; a selection the student has *emptied* is `[]`, which is deliberately **not** the default — it blocks Start with the min-types message instead of silently handing back the full random mix. The rules are pure functions in `src/utils/quizTypeSelection.ts` — Start is blocked (with the shortfall shown) when Σ selected counts < the chosen quiz size, and a stale selection is pruned when the lesson set changes. `image` is a **selectable category here** even though it is not a `Question.type`: it means "an mcq/true_false carrying an image", and those rows are counted under `image` and *not* under `mcq`, so the buckets never double-count.
 - The quiz **taking** surfaces are intentionally light-only (palette: `QUIZ_COLORS` in `src/config/colors.ts`, plus `MATCH_PAIR_COLORS`); the review screen stays theme-aware. Submitting uses a longer per-op timeout (`SUBMIT_QUIZ_TIMEOUT_MS`, passed via `context.fetchOptions`) because descriptive grading is synchronous. Apollo needs `MatchColumnItem: { keyFields: false }` — those ids (`L0`/`R0`…) repeat across questions and would otherwise collide in the cache.
 
+## Feature switches (`src/config/features.ts`)
+Build-time switches for **finished** work that is not being launched yet. Not debug flags — they
+ignore `debugMode` and behave the same in every environment. Flip the constant, rebuild, done.
+
+### `STUDY_PLAN_ENABLED` — **off**
+The study plan / weekly calendar is hidden from the mobile app; **not launching for now.**
+
+⚠️ The mobile implementation is **complete, not a stub** — do not "finish" it or rebuild it.
+`StudyCalendarScreen` adds a subject to a day, removes one, picks the subject, sets lesson/quiz
+goals, and persists the whole week via the `SaveStudySchedule` mutation. It is **not** a read-only
+mirror of a plan built on the web. Nothing was deleted when it was hidden; setting the flag to
+`true` restores the feature exactly as it was.
+
+The flag gates three things — all of them, or it leaks:
+1. **Home's "Today's Plan" card** *and* its `TodaySchedule` query. The query is `skip`ped, and the
+   focus-refresh `Promise.all` gates its `refetch()` separately: **`refetch()` ignores `skip`**, so
+   without that guard the unlaunched feature still hits the network on every focus.
+2. **The `StudyCalendar` route** in `TabNavigator` — deliberately not *registered*, so the screen is
+   genuinely unreachable rather than merely unlinked.
+3. Any `navigation.navigate('StudyCalendar')` call site.
+
+`src/components/TodaysPlanWidget.tsx` also navigates there but is **mounted nowhere** (dead code as
+of this writing) — gate or delete it if you ever mount it.
+
 ## Commands
 | Command | What it does |
 |---|---|
