@@ -140,7 +140,10 @@ describe('useOtpTimer Hook', () => {
     expect(result.current.timeLeft).toBeLessThanOrEqual(RESEND_LOCK_SECONDS);
   });
 
-  it('should discard a persisted state whose code already died', async () => {
+  // The record itself is retained so the send tally survives (BKLT-287) — what
+  // must not survive is the LOCK, which is what a remount could otherwise
+  // resurrect. Assert the behaviour rather than the storage key's absence.
+  it('should not resurrect the lock from a persisted state whose code already died', async () => {
     await AsyncStorage.setItem(
       key('student-verify'),
       JSON.stringify({ sentAt: Date.now() - 700_000, expiresIn: 600 }),
@@ -153,7 +156,9 @@ describe('useOtpTimer Hook', () => {
     });
 
     expect(result.current.isActive).toBe(false);
-    expect(await AsyncStorage.getItem(key('student-verify'))).toBeNull();
+    expect(result.current.timeLeft).toBe(0);
+    expect(result.current.hasLiveCode).toBe(false);
+    expect(result.current.isExpired).toBe(true);
   });
 
   it('should keep the lock for a code sent during mount, not the stale stored one', async () => {
@@ -361,6 +366,62 @@ describe('send allowance (BKLT-287)', () => {
       await result.current.clearTimer();
     });
     expect(result.current.sendCount).toBe(0);
+    expect(result.current.hasReachedSendLimit).toBe(false);
+  });
+});
+
+describe('allowance vs code expiry (BKLT-287 review finding)', () => {
+  const MOBILE = '01001234567';
+
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  // A code lives ~10 minutes; the backend budget is hourly. If expiry returned
+  // the allowance, resend would re-open and the support box would vanish at the
+  // exact moment further requests can only be refused.
+  it('keeps the spent allowance after the code dies', async () => {
+    await AsyncStorage.setItem(
+      key('student-reset'),
+      JSON.stringify({
+        sentAt: Date.now() - 11 * 60 * 1000,
+        expiresIn: 600,
+        sentTo: MOBILE,
+        sends: MAX_OTP_SENDS,
+      }),
+    );
+
+    const { result } = renderHook(() => useOtpTimer('student-reset'));
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(result.current.hasLiveCode).toBe(false);
+    expect(result.current.isActive).toBe(false);
+    expect(result.current.sendCount).toBe(MAX_OTP_SENDS);
+    expect(result.current.hasReachedSendLimit).toBe(true);
+  });
+
+  it('still lets a different number start fresh after an expiry', async () => {
+    await AsyncStorage.setItem(
+      key('student-reset'),
+      JSON.stringify({
+        sentAt: Date.now() - 11 * 60 * 1000,
+        expiresIn: 600,
+        sentTo: MOBILE,
+        sends: MAX_OTP_SENDS,
+      }),
+    );
+
+    const { result } = renderHook(() => useOtpTimer('student-reset'));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    await act(async () => {
+      await result.current.startTimer(600, '01119998877');
+    });
+
+    expect(result.current.sendCount).toBe(1);
     expect(result.current.hasReachedSendLimit).toBe(false);
   });
 });

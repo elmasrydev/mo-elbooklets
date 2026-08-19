@@ -84,6 +84,12 @@ const AppNavigator: React.FC = () => {
                 component={ForgotPasswordScreen}
                 initialParams={{ audience: 'student', fromProfile: true }}
               />
+              {/* Also needed HERE, not just in the unauthenticated group and
+                  TabNavigator: ResetPassword is a sibling of MainTabs in this
+                  group, and navigate() does not descend into an unfocused child
+                  navigator — so its Contact Support button would resolve to
+                  nothing from this route. */}
+              <RootStack.Screen name="ContactUs" component={ContactUsScreen} />
             </RootStack.Group>
           )
         ) : (

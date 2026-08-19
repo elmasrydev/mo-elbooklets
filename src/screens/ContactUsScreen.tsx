@@ -50,12 +50,14 @@ const ContactUsScreen = ({ navigation, route }: any) => {
   const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
   const { showConfirm } = useModal();
-  const { user } = useAuth();
+  const { user, parentUser } = useAuth();
 
   // Prefill from the signed-in account when there is one; the reset path from
   // the login screen has no session, which is exactly why it passes context.
-  const [name, setName] = useState(user?.name ?? '');
-  const [email, setEmail] = useState(user?.email ?? '');
+  // Either role may be signed in; a parent's details live on parentUser.
+  const account = user ?? parentUser;
+  const [name, setName] = useState(account?.name ?? '');
+  const [email, setEmail] = useState(account?.email ?? '');
   const [subject, setSubject] = useState(params.presetSubject ?? '');
   const [message, setMessage] = useState(params.presetContext ?? '');
   const [loading, setLoading] = useState(false);

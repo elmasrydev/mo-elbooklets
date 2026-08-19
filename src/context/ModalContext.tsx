@@ -1,4 +1,12 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode, useMemo } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  ReactNode,
+  useMemo,
+  useRef,
+} from 'react';
 
 export interface ConfirmModalConfig {
   title: string;
@@ -20,6 +28,8 @@ export interface ConfirmModalConfig {
 interface ModalContextType {
   showConfirm: (config: ConfirmModalConfig) => void;
   hideModal: () => void;
+  /** See `generationRef` — lets a handler detect that it opened another modal. */
+  getModalGeneration: () => number;
   isModalVisible: boolean;
   modalConfig: ConfirmModalConfig | null;
   inputValue: string;
@@ -37,11 +47,24 @@ export const ModalProvider: React.FC<ModalProviderProps> = ({ children }) => {
   const [modalConfig, setModalConfig] = useState<ConfirmModalConfig | null>(null);
   const [inputValue, setInputValue] = useState('');
 
+  /**
+   * Bumped on every showConfirm. A handler that opens a SECOND modal from
+   * inside the first one's `onConfirm` (a failed action reporting its error, for
+   * example) would otherwise be wiped out: GlobalModalHandler hides the modal in
+   * its `finally`, which lands after the new one was shown. Callers compare this
+   * across the await to tell "still my modal" from "someone opened another".
+   */
+  const generationRef = useRef(0);
+
   const showConfirm = useCallback((config: ConfirmModalConfig) => {
+    generationRef.current += 1;
     setModalConfig(config);
     setInputValue(config.initialInputValue || '');
     setIsModalVisible(true);
   }, []);
+
+  /** Current modal generation — see `generationRef`. */
+  const getModalGeneration = useCallback(() => generationRef.current, []);
 
   const hideModal = useCallback(() => {
     setIsModalVisible(false);
@@ -55,12 +78,13 @@ export const ModalProvider: React.FC<ModalProviderProps> = ({ children }) => {
     () => ({
       showConfirm,
       hideModal,
+      getModalGeneration,
       isModalVisible,
       modalConfig,
       inputValue,
       setInputValue,
     }),
-    [showConfirm, hideModal, isModalVisible, modalConfig, inputValue],
+    [showConfirm, hideModal, getModalGeneration, isModalVisible, modalConfig, inputValue],
   );
 
   return <ModalContext.Provider value={value}>{children}</ModalContext.Provider>;

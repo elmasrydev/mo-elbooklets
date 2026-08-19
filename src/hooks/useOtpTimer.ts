@@ -124,8 +124,20 @@ export const useOtpTimer = (scope: OtpTimerScope) => {
         setState(restored);
         setNow(Date.now());
       } else {
-        // The code is dead; drop it so a remount cannot resurrect the lock.
-        await AsyncStorage.removeItem(key);
+        // The code is dead, so the lock and the code itself must go — but NOT
+        // the send count. A code lives ~10 minutes while the backend's budget is
+        // hourly, so discarding it here would re-open resend (and hide the
+        // support box) at the exact point further requests can only be refused.
+        // Keep the tally against the same number, with the stamp aged out.
+        const spent: TimerState = {
+          sentAt: restored.sentAt,
+          expiresIn: 0,
+          ...(restored.sentTo ? { sentTo: restored.sentTo } : {}),
+          sends: restored.sends ?? 0,
+        };
+        setState(spent);
+        setNow(Date.now());
+        await AsyncStorage.setItem(key, JSON.stringify(spent));
       }
     } catch (e) {
       console.error('Error loading OTP timer state', e);

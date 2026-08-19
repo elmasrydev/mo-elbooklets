@@ -180,6 +180,13 @@ const ForgotPasswordScreen: React.FC = () => {
    * route to the code field (guide §5).
    */
   const handleContinue = async () => {
+    // The cap is per number, so walking back to this step must not buy another
+    // code — otherwise Continue is a way around the disabled resend link.
+    if (hasReachedSendLimit && sentTo === mobile) {
+      setErrorMsg(t('otp.resend_limit_reached'));
+      if (hasLiveCode) setStep('code');
+      return;
+    }
     const sent = await handleSendCode();
     if (!sent && hasLiveCode && sentTo === mobile) {
       setErrorMsg('');
@@ -555,7 +562,7 @@ const ForgotPasswordScreen: React.FC = () => {
                 style={currentStyles.supportButton}
                 activeOpacity={0.8}
               >
-                <Ionicons name="headset-outline" size={18} color="#005ab4" />
+                <Ionicons name="headset-outline" size={18} color={theme.colors.primary} />
                 <Text style={currentStyles.supportButtonText}>{t('common.contact_support')}</Text>
               </TouchableOpacity>
             </View>
@@ -830,14 +837,14 @@ const styles = (config: any) => {
       marginTop: spacing.md,
       padding: spacing.md,
       borderRadius: borderRadius.lg,
-      backgroundColor: '#FEF3C7',
+      backgroundColor: theme.colors.warning + '1A',
       borderWidth: 1,
-      borderColor: 'rgba(217,119,6,0.25)',
+      borderColor: theme.colors.warning + '40',
       gap: spacing.sm,
     },
     limitText: {
       ...typography('caption'),
-      color: '#92400E',
+      color: theme.colors.text,
       textAlign: 'left',
     },
     supportButton: {
@@ -850,7 +857,7 @@ const styles = (config: any) => {
     supportButtonText: {
       ...typography('caption'),
       ...fontWeight('bold'),
-      color: '#005ab4',
+      color: theme.colors.primary,
     },
     resendNoticeText: {
       ...typography('caption'),

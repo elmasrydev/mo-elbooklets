@@ -3,10 +3,15 @@ import { useModal } from '../context/ModalContext';
 import { ConfirmModal } from './ConfirmModal';
 
 export const GlobalModalHandler: React.FC = () => {
-  const { isModalVisible, modalConfig, hideModal, inputValue, setInputValue } = useModal();
+  const { isModalVisible, modalConfig, hideModal, getModalGeneration, inputValue, setInputValue } =
+    useModal();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleConfirm = async () => {
+    // A handler may open ANOTHER modal — a failed delete reporting its error,
+    // for example. Hiding unconditionally in `finally` would wipe that one out
+    // the instant it appeared, so the action looked like it had silently worked.
+    const generation = getModalGeneration();
     try {
       setIsLoading(true);
       if (modalConfig?.onConfirm) {
@@ -16,7 +21,7 @@ export const GlobalModalHandler: React.FC = () => {
       console.error('❌ [GlobalModalHandler] Error in onConfirm:', error);
     } finally {
       setIsLoading(false);
-      hideModal();
+      if (getModalGeneration() === generation) hideModal();
     }
   };
 
