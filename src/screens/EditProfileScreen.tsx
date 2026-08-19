@@ -23,12 +23,10 @@ import {
   SearchCitiesDocument,
   SearchSchoolsDocument,
   UpdateProfileDocument,
-  UpdatePasswordDocument,
 } from '../generated/graphql';
 import { addCity, addSchool } from '../services/locationService';
 import { Ionicons } from '@expo/vector-icons';
 import UnifiedHeader from '../components/UnifiedHeader';
-import AppButton from '../components/AppButton';
 import { useTypography } from '../hooks/useTypography';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -37,7 +35,6 @@ import SearchablePickerModal from '../components/SearchablePickerModal';
 import Avatar from '../components/Avatar';
 import AvatarPickerModal from '../components/AvatarPickerModal';
 import { INPUT_TEXT_ALIGN } from '../lib/rtl';
-import { validatePasswordChange } from '../utils/passwordChange';
 
 interface EducationalSystem {
   id: string;
@@ -64,7 +61,7 @@ const EditProfileScreen: React.FC = () => {
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
-  const { user, refreshUser, updateUser } = useAuth();
+  const { user, updateUser } = useAuth();
   const { typography, fontWeight } = useTypography();
   const common = useCommonStyles();
   const insets = useSafeAreaInsets();
@@ -96,7 +93,6 @@ const EditProfileScreen: React.FC = () => {
   const [runCitiesQuery] = useLazyQuery(SearchCitiesDocument);
   const [runSchoolsQuery] = useLazyQuery(SearchSchoolsDocument);
   const [updateProfile] = useMutation(UpdateProfileDocument);
-  const [updatePassword] = useMutation(UpdatePasswordDocument);
 
   const [governorates, setGovernorates] = useState<any[]>([]);
   const [cities, setCities] = useState<City[]>([]);
@@ -104,13 +100,6 @@ const EditProfileScreen: React.FC = () => {
   const [fetchingCities, setFetchingCities] = useState(false);
   const [addingCity, setAddingCity] = useState(false);
   const [addingSchool, setAddingSchool] = useState(false);
-
-  const [passwordState, setPasswordState] = useState({
-    oldPassword: '',
-    newPassword: '',
-    confirmPassword: '',
-  });
-  const [showPasswordSection, setShowPasswordSection] = useState(false);
 
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
@@ -327,83 +316,6 @@ const EditProfileScreen: React.FC = () => {
     if (touched && !valid) return '#FF6B6B'; // Red-500
     if (value.length > 0 && valid) return theme.colors.primary;
     return theme.colors.border;
-  };
-
-  const getPasswordInputBorderColor = (fieldName: string) => {
-    if (focusedField === fieldName) return theme.colors.primary;
-    return theme.colors.border;
-  };
-
-  const handleUpdatePassword = async () => {
-    const validationError = validatePasswordChange({
-      currentPassword: passwordState.oldPassword,
-      newPassword: passwordState.newPassword,
-      confirmPassword: passwordState.confirmPassword,
-    });
-    if (validationError) {
-      showConfirm({
-        title: t('common.error'),
-        message: t(validationError),
-        showCancel: false,
-        onConfirm: () => {},
-      });
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      const result = await updatePassword({
-        variables: {
-          input: {
-            current_password: passwordState.oldPassword,
-            password: passwordState.newPassword,
-            password_confirmation: passwordState.confirmPassword,
-          },
-        },
-      });
-
-      if (result.data?.updatePassword?.success) {
-        // A password change can invalidate sibling sessions server-side, and
-        // `updatePassword` returns no replacement token, so the only way to know
-        // this device's token survived is to spend one authenticated request on
-        // it. If it was revoked, the Apollo error link routes through
-        // `revokeSession` and signs the user out instead of leaving them on a
-        // dead session that fails at the next random screen.
-        await refreshUser();
-
-        // Clear before the modal, not inside its onConfirm: the modal is
-        // dismissible by its ✕/backdrop, and that path skips onConfirm — which
-        // would leave the plaintext old and new passwords sitting in state with
-        // the form still open, reading as if nothing had happened.
-        setShowPasswordSection(false);
-        setPasswordState({ oldPassword: '', newPassword: '', confirmPassword: '' });
-
-        showConfirm({
-          title: t('common.success'),
-          message: result.data.updatePassword.message || t('profile.password_changed_success'),
-          showCancel: false,
-          onConfirm: () => {},
-        });
-      } else {
-        showConfirm({
-          title: t('common.error'),
-          message: result.data?.updatePassword?.message || t('common.error'),
-          showCancel: false,
-          onConfirm: () => {},
-        });
-      }
-    } catch (err: any) {
-      console.error('Update password error:', err);
-      showConfirm({
-        title: t('common.error'),
-        message: err.message || t('common.error'),
-        showCancel: false,
-        onConfirm: () => {},
-      });
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleSave = async () => {
@@ -951,142 +863,11 @@ const EditProfileScreen: React.FC = () => {
             )}
           </TouchableOpacity>
 
-          {/* Security & Password Card */}
-          <View style={currentStyles.card}>
-            <TouchableOpacity
-              testID="profile-change-password-toggle"
-              style={currentStyles.passwordToggle}
-              onPress={() => setShowPasswordSection(!showPasswordSection)}
-              activeOpacity={0.7}
-            >
-              <View style={currentStyles.passwordToggleLeft}>
-                <Ionicons name="lock-closed-outline" size={20} color={theme.colors.primary} />
-                <Text style={currentStyles.passwordToggleText}>{t('profile.change_password')}</Text>
-              </View>
-              <Ionicons
-                name={showPasswordSection ? 'chevron-up' : 'chevron-down'}
-                size={20}
-                color={theme.colors.primary}
-              />
-            </TouchableOpacity>
-
-            {showPasswordSection && (
-              <View style={currentStyles.passwordSection}>
-                <View style={currentStyles.inputGroup}>
-                  <Text style={currentStyles.inputLabel}>{t('profile.old_password')}</Text>
-                  <View
-                    style={[
-                      currentStyles.inputWrapper,
-                      { borderColor: getPasswordInputBorderColor('oldPassword') },
-                    ]}
-                  >
-                    <Ionicons
-                      name="key-outline"
-                      size={20}
-                      color={
-                        focusedField === 'oldPassword'
-                          ? theme.colors.primary
-                          : theme.colors.textTertiary
-                      }
-                      style={currentStyles.inputIconLeft}
-                    />
-                    <TextInput
-                      testID="profile-old-password-input"
-                      style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN }]}
-                      secureTextEntry
-                      value={passwordState.oldPassword}
-                      onChangeText={(v) => setPasswordState((p) => ({ ...p, oldPassword: v }))}
-                      placeholder="••••••••"
-                      placeholderTextColor={theme.colors.textTertiary}
-                      onFocus={() => setFocusedField('oldPassword')}
-                      onBlur={() => setFocusedField(null)}
-                    />
-                  </View>
-                </View>
-
-                <View style={currentStyles.inputGroup}>
-                  <Text style={currentStyles.inputLabel}>{t('profile.new_password')}</Text>
-                  <View
-                    style={[
-                      currentStyles.inputWrapper,
-                      { borderColor: getPasswordInputBorderColor('newPassword') },
-                    ]}
-                  >
-                    <Ionicons
-                      name="lock-closed-outline"
-                      size={20}
-                      color={
-                        focusedField === 'newPassword'
-                          ? theme.colors.primary
-                          : theme.colors.textTertiary
-                      }
-                      style={currentStyles.inputIconLeft}
-                    />
-                    <TextInput
-                      testID="profile-new-password-input"
-                      style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN }]}
-                      secureTextEntry
-                      value={passwordState.newPassword}
-                      onChangeText={(v) => setPasswordState((p) => ({ ...p, newPassword: v }))}
-                      placeholder="••••••••"
-                      placeholderTextColor={theme.colors.textTertiary}
-                      onFocus={() => setFocusedField('newPassword')}
-                      onBlur={() => setFocusedField(null)}
-                    />
-                  </View>
-                </View>
-
-                <View style={currentStyles.inputGroup}>
-                  <Text style={currentStyles.inputLabel}>{t('profile.confirm_new_password')}</Text>
-                  <View
-                    style={[
-                      currentStyles.inputWrapper,
-                      { borderColor: getPasswordInputBorderColor('confirmPassword') },
-                    ]}
-                  >
-                    <Ionicons
-                      name="lock-closed-outline"
-                      size={20}
-                      color={
-                        focusedField === 'confirmPassword'
-                          ? theme.colors.primary
-                          : theme.colors.textTertiary
-                      }
-                      style={currentStyles.inputIconLeft}
-                    />
-                    <TextInput
-                      testID="profile-confirm-password-input"
-                      style={[currentStyles.input, { textAlign: INPUT_TEXT_ALIGN }]}
-                      secureTextEntry
-                      value={passwordState.confirmPassword}
-                      onChangeText={(v) => setPasswordState((p) => ({ ...p, confirmPassword: v }))}
-                      placeholder="••••••••"
-                      placeholderTextColor={theme.colors.textTertiary}
-                      onFocus={() => setFocusedField('confirmPassword')}
-                      onBlur={() => setFocusedField(null)}
-                    />
-                  </View>
-                </View>
-
-                <Text style={currentStyles.resetPasswordHint}>{t('auth.password_min_8')}</Text>
-
-                <View style={{ marginTop: spacing.md }}>
-                  <AppButton
-                    testID="profile-update-password-button"
-                    title={t('profile.update_password')}
-                    onPress={handleUpdatePassword}
-                    loading={loading}
-                    variant="primary"
-                    fullWidth={true}
-                  />
-                </View>
-              </View>
-            )}
-          </View>
-
-          {/* Forgot the current password? That path cannot use the form above —
-              it needs the WhatsApp code flow, which ends signed out because the
-              server revokes every token on reset. */}
+          {/* The ONLY password path (BKLT-287). The in-profile change-password
+              form was removed: it duplicated this flow with weaker guarantees,
+              and the WhatsApp reset is the single scenario the backend supports
+              end to end. It always ends signed out, because the server revokes
+              every token on reset. */}
           <View style={currentStyles.card}>
             <TouchableOpacity
               testID="profile-reset-password-button"
@@ -1350,12 +1131,6 @@ const styles = (config: any) => {
     passwordToggleText: {
       ...typography('button'),
       ...fontWeight('700'),
-    },
-    passwordSection: {
-      paddingTop: spacing.md,
-      borderTopWidth: 1,
-      borderTopColor: theme.colors.border,
-      marginTop: spacing.sm,
     },
     resetPasswordHint: {
       ...typography('caption'),

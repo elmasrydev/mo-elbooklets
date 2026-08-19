@@ -878,7 +878,6 @@
   "profile": {
     "add_failed": "تعذّر الإضافة الآن. حاول مرة أخرى.",
     "cant_find_add": "لم تجدها؟ أضف ⁨\"{{name}}\"⁩",
-    "change_password": "تغيير كلمة المرور",
     "city": "المدينة",
     "complete_in_settings": "إكمال في الإعدادات",
     "complete_profile": "إكمال الملف الشخصي",
@@ -886,7 +885,6 @@
     "complete_your_profile": "أكمل ملفك الشخصي",
     "completeness": "اكتمال الملف الشخصي",
     "completeness_incentive": "ساعدنا في تخصيص تجربة التعلم الخاصة بك",
-    "confirm_new_password": "تأكيد كلمة المرور الجديدة",
     "enter_email": "أدخل البريد الإلكتروني",
     "enter_parent_mobile": "أدخل رقم موبايل ولي الأمر",
     "enter_school": "أدخل اسم المدرسة",
@@ -899,8 +897,6 @@
     "name_invalid_chars": "استخدم الحروف والأرقام والمسافات. يُسمح بعلامات ⁨- ' .⁩ داخل الاسم فقط — ليس في بدايته أو نهايته ولا مكررة.",
     "name_not_editable": "لا يمكن تغيير الاسم يدوياً",
     "new_password": "كلمة المرور الجديدة",
-    "old_password": "كلمة المرور الحالية",
-    "password_changed_success": "تم تغيير كلمة المرور بنجاح",
     "passwords_dont_match": "كلمتا المرور غير متطابقتين",
     "personal_info": "البيانات الشخصية",
     "reset_password_hint": "إعادة تعيين كلمة المرور تُسجّل خروجك من هذا الجهاز ومن جميع الأجهزة الأخرى.",
@@ -912,8 +908,8 @@
     "select_gov_first": "اختَر المحافظة أولاً",
     "select_governorate": "اختَر المحافظة",
     "start_typing_to_search": "ابدأ الكتابة للبحث...",
-    "update_password": "تحديث كلمة المرور",
-    "update_success": "تم تحديث الملف الشخصي بنجاح"
+    "update_success": "تم تحديث الملف الشخصي بنجاح",
+    "confirm_new_password": "تأكيد كلمة المرور الجديدة"
   },
   "notifications_center": {
     "delete_all_confirm": "مسح جميع التنبيهات؟",

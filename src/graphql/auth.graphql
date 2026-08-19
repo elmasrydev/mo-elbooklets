@@ -181,13 +181,6 @@ mutation ForgotPassword($email: String!) {
   }
 }
 
-mutation UpdatePassword($input: UpdatePasswordInput!) {
-  updatePassword(input: $input) {
-    success
-    message
-  }
-}
-
 # WhatsApp OTP — student number verification (OTPVerificationScreen).
 
 mutation SendMobileOtp($mobile: String!, $country_code: String) {

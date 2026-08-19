@@ -97,7 +97,12 @@ Four **scoped** flows — student/parent × verify/reset. A code only works with
 - **Anti-enumeration**: a send's `success: true` says nothing about whether the account exists. Always advance to the code step, and never word anything as "we found your account".
 - **After a reset the server revokes every token**, including ours: clear it and route to login (`logout()` for the in-profile path). Never auto-login. Reset failures arrive as either `success: false` *or* a top-level GraphQL error (password policy) — handle both.
 - **Digits**: user-typed numbers go through `digitsOnly()` / `normalizeDigits()` (`src/utils/digits.ts`). A bare `[^0-9]`/`\d` strip is ASCII-only and silently deletes an Arabic-Indic code or mobile number.
-- **Two distinct password surfaces in Edit Profile** — do not merge them. The **change-password form** (`profile-change-password-toggle` → `profile-update-password-button`, `updatePassword` mutation) is for a signed-in user who *knows* their current password; it keeps the session, and because `updatePassword` returns no replacement token the screen calls `refreshUser()` afterwards to prove this device's token survived (a revoked one falls through to `revokeSession` and signs out). The **OTP reset** (`profile-reset-password-button` → `ResetPassword` route) is for someone who does *not* know it; it always ends signed out.
+- **One password path only (BKLT-287)**: the WhatsApp **OTP reset**
+  (`profile-reset-password-button` → `ResetPassword` route). The in-profile *change-password* form
+  (`updatePassword` mutation) was **removed** — it duplicated the reset with weaker guarantees and
+  its own validator. There is no signed-in "I know my current password" flow any more; every
+  password change goes through the code and **ends signed out**, because the server revokes every
+  token on reset. Do not reintroduce `updatePassword`.
 
 ## Quiz question types
 `Question.type` is one of six values: `mcq`, `true_false`, `what_happens`, `give_a_reason` (both AI-graded free text), `match`, `paragraph`. **`image` is NOT a type** — `imageUrl` is an attachment orthogonal to `type` and can appear on any question, including paragraph children (render it via `src/components/quiz/QuestionImage.tsx`, which routes **SVGs to `react-native-svg`'s `SvgUri`** — expo-image and RN `<Image>` can't decode them — and raster formats to **expo-image** for caching). Branch on `type` (guards in `src/utils/quizQuestionTypes.ts`), never on `answers.length`.

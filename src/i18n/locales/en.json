@@ -874,7 +874,6 @@
   "profile": {
     "add_failed": "Couldn't add that right now. Please try again.",
     "cant_find_add": "Can't find it? Add ⁨\"{{name}}\"⁩",
-    "change_password": "Change Password",
     "city": "City",
     "complete_in_settings": "Complete in Settings",
     "complete_profile": "Complete Profile",
@@ -882,7 +881,6 @@
     "complete_your_profile": "Complete Your Profile",
     "completeness": "Profile Completion",
     "completeness_incentive": "Help us personalize your learning experience",
-    "confirm_new_password": "Confirm New Password",
     "enter_email": "Enter Email Address",
     "enter_parent_mobile": "Enter Parent's Mobile",
     "enter_school": "Enter School Name",
@@ -895,8 +893,6 @@
     "name_invalid_chars": "Use letters, numbers and spaces. The marks ⁨- ' .⁩ are allowed inside the name only — not at the start or end, and not doubled.",
     "name_not_editable": "Name cannot be changed manually",
     "new_password": "New Password",
-    "old_password": "Current Password",
-    "password_changed_success": "Password changed successfully",
     "passwords_dont_match": "Passwords do not match",
     "personal_info": "Personal Information",
     "reset_password_hint": "Resetting your password signs you out of this device and all others.",
@@ -908,8 +904,8 @@
     "select_gov_first": "Select Governorate First",
     "select_governorate": "Select Governorate",
     "start_typing_to_search": "Start typing to search...",
-    "update_password": "Update Password",
-    "update_success": "Profile updated successfully"
+    "update_success": "Profile updated successfully",
+    "confirm_new_password": "Confirm New Password"
   },
   "notifications_center": {
     "delete_all_confirm": "Clear all notifications?",

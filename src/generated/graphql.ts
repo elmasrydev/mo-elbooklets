@@ -78,13 +78,6 @@ export type UpdateNotificationPreferencesInput = {
   social_notifications_enabled?: boolean | null | undefined;
 };
 
-/** Password update input */
-export type UpdatePasswordInput = {
-  current_password: string;
-  password: string;
-  password_confirmation: string;
-};
-
 /** Update profile input for progressive field collection */
 export type UpdateProfileInput = {
   avatar_id?: string | null | undefined;
@@ -266,14 +259,6 @@ export type ForgotPasswordMutationVariables = Exact<{
 
 export type ForgotPasswordMutation = {
   forgotPassword: { success: boolean; message: string | null };
-};
-
-export type UpdatePasswordMutationVariables = Exact<{
-  input: UpdatePasswordInput;
-}>;
-
-export type UpdatePasswordMutation = {
-  updatePassword: { success: boolean; message: string | null };
 };
 
 export type SendMobileOtpMutationVariables = Exact<{
@@ -2271,49 +2256,6 @@ export const ForgotPasswordDocument = {
     },
   ],
 } as unknown as DocumentNode<ForgotPasswordMutation, ForgotPasswordMutationVariables>;
-export const UpdatePasswordDocument = {
-  kind: 'Document',
-  definitions: [
-    {
-      kind: 'OperationDefinition',
-      operation: 'mutation',
-      name: { kind: 'Name', value: 'UpdatePassword' },
-      variableDefinitions: [
-        {
-          kind: 'VariableDefinition',
-          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
-          type: {
-            kind: 'NonNullType',
-            type: { kind: 'NamedType', name: { kind: 'Name', value: 'UpdatePasswordInput' } },
-          },
-        },
-      ],
-      selectionSet: {
-        kind: 'SelectionSet',
-        selections: [
-          {
-            kind: 'Field',
-            name: { kind: 'Name', value: 'updatePassword' },
-            arguments: [
-              {
-                kind: 'Argument',
-                name: { kind: 'Name', value: 'input' },
-                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
-              },
-            ],
-            selectionSet: {
-              kind: 'SelectionSet',
-              selections: [
-                { kind: 'Field', name: { kind: 'Name', value: 'success' } },
-                { kind: 'Field', name: { kind: 'Name', value: 'message' } },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<UpdatePasswordMutation, UpdatePasswordMutationVariables>;
 export const SendMobileOtpDocument = {
   kind: 'Document',
   definitions: [
