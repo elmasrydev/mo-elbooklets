@@ -135,7 +135,8 @@
     "version": "Version",
     "yes": "Yes",
     "close": "Close",
-    "clear": "Clear"
+    "clear": "Clear",
+    "contact_support": "Contact Support"
   },
   "subscription": {
     "required_message": "You must subscribe to access all features. Please subscribe to continue.",
@@ -969,7 +970,9 @@
     "verify": "Verify",
     "verify_mobile": "Verify your mobile via WhatsApp",
     "verifying": "Verifying...",
-    "whatsapp_failed": "Failed to send via WhatsApp. Please try again later."
+    "whatsapp_failed": "Failed to send via WhatsApp. Please try again later.",
+    "resend_limit_reached": "You've reached the maximum number of verification code requests.",
+    "resend_invalidates_previous": "A new verification code has been sent. Previous codes are no longer valid."
   },
   "quiz_flow": {
     "all_units": "All units",

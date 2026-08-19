@@ -94,8 +94,17 @@ const ForgotPasswordScreen: React.FC = () => {
   const { t } = useTranslation();
   const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
-  const { isActive, formattedTime, isExpired, hasLiveCode, sentTo, startTimer, clearTimer } =
-    useOtpTimer(isParent ? 'parent-reset' : 'student-reset');
+  const {
+    isActive,
+    formattedTime,
+    isExpired,
+    hasLiveCode,
+    sentTo,
+    sendCount,
+    hasReachedSendLimit,
+    startTimer,
+    clearTimer,
+  } = useOtpTimer(isParent ? 'parent-reset' : 'student-reset');
 
   // Someone who reached this screen from their profile already has an email on
   // file or does not — offering the link when we know there is none is a dead end.
@@ -510,18 +519,41 @@ const ForgotPasswordScreen: React.FC = () => {
             <TouchableOpacity
               testID="forgot-resend-button"
               onPress={handleSendCode}
-              disabled={isActive || isLoading}
+              disabled={isActive || isLoading || hasReachedSendLimit}
+              accessibilityState={{ disabled: isActive || isLoading || hasReachedSendLimit }}
             >
               <Text
                 style={[
                   currentStyles.secondaryLinkText,
-                  isActive && { color: theme.colors.textTertiary },
+                  (isActive || hasReachedSendLimit) && { color: theme.colors.textTertiary },
                 ]}
               >
                 {t('otp.resend_code')}
               </Text>
             </TouchableOpacity>
           </View>
+
+          {/* BKLT-287: once the allowance is spent, a disabled link with no
+              explanation reads as a broken button — say why, and give them the
+              only route left. */}
+          {hasReachedSendLimit ? (
+            <View style={currentStyles.limitBox} testID="forgot-resend-limit">
+              <Text style={currentStyles.limitText}>{t('otp.resend_limit_reached')}</Text>
+              <TouchableOpacity
+                testID="forgot-contact-support"
+                onPress={() => navigation.navigate('ContactUs')}
+                style={currentStyles.supportButton}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="headset-outline" size={18} color="#005ab4" />
+                <Text style={currentStyles.supportButtonText}>{t('common.contact_support')}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : sendCount > 0 && !isActive ? (
+            <Text style={currentStyles.resendNoticeText} testID="forgot-resend-notice">
+              {t('otp.resend_invalidates_previous')}
+            </Text>
+          ) : null}
         </View>
       </View>
     </>
@@ -783,6 +815,38 @@ const styles = (config: any) => {
       ...fontWeight('600'),
       color: '#005ab4',
       textAlign: 'center',
+    },
+    limitBox: {
+      marginTop: spacing.md,
+      padding: spacing.md,
+      borderRadius: borderRadius.lg,
+      backgroundColor: '#FEF3C7',
+      borderWidth: 1,
+      borderColor: 'rgba(217,119,6,0.25)',
+      gap: spacing.sm,
+    },
+    limitText: {
+      ...typography('caption'),
+      color: '#92400E',
+      textAlign: 'left',
+    },
+    supportButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      gap: 6,
+      paddingVertical: 6,
+    },
+    supportButtonText: {
+      ...typography('caption'),
+      ...fontWeight('bold'),
+      color: '#005ab4',
+    },
+    resendNoticeText: {
+      ...typography('caption'),
+      color: theme.colors.textSecondary,
+      textAlign: 'left',
+      marginTop: spacing.sm,
     },
     resendRow: {
       flexDirection: 'row',

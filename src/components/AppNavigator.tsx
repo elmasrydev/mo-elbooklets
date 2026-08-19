@@ -15,6 +15,7 @@ import InternalSettingsScreen from '../screens/InternalSettingsScreen';
 import OTPVerificationScreen from '../screens/OTPVerificationScreen';
 import ProfileCompletionPrompt from './ProfileCompletionPrompt';
 import RegistrationSuccessScreen from '../screens/RegistrationSuccessScreen';
+import ContactUsScreen from '../screens/ContactUsScreen';
 import { parentVerificationState } from '../utils/parentVerification';
 
 const RootStack = createNativeStackNavigator();
@@ -102,6 +103,13 @@ const AppNavigator: React.FC = () => {
               component={ForgotPasswordScreen}
               initialParams={{ audience: 'parent' }}
             />
+            {/* Reachable while signed OUT: the forgot-password flow offers
+                Contact Support once the code allowance is spent (BKLT-287), and
+                the ContactUs registration inside MainTabs is unreachable from
+                here. `sendContactMessage` takes name/email/subject/message as
+                arguments and needs no session — verified unauthenticated
+                against PRS and demo. */}
+            <RootStack.Screen name="ContactUs" component={ContactUsScreen} />
           </RootStack.Group>
         )}
       </RootStack.Navigator>
