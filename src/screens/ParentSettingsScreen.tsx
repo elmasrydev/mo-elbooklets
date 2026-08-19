@@ -31,12 +31,13 @@ import {
   openSettings,
 } from '../services/notificationService';
 import {
-  DeleteAccountDocument,
-  DeleteAccountMutation,
-  DeleteAccountMutationVariables,
+  ParentDeleteAccountDocument,
+  ParentDeleteAccountMutation,
+  ParentDeleteAccountMutationVariables,
 } from '../generated/graphql';
 import { isDebugMode } from '../config/debug';
 import { parentVerificationState } from '../utils/parentVerification';
+import { logError } from '../utils/logger';
 import crashlytics from '@react-native-firebase/crashlytics';
 import { useNotificationPreferences } from '../hooks/useNotificationPreferences';
 
@@ -90,10 +91,12 @@ const ParentSettingsScreen: React.FC = () => {
     });
   };
 
+  // BKLT-323: `deleteAccount` resolves against the student guard, so a parent
+  // token made it 500 — the dialog completed and the account stayed live.
   const [deleteAccountMutation, { loading: isDeletingAccount }] = useMutation<
-    DeleteAccountMutation,
-    DeleteAccountMutationVariables
-  >(DeleteAccountDocument);
+    ParentDeleteAccountMutation,
+    ParentDeleteAccountMutationVariables
+  >(ParentDeleteAccountDocument);
 
   const {
     preferences,
@@ -158,6 +161,18 @@ const ParentSettingsScreen: React.FC = () => {
     });
   };
 
+  const reportDeleteFailure = (serverMessage?: string | null) => {
+    if (serverMessage) logError(`[ParentSettings] Delete account rejected: ${serverMessage}`);
+    showConfirm({
+      title: t('common.error'),
+      // The server message is untranslated English; the app's own copy is the
+      // only thing an Arabic parent can read.
+      message: t('profile_screen.delete_account_error', 'Could not delete your account.'),
+      showCancel: false,
+      onConfirm: () => {},
+    });
+  };
+
   const handleDeleteAccount = () => {
     showConfirm({
       title: t('profile_screen.delete_account'),
@@ -169,16 +184,16 @@ const ParentSettingsScreen: React.FC = () => {
       onConfirm: async () => {
         try {
           const result = await deleteAccountMutation();
-          if (result.data?.deleteAccount?.success) {
+          if (result.data?.parentDeleteAccount?.success) {
             logout();
-          } else {
-            console.error(
-              'Delete account server returned false',
-              result.data?.deleteAccount?.message,
-            );
+            return;
           }
+          // Without this the sheet just closes and the account is still there —
+          // exactly the symptom reported in BKLT-323.
+          reportDeleteFailure(result.data?.parentDeleteAccount?.message);
         } catch (error) {
-          console.error('Error deleting account', error);
+          logError('[ParentSettings] Delete account failed', error);
+          reportDeleteFailure();
         }
       },
     });
@@ -491,6 +506,7 @@ const ParentSettingsScreen: React.FC = () => {
         <Text style={currentStyles.versionText}>{APP_VERSION}</Text>
 
         <TouchableOpacity
+          testID="parent-settings-delete-account"
           style={currentStyles.deleteAccountItem}
           onPress={handleDeleteAccount}
           disabled={isDeletingAccount}

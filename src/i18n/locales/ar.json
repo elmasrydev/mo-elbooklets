@@ -790,7 +790,8 @@
     "social_notifications": "الإشعارات الاجتماعية",
     "social_notifications_desc": "استلام إشعارات النشاط الاجتماعي",
     "test_crash": "اختبار الانهيار",
-    "test_log_error": "تسجيل خطأ"
+    "test_log_error": "تسجيل خطأ",
+    "delete_account_error": "تعذّر حذف حسابك. برجاء المحاولة مرة أخرى."
   },
   "badges_screen": {
     "awarded_at": "تم الحصول عليها في {{date}}",

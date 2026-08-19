@@ -164,6 +164,16 @@ mutation DeleteAccount {
   }
 }
 
+# Parents have their own deletion mutation. `deleteAccount` resolves against the
+# student guard, so calling it with a parent token 500s (BKLT-323) — the parent
+# app appeared to accept the deletion while the account stayed live.
+mutation ParentDeleteAccount {
+  parentDeleteAccount {
+    success
+    message
+  }
+}
+
 mutation ForgotPassword($email: String!) {
   forgotPassword(email: $email) {
     success

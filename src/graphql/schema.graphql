@@ -119,7 +119,16 @@ type BadgeCategory {
   descriptionAr: String
   descriptionEn: String
   displayOrder: Int!
+
+  """
+  Legacy Font Awesome class name. Still served for categories that carry one; null for categories created since icons became uploaded artwork.
+  """
   icon: String
+
+  """
+  URL of the category's uploaded icon image. Prefer this over `icon`; null when the category has no artwork yet.
+  """
+  iconUrl: String
   id: ID!
   name: String!
   nameAr: String
@@ -539,6 +548,11 @@ type Mutation {
 
   """Parent cancels a pending link request they sent to a student"""
   parentCancelLinkRequest(request_id: ID!): SocialActionResponse!
+
+  """
+  Deactivate parent account (set can_login=false). Parent counterpart of `deleteAccount`.
+  """
+  parentDeleteAccount: SocialActionResponse!
 
   """Initiate password reset for a parent (sends email)"""
   parentForgotPassword(email: String!): SocialActionResponse!
@@ -1329,6 +1343,13 @@ type QuizResult {
   isPublished: Boolean!
   nextLessonTeaser: LessonTeaser
   quiz: Quiz!
+
+  """
+  Lessons to revise, derived from the questions answered wrongly and ordered
+  most-missed first. Always empty for a quiz covering a single lesson — there
+  is nothing to choose between — so clients can hide the section on an empty list.
+  """
+  recommendedLessons: [Lesson!]!
   score: Float!
   totalQuestions: Int!
   userAnswers: [UserQuizAnswer!]!

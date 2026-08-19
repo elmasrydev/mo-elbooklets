@@ -786,7 +786,8 @@
     "social_notifications": "Social Notifications",
     "social_notifications_desc": "Receive social activity notifications",
     "test_crash": "Test Crash",
-    "test_log_error": "Log Error"
+    "test_log_error": "Log Error",
+    "delete_account_error": "Could not delete your account. Please try again."
   },
   "badges_screen": {
     "awarded_at": "Awarded on {{date}}",

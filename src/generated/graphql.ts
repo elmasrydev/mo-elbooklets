@@ -254,6 +254,12 @@ export type DeleteAccountMutationVariables = Exact<{ [key: string]: never }>;
 
 export type DeleteAccountMutation = { deleteAccount: { success: boolean; message: string | null } };
 
+export type ParentDeleteAccountMutationVariables = Exact<{ [key: string]: never }>;
+
+export type ParentDeleteAccountMutation = {
+  parentDeleteAccount: { success: boolean; message: string | null };
+};
+
 export type ForgotPasswordMutationVariables = Exact<{
   email: string;
 }>;
@@ -2196,6 +2202,32 @@ export const DeleteAccountDocument = {
     },
   ],
 } as unknown as DocumentNode<DeleteAccountMutation, DeleteAccountMutationVariables>;
+export const ParentDeleteAccountDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'ParentDeleteAccount' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'parentDeleteAccount' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'message' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<ParentDeleteAccountMutation, ParentDeleteAccountMutationVariables>;
 export const ForgotPasswordDocument = {
   kind: 'Document',
   definitions: [
