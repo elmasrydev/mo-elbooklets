@@ -972,7 +972,9 @@
     "verifying": "Verifying...",
     "whatsapp_failed": "Failed to send via WhatsApp. Please try again later.",
     "resend_limit_reached": "You've reached the maximum number of verification code requests.",
-    "resend_invalidates_previous": "A new verification code has been sent. Previous codes are no longer valid."
+    "resend_invalidates_previous": "A new verification code has been sent. Previous codes are no longer valid.",
+    "support_reset_subject": "Password reset help",
+    "support_reset_context": "I could not reset my password — I reached the maximum number of verification code requests.\n\nMobile number on the account: {{mobile}}\n\nPlease describe anything else that may help:"
   },
   "quiz_flow": {
     "all_units": "All units",

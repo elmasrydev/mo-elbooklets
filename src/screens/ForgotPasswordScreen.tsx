@@ -541,7 +541,17 @@ const ForgotPasswordScreen: React.FC = () => {
               <Text style={currentStyles.limitText}>{t('otp.resend_limit_reached')}</Text>
               <TouchableOpacity
                 testID="forgot-contact-support"
-                onPress={() => navigation.navigate('ContactUs')}
+                onPress={() =>
+                  navigation.navigate('ContactUs', {
+                    presetSubject: t('otp.support_reset_subject'),
+                    // Carry the number being reset: the user is locked out, so
+                    // without it support has no way to find the account (email
+                    // is optional at registration). Prefilled and editable.
+                    presetContext: t('otp.support_reset_context', {
+                      mobile: `${COUNTRY_CODE} ${mobile}`,
+                    }),
+                  })
+                }
                 style={currentStyles.supportButton}
                 activeOpacity={0.8}
               >
