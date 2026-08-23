@@ -25,6 +25,7 @@
     "guardme:clean-code": "npm run lint && npx tsc --noEmit",
     "guardme:codegen": "npm run codegen && git diff --exit-code -- src/generated src/graphql",
     "guardme:docs": "python3 scripts/verify_docs.py",
+    "check:release-fields": "python3 scripts/check_release_fields.py",
     "guardme": "npm run guardme:codegen && npm run guardme:clean-code && npm run test:prs && npm run guardme:docs",
     "guardme:prs": "npm run guardme:codegen && npm run guardme:clean-code && npm run test:prs && npm run guardme:docs",
     "guardme:dev": "npm run guardme:codegen && npm run guardme:clean-code && npm run test:dev && npm run guardme:docs",

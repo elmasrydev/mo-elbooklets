@@ -82,9 +82,9 @@ cached before the field existed), no URL → `'none'` and the section is not ren
   silently stops rotating. Analytics: `trackMindMapViewed` fires when the map is actually on screen, once
   per lesson per session; `trackMindMapZoomed` per fullscreen open. testIDs: `study-mindmap`,
   `study-mindmap-retry`, `study-mindmap-viewer`, `study-mindmap-viewer-close`.
-- ⚠️ **Release gate**: `mindMapMimeType` is live on PRS + demo but **not production** (checked
-  2026-08-10). A query selecting an unknown field fails *entirely*, so shipping this before the
-  prod deploy breaks the whole study flow. Re-introspect prod before any store build.
+- ✅ **Release gate cleared**: `mindMapMimeType` is now live on all three environments (re-checked
+  2026-08-23 via `npm run check:release-fields`). The general rule stands — a query selecting an
+  unknown field fails *entirely* — so run that script before any store build.
 - Generation is async: a new lesson can return `mindMapUrl: null` and get one minutes later — never
   cache "this lesson has no map".
 
@@ -208,6 +208,7 @@ of this writing) — gate or delete it if you ever mount it.
 | `npm run test:prs` (also `:dev`, `:prod`) | Jest unit tests |
 | `npm run e2e:prs` (also `:dev`, `:prod`) | Maestro E2E via `scripts/run_maestro.py` |
 | `npm run guardme:prs` | Full gate: codegen drift check + lint + `tsc --noEmit` + jest + docs check |
+| `npm run check:release-fields` | Pre-store-build: does **production** have every field the app cannot work without? Fails on those; only warns for fields whose query is built to degrade (the trial five). `--url` for another env |
 | `npm run build:apk` / `build:aab` | Android release builds |
 
 ## Testing
