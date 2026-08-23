@@ -26,6 +26,7 @@ import { useModal } from '../context/ModalContext';
 import { useNavigation } from '@react-navigation/native';
 import { analytics } from '../lib/analytics';
 import { INPUT_TEXT_ALIGN } from '../lib/rtl';
+import { authFailureText } from '../utils/authErrors';
 import { digitsOnly } from '../utils/digits';
 import { isDebugMode } from '../config/debug';
 import {
@@ -243,7 +244,7 @@ const RegisterScreen: React.FC = () => {
       } else if (!result.success) {
         showConfirm({
           title: t('auth.registration_failed'),
-          message: t(result.error || 'auth.registration_error'),
+          message: authFailureText(result, t, 'auth.registration_error'),
           showCancel: false,
           onConfirm: () => {},
         });

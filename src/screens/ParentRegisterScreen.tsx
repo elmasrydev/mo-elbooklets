@@ -30,6 +30,7 @@ import {
   isValidPersonName,
 } from '../utils/validators';
 import { INPUT_TEXT_ALIGN } from '../lib/rtl';
+import { authFailureText } from '../utils/authErrors';
 import { digitsOnly } from '../utils/digits';
 import { analytics } from '../lib/analytics';
 import { useMobileAvailability } from '../hooks/useMobileAvailability';
@@ -141,7 +142,7 @@ const ParentRegisterScreen: React.FC = () => {
       if (!result.success) {
         showConfirm({
           title: t('auth.registration_failed'),
-          message: t(result.error || 'auth.registration_error'),
+          message: authFailureText(result, t, 'auth.registration_error'),
           showCancel: false,
           onConfirm: () => {},
         });

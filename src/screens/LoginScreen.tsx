@@ -24,6 +24,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { analytics } from '../lib/analytics';
 import { INPUT_TEXT_ALIGN } from '../lib/rtl';
+import { authFailureText } from '../utils/authErrors';
 import { digitsOnly } from '../utils/digits';
 import { EGYPT_MOBILE_REGEX } from '../utils/validators';
 import { isDebugMode } from '../config/debug';
@@ -84,7 +85,7 @@ const LoginScreen: React.FC = () => {
       } else if (!result.success) {
         showConfirm({
           title: t('auth.login_failed'),
-          message: t(result.error || 'auth.invalid_credentials'),
+          message: authFailureText(result, t, 'auth.invalid_credentials'),
           showCancel: false,
           onConfirm: () => {},
         });

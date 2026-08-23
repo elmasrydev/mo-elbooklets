@@ -88,6 +88,15 @@ cached before the field existed), no URL → `'none'` and the section is not ren
 - Generation is async: a new lesson can return `mindMapUrl: null` and get one minutes later — never
   cache "this lesson has no map".
 
+## Auth error messages
+Login/register failures show the **server's** message verbatim: the backend localizes by our `lang`
+header on all three environments ("The provided credentials are incorrect." / "بيانات الدخول مش
+صح."). `classifyAuthFailure`/`authFailureText` (`src/utils/authErrors.ts`) return the server text
+when there is one and a bundled key only for transport/unknown failures. **Never re-word or
+sharpen it** — the substring-matching that turned the generic refusal into "no account found"
+leaked whether a number is registered (removed with `auth.no_account_found` /
+`auth.incorrect_password`). Shared GraphQL-error reading lives in `src/utils/graphqlErrors.ts`.
+
 ## WhatsApp OTP (backend contract: `mobile-otp-guide.md` — a local copy from the backend team, deliberately not committed)
 Four **scoped** flows — student/parent × verify/reset. A code only works with its matching consume mutation, so **every flow starts with a fresh send**; never reuse one across screens. On non-prod the code is always `123456`.
 - **Screens**: `OTPVerificationScreen` (signup verification, both roles) and `ForgotPasswordScreen` (password reset, both roles) each take an `audience: 'student' | 'parent'` route param that selects the account, the documents, and the timer scope. `ForgotPasswordScreen` also takes `fromProfile` and serves three routes: `ForgotPassword`, `ParentForgotPassword`, and the authenticated `ResetPassword`. The 6-digit field is the shared `src/components/OtpCodeInput.tsx`.

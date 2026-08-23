@@ -129,12 +129,20 @@ describe('AuthContext & AuthProvider', () => {
       );
     });
 
-    // The error must be a translation KEY, not the server's English text — the
-    // screens render it with t(), so a raw message reaches Arabic users as-is.
-    it('should fail login and return a translation key', async () => {
-      (apolloClient.mutate as jest.Mock).mockRejectedValueOnce(
-        new Error('Invalid mobile or password'),
-      );
+    // The server answers a rejected sign-in with a message already translated
+    // to the request's language, so it is surfaced verbatim rather than
+    // replaced by our own (mobile-only login, but the bundled string said
+    // "Invalid email or password").
+    it('surfaces the server message for rejected credentials', async () => {
+      (apolloClient.mutate as jest.Mock).mockRejectedValueOnce({
+        name: 'CombinedGraphQLErrors',
+        errors: [
+          {
+            message: 'The provided credentials are incorrect.',
+            extensions: { validation: { mobile: ['The provided credentials are incorrect.'] } },
+          },
+        ],
+      });
 
       const { result } = renderHook(() => useAuth(), { wrapper });
 
@@ -146,7 +154,10 @@ describe('AuthContext & AuthProvider', () => {
         });
       });
 
-      expect(loginResult).toEqual({ success: false, error: 'auth.invalid_credentials' });
+      expect(loginResult).toEqual({
+        success: false,
+        errorMessage: 'The provided credentials are incorrect.',
+      });
       expect(result.current.isAuthenticated).toBe(false);
     });
 
@@ -160,7 +171,7 @@ describe('AuthContext & AuthProvider', () => {
         loginResult = await result.current.login({ mobile: '01007867184', password: 'pw' });
       });
 
-      expect(loginResult).toEqual({ success: false, error: 'common.unexpected_error' });
+      expect(loginResult).toEqual({ success: false, errorKey: 'common.unexpected_error' });
     });
 
     it('should register a new student user and trigger OTP state if unverified', async () => {

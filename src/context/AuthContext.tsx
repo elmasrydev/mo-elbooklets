@@ -27,6 +27,7 @@ import {
   configureCrashlyticsGuest,
 } from '../utils/crashlyticsHelper';
 import { logError, logInfo } from '../utils/logger';
+import { AuthFailure, classifyAuthFailure } from '../utils/authErrors';
 import {
   triggerNotificationPrompt,
   clearNotificationPromptedFlag,
@@ -113,11 +114,11 @@ interface AuthContextType {
   userRole: 'student' | 'parent' | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (input: LoginInput) => Promise<{ success: boolean; user?: User; error?: string }>;
-  register: (input: RegisterInput) => Promise<{ success: boolean; user?: User; error?: string }>;
+  login: (input: LoginInput) => Promise<{ success: boolean; user?: User } & AuthFailure>;
+  register: (input: RegisterInput) => Promise<{ success: boolean; user?: User } & AuthFailure>;
   forgotPassword: (email: string) => Promise<{ success: boolean; message?: string | null }>;
-  parentLogin: (input: ParentLoginInput) => Promise<{ success: boolean; error?: string }>;
-  parentRegister: (input: ParentRegisterInput) => Promise<{ success: boolean; error?: string }>;
+  parentLogin: (input: ParentLoginInput) => Promise<{ success: boolean } & AuthFailure>;
+  parentRegister: (input: ParentRegisterInput) => Promise<{ success: boolean } & AuthFailure>;
   parentForgotPassword: (email: string) => Promise<{ success: boolean; message?: string | null }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -141,27 +142,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 interface AuthProviderProps {
   children: ReactNode;
 }
-
-/**
- * Map a thrown auth error to a translation KEY. Screens render these with t(),
- * so returning the raw server/transport message leaves an Arabic user reading
- * English. A transport failure is not a credentials problem, so it gets its own
- * message; anything else falls back to the caller's domain default.
- */
-const authErrorKey = (error: unknown, fallbackKey: string): string => {
-  const message = error instanceof Error ? error.message.toLowerCase() : '';
-  if (!message) return fallbackKey;
-  if (message.includes('already been taken')) return 'auth.mobile_already_registered';
-  if (
-    message.includes('network') ||
-    message.includes('timeout') ||
-    message.includes('abort') ||
-    message.includes('failed to fetch')
-  ) {
-    return 'common.unexpected_error';
-  }
-  return fallbackKey;
-};
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -275,7 +255,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const login = useCallback(
-    async (input: LoginInput): Promise<{ success: boolean; user?: User; error?: string }> => {
+    async (input: LoginInput): Promise<{ success: boolean; user?: User } & AuthFailure> => {
       try {
         const result = await apolloClient.mutate({
           mutation: LoginDocument,
@@ -306,20 +286,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return { success: true, user: authPayload.user };
         }
 
-        // The screens pass this straight to t(), so it must be a translation
-        // KEY. A mutation that returns no payload without throwing means the
-        // credentials were rejected.
-        return { success: false, error: 'auth.invalid_credentials' };
+        // A mutation that returns no payload without throwing means the
+        // credentials were rejected but the server explained nothing.
+        return { success: false, errorKey: 'auth.invalid_credentials' };
       } catch (error) {
         logError('Login error', error);
-        return { success: false, error: authErrorKey(error, 'auth.invalid_credentials') };
+        return { success: false, ...classifyAuthFailure(error, 'auth.invalid_credentials') };
       }
     },
     [],
   );
 
   const register = useCallback(
-    async (input: RegisterInput): Promise<{ success: boolean; user?: User; error?: string }> => {
+    async (input: RegisterInput): Promise<{ success: boolean; user?: User } & AuthFailure> => {
       try {
         const result = await apolloClient.mutate({
           mutation: RegisterDocument,
@@ -347,10 +326,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return { success: true, user: authPayload.user };
         }
 
-        return { success: false, error: 'auth.registration_error' };
+        return { success: false, errorKey: 'auth.registration_error' };
       } catch (error) {
         logError('Registration error', error);
-        return { success: false, error: authErrorKey(error, 'auth.registration_error') };
+        return { success: false, ...classifyAuthFailure(error, 'auth.registration_error') };
       }
     },
     [],
@@ -384,7 +363,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   );
 
   const parentLogin = useCallback(
-    async (input: ParentLoginInput): Promise<{ success: boolean; error?: string }> => {
+    async (input: ParentLoginInput): Promise<{ success: boolean } & AuthFailure> => {
       try {
         const result = await apolloClient.mutate({
           mutation: ParentLoginDocument,
@@ -414,17 +393,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return { success: true };
         }
 
-        return { success: false, error: 'Login failed' };
-      } catch (error: any) {
+        return { success: false, errorKey: 'auth.invalid_credentials' };
+      } catch (error) {
         logError('Parent login error', error);
-        return { success: false, error: error.message || 'An error occurred during parent login' };
+        return { success: false, ...classifyAuthFailure(error, 'auth.invalid_credentials') };
       }
     },
     [],
   );
 
   const parentRegister = useCallback(
-    async (input: ParentRegisterInput): Promise<{ success: boolean; error?: string }> => {
+    async (input: ParentRegisterInput): Promise<{ success: boolean } & AuthFailure> => {
       try {
         const result = await apolloClient.mutate({
           mutation: ParentRegisterDocument,
@@ -455,13 +434,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return { success: true };
         }
 
-        return { success: false, error: 'Registration failed' };
-      } catch (error: any) {
+        return { success: false, errorKey: 'auth.registration_error' };
+      } catch (error) {
         logError('Parent registration error', error);
-        return {
-          success: false,
-          error: error.message || 'An error occurred during parent registration',
-        };
+        return { success: false, ...classifyAuthFailure(error, 'auth.registration_error') };
       }
     },
     [],
