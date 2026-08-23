@@ -809,12 +809,14 @@ const StudyLessonScreen: React.FC = () => {
   }, [dodProgress?.isComplete, currentLesson, subject]);
 
   const handleNavigateLesson = (lesson: Lesson) => {
-    // Locked lessons aren't navigable (mirror the lessons list).
+    // Locked lessons aren't navigable (mirror the lessons list). Rendered
+    // locally rather than through ModalContext: this screen is presented as an
+    // iOS fullScreenModal, which the root-level handler cannot pierce.
     if (lesson?.isLocked) {
       setLocalAlert({
         visible: true,
-        title: t('study_lesson.locked_title', 'Lesson Locked'),
-        message: t('study_chapters.locked_lesson', 'Purchase required or restricted'),
+        title: t('subscription.required_title'),
+        message: t('subscription.required_message'),
       });
       return;
     }

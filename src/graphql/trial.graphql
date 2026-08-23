@@ -1,0 +1,22 @@
+# Trial / subscription state (contract: `mobile-trial-restrictions.md` §2).
+#
+# Deliberately its OWN query rather than extra fields on `Me`, `Login` or
+# `Register`: these five fields are deployed on PRS but not yet on demo or
+# production (checked 2026-08-23), and a GraphQL operation selecting an unknown
+# field fails *entirely*. Folded into an auth document that would mean nobody
+# can sign in on those environments; kept here, the worst case is that the
+# query fails and the app simply shows no trial UI.
+#
+# `is_subscribed` rides along so one fetch answers both "can this student use
+# the app" and "how much of the trial is left".
+query TrialStatus {
+  me {
+    id
+    is_subscribed
+    on_trial
+    trial_ends_at
+    trial_days_remaining
+    daily_quiz_limit
+    remaining_quizzes_today
+  }
+}

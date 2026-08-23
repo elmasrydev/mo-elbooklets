@@ -56,7 +56,7 @@ src/
 - **Connectivity**: `@react-native-community/netinfo` via `src/hooks/useNetworkStatus.ts` distinguishes offline from backend errors (NetInfo is a native module → dev-client rebuild needed). Rate limit is 10 req/min → 429.
 - **Report + feedback** (Phase 3): each answer bubble has like/dislike (optimistic `aiChatFeedback`, toggles to NONE) + a Report button opening `BokiReportSheet` (fixed reason set `incorrect/irrelevant/offensive/other` — no backend reasons query — + optional notes → `aiChatReport`, confirmation via `ModalContext`).
 - **Analytics** (Title Case, `feature: 'boki'`) via `analytics.trackBoki*` in `src/lib/analytics.ts`. testIDs: `boki-fab`, `boki-chat-input`, `boki-send-button`, `boki-message-list`, `boki-typing-indicator`, `boki-retry-button`, `boki-source-link`, `boki-history-button`, `boki-new-conversation`, `boki-conversation-list`, `boki-conversation-{id}`, `boki-like-button`, `boki-dislike-button`, `boki-report-button`, `boki-report-reason-{reason}`, `boki-report-submit`.
-- **Reference-link deep-nav (BKLT-314)**: a source chip's `onPress` resolves `source.lessonId` via `BokiLessonById` (`lesson(id)` in `lesson.graphql`, plain `useLazyQuery` in `BokiChatScreen` — not part of the isolated `bokiApi.ts` layer, since it's a Lesson-domain op) and navigates to `StudyLesson` with `{ lesson, subject: lesson.chapter?.subject, fromBoki: true }`. Same `checkSubscription()` gate as `StudyChaptersScreen`'s chapter-list tap, but an `isLocked` lesson here surfaces `study_lesson.locked_title`/`study_chapters.locked_lesson` (there's no chapter-list lock badge to fall back on, unlike `StudyChaptersScreen`, which just no-ops). A null `lesson` or a failed query falls back to `boki.source_open_error`. `fromBoki` (like `fromBookmarks`) skips `StudyLesson`'s leave-disclaimer — there's no `allLessons`/study-session context to lose.
+- **Reference-link deep-nav (BKLT-314)**: a source chip's `onPress` resolves `source.lessonId` via `BokiLessonById` (`lesson(id)` in `lesson.graphql`, plain `useLazyQuery` in `BokiChatScreen` — not part of the isolated `bokiApi.ts` layer, since it's a Lesson-domain op) and navigates to `StudyLesson` with `{ lesson, subject: lesson.chapter?.subject, fromBoki: true }`. Same `checkSubscription()` gate as `StudyChaptersScreen`'s chapter-list tap, and an `isLocked` lesson here raises the shared `showPremiumNotice()` — the same one the lesson lists now use (see *Trial & subscription access*). A null `lesson` or a failed query falls back to `boki.source_open_error`. `fromBoki` (like `fromBookmarks`) skips `StudyLesson`'s leave-disclaimer — there's no `allLessons`/study-session context to lose.
 - **Status**: Phases 1–3 shipped (chat + errors/retry + history + new conversation + report + like/dislike + reference-link deep-nav). Backend exposes `conversations`/`conversationMessages` as queries, `aiChat*` as mutations (introspect before adding ops — the contract doc has been wrong once).
 
 ### Lesson mind map (BKLT-174, contract: `mobile-lesson-mindmap-svg.md` — local-only)
@@ -87,6 +87,52 @@ cached before the field existed), no URL → `'none'` and the section is not ren
   prod deploy breaks the whole study flow. Re-introspect prod before any store build.
 - Generation is async: a new lesson can return `mindMapUrl: null` and get one minutes later — never
   cache "this lesson has no map".
+
+## Trial & subscription access (backend contract: `mobile-trial-restrictions.md` — local-only)
+The server owns every access decision; the app only interprets. A student is on a **trial** from
+signup (bounded by ops-tuned `.env` values — PRS currently runs a **120-day** trial, so **never
+hardcode 7 or 2**), then either subscribed or locked out.
+- **`TrialStatus` (`src/graphql/trial.graphql`) is deliberately its own query.** The five fields
+  (`on_trial`, `trial_ends_at`, `trial_days_remaining`, `daily_quiz_limit`,
+  `remaining_quizzes_today`) are live on **PRS only** — not demo, not production (checked
+  2026-08-23). Folding them into `Me`/`Login`/`Register` would make **sign-in itself fail** on
+  those environments, since an operation selecting an unknown field fails in full. Keep them out
+  of every auth document; gate store builds on `npm run check:release-fields`.
+- **One fetch, one provider**: `TrialStatusProvider` (`src/context/TrialStatusContext.tsx`) wraps
+  the app; `useTrialStatus()` reads it. `status` is `null` for "unknown" (parent, signed out, or an
+  environment without the fields) and every consumer must **fail open** on it.
+- **`null` ≠ `0`**: for `daily_quiz_limit`, `null` is *unlimited* and `0` is *no access*. Use the
+  predicates in `src/utils/trialStatus.ts` (`isUnlimitedQuizzes`, `isQuizzingBlocked`,
+  `hasQuizAttemptsLeft`, `isLockedOut`) — a bare `<= 0` or `?? 0` locks out exactly the students
+  who paid.
+- **Freshness**: `is_subscribed` cached at sign-in goes stale both ways (a lapsed trial keeps
+  passing the gate; an activated plan keeps failing it). `refreshUser()` runs at launch and on
+  every foreground (`useAppForeground`); the trial query refreshes on foreground, on Home's focus
+  window, and after every `startQuiz`.
+- **Locks come from `Lesson.isLocked` only** — never from an index or from `on_trial` (a per-subject
+  plan mixes locked and unlocked rows on one screen). A locked row must *say something*: tapping one
+  raises `useSubscriptionGate().showPremiumNotice()` instead of the silent no-op it used to be.
+  **Every** way into a lesson is gated — the study chapter list, the in-reader lesson switcher, Boki
+  source chips, and **Bookmarks/Notes**. That last one is easy to miss: a bookmark outlives the
+  access that created it, so `MySavedPoints` selects `isLocked` too and the reader is not opened
+  when it is true (otherwise an expired student reads a blank page, since the server redacts
+  `summary`/`points` for a locked lesson).
+- **`startQuiz` failures** carry no `extensions.code`, so branch on *shape*, not wording
+  (`src/utils/quizStartErrors.ts`): `extensions.validation.lessonIds` ⇒ locked lesson ⇒ our list is
+  stale, so refetch `LessonsForSubject` and pop back to the **picker** (the settings screen's route
+  params still hold the rejected lesson), where `QuizLessonsScreen` prunes any now-locked selection;
+  any other GraphQL error is the daily cap. **Never auto-retry.** An attempt is spent on **start**,
+  not submit, and a resume costs nothing — so re-read `remaining_quizzes_today` after every start
+  instead of counting locally.
+- ⚠️ **No new paywall UI, by product decision.** There is no subscription/plans screen, no trial
+  countdown banner and no quiz counter — no IAP is planned and selling from inside the app is a
+  store-policy problem (Apple 3.1.1). **Every** refusal — locked lesson, locked-out account, daily
+  cap reached, `startQuiz` rejected — shows the app's one existing premium notice
+  (`subscription.required_title` / `required_message`), and that block of locale keys holds exactly
+  those two strings. This is a deliberate deviation from the contract's §2 "Suggested UI" and its
+  §5 "route to the subscription screen": the *logic* is implemented in full, only the surfaces are
+  not. The server's own refusal text is logged rather than shown, so support can still tell which
+  limit was hit.
 
 ## Auth error messages
 Login/register failures show the **server's** message verbatim: the backend localizes by our `lang`

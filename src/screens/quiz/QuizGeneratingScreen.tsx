@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, Dimensions, ActivityIndicator, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
-import { useMutation } from '@apollo/client/react';
+import { useApolloClient, useMutation } from '@apollo/client/react';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -16,8 +16,12 @@ import Animated, {
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { useTypography } from '../../hooks/useTypography';
-import { StartQuizDocument } from '../../generated/graphql';
+import { LessonsForSubjectDocument, StartQuizDocument } from '../../generated/graphql';
 import { ConfirmModal } from '../../components/ConfirmModal';
+import { classifyQuizStartError, QuizStartFailure } from '../../utils/quizStartErrors';
+import { logError, logInfo } from '../../utils/logger';
+import { useTrialStatus } from '../../context/TrialStatusContext';
+import { hasQuizAttemptsLeft, isLockedOut } from '../../utils/trialStatus';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -36,6 +40,8 @@ const QuizGeneratingScreen: React.FC = () => {
 
   const [localModalVisible, setLocalModalVisible] = useState(false);
   const [localModalError, setLocalModalError] = useState<string | null>(null);
+  const { status: trialStatus, refresh: refreshTrialStatus } = useTrialStatus();
+  const client = useApolloClient();
 
   // Animation shared values
   const transitionProgress = useSharedValue(0);
@@ -51,8 +57,50 @@ const QuizGeneratingScreen: React.FC = () => {
   const [timelineCompleted, setTimelineCompleted] = useState(false);
   const [quizId, setQuizId] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
+  // Which kind of refusal this was — it decides both the recovery and which
+  // message the student sees (a dropped request is not an access problem).
+  const [failureKind, setFailureKind] = useState<QuizStartFailure['kind'] | null>(null);
   const [apiCompleted, setApiCompleted] = useState(false);
   const [startQuizMutation] = useMutation(StartQuizDocument);
+
+  /**
+   * Leave the failed attempt.
+   *
+   * A locked lesson means the picker we came from is showing locks the server
+   * disagrees with (§4b), so the list is refetched *and* the student is sent
+   * back to the picker itself — not to the settings screen, whose route params
+   * still carry the rejected lesson and would fail again identically.
+   */
+  const leaveFailedAttempt = useCallback(() => {
+    setLocalModalVisible(false);
+    if (failureKind === 'lockedLesson') {
+      // `include` only touches lists currently mounted, so this is a no-op if
+      // the picker was unmounted behind us. On failure the picker keeps the
+      // rejected lesson ticked and Start fails the same way again — worth a
+      // log line, since nothing else would explain the loop.
+      void client
+        .refetchQueries({ include: [LessonsForSubjectDocument] })
+        .catch((refetchError) => logError('Lesson list refetch failed', refetchError));
+      navigation.popTo('QuizFlowLessons');
+      return;
+    }
+    navigation.goBack();
+  }, [failureKind, client, navigation]);
+
+  /**
+   * Is this refusal about access, or did something just break?
+   *
+   * A locked lesson always is. Anything else the server refuses is only an
+   * access problem if the student's own state says so — `classifyQuizStartError`
+   * returns `server` for *any* messaged error, so treating that alone as the
+   * daily cap would answer an internal server error with "Subscription
+   * Required" for a paid student with unlimited quizzes. The counter is re-read
+   * as soon as the attempt settles, so by the time this modal appears the
+   * status reflects the attempt that just failed.
+   */
+  const isAccessFailure =
+    failureKind === 'lockedLesson' ||
+    (failureKind === 'server' && (!hasQuizAttemptsLeft(trialStatus) || isLockedOut(trialStatus)));
 
   // Start breathing (pulse) animations
   useEffect(() => {
@@ -84,12 +132,17 @@ const QuizGeneratingScreen: React.FC = () => {
     // out of the generating screen mid-flight.
     let active = true;
     const startQuizApi = async () => {
-      try {
-        // Guard against arriving here without route params (deep link / fast refresh)
-        if (!subject?.id) {
-          if (active) setApiError(t('quiz_screen.error_loading_history'));
-          return;
+      // Guard against arriving here without route params (deep link / fast
+      // refresh). Sits outside the try so no attempt — and so no counter
+      // re-read — is reported for a request that was never sent.
+      if (!subject?.id) {
+        if (active) {
+          setApiError(t('quiz_screen.error_loading_history'));
+          setApiCompleted(true);
         }
+        return;
+      }
+      try {
         const { data } = await startQuizMutation({
           variables: {
             subjectId: subject.id,
@@ -106,10 +159,30 @@ const QuizGeneratingScreen: React.FC = () => {
         } else {
           setApiError(t('quiz_screen.error_loading_history'));
         }
-      } catch (err: any) {
-        if (active) setApiError(err.message || t('quiz_screen.error_loading_history'));
+      } catch (err) {
+        if (!active) return;
+        // Branch on the error's *shape*, never its wording: the server tags
+        // neither trial failure with a code (§4a, §4b), so matching on text
+        // would break the moment the backend rephrases anything.
+        const failure = classifyQuizStartError(err);
+        setFailureKind(failure.kind);
+        // Hold the server's own (already translated) sentence. An access
+        // refusal is answered with the app's premium notice instead — see the
+        // modal below — but anything else still shows what the server said,
+        // which is what this screen has always done.
+        if (failure.kind !== 'unknown') logInfo(`startQuiz refused: ${failure.message}`);
+        setApiError(
+          failure.kind === 'unknown' ? t('quiz_screen.error_loading_history') : failure.message,
+        );
       } finally {
-        if (active) setApiCompleted(true);
+        if (active) {
+          setApiCompleted(true);
+          // An attempt is spent on start, not on submit — and a resume spends
+          // nothing. Rather than track that here, re-read the counter the
+          // server already keeps (§4, "cheapest correct approach"). Nothing on
+          // this screen waits for it.
+          void refreshTrialStatus();
+        }
       }
     };
     startQuizApi();
@@ -418,18 +491,14 @@ const QuizGeneratingScreen: React.FC = () => {
       {/* Local Confirm Modal to bypass iOS fullScreenModal backdrop issues */}
       <ConfirmModal
         visible={localModalVisible}
-        title={t('common.error')}
-        message={localModalError || undefined}
+        title={isAccessFailure ? t('subscription.required_title') : t('common.error')}
+        message={
+          isAccessFailure ? t('subscription.required_message') : localModalError || undefined
+        }
         showCancel={false}
         confirmLabel={t('common.ok', 'OK')}
-        onConfirm={() => {
-          setLocalModalVisible(false);
-          navigation.goBack();
-        }}
-        onCancel={() => {
-          setLocalModalVisible(false);
-          navigation.goBack();
-        }}
+        onConfirm={leaveFailedAttempt}
+        onCancel={leaveFailedAttempt}
       />
     </View>
   );

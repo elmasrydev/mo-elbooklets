@@ -31,6 +31,7 @@ import { GenericListSkeleton } from '../components/SkeletonLoader';
 import RetryView from '../components/RetryView';
 import { loadFailureMessage } from '../utils/queryError';
 import { INPUT_TEXT_ALIGN } from '../lib/rtl';
+import { useSubscriptionGate } from '../hooks/useSubscriptionGate';
 
 type SavedPoint = MySavedPointsQuery['mySavedPoints'][number];
 
@@ -127,6 +128,7 @@ const NoteModal: React.FC<{
 
 const BookmarksNotesScreen: React.FC = () => {
   const { theme, spacing, borderRadius } = useTheme();
+  const { checkSubscription, showPremiumNotice } = useSubscriptionGate();
   const { isRTL, language } = useLanguage();
   const { t } = useTranslation();
   const { typography, fontWeight } = useTypography();
@@ -191,6 +193,16 @@ const BookmarksNotesScreen: React.FC = () => {
   );
 
   const handleItemPress = (item: SavedPoint) => {
+    // A bookmark is not a permanent key to the lesson behind it. When a trial
+    // or plan ends the server locks every lesson again — the bookmarked ones
+    // included — and returns them redacted, so opening one would show a blank
+    // reader. Both checks answer with the same premium notice the lesson lists
+    // use (contract §3, §5).
+    if (!checkSubscription()) return;
+    if (item.lesson.isLocked) {
+      showPremiumNotice();
+      return;
+    }
     navigation.navigate('StudyLesson', {
       lesson: item.lesson,
       // Pass the point ID to scroll to it

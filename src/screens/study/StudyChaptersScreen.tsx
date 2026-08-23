@@ -57,7 +57,7 @@ const StudyChaptersScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const subject: Subject = route.params?.subject;
-  const { checkSubscription } = useSubscriptionGate();
+  const { checkSubscription, showPremiumNotice } = useSubscriptionGate();
 
   const {
     data,
@@ -101,7 +101,13 @@ const StudyChaptersScreen: React.FC = () => {
 
   const handleLessonPress = (lesson: Lesson) => {
     if (!checkSubscription()) return;
-    if (lesson.isLocked) return;
+    // A locked row is a paywall entry point, not a no-op: returning silently
+    // here is indistinguishable from a broken app, and during the trial the
+    // gate above passes so nothing else would speak up.
+    if (lesson.isLocked) {
+      showPremiumNotice();
+      return;
+    }
     const allLessons = chapters.flatMap((ch) => ch.lessons);
     navigation.navigate('StudyLesson', { lesson, allLessons, subject });
   };

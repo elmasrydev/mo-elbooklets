@@ -8,6 +8,7 @@ import { View, ActivityIndicator, StyleSheet, I18nManager, NativeModules } from 
 import { useFonts } from 'expo-font';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthProvider } from './src/context/AuthContext';
+import { TrialStatusProvider } from './src/context/TrialStatusContext';
 import { ThemeProvider } from './src/context/ThemeContext';
 import apolloClient from './src/lib/apollo';
 import { ApiUriManager } from './src/config/api';
@@ -181,37 +182,39 @@ export default function App() {
                 <LanguageProvider initialLanguage={initialLanguage}>
                   <I18nextProvider i18n={i18n}>
                     <AuthProvider>
-                      <NavigationContainer
-                        ref={navigationRef}
-                        onReady={() => {
-                          const currentRouteName = navigationRef.current?.getCurrentRoute()?.name;
-                          routeNameRef.current = currentRouteName;
-                          if (currentRouteName) {
-                            crashlytics().log(`Screen viewed: ${currentRouteName}`);
-                            analytics.screen(currentRouteName);
-                          }
-                        }}
-                        onStateChange={async () => {
-                          const previousRouteName = routeNameRef.current;
-                          const currentRouteName = navigationRef.current?.getCurrentRoute()?.name;
+                      <TrialStatusProvider>
+                        <NavigationContainer
+                          ref={navigationRef}
+                          onReady={() => {
+                            const currentRouteName = navigationRef.current?.getCurrentRoute()?.name;
+                            routeNameRef.current = currentRouteName;
+                            if (currentRouteName) {
+                              crashlytics().log(`Screen viewed: ${currentRouteName}`);
+                              analytics.screen(currentRouteName);
+                            }
+                          }}
+                          onStateChange={async () => {
+                            const previousRouteName = routeNameRef.current;
+                            const currentRouteName = navigationRef.current?.getCurrentRoute()?.name;
 
-                          if (previousRouteName !== currentRouteName && currentRouteName) {
-                            crashlytics().log(`Navigated to: ${currentRouteName}`);
-                            analytics.screen(currentRouteName);
-                          }
-                          routeNameRef.current = currentRouteName;
-                        }}
-                      >
-                        <ErrorBoundary>
-                          <AppNavigator />
-                          <NotificationHandler />
-                        </ErrorBoundary>
-                      </NavigationContainer>
-                      <BokiFloatingButton navigationRef={navigationRef} />
-                      <ForceUpdateModal />
-                      <MaintenanceModal />
-                      <GlobalModalHandler />
-                      <ApiDomainChecker />
+                            if (previousRouteName !== currentRouteName && currentRouteName) {
+                              crashlytics().log(`Navigated to: ${currentRouteName}`);
+                              analytics.screen(currentRouteName);
+                            }
+                            routeNameRef.current = currentRouteName;
+                          }}
+                        >
+                          <ErrorBoundary>
+                            <AppNavigator />
+                            <NotificationHandler />
+                          </ErrorBoundary>
+                        </NavigationContainer>
+                        <BokiFloatingButton navigationRef={navigationRef} />
+                        <ForceUpdateModal />
+                        <MaintenanceModal />
+                        <GlobalModalHandler />
+                        <ApiDomainChecker />
+                      </TrialStatusProvider>
                     </AuthProvider>
                   </I18nextProvider>
                 </LanguageProvider>

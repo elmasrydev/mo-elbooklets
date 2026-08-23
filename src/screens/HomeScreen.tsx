@@ -37,6 +37,7 @@ import SubjectIcon from '../components/SubjectIcon';
 import { CardListSkeleton } from '../components/SkeletonLoader';
 import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
 import NotificationBell from '../components/NotificationBell';
+import { useTrialStatus } from '../context/TrialStatusContext';
 import Avatar from '../components/Avatar';
 import { analytics } from '../lib/analytics';
 
@@ -203,6 +204,7 @@ const HomeScreen: React.FC = () => {
   const { t } = useTranslation();
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
+  const { refresh: refreshTrialStatus } = useTrialStatus();
 
   // Subjects and today's schedule reuse their own tabs' documents, so opening
   // those tabs reads the same cache entry instead of refetching.
@@ -226,7 +228,11 @@ const HomeScreen: React.FC = () => {
   const loading = homeQuery.loading;
 
   const fetchHomeData = useCallback(async () => {
+    // No trial UI renders here, but the gates read this state — Home's focus
+    // window is the app's regular "is this still true?" beat, so it keeps the
+    // subscription flag and the day's quiz counter current too.
     await Promise.all([
+      refreshTrialStatus(),
       homeQuery.refetch(),
       subjectsQuery.refetch(),
       leaderboardQuery.refetch(),
@@ -236,7 +242,7 @@ const HomeScreen: React.FC = () => {
     ]);
     // Refetch functions are stable for the life of the hook.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [refreshTrialStatus]);
 
   // useQuery fetched on mount, so the first focus inside the window is a no-op.
   const lastFetchRef = React.useRef<number>(Date.now());

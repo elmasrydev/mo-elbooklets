@@ -63,6 +63,10 @@ query MySavedPoints($lessonId: ID) {
       mindMapUrl
       mindMapMimeType
       myInteraction
+      # A bookmark outlives the access that created it: once a trial ends every
+      # lesson is locked again, this one included, and its `summary`/`points`
+      # come back redacted. Without this field the reader opens an empty page.
+      isLocked
       lessonPoints {
         id
         title

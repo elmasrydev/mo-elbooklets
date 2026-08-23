@@ -679,6 +679,7 @@ export type MySavedPointsQuery = {
       mindMapUrl: string | null;
       mindMapMimeType: string | null;
       myInteraction: string | null;
+      isLocked: boolean;
       lessonPoints: Array<{
         id: string;
         title: string;
@@ -1559,6 +1560,20 @@ export type ReportQuestionMutationVariables = Exact<{
 
 export type ReportQuestionMutation = {
   reportQuestion: { success: boolean; message: string | null };
+};
+
+export type TrialStatusQueryVariables = Exact<{ [key: string]: never }>;
+
+export type TrialStatusQuery = {
+  me: {
+    id: string;
+    is_subscribed: boolean;
+    on_trial: boolean;
+    trial_ends_at: string | null;
+    trial_days_remaining: number;
+    daily_quiz_limit: number | null;
+    remaining_quizzes_today: number | null;
+  } | null;
 };
 
 export const LoginDocument = {
@@ -3868,6 +3883,7 @@ export const MySavedPointsDocument = {
                       { kind: 'Field', name: { kind: 'Name', value: 'mindMapUrl' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'mindMapMimeType' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'myInteraction' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'isLocked' } },
                       {
                         kind: 'Field',
                         name: { kind: 'Name', value: 'lessonPoints' },
@@ -7782,3 +7798,34 @@ export const ReportQuestionDocument = {
     },
   ],
 } as unknown as DocumentNode<ReportQuestionMutation, ReportQuestionMutationVariables>;
+export const TrialStatusDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'TrialStatus' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'me' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'is_subscribed' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'on_trial' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'trial_ends_at' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'trial_days_remaining' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'daily_quiz_limit' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'remaining_quizzes_today' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<TrialStatusQuery, TrialStatusQueryVariables>;

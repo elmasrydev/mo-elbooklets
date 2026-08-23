@@ -28,6 +28,7 @@ import {
 } from '../utils/crashlyticsHelper';
 import { logError, logInfo } from '../utils/logger';
 import { AuthFailure, classifyAuthFailure } from '../utils/authErrors';
+import { useAppForeground } from '../hooks/useAppForeground';
 import {
   triggerNotificationPrompt,
   clearNotificationPromptedFlag,
@@ -212,6 +213,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               grade: parsedUser.grade?.name,
             });
           }
+
+          // The stored blob is a snapshot from the last sign-in, and
+          // `is_subscribed` is the field the whole app gates content on — a
+          // trial that lapsed overnight, or a plan support activated this
+          // morning, is invisible until this lands. Deliberately not awaited:
+          // the cached copy is good enough to paint with, and holding the
+          // splash on a network round-trip is not.
+          void refreshUser();
 
           // Check if registration success screen is pending
           const justRegistered = await AsyncStorage.getItem('just_registered_pending_success');
@@ -625,6 +634,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       logError('Refresh user error', error);
     }
   }, []);
+
+  // A subscription can start or lapse while the app sits in the background, and
+  // nothing tells the device. Re-read the account on the way back in so the
+  // content gates decide on today's state rather than the one cached at launch.
+  // `refreshUser` no-ops without a stored session, so this is safe signed out.
+  useAppForeground(refreshUser);
 
   const value: AuthContextType = React.useMemo(
     () => ({

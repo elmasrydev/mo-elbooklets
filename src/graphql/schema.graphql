@@ -1761,6 +1761,11 @@ type User {
   city_id: ID
   country_code: String
   created_at: DateTime!
+
+  """
+  Quiz attempts allowed per day (trial config or the plan's limit). Null means unlimited.
+  """
+  daily_quiz_limit: Int
   educational_system: EducationalSystem
   educational_system_id: ID
   email: String
@@ -1776,13 +1781,25 @@ type User {
   mobile: String!
   mobile_verified_at: DateTime
   name: String!
+
+  """True while the free trial is still running."""
+  on_trial: Boolean!
   parent_mobile: String
   profileCompleteness: ProfileCompleteness!
+
+  """Quiz attempts left today. Null means unlimited."""
+  remaining_quizzes_today: Int
   school: School
   school_id: ID
   school_name: String
   selectedAvatar: Avatar
   streak_freezes: Int!
+
+  """Whole days left on the trial; 0 once it has ended."""
+  trial_days_remaining: Int!
+
+  """When the free trial ends. Null if the user never had one."""
+  trial_ends_at: DateTime
   updated_at: DateTime!
 
   """
