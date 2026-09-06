@@ -23,13 +23,13 @@
         "ITSAppUsesNonExemptEncryption": false
       },
       "bundleIdentifier": "com.elbooklets.app",
-      "buildNumber": "98",
+      "buildNumber": "103",
       "appleTeamId": "XJAN9FLEYZ",
       "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "package": "com.elbooklets.app",
-      "versionCode": 10,
+      "versionCode": 11,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#F3F5FB"
@@ -37,10 +37,7 @@
       "supportsRtl": true,
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "permissions": [
-        "INTERNET",
-        "ACCESS_NETWORK_STATE"
-      ],
+      "permissions": ["INTERNET", "ACCESS_NETWORK_STATE"],
       "googleServicesFile": "./google-services.json"
     },
     "web": {
@@ -67,7 +64,7 @@
       "./plugins/withSecurityConfigs.js"
     ],
     "extra": {
-      "debugMode": true,
+      "debugMode": false,
       "eas": {
         "projectId": "d4dcdf3d-7581-496d-96a9-c5acca79629d"
       }
