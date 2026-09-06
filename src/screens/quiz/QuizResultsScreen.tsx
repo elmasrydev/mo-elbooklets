@@ -115,7 +115,9 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
       setPublishError(null);
       const response = await publishQuizToFeed({ variables: { quizId } });
       if (response.data?.publishQuizToFeed?.success) {
-        setPublished(!published);
+        // There is no unpublish mutation — toggling made a second tap claim the
+        // post had been removed when it was still on the feed.
+        setPublished(true);
       } else {
         setPublishError(response.data?.publishQuizToFeed?.message || t('common.error'));
       }
@@ -238,12 +240,11 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
   const formattedTime = formatTime(timeTaken);
 
   // Determine state based on percentage and determine icon asset
-  const celebrationIcon =
-    percentage < 60
-      ? require('../../../assets/images/quizzLowIcon.png')
-      : percentage < 80
-        ? require('../../../assets/images/quizzNormalIcon.png')
-        : require('../../../assets/images/quizzSucessIcon.png');
+  const celebrationIcon = !quizResult.isPassed
+    ? require('../../../assets/images/quizzLowIcon.png')
+    : percentage < 80
+      ? require('../../../assets/images/quizzNormalIcon.png')
+      : require('../../../assets/images/quizzSucessIcon.png');
 
   let stateTheme = {
     color: '#10B981', // green
@@ -252,7 +253,10 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
     subtitle: t('quiz_results.mastered_perfectly', "You've mastered this topic perfectly."),
   };
 
-  if (percentage < 60) {
+  // The fail state follows the server's verdict so the encouragement copy can
+  // never contradict the Pass/Fail badge; the "good job" tier stays a purely
+  // visual band on top of a pass.
+  if (!quizResult.isPassed) {
     stateTheme = {
       color: '#FF6B6B', // red
       bg: '#FEE2E2',
@@ -310,7 +314,10 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
                 </Text>
               </View>
               <Text style={currentStyles.passStatusValue}>
-                {percentage >= 60
+                {/* The server owns the pass threshold — re-deriving it from a
+                    hardcoded 60% would disagree with the score the backend
+                    recorded the moment that threshold changes. */}
+                {quizResult.isPassed
                   ? t('home_screen.passed', 'Passed')
                   : t('home_screen.failed', 'Failed')}
               </Text>
@@ -337,7 +344,7 @@ const QuizResultsScreen: React.FC<QuizResultsScreenProps> = (props) => {
                 </Text>
               </View>
               <Text style={[currentStyles.statValueText, { color: theme.colors.warning }]}>
-                +{quizResult.xp.toLocaleString()} XP
+                {`+${quizResult.xp.toLocaleString()} ${t('student_profile.xp')}`}
               </Text>
             </View>
           )}

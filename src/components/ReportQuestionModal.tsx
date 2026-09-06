@@ -21,6 +21,7 @@ import { useLazyQuery, useMutation } from '@apollo/client/react';
 import { QuestionReportTypesDocument, ReportQuestionDocument } from '../generated/graphql';
 import AppButton from './AppButton';
 import { spacing as spacingConst } from '../config/spacing';
+import { INPUT_TEXT_ALIGN } from '../lib/rtl';
 
 const logo = require('../../assets/logo-transparent.png');
 
@@ -303,6 +304,7 @@ const ReportQuestionModal: React.FC<ReportQuestionModalProps> = ({
                         }, 100);
                       }}
                       multiline
+                      textAlign={INPUT_TEXT_ALIGN}
                       textAlignVertical="top"
                       maxLength={500}
                     />
@@ -460,7 +462,7 @@ const styles = (theme: any, borderRadius: any, typography: any, fontWeight: any)
       minHeight: 90,
       ...typography('body'),
       lineHeight: 22,
-      textAlign: 'left',
+      // No textAlign here — it would beat the INPUT_TEXT_ALIGN prop (BKLT-312).
     },
     charCount: {
       ...typography('caption'),

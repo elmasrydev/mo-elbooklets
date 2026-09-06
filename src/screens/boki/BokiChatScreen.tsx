@@ -54,7 +54,7 @@ const BokiChatScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { showConfirm } = useModal();
-  const { checkSubscription } = useSubscriptionGate();
+  const { checkSubscription, showPremiumNotice } = useSubscriptionGate();
   const { isConnected } = useNetworkStatus();
   const [fetchLesson, { loading: lessonLoading }] = useLazyQuery(BokiLessonByIdDocument, {
     fetchPolicy: 'network-only',
@@ -119,15 +119,6 @@ const BokiChatScreen: React.FC = () => {
     });
   }, [showConfirm, t, isConnected]);
 
-  const showLessonLocked = useCallback(() => {
-    showConfirm({
-      title: t('study_lesson.locked_title'),
-      message: t('study_chapters.locked_lesson'),
-      showCancel: false,
-      onConfirm: () => {},
-    });
-  }, [showConfirm, t]);
-
   // Reference-link tap (BKLT-314): resolve the source's lessonId to a full
   // lesson via `lesson(id)` and open StudyLesson — mirrors the gating
   // StudyChaptersScreen applies before opening a lesson from the chapter list.
@@ -149,7 +140,9 @@ const BokiChatScreen: React.FC = () => {
           return;
         }
         if (lesson.isLocked) {
-          showLessonLocked();
+          // Same paywall the lesson lists raise — a source chip pointing at a
+          // lesson outside the student's plan is a locked lesson, not a Boki failure.
+          showPremiumNotice();
           return;
         }
         navigation.navigate('StudyLesson', {
@@ -168,7 +161,7 @@ const BokiChatScreen: React.FC = () => {
       lessonLoading,
       fetchLesson,
       showSourceOpenError,
-      showLessonLocked,
+      showPremiumNotice,
       navigation,
     ],
   );

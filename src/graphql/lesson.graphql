@@ -30,6 +30,8 @@ query StudyChapters($subjectId: ID!) {
       summary
       points
       videoUrl
+      mindMapUrl
+      mindMapMimeType
       myInteraction
       lessonPoints {
         id
@@ -58,7 +60,13 @@ query MySavedPoints($lessonId: ID) {
       summary
       points
       videoUrl
+      mindMapUrl
+      mindMapMimeType
       myInteraction
+      # A bookmark outlives the access that created it: once a trial ends every
+      # lesson is locked again, this one included, and its `summary`/`points`
+      # come back redacted. Without this field the reader opens an empty page.
+      isLocked
       lessonPoints {
         id
         title
@@ -92,6 +100,8 @@ query BokiLessonById($id: ID!) {
     summary
     points
     videoUrl
+    mindMapUrl
+    mindMapMimeType
     myInteraction
     lessonPoints {
       id

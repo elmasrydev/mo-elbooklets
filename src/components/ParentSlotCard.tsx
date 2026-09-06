@@ -2,6 +2,11 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, Animated, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { useModal } from '../context/ModalContext';
+import { logError } from '../utils/logger';
+import { INPUT_TEXT_ALIGN } from '../lib/rtl';
+import { EGYPT_MOBILE_REGEX } from '../utils/validators';
+import { digitsOnly } from '../utils/digits';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTypography } from '../hooks/useTypography';
@@ -32,33 +37,52 @@ const ParentSlotCard: React.FC<ParentSlotCardProps> = ({
   const { theme, spacing, borderRadius } = useTheme();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
+  const { showConfirm } = useModal();
   const { typography, fontWeight } = useTypography();
 
   const [mobileInput, setMobileInput] = useState('');
   const [inputError, setInputError] = useState<string | null>(null);
 
   const handleSendInvite = async () => {
-    // Egyptian mobile validation: 11 digits starting with 010, 011, 012, or 015
-    const isValid = /^01[0125][0-9]{8}$/.test(mobileInput);
-    if (!isValid) {
+    // digitsOnly() first: testing the raw value is ASCII-only, so a number typed
+    // on an Arabic keyboard (٠١٠…) fails a validation it should pass. Reuse the
+    // shared regex rather than re-inlining one — validators.ts is the source of
+    // truth for the Egyptian mobile format.
+    const mobile = digitsOnly(mobileInput);
+    if (!EGYPT_MOBILE_REGEX.test(mobile)) {
       setInputError(t('parent_linking.invalid_mobile'));
       return;
     }
     setInputError(null);
     try {
-      await onSendInvite(mobileInput);
+      await onSendInvite(mobile);
       setMobileInput(''); // Clear input on success
     } catch (e: any) {
       setInputError(e.message || t('parent_linking.send_error'));
     }
   };
 
+  // A failed accept/decline/cancel used to vanish into console.error: the card
+  // simply stayed as it was, so the student could not tell whether their tap had
+  // done anything.
+  const reportFailure = (error: unknown, context: string) => {
+    logError(`[ParentSlotCard] ${context} failed`, error);
+    showConfirm({
+      title: t('common.error'),
+      // The server's message is untranslated English; the app's own copy is the
+      // only thing an Arabic student can read.
+      message: t('common.unexpected_error'),
+      showCancel: false,
+      onConfirm: () => {},
+    });
+  };
+
   const handleRespond = async (action: 'accept' | 'decline') => {
     if (!slot.request) return;
     try {
       await onRespond(slot.request.id, action);
-    } catch (e: any) {
-      console.error(e);
+    } catch (e) {
+      reportFailure(e, action);
     }
   };
 
@@ -66,8 +90,8 @@ const ParentSlotCard: React.FC<ParentSlotCardProps> = ({
     if (!slot.request) return;
     try {
       await onCancel(slot.request.id);
-    } catch (e: any) {
-      console.error(e);
+    } catch (e) {
+      reportFailure(e, 'cancel');
     }
   };
 
@@ -125,6 +149,7 @@ const ParentSlotCard: React.FC<ParentSlotCardProps> = ({
           placeholder={t('parent_linking.enter_mobile_placeholder')}
           placeholderTextColor={theme.colors.textTertiary}
           keyboardType="phone-pad"
+          textAlign={INPUT_TEXT_ALIGN}
           value={mobileInput}
           onChangeText={(val) => {
             setMobileInput(val);
@@ -238,6 +263,7 @@ const ParentSlotCard: React.FC<ParentSlotCardProps> = ({
           placeholder={t('parent_linking.enter_mobile_placeholder')}
           placeholderTextColor={theme.colors.textTertiary}
           keyboardType="phone-pad"
+          textAlign={INPUT_TEXT_ALIGN}
           value={mobileInput}
           onChangeText={(val) => {
             setMobileInput(val);
@@ -316,10 +342,12 @@ const styles = (
     },
     input: {
       flex: 1,
-      fontSize: 16,
+      // typography() rather than a bare fontSize — a bare size leaves the input
+      // on the system face instead of the app's family.
+      ...typography('body'),
       height: '100%',
       color: theme.colors.text,
-      textAlign: 'left',
+      // No textAlign here — it would beat the INPUT_TEXT_ALIGN prop (BKLT-312).
       marginHorizontal: spacing.sm,
     },
     errorText: {

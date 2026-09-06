@@ -1,5 +1,5 @@
 # Social graph: timeline feed, student search, follow lists, public profiles.
-# StudentSearchResult and LeaderboardEntry are normalized by id, so the
+# StudentSearchResult is normalized by id, so the
 # FollowUser mutation syncs isFollowing across every list via the Apollo cache
 # (useFollowToggle); followBus covers the non-normalized screens.
 

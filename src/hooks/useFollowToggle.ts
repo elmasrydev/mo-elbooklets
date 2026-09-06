@@ -5,6 +5,7 @@ import { useMutation } from '@apollo/client/react';
 import { FollowUserDocument, FollowUserMutation } from '../generated/graphql';
 import { useAuth } from '../context/AuthContext';
 import { emitFollowChange } from '../utils/followBus';
+import { patchCachedLeaderboardEntries } from '../utils/leaderboardCache';
 
 type FollowResult = FollowUserMutation['followUser'];
 
@@ -12,18 +13,22 @@ export const useFollowToggle = () => {
   const { refreshUser } = useAuth();
 
   const [followUser, { loading: isToggling }] = useMutation(FollowUserDocument, {
-    // StudentSearchResult and LeaderboardEntry are normalized by id, so one
-    // cache write flips isFollowing in every mounted list at once (search
-    // results, follow lists, leaderboard entries + userEntry).
     update: (cache, { data }, { variables }) => {
       const result = data?.followUser;
       if (!result?.success || !variables) return;
-      for (const __typename of ['StudentSearchResult', 'LeaderboardEntry'] as const) {
-        cache.modify({
-          id: cache.identify({ __typename, id: variables.userId }),
-          fields: { isFollowing: () => result.isFollowing },
-        });
-      }
+      const { userId } = variables;
+      const { isFollowing } = result;
+
+      // StudentSearchResult is normalized by id, so one write flips isFollowing
+      // everywhere it is mounted (search results, follow lists).
+      cache.modify({
+        id: cache.identify({ __typename: 'StudentSearchResult', id: userId }),
+        fields: { isFollowing: () => isFollowing },
+      });
+
+      // LeaderboardEntry is deliberately NOT normalized, so each cached board
+      // holds its own copy of the student and must be patched in place.
+      patchCachedLeaderboardEntries(cache, userId, (entry) => ({ ...entry, isFollowing }));
     },
   });
 

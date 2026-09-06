@@ -107,6 +107,14 @@ class ApiUriManager {
    * If the URL matches PRIMARY_API_URL, clears the override from storage.
    */
   static async updateUrl(url: string): Promise<void> {
+    // Defence in depth: only the *menu rows* leading here were debug-gated, so
+    // the switcher itself would still repoint a production build if it were ever
+    // reachable another way (deep link, stale screen, a future caller).
+    if (!isDebugMode()) {
+      if (__DEV__) console.warn('[ApiUriManager] Refused URL switch outside debug mode');
+      return;
+    }
+
     // Safety: only accept known URLs
     if (!KNOWN_API_URLS.includes(url as (typeof KNOWN_API_URLS)[number])) {
       if (__DEV__) console.warn('[ApiUriManager] Rejected unknown URL:', url);
@@ -126,3 +134,19 @@ class ApiUriManager {
 }
 
 export { ApiUriManager };
+
+/**
+ * Resolve a server-relative asset path (badge logos, avatars — the API returns
+ * them as "/storage/…") against the *active* backend.
+ *
+ * Must never be replaced with a hardcoded host: pinning one would make a
+ * production build fetch its images from the PRS test server, which is both a
+ * broken-image risk and a leak of test infrastructure into the store build.
+ * An absolute URL is passed through untouched.
+ */
+export const resolveAssetUrl = (path?: string | null): string | undefined => {
+  if (!path) return undefined;
+  if (!path.startsWith('/')) return path;
+  // Every known API URL ends in /graphql; the asset origin is what precedes it.
+  return ApiUriManager.getActiveUrl().replace(/\/graphql\/?$/, '') + path;
+};

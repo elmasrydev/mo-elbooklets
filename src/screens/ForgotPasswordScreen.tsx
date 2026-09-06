@@ -94,8 +94,17 @@ const ForgotPasswordScreen: React.FC = () => {
   const { t } = useTranslation();
   const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
-  const { isActive, formattedTime, isExpired, hasLiveCode, sentTo, startTimer, clearTimer } =
-    useOtpTimer(isParent ? 'parent-reset' : 'student-reset');
+  const {
+    isActive,
+    formattedTime,
+    isExpired,
+    hasLiveCode,
+    sentTo,
+    sendCount,
+    hasReachedSendLimit,
+    startTimer,
+    clearTimer,
+  } = useOtpTimer(isParent ? 'parent-reset' : 'student-reset');
 
   // Someone who reached this screen from their profile already has an email on
   // file or does not — offering the link when we know there is none is a dead end.
@@ -171,6 +180,13 @@ const ForgotPasswordScreen: React.FC = () => {
    * route to the code field (guide §5).
    */
   const handleContinue = async () => {
+    // The cap is per number, so walking back to this step must not buy another
+    // code — otherwise Continue is a way around the disabled resend link.
+    if (hasReachedSendLimit && sentTo === mobile) {
+      setErrorMsg(t('otp.resend_limit_reached'));
+      if (hasLiveCode) setStep('code');
+      return;
+    }
     const sent = await handleSendCode();
     if (!sent && hasLiveCode && sentTo === mobile) {
       setErrorMsg('');
@@ -510,18 +526,51 @@ const ForgotPasswordScreen: React.FC = () => {
             <TouchableOpacity
               testID="forgot-resend-button"
               onPress={handleSendCode}
-              disabled={isActive || isLoading}
+              disabled={isActive || isLoading || hasReachedSendLimit}
+              accessibilityState={{ disabled: isActive || isLoading || hasReachedSendLimit }}
             >
               <Text
                 style={[
                   currentStyles.secondaryLinkText,
-                  isActive && { color: theme.colors.textTertiary },
+                  (isActive || hasReachedSendLimit) && { color: theme.colors.textTertiary },
                 ]}
               >
                 {t('otp.resend_code')}
               </Text>
             </TouchableOpacity>
           </View>
+
+          {/* BKLT-287: once the allowance is spent, a disabled link with no
+              explanation reads as a broken button — say why, and give them the
+              only route left. */}
+          {hasReachedSendLimit ? (
+            <View style={currentStyles.limitBox} testID="forgot-resend-limit">
+              <Text style={currentStyles.limitText}>{t('otp.resend_limit_reached')}</Text>
+              <TouchableOpacity
+                testID="forgot-contact-support"
+                onPress={() =>
+                  navigation.navigate('ContactUs', {
+                    presetSubject: t('otp.support_reset_subject'),
+                    // Carry the number being reset: the user is locked out, so
+                    // without it support has no way to find the account (email
+                    // is optional at registration). Prefilled and editable.
+                    presetContext: t('otp.support_reset_context', {
+                      mobile: `${COUNTRY_CODE} ${mobile}`,
+                    }),
+                  })
+                }
+                style={currentStyles.supportButton}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="headset-outline" size={18} color={theme.colors.primary} />
+                <Text style={currentStyles.supportButtonText}>{t('common.contact_support')}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : sendCount > 0 && !isActive ? (
+            <Text style={currentStyles.resendNoticeText} testID="forgot-resend-notice">
+              {t('otp.resend_invalidates_previous')}
+            </Text>
+          ) : null}
         </View>
       </View>
     </>
@@ -783,6 +832,38 @@ const styles = (config: any) => {
       ...fontWeight('600'),
       color: '#005ab4',
       textAlign: 'center',
+    },
+    limitBox: {
+      marginTop: spacing.md,
+      padding: spacing.md,
+      borderRadius: borderRadius.lg,
+      backgroundColor: theme.colors.warning + '1A',
+      borderWidth: 1,
+      borderColor: theme.colors.warning + '40',
+      gap: spacing.sm,
+    },
+    limitText: {
+      ...typography('caption'),
+      color: theme.colors.text,
+      textAlign: 'left',
+    },
+    supportButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      gap: 6,
+      paddingVertical: 6,
+    },
+    supportButtonText: {
+      ...typography('caption'),
+      ...fontWeight('bold'),
+      color: theme.colors.primary,
+    },
+    resendNoticeText: {
+      ...typography('caption'),
+      color: theme.colors.textSecondary,
+      textAlign: 'left',
+      marginTop: spacing.sm,
     },
     resendRow: {
       flexDirection: 'row',

@@ -305,7 +305,7 @@ const LeaderboardScreen: React.FC = () => {
         <Text style={[s.spotScore, { fontSize: cfg.sc, color: cfg.platText }]}>
           {student.avgScore}%
         </Text>
-        <Text style={s.spotXp}>{student.xp.toLocaleString()} XP</Text>
+        <Text style={s.spotXp}>{`${student.xp.toLocaleString()} ${t('student_profile.xp')}`}</Text>
         <View style={[s.platform, { height: cfg.h, backgroundColor: cfg.plat }]}>
           <Text style={[s.platformNum, { color: cfg.platText, fontSize: place === 1 ? 28 : 22 }]}>
             {place}
@@ -322,7 +322,7 @@ const LeaderboardScreen: React.FC = () => {
     return (
       <Animated.View
         key={e.id}
-        entering={FadeInDown.delay(index * 40).duration(280)}
+        entering={FadeInDown.delay(Math.min(index, 8) * 40).duration(280)}
         style={[s.row, isYou && s.rowYou]}
       >
         <Text style={s.rowRank}>{e.rank}</Text>
@@ -349,7 +349,7 @@ const LeaderboardScreen: React.FC = () => {
         </View>
         <View style={s.rowXpCol}>
           <Text style={s.rowXp}>{e.xp.toLocaleString()}</Text>
-          <Text style={s.rowXpLabel}>XP</Text>
+          <Text style={s.rowXpLabel}>{t('student_profile.xp')}</Text>
         </View>
         {!isYou ? (
           <TouchableOpacity
@@ -373,7 +373,7 @@ const LeaderboardScreen: React.FC = () => {
   };
 
   const renderBody = () => {
-    if (leaderboardLoading)
+    if (leaderboardLoading && !leaderboardData)
       return (
         <View style={{ paddingTop: spacing.md }}>
           <GenericListSkeleton numItems={6} />
@@ -415,7 +415,10 @@ const LeaderboardScreen: React.FC = () => {
     const top3 = [1, 2, 3].map((r) => leaderboard.entries.find((e) => e.rank === r));
     const rest = leaderboard.entries.filter((e) => e.rank > 3);
     const you = leaderboard.userEntry;
-    if (you && you.rank > 3 && !rest.some((e) => e.id === you.id)) {
+    // isRanked guards the 0-XP case: such a student is filtered out of the
+    // board, so re-inserting them with a rank number contradicted their own
+    // "not ranked yet" banner.
+    if (you && isRanked(you) && you.rank > 3 && !rest.some((e) => e.id === you.id)) {
       rest.push(you);
       rest.sort((a, b) => a.rank - b.rank);
     }
@@ -442,15 +445,22 @@ const LeaderboardScreen: React.FC = () => {
                   {t('leaderboard_screen.your_ranking', 'Your Ranking')}
                 </Text>
                 <Text style={s.bannerSub} numberOfLines={1}>
-                  {t('leaderboard_screen.rank_of', {
-                    count: leaderboard.entries.length,
-                    defaultValue: 'of {{count}} students',
-                  })}{' '}
-                  · {contextLine}
+                  {/* Only meaningful when the student is inside the fetched page:
+                      entries.length is a capped page with 0-XP students removed,
+                      so otherwise it claimed a cohort smaller than their rank. */}
+                  {isRanked(you) && you.rank <= leaderboard.entries.length
+                    ? `${t('leaderboard_screen.rank_of', {
+                        count: leaderboard.entries.length,
+                        defaultValue: 'of {{count}} students',
+                      })} · `
+                    : ''}
+                  {contextLine}
                 </Text>
                 <View style={s.bannerXpRow}>
                   <Ionicons name="flash" size={13} color={GOLD} />
-                  <Text style={s.bannerXpText}>{you.xp.toLocaleString()} XP</Text>
+                  <Text
+                    style={s.bannerXpText}
+                  >{`${you.xp.toLocaleString()} ${t('student_profile.xp')}`}</Text>
                 </View>
               </View>
               <View style={s.bannerRight}>

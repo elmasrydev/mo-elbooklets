@@ -1,11 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import type { NavigationContainerRef } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
 import { analytics } from '../../lib/analytics';
 import { spacing, borderRadius } from '../../config/spacing';
 import { layout } from '../../config/layout';
@@ -25,6 +23,7 @@ const BOKI_HIDDEN_ROUTES = new Set<string>([
   'Login',
   'Register',
   'ForgotPassword',
+  'ResetPassword',
   'ParentLogin',
   'ParentRegister',
   'ParentForgotPassword',
@@ -55,7 +54,6 @@ const BOKI_HIDDEN_ROUTES = new Set<string>([
 const BokiFloatingButton: React.FC<BokiFloatingButtonProps> = ({ navigationRef }) => {
   const { t } = useTranslation();
   const { isAuthenticated, userRole } = useAuth();
-  const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   // Defaults to 'Splash' (a hidden route) rather than undefined — the navigation
   // ref has no current route for as long as AppNavigator's early-return keeps
@@ -91,16 +89,14 @@ const BokiFloatingButton: React.FC<BokiFloatingButtonProps> = ({ navigationRef }
         accessibilityLabel={t('boki.title')}
         activeOpacity={0.85}
         onPress={handlePress}
-        style={[
-          styles.fab,
-          {
-            backgroundColor: theme.colors.primary,
-            shadowColor: theme.colors.shadow,
-            bottom: insets.bottom + layout.tabBarContentHeight + spacing.md,
-          },
-        ]}
+        style={[styles.fab, { bottom: insets.bottom + layout.tabBarContentHeight + spacing.md }]}
       >
-        <Ionicons name="sparkles" size={spacing.icon.lg} color={theme.colors.textOnDark} />
+        <Image
+          source={require('../../../assets/images/bokiIcon.png')}
+          style={styles.icon}
+          resizeMode="contain"
+          accessibilityIgnoresInvertColors
+        />
       </TouchableOpacity>
     </View>
   );
@@ -115,10 +111,24 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 6,
+    // Deliberately white in BOTH themes, not a theme surface: the Boki mark is a
+    // blue card with white detail inside it, so it needs a light disc to read
+    // against. A dark-mode surface would swallow it.
+    backgroundColor: '#FFFFFF',
+    // Very light shadow — enough to lift the disc off the content behind it
+    // without the heavy drop the filled primary FAB needed.
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  icon: {
+    // Exported at exactly 40/80/120, so it renders 1:1 per density with no
+    // resampling. 40 in a 56 disc keeps a comfortable ring of white around the
+    // mark without shrinking it to a dot.
+    width: 40,
+    height: 40,
   },
 });
 

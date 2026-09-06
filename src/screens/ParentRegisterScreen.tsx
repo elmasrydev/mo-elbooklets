@@ -30,6 +30,7 @@ import {
   isValidPersonName,
 } from '../utils/validators';
 import { INPUT_TEXT_ALIGN } from '../lib/rtl';
+import { authFailureText } from '../utils/authErrors';
 import { digitsOnly } from '../utils/digits';
 import { analytics } from '../lib/analytics';
 import { useMobileAvailability } from '../hooks/useMobileAvailability';
@@ -141,7 +142,7 @@ const ParentRegisterScreen: React.FC = () => {
       if (!result.success) {
         showConfirm({
           title: t('auth.registration_failed'),
-          message: t(result.error || 'auth.registration_error'),
+          message: authFailureText(result, t, 'auth.registration_error'),
           showCancel: false,
           onConfirm: () => {},
         });
@@ -461,7 +462,9 @@ const ParentRegisterScreen: React.FC = () => {
             activeOpacity={0.7}
           >
             <Ionicons name="language-outline" size={18} color={'#005ab4'} />
-            <Text style={currentStyles.langText}>{language === 'ar' ? 'English' : 'عربي'}</Text>
+            <Text style={[currentStyles.langText, fontWeight('600', language !== 'ar')]}>
+              {language === 'ar' ? 'English' : 'عربي'}
+            </Text>
           </TouchableOpacity>
 
           <View style={currentStyles.footer}>

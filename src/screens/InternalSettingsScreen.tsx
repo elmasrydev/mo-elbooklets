@@ -22,14 +22,14 @@ import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { isDebugMode } from '../config/debug';
 import ApiUrlSwitcherModal from '../components/ApiUrlSwitcherModal';
-import crashlytics from '@react-native-firebase/crashlytics';
+import { getCrashlytics, crash, log, recordError } from '@react-native-firebase/crashlytics';
 import messaging from '@react-native-firebase/messaging';
 import { lastFcmPayload } from '../services/notificationService';
 import * as Clipboard from 'expo-clipboard';
 import DeviceInfo from 'react-native-device-info';
 import Constants from 'expo-constants';
 import { useMutation } from '@apollo/client/react';
-import { UpdateProfileDocument } from '../generated/graphql';
+import { UpdateProfileDocument, UpdateProfileInput } from '../generated/graphql';
 const CrashTrigger = () => {
   throw new Error('Test React Render Error for ErrorBoundary');
 };
@@ -92,18 +92,23 @@ const InternalSettingsScreen: React.FC = () => {
   const handleUnverifyMobile = async () => {
     try {
       setIsUnverifying(true);
-      const input = {
-        name: user?.name,
-        email: user?.email,
-        mobile: user?.mobile,
-        mobile_verified_at: 'reset',
-      };
-
+      // `mobile_verified_at` is NOT a field on UpdateProfileInput (see
+      // schema.graphql), so the server can never clear it from here — this tool
+      // silently failed every time. Until the backend exposes a debug mutation,
+      // clear the flag locally: that is enough to exercise the OTP gate, which
+      // is all this tool is for.
+      const input: UpdateProfileInput = { name: user?.name };
       const result = await updateProfile({ variables: { input } });
 
       if (result.data?.updateProfile && user) {
         await updateUser({ ...user, mobile_verified_at: undefined });
-        alert('Unverified! Restart app or log out to see OTP screen.');
+        alert(
+          'Local verification flag cleared — the OTP screen will show.\n' +
+            'NOTE: the server still considers this number verified; clearing it there ' +
+            'needs a backend debug mutation.',
+        );
+      } else {
+        alert('Unverify failed: the server returned no profile.');
       }
     } catch (e: any) {
       alert('Failed to unverify: ' + e.message);
@@ -112,11 +117,13 @@ const InternalSettingsScreen: React.FC = () => {
     }
   };
   const handleTestCrash = () => {
-    crashlytics().crash();
+    crash(getCrashlytics());
   };
   const handleTestLogError = () => {
-    crashlytics().log('Test log from Internal Settings Screen');
-    crashlytics().recordError(
+    const instance = getCrashlytics();
+    log(instance, 'Test log from Internal Settings Screen');
+    recordError(
+      instance,
       new Error('Test error from Internal Settings Screen at ' + new Date().toISOString()),
     );
   };

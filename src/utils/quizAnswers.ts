@@ -94,20 +94,27 @@ export function buildSubmitPayload(
  * paired, paragraph needs every child answered. An unknown/unsupported type is
  * treated as complete so the student is never trapped on a card they can't
  * answer (it will submit as null and score 0).
+ *
+ * The same escape hatch covers a *known* type that arrived with nothing to
+ * answer — a `match` with no left column, or a `paragraph` with no children.
+ * The card renders as unsupported, so requiring an answer would block Next and
+ * Finish forever and strand the student mid-attempt.
  */
 export function isQuestionComplete(question: AnswerableQuestion, draft: QuizDraft): boolean {
   const entry = draft[question.id];
 
   if (isMatchType(question.type)) {
-    const pairs = matchPairsOf(entry);
     const leftIds = question.matchPairs?.left.map((item) => item.id) ?? [];
-    return leftIds.length > 0 && leftIds.every((id) => pairs[id] != null);
+    if (leftIds.length === 0) return true;
+    const pairs = matchPairsOf(entry);
+    return leftIds.every((id) => pairs[id] != null);
   }
 
   if (isParagraphType(question.type)) {
-    const children = childrenOf(entry);
     const subs = question.subQuestions ?? [];
-    return subs.length > 0 && subs.every((child) => (children[child.id] ?? '').trim() !== '');
+    if (subs.length === 0) return true;
+    const children = childrenOf(entry);
+    return subs.every((child) => (children[child.id] ?? '').trim() !== '');
   }
 
   if (isSupportedType(question.type)) {

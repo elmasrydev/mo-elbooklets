@@ -44,12 +44,17 @@ const lessonSource = (lessonId: string, title: string) => ({
   similarityScore: 0.8,
 });
 
+// Must mirror BokiLessonById's full selection set — a missing field makes Apollo
+// drop the whole normalized result and the screen sees nothing, which is exactly
+// the failure mode this suite exists to catch.
 const lessonPayload = (id: string, overrides = {}) => ({
   id,
   name: `Lesson ${id}`,
   summary: null,
   points: null,
   videoUrl: null,
+  mindMapUrl: null,
+  mindMapMimeType: null,
   myInteraction: null,
   isLocked: false,
   lessonPoints: [],
@@ -192,7 +197,9 @@ describe('BokiChatScreen', () => {
       );
     });
 
-    it('shows a locked message and does not navigate when the lesson is locked', async () => {
+    // Same premium notice the lesson lists raise — a locked source chip is a
+    // locked lesson, not a Boki failure.
+    it('shows the premium notice and does not navigate when the lesson is locked', async () => {
       const lesson = lessonPayload('162', { isLocked: true });
       const apolloMocks = [
         {
@@ -209,7 +216,10 @@ describe('BokiChatScreen', () => {
 
       await waitFor(() =>
         expect(mockShowConfirm).toHaveBeenCalledWith(
-          expect.objectContaining({ title: 'study_lesson.locked_title' }),
+          expect.objectContaining({
+            title: 'subscription.required_title',
+            message: 'subscription.required_message',
+          }),
         ),
       );
       expect(mockNavigate).not.toHaveBeenCalled();

@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useOtpTimer, RESEND_LOCK_SECONDS } from '../../hooks/useOtpTimer';
+import { useOtpTimer, RESEND_LOCK_SECONDS, MAX_OTP_SENDS } from '../../hooks/useOtpTimer';
 
 const key = (scope: string) => `@otp_timer_state:${scope}`;
 const LEGACY_STORAGE_KEY = '@otp_timer_state';
@@ -140,7 +140,10 @@ describe('useOtpTimer Hook', () => {
     expect(result.current.timeLeft).toBeLessThanOrEqual(RESEND_LOCK_SECONDS);
   });
 
-  it('should discard a persisted state whose code already died', async () => {
+  // The record itself is retained so the send tally survives (BKLT-287) — what
+  // must not survive is the LOCK, which is what a remount could otherwise
+  // resurrect. Assert the behaviour rather than the storage key's absence.
+  it('should not resurrect the lock from a persisted state whose code already died', async () => {
     await AsyncStorage.setItem(
       key('student-verify'),
       JSON.stringify({ sentAt: Date.now() - 700_000, expiresIn: 600 }),
@@ -153,7 +156,9 @@ describe('useOtpTimer Hook', () => {
     });
 
     expect(result.current.isActive).toBe(false);
-    expect(await AsyncStorage.getItem(key('student-verify'))).toBeNull();
+    expect(result.current.timeLeft).toBe(0);
+    expect(result.current.hasLiveCode).toBe(false);
+    expect(result.current.isExpired).toBe(true);
   });
 
   it('should keep the lock for a code sent during mount, not the stale stored one', async () => {
@@ -273,5 +278,150 @@ describe('useOtpTimer Hook', () => {
     expect(result.current.expiresLeft).toBe(570);
 
     global.Date.now = realDateNow;
+  });
+});
+
+describe('send allowance (BKLT-287)', () => {
+  const MOBILE = '01001234567';
+
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  it('counts codes spent on the same number and closes resend at the cap', async () => {
+    const { result } = renderHook(() => useOtpTimer('student-reset'));
+
+    expect(result.current.sendCount).toBe(0);
+    expect(result.current.hasReachedSendLimit).toBe(false);
+
+    for (let i = 1; i <= MAX_OTP_SENDS; i += 1) {
+      await act(async () => {
+        await result.current.startTimer(600, MOBILE);
+      });
+      expect(result.current.sendCount).toBe(i);
+    }
+
+    expect(result.current.hasReachedSendLimit).toBe(true);
+  });
+
+  it('starts the allowance over when the user types a different number', async () => {
+    const { result } = renderHook(() => useOtpTimer('student-reset'));
+
+    for (let i = 0; i < MAX_OTP_SENDS; i += 1) {
+      await act(async () => {
+        await result.current.startTimer(600, MOBILE);
+      });
+    }
+    expect(result.current.hasReachedSendLimit).toBe(true);
+
+    await act(async () => {
+      await result.current.startTimer(600, '01119998877');
+    });
+    expect(result.current.sendCount).toBe(1);
+    expect(result.current.hasReachedSendLimit).toBe(false);
+  });
+
+  // The whole point of persisting it: killing the app must not hand out a
+  // fresh allowance.
+  it('survives a remount', async () => {
+    const first = renderHook(() => useOtpTimer('student-reset'));
+    for (let i = 0; i < MAX_OTP_SENDS; i += 1) {
+      await act(async () => {
+        await first.result.current.startTimer(600, MOBILE);
+      });
+    }
+    first.unmount();
+
+    const second = renderHook(() => useOtpTimer('student-reset'));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(second.result.current.sendCount).toBe(MAX_OTP_SENDS);
+    expect(second.result.current.hasReachedSendLimit).toBe(true);
+  });
+
+  it('is scoped per flow, so a reset cap cannot close the verify flow', async () => {
+    const reset = renderHook(() => useOtpTimer('student-reset'));
+    for (let i = 0; i < MAX_OTP_SENDS; i += 1) {
+      await act(async () => {
+        await reset.result.current.startTimer(600, MOBILE);
+      });
+    }
+
+    const verify = renderHook(() => useOtpTimer('student-verify'));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(verify.result.current.hasReachedSendLimit).toBe(false);
+  });
+
+  it('clearing the flow returns the allowance', async () => {
+    const { result } = renderHook(() => useOtpTimer('student-reset'));
+    for (let i = 0; i < MAX_OTP_SENDS; i += 1) {
+      await act(async () => {
+        await result.current.startTimer(600, MOBILE);
+      });
+    }
+    await act(async () => {
+      await result.current.clearTimer();
+    });
+    expect(result.current.sendCount).toBe(0);
+    expect(result.current.hasReachedSendLimit).toBe(false);
+  });
+});
+
+describe('allowance vs code expiry (BKLT-287 review finding)', () => {
+  const MOBILE = '01001234567';
+
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  // A code lives ~10 minutes; the backend budget is hourly. If expiry returned
+  // the allowance, resend would re-open and the support box would vanish at the
+  // exact moment further requests can only be refused.
+  it('keeps the spent allowance after the code dies', async () => {
+    await AsyncStorage.setItem(
+      key('student-reset'),
+      JSON.stringify({
+        sentAt: Date.now() - 11 * 60 * 1000,
+        expiresIn: 600,
+        sentTo: MOBILE,
+        sends: MAX_OTP_SENDS,
+      }),
+    );
+
+    const { result } = renderHook(() => useOtpTimer('student-reset'));
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(result.current.hasLiveCode).toBe(false);
+    expect(result.current.isActive).toBe(false);
+    expect(result.current.sendCount).toBe(MAX_OTP_SENDS);
+    expect(result.current.hasReachedSendLimit).toBe(true);
+  });
+
+  it('still lets a different number start fresh after an expiry', async () => {
+    await AsyncStorage.setItem(
+      key('student-reset'),
+      JSON.stringify({
+        sentAt: Date.now() - 11 * 60 * 1000,
+        expiresIn: 600,
+        sentTo: MOBILE,
+        sends: MAX_OTP_SENDS,
+      }),
+    );
+
+    const { result } = renderHook(() => useOtpTimer('student-reset'));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    await act(async () => {
+      await result.current.startTimer(600, '01119998877');
+    });
+
+    expect(result.current.sendCount).toBe(1);
+    expect(result.current.hasReachedSendLimit).toBe(false);
   });
 });

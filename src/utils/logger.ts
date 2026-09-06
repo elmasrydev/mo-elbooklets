@@ -1,22 +1,54 @@
+import { getCrashlytics, log, recordError } from '@react-native-firebase/crashlytics';
+
 import { isDebugMode } from '../config/debug';
 
 /**
- * Global error logger utility.
+ * Global logging utility.
  *
- * Used to centralize console logs and (in the future) external reporting providers like Firebase Crashlytics.
+ * Console output is gated on `debugMode` (app.json) so a production build stays
+ * quiet. Crashlytics reporting is NOT gated on it — a release build is exactly
+ * where we need the reports.
  *
- * As per latest requirements:
- * - If debugMode=true in app.json, logs to console to aid developers.
- * - If debugMode=false, suppresses console logs.
- * - Firebase logging is currently DISABLED for this utility.
+ * `logError` records a non-fatal so handled failures (a failed mutation, a
+ * swallowed parse error) are visible alongside real crashes; without this the
+ * console only ever showed native crashes and unhandled JS exceptions.
+ * Warnings and info become breadcrumbs attached to the next report.
+ *
+ * Whether anything is actually delivered is decided natively by
+ * `crashlytics_auto_collection_enabled` / `crashlytics_debug_enabled` in
+ * `firebase.json` — debug builds report nothing unless the latter is true.
+ *
+ * Uses the **modular** RNFB API on purpose: the namespaced `crashlytics()` form
+ * is deprecated and logs a migration warning on every single call, which would
+ * flood the dev console given how often these helpers run.
+ *
+ * PRIVACY: messages here land in the Crashlytics console. Never interpolate a
+ * name, mobile, email or any other user identifier into one — see the rule in
+ * `crashlyticsHelper.ts`.
  */
-export const logError = (message: string, error?: any): void => {
+const crashlytics = () => getCrashlytics();
+
+/** Telemetry must never break the caller — these run inside catch blocks. */
+const safely = (action: () => void): void => {
+  try {
+    action();
+  } catch {
+    // Reporting is best-effort by design.
+  }
+};
+
+export const logError = (message: string, error?: unknown): void => {
   if (isDebugMode()) {
     console.error(`[EL-Booklets ERROR] ${message}`, error || '');
   }
-  // Firebase Crashlytics is intentionally ignored for now per user request.
-  // In the future:
-  // if (error instanceof Error) crashlytics().recordError(error);
+
+  safely(() => {
+    const reported =
+      error instanceof Error
+        ? error
+        : new Error(error === undefined ? message : `${message}: ${String(error)}`);
+    recordError(crashlytics(), reported, message);
+  });
 };
 
 /**
@@ -26,13 +58,15 @@ export const logWarning = (message: string): void => {
   if (isDebugMode()) {
     console.warn(`[EL-Booklets WARNING] ${message}`);
   }
+  safely(() => log(crashlytics(), `WARN: ${message}`));
 };
 
 /**
- * Log an info message.
+ * Log an info message (breadcrumb).
  */
 export const logInfo = (message: string): void => {
   if (isDebugMode()) {
     console.log(`[EL-Booklets INFO] ${message}`);
   }
+  safely(() => log(crashlytics(), message));
 };

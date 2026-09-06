@@ -24,6 +24,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isDebugMode } from '../config/debug';
 import { EGYPT_MOBILE_REGEX } from '../utils/validators';
 import { INPUT_TEXT_ALIGN } from '../lib/rtl';
+import { authFailureText } from '../utils/authErrors';
 import { digitsOnly } from '../utils/digits';
 
 const ParentLoginScreen: React.FC = () => {
@@ -74,26 +75,9 @@ const ParentLoginScreen: React.FC = () => {
     try {
       const result = await parentLogin({ mobile: mobile.trim(), password });
       if (!result.success) {
-        const rawError = (result.error || '').toLowerCase();
-        let errorKey = 'auth.invalid_credentials';
-
-        if (
-          rawError.includes('not found') ||
-          rawError.includes('no account') ||
-          rawError.includes('no user')
-        ) {
-          errorKey = 'auth.no_account_found';
-        } else if (
-          rawError.includes('password') ||
-          rawError.includes('incorrect') ||
-          rawError.includes('wrong')
-        ) {
-          errorKey = 'auth.incorrect_password';
-        }
-
         showConfirm({
           title: t('auth.login_failed'),
-          message: t(errorKey),
+          message: authFailureText(result, t, 'auth.invalid_credentials'),
           showCancel: false,
           onConfirm: () => {},
         });
@@ -288,7 +272,9 @@ const ParentLoginScreen: React.FC = () => {
             activeOpacity={0.7}
           >
             <Ionicons name="language-outline" size={18} color={theme.colors.primary} />
-            <Text style={currentStyles.langText}>{language === 'ar' ? 'English' : 'عربي'}</Text>
+            <Text style={[currentStyles.langText, fontWeight('600', language !== 'ar')]}>
+              {language === 'ar' ? 'English' : 'عربي'}
+            </Text>
           </TouchableOpacity>
 
           {/* Footer Links */}

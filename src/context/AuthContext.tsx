@@ -27,6 +27,8 @@ import {
   configureCrashlyticsGuest,
 } from '../utils/crashlyticsHelper';
 import { logError, logInfo } from '../utils/logger';
+import { AuthFailure, classifyAuthFailure } from '../utils/authErrors';
+import { useAppForeground } from '../hooks/useAppForeground';
 import {
   triggerNotificationPrompt,
   clearNotificationPromptedFlag,
@@ -113,11 +115,11 @@ interface AuthContextType {
   userRole: 'student' | 'parent' | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (input: LoginInput) => Promise<{ success: boolean; user?: User; error?: string }>;
-  register: (input: RegisterInput) => Promise<{ success: boolean; user?: User; error?: string }>;
+  login: (input: LoginInput) => Promise<{ success: boolean; user?: User } & AuthFailure>;
+  register: (input: RegisterInput) => Promise<{ success: boolean; user?: User } & AuthFailure>;
   forgotPassword: (email: string) => Promise<{ success: boolean; message?: string | null }>;
-  parentLogin: (input: ParentLoginInput) => Promise<{ success: boolean; error?: string }>;
-  parentRegister: (input: ParentRegisterInput) => Promise<{ success: boolean; error?: string }>;
+  parentLogin: (input: ParentLoginInput) => Promise<{ success: boolean } & AuthFailure>;
+  parentRegister: (input: ParentRegisterInput) => Promise<{ success: boolean } & AuthFailure>;
   parentForgotPassword: (email: string) => Promise<{ success: boolean; message?: string | null }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -208,11 +210,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setUser(parsedUser);
             configureCrashlyticsStudent(parsedUser);
             analytics.identify(parsedUser.id, {
-              name: parsedUser.name,
-              mobile: parsedUser.mobile,
               grade: parsedUser.grade?.name,
             });
           }
+
+          // The stored blob is a snapshot from the last sign-in, and
+          // `is_subscribed` is the field the whole app gates content on — a
+          // trial that lapsed overnight, or a plan support activated this
+          // morning, is invisible until this lands. Deliberately not awaited:
+          // the cached copy is good enough to paint with, and holding the
+          // splash on a network round-trip is not.
+          void refreshUser();
 
           // Check if registration success screen is pending
           const justRegistered = await AsyncStorage.getItem('just_registered_pending_success');
@@ -256,7 +264,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const login = useCallback(
-    async (input: LoginInput): Promise<{ success: boolean; user?: User; error?: string }> => {
+    async (input: LoginInput): Promise<{ success: boolean; user?: User } & AuthFailure> => {
       try {
         const result = await apolloClient.mutate({
           mutation: LoginDocument,
@@ -272,8 +280,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setUserRole('student');
           configureCrashlyticsStudent(authPayload.user);
           analytics.identify(authPayload.user.id, {
-            name: authPayload.user.name,
-            mobile: authPayload.user.mobile,
             grade: authPayload.user.grade?.name,
           });
 
@@ -289,22 +295,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return { success: true, user: authPayload.user };
         }
 
-        let errorMessage = 'Login failed';
-        if (errorMessage === 'These credentials do not match our records.') {
-          errorMessage = 'auth.invalid_credentials';
-        }
-
-        return { success: false, error: errorMessage };
-      } catch (error: any) {
+        // A mutation that returns no payload without throwing means the
+        // credentials were rejected but the server explained nothing.
+        return { success: false, errorKey: 'auth.invalid_credentials' };
+      } catch (error) {
         logError('Login error', error);
-        return { success: false, error: error.message || 'An error occurred during login' };
+        return { success: false, ...classifyAuthFailure(error, 'auth.invalid_credentials') };
       }
     },
     [],
   );
 
   const register = useCallback(
-    async (input: RegisterInput): Promise<{ success: boolean; user?: User; error?: string }> => {
+    async (input: RegisterInput): Promise<{ success: boolean; user?: User } & AuthFailure> => {
       try {
         const result = await apolloClient.mutate({
           mutation: RegisterDocument,
@@ -320,8 +323,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setUserRole('student');
           configureCrashlyticsStudent(authPayload.user);
           analytics.identify(authPayload.user.id, {
-            name: authPayload.user.name,
-            mobile: authPayload.user.mobile,
             grade: authPayload.user.grade?.name,
           });
 
@@ -334,15 +335,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return { success: true, user: authPayload.user };
         }
 
-        let errorMessage = 'Registration failed';
-        if (errorMessage === 'The mobile has already been taken.') {
-          errorMessage = 'auth.mobile_taken';
-        }
-
-        return { success: false, error: errorMessage };
-      } catch (error: any) {
+        return { success: false, errorKey: 'auth.registration_error' };
+      } catch (error) {
         logError('Registration error', error);
-        return { success: false, error: error.message || 'An error occurred during registration' };
+        return { success: false, ...classifyAuthFailure(error, 'auth.registration_error') };
       }
     },
     [],
@@ -376,7 +372,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   );
 
   const parentLogin = useCallback(
-    async (input: ParentLoginInput): Promise<{ success: boolean; error?: string }> => {
+    async (input: ParentLoginInput): Promise<{ success: boolean } & AuthFailure> => {
       try {
         const result = await apolloClient.mutate({
           mutation: ParentLoginDocument,
@@ -406,17 +402,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return { success: true };
         }
 
-        return { success: false, error: 'Login failed' };
-      } catch (error: any) {
+        return { success: false, errorKey: 'auth.invalid_credentials' };
+      } catch (error) {
         logError('Parent login error', error);
-        return { success: false, error: error.message || 'An error occurred during parent login' };
+        return { success: false, ...classifyAuthFailure(error, 'auth.invalid_credentials') };
       }
     },
     [],
   );
 
   const parentRegister = useCallback(
-    async (input: ParentRegisterInput): Promise<{ success: boolean; error?: string }> => {
+    async (input: ParentRegisterInput): Promise<{ success: boolean } & AuthFailure> => {
       try {
         const result = await apolloClient.mutate({
           mutation: ParentRegisterDocument,
@@ -447,13 +443,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return { success: true };
         }
 
-        return { success: false, error: 'Registration failed' };
-      } catch (error: any) {
+        return { success: false, errorKey: 'auth.registration_error' };
+      } catch (error) {
         logError('Parent registration error', error);
-        return {
-          success: false,
-          error: error.message || 'An error occurred during parent registration',
-        };
+        return { success: false, ...classifyAuthFailure(error, 'auth.registration_error') };
       }
     },
     [],
@@ -513,6 +506,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // bypass the OTP screen). (code-review)
       setIsVerificationSkipped(false);
       setOtpShouldAutoRequest(false);
+      // The post-registration success flag is per-account. Left set, a student
+      // who registers, abandons at the OTP gate and logs out hands the
+      // celebration screen to whoever signs in next on this device — and
+      // checkAuthStatus re-reads the AsyncStorage keys with no ownership check,
+      // so it would re-arm on their next cold start too.
+      setShowRegistrationSuccess(false);
+      await AsyncStorage.removeItem('just_registered_pending_success');
+      await AsyncStorage.removeItem('has_seen_success_screen');
       // Load-bearing for both roles since the parent gate landed: left set, the
       // next sign-in jumps straight to the code step and locks resend for 60s
       // for a code that was never sent.
@@ -538,9 +539,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(updatedUser);
         configureCrashlyticsStudent(updatedUser);
         analytics.identify(updatedUser.id, {
-          name: updatedUser.name,
-          email: updatedUser.email,
-          mobile: updatedUser.mobile,
           grade: updatedUser.grade?.name,
         });
       } catch (error) {
@@ -618,8 +616,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setUser(result.data.me);
           configureCrashlyticsStudent(result.data.me);
           analytics.identify(result.data.me.id, {
-            name: result.data.me.name,
-            mobile: result.data.me.mobile,
             grade: result.data.me.grade?.name,
           });
         }
@@ -638,6 +634,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       logError('Refresh user error', error);
     }
   }, []);
+
+  // A subscription can start or lapse while the app sits in the background, and
+  // nothing tells the device. Re-read the account on the way back in so the
+  // content gates decide on today's state rather than the one cached at launch.
+  // `refreshUser` no-ops without a stored session, so this is safe signed out.
+  useAppForeground(refreshUser);
 
   const value: AuthContextType = React.useMemo(
     () => ({

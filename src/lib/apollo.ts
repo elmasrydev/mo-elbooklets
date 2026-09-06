@@ -143,6 +143,16 @@ const client = new ApolloClient({
       // ("L0"/"R0"/… repeat across every match question). Normalizing by id would
       // let one question's columns overwrite another's, so keep them embedded.
       MatchColumnItem: { keyFields: false },
+      // A leaderboard entry's id identifies the *student*, but rank/xp/avgScore/
+      // totalQuizzes are relative to the board that produced them. Normalizing by
+      // id makes every board share one object, so opening the Math board would
+      // rewrite the global board's numbers for the same student (and Home's rank
+      // rail, which paints from cache with no loading gate, repaints wrong).
+      // Keep them embedded: LeaderboardResult has no id either, so each
+      // `leaderboard(subjectId, filter, limit)` field keeps its own copy.
+      // Trade-off: `isFollowing` no longer propagates by normalization —
+      // useFollowToggle patches these fields explicitly.
+      LeaderboardEntry: { keyFields: false },
     },
   }),
   defaultOptions: {

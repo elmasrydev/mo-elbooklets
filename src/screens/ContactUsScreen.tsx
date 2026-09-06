@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import UnifiedHeader from '../components/UnifiedHeader';
+import { useAuth } from '../context/AuthContext';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
 import { layout } from '../config/layout';
@@ -26,7 +27,22 @@ import { SendContactMessageDocument } from '../generated/graphql';
 import { analytics } from '../lib/analytics';
 import { INPUT_TEXT_ALIGN } from '../lib/rtl';
 
-const ContactUsScreen = ({ navigation }: any) => {
+/**
+ * Optional context a caller can hand in, so support arrives with something to
+ * act on. The unauthenticated password-reset path uses this: the person is
+ * locked out by definition, so a bare "name + email" form gives CS nothing to
+ * find the account with — email is optional at registration and may match
+ * nothing, while the mobile number they just typed identifies it exactly.
+ * Prefilled, never hidden: the user can read and edit everything before it goes.
+ */
+type ContactUsParams = {
+  presetSubject?: string;
+  /** Free text prepended to the message body, e.g. the number being reset. */
+  presetContext?: string;
+};
+
+const ContactUsScreen = ({ navigation, route }: any) => {
+  const params: ContactUsParams = route?.params ?? {};
   const { t } = useTranslation();
   const { theme, spacing, borderRadius, fontSizes } = useTheme();
   const { isRTL } = useLanguage();
@@ -34,11 +50,16 @@ const ContactUsScreen = ({ navigation }: any) => {
   const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
   const { showConfirm } = useModal();
+  const { user, parentUser } = useAuth();
 
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [subject, setSubject] = useState('');
-  const [message, setMessage] = useState('');
+  // Prefill from the signed-in account when there is one; the reset path from
+  // the login screen has no session, which is exactly why it passes context.
+  // Either role may be signed in; a parent's details live on parentUser.
+  const account = user ?? parentUser;
+  const [name, setName] = useState(account?.name ?? '');
+  const [email, setEmail] = useState(account?.email ?? '');
+  const [subject, setSubject] = useState(params.presetSubject ?? '');
+  const [message, setMessage] = useState(params.presetContext ?? '');
   const [loading, setLoading] = useState(false);
   const [sendContactMessage] = useMutation(SendContactMessageDocument);
 

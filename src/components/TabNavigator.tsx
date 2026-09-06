@@ -14,6 +14,7 @@ import LeaderboardScreen from '../screens/LeaderboardScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import SocialScreen from '../screens/SocialScreen';
 import StudyCalendarScreen from '../screens/StudyCalendarScreen';
+import { STUDY_PLAN_ENABLED } from '../config/features';
 import StudyChaptersScreen from '../screens/study/StudyChaptersScreen';
 import StudyLessonScreen from '../screens/study/StudyLessonScreen';
 import QuizTakingScreen from '../screens/quiz/QuizTakingScreen';
@@ -188,7 +189,9 @@ const TabNavigator: React.FC = () => {
         name="Leaderboard"
         component={require('../screens/LeaderboardScreen').default}
       />
-      <Stack.Screen name="StudyCalendar" component={StudyCalendarScreen} />
+      {/* Not registered while the study plan is unlaunched, so the screen is
+          genuinely unreachable rather than just unlinked. */}
+      {STUDY_PLAN_ENABLED && <Stack.Screen name="StudyCalendar" component={StudyCalendarScreen} />}
       <Stack.Screen name="StudyChapters" component={StudyChaptersScreen} options={{}} />
       <Stack.Screen
         name="StudyLesson"

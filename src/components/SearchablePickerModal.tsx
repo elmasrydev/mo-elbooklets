@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  Pressable,
   ScrollView,
   Modal,
   ActivityIndicator,
@@ -72,7 +73,16 @@ const SearchablePickerModal: React.FC<SearchablePickerModalProps> = ({
 
   return (
     <Modal visible={visible} transparent={true} animationType="slide" onRequestClose={onClose}>
-      <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={onClose}>
+      <View style={styles.modalOverlay}>
+        {/* The dismiss target is a SIBLING behind the sheet, not its parent —
+            as a parent it also received every tap that bubbled up from inside
+            the sheet, so tapping a list row or the search box closed the
+            picker instead of selecting. */}
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={onClose}
+          accessibilityLabel={t('common.close')}
+        />
         <View style={[styles.bottomModal, { backgroundColor: theme.colors.card, height: '75%' }]}>
           <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
             <Text
@@ -211,7 +221,7 @@ const SearchablePickerModal: React.FC<SearchablePickerModalProps> = ({
             )}
           />
         </View>
-      </TouchableOpacity>
+      </View>
     </Modal>
   );
 };

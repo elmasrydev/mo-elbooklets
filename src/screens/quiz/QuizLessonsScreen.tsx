@@ -66,7 +66,9 @@ const QuizLessonsScreen: React.FC = () => {
   // Quiz types ride along so the settings screen can receive them via params.
   const { data: quizTypesData, loading: typesLoading } = useQuery(QuizTypesDocument);
 
-  const chapters = lessonsData?.lessonsForSubject ?? [];
+  // Memoized so the fallback `[]` doesn't produce a fresh reference on every
+  // render — the prune effect below depends on it.
+  const chapters = useMemo(() => lessonsData?.lessonsForSubject ?? [], [lessonsData]);
   const quizTypes: QuizType[] = useMemo(
     () =>
       (quizTypesData?.quizTypes ?? []).map((qt) => ({
@@ -79,6 +81,23 @@ const QuizLessonsScreen: React.FC = () => {
     [quizTypesData],
   );
   const loading = lessonsLoading || typesLoading;
+
+  // Drop any selected lesson the server now reports as locked. This screen
+  // stays mounted while the student walks the rest of the quiz flow, so after
+  // a rejected `startQuiz` sends them back here with a refreshed list, the
+  // offending lesson would otherwise still be ticked and fail again.
+  useEffect(() => {
+    const lockedIds = chapters.flatMap((chapter) =>
+      chapter.lessons.filter((lesson) => lesson.isLocked).map((lesson) => lesson.id),
+    );
+    setSelectedLessons((previous) => {
+      const stale = lockedIds.filter((id) => previous.has(id));
+      if (stale.length === 0) return previous;
+      const pruned = new Set(previous);
+      stale.forEach((id) => pruned.delete(id));
+      return pruned;
+    });
+  }, [chapters]);
 
   // Tapping a unit selects/deselects all of its unlocked lessons.
   const handleChapterToggle = (chapter: Chapter) => {
@@ -170,13 +189,13 @@ const QuizLessonsScreen: React.FC = () => {
 
   const unitsText =
     selectedUnits.length === 1
-      ? t('quiz_flow.units_count')
-      : t('quiz_flow.units_count_plural', { count: selectedUnits.length });
+      ? t('quiz_flow.units_count', { count: 1 })
+      : t('quiz_flow.units_count', { count: selectedUnits.length });
 
   const lessonsText =
     selectedLessons.size === 1
-      ? t('quiz_flow.x_lessons')
-      : t('quiz_flow.x_lessons_plural', { count: selectedLessons.size });
+      ? t('quiz_flow.x_lessons', { count: 1 })
+      : t('quiz_flow.x_lessons', { count: selectedLessons.size });
 
   const selectionText = isRTL ? `${unitsText}، ${lessonsText}` : `${unitsText}, ${lessonsText}`;
 

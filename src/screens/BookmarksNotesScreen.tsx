@@ -11,6 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { formatDate } from '../lib/dateUtils';
 import { useTranslation } from 'react-i18next';
 import { useTypography } from '../hooks/useTypography';
 import { useCommonStyles } from '../hooks/useCommonStyles';
@@ -27,7 +28,10 @@ import {
 } from '../generated/graphql';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { GenericListSkeleton } from '../components/SkeletonLoader';
+import RetryView from '../components/RetryView';
+import { loadFailureMessage } from '../utils/queryError';
 import { INPUT_TEXT_ALIGN } from '../lib/rtl';
+import { useSubscriptionGate } from '../hooks/useSubscriptionGate';
 
 type SavedPoint = MySavedPointsQuery['mySavedPoints'][number];
 
@@ -124,7 +128,8 @@ const NoteModal: React.FC<{
 
 const BookmarksNotesScreen: React.FC = () => {
   const { theme, spacing, borderRadius } = useTheme();
-  const { isRTL } = useLanguage();
+  const { checkSubscription, showPremiumNotice } = useSubscriptionGate();
+  const { isRTL, language } = useLanguage();
   const { t } = useTranslation();
   const { typography, fontWeight } = useTypography();
   const common = useCommonStyles();
@@ -140,10 +145,22 @@ const BookmarksNotesScreen: React.FC = () => {
   const [noteModalVisible, setNoteModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState<SavedPoint | null>(null);
 
-  const { data, loading, refetch } = useQuery(MySavedPointsDocument, {
+  const {
+    data,
+    loading,
+    error: queryError,
+    refetch,
+  } = useQuery(MySavedPointsDocument, {
     notifyOnNetworkStatusChange: true,
   });
   const savedPoints = data?.mySavedPoints ?? [];
+  // Without this the empty state doubles as the error state, and a student whose
+  // request timed out is told their bookmarks don't exist.
+  const loadError = loadFailureMessage(
+    data?.mySavedPoints,
+    queryError,
+    t('bookmarks.error_loading', 'Could not load your bookmarks and notes.'),
+  );
 
   // Notes and bookmarks can be edited inside the lesson reader, so re-check on
   // every focus.
@@ -176,6 +193,16 @@ const BookmarksNotesScreen: React.FC = () => {
   );
 
   const handleItemPress = (item: SavedPoint) => {
+    // A bookmark is not a permanent key to the lesson behind it. When a trial
+    // or plan ends the server locks every lesson again — the bookmarked ones
+    // included — and returns them redacted, so opening one would show a blank
+    // reader. Both checks answer with the same premium notice the lesson lists
+    // use (contract §3, §5).
+    if (!checkSubscription()) return;
+    if (item.lesson.isLocked) {
+      showPremiumNotice();
+      return;
+    }
     navigation.navigate('StudyLesson', {
       lesson: item.lesson,
       // Pass the point ID to scroll to it
@@ -297,7 +324,7 @@ const BookmarksNotesScreen: React.FC = () => {
         </View>
       )}
 
-      <Text style={currentStyles.dateText}>{new Date(item.created_at).toLocaleDateString()}</Text>
+      <Text style={currentStyles.dateText}>{formatDate(item.created_at, language)}</Text>
     </TouchableOpacity>
   );
 
@@ -348,6 +375,8 @@ const BookmarksNotesScreen: React.FC = () => {
         <View style={{ flex: 1, paddingTop: 20 }}>
           <GenericListSkeleton numItems={6} />
         </View>
+      ) : loadError ? (
+        <RetryView message={loadError} onRetry={() => refetch()} />
       ) : (
         <FlatList
           data={filteredData}

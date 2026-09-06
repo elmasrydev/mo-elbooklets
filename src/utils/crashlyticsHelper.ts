@@ -1,19 +1,28 @@
-import crashlytics from '@react-native-firebase/crashlytics';
+import { getCrashlytics, setAttributes, setUserId } from '@react-native-firebase/crashlytics';
 import DeviceInfo from 'react-native-device-info';
 import i18n from '../i18n';
 import { logError, logInfo } from './logger';
 
 type UserRole = 'student' | 'parent' | 'guest';
 
+/**
+ * PRIVACY RULE — read before adding a key here.
+ *
+ * This app's users are minors. Crashlytics attributes are attached to every
+ * crash report and are readable by anyone with Firebase console access, so the
+ * only identifier we send is the account id (`setUserId`) — a pseudonymous key
+ * that already links every session and report back to the account when support
+ * needs it.
+ *
+ * NEVER add name, email, mobile, school, gender, address or any other field
+ * that identifies a human being. Google's own terms forbid PII in Crashlytics
+ * keys, and re-adding one would put a child's identity next to a stack trace.
+ * Attributes below are strictly non-identifying context for reproducing a bug.
+ */
+
 // `| null` mirrors the API shape these values come from (see AuthContext.User).
 interface CrashlyticsStudent {
   id: string;
-  name: string;
-  email?: string | null;
-  mobile: string;
-  country_code?: string | null;
-  gender?: string | null;
-  school_name?: string | null;
   grade?: { id: string; name: string } | null;
   educational_system?: { id: string; name: string } | null;
   is_subscribed?: boolean | null;
@@ -21,99 +30,56 @@ interface CrashlyticsStudent {
 
 interface CrashlyticsParent {
   id: string;
-  name: string | null;
-  mobile: string;
-  country_code?: string | null;
 }
 
+/** Device/app context shared by every role — none of it identifies the user. */
+const deviceAttributes = (): Record<string, string> => ({
+  device_brand: DeviceInfo.getBrand(),
+  device_model: DeviceInfo.getModel(),
+  os_version: DeviceInfo.getSystemVersion(),
+  app_version: DeviceInfo.getVersion(),
+  selected_language: i18n?.language || 'en',
+});
+
+const configure = async (role: UserRole, id: string, extra: Record<string, string> = {}) => {
+  // Modular API: the namespaced `crashlytics()` form is deprecated and warns on
+  // every call.
+  const instance = getCrashlytics();
+  await setUserId(instance, id);
+  await setAttributes(instance, { role, ...deviceAttributes(), ...extra });
+  logInfo(`[Crashlytics] ${role} context configured (${id})`);
+};
+
 /**
- * Configure Crashlytics with student user attributes.
+ * Configure Crashlytics for a signed-in student.
+ * Only the account id is identifying — see the privacy rule above.
  */
 export const configureCrashlyticsStudent = async (user: CrashlyticsStudent): Promise<void> => {
   try {
-    const brand = DeviceInfo.getBrand();
-    const model = DeviceInfo.getModel();
-    const osVersion = DeviceInfo.getSystemVersion();
-    const currentLanguage = i18n?.language || 'en';
-
-    await crashlytics().setUserId(user.id);
-    await crashlytics().setAttributes({
-      role: 'student',
-      name: user.name || 'Unknown',
-      email: user.email || 'N/A',
-      mobile: user.mobile || 'Unknown',
-      country_code: user.country_code || 'N/A',
-      gender: user.gender || 'N/A',
-      school_name: user.school_name || 'N/A',
+    await configure('student', user.id, {
       grade: user.grade?.name || 'N/A',
       educational_system: user.educational_system?.name || 'N/A',
       is_subscribed: user.is_subscribed ? 'true' : 'false',
-      device_brand: brand,
-      device_model: model,
-      os_version: osVersion,
-      selected_language: currentLanguage,
     });
-
-    logInfo(`[Crashlytics] Student attributes configured: ${user.name} (${user.id})`);
   } catch (error) {
-    logError('[Crashlytics] Failed to set student properties', error);
+    logError('[Crashlytics] Failed to set student context', error);
   }
 };
 
-/**
- * Configure Crashlytics with parent user attributes.
- */
+/** Configure Crashlytics for a signed-in parent. */
 export const configureCrashlyticsParent = async (parent: CrashlyticsParent): Promise<void> => {
   try {
-    const brand = DeviceInfo.getBrand();
-    const model = DeviceInfo.getModel();
-    const osVersion = DeviceInfo.getSystemVersion();
-    const currentLanguage = i18n?.language || 'en';
-
-    await crashlytics().setUserId(parent.id);
-    await crashlytics().setAttributes({
-      role: 'parent',
-      name: parent.name || 'Unknown',
-      email: 'N/A',
-      mobile: parent.mobile || 'Unknown',
-      country_code: parent.country_code || 'N/A',
-      device_brand: brand,
-      device_model: model,
-      os_version: osVersion,
-      selected_language: currentLanguage,
-    });
-
-    logInfo(`[Crashlytics] Parent attributes configured: ${parent.name} (${parent.id})`);
+    await configure('parent', parent.id);
   } catch (error) {
-    logError('[Crashlytics] Failed to set parent properties', error);
+    logError('[Crashlytics] Failed to set parent context', error);
   }
 };
 
-/**
- * Clear Crashlytics user attributes (guest/logged out).
- */
+/** Clear user context (guest / logged out). */
 export const configureCrashlyticsGuest = async (): Promise<void> => {
   try {
-    const brand = DeviceInfo.getBrand();
-    const model = DeviceInfo.getModel();
-    const osVersion = DeviceInfo.getSystemVersion();
-    const currentLanguage = i18n?.language || 'en';
-
-    await crashlytics().setUserId('guest_user');
-    await crashlytics().setAttributes({
-      role: 'guest',
-      name: 'Guest',
-      email: 'N/A',
-      mobile: 'N/A',
-      country_code: 'N/A',
-      device_brand: brand,
-      device_model: model,
-      os_version: osVersion,
-      selected_language: currentLanguage,
-    });
-
-    logInfo('[Crashlytics] Guest attributes configured.');
+    await configure('guest', 'guest_user');
   } catch (error) {
-    logError('[Crashlytics] Failed to set guest properties', error);
+    logError('[Crashlytics] Failed to set guest context', error);
   }
 };

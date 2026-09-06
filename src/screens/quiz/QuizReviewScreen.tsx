@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
+import { isArabicText } from '../../config/fonts';
 import { loadFailureMessage } from '../../utils/queryError';
 import { PublishQuizToFeedDocument, QuizReviewDocument } from '../../generated/graphql';
 import { layout } from '../../config/layout';
@@ -479,7 +480,13 @@ const QuizReviewScreen: React.FC = () => {
                         testID={`review-question-image-${ua.question.id}`}
                       />
                     )}
-                    <Text style={[currentStyles.questionText, { textAlign: contentAlign }]}>
+                    <Text
+                      style={[
+                        currentStyles.questionText,
+                        { textAlign: contentAlign },
+                        fontWeight('700', isArabicText(ua.question.question)),
+                      ]}
+                    >
                       {ua.question.question}
                     </Text>
 
@@ -885,7 +892,17 @@ const QuizReviewScreen: React.FC = () => {
                                   {String.fromCharCode(65 + optIndex)}
                                 </Text>
                               </View>
-                              <Text style={[currentStyles.optionText, textStyle]}>
+                              <Text
+                                style={[
+                                  currentStyles.optionText,
+                                  textStyle,
+                                  // fontWeight, not typography: textStyle sets
+                                  // ONLY a colour (green/red), and typography
+                                  // would re-supply its own and flatten the
+                                  // correct/incorrect distinction to one grey.
+                                  fontWeight('500', isArabicText(opt)),
+                                ]}
+                              >
                                 {isTrueFalse && opt.toLowerCase() === 'true'
                                   ? t('common.true')
                                   : isTrueFalse && opt.toLowerCase() === 'false'

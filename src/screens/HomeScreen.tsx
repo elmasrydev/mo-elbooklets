@@ -14,6 +14,8 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { formatDate } from '../lib/dateUtils';
+import { STUDY_PLAN_ENABLED } from '../config/features';
 import { useTranslation } from 'react-i18next';
 import { useCommonStyles } from '../hooks/useCommonStyles';
 import { useTypography } from '../hooks/useTypography';
@@ -35,6 +37,7 @@ import SubjectIcon from '../components/SubjectIcon';
 import { CardListSkeleton } from '../components/SkeletonLoader';
 import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
 import NotificationBell from '../components/NotificationBell';
+import { useTrialStatus } from '../context/TrialStatusContext';
 import Avatar from '../components/Avatar';
 import { analytics } from '../lib/analytics';
 
@@ -197,17 +200,20 @@ const HomeScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { user } = useAuth();
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
-  const { isRTL } = useLanguage();
+  const { isRTL, language } = useLanguage();
   const { t } = useTranslation();
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
+  const { refresh: refreshTrialStatus } = useTrialStatus();
 
   // Subjects and today's schedule reuse their own tabs' documents, so opening
   // those tabs reads the same cache entry instead of refetching.
   const homeQuery = useQuery(HomeDataDocument, { notifyOnNetworkStatusChange: true });
   const subjectsQuery = useQuery(StudySubjectsDocument);
   const leaderboardQuery = useQuery(HomeLeaderboardDocument, { variables: { limit: 4 } });
-  const scheduleQuery = useQuery(TodayScheduleDocument);
+  // Study plan is not launched — skip the request entirely rather than fetch a
+  // payload nothing renders (see STUDY_PLAN_ENABLED).
+  const scheduleQuery = useQuery(TodayScheduleDocument, { skip: !STUDY_PLAN_ENABLED });
 
   const activitiesData = homeQuery.data?.activities ?? null;
   const wheelData = homeQuery.data?.wheelOfSuccess ?? null;
@@ -222,15 +228,21 @@ const HomeScreen: React.FC = () => {
   const loading = homeQuery.loading;
 
   const fetchHomeData = useCallback(async () => {
+    // No trial UI renders here, but the gates read this state — Home's focus
+    // window is the app's regular "is this still true?" beat, so it keeps the
+    // subscription flag and the day's quiz counter current too.
     await Promise.all([
+      refreshTrialStatus(),
       homeQuery.refetch(),
       subjectsQuery.refetch(),
       leaderboardQuery.refetch(),
-      scheduleQuery.refetch(),
+      // refetch() ignores `skip`, so this has to be gated too or the unlaunched
+      // study plan would still hit the network on every focus refresh.
+      ...(STUDY_PLAN_ENABLED ? [scheduleQuery.refetch()] : []),
     ]);
     // Refetch functions are stable for the life of the hook.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [refreshTrialStatus]);
 
   // useQuery fetched on mount, so the first focus inside the window is a no-op.
   const lastFetchRef = React.useRef<number>(Date.now());
@@ -239,10 +251,14 @@ const HomeScreen: React.FC = () => {
   useFocusEffect(
     useCallback(() => {
       const now = Date.now();
-      if (now - lastFetchRef.current < STALE_MS && activitiesData) return;
+      // The `&& activitiesData` clause defeated the guard on a cold cache: the
+      // first focus fires before any payload lands, so Home refetched all four
+      // queries it had just fired on mount. The timestamp alone is the guard —
+      // it is seeded at mount for exactly this reason.
+      if (now - lastFetchRef.current < STALE_MS) return;
       lastFetchRef.current = now;
       fetchHomeData();
-    }, [fetchHomeData, activitiesData]),
+    }, [fetchHomeData]),
   );
 
   // continueSubject memo removed since "Where You Left Off" was removed
@@ -355,9 +371,7 @@ const HomeScreen: React.FC = () => {
                 {user?.grade?.name?.toUpperCase() || t('more_screen.grade').toUpperCase()}
               </Text>
               <Text style={s.bannerStreakText}>
-                {isRTL
-                  ? `${activitiesData.streak || 0} ${t('home_screen.streak_title')} 🔥`
-                  : `${activitiesData.streak || 0} day streak 🔥`}
+                {`${activitiesData.streak || 0} ${t('home_screen.streak_title')}`}
               </Text>
 
               {/* Inline Stats Row */}
@@ -406,7 +420,7 @@ const HomeScreen: React.FC = () => {
                 <View style={s.bannerStatDivider} />
                 <View style={s.bannerStatItem}>
                   <Text style={s.bannerStatLabel} numberOfLines={1} adjustsFontSizeToFit>
-                    XP
+                    {t('student_profile.xp')}
                   </Text>
                   <Text
                     style={s.bannerStatValue}
@@ -525,8 +539,8 @@ const HomeScreen: React.FC = () => {
                       </Text>
                       <Text style={s.recentQuizTime}>
                         {activity.completedAt
-                          ? new Date(activity.completedAt).toLocaleDateString()
-                          : 'Recent'}
+                          ? formatDate(activity.completedAt, language)
+                          : t('home_screen.recent')}
                       </Text>
                     </View>
                     <Text
@@ -596,7 +610,9 @@ const HomeScreen: React.FC = () => {
                         ? `${entry.name} (${t('leaderboard_screen.you', 'You')})`
                         : entry.name}
                     </Text>
-                    <Text style={s.leaderboardRankXp}>{entry.xp} XP</Text>
+                    <Text
+                      style={s.leaderboardRankXp}
+                    >{`${entry.xp} ${t('student_profile.xp')}`}</Text>
                   </View>
                 </View>
               ))}
@@ -626,7 +642,9 @@ const HomeScreen: React.FC = () => {
                         ? `${leaderboardUser.name.split(' ')[0]} (${t('leaderboard_screen.your_rank', 'You')})`
                         : t('leaderboard_screen.your_rank', 'You')}
                     </Text>
-                    <Text style={s.leaderboardUserXp}>{leaderboardUser.xp} XP</Text>
+                    <Text
+                      style={s.leaderboardUserXp}
+                    >{`${leaderboardUser.xp} ${t('student_profile.xp')}`}</Text>
                   </View>
                 </View>
               )}
@@ -635,7 +653,9 @@ const HomeScreen: React.FC = () => {
         )}
 
         {/* ─── 6. Today's Plan Card (Study Schedule) ─────────────── */}
-        {todaySchedule && todaySchedule.schedule.length > 0 && (
+        {/* Hidden behind STUDY_PLAN_ENABLED — the feature is complete but not
+            launching yet. Flip the flag in src/config/features.ts to restore. */}
+        {STUDY_PLAN_ENABLED && todaySchedule && todaySchedule.schedule.length > 0 && (
           <TouchableOpacity
             style={s.planCard}
             activeOpacity={0.8}

@@ -24,7 +24,9 @@ import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { analytics } from '../lib/analytics';
 import { INPUT_TEXT_ALIGN } from '../lib/rtl';
+import { authFailureText } from '../utils/authErrors';
 import { digitsOnly } from '../utils/digits';
+import { EGYPT_MOBILE_REGEX } from '../utils/validators';
 import { isDebugMode } from '../config/debug';
 
 const LoginScreen: React.FC = () => {
@@ -78,14 +80,12 @@ const LoginScreen: React.FC = () => {
       if (result.success && result.user) {
         analytics.trackLogin('phone');
         analytics.identify(result.user.id, {
-          name: result.user.name,
-          mobile: result.user.mobile,
           grade: result.user.grade?.name,
         });
       } else if (!result.success) {
         showConfirm({
           title: t('auth.login_failed'),
-          message: t(result.error || 'auth.invalid_credentials'),
+          message: authFailureText(result, t, 'auth.invalid_credentials'),
           showCancel: false,
           onConfirm: () => {},
         });
@@ -115,7 +115,7 @@ const LoginScreen: React.FC = () => {
     insets,
   });
 
-  const isMobileValid = /^01[0125]\d{8}$/.test(mobile.trim());
+  const isMobileValid = EGYPT_MOBILE_REGEX.test(mobile.trim());
   // Min 6 to match the registration policy (BKLT-284), so a valid password never
   // flags red at login. This only drives the border colour; submit isn't gated on it.
   const isPasswordValid = password.length >= 6;
@@ -188,7 +188,9 @@ const LoginScreen: React.FC = () => {
                   style={currentStyles.input}
                   value={mobile}
                   onChangeText={(val) => setMobile(digitsOnly(val).slice(0, 11))}
-                  maxLength={11}
+                  // No maxLength: it clips a pasted "+20 100 123 4567" before
+                  // digitsOnly() can strip the formatting. The slice above is
+                  // the real cap.
                   placeholder={t('auth.mobile_placeholder')}
                   placeholderTextColor={theme.colors.textTertiary}
                   keyboardType="phone-pad"
@@ -291,7 +293,7 @@ const LoginScreen: React.FC = () => {
             activeOpacity={0.7}
           >
             <Ionicons name="language-outline" size={20} color={theme.colors.primary} />
-            <Text style={currentStyles.languageButtonText}>
+            <Text style={[currentStyles.languageButtonText, fontWeight('600', language !== 'ar')]}>
               {language === 'ar' ? 'English' : 'عربي'}
             </Text>
           </TouchableOpacity>

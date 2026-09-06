@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -332,15 +332,22 @@ const QuizTakingScreen: React.FC = () => {
     quiz?.subject?.language,
     quiz?.subject?.name,
   );
-  const currentStyles = styles(
-    theme,
-    typography,
-    fontWeight,
-    spacing,
-    borderRadius,
-    common,
-    contentAlign,
+  // Rebuilt on every render before this — and a timed quiz re-renders once a
+  // second, so the entire stylesheet was recreated 60x/minute mid-question.
+  const currentStyles = useMemo(
+    () => styles(theme, typography, fontWeight, spacing, borderRadius, common, contentAlign),
+    [theme, typography, fontWeight, spacing, borderRadius, common, contentAlign],
   );
+
+  // The render path clamps the index, but the handlers, the progress label and
+  // the report modal read the raw value — so after a refetch returning fewer
+  // questions, Next/Finish could act on a different question than the one on
+  // screen. Clamp the state itself so every consumer agrees.
+  useEffect(() => {
+    if (!quiz?.questions?.length) return;
+    const max = quiz.questions.length - 1;
+    if (currentQuestionIndex > max) setCurrentQuestionIndex(Math.max(0, max));
+  }, [quiz, currentQuestionIndex]);
 
   if (loading) {
     return (
@@ -426,7 +433,7 @@ const QuizTakingScreen: React.FC = () => {
             <Text style={currentStyles.progressSteps}>
               <Text style={currentStyles.progressCurrentStep}>
                 {t('quiz_taking.question', 'Question')}{' '}
-                {(currentQuestionIndex + 1).toString().padStart(2, '0')}
+                {(safeIndex + 1).toString().padStart(2, '0')}
               </Text>{' '}
               {t('quiz_taking.of', 'of')} {quiz.questions.length}
             </Text>
@@ -480,7 +487,14 @@ const QuizTakingScreen: React.FC = () => {
 
           {/* Paragraph renders its own passage card, so skip the top prompt. */}
           {!isParagraph && (
-            <Text style={currentStyles.questionText}>{currentQuestion.question}</Text>
+            <Text
+              style={[
+                currentStyles.questionText,
+                typography('h1', 'bold', isArabicText(currentQuestion.question)),
+              ]}
+            >
+              {currentQuestion.question}
+            </Text>
           )}
 
           {/* Report button */}

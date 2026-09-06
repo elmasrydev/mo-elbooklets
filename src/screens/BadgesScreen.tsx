@@ -15,10 +15,13 @@ import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { formatDate } from '../lib/dateUtils';
 import { useTypography } from '../hooks/useTypography';
 import UnifiedHeader from '../components/UnifiedHeader';
 import { useQuery } from '@apollo/client/react';
 import { GetBadgesScreenDataDocument, GetBadgesScreenDataQuery } from '../generated/graphql';
+import { resolveAssetUrl } from '../config/api';
+import { loadFailureMessage } from '../utils/queryError';
 
 // Shaped by what this screen's query actually selects — narrower and safer
 // than the full schema type of the same name.
@@ -82,7 +85,14 @@ const BadgesScreen: React.FC = () => {
     return <MaterialIcons name={name as any} size={size} color={color} style={style} />;
   };
 
-  const { data, loading, error, refetch } = useQuery(GetBadgesScreenDataDocument);
+  const { data, loading, error: queryError, refetch } = useQuery(GetBadgesScreenDataDocument);
+  // errorPolicy is 'all', so a partial response carries data AND errors; gating
+  // on the raw error would blank a screen that has badges to show.
+  const error = loadFailureMessage(
+    data?.allBadges,
+    queryError,
+    t('badges_screen.error_loading', 'Could not load badges. Please check your connection.'),
+  );
 
   const categories = data?.badgeCategories || [];
   const badges = data?.allBadges || [];
@@ -302,9 +312,7 @@ const BadgesScreen: React.FC = () => {
                           {badge.logoUrl ? (
                             <Image
                               source={{
-                                uri: badge.logoUrl.startsWith('/')
-                                  ? `https://prs.elbooklets.com${badge.logoUrl}`
-                                  : badge.logoUrl,
+                                uri: resolveAssetUrl(badge.logoUrl),
                               }}
                               style={[styles.badgeImage, !badge.awardedAt && styles.grayscaleImage]}
                             />
@@ -414,9 +422,7 @@ const BadgesScreen: React.FC = () => {
                         {selectedBadge.logoUrl && !modalImageError ? (
                           <Image
                             source={{
-                              uri: selectedBadge.logoUrl.startsWith('/')
-                                ? `https://prs.elbooklets.com${selectedBadge.logoUrl}`
-                                : selectedBadge.logoUrl,
+                              uri: resolveAssetUrl(selectedBadge.logoUrl),
                             }}
                             style={[
                               styles.modalBadgeImage,
@@ -518,7 +524,7 @@ const BadgesScreen: React.FC = () => {
                           ]}
                         >
                           {t('badges_screen.awarded_at', 'Awarded on {{date}}', {
-                            date: new Date(selectedBadge.awardedAt).toLocaleDateString(),
+                            date: formatDate(selectedBadge.awardedAt, language),
                           })}
                         </Text>
                       )}

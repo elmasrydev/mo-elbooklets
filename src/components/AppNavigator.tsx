@@ -15,6 +15,8 @@ import InternalSettingsScreen from '../screens/InternalSettingsScreen';
 import OTPVerificationScreen from '../screens/OTPVerificationScreen';
 import ProfileCompletionPrompt from './ProfileCompletionPrompt';
 import RegistrationSuccessScreen from '../screens/RegistrationSuccessScreen';
+import ContactUsScreen from '../screens/ContactUsScreen';
+import { parentVerificationState } from '../utils/parentVerification';
 
 const RootStack = createNativeStackNavigator();
 
@@ -47,7 +49,8 @@ const AppNavigator: React.FC = () => {
             // `null` is the server saying "not verified"; `undefined` means the
             // record predates the gate and is being backfilled — gating on that
             // would lock every already-verified parent out after an upgrade.
-            parentUser?.mobile_verified_at === null && !isVerificationSkipped ? (
+            parentVerificationState(parentUser?.mobile_verified_at) === 'unverified' &&
+            !isVerificationSkipped ? (
               <RootStack.Group>
                 <RootStack.Screen
                   name="OTPVerification"
@@ -81,6 +84,12 @@ const AppNavigator: React.FC = () => {
                 component={ForgotPasswordScreen}
                 initialParams={{ audience: 'student', fromProfile: true }}
               />
+              {/* Also needed HERE, not just in the unauthenticated group and
+                  TabNavigator: ResetPassword is a sibling of MainTabs in this
+                  group, and navigate() does not descend into an unfocused child
+                  navigator — so its Contact Support button would resolve to
+                  nothing from this route. */}
+              <RootStack.Screen name="ContactUs" component={ContactUsScreen} />
             </RootStack.Group>
           )
         ) : (
@@ -100,6 +109,13 @@ const AppNavigator: React.FC = () => {
               component={ForgotPasswordScreen}
               initialParams={{ audience: 'parent' }}
             />
+            {/* Reachable while signed OUT: the forgot-password flow offers
+                Contact Support once the code allowance is spent (BKLT-287), and
+                the ContactUs registration inside MainTabs is unreachable from
+                here. `sendContactMessage` takes name/email/subject/message as
+                arguments and needs no session — verified unauthenticated
+                against PRS and demo. */}
+            <RootStack.Screen name="ContactUs" component={ContactUsScreen} />
           </RootStack.Group>
         )}
       </RootStack.Navigator>

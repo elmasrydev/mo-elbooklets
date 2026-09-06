@@ -70,6 +70,18 @@ booki-graphql-api.md
 avatars.md
 mobile-availability-check-mutation.md
 notification-localization-mobile-guide.md
+mobile-otp-guide.md
+mobile-quiz-question-type-selection.md
+mobile-paymob-*.md
+mobile-lesson-mindmap-svg.md
+backend-issues-from-audit.md
+test-notes-claude-reviews1.md
+mobile-trial-restrictions.md
+trial-alignment-plan.md
+
+# Design source for the Boki mark — the exported assets/images/bokiIcon*.png are
+# what the app uses; keep the 1600px original local.
+bookiicon.jpeg
 
 # Bug-report screenshots (CLAUDE.md: never commit screenshots to the repo root)
 simulator_screenshot_*.png

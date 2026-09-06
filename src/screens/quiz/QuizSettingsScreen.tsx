@@ -25,6 +25,8 @@ import { useModal } from '../../context/ModalContext';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import SubjectIcon from '../../components/SubjectIcon';
 import { useSubscriptionGate } from '../../hooks/useSubscriptionGate';
+import { useTrialStatus } from '../../context/TrialStatusContext';
+import { hasQuizAttemptsLeft } from '../../utils/trialStatus';
 import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
 import {
   canOfferTypePicker,
@@ -90,6 +92,7 @@ const QuizSettingsScreen: React.FC = () => {
   const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
   const { checkSubscription } = useSubscriptionGate();
+  const { status: trialStatus } = useTrialStatus();
 
   // Settings State
   const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null);
@@ -200,8 +203,16 @@ const QuizSettingsScreen: React.FC = () => {
     [selectedQuestionTypes, typeOptions, minSelectedTypes, totalAvailable, currentQuizType],
   );
 
+  // Today's quiz allowance (contract §2). No counter is rendered — the limit is
+  // only used to answer Start with the premium notice instead of walking the
+  // student through the generating animation to reach the server's refusal.
+  const attemptsLeftToday = hasQuizAttemptsLeft(trialStatus);
+
   // Only gate on availability once the counts have actually arrived; until then
-  // the server stays the backstop.
+  // the server stays the backstop. A spent daily quota deliberately does *not*
+  // disable Start: a greyed button with no counter (the limit is 0, so there is
+  // nothing to count down) explains nothing — pressing it opens the modal that
+  // does.
   const canStart = !!selectedTypeId && (!hasAvailability || selectionStatus.canStart);
 
   // Why Start is blocked. Lives outside the picker card because the shortfall
@@ -223,6 +234,13 @@ const QuizSettingsScreen: React.FC = () => {
 
   const handleStartQuiz = () => {
     if (!checkSubscription({ skipModal: true })) {
+      setShowSubModal(true);
+      return;
+    }
+    // The day's attempts are spent. The server would refuse anyway (§4), but
+    // sending the student through the 6-second generating animation to reach
+    // that refusal is worse than saying so here.
+    if (!attemptsLeftToday) {
       setShowSubModal(true);
       return;
     }
@@ -308,7 +326,9 @@ const QuizSettingsScreen: React.FC = () => {
                 </Text>
               ))}
               {selectedUnits.length > 3 && (
-                <Text style={currentStyles.unitItemMore}>+ {selectedUnits.length - 3} more</Text>
+                <Text style={currentStyles.unitItemMore}>
+                  {t('quiz_flow.units_more', { count: selectedUnits.length - 3 })}
+                </Text>
               )}
             </View>
           </View>
@@ -473,17 +493,20 @@ const QuizSettingsScreen: React.FC = () => {
         />
       </View>
 
+      {/* Local (not ModalContext) because this screen is an iOS fullScreenModal. */}
       <ConfirmModal
         visible={showSubModal}
         icon={<Ionicons name="lock-closed" size={50} color={theme.colors.primary} />}
         title={t('subscription.required_title')}
         message={t('subscription.required_message')}
         confirmLabel={t('common.ok')}
-        onConfirm={() => {
-          setShowSubModal(false);
-          navigation.navigate('MainTabs', { screen: 'SettingsTab' });
-        }}
-        showCancel={true}
+        // Dismiss only. This modal now also answers "today's quizzes are used
+        // up", and the old jump to the Settings tab would throw that student
+        // out of the flow — losing their lesson selection — to reach a screen
+        // that says nothing about subscribing. Matches every other premium
+        // notice in the app.
+        onConfirm={() => setShowSubModal(false)}
+        showCancel={false}
         onCancel={() => setShowSubModal(false)}
       />
     </View>

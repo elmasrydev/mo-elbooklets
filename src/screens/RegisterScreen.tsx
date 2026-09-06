@@ -26,6 +26,7 @@ import { useModal } from '../context/ModalContext';
 import { useNavigation } from '@react-navigation/native';
 import { analytics } from '../lib/analytics';
 import { INPUT_TEXT_ALIGN } from '../lib/rtl';
+import { authFailureText } from '../utils/authErrors';
 import { digitsOnly } from '../utils/digits';
 import { isDebugMode } from '../config/debug';
 import {
@@ -74,7 +75,7 @@ const RegisterScreen: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
 
-  const { register } = useAuth();
+  const { register, setRegistrationSuccessPending } = useAuth();
   const { showConfirm } = useModal();
   const { theme, fontSizes, spacing, borderRadius } = useTheme();
   const { language, setLanguage } = useLanguage();
@@ -234,14 +235,16 @@ const RegisterScreen: React.FC = () => {
       if (result.success && result.user) {
         analytics.trackSignUp('phone');
         analytics.identify(result.user.id, {
-          name: result.user.name,
-          mobile: result.user.mobile,
           grade: result.user.grade?.name,
         });
+        // Arms the success screen AppNavigator renders once the OTP gate is
+        // cleared. Nothing called this before, so the screen — fully built and
+        // routed — could never appear.
+        await setRegistrationSuccessPending(true);
       } else if (!result.success) {
         showConfirm({
           title: t('auth.registration_failed'),
-          message: t(result.error || 'auth.registration_error'),
+          message: authFailureText(result, t, 'auth.registration_error'),
           showCancel: false,
           onConfirm: () => {},
         });
@@ -418,7 +421,9 @@ const RegisterScreen: React.FC = () => {
                 activeOpacity={0.7}
               >
                 <Ionicons name="language-outline" size={20} color={theme.colors.primary} />
-                <Text style={currentStyles.languageButtonText}>
+                <Text
+                  style={[currentStyles.languageButtonText, fontWeight('600', language !== 'ar')]}
+                >
                   {language === 'ar' ? 'English' : 'عربي'}
                 </Text>
               </TouchableOpacity>

@@ -135,7 +135,8 @@
     "version": "الإصدار",
     "yes": "نعم",
     "close": "إغلاق",
-    "clear": "مسح"
+    "clear": "مسح",
+    "contact_support": "تواصل مع الدعم"
   },
   "subscription": {
     "required_message": "يجب عليك الاشتراك للوصول إلى جميع المميزات. يرجى الاشتراك للمتابعة.",
@@ -178,7 +179,6 @@
     "leave_message": "تقدّمك في المراجعة محفوظ. هل أنت متأكد من المغادرة؟",
     "leave_title": "مغادرة الدرس؟",
     "lesson_content": "محتوى الدرس",
-    "locked_title": "الدرس مغلق",
     "my_notes": "ملاحظاتي",
     "next": "الدرس التالي",
     "no_dod_data": "لا توجد بيانات تقدّم متاحة",
@@ -195,7 +195,10 @@
     "summary": "ملخّص الدرس",
     "tab_overview": "الملخّص والنقاط",
     "take_quiz": "ابدأ الاختبار",
-    "test_your_knowledge": "اختبر معلوماتك في هذا الدرس"
+    "test_your_knowledge": "اختبر معلوماتك في هذا الدرس",
+    "mind_map": "الخريطة الذهنية",
+    "mind_map_hint": "اضغط لعرض الخريطة كاملة بالوضع الأفقي",
+    "mind_map_error": "تعذّر تحميل الخريطة الذهنية"
   },
   "more_screen": {
     "about_content": "تطبيق البوكلتس للجوال\nالإصدار 1.0.0\n\nرفيقك في التعلم الرقمي والتعليم التفاعلي.",
@@ -281,7 +284,8 @@
     "view_all": "عرض الكل",
     "weekly_leaderboard": "لوحة الأوائل الأسبوعية",
     "welcome_back": "أهلاً بعودتك،",
-    "wheel_of_success": "عجلة النجاح"
+    "wheel_of_success": "عجلة النجاح",
+    "recent": "مؤخرًا"
   },
   "quiz_screen": {
     "error_loading_history": "خطأ في تحميل السجل",
@@ -326,9 +330,13 @@
     "select_quiz_type": "اختر نوع الاختبار",
     "settings_info_text": "المزيد من الإعدادات قريباً!",
     "start_quiz": "ابدأ الاختبار",
-    "start_quiz_count": "ابدأ الاختبار ({{count}} درس)",
-    "start_quiz_count_plural": "ابدأ الاختبار ({{count}} دروس)",
-    "timed_mode": "الوضع المحدد بوقت"
+    "timed_mode": "الوضع المحدد بوقت",
+    "start_quiz_count_zero": "ابدأ الاختبار",
+    "start_quiz_count_one": "ابدأ الاختبار (درس واحد)",
+    "start_quiz_count_two": "ابدأ الاختبار (درسان)",
+    "start_quiz_count_few": "ابدأ الاختبار ({{count}} دروس)",
+    "start_quiz_count_many": "ابدأ الاختبار ({{count}} درسًا)",
+    "start_quiz_count_other": "ابدأ الاختبار ({{count}} درس)"
   },
   "quiz_start": {
     "go_back": "رجوع",
@@ -560,8 +568,7 @@
     "full_name_placeholder": "أدخل اسمك الكامل",
     "gender": "الجنس",
     "girl": "بنت",
-    "incorrect_password": "كلمة المرور غير صحيحة. يرجى المحاولة مرة أخرى أو استخدام خيار نسيت كلمة المرور.",
-    "invalid_credentials": "بيانات الدخول غير صحيحة.",
+    "invalid_credentials": "رقم الموبايل أو كلمة المرور غير صحيحة.",
     "invalid_egyptian_mobile": "يرجى إدخال رقم موبايل مصري صالح (يبدأ بـ 01 ويتكون من 11 رقماً).",
     "invalid_email": "يرجى إدخال بريد إلكتروني صحيح",
     "invalid_email_format": "يرجى إدخال بريد إلكتروني صحيح",
@@ -579,7 +586,6 @@
     "name": "الاسم الكامل",
     "name_placeholder": "أدخل اسمك الكامل",
     "name_too_short": "الاسم قصير جداً (3 أحرف على الأقل)",
-    "no_account_found": "لم يتم العثور على حساب مرتبط بهذا الرقم. يرجى التحقق من الرقم أو تسجيل حساب جديد.",
     "no_referral_disclaimer": "أنت تسجل بدون كود دعوة وستحصل على وصول تجريبي محدود فقط.",
     "no_schools_found": "لا توجد مدارس مطابقة",
     "parent_data": "بيانات ولي الأمر",
@@ -782,7 +788,8 @@
     "social_notifications": "الإشعارات الاجتماعية",
     "social_notifications_desc": "استلام إشعارات النشاط الاجتماعي",
     "test_crash": "اختبار الانهيار",
-    "test_log_error": "تسجيل خطأ"
+    "test_log_error": "تسجيل خطأ",
+    "delete_account_error": "تعذّر حذف حسابك. برجاء المحاولة مرة أخرى."
   },
   "badges_screen": {
     "awarded_at": "تم الحصول عليها في {{date}}",
@@ -869,7 +876,6 @@
   "profile": {
     "add_failed": "تعذّر الإضافة الآن. حاول مرة أخرى.",
     "cant_find_add": "لم تجدها؟ أضف ⁨\"{{name}}\"⁩",
-    "change_password": "تغيير كلمة المرور",
     "city": "المدينة",
     "complete_in_settings": "إكمال في الإعدادات",
     "complete_profile": "إكمال الملف الشخصي",
@@ -877,7 +883,6 @@
     "complete_your_profile": "أكمل ملفك الشخصي",
     "completeness": "اكتمال الملف الشخصي",
     "completeness_incentive": "ساعدنا في تخصيص تجربة التعلم الخاصة بك",
-    "confirm_new_password": "تأكيد كلمة المرور الجديدة",
     "enter_email": "أدخل البريد الإلكتروني",
     "enter_parent_mobile": "أدخل رقم موبايل ولي الأمر",
     "enter_school": "أدخل اسم المدرسة",
@@ -890,8 +895,6 @@
     "name_invalid_chars": "استخدم الحروف والأرقام والمسافات. يُسمح بعلامات ⁨- ' .⁩ داخل الاسم فقط — ليس في بدايته أو نهايته ولا مكررة.",
     "name_not_editable": "لا يمكن تغيير الاسم يدوياً",
     "new_password": "كلمة المرور الجديدة",
-    "old_password": "كلمة المرور الحالية",
-    "password_changed_success": "تم تغيير كلمة المرور بنجاح",
     "passwords_dont_match": "كلمتا المرور غير متطابقتين",
     "personal_info": "البيانات الشخصية",
     "reset_password_hint": "إعادة تعيين كلمة المرور تُسجّل خروجك من هذا الجهاز ومن جميع الأجهزة الأخرى.",
@@ -903,8 +906,8 @@
     "select_gov_first": "اختَر المحافظة أولاً",
     "select_governorate": "اختَر المحافظة",
     "start_typing_to_search": "ابدأ الكتابة للبحث...",
-    "update_password": "تحديث كلمة المرور",
-    "update_success": "تم تحديث الملف الشخصي بنجاح"
+    "update_success": "تم تحديث الملف الشخصي بنجاح",
+    "confirm_new_password": "تأكيد كلمة المرور الجديدة"
   },
   "notifications_center": {
     "delete_all_confirm": "مسح جميع التنبيهات؟",
@@ -918,7 +921,8 @@
     "today": "اليوم",
     "unread_count": "تنبيهات غير مقروءة",
     "unread_only": "غير المقروءة فقط",
-    "yesterday": "أمس"
+    "yesterday": "أمس",
+    "error_loading": "تعذّر تحميل الإشعارات."
   },
   "report_question": {
     "comment_label": "تعليقات إضافية (اختياري)",
@@ -941,7 +945,8 @@
   },
   "bookmarks": {
     "empty_subtitle": "ضع إشارة مرجعية على النقاط الرئيسية لتجدها هنا لاحقاً.",
-    "empty_title": "لا توجد إشارات مرجعية بعد"
+    "empty_title": "لا توجد إشارات مرجعية بعد",
+    "error_loading": "تعذّر تحميل العلامات المرجعية والملاحظات."
   },
   "notes": {
     "empty_subtitle": "أضف ملاحظات على النقاط الرئيسية أثناء المراجعة.",
@@ -966,7 +971,11 @@
     "verify": "تأكيد",
     "verify_mobile": "أكِّد رقمك عبر واتساب",
     "verifying": "جارٍ التحقق...",
-    "whatsapp_failed": "فشل الإرسال عبر واتساب. حاول لاحقاً."
+    "whatsapp_failed": "فشل الإرسال عبر واتساب. حاول لاحقاً.",
+    "resend_limit_reached": "لقد وصلت إلى الحد الأقصى لطلبات رمز التحقق.",
+    "resend_invalidates_previous": "تم إرسال رمز تحقق جديد. الرموز السابقة لم تعد صالحة.",
+    "support_reset_subject": "مساعدة في إعادة تعيين كلمة المرور",
+    "support_reset_context": "لم أتمكن من إعادة تعيين كلمة المرور — وصلت إلى الحد الأقصى لطلبات رمز التحقق.\n\nرقم الموبايل المسجَّل: {{mobile}}\n\nبرجاء إضافة أي تفاصيل أخرى قد تساعد:"
   },
   "quiz_flow": {
     "all_units": "كل الوحدات",
@@ -1022,11 +1031,24 @@
     "step_x_of_y": "الخطوة {{current}} من {{total}}",
     "time_limit": "الوقت المحدد",
     "unit_locked": "الوحدة مغلقة",
-    "units_count": "وحدة واحدة",
-    "units_count_plural": "{{count}} وحدات",
-    "x_lessons": "درس واحد",
-    "x_lessons_plural": "{{count}} دروس",
-    "x_selected": "تم تحديد {{count}}"
+    "x_selected": "تم تحديد {{count}}",
+    "units_count_zero": "لا وحدات",
+    "units_count_one": "وحدة واحدة",
+    "units_count_two": "وحدتان",
+    "units_count_few": "{{count}} وحدات",
+    "units_count_many": "{{count}} وحدة",
+    "units_count_other": "{{count}} وحدة",
+    "x_lessons_zero": "لا دروس",
+    "x_lessons_one": "درس واحد",
+    "x_lessons_two": "درسان",
+    "x_lessons_few": "{{count}} دروس",
+    "x_lessons_many": "{{count}} درسًا",
+    "x_lessons_other": "{{count}} درس",
+    "units_more_one": "+ وحدة أخرى",
+    "units_more_two": "+ وحدتان أخريان",
+    "units_more_few": "+ {{count}} وحدات أخرى",
+    "units_more_many": "+ {{count}} وحدة أخرى",
+    "units_more_other": "+ {{count}} وحدة أخرى"
   },
   "boki": {
     "title": "بوكي",
@@ -1050,8 +1072,6 @@
     "history_empty_subtitle": "ابدأ الدردشة مع بوكي وستظهر محادثاتك هنا.",
     "history_error": "تعذّر تحميل محادثاتك.",
     "load_error": "تعذّر تحميل هذه المحادثة.",
-    "message_count": "{{count}} رسالة",
-    "message_count_plural": "{{count}} رسائل",
     "like": "مفيدة",
     "dislike": "غير مفيدة",
     "report": "إبلاغ",
@@ -1065,6 +1085,12 @@
     "report_submit": "إرسال البلاغ",
     "report_success_title": "شكراً لك",
     "report_success": "تم إرسال بلاغك.",
-    "report_error": "تعذّر إرسال البلاغ. يرجى المحاولة مرة أخرى."
+    "report_error": "تعذّر إرسال البلاغ. يرجى المحاولة مرة أخرى.",
+    "message_count_zero": "لا رسائل",
+    "message_count_one": "رسالة واحدة",
+    "message_count_two": "رسالتان",
+    "message_count_few": "{{count}} رسائل",
+    "message_count_many": "{{count}} رسالة",
+    "message_count_other": "{{count}} رسالة"
   }
 }

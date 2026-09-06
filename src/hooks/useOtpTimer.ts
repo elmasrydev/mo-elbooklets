@@ -17,6 +17,14 @@ export type OtpTimerScope = 'student-verify' | 'parent-verify' | 'student-reset'
  */
 export const RESEND_LOCK_SECONDS = 60;
 
+/**
+ * Codes a user may request per number before the resend button is disabled and
+ * they are pointed at support (BKLT-287). The backend enforces its own
+ * per-hour budget; this is the UX cap, so the button stops looking available
+ * once further taps can only be refused.
+ */
+export const MAX_OTP_SENDS = 3;
+
 /** Codes live 10 minutes; used when a send response carries no `expires_in`. */
 export const DEFAULT_OTP_EXPIRY_SECONDS = 600;
 
@@ -35,6 +43,12 @@ interface TimerState {
    * message from a 3-per-hour budget.
    */
   sentTo?: string;
+  /**
+   * How many codes this flow has spent on `sentTo`. Persisted with the stamp so
+   * backgrounding the app — or killing it — cannot hand the user a fresh
+   * allowance (BKLT-287). Resets when the number changes or the flow is cleared.
+   */
+  sends?: number;
 }
 
 /**
@@ -57,6 +71,14 @@ export const useOtpTimer = (scope: OtpTimerScope) => {
    * disk that is not newer than this is a stale read and gets ignored.
    */
   const lastLocalSendRef = useRef(0);
+
+  /**
+   * Mirror of `state` for `startTimer`, which must read the previous send count
+   * without taking `state` as a dependency — doing so would rebuild the
+   * callback on every tick and re-run the screens' effects that depend on it.
+   */
+  const stateRef = useRef<TimerState | null>(null);
+  stateRef.current = state;
 
   const key = storageKey(scope);
 
@@ -102,8 +124,20 @@ export const useOtpTimer = (scope: OtpTimerScope) => {
         setState(restored);
         setNow(Date.now());
       } else {
-        // The code is dead; drop it so a remount cannot resurrect the lock.
-        await AsyncStorage.removeItem(key);
+        // The code is dead, so the lock and the code itself must go — but NOT
+        // the send count. A code lives ~10 minutes while the backend's budget is
+        // hourly, so discarding it here would re-open resend (and hide the
+        // support box) at the exact point further requests can only be refused.
+        // Keep the tally against the same number, with the stamp aged out.
+        const spent: TimerState = {
+          sentAt: restored.sentAt,
+          expiresIn: 0,
+          ...(restored.sentTo ? { sentTo: restored.sentTo } : {}),
+          sends: restored.sends ?? 0,
+        };
+        setState(spent);
+        setNow(Date.now());
+        await AsyncStorage.setItem(key, JSON.stringify(spent));
       }
     } catch (e) {
       console.error('Error loading OTP timer state', e);
@@ -150,10 +184,15 @@ export const useOtpTimer = (scope: OtpTimerScope) => {
 
   const startTimer = useCallback(
     async (expiresInSeconds: number = DEFAULT_OTP_EXPIRY_SECONDS, target?: string) => {
+      // Count sends against the number they were sent to: retyping a different
+      // number is a new attempt and starts the allowance over, while resending
+      // to the same one spends it.
+      const sameTarget = !!target && stateRef.current?.sentTo === target;
       const next: TimerState = {
         sentAt: Date.now(),
         expiresIn: Math.max(0, expiresInSeconds),
         ...(target ? { sentTo: target } : {}),
+        sends: sameTarget ? (stateRef.current?.sends ?? 0) + 1 : 1,
       };
 
       lastLocalSendRef.current = next.sentAt;
@@ -193,6 +232,10 @@ export const useOtpTimer = (scope: OtpTimerScope) => {
     hasLiveCode,
     /** The number the live code was sent to, when the flow recorded one. */
     sentTo,
+    /** Codes spent on the current number this attempt. */
+    sendCount: state?.sends ?? 0,
+    /** True once the user has spent their allowance and resend must be closed. */
+    hasReachedSendLimit: (state?.sends ?? 0) >= MAX_OTP_SENDS,
     startTimer,
     clearTimer,
   };

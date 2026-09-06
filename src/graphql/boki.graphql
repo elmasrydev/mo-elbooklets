@@ -52,6 +52,7 @@ query ConversationMessages($conversationId: ID!, $page: Int, $perPage: Int) {
       confidenceScore
       subjectId
       lessonId
+      feedback
       createdAt
       updatedAt
     }

@@ -21,6 +21,7 @@ import { useTypography } from '../hooks/useTypography';
 import { layout } from '../config/layout';
 import UnifiedHeader from '../components/UnifiedHeader';
 import { useTranslation } from 'react-i18next';
+import { logError } from '../utils/logger';
 import { Ionicons } from '@expo/vector-icons';
 import DeviceInfo from 'react-native-device-info';
 import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
@@ -174,14 +175,24 @@ const ProfileScreen: React.FC = () => {
           const result = await deleteAccountMutation();
           if (result.data?.deleteAccount?.success) {
             logout();
-          } else {
-            console.error(
-              'Delete account server returned false',
-              result.data?.deleteAccount?.message,
-            );
+            return;
           }
+          // Without this the sheet just closes and the account is still there —
+          // the user has no way to tell the deletion did not happen.
+          showConfirm({
+            title: t('common.error'),
+            message: result.data?.deleteAccount?.message || t('common.unexpected_error'),
+            showCancel: false,
+            onConfirm: () => {},
+          });
         } catch (error) {
-          console.error('Error deleting account:', error);
+          logError('Delete account failed', error);
+          showConfirm({
+            title: t('common.error'),
+            message: t('common.unexpected_error'),
+            showCancel: false,
+            onConfirm: () => {},
+          });
         }
       },
     });
@@ -344,7 +355,9 @@ const ProfileScreen: React.FC = () => {
               {xp != null ? (
                 <View style={s.xpInline}>
                   <Ionicons name="flash" size={13} color={theme.colors.warning} />
-                  <Text style={s.xpInlineText}>{xp.toLocaleString()} XP</Text>
+                  <Text
+                    style={s.xpInlineText}
+                  >{`${xp.toLocaleString()} ${t('student_profile.xp')}`}</Text>
                 </View>
               ) : null}
             </View>

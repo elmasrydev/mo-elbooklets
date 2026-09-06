@@ -8,6 +8,7 @@ import { View, ActivityIndicator, StyleSheet, I18nManager, NativeModules } from 
 import { useFonts } from 'expo-font';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthProvider } from './src/context/AuthContext';
+import { TrialStatusProvider } from './src/context/TrialStatusContext';
 import { ThemeProvider } from './src/context/ThemeContext';
 import apolloClient from './src/lib/apollo';
 import { ApiUriManager } from './src/config/api';
@@ -25,6 +26,8 @@ import { ModalProvider } from './src/context/ModalContext';
 import { GlobalModalHandler } from './src/components/GlobalModalHandler';
 import { ApiDomainChecker } from './src/components/ApiDomainChecker';
 import { NotificationHandler } from './src/components/NotificationHandler';
+
+import * as ScreenOrientation from 'expo-screen-orientation';
 
 import { ForceUpdateProvider } from './src/context/ForceUpdateContext';
 import ForceUpdateModal from './src/components/ForceUpdateModal';
@@ -45,7 +48,7 @@ export default function App() {
   const routeNameRef = useRef<string>(undefined as any);
   const navigationRef = useRef<any>(null);
 
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     Lexend: require('@expo-google-fonts/lexend/400Regular/Lexend_400Regular.ttf'),
     'Lexend-Regular': require('@expo-google-fonts/lexend/400Regular/Lexend_400Regular.ttf'),
     'Lexend-Medium': require('@expo-google-fonts/lexend/500Medium/Lexend_500Medium.ttf'),
@@ -61,6 +64,13 @@ export default function App() {
   });
   const [appReady, setAppReady] = useState(false);
   const [initialLanguage, setInitialLanguage] = useState<Language>('en');
+
+  // The native manifests advertise landscape so the mind-map viewer can rotate
+  // (BKLT-174) — everything else stays portrait, held here at runtime rather
+  // than in app.json. Failure is non-fatal: worst case a screen can rotate.
+  useEffect(() => {
+    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const bootstrap = async () => {
@@ -151,7 +161,10 @@ export default function App() {
   }, []);
 
   // Show loading screen while fonts and i18n are loading
-  if (!fontsLoaded || !appReady) {
+  // Proceed on a font *error* too: useFonts never flips fontsLoaded when a face
+  // fails to load, so gating on it alone leaves the app stuck on the boot spinner
+  // forever. System fonts are a far better outcome than a dead launch.
+  if ((!fontsLoaded && !fontError) || !appReady) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#1E40AF" />
@@ -169,37 +182,39 @@ export default function App() {
                 <LanguageProvider initialLanguage={initialLanguage}>
                   <I18nextProvider i18n={i18n}>
                     <AuthProvider>
-                      <NavigationContainer
-                        ref={navigationRef}
-                        onReady={() => {
-                          const currentRouteName = navigationRef.current?.getCurrentRoute()?.name;
-                          routeNameRef.current = currentRouteName;
-                          if (currentRouteName) {
-                            crashlytics().log(`Screen viewed: ${currentRouteName}`);
-                            analytics.screen(currentRouteName);
-                          }
-                        }}
-                        onStateChange={async () => {
-                          const previousRouteName = routeNameRef.current;
-                          const currentRouteName = navigationRef.current?.getCurrentRoute()?.name;
+                      <TrialStatusProvider>
+                        <NavigationContainer
+                          ref={navigationRef}
+                          onReady={() => {
+                            const currentRouteName = navigationRef.current?.getCurrentRoute()?.name;
+                            routeNameRef.current = currentRouteName;
+                            if (currentRouteName) {
+                              crashlytics().log(`Screen viewed: ${currentRouteName}`);
+                              analytics.screen(currentRouteName);
+                            }
+                          }}
+                          onStateChange={async () => {
+                            const previousRouteName = routeNameRef.current;
+                            const currentRouteName = navigationRef.current?.getCurrentRoute()?.name;
 
-                          if (previousRouteName !== currentRouteName && currentRouteName) {
-                            crashlytics().log(`Navigated to: ${currentRouteName}`);
-                            analytics.screen(currentRouteName);
-                          }
-                          routeNameRef.current = currentRouteName;
-                        }}
-                      >
-                        <ErrorBoundary>
-                          <AppNavigator />
-                          <NotificationHandler />
-                        </ErrorBoundary>
-                      </NavigationContainer>
-                      <BokiFloatingButton navigationRef={navigationRef} />
-                      <ForceUpdateModal />
-                      <MaintenanceModal />
-                      <GlobalModalHandler />
-                      <ApiDomainChecker />
+                            if (previousRouteName !== currentRouteName && currentRouteName) {
+                              crashlytics().log(`Navigated to: ${currentRouteName}`);
+                              analytics.screen(currentRouteName);
+                            }
+                            routeNameRef.current = currentRouteName;
+                          }}
+                        >
+                          <ErrorBoundary>
+                            <AppNavigator />
+                            <NotificationHandler />
+                          </ErrorBoundary>
+                        </NavigationContainer>
+                        <BokiFloatingButton navigationRef={navigationRef} />
+                        <ForceUpdateModal />
+                        <MaintenanceModal />
+                        <GlobalModalHandler />
+                        <ApiDomainChecker />
+                      </TrialStatusProvider>
                     </AuthProvider>
                   </I18nextProvider>
                 </LanguageProvider>

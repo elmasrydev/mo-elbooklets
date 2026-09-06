@@ -78,13 +78,6 @@ export type UpdateNotificationPreferencesInput = {
   social_notifications_enabled?: boolean | null | undefined;
 };
 
-/** Password update input */
-export type UpdatePasswordInput = {
-  current_password: string;
-  password: string;
-  password_confirmation: string;
-};
-
 /** Update profile input for progressive field collection */
 export type UpdateProfileInput = {
   avatar_id?: string | null | undefined;
@@ -254,20 +247,18 @@ export type DeleteAccountMutationVariables = Exact<{ [key: string]: never }>;
 
 export type DeleteAccountMutation = { deleteAccount: { success: boolean; message: string | null } };
 
+export type ParentDeleteAccountMutationVariables = Exact<{ [key: string]: never }>;
+
+export type ParentDeleteAccountMutation = {
+  parentDeleteAccount: { success: boolean; message: string | null };
+};
+
 export type ForgotPasswordMutationVariables = Exact<{
   email: string;
 }>;
 
 export type ForgotPasswordMutation = {
   forgotPassword: { success: boolean; message: string | null };
-};
-
-export type UpdatePasswordMutationVariables = Exact<{
-  input: UpdatePasswordInput;
-}>;
-
-export type UpdatePasswordMutation = {
-  updatePassword: { success: boolean; message: string | null };
 };
 
 export type SendMobileOtpMutationVariables = Exact<{
@@ -466,6 +457,7 @@ export type ConversationMessagesQuery = {
       confidenceScore: number;
       subjectId: string | null;
       lessonId: string | null;
+      feedback: string | null;
       createdAt: string;
       updatedAt: string;
       sources: Array<{ lessonId: string; title: string; similarityScore: number }>;
@@ -652,6 +644,8 @@ export type StudyChaptersQuery = {
       summary: string | null;
       points: Array<string> | null;
       videoUrl: string | null;
+      mindMapUrl: string | null;
+      mindMapMimeType: string | null;
       myInteraction: string | null;
       isLocked: boolean;
       lessonPoints: Array<{
@@ -682,7 +676,10 @@ export type MySavedPointsQuery = {
       summary: string | null;
       points: Array<string> | null;
       videoUrl: string | null;
+      mindMapUrl: string | null;
+      mindMapMimeType: string | null;
       myInteraction: string | null;
+      isLocked: boolean;
       lessonPoints: Array<{
         id: string;
         title: string;
@@ -707,6 +704,8 @@ export type BokiLessonByIdQuery = {
     summary: string | null;
     points: Array<string> | null;
     videoUrl: string | null;
+    mindMapUrl: string | null;
+    mindMapMimeType: string | null;
     myInteraction: string | null;
     isLocked: boolean;
     lessonPoints: Array<{
@@ -951,6 +950,14 @@ export type ParentUnregisterDeviceTokenMutationVariables = Exact<{
 }>;
 
 export type ParentUnregisterDeviceTokenMutation = { parentUnregisterDeviceToken: boolean };
+
+export type UserNotificationsUnreadCountQueryVariables = Exact<{ [key: string]: never }>;
+
+export type UserNotificationsUnreadCountQuery = { userNotifications: { unread_count: number } };
+
+export type ParentNotificationsUnreadCountQueryVariables = Exact<{ [key: string]: never }>;
+
+export type ParentNotificationsUnreadCountQuery = { parentNotifications: { unread_count: number } };
 
 export type ParentLinkRequestsQueryVariables = Exact<{ [key: string]: never }>;
 
@@ -1553,6 +1560,20 @@ export type ReportQuestionMutationVariables = Exact<{
 
 export type ReportQuestionMutation = {
   reportQuestion: { success: boolean; message: string | null };
+};
+
+export type TrialStatusQueryVariables = Exact<{ [key: string]: never }>;
+
+export type TrialStatusQuery = {
+  me: {
+    id: string;
+    is_subscribed: boolean;
+    on_trial: boolean;
+    trial_ends_at: string | null;
+    trial_days_remaining: number;
+    daily_quiz_limit: number | null;
+    remaining_quizzes_today: number | null;
+  } | null;
 };
 
 export const LoginDocument = {
@@ -2181,6 +2202,32 @@ export const DeleteAccountDocument = {
     },
   ],
 } as unknown as DocumentNode<DeleteAccountMutation, DeleteAccountMutationVariables>;
+export const ParentDeleteAccountDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'ParentDeleteAccount' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'parentDeleteAccount' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'message' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<ParentDeleteAccountMutation, ParentDeleteAccountMutationVariables>;
 export const ForgotPasswordDocument = {
   kind: 'Document',
   definitions: [
@@ -2224,49 +2271,6 @@ export const ForgotPasswordDocument = {
     },
   ],
 } as unknown as DocumentNode<ForgotPasswordMutation, ForgotPasswordMutationVariables>;
-export const UpdatePasswordDocument = {
-  kind: 'Document',
-  definitions: [
-    {
-      kind: 'OperationDefinition',
-      operation: 'mutation',
-      name: { kind: 'Name', value: 'UpdatePassword' },
-      variableDefinitions: [
-        {
-          kind: 'VariableDefinition',
-          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
-          type: {
-            kind: 'NonNullType',
-            type: { kind: 'NamedType', name: { kind: 'Name', value: 'UpdatePasswordInput' } },
-          },
-        },
-      ],
-      selectionSet: {
-        kind: 'SelectionSet',
-        selections: [
-          {
-            kind: 'Field',
-            name: { kind: 'Name', value: 'updatePassword' },
-            arguments: [
-              {
-                kind: 'Argument',
-                name: { kind: 'Name', value: 'input' },
-                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
-              },
-            ],
-            selectionSet: {
-              kind: 'SelectionSet',
-              selections: [
-                { kind: 'Field', name: { kind: 'Name', value: 'success' } },
-                { kind: 'Field', name: { kind: 'Name', value: 'message' } },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<UpdatePasswordMutation, UpdatePasswordMutationVariables>;
 export const SendMobileOtpDocument = {
   kind: 'Document',
   definitions: [
@@ -3117,6 +3121,7 @@ export const ConversationMessagesDocument = {
                       { kind: 'Field', name: { kind: 'Name', value: 'confidenceScore' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'subjectId' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'lessonId' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'feedback' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
                     ],
@@ -3800,6 +3805,8 @@ export const StudyChaptersDocument = {
                       { kind: 'Field', name: { kind: 'Name', value: 'summary' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'points' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'videoUrl' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'mindMapUrl' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'mindMapMimeType' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'myInteraction' } },
                       {
                         kind: 'Field',
@@ -3873,7 +3880,10 @@ export const MySavedPointsDocument = {
                       { kind: 'Field', name: { kind: 'Name', value: 'summary' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'points' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'videoUrl' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'mindMapUrl' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'mindMapMimeType' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'myInteraction' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'isLocked' } },
                       {
                         kind: 'Field',
                         name: { kind: 'Name', value: 'lessonPoints' },
@@ -3961,6 +3971,8 @@ export const BokiLessonByIdDocument = {
                 { kind: 'Field', name: { kind: 'Name', value: 'summary' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'points' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'videoUrl' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'mindMapUrl' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'mindMapMimeType' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'myInteraction' } },
                 {
                   kind: 'Field',
@@ -5000,6 +5012,82 @@ export const ParentUnregisterDeviceTokenDocument = {
 } as unknown as DocumentNode<
   ParentUnregisterDeviceTokenMutation,
   ParentUnregisterDeviceTokenMutationVariables
+>;
+export const UserNotificationsUnreadCountDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'UserNotificationsUnreadCount' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'userNotifications' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'page' },
+                value: { kind: 'IntValue', value: '1' },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'per_page' },
+                value: { kind: 'IntValue', value: '1' },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [{ kind: 'Field', name: { kind: 'Name', value: 'unread_count' } }],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  UserNotificationsUnreadCountQuery,
+  UserNotificationsUnreadCountQueryVariables
+>;
+export const ParentNotificationsUnreadCountDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'ParentNotificationsUnreadCount' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'parentNotifications' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'page' },
+                value: { kind: 'IntValue', value: '1' },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'per_page' },
+                value: { kind: 'IntValue', value: '1' },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [{ kind: 'Field', name: { kind: 'Name', value: 'unread_count' } }],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  ParentNotificationsUnreadCountQuery,
+  ParentNotificationsUnreadCountQueryVariables
 >;
 export const ParentLinkRequestsDocument = {
   kind: 'Document',
@@ -7710,3 +7798,34 @@ export const ReportQuestionDocument = {
     },
   ],
 } as unknown as DocumentNode<ReportQuestionMutation, ReportQuestionMutationVariables>;
+export const TrialStatusDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'TrialStatus' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'me' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'is_subscribed' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'on_trial' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'trial_ends_at' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'trial_days_remaining' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'daily_quiz_limit' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'remaining_quizzes_today' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<TrialStatusQuery, TrialStatusQueryVariables>;
