@@ -198,6 +198,21 @@ The flag gates three things — all of them, or it leaks:
 `src/components/TodaysPlanWidget.tsx` also navigates there but is **mounted nowhere** (dead code as
 of this writing) — gate or delete it if you ever mount it.
 
+### `QUIZ_LENGTH_PICKER_ENABLED` — **off**
+The **"Question Count"** card on `QuizSettingsScreen` (the 10 / 30 / 50 pills, one per `quizTypes`
+entry) is hidden; the student does not pick a quiz length for now (BKLT-397).
+
+Only the card is gated — **the request is unchanged**. The existing effect still auto-selects the
+server's `is_default` quiz type, so `startQuiz` keeps sending a `quizTypeId`, and the min-types /
+shortfall validation keeps measuring the selection against that type's `question_count`. Nothing
+was deleted: the card's JSX, `sortedQuizTypes`, the `pill*` styles and the
+`quiz_flow.question_count*` / `quiz_flow.default` keys all stay, so flipping the flag restores the
+picker as it was.
+
+It does **not** gate the other two places a count appears — `quiz_flow.generating_questions`
+("Generating 10 questions…") and the taking screen's "Question 01 of 10". Those are separate
+surfaces; hiding them was not asked for.
+
 ## Commands
 | Command | What it does |
 |---|---|

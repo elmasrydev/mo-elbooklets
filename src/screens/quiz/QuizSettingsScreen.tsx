@@ -21,6 +21,7 @@ import { useTypography } from '../../hooks/useTypography';
 import QuizFlowHeader from '../../components/QuizFlowHeader';
 import AppButton from '../../components/AppButton';
 import { layout } from '../../config/layout';
+import { QUIZ_LENGTH_PICKER_ENABLED } from '../../config/features';
 import { useModal } from '../../context/ModalContext';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import SubjectIcon from '../../components/SubjectIcon';
@@ -337,44 +338,53 @@ const QuizSettingsScreen: React.FC = () => {
         )}
 
         {/* Question Count Pill Picker */}
-        <View style={currentStyles.card}>
-          <View style={currentStyles.settingHeader}>
-            <View>
-              <Text style={currentStyles.cardLabel}>{t('quiz_flow.question_count')}</Text>
-              <Text style={currentStyles.cardSublabel}>{t('quiz_flow.question_count_desc')}</Text>
+        {/* Hidden behind QUIZ_LENGTH_PICKER_ENABLED (BKLT-397) — the picker is
+            complete but the student is not meant to choose a length for now.
+            The default quiz type is still selected for them by the effect
+            above, so Start behaves exactly as it did on the default pill. */}
+        {QUIZ_LENGTH_PICKER_ENABLED && (
+          <View style={currentStyles.card}>
+            <View style={currentStyles.settingHeader}>
+              <View>
+                <Text style={currentStyles.cardLabel}>{t('quiz_flow.question_count')}</Text>
+                <Text style={currentStyles.cardSublabel}>{t('quiz_flow.question_count_desc')}</Text>
+              </View>
+            </View>
+
+            <View style={currentStyles.pillContainer}>
+              {sortedQuizTypes.map((type: QuizType) => {
+                const isSelected = selectedTypeId === type.id;
+                return (
+                  <TouchableOpacity
+                    key={type.id}
+                    style={[
+                      currentStyles.pillButton,
+                      isSelected && currentStyles.pillButtonSelected,
+                    ]}
+                    onPress={() => setSelectedTypeId(type.id)}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[currentStyles.pillText, isSelected && currentStyles.pillTextSelected]}
+                    >
+                      {type.questionCount}
+                    </Text>
+                    {type.isDefault && (
+                      <Text
+                        style={[
+                          currentStyles.pillBadgeText,
+                          isSelected && currentStyles.pillBadgeTextSelected,
+                        ]}
+                      >
+                        {t('quiz_flow.default')}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </View>
-
-          <View style={currentStyles.pillContainer}>
-            {sortedQuizTypes.map((type: QuizType) => {
-              const isSelected = selectedTypeId === type.id;
-              return (
-                <TouchableOpacity
-                  key={type.id}
-                  style={[currentStyles.pillButton, isSelected && currentStyles.pillButtonSelected]}
-                  onPress={() => setSelectedTypeId(type.id)}
-                  activeOpacity={0.7}
-                >
-                  <Text
-                    style={[currentStyles.pillText, isSelected && currentStyles.pillTextSelected]}
-                  >
-                    {type.questionCount}
-                  </Text>
-                  {type.isDefault && (
-                    <Text
-                      style={[
-                        currentStyles.pillBadgeText,
-                        isSelected && currentStyles.pillBadgeTextSelected,
-                      ]}
-                    >
-                      {t('quiz_flow.default')}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
+        )}
 
         {/* Question Types — only the types these lessons actually hold, with the
             live count for each. Hidden when there is nothing to choose between. */}
