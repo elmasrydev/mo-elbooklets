@@ -96,7 +96,10 @@ const QuizSettingsScreen: React.FC = () => {
 
   // Settings State
   const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null);
-  const [timerEnabled, setTimerEnabled] = useState(false);
+  // On by default (BKLT-396). The timer is a count-up stopwatch for the record
+  // only — it never cuts a quiz short — so starting it on costs the student
+  // nothing and gives every attempt a "Time Taken" on the results screen.
+  const [timerEnabled, setTimerEnabled] = useState(true);
 
   const [showSubModal, setShowSubModal] = useState(false);
 
@@ -252,7 +255,6 @@ const QuizSettingsScreen: React.FC = () => {
       selectedLessonIds,
       selectedTypeId,
       timedMode: timerEnabled,
-      timeLimit: timerEnabled ? 30 : null,
       difficulty: 'medium',
       shuffleQuestions: true,
       instantFeedback: false,
