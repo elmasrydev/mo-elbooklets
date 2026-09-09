@@ -10,6 +10,7 @@ import {
   Platform,
   TextInput,
   Keyboard,
+  KeyboardAvoidingView,
   TouchableWithoutFeedback,
   BackHandler,
 } from 'react-native';
@@ -146,96 +147,108 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = (props: ConfirmModalPro
         style={styles.overlay}
         onPress={handleBackdropPress}
       >
-        <TouchableWithoutFeedback accessible={false} onPress={() => Keyboard.dismiss()}>
-          <View
-            style={[
-              styles.container,
-              {
-                backgroundColor: theme.colors.card,
-                borderRadius: borderRadius.xl,
-              },
-            ]}
-            onStartShouldSetResponder={() => true}
-          >
-            <TouchableOpacity
-              style={[styles.closeButton, { backgroundColor: theme.colors.bgGray }]}
-              onPress={onCancel}
-              activeOpacity={0.7}
+        {/* The card is vertically centred, so a keyboard would sit on top of it
+            — and this modal hosts text fields: the `hasInput` variant and the
+            note popup on the study reader and Bookmarks, which autofocus and so
+            raise the keyboard the moment the popup opens (BKLT-393). Padding
+            below the card re-centres it in the space the keyboard leaves.
+            Android resizes the window itself, and a modal with no input is
+            unaffected either way. */}
+        <KeyboardAvoidingView
+          style={styles.keyboardWrap}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <TouchableWithoutFeedback accessible={false} onPress={() => Keyboard.dismiss()}>
+            <View
+              style={[
+                styles.container,
+                {
+                  backgroundColor: theme.colors.card,
+                  borderRadius: borderRadius.xl,
+                },
+              ]}
+              onStartShouldSetResponder={() => true}
             >
-              <Ionicons name="close" size={24} color={theme.colors.text} />
-            </TouchableOpacity>
-
-            <View style={styles.header}>
-              <View style={styles.logoContainer}>
-                {icon ? icon : <Image source={logo} style={styles.logoImage} />}
-              </View>
-              <Text
-                testID="confirm-modal-title"
-                style={[
-                  styles.title,
-                  typography('h2'),
-                  fontWeight('700'),
-                  { color: theme.colors.text },
-                ]}
+              <TouchableOpacity
+                style={[styles.closeButton, { backgroundColor: theme.colors.bgGray }]}
+                onPress={onCancel}
+                activeOpacity={0.7}
               >
-                {title}
+                <Ionicons name="close" size={24} color={theme.colors.text} />
+              </TouchableOpacity>
+
+              <View style={styles.header}>
+                <View style={styles.logoContainer}>
+                  {icon ? icon : <Image source={logo} style={styles.logoImage} />}
+                </View>
+                <Text
+                  testID="confirm-modal-title"
+                  style={[
+                    styles.title,
+                    typography('h2'),
+                    fontWeight('700'),
+                    { color: theme.colors.text },
+                  ]}
+                >
+                  {title}
+                </Text>
+              </View>
+
+              <Text
+                style={[styles.message, typography('body'), { color: theme.colors.textSecondary }]}
+              >
+                {message}
               </Text>
-            </View>
+              {children}
 
-            <Text
-              style={[styles.message, typography('body'), { color: theme.colors.textSecondary }]}
-            >
-              {message}
-            </Text>
-            {children}
-
-            {hasInput && (
-              <TextInput
-                style={[
-                  styles.input,
-                  typography('body'),
-                  {
-                    backgroundColor: theme.colors.bgGray,
-                    color: theme.colors.text,
-                    borderColor: theme.colors.border,
-                    borderRadius: borderRadius.md,
-                  },
-                ]}
-                placeholder={inputPlaceholder}
-                placeholderTextColor={theme.colors.textTertiary}
-                value={inputValue}
-                onChangeText={onInputChange}
-                autoFocus={true}
-              />
-            )}
-
-            <View style={styles.buttonContainer}>
-              <AppButton
-                testID="confirm-modal-ok"
-                title={
-                  timeLeft > 0
-                    ? `${confirmLabel || t('common.ok', 'OK')} (${timeLeft})`
-                    : confirmLabel || t('common.ok', 'OK')
-                }
-                onPress={onConfirm}
-                variant={confirmVariant}
-                loading={isLoading}
-                disabled={timeLeft > 0}
-                fullWidth={true}
-              />
-              {showCancel && (
-                <AppButton
-                  testID="confirm-modal-cancel"
-                  title={cancelLabel || t('common.cancel', 'Cancel')}
-                  onPress={onCancel}
-                  variant="outline"
-                  fullWidth={true}
-                  disabled={isLoading}
+              {hasInput && (
+                <TextInput
+                  style={[
+                    styles.input,
+                    typography('body'),
+                    {
+                      backgroundColor: theme.colors.bgGray,
+                      color: theme.colors.text,
+                      borderColor: theme.colors.border,
+                      borderRadius: borderRadius.md,
+                    },
+                  ]}
+                  placeholder={inputPlaceholder}
+                  placeholderTextColor={theme.colors.textTertiary}
+                  value={inputValue}
+                  onChangeText={onInputChange}
+                  autoFocus={true}
                 />
               )}
+
+              <View style={styles.buttonContainer}>
+                <AppButton
+                  testID="confirm-modal-ok"
+                  title={
+                    timeLeft > 0
+                      ? `${confirmLabel || t('common.ok', 'OK')} (${timeLeft})`
+                      : confirmLabel || t('common.ok', 'OK')
+                  }
+                  onPress={onConfirm}
+                  variant={confirmVariant}
+                  loading={isLoading}
+                  disabled={timeLeft > 0}
+                  fullWidth={true}
+                />
+                {showCancel && (
+                  <AppButton
+                    testID="confirm-modal-cancel"
+                    title={cancelLabel || t('common.cancel', 'Cancel')}
+                    onPress={onCancel}
+                    variant="outline"
+                    fullWidth={true}
+                    disabled={isLoading}
+                  />
+                )}
+              </View>
             </View>
-          </View>
-        </TouchableWithoutFeedback>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -253,6 +266,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.mdd,
+  },
+  // Auto-height, so KeyboardAvoidingView's bottom padding shifts the card up
+  // inside the centred overlay rather than stretching it.
+  keyboardWrap: {
+    width: '100%',
   },
   container: {
     width: '100%',

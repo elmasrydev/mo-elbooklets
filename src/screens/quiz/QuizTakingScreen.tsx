@@ -7,6 +7,9 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Keyboard,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -20,6 +23,7 @@ import { loadFailureMessage } from '../../utils/queryError';
 import { QuizDocument, SubmitQuizAnswersDocument } from '../../generated/graphql';
 import { useCommonStyles } from '../../hooks/useCommonStyles';
 import useAndroidBack from '../../hooks/useAndroidBack';
+import { useKeyboardVisible } from '../../hooks/useKeyboardVisible';
 import { useTypography } from '../../hooks/useTypography';
 import { layout } from '../../config/layout';
 import UnifiedHeader from '../../components/UnifiedHeader';
@@ -62,6 +66,7 @@ const QuizTakingScreen: React.FC = () => {
   const common = useCommonStyles();
   const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
+  const keyboardVisible = useKeyboardVisible();
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [draft, setDraft] = useState<QuizDraft>({});
@@ -77,6 +82,25 @@ const QuizTakingScreen: React.FC = () => {
   useEffect(() => {
     scrollRef.current?.scrollTo({ y: 0, animated: false });
   }, [currentQuestionIndex]);
+
+  // Bring the free-text answer above the keyboard (BKLT-393). It is the last
+  // element of the scroll content, so scrolling to the end is enough.
+  //
+  // This has to run on `keyboardDidShow` rather than on the input's `onFocus`:
+  // focus fires before the keyboard is up, so at that point
+  // `KeyboardAvoidingView` has not yet shortened the ScrollView and "the end"
+  // is still the full-height bottom — the scroll lands short and the field
+  // stays covered.
+  const descriptiveFocused = React.useRef(false);
+  const revealAnswerField = useCallback(() => {
+    scrollRef.current?.scrollToEnd({ animated: true });
+  }, []);
+  useEffect(() => {
+    const sub = Keyboard.addListener('keyboardDidShow', () => {
+      if (descriptiveFocused.current) revealAnswerField();
+    });
+    return () => sub.remove();
+  }, [revealAnswerField]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -462,218 +486,256 @@ const QuizTakingScreen: React.FC = () => {
         </View>
       </View>
 
-      <ScrollView
-        ref={scrollRef}
-        style={currentStyles.content}
-        contentContainerStyle={currentStyles.contentContainer}
-        showsVerticalScrollIndicator={false}
+      {/* The answer area and the Prev/Next footer both have to clear the
+          keyboard (BKLT-393). iOS never resizes the window, so without this the
+          keyboard sat on top of the free-text field and the footer. The header
+          and progress bar stay outside — they are above the keyboard anyway,
+          and keeping them out means no `keyboardVerticalOffset` is needed (the
+          stack renders with `headerShown: false`). Android resizes the window
+          itself (`adjustResize`), hence no `behavior` there. */}
+      <KeyboardAvoidingView
+        style={currentStyles.keyboardFlex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={currentStyles.questionWrapper}>
-          {isDescriptive && (
-            <View style={currentStyles.descriptiveBadge}>
-              <Ionicons name="create-outline" size={14} color={theme.colors.primary} />
-              <Text style={currentStyles.descriptiveBadgeText}>
-                {currentQuestion.type === 'what_happens'
-                  ? t('quiz_taking.what_happens', 'What Happens?')
-                  : t('quiz_taking.give_a_reason', 'Give a Reason')}
+        <ScrollView
+          ref={scrollRef}
+          style={currentStyles.content}
+          contentContainerStyle={currentStyles.contentContainer}
+          showsVerticalScrollIndicator={false}
+          // Let a tap reach Next/Previous while the keyboard is open, instead of
+          // spending the first tap on dismissing it.
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={currentStyles.questionWrapper}>
+            {isDescriptive && (
+              <View style={currentStyles.descriptiveBadge}>
+                <Ionicons name="create-outline" size={14} color={theme.colors.primary} />
+                <Text style={currentStyles.descriptiveBadgeText}>
+                  {currentQuestion.type === 'what_happens'
+                    ? t('quiz_taking.what_happens', 'What Happens?')
+                    : t('quiz_taking.give_a_reason', 'Give a Reason')}
+                </Text>
+              </View>
+            )}
+
+            {/* Image attachment — orthogonal to type; may sit on any question. */}
+            {currentQuestion.imageUrl && (
+              <QuestionImage uri={currentQuestion.imageUrl} testID="question-image" />
+            )}
+
+            {/* Paragraph renders its own passage card, so skip the top prompt. */}
+            {!isParagraph && (
+              <Text
+                style={[
+                  currentStyles.questionText,
+                  typography('h1', 'bold', isArabicText(currentQuestion.question)),
+                ]}
+              >
+                {currentQuestion.question}
               </Text>
-            </View>
-          )}
+            )}
 
-          {/* Image attachment — orthogonal to type; may sit on any question. */}
-          {currentQuestion.imageUrl && (
-            <QuestionImage uri={currentQuestion.imageUrl} testID="question-image" />
-          )}
+            {/* Report button */}
+            <TouchableOpacity
+              style={[currentStyles.reportBtn, { borderColor: theme.colors.border }]}
+              onPress={() => setShowReportModal(true)}
+              activeOpacity={0.75}
+              testID="quiz-report-button"
+            >
+              <Ionicons name="flag" size={15} color={theme.colors.error} />
+              <Text style={[currentStyles.reportBtnText, { color: theme.colors.textSecondary }]}>
+                {t('report_question.report_btn', 'Report')}
+              </Text>
+            </TouchableOpacity>
 
-          {/* Paragraph renders its own passage card, so skip the top prompt. */}
-          {!isParagraph && (
+            {isDescriptive ? (
+              /* Descriptive answer: multi-line text input */
+              <View style={currentStyles.descriptiveContainer}>
+                <TextInput
+                  // INPUT_TEXT_ALIGN, not contentAlign: `left`/`right` stay
+                  // physical on TextInput, so the subject-derived value would pin
+                  // Arabic answers to the wrong edge (BKLT-312).
+                  style={[currentStyles.descriptiveInput, { textAlign: INPUT_TEXT_ALIGN }]}
+                  value={textValueOf(currentQuestion.id)}
+                  onChangeText={(text) => setTextAnswer(currentQuestion.id, text)}
+                  placeholder={t('quiz_taking.write_your_answer', 'Write your answer here...')}
+                  placeholderTextColor={theme.colors.textSecondary}
+                  multiline
+                  textAlignVertical="top"
+                  maxLength={2000}
+                  // Only this field asks to be scrolled into view; the choice,
+                  // match and paragraph layouts never open a keyboard.
+                  onFocus={() => {
+                    descriptiveFocused.current = true;
+                    // Also scroll here, not only on `keyboardDidShow`: stepping
+                    // from one free-text question straight to the next leaves
+                    // the keyboard up throughout, so no show event arrives to
+                    // reveal the new field. Harmless on a cold open — the
+                    // keyboard's own event corrects this first, short scroll.
+                    revealAnswerField();
+                  }}
+                  onBlur={() => {
+                    descriptiveFocused.current = false;
+                  }}
+                  testID="quiz-descriptive-input"
+                />
+                <Text style={currentStyles.charCount}>
+                  {textValueOf(currentQuestion.id).length} / 2000
+                </Text>
+              </View>
+            ) : isMatch ? (
+              currentQuestion.matchPairs ? (
+                // Key by question id so the armed-card (`pending`) state can't leak
+                // into the next match question — each question remounts fresh.
+                <MatchQuestion
+                  key={currentQuestion.id}
+                  matchPairs={currentQuestion.matchPairs}
+                  pairs={matchPairsOf(currentQuestion.id)}
+                  onChange={(pairs) => setMatchPairs(currentQuestion.id, pairs)}
+                  contentAlign={contentAlign}
+                />
+              ) : (
+                unsupportedCard
+              )
+            ) : isParagraph ? (
+              // Key by question id so the passage-collapse state resets per question.
+              <ParagraphQuestion
+                key={currentQuestion.id}
+                passage={currentQuestion.question}
+                childQuestions={currentQuestion.subQuestions ?? []}
+                answers={childAnswersOf(currentQuestion.id)}
+                onChildChange={(childId, value) =>
+                  setChildAnswer(currentQuestion.id, childId, value)
+                }
+                contentAlign={contentAlign}
+                contentRowDirection={contentRowDirection}
+              />
+            ) : isChoiceType(currentQuestion.type) ? (
+              <ChoiceOptions
+                questionType={currentQuestion.type}
+                options={currentQuestion.answers}
+                selectedAnswer={textValueOf(currentQuestion.id)}
+                onSelect={(answer) => setTextAnswer(currentQuestion.id, answer)}
+                contentAlign={contentAlign}
+                contentRowDirection={contentRowDirection}
+                testIDPrefix="quiz-answer"
+              />
+            ) : (
+              unsupportedCard
+            )}
+          </View>
+        </ScrollView>
+
+        {/* Paragraph passage stays one tap away via a floating pill + sheet. */}
+        {isParagraph && (
+          <TouchableOpacity
+            style={[currentStyles.passageFab, { bottom: Math.max(insets.bottom, 24) + 78 }]}
+            onPress={() => setPassageSheetOpen(true)}
+            activeOpacity={0.9}
+            testID="paragraph-passage-fab"
+          >
+            <Ionicons name="book" size={16} color="#FFFFFF" />
+            <Text style={currentStyles.passageFabText}>
+              {t('quiz_taking.passage_fab', 'Passage')}
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {isParagraph && (
+          <QuizBottomSheet
+            visible={passageSheetOpen}
+            onClose={() => setPassageSheetOpen(false)}
+            chipIcon="book-outline"
+            chipLabel={t('quiz_taking.passage', 'Reading passage')}
+            testID="paragraph-passage-sheet"
+          >
             <Text
               style={[
-                currentStyles.questionText,
-                typography('h1', 'bold', isArabicText(currentQuestion.question)),
+                currentStyles.passageSheetText,
+                typography('bodySmall', '600', isArabicText(currentQuestion.question)),
+                { textAlign: contentAlign },
               ]}
             >
               {currentQuestion.question}
             </Text>
-          )}
+          </QuizBottomSheet>
+        )}
 
-          {/* Report button */}
+        {/* Navigation Footer */}
+        <View
+          style={[
+            currentStyles.footerContainer,
+            // The home-indicator inset is dead space once the keyboard covers it,
+            // so hand that room back to the answer field while typing.
+            { paddingBottom: keyboardVisible ? spacing.sm : Math.max(insets.bottom, 24) },
+          ]}
+        >
           <TouchableOpacity
-            style={[currentStyles.reportBtn, { borderColor: theme.colors.border }]}
-            onPress={() => setShowReportModal(true)}
-            activeOpacity={0.75}
-            testID="quiz-report-button"
+            style={[
+              currentStyles.navButton,
+              currentStyles.prevButton,
+              currentQuestionIndex === 0 && currentStyles.navButtonDisabled,
+            ]}
+            onPress={handlePreviousQuestion}
+            disabled={currentQuestionIndex === 0}
           >
-            <Ionicons name="flag" size={15} color={theme.colors.error} />
-            <Text style={[currentStyles.reportBtnText, { color: theme.colors.textSecondary }]}>
-              {t('report_question.report_btn', 'Report')}
+            <Ionicons
+              name={isRTL ? 'arrow-forward' : 'arrow-back'}
+              size={20}
+              color={currentQuestionIndex === 0 ? '#9CA3AF' : '#374151'}
+            />
+            <Text
+              style={[
+                currentStyles.navButtonText,
+                currentStyles.prevButtonText,
+                currentQuestionIndex === 0 && currentStyles.navButtonTextDisabled,
+              ]}
+            >
+              {t('common.previous', 'Previous')}
             </Text>
           </TouchableOpacity>
 
-          {isDescriptive ? (
-            /* Descriptive answer: multi-line text input */
-            <View style={currentStyles.descriptiveContainer}>
-              <TextInput
-                // INPUT_TEXT_ALIGN, not contentAlign: `left`/`right` stay
-                // physical on TextInput, so the subject-derived value would pin
-                // Arabic answers to the wrong edge (BKLT-312).
-                style={[currentStyles.descriptiveInput, { textAlign: INPUT_TEXT_ALIGN }]}
-                value={textValueOf(currentQuestion.id)}
-                onChangeText={(text) => setTextAnswer(currentQuestion.id, text)}
-                placeholder={t('quiz_taking.write_your_answer', 'Write your answer here...')}
-                placeholderTextColor={theme.colors.textSecondary}
-                multiline
-                textAlignVertical="top"
-                maxLength={2000}
-                testID="quiz-descriptive-input"
-              />
-              <Text style={currentStyles.charCount}>
-                {textValueOf(currentQuestion.id).length} / 2000
-              </Text>
-            </View>
-          ) : isMatch ? (
-            currentQuestion.matchPairs ? (
-              // Key by question id so the armed-card (`pending`) state can't leak
-              // into the next match question — each question remounts fresh.
-              <MatchQuestion
-                key={currentQuestion.id}
-                matchPairs={currentQuestion.matchPairs}
-                pairs={matchPairsOf(currentQuestion.id)}
-                onChange={(pairs) => setMatchPairs(currentQuestion.id, pairs)}
-                contentAlign={contentAlign}
-              />
-            ) : (
-              unsupportedCard
-            )
-          ) : isParagraph ? (
-            // Key by question id so the passage-collapse state resets per question.
-            <ParagraphQuestion
-              key={currentQuestion.id}
-              passage={currentQuestion.question}
-              childQuestions={currentQuestion.subQuestions ?? []}
-              answers={childAnswersOf(currentQuestion.id)}
-              onChildChange={(childId, value) => setChildAnswer(currentQuestion.id, childId, value)}
-              contentAlign={contentAlign}
-              contentRowDirection={contentRowDirection}
-            />
-          ) : isChoiceType(currentQuestion.type) ? (
-            <ChoiceOptions
-              questionType={currentQuestion.type}
-              options={currentQuestion.answers}
-              selectedAnswer={textValueOf(currentQuestion.id)}
-              onSelect={(answer) => setTextAnswer(currentQuestion.id, answer)}
-              contentAlign={contentAlign}
-              contentRowDirection={contentRowDirection}
-              testIDPrefix="quiz-answer"
-            />
+          {currentQuestionIndex === quiz.questions.length - 1 ? (
+            <TouchableOpacity
+              style={[
+                currentStyles.navButton,
+                currentStyles.nextButton,
+                !currentComplete && currentStyles.navButtonIdle,
+                submitting && currentStyles.navButtonDisabled,
+              ]}
+              onPress={handleSubmitQuiz}
+              disabled={submitting}
+              testID="quiz-finish-button"
+            >
+              {submitting ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <>
+                  <Text style={[currentStyles.navButtonText, currentStyles.nextButtonText]}>
+                    {t('quiz_taking.finish_quiz', 'Finish Quiz')}
+                  </Text>
+                  <Ionicons name="checkmark-done" size={20} color="#FFFFFF" />
+                </>
+              )}
+            </TouchableOpacity>
           ) : (
-            unsupportedCard
+            <TouchableOpacity
+              style={[
+                currentStyles.navButton,
+                currentStyles.nextButton,
+                !currentComplete && currentStyles.navButtonIdle,
+              ]}
+              onPress={handleNextQuestion}
+              testID="quiz-next-button"
+            >
+              <Text style={[currentStyles.navButtonText, currentStyles.nextButtonText]}>
+                {t('common.next', 'Next')}
+              </Text>
+              <Ionicons name={isRTL ? 'arrow-back' : 'arrow-forward'} size={20} color="#FFFFFF" />
+            </TouchableOpacity>
           )}
         </View>
-      </ScrollView>
-
-      {/* Paragraph passage stays one tap away via a floating pill + sheet. */}
-      {isParagraph && (
-        <TouchableOpacity
-          style={[currentStyles.passageFab, { bottom: Math.max(insets.bottom, 24) + 78 }]}
-          onPress={() => setPassageSheetOpen(true)}
-          activeOpacity={0.9}
-          testID="paragraph-passage-fab"
-        >
-          <Ionicons name="book" size={16} color="#FFFFFF" />
-          <Text style={currentStyles.passageFabText}>
-            {t('quiz_taking.passage_fab', 'Passage')}
-          </Text>
-        </TouchableOpacity>
-      )}
-
-      {isParagraph && (
-        <QuizBottomSheet
-          visible={passageSheetOpen}
-          onClose={() => setPassageSheetOpen(false)}
-          chipIcon="book-outline"
-          chipLabel={t('quiz_taking.passage', 'Reading passage')}
-          testID="paragraph-passage-sheet"
-        >
-          <Text
-            style={[
-              currentStyles.passageSheetText,
-              typography('bodySmall', '600', isArabicText(currentQuestion.question)),
-              { textAlign: contentAlign },
-            ]}
-          >
-            {currentQuestion.question}
-          </Text>
-        </QuizBottomSheet>
-      )}
-
-      {/* Navigation Footer */}
-      <View style={[currentStyles.footerContainer, { paddingBottom: Math.max(insets.bottom, 24) }]}>
-        <TouchableOpacity
-          style={[
-            currentStyles.navButton,
-            currentStyles.prevButton,
-            currentQuestionIndex === 0 && currentStyles.navButtonDisabled,
-          ]}
-          onPress={handlePreviousQuestion}
-          disabled={currentQuestionIndex === 0}
-        >
-          <Ionicons
-            name={isRTL ? 'arrow-forward' : 'arrow-back'}
-            size={20}
-            color={currentQuestionIndex === 0 ? '#9CA3AF' : '#374151'}
-          />
-          <Text
-            style={[
-              currentStyles.navButtonText,
-              currentStyles.prevButtonText,
-              currentQuestionIndex === 0 && currentStyles.navButtonTextDisabled,
-            ]}
-          >
-            {t('common.previous', 'Previous')}
-          </Text>
-        </TouchableOpacity>
-
-        {currentQuestionIndex === quiz.questions.length - 1 ? (
-          <TouchableOpacity
-            style={[
-              currentStyles.navButton,
-              currentStyles.nextButton,
-              !currentComplete && currentStyles.navButtonIdle,
-              submitting && currentStyles.navButtonDisabled,
-            ]}
-            onPress={handleSubmitQuiz}
-            disabled={submitting}
-            testID="quiz-finish-button"
-          >
-            {submitting ? (
-              <ActivityIndicator color="#FFFFFF" size="small" />
-            ) : (
-              <>
-                <Text style={[currentStyles.navButtonText, currentStyles.nextButtonText]}>
-                  {t('quiz_taking.finish_quiz', 'Finish Quiz')}
-                </Text>
-                <Ionicons name="checkmark-done" size={20} color="#FFFFFF" />
-              </>
-            )}
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            style={[
-              currentStyles.navButton,
-              currentStyles.nextButton,
-              !currentComplete && currentStyles.navButtonIdle,
-            ]}
-            onPress={handleNextQuestion}
-            testID="quiz-next-button"
-          >
-            <Text style={[currentStyles.navButtonText, currentStyles.nextButtonText]}>
-              {t('common.next', 'Next')}
-            </Text>
-            <Ionicons name={isRTL ? 'arrow-back' : 'arrow-forward'} size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-        )}
-      </View>
+      </KeyboardAvoidingView>
 
       {/* Report Question Modal */}
       {quiz && (
@@ -699,6 +761,11 @@ const styles = (
   StyleSheet.create({
     screenContainer: {
       backgroundColor: '#FFFFFF',
+    },
+    // Holds the scrollable question area and the nav footer, so the keyboard
+    // lifts both together.
+    keyboardFlex: {
+      flex: 1,
     },
     // Progress Area
     progressSection: {
