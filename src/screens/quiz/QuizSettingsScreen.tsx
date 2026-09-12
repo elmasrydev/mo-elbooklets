@@ -446,7 +446,10 @@ const QuizSettingsScreen: React.FC = () => {
                         <Text style={currentStyles.typeLabel}>{option.label}</Text>
                       </View>
                     </View>
-                    <Text style={currentStyles.typeCount}>{option.count}</Text>
+                    {/* No per-type count on the row (BKLT-397): product does not
+                        want students to see how many questions each type holds.
+                        `option.count` still feeds `evaluateSelection`, so the
+                        shortfall check is unaffected. */}
                   </TouchableOpacity>
                 );
               })}
@@ -694,15 +697,6 @@ const styles = (
       color: '#94A3B8',
       textAlign: 'left',
       marginTop: 2,
-    },
-    typeCount: {
-      ...typography('caption'),
-      ...fontWeight('700'),
-      color: '#475569',
-      // Logical margins so the count keeps its breathing room from the row's
-      // trailing edge under RTL, where "right" becomes the leading side.
-      marginStart: spacing.md,
-      marginEnd: spacing.xs,
     },
     selectionMessage: {
       ...typography('caption'),
