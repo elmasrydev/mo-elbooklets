@@ -9,7 +9,6 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Keyboard,
-  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -53,6 +52,7 @@ import { isArabicText } from '../../config/fonts';
 import { QUIZ_COLORS } from '../../config/colors';
 import { SUBMIT_QUIZ_TIMEOUT_MS } from '../../config/api';
 import { INPUT_TEXT_ALIGN } from '../../lib/rtl';
+import { KEYBOARD_AVOIDING_BEHAVIOR } from '../../lib/keyboard';
 
 const QuizTakingScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -491,11 +491,12 @@ const QuizTakingScreen: React.FC = () => {
           keyboard sat on top of the free-text field and the footer. The header
           and progress bar stay outside — they are above the keyboard anyway,
           and keeping them out means no `keyboardVerticalOffset` is needed (the
-          stack renders with `headerShown: false`). Android resizes the window
-          itself (`adjustResize`), hence no `behavior` there. */}
+          stack renders with `headerShown: false`). Android needs it too: the
+          app is edge-to-edge, so the window no longer resizes for the keyboard
+          (see KEYBOARD_AVOIDING_BEHAVIOR). */}
       <KeyboardAvoidingView
         style={currentStyles.keyboardFlex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={KEYBOARD_AVOIDING_BEHAVIOR}
       >
         <ScrollView
           ref={scrollRef}

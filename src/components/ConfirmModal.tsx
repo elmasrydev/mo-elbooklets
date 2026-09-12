@@ -21,6 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { layout } from '../config/layout';
 import { spacing } from '../config/spacing';
+import { KEYBOARD_AVOIDING_BEHAVIOR } from '../lib/keyboard';
 
 const { width } = Dimensions.get('window');
 const logo = require('../../assets/logo-transparent.png');
@@ -151,13 +152,10 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = (props: ConfirmModalPro
             — and this modal hosts text fields: the `hasInput` variant and the
             note popup on the study reader and Bookmarks, which autofocus and so
             raise the keyboard the moment the popup opens (BKLT-393). Padding
-            below the card re-centres it in the space the keyboard leaves.
-            Android resizes the window itself, and a modal with no input is
-            unaffected either way. */}
-        <KeyboardAvoidingView
-          style={styles.keyboardWrap}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
+            below the card re-centres it in the space the keyboard leaves, on
+            Android too now that the app is edge-to-edge (see
+            KEYBOARD_AVOIDING_BEHAVIOR). A modal with no input is unaffected. */}
+        <KeyboardAvoidingView style={styles.keyboardWrap} behavior={KEYBOARD_AVOIDING_BEHAVIOR}>
           <TouchableWithoutFeedback accessible={false} onPress={() => Keyboard.dismiss()}>
             <View
               style={[

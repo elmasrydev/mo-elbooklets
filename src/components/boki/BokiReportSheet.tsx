@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
-  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -21,6 +20,7 @@ import { spacing, borderRadius } from '../../config/spacing';
 import { layout } from '../../config/layout';
 import { BokiReportReason } from '../../types/boki';
 import { INPUT_TEXT_ALIGN } from '../../lib/rtl';
+import { KEYBOARD_AVOIDING_BEHAVIOR } from '../../lib/keyboard';
 
 interface BokiReportSheetProps {
   visible: boolean;
@@ -89,7 +89,7 @@ const BokiReportSheet: React.FC<BokiReportSheetProps> = ({ visible, chatLogId, o
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.backdrop}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <KeyboardAvoidingView behavior={KEYBOARD_AVOIDING_BEHAVIOR}>
           <View
             style={[
               styles.sheet,
