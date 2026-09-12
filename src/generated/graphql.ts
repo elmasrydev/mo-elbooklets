@@ -959,6 +959,20 @@ export type ParentNotificationsUnreadCountQueryVariables = Exact<{ [key: string]
 
 export type ParentNotificationsUnreadCountQuery = { parentNotifications: { unread_count: number } };
 
+export type StaticPageQueryVariables = Exact<{
+  slug: string;
+}>;
+
+export type StaticPageQuery = {
+  page: {
+    id: string;
+    slug: string;
+    is_active: boolean;
+    content_en: string | null;
+    content_ar: string | null;
+  } | null;
+};
+
 export type ParentLinkRequestsQueryVariables = Exact<{ [key: string]: never }>;
 
 export type ParentLinkRequestsQuery = {
@@ -5089,6 +5103,52 @@ export const ParentNotificationsUnreadCountDocument = {
   ParentNotificationsUnreadCountQuery,
   ParentNotificationsUnreadCountQueryVariables
 >;
+export const StaticPageDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'StaticPage' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'slug' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'page' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'slug' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'slug' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'slug' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'is_active' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'content_en' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'content_ar' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<StaticPageQuery, StaticPageQueryVariables>;
 export const ParentLinkRequestsDocument = {
   kind: 'Document',
   definitions: [

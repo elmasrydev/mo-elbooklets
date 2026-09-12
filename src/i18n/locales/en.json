@@ -201,8 +201,6 @@
     "mind_map_error": "Couldn't load the mind map"
   },
   "more_screen": {
-    "about_content": "ElBooklets Mobile App\nVersion 1.0.0\n\nYour digital learning companion for interactive education.",
-    "about_title": "About ElBooklets",
     "app_info": "App information and version",
     "app_preferences": "App preferences and notifications",
     "bookmarks_notes": "Bookmarks & Notes",
@@ -772,6 +770,7 @@
     "notifications_control": "Notifications Control",
     "account_section": "Account",
     "support_section": "Support",
+    "legal_section": "About & Legal",
     "verify_mobile_msg": "Verify your mobile number via WhatsApp to secure your account and unlock all features.",
     "notifications_desc": "Receive updates and alerts",
     "notifications_disable_msg": "Please disable notifications from device settings",
@@ -811,6 +810,15 @@
     "q1": "How can I subscribe?",
     "q2": "Is the platform available on mobile?",
     "q3": "Are the questions compatible with the Ministry's system?"
+  },
+  "static_pages": {
+    "about_us": "About Us",
+    "terms": "Terms & Conditions",
+    "privacy": "Privacy Policy",
+    "refund": "Refund Policy",
+    "shipping": "Shipping Policy",
+    "load_error": "We couldn't load this page. Check your connection and try again.",
+    "unavailable": "This page isn't available right now."
   },
   "contact_us": {
     "email": "Email Address",

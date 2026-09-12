@@ -27,6 +27,7 @@ import QuizGeneratingScreen from '../screens/quiz/QuizGeneratingScreen';
 import { useTranslation } from 'react-i18next';
 import FAQScreen from '../screens/FAQScreen';
 import ContactUsScreen from '../screens/ContactUsScreen';
+import StaticPageScreen from '../screens/StaticPageScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import ParentLinkingScreen from '../screens/ParentLinkingScreen';
 import FollowListScreen from '../screens/FollowListScreen';
@@ -209,6 +210,7 @@ const TabNavigator: React.FC = () => {
       />
       <Stack.Screen name="FAQs" component={FAQScreen} />
       <Stack.Screen name="ContactUs" component={ContactUsScreen} />
+      <Stack.Screen name="StaticPage" component={StaticPageScreen} />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       <Stack.Screen name="ParentLinking" component={ParentLinkingScreen} />
       <Stack.Screen

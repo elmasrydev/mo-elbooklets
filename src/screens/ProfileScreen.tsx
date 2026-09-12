@@ -38,6 +38,7 @@ import {
   ProfileXpDocument,
 } from '../generated/graphql';
 import { isDebugMode } from '../config/debug';
+import { STATIC_PAGES } from '../config/staticPages';
 import {
   checkNotificationPermission,
   requestNotificationPermission,
@@ -463,6 +464,22 @@ const ProfileScreen: React.FC = () => {
                 onPress: () => navigation.navigate('InternalSettings'),
               })
             : null}
+        </View>
+
+        {/* About & legal — CMS pages, including the ones Paymob requires (BKLT-300) */}
+        <Text style={s.groupLabel}>{t('profile_screen.legal_section')}</Text>
+        <View style={s.group}>
+          {STATIC_PAGES.map((page, index) => (
+            <React.Fragment key={page.slug}>
+              {renderRow({
+                icon: page.icon,
+                title: t(page.labelKey),
+                onPress: () => navigation.navigate('StaticPage', { slug: page.slug }),
+                first: index === 0,
+                testID: `profile-page-${page.slug}`,
+              })}
+            </React.Fragment>
+          ))}
         </View>
 
         {/* Notifications */}

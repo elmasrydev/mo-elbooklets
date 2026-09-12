@@ -198,6 +198,27 @@ The flag gates three things — all of them, or it leaks:
 `src/components/TodaysPlanWidget.tsx` also navigates there but is **mounted nowhere** (dead code as
 of this writing) — gate or delete it if you ever mount it.
 
+## Static pages (BKLT-300)
+About Us and the legal pages Paymob requires (terms, privacy, refund, shipping) come from the CMS
+via `page(slug:)` (`src/graphql/pages.graphql`) and render in `StaticPageScreen`, linked from
+Profile → **About & Legal** (student) and Parent Settings (parent).
+- **Public, plain text.** The query needs no token. The body is plain text in `content_en` /
+  `content_ar` — not HTML, and not localized by the `lang` header — so `pickLocalizedBody()` picks
+  the UI language and falls back to the other. `parseStaticPage()` (`src/utils/staticPage.ts`) turns
+  its line shapes into blocks: `•\t` bullet, number-dot-**tab** step, number-dot-**space** heading,
+  and a short unpunctuated line as a heading (About Us's "Our Story"). No web view.
+- **The menu is `STATIC_PAGES`** (`src/config/staticPages.ts`), never the CMS `pages` list: its
+  `order` is 0 for refund/shipping so they would sort first, its `icon` values are web heroicons,
+  and a page added to the CMS later should not appear in the app unannounced. Labels are bundled
+  (`static_pages.*`), so the menu and header need no fetch.
+- **A missing slug is `page: null`, not an error** → the screen's "unavailable" state; an
+  `is_active: false` page is treated the same. Demo has no refund-policy / shipping-policy (checked
+  2026-09-12); PRS and production have all five. `check:release-fields` requires `Query.page` and
+  the three selected `Page` fields.
+- Registered for signed-in students (`TabNavigator`) and parents (`ParentTabNavigator`) only.
+  Nothing links to it while signed out yet — a signup "you agree to the Terms" line would need a
+  registration in `AppNavigator`'s unauthenticated group too, like `ContactUs`.
+
 ## Commands
 | Command | What it does |
 |---|---|
