@@ -142,20 +142,21 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = (props: ConfirmModalPro
       style={[styles.fullScreenOverlay, { opacity: fadeAnim }]}
       pointerEvents={visible ? 'auto' : 'none'}
     >
-      <TouchableOpacity
-        accessible={false}
-        activeOpacity={1}
-        style={styles.overlay}
-        onPress={handleBackdropPress}
-      >
-        {/* The card is vertically centred, so a keyboard would sit on top of it
-            — and this modal hosts text fields: the `hasInput` variant and the
-            note popup on the study reader and Bookmarks, which autofocus and so
-            raise the keyboard the moment the popup opens (BKLT-393). Padding
-            below the card re-centres it in the space the keyboard leaves, on
-            Android too now that the app is edge-to-edge (see
-            KEYBOARD_AVOIDING_BEHAVIOR). A modal with no input is unaffected. */}
-        <KeyboardAvoidingView style={styles.keyboardWrap} behavior={KEYBOARD_AVOIDING_BEHAVIOR}>
+      {/* The card is vertically centred, so a keyboard would sit on top of it
+          — and this modal hosts text fields: the `hasInput` variant and the
+          note popup on the study reader and Bookmarks, which autofocus and so
+          raise the keyboard the moment the popup opens (BKLT-393). The wrapper
+          fills the overlay and pads its bottom by the keyboard's height, so the
+          backdrop below — and the card centred in it — sits in the space the
+          keyboard leaves. Android too, now that the app is edge-to-edge (see
+          KEYBOARD_AVOIDING_BEHAVIOR). A modal with no input is unaffected. */}
+      <KeyboardAvoidingView style={styles.keyboardWrap} behavior={KEYBOARD_AVOIDING_BEHAVIOR}>
+        <TouchableOpacity
+          accessible={false}
+          activeOpacity={1}
+          style={styles.overlay}
+          onPress={handleBackdropPress}
+        >
           <TouchableWithoutFeedback accessible={false} onPress={() => Keyboard.dismiss()}>
             <View
               style={[
@@ -246,8 +247,8 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = (props: ConfirmModalPro
               </View>
             </View>
           </TouchableWithoutFeedback>
-        </KeyboardAvoidingView>
-      </TouchableOpacity>
+        </TouchableOpacity>
+      </KeyboardAvoidingView>
     </Animated.View>
   );
 };
@@ -257,18 +258,22 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     zIndex: 9999,
     elevation: 9999,
+    // The dim lives here rather than on the backdrop touchable, whose bottom
+    // the keyboard wrapper pads: it must still reach the screen's edge.
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.mdd,
   },
-  // Auto-height, so KeyboardAvoidingView's bottom padding shifts the card up
-  // inside the centred overlay rather than stretching it.
+  // Fixed height (fills the overlay), so the padding it adds for the keyboard
+  // never changes its own frame. An auto-height wrapper grew by its own
+  // padding, re-measured that as more keyboard overlap and padded again,
+  // stepping the card up until it pressed against the keyboard.
   keyboardWrap: {
-    width: '100%',
+    flex: 1,
   },
   container: {
     width: '100%',
