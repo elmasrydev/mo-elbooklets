@@ -8,7 +8,6 @@ import {
   ScrollView,
   ActivityIndicator,
   KeyboardAvoidingView,
-  Keyboard,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -79,28 +78,28 @@ const QuizTakingScreen: React.FC = () => {
   // Reset scroll to the top on every question change, so a new question never
   // opens mid-scroll from where the previous one was left.
   const scrollRef = React.useRef<ScrollView>(null);
+  // Whether the free-text answer has focus. Reset on every question change:
+  // the input is remounted per question (see its `key`), and a focused input
+  // that unmounts is not guaranteed to report `onBlur` — left stale, the
+  // keyboard closing would scroll the new question to its end.
+  const descriptiveFocused = React.useRef(false);
   useEffect(() => {
+    descriptiveFocused.current = false;
     scrollRef.current?.scrollTo({ y: 0, animated: false });
   }, [currentQuestionIndex]);
 
   // Bring the free-text answer above the keyboard (BKLT-393). It is the last
   // element of the scroll content, so scrolling to the end is enough.
   //
-  // This has to run on `keyboardDidShow` rather than on the input's `onFocus`:
-  // focus fires before the keyboard is up, so at that point
-  // `KeyboardAvoidingView` has not yet shortened the ScrollView and "the end"
-  // is still the full-height bottom — the scroll lands short and the field
-  // stays covered.
-  const descriptiveFocused = React.useRef(false);
-  const revealAnswerField = useCallback(() => {
-    scrollRef.current?.scrollToEnd({ animated: true });
+  // Driven by the ScrollView's own layout, not by a keyboard event. On Android
+  // KeyboardAvoidingView pads *asynchronously* in response to the same
+  // `keyboardDidShow`, so a listener there scrolls before the ScrollView has
+  // shrunk and lands short. A layout change while the answer field is focused
+  // is exactly "the visible area just moved for the keyboard" — on both
+  // platforms, and whether or not the window itself resizes.
+  const handleScrollLayout = useCallback(() => {
+    if (descriptiveFocused.current) scrollRef.current?.scrollToEnd({ animated: true });
   }, []);
-  useEffect(() => {
-    const sub = Keyboard.addListener('keyboardDidShow', () => {
-      if (descriptiveFocused.current) revealAnswerField();
-    });
-    return () => sub.remove();
-  }, [revealAnswerField]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -503,6 +502,7 @@ const QuizTakingScreen: React.FC = () => {
           style={currentStyles.content}
           contentContainerStyle={currentStyles.contentContainer}
           showsVerticalScrollIndicator={false}
+          onLayout={handleScrollLayout}
           // Let a tap reach Next/Previous while the keyboard is open, instead of
           // spending the first tap on dismissing it.
           keyboardShouldPersistTaps="handled"
@@ -553,6 +553,12 @@ const QuizTakingScreen: React.FC = () => {
               /* Descriptive answer: multi-line text input */
               <View style={currentStyles.descriptiveContainer}>
                 <TextInput
+                  // One input per question. Reused across two free-text
+                  // questions in a row, it would stay focused with the keyboard
+                  // up, and no event would bring the next field into view.
+                  // Remounting drops focus, so the next question opens at the
+                  // top like every other question does.
+                  key={currentQuestion.id}
                   // INPUT_TEXT_ALIGN, not contentAlign: `left`/`right` stay
                   // physical on TextInput, so the subject-derived value would pin
                   // Arabic answers to the wrong edge (BKLT-312).
@@ -565,15 +571,11 @@ const QuizTakingScreen: React.FC = () => {
                   textAlignVertical="top"
                   maxLength={2000}
                   // Only this field asks to be scrolled into view; the choice,
-                  // match and paragraph layouts never open a keyboard.
+                  // match and paragraph layouts never open a keyboard. The
+                  // scroll itself happens in `handleScrollLayout`, once the
+                  // keyboard has actually shrunk the ScrollView.
                   onFocus={() => {
                     descriptiveFocused.current = true;
-                    // Also scroll here, not only on `keyboardDidShow`: stepping
-                    // from one free-text question straight to the next leaves
-                    // the keyboard up throughout, so no show event arrives to
-                    // reveal the new field. Harmless on a cold open — the
-                    // keyboard's own event corrects this first, short scroll.
-                    revealAnswerField();
                   }}
                   onBlur={() => {
                     descriptiveFocused.current = false;
