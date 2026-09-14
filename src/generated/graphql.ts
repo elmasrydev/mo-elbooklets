@@ -815,6 +815,19 @@ export type DeletePointNoteMutation = {
   };
 };
 
+export type MySavedPointFlagsQueryVariables = Exact<{
+  lessonId?: string | null | undefined;
+}>;
+
+export type MySavedPointFlagsQuery = {
+  mySavedPoints: Array<{
+    id: string;
+    is_bookmarked: boolean;
+    note_content: string | null;
+    lessonPoint: { id: string };
+  }>;
+};
+
 export type UserNotificationsQueryVariables = Exact<{
   page?: number | null | undefined;
   per_page?: number | null | undefined;
@@ -4438,6 +4451,55 @@ export const DeletePointNoteDocument = {
     },
   ],
 } as unknown as DocumentNode<DeletePointNoteMutation, DeletePointNoteMutationVariables>;
+export const MySavedPointFlagsDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'MySavedPointFlags' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'lessonId' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'mySavedPoints' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'lessonId' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'lessonId' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'is_bookmarked' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'note_content' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'lessonPoint' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [{ kind: 'Field', name: { kind: 'Name', value: 'id' } }],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<MySavedPointFlagsQuery, MySavedPointFlagsQueryVariables>;
 export const UserNotificationsDocument = {
   kind: 'Document',
   definitions: [

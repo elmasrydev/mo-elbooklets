@@ -17,6 +17,7 @@ import StudyCalendarScreen from '../screens/StudyCalendarScreen';
 import { STUDY_PLAN_ENABLED } from '../config/features';
 import StudyChaptersScreen from '../screens/study/StudyChaptersScreen';
 import StudyLessonScreen from '../screens/study/StudyLessonScreen';
+import MindMapViewerScreen from '../screens/study/MindMapViewerScreen';
 import QuizTakingScreen from '../screens/quiz/QuizTakingScreen';
 import QuizReviewScreen from '../screens/quiz/QuizReviewScreen';
 import QuizResultsScreen from '../screens/quiz/QuizResultsScreen';
@@ -183,7 +184,7 @@ const TabScreens: React.FC = () => {
 
 const TabNavigator: React.FC = () => {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator screenOptions={{ headerShown: false, orientation: 'portrait_up' }}>
       <Stack.Screen name="MainTabs" component={TabScreens} />
       <Stack.Screen name="Social" component={require('../screens/SocialScreen').default} />
       <Stack.Screen
@@ -200,6 +201,14 @@ const TabNavigator: React.FC = () => {
         options={{
           presentation: 'fullScreenModal',
         }}
+      />
+      {/* The only landscape screen. react-native-screens rotates the app when it
+          appears and back to portrait when it is popped — close button, swipe
+          or Android back — with no orientation lock called from JS. */}
+      <Stack.Screen
+        name="MindMapViewer"
+        component={MindMapViewerScreen}
+        options={{ presentation: 'fullScreenModal', orientation: 'landscape', animation: 'fade' }}
       />
       <Stack.Screen name="QuizTaking" component={QuizTakingScreen} options={{}} />
       <Stack.Screen name="QuizResults" component={QuizResultsScreen as any} options={{}} />

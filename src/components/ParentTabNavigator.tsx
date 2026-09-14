@@ -148,7 +148,7 @@ const ParentTabScreens: React.FC = () => {
 const ParentTabNavigator: React.FC = () => {
   return (
     <ParentDashboardProvider>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator screenOptions={{ headerShown: false, orientation: 'portrait_up' }}>
         <Stack.Screen name="ParentMainTabs" component={ParentTabScreens} />
         <Stack.Screen name="ChildDetailsScreen" component={ChildDetailsScreen} />
         <Stack.Screen

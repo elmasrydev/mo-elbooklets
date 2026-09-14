@@ -66,8 +66,11 @@ export default function App() {
   const [initialLanguage, setInitialLanguage] = useState<Language>('en');
 
   // The native manifests advertise landscape so the mind-map viewer can rotate
-  // (BKLT-174) — everything else stays portrait, held here at runtime rather
-  // than in app.json. Failure is non-fatal: worst case a screen can rotate.
+  // (BKLT-174), so portrait has to be held at runtime rather than in app.json.
+  // Once the navigator mounts, react-native-screens owns orientation per screen
+  // (every stack declares `portrait_up`, MindMapViewer `landscape`); this lock
+  // only covers the splash window before that. Failure is non-fatal: worst case
+  // the splash can rotate.
   useEffect(() => {
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
   }, []);

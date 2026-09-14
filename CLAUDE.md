@@ -64,29 +64,63 @@ src/
 `Lesson.mindMapMimeType` is the only way to tell — `<Image>` renders *nothing* for an SVG, so
 picking the branch by file extension is a silent-blank bug (a generated map's storage URL need not
 end in `.svg`). Branch via `resolveMindMapKind()` (`src/utils/mindMap.ts`): exact
-`image/svg+xml` → `SvgUri`, anything else with a URL → **raster** (the safe fallback for payloads
+`image/svg+xml` → `SvgXml` fed by `useRemoteSvg`, anything else with a URL → **raster** (the safe fallback for payloads
 cached before the field existed), no URL → `'none'` and the section is not rendered at all.
 - **Both fields must be selected by every query that can feed the reader** — `StudyChapters`,
   `MySavedPoints` and `BokiLessonById`. Miss one and that path silently falls back to the raster
   renderer, which draws nothing for a generated map.
-- UI is `src/components/study/LessonMindMap.tsx` (fitted preview + pinch/pan/double-tap fullscreen
-  viewer; the viewer needs its own `GestureHandlerRootView` because a `Modal` sits outside the
-  app's root one).
-- **Orientation**: the generated canvas is ~2:1, so a portrait "fullscreen" letterboxes to barely
-  more than the inline preview. `app.json > orientation` is therefore `"default"` (the native
-  manifests advertise landscape) and the app is held portrait **at runtime** by a
-  `ScreenOrientation.lockAsync(PORTRAIT_UP)` in `App.tsx`. Only the mind-map viewer unlocks to
-  `LANDSCAPE`, restoring portrait on close *and* on unmount (a hardware-back dismiss never reaches
-  the close handler, and leaving the lock set would strand the whole app sideways). Never move the
-  portrait lock back into `app.json` — that removes landscape from the plist and the viewer
-  silently stops rotating. Analytics: `trackMindMapViewed` fires when the map is actually on screen, once
-  per lesson per session; `trackMindMapZoomed` per fullscreen open. testIDs: `study-mindmap`,
-  `study-mindmap-retry`, `study-mindmap-viewer`, `study-mindmap-viewer-close`.
+- UI: `src/components/study/LessonMindMap.tsx` is the inline preview; tapping it navigates to the
+  **`MindMapViewer` route** (`src/screens/study/MindMapViewerScreen.tsx`, pinch/pan/double-tap),
+  registered in `TabNavigator` as a `fullScreenModal` with `orientation: 'landscape'`. The viewer
+  keeps its own `GestureHandlerRootView` (an Android fullScreenModal is hosted outside the app's
+  root one) and is on the Boki FAB denylist.
+- **Orientation is owned by react-native-screens, per screen.** Every stack navigator declares
+  `orientation: 'portrait_up'` in its `screenOptions` (root, student, parent) and only
+  `MindMapViewer` declares `landscape`, so the OS rotates when the viewer appears and back when it
+  is popped by any route — close button, swipe, Android back. The generated canvas is ~2:1, so a
+  portrait "fullscreen" would letterbox to barely more than the inline preview. **Nothing calls
+  `ScreenOrientation.lockAsync` for the viewer any more**: the old Modal-plus-lock design issued
+  locks while the modal was still animating and raced a second orientation request from the
+  presentation machinery, which is why the app sometimes stayed sideways. The one remaining lock is
+  App.tsx's `PORTRAIT_UP`, which only covers the splash window before the navigator mounts.
+  `app.json > orientation` stays `"default"` — the plist must advertise landscape or the viewer
+  cannot rotate.
+- **One download per map.** An SVG goes through `useRemoteSvg` (`src/hooks/useRemoteSvg.ts`):
+  cached per URL, cancelled on unmount and on lesson change, normalised by `normalizeSvgXml`
+  (`src/utils/svgCompat.ts`) before caching. The preview fills the cache and the viewer reads it.
+  Never `SvgUri` — it downloads per mounted instance and cannot be cancelled, so one visit used to
+  download and mount the map three times (preview, viewer, preview again on close). The reader
+  passes `active={contentReady}` so the download waits for the opening transition.
+- **`normalizeSvgXml` exists because the backend's newer generator (2026-09) emits SVG that
+  react-native-svg renders wrong**: a base64 `@font-face` `<style>` block (~360 KB; dropped),
+  undecoded `&apos;`/`&gt;` entities (decoded), and mixed-direction labels split into several
+  attribute-less `<tspan>`s that render as overlapping fragments (merged into one run). Positioned
+  spans are untouched. If the generator changes shape again, extend that function and its tests
+  first — and keep asking the backend for the older single-span, no-font format, which needs none
+  of this.
+- Analytics: `trackMindMapViewed` fires when the map is actually on screen, once per lesson per
+  session; `trackMindMapZoomed` when the viewer is opened. testIDs: `study-mindmap`,
+  `study-mindmap-retry`, `study-mindmap-viewer`, `study-mindmap-viewer-retry`,
+  `study-mindmap-viewer-close`.
 - ✅ **Release gate cleared**: `mindMapMimeType` is now live on all three environments (re-checked
   2026-08-23 via `npm run check:release-fields`). The general rule stands — a query selecting an
   unknown field fails *entirely* — so run that script before any store build.
 - Generation is async: a new lesson can return `mindMapUrl: null` and get one minutes later — never
   cache "this lesson has no map".
+
+### Lesson reader: keep the first frame cheap
+- `StudyLessonScreen` paints the header and summary first and mounts the video player, the mind
+  map and the key-point list only once `useAfterInteractions()` (`src/hooks/useAfterInteractions.ts`)
+  flips, with skeletons until then. Everything used to land inside the `fullScreenModal` transition
+  and the first touches queued behind it — the freeze that was blamed on "the video loading". Use
+  the same hook for any screen that opens with a heavy tree.
+- On open the reader refreshes bookmark/note state with **`MySavedPointFlags`**, not
+  `MySavedPoints`: the latter carries the whole lesson once per saved point and is only for the
+  bookmark deep-link (`fetchLessonDetails`). Every async response is checked against
+  `currentLessonIdRef` (`isStale()`) before it is applied — the reader swaps lessons in place, so a
+  slow reply for the previous lesson must not overwrite the next one's state.
+- No `LayoutAnimation` on the lesson swap (Next/Previous): animating the whole content tree
+  re-laid out the video, the map and every card at once.
 
 ## Trial & subscription access (backend contract: `mobile-trial-restrictions.md` — local-only)
 The server owns every access decision; the app only interprets. A student is on a **trial** from

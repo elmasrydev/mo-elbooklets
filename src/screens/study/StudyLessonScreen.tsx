@@ -26,6 +26,7 @@ import { useLazyQuery, useMutation } from '@apollo/client/react';
 import {
   DeletePointNoteDocument,
   LessonDodProgressDocument,
+  MySavedPointFlagsDocument,
   MySavedPointsDocument,
   RecordKeyPointViewDocument,
   SavePointNoteDocument,
@@ -37,7 +38,9 @@ import LessonNavBar from '../../components/navigation/LessonNavBar';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import { useTypography } from '../../hooks/useTypography';
 import useAndroidBack from '../../hooks/useAndroidBack';
+import { useAfterInteractions } from '../../hooks/useAfterInteractions';
 import AppButton from '../../components/AppButton';
+import { GenericListSkeleton } from '../../components/SkeletonLoader';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import LessonMindMap from '../../components/study/LessonMindMap';
 import { resolveMindMapKind } from '../../utils/mindMap';
@@ -340,6 +343,11 @@ const StudyLessonScreen: React.FC = () => {
   const route = useRoute<any>();
   const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
+  // Header and summary paint first; the video player, the mind map and the
+  // key-point list mount once the opening transition is over. Mounted all at
+  // once they landed inside the transition and the first touches queued behind
+  // them — the freeze that was blamed on "the video loading".
+  const contentReady = useAfterInteractions();
 
   const [currentLesson, setCurrentLesson] = useState<Lesson>(route.params?.lesson);
   const [allLessons, setAllLessons] = useState<Lesson[]>(route.params?.allLessons || []);
@@ -398,7 +406,21 @@ const StudyLessonScreen: React.FC = () => {
   const [fetchSavedPoints] = useLazyQuery(MySavedPointsDocument, {
     fetchPolicy: 'network-only',
   });
+  // The light variant for the per-open refresh — MySavedPoints above carries
+  // the whole lesson per saved point and is only for the bookmark deep-link.
+  const [fetchSavedPointFlags] = useLazyQuery(MySavedPointFlagsDocument, {
+    fetchPolicy: 'network-only',
+  });
   const [fetchDod] = useLazyQuery(LessonDodProgressDocument, { fetchPolicy: 'network-only' });
+
+  // The reader swaps lessons in place, so every async response is checked
+  // against this before it is applied: a slow reply for the previous lesson
+  // must not overwrite the next lesson's progress or saved points.
+  const currentLessonIdRef = useRef(currentLesson.id);
+  useEffect(() => {
+    currentLessonIdRef.current = currentLesson.id;
+  }, [currentLesson.id]);
+  const isStale = (lessonId: string) => currentLessonIdRef.current !== lessonId;
   const [toggleLessonInteraction] = useMutation(ToggleLessonInteractionDocument);
   const [recordKeyPointView] = useMutation(RecordKeyPointViewDocument);
   const [toggleSavedPointBookmark] = useMutation(ToggleSavedPointBookmarkDocument);
@@ -529,6 +551,7 @@ const StudyLessonScreen: React.FC = () => {
     try {
       setLoadingDod(true);
       const { data } = await fetchDod({ variables: { lessonId } });
+      if (isStale(lessonId)) return;
       if (data?.lessonDODProgress) {
         setDodProgress(data.lessonDODProgress);
       }
@@ -565,6 +588,7 @@ const StudyLessonScreen: React.FC = () => {
       // We use mySavedPoints because it's guaranteed to return the lesson object
       // if we're navigating from a bookmark.
       const { data } = await fetchSavedPoints({ variables: { lessonId } });
+      if (isStale(lessonId)) return;
 
       if (data?.mySavedPoints?.[0]?.lesson) {
         const fullLesson = data.mySavedPoints[0].lesson;
@@ -594,7 +618,8 @@ const StudyLessonScreen: React.FC = () => {
 
   const fetchLessonMetadata = async (lessonId: string) => {
     try {
-      const { data } = await fetchSavedPoints({ variables: { lessonId } });
+      const { data } = await fetchSavedPointFlags({ variables: { lessonId } });
+      if (isStale(lessonId)) return;
 
       if (data?.mySavedPoints) {
         const pointsMap = new Map<string, UserSavedPoint>();
@@ -732,8 +757,10 @@ const StudyLessonScreen: React.FC = () => {
     });
   }, [currentLesson.id]);
 
+  // Waits for `contentReady`: the points only mount then, and the scroll below
+  // needs their layout.
   useEffect(() => {
-    if (route.params?.initialPointId && currentLesson.lessonPoints?.length) {
+    if (contentReady && route.params?.initialPointId && currentLesson.lessonPoints?.length) {
       const pointId = route.params.initialPointId;
 
       // Ensure the point is expanded
@@ -757,7 +784,7 @@ const StudyLessonScreen: React.FC = () => {
         clearTimeout(highlightTimer);
       };
     }
-  }, [route.params?.initialPointId, currentLesson.lessonPoints]);
+  }, [contentReady, route.params?.initialPointId, currentLesson.lessonPoints]);
 
   const mindMapKind = resolveMindMapKind(currentLesson.mindMapUrl, currentLesson.mindMapMimeType);
 
@@ -829,7 +856,9 @@ const StudyLessonScreen: React.FC = () => {
     // Persist the current lesson's checks before leaving it.
     viewedCacheRef.current.set(currentLesson.id, viewedPoints);
 
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    // No LayoutAnimation here: animating the whole content swap re-laid out the
+    // video, the map and every card at once, which is what made Next/Previous
+    // stutter. The swap is instant and scrolls to the top.
     setCurrentLesson(lesson);
     setExpandedPoints(new Set());
     setHighlightedPointId(null);
@@ -928,13 +957,19 @@ const StudyLessonScreen: React.FC = () => {
         {currentLesson.videoUrl && (
           <>
             <View style={currentStyles.videoSection}>
-              <LessonVideoPlayer
-                url={currentLesson.videoUrl as string}
-                theme={theme}
-                spacing={spacing}
-                borderRadius={borderRadius}
-                typography={typography}
-              />
+              {contentReady ? (
+                <LessonVideoPlayer
+                  url={currentLesson.videoUrl as string}
+                  theme={theme}
+                  spacing={spacing}
+                  borderRadius={borderRadius}
+                  typography={typography}
+                />
+              ) : (
+                <View style={currentStyles.videoPlaceholder} testID="study-video-placeholder">
+                  <ActivityIndicator color={theme.colors.textOnDark} />
+                </View>
+              )}
             </View>
             {/* Like / Dislike */}
             <View style={currentStyles.interactionRow}>
@@ -1082,6 +1117,7 @@ const StudyLessonScreen: React.FC = () => {
                   mimeType={currentLesson.mindMapMimeType}
                   onViewed={reportMindMapViewed}
                   onZoomed={reportMindMapZoomed}
+                  active={contentReady}
                 />
               </View>
             )}
@@ -1111,7 +1147,9 @@ const StudyLessonScreen: React.FC = () => {
                 )}
               </View>
 
-              {hasNewPoints ? (
+              {!contentReady ? (
+                <GenericListSkeleton numItems={3} />
+              ) : hasNewPoints ? (
                 <View style={currentStyles.pointsList}>
                   {currentLesson.lessonPoints!.map((point, idx) => {
                     const isExpanded = expandedPoints.has(point.id);
@@ -1594,6 +1632,13 @@ const styles = (
       overflow: 'hidden',
       backgroundColor: '#000',
       ...layout.shadow,
+    },
+    // Same footprint as the player, so nothing below shifts when it mounts.
+    videoPlaceholder: {
+      width: '100%',
+      aspectRatio: 16 / 9,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     interactionRow: {
       flexDirection: 'row',

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
-import { SvgUri } from 'react-native-svg';
+import { SvgXml } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTypography } from '../../hooks/useTypography';
+import { LoadStatus, svgLoadStatus, useRemoteSvg } from '../../hooks/useRemoteSvg';
 import { QUIZ_COLORS } from '../../config/colors';
 
 /**
@@ -12,11 +13,13 @@ import { QUIZ_COLORS } from '../../config/colors';
  * Orthogonal to `type` — any question, including paragraph children, may carry
  * one.
  *
- * SVGs are rendered with react-native-svg's `SvgUri` (reliable for remote SVGs,
- * respects the viewBox even when the file has no explicit width/height — which
- * is exactly where expo-image falls short). Raster formats (PNG/JPG/GIF/WebP)
- * go through expo-image for caching + fast decode. Both share a loading
- * skeleton, a broken-image fallback + retry, and a tap-to-zoom viewer.
+ * SVGs are downloaded once through `useRemoteSvg` and drawn with
+ * react-native-svg's `SvgXml` (reliable for remote SVGs, respects the viewBox
+ * even when the file has no explicit width/height — which is exactly where
+ * expo-image falls short); the zoom viewer reuses the same text rather than
+ * downloading again. Raster formats (PNG/JPG/GIF/WebP) go through expo-image
+ * for caching + fast decode. Both share a loading skeleton, a broken-image
+ * fallback + retry, and a tap-to-zoom viewer.
  */
 
 const isSvgUri = (uri: string): boolean => /\.svg(\?.*)?$/i.test(uri);
@@ -30,26 +33,33 @@ const QuestionImage: React.FC<QuestionImageProps> = ({ uri, testID }) => {
   const { t } = useTranslation();
   const { typography, fontWeight } = useTypography();
   const svg = isSvgUri(uri);
-  // SVGs render fast and their onLoad can be unreliable, so skip the skeleton
-  // for them (start "loaded") — onError still drives the broken-image fallback.
-  const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>(svg ? 'loaded' : 'loading');
+  const remote = useRemoteSvg(svg ? uri : null);
+  const [svgUnparseable, setSvgUnparseable] = useState(false);
+  const [rasterStatus, setRasterStatus] = useState<LoadStatus>('loading');
   const [viewerOpen, setViewerOpen] = useState(false);
-  // Bumped to force a re-request of the same URL after a failure.
+  // Bumped to force a re-request of the same raster URL after a failure.
   const [attempt, setAttempt] = useState(0);
 
-  // The initialiser only runs on mount, but the quiz renders one instance and
-  // swaps `uri` as the student moves between questions — so without this a
-  // failed image leaves the next question showing "failed to load", and a
-  // loaded one suppresses the next skeleton.
+  // The quiz renders one instance and swaps `uri` as the student moves between
+  // questions — so without this a failed image leaves the next question showing
+  // "failed to load", and a loaded one suppresses the next skeleton.
   useEffect(() => {
-    setStatus(svg ? 'loaded' : 'loading');
+    setRasterStatus('loading');
+    setSvgUnparseable(false);
     setAttempt(0);
     setViewerOpen(false);
-  }, [uri, svg]);
+  }, [uri]);
+
+  const status: LoadStatus = svg ? svgLoadStatus(remote.status, svgUnparseable) : rasterStatus;
 
   const retry = () => {
-    setStatus(svg ? 'loaded' : 'loading');
-    setAttempt((n) => n + 1);
+    if (svg) {
+      setSvgUnparseable(false);
+      remote.retry();
+    } else {
+      setRasterStatus('loading');
+      setAttempt((n) => n + 1);
+    }
   };
 
   if (status === 'error') {
@@ -86,16 +96,16 @@ const QuestionImage: React.FC<QuestionImageProps> = ({ uri, testID }) => {
         {svg ? (
           // pointerEvents="none" so the SVG's native views don't swallow the
           // tap — the parent TouchableOpacity needs it to open the zoom viewer.
-          <View style={styles.image} pointerEvents="none">
-            <SvgUri
-              key={attempt}
-              uri={uri}
-              width="100%"
-              height="100%"
-              onLoad={() => setStatus('loaded')}
-              onError={() => setStatus('error')}
-            />
-          </View>
+          remote.xml && (
+            <View style={styles.image} pointerEvents="none">
+              <SvgXml
+                xml={remote.xml}
+                width="100%"
+                height="100%"
+                onError={() => setSvgUnparseable(true)}
+              />
+            </View>
+          )
         ) : (
           <Image
             key={attempt}
@@ -104,8 +114,8 @@ const QuestionImage: React.FC<QuestionImageProps> = ({ uri, testID }) => {
             contentFit="contain"
             cachePolicy="memory-disk"
             transition={150}
-            onLoad={() => setStatus('loaded')}
-            onError={() => setStatus('error')}
+            onLoad={() => setRasterStatus('loaded')}
+            onError={() => setRasterStatus('error')}
           />
         )}
         {status === 'loading' && (
@@ -124,7 +134,7 @@ const QuestionImage: React.FC<QuestionImageProps> = ({ uri, testID }) => {
         <View style={styles.viewerBackdrop}>
           {svg ? (
             <View style={styles.viewerSvg}>
-              <SvgUri uri={uri} width="100%" height="100%" />
+              {remote.xml && <SvgXml xml={remote.xml} width="100%" height="100%" />}
             </View>
           ) : (
             <Image source={{ uri }} style={styles.viewerImage} contentFit="contain" />
