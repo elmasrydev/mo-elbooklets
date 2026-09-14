@@ -49,6 +49,43 @@ src/
 - RTL rule: set `textAlign: 'left'` and let native RTL flip it. **Exception — `TextInput`:** use `INPUT_TEXT_ALIGN` from `src/lib/rtl.ts` instead (and never also set `textAlign` in that input's style, or it wins over the prop). Only the `<Text>` path propagates `layoutDirection`, so for inputs `left`/`right` stay *physical* on both platforms and Arabic text would pin to the wrong edge (BKLT-312).
 - Arabic font rule: font follows the **text's script, not the UI language** — pass `isArabicText(str)` (`src/config/fonts.ts`) as `forceArabic` to `useTypography` for any user-supplied text (names, titles). Never inline a new Arabic-range regex, and never set a bare `fontWeight` (it drops the custom family on Android — use `typography(style, weight)` / `fontWeight(weight)`).
 
+### Crash reporting & analytics (Firebase)
+Crashlytics and Analytics report from **every** build — release or dev client, device or simulator,
+`debugMode` true or false. `debugMode` gates console output in `src/utils/logger.ts`, never reporting.
+- **Native switches live in `firebase.json`** (`react-native` block) and are baked in at build time —
+  change one, rebuild the dev client. Keys must be React Native Firebase's exact names: an unknown key
+  is **silently ignored**. The screen-reporting switch was spelt `analytics_automatic_screen_reporting_enabled`
+  (no `google_` prefix) until 2026-09-14 and never applied; `src/__tests__/lib/firebaseConfig.test.ts`
+  now checks every key against RNFB's own `firebase-schema.json`.
+- **Crashlytics**: `crashlytics_auto_collection_enabled` (release) and `crashlytics_debug_enabled` (debug
+  builds) are both `true`. The built Info.plist still carries `FirebaseCrashlyticsCollectionEnabled = NO`
+  (and the Android manifest `firebase_crashlytics_collection_enabled = false`) — that is RNFB's
+  auto-disabler; its init provider switches collection on at launch from `firebase.json`, so don't
+  "fix" those. iOS dSYMs upload from the generated project's `[CP-User] [RNFB] Crashlytics
+  Configuration` build phase. A watchdog kill (`0x8BADF00D` — the main thread blocked for ~10 s, like
+  the old mind-map freeze) is a SIGKILL the app cannot report, so it may never reach Crashlytics; look
+  in Xcode Organizer or the device's crash logs.
+- **Analytics goes through Segment as a local bus** (`src/lib/segmentClient.ts` → Segment's
+  `FirebasePlugin`). Segment only runs a destination whose key is in its settings, and there is no
+  Segment cloud (the placeholder writeKey gets a 404), so `defaultSettings.integrations`, keyed by the
+  plugin's own `key`, is the **only** thing that switches Firebase on. It was missing until 2026-09-14:
+  no screen or event reached Firebase at all, only Firebase's automatic events. Segment's app-lifecycle
+  events are off — Firebase records opens and sessions itself. A `SafeTraitsPlugin` inside that
+  destination cuts every identify down to `pickSafeTraits` (`src/lib/safeUserTraits.ts`): Segment
+  merges each identify with the traits it persisted on the device, and builds up to v1.0.3 persisted
+  a student's name, mobile and email.
+- **Screen names come from the navigator.** `NavigationContainer`'s `onReady`/`onStateChange` in
+  `App.tsx` call `analytics.screen(routeName)` (a Firebase `screen_view` whose screen name is the route
+  name) and log a Crashlytics line (`Screen viewed:` / `Navigated to: <route>`). Firebase's automatic
+  screen reporting is **off**: it recorded native classes (`RNSScreen`, `UIViewController`,
+  `RCTFabricModalHostViewController`, `ScreenOrientationViewController`) instead of screens.
+- **Privacy — users are minors.** Event parameters and user properties carry ids, content names
+  (subject/lesson/quiz titles) and counts, never free text a user typed or anything identifying.
+  `SafeUserTraits` is the whole trait set, enforced at the destination as above;
+  `trackContactSupport` deliberately sends no subject. A forced sign-out (`handleSessionExpired`)
+  resets analytics just like `logout`, so the next person on the device — often a parent — is not
+  tracked under the student's Firebase user id.
+
 ### Boki AI Assistant (BKLT-221)
 **Boki** (بوكي) is the student AI study assistant. Backend contract: `booki-graphql-api.md` (repo root, gitignored — keep local). Single request/response (`aiChat` mutation returns the full answer — **no streaming**).
 - **Data layer is isolated** in `src/services/bokiApi.ts` (wraps `tryFetchWithFallback`) + raw ops in `src/graphql/boki.ts` + hand-written types in `src/types/boki.ts`. A contract change touches only these. Pure helpers: `src/utils/bokiErrors.ts` (`classifyBokiError` → `offline`/`rateLimit`/`backend`, `BokiApiError`) and `src/utils/bokiMessages.ts` (turn transforms) — unit-tested directly.
@@ -80,7 +117,7 @@ cached before the field existed), no URL → `'none'` and the section is not ren
 - **Orientation is owned by react-native-screens, per screen.** Every stack navigator declares
   `orientation: 'portrait_up'` in its `screenOptions` (root, student, parent) and only
   `MindMapViewer` declares `landscape`, so the OS rotates when the viewer appears and back when it
-  is popped by any route — close button, swipe, Android back. The generated canvas is ~2:1, so a
+  is popped by any route — the close button or Android back. The generated canvas is ~2:1, so a
   portrait "fullscreen" would letterbox to barely more than the inline preview. **Nothing calls
   `ScreenOrientation.lockAsync` for the viewer any more**: the old Modal-plus-lock design issued
   locks while the modal was still animating and raced a second orientation request from the
@@ -89,11 +126,15 @@ cached before the field existed), no URL → `'none'` and the section is not ren
   `app.json > orientation` stays `"default"` — the plist must advertise landscape or the viewer
   cannot rotate.
 - **One download per map.** An SVG goes through `useRemoteSvg` (`src/hooks/useRemoteSvg.ts`):
-  cached per URL, cancelled on unmount and on lesson change, handed out **as downloaded**. The
-  preview fills the cache and the viewer reads it. Never `SvgUri` — it downloads per mounted
-  instance and cannot be cancelled, so one visit used to download and mount the map three times
-  (preview, viewer, preview again on close). The reader passes `active={contentReady}` so the
-  download waits for the opening transition.
+  cached per URL and **shared while in flight** (a viewer opened mid-download joins the preview's
+  request), handed out **as downloaded**, cancelled when its last consumer leaves. It times out
+  after 30 s and treats a body that is not an SVG as a failure, so a stalled network or a captive
+  portal ends in the retry card; `retry` re-downloads even after a load. Its state is derived per
+  URL and `LessonMindMap` keys its preview by the map URL, so after an in-place lesson swap no
+  render shows the previous map as loaded (that once fired "Mind Map Viewed" early). Never `SvgUri`
+  — it downloads per mounted instance and cannot be cancelled, so one visit used to download and
+  mount the map three times (preview, viewer, preview again on close). The reader passes
+  `active={contentReady}`, so the map — SVG download or raster — waits for the opening transition.
 - **Why a WebView and never react-native-svg for the mind map.** react-native-svg draws on the
   app's **main thread** and redraws the whole map on mount, every time it scrolls back into view and
   on every rotation; the newer generator (2026-09) also puts a `feDropShadow` filter on 35
@@ -104,7 +145,8 @@ cached before the field existed), no URL → `'none'` and the section is not ren
   direction render as designed, and zoom stays vector-sharp. `react-native-webview` (13.15.0, the
   SDK 54 version) is a **native** dependency — adding or upgrading it needs a dev-client rebuild.
   `MindMapWebView` runs with JavaScript off, refuses any http(s) navigation, and remounts itself if
-  the OS kills its content process (a blank white view on iOS; an app crash on Android if unhandled).
+  the OS kills its content process (which leaves a blank white view on iOS and an unusable one on
+  Android).
 - **`WebViewWarmup` (`src/components/WebViewWarmup.tsx`) must stay mounted at App's root.** The
   first WebView navigation in an app session runs WebKit's single-sign-on check
   (`SOAuthorizationCoordinator::tryAuthorize`) synchronously on the main thread — 0.43 s profiled
@@ -112,11 +154,15 @@ cached before the field existed), no URL → `'none'` and the section is not ren
   WebView a student met. The warm-up loads an empty document in a hidden 1×1 WebView behind the
   boot spinner (after it: 3 samples at lesson open). It sits at the same position in both of
   App's render branches so the spinner → app switch does not cut it short, and unmounts itself
-  once loaded.
+  once loaded. **iOS only**: Android has no such check, and a WebView built at launch crashes the
+  app outright on a phone whose system WebView is being updated or is disabled
+  (react-native-webview does not guard the constructor) — a risk for the lesson that shows a map,
+  not for every launch.
 - **`normalizeSvgXml` (`src/utils/svgCompat.ts`) is for react-native-svg consumers only** — quiz
   images (`QuestionImage`). It drops filters (the CoreImage main-thread cost above), the base64
-  `@font-face` `<style>` block, decodes `&apos;`/`&gt;`, and merges attribute-less `<tspan>` runs
-  that react-native-svg would lay out on top of each other. Never feed its output to the WebView,
+  `@font-face` `<style>` block, decodes `&apos;`/`&gt;` in text only (a
+  decoded `'` inside a single-quoted attribute breaks the file), and merges runs of bare `<tspan>`s
+  that react-native-svg would lay out on top of each other — never a styled or positioned one. Never feed its output to the WebView,
   which renders all of these correctly. If the generator changes shape again, extend that function
   and its tests first.
 - Analytics: `trackMindMapViewed` fires once the map has rendered (load-based, not viewport-based),
@@ -130,17 +176,21 @@ cached before the field existed), no URL → `'none'` and the section is not ren
   cache "this lesson has no map".
 
 ### Lesson reader: keep the first frame cheap
-- `StudyLessonScreen` paints the header and summary first and mounts the video player, the mind
-  map and the key-point list only once `useAfterInteractions()` (`src/hooks/useAfterInteractions.ts`)
-  flips, with skeletons until then, so the transition itself stays light. (The multi-second freeze
-  blamed on "the video loading" was the mind map's main-thread drawing — see the WebView bullet
-  above; the video's load is asynchronous.) Use the same hook for any screen that opens with a
-  heavy tree.
+- `StudyLessonScreen` paints the header and summary first; the video player and the key-point list
+  mount, and the mind map loads, only once `useAfterTransition()` (`src/hooks/useAfterTransition.ts`)
+  flips, with skeletons until then, so the opening transition itself stays light. The hook listens
+  to native-stack's `transitionEnd` (600 ms fallback). **Not `InteractionManager`**: on RN 0.81 it
+  is a stub that runs on the next tick and no navigator registers interactions, so the first version
+  of this hook deferred nothing. (The multi-second freeze blamed on "the video loading" was the mind
+  map's main-thread drawing — see the WebView bullet above; the video's load is asynchronous.) Use
+  the same hook for any screen that opens with a heavy tree.
 - On open the reader refreshes bookmark/note state with **`MySavedPointFlags`**, not
-  `MySavedPoints`: the latter carries the whole lesson once per saved point and is only for the
-  bookmark deep-link (`fetchLessonDetails`). Every async response is checked against
-  `currentLessonIdRef` (`isStale()`) before it is applied — the reader swaps lessons in place, so a
-  slow reply for the previous lesson must not overwrite the next one's state.
+  `MySavedPoints`: the latter carries the whole lesson once per saved point, so in the reader it is
+  only for the bookmark deep-link (`fetchLessonDetails`); Bookmarks/Notes still lists from it. Every
+  lesson-scoped fetch and the like/dislike reply are checked against `currentLessonIdRef`
+  (`isStale()`) before they touch the screen — the reader swaps lessons in place, so a slow reply for
+  the previous lesson must not land on the next one. Bookmark/note replies are keyed by point id, so
+  a late one cannot touch the next lesson's rows.
 - No `LayoutAnimation` on the lesson swap (Next/Previous): animating the whole content tree
   re-laid out the video, the map and every card at once.
 

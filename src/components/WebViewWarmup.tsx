@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 
 /**
- * Pays WebKit's one-time start-up cost behind the boot spinner.
+ * Pays WebKit's one-time start-up cost behind the boot spinner — iOS only.
  *
  * The first WebView navigation in an app session runs WebKit's single-sign-on
  * check (`SOAuthorizationCoordinator::tryAuthorize`) synchronously on the main
@@ -11,16 +11,20 @@ import { WebView } from 'react-native-webview';
  * met was the lesson's mind map, so that stall landed on the lesson as it
  * opened. A hidden 1×1 WebView loading an empty document at launch takes the
  * hit while the app is still booting; every later WebView starts warm (the
- * fullscreen viewer, the second WebView of a session, measured 0.03 s). On
- * Android it front-loads the WebView provider's own first-use initialisation
- * the same way.
+ * fullscreen viewer, the second WebView of a session, measured 0.03 s).
  *
- * It unmounts itself once the document has loaded — or failed to, since either
- * way the start-up work is done.
+ * Not on Android: it has no such check, and a WebView constructed at launch
+ * crashes the app outright on a phone whose system WebView is being updated or
+ * is disabled — react-native-webview does not guard the constructor. That risk
+ * belongs to the lesson that shows a map, not to every launch of every user.
+ *
+ * It unmounts itself once the document has loaded, failed to load, or lost its
+ * content process — either way the start-up work is done.
  */
 const WebViewWarmup: React.FC = () => {
-  const [warm, setWarm] = useState(false);
+  const [warm, setWarm] = useState(Platform.OS !== 'ios');
   if (warm) return null;
+  const finish = () => setWarm(true);
 
   return (
     <View
@@ -32,8 +36,9 @@ const WebViewWarmup: React.FC = () => {
       <WebView
         source={{ html: '<html></html>' }}
         javaScriptEnabled={false}
-        onLoad={() => setWarm(true)}
-        onError={() => setWarm(true)}
+        onLoad={finish}
+        onError={finish}
+        onContentProcessDidTerminate={finish}
       />
     </View>
   );

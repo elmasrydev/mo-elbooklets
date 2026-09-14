@@ -108,7 +108,7 @@ const ContactUsScreen = ({ navigation, route }: any) => {
       });
 
       if (response.data?.sendContactMessage?.success) {
-        analytics.trackContactSupport(subject);
+        analytics.trackContactSupport();
         showConfirm({
           title: t('common.success'),
           message: response.data.sendContactMessage.message || t('contact_us.success_message'),

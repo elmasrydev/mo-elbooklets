@@ -253,7 +253,10 @@ describe('BokiChatScreen', () => {
         {
           request: { query: BokiLessonByIdDocument, variables: { id: '162' } },
           result: { data: { lesson: lessonA } },
-          delay: 20,
+          // Long enough that the lookup is certainly still in flight when the
+          // second chip is tapped. 20 ms raced a slow render on a busy machine:
+          // the lookup finished first and re-enabled the chip.
+          delay: 500,
         },
       ];
       mockedSend.mockResolvedValueOnce(

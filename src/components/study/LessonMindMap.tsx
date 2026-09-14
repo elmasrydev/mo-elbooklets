@@ -3,11 +3,13 @@ import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '../../context/ThemeContext';
 import { useTypography } from '../../hooks/useTypography';
 import { combinedLoadStatus, LoadStatus, useRemoteSvg } from '../../hooks/useRemoteSvg';
+import type { MindMapViewerParams } from '../../screens/study/MindMapViewerScreen';
 import { resolveMindMapKind } from '../../utils/mindMap';
 import { svgDocument } from '../../utils/mindMapHtml';
 import MindMapWebView from './MindMapWebView';
@@ -26,8 +28,9 @@ import MindMapWebView from './MindMapWebView';
  * `MindMapViewer`, a landscape screen of its own, which reads the same cached
  * SVG text.
  *
- * `active` lets the reader defer the download until its opening transition is
- * over — the preview shows its skeleton meanwhile.
+ * `active` lets the reader hold the map back until its opening transition is
+ * over — SVG download and raster load alike; the preview shows its skeleton
+ * meanwhile.
  *
  * Renders `null` when there is no map, so the lesson page never shows an empty
  * or broken mind-map section (BKLT-174 AC 4).
@@ -36,16 +39,18 @@ import MindMapWebView from './MindMapWebView';
 type LessonMindMapProps = {
   url?: string | null;
   mimeType?: string | null;
-  /** Fired once the map is actually on screen — drives "Mind Map Viewed". */
+  /** Fired once the map has rendered (not when it scrolls into view) — drives "Mind Map Viewed". */
   onViewed?: () => void;
   /** Fired when the student opens the zoomable fullscreen view. */
   onZoomed?: () => void;
-  /** `false` holds the download back (skeleton shown); default `true`. */
+  /** `false` holds the map back (skeleton shown); default `true`. */
   active?: boolean;
   testID?: string;
 };
 
-const LessonMindMap: React.FC<LessonMindMapProps> = ({
+type ViewerNavigation = NativeStackNavigationProp<{ MindMapViewer: MindMapViewerParams }>;
+
+const MindMapPreview: React.FC<LessonMindMapProps> = ({
   url,
   mimeType,
   onViewed,
@@ -56,7 +61,7 @@ const LessonMindMap: React.FC<LessonMindMapProps> = ({
   const { t } = useTranslation();
   const { theme, spacing, borderRadius } = useTheme();
   const { typography, fontWeight } = useTypography();
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<ViewerNavigation>();
 
   const kind = resolveMindMapKind(url, mimeType);
   const isSvg = kind === 'svg';
@@ -70,14 +75,6 @@ const LessonMindMap: React.FC<LessonMindMapProps> = ({
   // Rasters are driven by expo-image's load events.
   const [rasterStatus, setRasterStatus] = useState<LoadStatus>('loading');
   const [rasterAttempt, setRasterAttempt] = useState(0);
-
-  // Reset per URL: the reader swaps lessons in place, so a previous failure
-  // would otherwise stick to the next lesson's map.
-  useEffect(() => {
-    setRenderStatus('loading');
-    setRasterStatus('loading');
-    setRasterAttempt(0);
-  }, [url]);
 
   const status: LoadStatus = isSvg ? combinedLoadStatus(svg.status, renderStatus) : rasterStatus;
 
@@ -102,7 +99,8 @@ const LessonMindMap: React.FC<LessonMindMapProps> = ({
 
   const openViewer = () => {
     onZoomed?.();
-    navigation.navigate('MindMapViewer', { url, mimeType });
+    // A URL is certain here: without one, `kind` is 'none' and nothing renders.
+    navigation.navigate('MindMapViewer', { url: url as string, mimeType });
   };
 
   const s = useMemo(() => styles(theme, spacing, borderRadius), [theme, spacing, borderRadius]);
@@ -143,32 +141,32 @@ const LessonMindMap: React.FC<LessonMindMapProps> = ({
         accessibilityLabel={t('study_lesson.mind_map_hint')}
         testID={testID}
       >
-        {isSvg ? (
-          // pointerEvents="none": the preview is a picture — the tap belongs
-          // to the card, and a drag to the lesson's scroll view.
-          html && (
-            <View style={s.fill} pointerEvents="none">
-              <MindMapWebView
-                key={renderAttempt}
-                html={html}
-                mode="preview"
-                onLoad={() => setRenderStatus('loaded')}
-                onError={() => setRenderStatus('error')}
+        {isSvg
+          ? // pointerEvents="none": the preview is a picture — the tap belongs
+            // to the card, and a drag to the lesson's scroll view.
+            html && (
+              <View style={s.fill} pointerEvents="none">
+                <MindMapWebView
+                  key={renderAttempt}
+                  html={html}
+                  mode="preview"
+                  onLoad={() => setRenderStatus('loaded')}
+                  onError={() => setRenderStatus('error')}
+                />
+              </View>
+            )
+          : active && (
+              <Image
+                key={rasterAttempt}
+                source={{ uri: url as string }}
+                style={s.fill}
+                contentFit="contain"
+                cachePolicy="memory-disk"
+                transition={150}
+                onLoad={() => setRasterStatus('loaded')}
+                onError={() => setRasterStatus('error')}
               />
-            </View>
-          )
-        ) : (
-          <Image
-            key={rasterAttempt}
-            source={{ uri: url as string }}
-            style={s.fill}
-            contentFit="contain"
-            cachePolicy="memory-disk"
-            transition={150}
-            onLoad={() => setRasterStatus('loaded')}
-            onError={() => setRasterStatus('error')}
-          />
-        )}
+            )}
         {status === 'loading' && (
           <View style={[s.skeleton, { backgroundColor: theme.colors.background }]}>
             <ActivityIndicator color={theme.colors.primary} />
@@ -184,6 +182,16 @@ const LessonMindMap: React.FC<LessonMindMapProps> = ({
     </>
   );
 };
+
+/**
+ * Keyed by the map's URL: the reader swaps lessons in place, and all load
+ * state — "loaded" included, which is what reports "Mind Map Viewed" — belongs
+ * to one map. Unkeyed, the first render after Next still read the previous
+ * map's "loaded" and counted the next lesson's map as viewed before it loaded.
+ */
+const LessonMindMap: React.FC<LessonMindMapProps> = (props) => (
+  <MindMapPreview key={props.url ?? 'none'} {...props} />
+);
 
 const styles = (theme: any, spacing: any, borderRadius: any) =>
   StyleSheet.create({

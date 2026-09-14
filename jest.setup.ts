@@ -3,7 +3,11 @@ import { NativeModules } from 'react-native';
 
 // Mock Segment Analytics at the very top to avoid loading order issues
 jest.mock('@segment/analytics-react-native', () => {
-  class MockDestinationPlugin {}
+  // segmentClient.ts adds its trait filter to the Firebase destination.
+  class MockDestinationPlugin {
+    add = jest.fn();
+  }
+  class MockEventPlugin {}
   return {
     __esModule: true,
     createClient: jest.fn(() => ({
@@ -15,8 +19,10 @@ jest.mock('@segment/analytics-react-native', () => {
     })),
     generateMapTransform: jest.fn(() => (val: any) => val),
     DestinationPlugin: MockDestinationPlugin,
+    EventPlugin: MockEventPlugin,
     PluginType: {
       destination: 'destination',
+      enrichment: 'enrichment',
       utility: 'utility',
     },
   };

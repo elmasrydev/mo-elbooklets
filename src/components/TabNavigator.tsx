@@ -203,8 +203,8 @@ const TabNavigator: React.FC = () => {
         }}
       />
       {/* The only landscape screen. react-native-screens rotates the app when it
-          appears and back to portrait when it is popped — close button, swipe
-          or Android back — with no orientation lock called from JS. */}
+          appears and back to portrait when it is popped — close button or
+          Android back — with no orientation lock called from JS. */}
       <Stack.Screen
         name="MindMapViewer"
         component={MindMapViewerScreen}

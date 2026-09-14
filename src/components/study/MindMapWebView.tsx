@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { WebView } from 'react-native-webview';
 
+import { COLORS } from '../../config/colors';
 import { MindMapViewMode } from '../../utils/mindMapHtml';
 
 type MindMapWebViewProps = {
@@ -32,8 +33,8 @@ type MindMapWebViewProps = {
  */
 const MindMapWebView: React.FC<MindMapWebViewProps> = ({ html, mode, onLoad, onError, testID }) => {
   // The OS can kill a WebView's content process under memory pressure, which
-  // leaves a blank white view — and on Android an unhandled render-process
-  // death takes the app down with it. Remounting brings the map back.
+  // leaves a blank white view on iOS and an unusable one on Android.
+  // Remounting brings the map back.
   const [processGeneration, setProcessGeneration] = useState(0);
   const restart = () => setProcessGeneration((n) => n + 1);
   const zoomable = mode === 'viewer';
@@ -65,7 +66,7 @@ const MindMapWebView: React.FC<MindMapWebViewProps> = ({ html, mode, onLoad, onE
 const styles = StyleSheet.create({
   web: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.white,
   },
 });
 

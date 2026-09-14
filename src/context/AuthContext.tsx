@@ -170,6 +170,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(null);
         setParentUser(null);
         setUserRole(null);
+        // The next person on this device — often a parent — must not be tracked
+        // under this student's Firebase user id; `logout` resets the same way.
+        analytics.reset();
         // Clear persisted credentials too — otherwise the stale token/role are
         // restored on next launch and the app re-authenticates into a session the
         // server already rejected, looping back into 401s.

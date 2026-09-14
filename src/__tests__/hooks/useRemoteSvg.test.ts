@@ -1,13 +1,28 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native';
-import { clearRemoteSvgCache, combinedLoadStatus, useRemoteSvg } from '../../hooks/useRemoteSvg';
+import {
+  clearRemoteSvgCache,
+  combinedLoadStatus,
+  DOWNLOAD_TIMEOUT_MS,
+  useRemoteSvg,
+} from '../../hooks/useRemoteSvg';
 
 const MAP_URL = 'https://cdn.example.com/storage/328/lesson-328-mindmap.svg';
+const NEXT_URL = 'https://cdn.example.com/storage/329/lesson-329-mindmap.svg';
 const MAP_XML = '<svg><style>@font-face{}</style><text>it&apos;s</text></svg>';
 
 type FetchMock = jest.Mock<Promise<{ ok: boolean; status: number; text: () => Promise<string> }>>;
 
 const respondWith = (body: string, ok = true): FetchMock =>
   jest.fn(() => Promise.resolve({ ok, status: ok ? 200 : 500, text: () => Promise.resolve(body) }));
+
+/** A connection that never answers — like real fetch, it only rejects once aborted. */
+const stalled = () =>
+  jest.fn(
+    (_url: string, init?: RequestInit) =>
+      new Promise<never>((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => reject(new Error('aborted')));
+      }),
+  );
 
 describe('useRemoteSvg', () => {
   let fetchMock: FetchMock;
@@ -32,21 +47,90 @@ describe('useRemoteSvg', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it('shares a download in flight, so the viewer opening mid-download does not fetch the map again', async () => {
+    let respond: (body: string) => void = () => {};
+    const fetchSpy = jest.fn(
+      () =>
+        new Promise((resolve) => {
+          respond = (body) => resolve({ ok: true, status: 200, text: () => Promise.resolve(body) });
+        }),
+    );
+    global.fetch = fetchSpy as unknown as typeof fetch;
+
+    const preview = renderHook(() => useRemoteSvg(MAP_URL));
+    const viewer = renderHook(() => useRemoteSvg(MAP_URL));
+    await act(async () => respond(MAP_XML));
+
+    expect(preview.result.current).toMatchObject({ status: 'loaded', xml: MAP_XML });
+    expect(viewer.result.current).toMatchObject({ status: 'loaded', xml: MAP_XML });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
   it('stays idle without a URL, so a deferred preview costs nothing', () => {
     const { result } = renderHook(() => useRemoteSvg(null));
     expect(result.current).toMatchObject({ status: 'idle', xml: null });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('reports a failed download and downloads again on retry', async () => {
-    global.fetch = respondWith('', false) as unknown as typeof fetch;
+  it.each([
+    ['a server error', () => respondWith('', false)],
+    ['an empty body', () => respondWith('')],
+    ['a page that is not an SVG', () => respondWith('<html>captive portal</html>')],
+  ])('treats %s as a failure, and downloads again on retry', async (_case, failing) => {
+    global.fetch = failing() as unknown as typeof fetch;
     const { result } = renderHook(() => useRemoteSvg(MAP_URL));
     await waitFor(() => expect(result.current.status).toBe('error'));
 
     global.fetch = fetchMock as unknown as typeof fetch;
     act(() => result.current.retry());
+    await waitFor(() => expect(result.current).toMatchObject({ status: 'loaded', xml: MAP_XML }));
+  });
+
+  it('downloads again on retry even after a load, so a file the renderer rejected is not re-read from cache', async () => {
+    global.fetch = respondWith('<svg><broken') as unknown as typeof fetch;
+    const { result } = renderHook(() => useRemoteSvg(MAP_URL));
     await waitFor(() => expect(result.current.status).toBe('loaded'));
-    expect(result.current.xml).toBe(MAP_XML);
+
+    global.fetch = fetchMock as unknown as typeof fetch;
+    act(() => result.current.retry());
+    await waitFor(() => expect(result.current.xml).toBe(MAP_XML));
+  });
+
+  it('gives up on a stalled connection, so the student gets the retry card instead of an endless spinner', async () => {
+    jest.useFakeTimers();
+    try {
+      global.fetch = stalled() as unknown as typeof fetch;
+      const { result } = renderHook(() => useRemoteSvg(MAP_URL));
+      expect(result.current.status).toBe('loading');
+
+      await act(async () => {
+        jest.advanceTimersByTime(DOWNLOAD_TIMEOUT_MS);
+      });
+      expect(result.current.status).toBe('error');
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  // Regression (code review, 2026-09-14): the first render after Next still reported the
+  // previous lesson's map as loaded, and the reader counted the new map as viewed.
+  it('never reports the previous map as loaded for the next URL, not even for one render', async () => {
+    const seen: Array<{ url: string; status: string }> = [];
+    const { result, rerender } = renderHook(
+      ({ url }: { url: string }) => {
+        const svg = useRemoteSvg(url);
+        seen.push({ url, status: svg.status });
+        return svg;
+      },
+      { initialProps: { url: MAP_URL } },
+    );
+    await waitFor(() => expect(result.current.status).toBe('loaded'));
+
+    global.fetch = stalled() as unknown as typeof fetch;
+    rerender({ url: NEXT_URL });
+    expect(
+      seen.filter((render) => render.url === NEXT_URL).map((render) => render.status),
+    ).not.toContain('loaded');
   });
 
   it('cancels the request when the URL changes, so a slow old map cannot overwrite the new one', async () => {

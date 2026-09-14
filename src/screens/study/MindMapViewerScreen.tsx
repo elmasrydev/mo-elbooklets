@@ -8,6 +8,8 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
+import { COLORS } from '../../config/colors';
+import { spacing } from '../../config/spacing';
 import { useTheme } from '../../context/ThemeContext';
 import { useTypography } from '../../hooks/useTypography';
 import { combinedLoadStatus, LoadStatus, useRemoteSvg } from '../../hooks/useRemoteSvg';
@@ -21,23 +23,21 @@ import MindMapWebView from '../../components/study/MindMapWebView';
  * A screen of its own rather than a `Modal` inside the reader, for one reason:
  * orientation. It is registered with `orientation: 'landscape'`, so
  * react-native-screens rotates the app when it appears and rotates it back
- * when it is popped — by close button, swipe or Android back alike — while
- * every other screen declares `portrait_up`. No orientation lock is called
- * from JS.
+ * when it is popped — by the close button or Android back alike — while every
+ * other screen declares `portrait_up`. No orientation lock is called from JS.
  *
  * The generated canvas is ~2:1, so landscape gives the map the long edge of the
  * screen before any zoom. An SVG map renders in `MindMapWebView`, whose native
  * pinch-zoom re-renders the vectors at every level (on iOS, WebKit does not
  * double-tap-zoom this page), and whose drawing never touches the app's main
- * thread; its text comes from
- * `useRemoteSvg`, which the inline preview already filled. An editor-uploaded
- * raster keeps expo-image with gesture zoom.
+ * thread; its text comes from `useRemoteSvg`, which the inline preview already
+ * filled. An editor-uploaded raster keeps expo-image with gesture zoom.
  */
 
 const MAX_SCALE = 5;
 const MIN_SCALE = 1;
 
-type MindMapViewerParams = { url: string; mimeType?: string | null };
+export type MindMapViewerParams = { url: string; mimeType?: string | null };
 type MindMapViewerRoute = RouteProp<{ MindMapViewer: MindMapViewerParams }, 'MindMapViewer'>;
 
 const MindMapViewerScreen: React.FC = () => {
@@ -78,52 +78,52 @@ const MindMapViewerScreen: React.FC = () => {
   const savedX = useSharedValue(0);
   const savedY = useSharedValue(0);
 
-  const pinch = Gesture.Pinch()
-    .onUpdate((e) => {
-      scale.value = Math.min(Math.max(savedScale.value * e.scale, MIN_SCALE), MAX_SCALE);
-    })
-    .onEnd(() => {
-      savedScale.value = scale.value;
-      // Snapping back to centre at 1x keeps the map from drifting off screen.
-      if (scale.value <= MIN_SCALE) {
-        translateX.value = withTiming(0);
-        translateY.value = withTiming(0);
-        savedX.value = 0;
-        savedY.value = 0;
-      }
-    });
+  // Built once — shared values are stable across renders — because RNGH
+  // re-attaches its handlers whenever the gesture objects change.
+  const zoomGesture = useMemo(() => {
+    const pinch = Gesture.Pinch()
+      .onUpdate((e) => {
+        scale.value = Math.min(Math.max(savedScale.value * e.scale, MIN_SCALE), MAX_SCALE);
+      })
+      .onEnd(() => {
+        savedScale.value = scale.value;
+        // Snapping back to centre at 1x keeps the map from drifting off screen.
+        if (scale.value <= MIN_SCALE) {
+          translateX.value = withTiming(0);
+          translateY.value = withTiming(0);
+          savedX.value = 0;
+          savedY.value = 0;
+        }
+      });
 
-  const pan = Gesture.Pan()
-    .onUpdate((e) => {
-      // Panning only makes sense once zoomed in.
-      if (scale.value <= MIN_SCALE) return;
-      translateX.value = savedX.value + e.translationX;
-      translateY.value = savedY.value + e.translationY;
-    })
-    .onEnd(() => {
-      savedX.value = translateX.value;
-      savedY.value = translateY.value;
-    });
+    const pan = Gesture.Pan()
+      .onUpdate((e) => {
+        // Panning only makes sense once zoomed in.
+        if (scale.value <= MIN_SCALE) return;
+        translateX.value = savedX.value + e.translationX;
+        translateY.value = savedY.value + e.translationY;
+      })
+      .onEnd(() => {
+        savedX.value = translateX.value;
+        savedY.value = translateY.value;
+      });
 
-  const doubleTap = Gesture.Tap()
-    .numberOfTaps(2)
-    .onEnd(() => {
-      const next = scale.value > MIN_SCALE ? MIN_SCALE : 2.5;
-      scale.value = withTiming(next);
-      savedScale.value = next;
-      if (next === MIN_SCALE) {
-        translateX.value = withTiming(0);
-        translateY.value = withTiming(0);
-        savedX.value = 0;
-        savedY.value = 0;
-      }
-    });
+    const doubleTap = Gesture.Tap()
+      .numberOfTaps(2)
+      .onEnd(() => {
+        const next = scale.value > MIN_SCALE ? MIN_SCALE : 2.5;
+        scale.value = withTiming(next);
+        savedScale.value = next;
+        if (next === MIN_SCALE) {
+          translateX.value = withTiming(0);
+          translateY.value = withTiming(0);
+          savedX.value = 0;
+          savedY.value = 0;
+        }
+      });
 
-  // Memoised: RNGH re-attaches handlers when the gesture object identity changes.
-  const composed = useMemo(
-    () => Gesture.Simultaneous(pinch, pan, doubleTap),
-    [pinch, pan, doubleTap],
-  );
+    return Gesture.Simultaneous(pinch, pan, doubleTap);
+  }, [scale, savedScale, translateX, translateY, savedX, savedY]);
 
   const zoomStyle = useAnimatedStyle(() => ({
     transform: [
@@ -133,9 +133,11 @@ const MindMapViewerScreen: React.FC = () => {
     ],
   }));
 
+  // Clear of whichever side holds a notch or navigation bar: in the app's RTL
+  // mode `right` is laid out on the physical left edge.
   const closeStyle = {
-    top: Math.max(insets.top, 12),
-    right: Math.max(insets.right, 12) + 8,
+    top: Math.max(insets.top, spacing.ssm),
+    right: Math.max(insets.left, insets.right, spacing.ssm) + spacing.sm,
   };
 
   const renderMap = () => {
@@ -156,7 +158,7 @@ const MindMapViewerScreen: React.FC = () => {
       );
     }
     return (
-      <GestureDetector gesture={composed}>
+      <GestureDetector gesture={zoomGesture}>
         <Animated.View style={[styles.canvas, zoomStyle]}>
           <Image
             key={rasterAttempt}
@@ -187,12 +189,12 @@ const MindMapViewerScreen: React.FC = () => {
             accessibilityLabel={t('study_lesson.mind_map_error')}
             testID="study-mindmap-viewer-retry"
           >
-            <Ionicons name="git-network-outline" size={32} color="#FFFFFF" />
+            <Ionicons name="git-network-outline" size={32} color={COLORS.textOnDark} />
             <Text style={[typography('body'), styles.errorText]}>
               {t('study_lesson.mind_map_error')}
             </Text>
             <View style={styles.retryRow}>
-              <Ionicons name="refresh" size={16} color="#FFFFFF" />
+              <Ionicons name="refresh" size={16} color={COLORS.textOnDark} />
               <Text style={[typography('caption'), fontWeight('600'), styles.errorText]}>
                 {t('common.retry')}
               </Text>
@@ -215,7 +217,7 @@ const MindMapViewerScreen: React.FC = () => {
           accessibilityLabel={t('common.close')}
           testID="study-mindmap-viewer-close"
         >
-          <Ionicons name="close" size={26} color="#FFFFFF" />
+          <Ionicons name="close" size={26} color={COLORS.textOnDark} />
         </TouchableOpacity>
       </View>
     </GestureHandlerRootView>
@@ -228,7 +230,7 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: COLORS.black,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
@@ -238,7 +240,7 @@ const styles = StyleSheet.create({
   canvas: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.white,
     overflow: 'hidden',
   },
   fill: {
@@ -252,17 +254,17 @@ const styles = StyleSheet.create({
   },
   errorCard: {
     alignItems: 'center',
-    gap: 10,
-    padding: 24,
+    gap: spacing.sectionGap,
+    padding: spacing.lg,
   },
   errorText: {
-    color: '#FFFFFF',
+    color: COLORS.textOnDark,
     textAlign: 'center',
   },
   retryRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: spacing.sm,
   },
   close: {
     position: 'absolute',
@@ -273,7 +275,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: COLORS.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,

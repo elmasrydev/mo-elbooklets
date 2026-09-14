@@ -1,3 +1,5 @@
+import { COLORS } from '../config/colors';
+
 /**
  * The HTML document a lesson mind map is rendered from (BKLT-174).
  *
@@ -21,7 +23,7 @@ const VIEWPORT: Record<MindMapViewMode, string> = {
 };
 
 const STYLE =
-  'html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#fff}' +
+  `html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:${COLORS.white}}` +
   'body>svg{display:block;width:100%;height:100%}';
 
 export const svgDocument = (svgXml: string, mode: MindMapViewMode): string =>

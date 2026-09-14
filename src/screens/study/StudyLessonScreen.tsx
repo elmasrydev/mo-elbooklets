@@ -38,7 +38,7 @@ import LessonNavBar from '../../components/navigation/LessonNavBar';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import { useTypography } from '../../hooks/useTypography';
 import useAndroidBack from '../../hooks/useAndroidBack';
-import { useAfterInteractions } from '../../hooks/useAfterInteractions';
+import { useAfterTransition } from '../../hooks/useAfterTransition';
 import AppButton from '../../components/AppButton';
 import { GenericListSkeleton } from '../../components/SkeletonLoader';
 import { ConfirmModal } from '../../components/ConfirmModal';
@@ -343,11 +343,10 @@ const StudyLessonScreen: React.FC = () => {
   const route = useRoute<any>();
   const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
-  // Header and summary paint first; the video player, the mind map and the
-  // key-point list mount once the opening transition is over. Mounted all at
-  // once they landed inside the transition and the first touches queued behind
-  // them — the freeze that was blamed on "the video loading".
-  const contentReady = useAfterInteractions();
+  // Header and summary paint first; the video player and the key-point list
+  // mount, and the mind map loads, once the opening transition is over —
+  // mounted with the shell they would all land inside the transition.
+  const contentReady = useAfterTransition();
 
   const [currentLesson, setCurrentLesson] = useState<Lesson>(route.params?.lesson);
   const [allLessons, setAllLessons] = useState<Lesson[]>(route.params?.allLessons || []);
@@ -413,9 +412,10 @@ const StudyLessonScreen: React.FC = () => {
   });
   const [fetchDod] = useLazyQuery(LessonDodProgressDocument, { fetchPolicy: 'network-only' });
 
-  // The reader swaps lessons in place, so every async response is checked
-  // against this before it is applied: a slow reply for the previous lesson
-  // must not overwrite the next lesson's progress or saved points.
+  // The reader swaps lessons in place, so every lesson-scoped fetch — and the
+  // like/dislike reply — is checked against this before it is applied: a slow
+  // reply for the previous lesson must not overwrite the next lesson's state.
+  // (Bookmark/note replies are keyed by point id and cannot touch its rows.)
   const currentLessonIdRef = useRef(currentLesson.id);
   useEffect(() => {
     currentLessonIdRef.current = currentLesson.id;
@@ -447,6 +447,10 @@ const StudyLessonScreen: React.FC = () => {
   const handleVideoInteraction = useCallback(
     async (type: 'LIKE' | 'DISLIKE') => {
       if (mutationInFlightRef.current) return;
+      const lessonId = currentLesson.id;
+      // The student can tap Next before the reply lands; it then belongs to
+      // this lesson's cache entry only, never to the lesson now on screen.
+      const stillOnLesson = () => currentLessonIdRef.current === lessonId;
       try {
         mutationInFlightRef.current = true;
 
@@ -455,26 +459,21 @@ const StudyLessonScreen: React.FC = () => {
         const optimistic: 'LIKE' | 'DISLIKE' | null = previous === type ? null : type;
         setInteraction(optimistic);
 
-        const result = await toggleLessonInteraction({
-          variables: { lessonId: currentLesson.id, type },
-        });
+        const result = await toggleLessonInteraction({ variables: { lessonId, type } });
 
         const payload = result.data?.toggleLessonInteraction;
-        if (payload?.success) {
-          // Server tells us the new interactionType ("LIKE", "DISLIKE", or null)
-          const confirmed = (payload.interactionType as 'LIKE' | 'DISLIKE' | null) ?? null;
-          confirmedInteractionRef.current = confirmed;
-          interactionCacheRef.current.set(currentLesson.id, confirmed);
-          setInteraction(confirmed);
-        } else {
-          // Roll back to last confirmed state
-          confirmedInteractionRef.current = previous;
-          interactionCacheRef.current.set(currentLesson.id, previous);
-          setInteraction(previous);
-        }
+        // Server tells us the new interactionType ("LIKE", "DISLIKE", or null);
+        // on failure, roll back to the last confirmed state.
+        const settled = payload?.success
+          ? ((payload.interactionType as 'LIKE' | 'DISLIKE' | null) ?? null)
+          : previous;
+        interactionCacheRef.current.set(lessonId, settled);
+        if (!stillOnLesson()) return;
+        confirmedInteractionRef.current = settled;
+        setInteraction(settled);
       } catch (err) {
         console.error('Toggle interaction error:', err);
-        setInteraction(confirmedInteractionRef.current);
+        if (stillOnLesson()) setInteraction(confirmedInteractionRef.current);
       } finally {
         mutationInFlightRef.current = false;
       }
@@ -788,9 +787,9 @@ const StudyLessonScreen: React.FC = () => {
 
   const mindMapKind = resolveMindMapKind(currentLesson.mindMapUrl, currentLesson.mindMapMimeType);
 
-  // BKLT-174 AC 5. "Viewed" fires when the map is actually on screen, once per
-  // lesson per session — the reader keeps one component mounted and swaps
-  // lessons through it, so without the ref every re-render would re-report.
+  // BKLT-174 AC 5. "Viewed" fires once the map has rendered, once per lesson
+  // per reader visit — the preview remounts for every map, so without the ref
+  // paging back to a lesson would report it again.
   const viewedMindMapsRef = React.useRef<Set<string>>(new Set());
   const mindMapParams = React.useCallback(
     () => ({
