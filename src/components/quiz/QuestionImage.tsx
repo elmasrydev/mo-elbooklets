@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
 import { SvgXml } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTypography } from '../../hooks/useTypography';
-import { LoadStatus, svgLoadStatus, useRemoteSvg } from '../../hooks/useRemoteSvg';
+import { combinedLoadStatus, LoadStatus, useRemoteSvg } from '../../hooks/useRemoteSvg';
+import { normalizeSvgXml } from '../../utils/svgCompat';
 import { QUIZ_COLORS } from '../../config/colors';
 
 /**
@@ -34,6 +35,10 @@ const QuestionImage: React.FC<QuestionImageProps> = ({ uri, testID }) => {
   const { typography, fontWeight } = useTypography();
   const svg = isSvgUri(uri);
   const remote = useRemoteSvg(svg ? uri : null);
+  // react-native-svg needs the compatibility pass (`normalizeSvgXml` drops
+  // filters, which it draws on the main thread, decodes entities and merges
+  // split spans); `useRemoteSvg` hands out the raw text.
+  const svgXml = useMemo(() => (remote.xml ? normalizeSvgXml(remote.xml) : null), [remote.xml]);
   const [svgUnparseable, setSvgUnparseable] = useState(false);
   const [rasterStatus, setRasterStatus] = useState<LoadStatus>('loading');
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -50,7 +55,9 @@ const QuestionImage: React.FC<QuestionImageProps> = ({ uri, testID }) => {
     setViewerOpen(false);
   }, [uri]);
 
-  const status: LoadStatus = svg ? svgLoadStatus(remote.status, svgUnparseable) : rasterStatus;
+  const status: LoadStatus = svg
+    ? combinedLoadStatus(remote.status, svgUnparseable ? 'error' : 'loaded')
+    : rasterStatus;
 
   const retry = () => {
     if (svg) {
@@ -96,10 +103,10 @@ const QuestionImage: React.FC<QuestionImageProps> = ({ uri, testID }) => {
         {svg ? (
           // pointerEvents="none" so the SVG's native views don't swallow the
           // tap — the parent TouchableOpacity needs it to open the zoom viewer.
-          remote.xml && (
+          svgXml && (
             <View style={styles.image} pointerEvents="none">
               <SvgXml
-                xml={remote.xml}
+                xml={svgXml}
                 width="100%"
                 height="100%"
                 onError={() => setSvgUnparseable(true)}
@@ -134,7 +141,7 @@ const QuestionImage: React.FC<QuestionImageProps> = ({ uri, testID }) => {
         <View style={styles.viewerBackdrop}>
           {svg ? (
             <View style={styles.viewerSvg}>
-              {remote.xml && <SvgXml xml={remote.xml} width="100%" height="100%" />}
+              {svgXml && <SvgXml xml={svgXml} width="100%" height="100%" />}
             </View>
           ) : (
             <Image source={{ uri }} style={styles.viewerImage} contentFit="contain" />

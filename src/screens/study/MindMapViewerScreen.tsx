@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Image } from 'expo-image';
-import { SvgXml } from 'react-native-svg';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,8 +10,10 @@ import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '../../context/ThemeContext';
 import { useTypography } from '../../hooks/useTypography';
-import { LoadStatus, svgLoadStatus, useRemoteSvg } from '../../hooks/useRemoteSvg';
+import { combinedLoadStatus, LoadStatus, useRemoteSvg } from '../../hooks/useRemoteSvg';
 import { resolveMindMapKind } from '../../utils/mindMap';
+import { svgDocument } from '../../utils/mindMapHtml';
+import MindMapWebView from '../../components/study/MindMapWebView';
 
 /**
  * Fullscreen, zoomable mind map (BKLT-174).
@@ -22,17 +23,15 @@ import { resolveMindMapKind } from '../../utils/mindMap';
  * react-native-screens rotates the app when it appears and rotates it back
  * when it is popped — by close button, swipe or Android back alike — while
  * every other screen declares `portrait_up`. No orientation lock is called
- * from JS any more; the previous Modal-plus-`lockAsync` design issued locks
- * while the modal was still animating and raced a second request from the
- * presentation machinery, which is why the app sometimes stayed sideways.
+ * from JS.
  *
  * The generated canvas is ~2:1, so landscape gives the map the long edge of the
- * screen before any pinch-zoom. SVG stays sharp at any scale, which is the
- * whole reason the backend switched to it, so the viewer allows a genuinely
- * useful zoom rather than a blurry one.
- *
- * An SVG comes from `useRemoteSvg`, which the inline preview already filled —
- * opening is a cache hit, not a second download.
+ * screen before any zoom. An SVG map renders in `MindMapWebView`, whose native
+ * pinch-zoom re-renders the vectors at every level (on iOS, WebKit does not
+ * double-tap-zoom this page), and whose drawing never touches the app's main
+ * thread; its text comes from
+ * `useRemoteSvg`, which the inline preview already filled. An editor-uploaded
+ * raster keeps expo-image with gesture zoom.
  */
 
 const MAX_SCALE = 5;
@@ -51,22 +50,27 @@ const MindMapViewerScreen: React.FC = () => {
 
   const isSvg = resolveMindMapKind(url, mimeType) === 'svg';
   const svg = useRemoteSvg(isSvg ? url : null);
-  const [svgUnparseable, setSvgUnparseable] = useState(false);
+  const html = useMemo(() => (svg.xml ? svgDocument(svg.xml, 'viewer') : null), [svg.xml]);
+  const [renderStatus, setRenderStatus] = useState<LoadStatus>('loading');
+  const [renderAttempt, setRenderAttempt] = useState(0);
   const [rasterStatus, setRasterStatus] = useState<LoadStatus>('loading');
   const [rasterAttempt, setRasterAttempt] = useState(0);
 
-  const status: LoadStatus = isSvg ? svgLoadStatus(svg.status, svgUnparseable) : rasterStatus;
+  const status: LoadStatus = isSvg ? combinedLoadStatus(svg.status, renderStatus) : rasterStatus;
 
   const retry = () => {
-    if (isSvg) {
-      setSvgUnparseable(false);
-      svg.retry();
-    } else {
+    if (!isSvg) {
       setRasterStatus('loading');
       setRasterAttempt((n) => n + 1);
+      return;
     }
+    setRenderStatus('loading');
+    // A failed download fetches again; a failed render remounts the WebView.
+    if (svg.status === 'error') svg.retry();
+    else setRenderAttempt((n) => n + 1);
   };
 
+  // Gesture zoom for the raster branch; the WebView zooms natively.
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
   const translateX = useSharedValue(0);
@@ -134,10 +138,44 @@ const MindMapViewerScreen: React.FC = () => {
     right: Math.max(insets.right, 12) + 8,
   };
 
+  const renderMap = () => {
+    if (isSvg) {
+      return (
+        html && (
+          <View style={styles.canvas}>
+            <MindMapWebView
+              key={renderAttempt}
+              html={html}
+              mode="viewer"
+              onLoad={() => setRenderStatus('loaded')}
+              onError={() => setRenderStatus('error')}
+              testID="study-mindmap-viewer-web"
+            />
+          </View>
+        )
+      );
+    }
+    return (
+      <GestureDetector gesture={composed}>
+        <Animated.View style={[styles.canvas, zoomStyle]}>
+          <Image
+            key={rasterAttempt}
+            source={{ uri: url }}
+            style={styles.fill}
+            contentFit="contain"
+            cachePolicy="memory-disk"
+            onLoad={() => setRasterStatus('loaded')}
+            onError={() => setRasterStatus('error')}
+          />
+        </Animated.View>
+      </GestureDetector>
+    );
+  };
+
   return (
-    // Its own gesture root: a fullScreenModal screen on Android is hosted
-    // outside the app's root handler view, and pinch/pan must still receive
-    // touches there.
+    // RNGH only delivers gestures under a GestureHandlerRootView, and the app
+    // mounts none at its root (this viewer is its only RNGH user), so the
+    // raster pinch/pan/double-tap bring their own.
     <GestureHandlerRootView style={styles.root}>
       <View style={styles.backdrop} testID="study-mindmap-viewer">
         {status === 'error' ? (
@@ -161,32 +199,7 @@ const MindMapViewerScreen: React.FC = () => {
             </View>
           </TouchableOpacity>
         ) : (
-          <GestureDetector gesture={composed}>
-            {/* Full-bleed: in landscape the map's 2:1 ratio nearly matches the
-                screen, so any inset is wasted map. */}
-            <Animated.View style={[styles.canvas, zoomStyle]}>
-              {isSvg ? (
-                svg.xml && (
-                  <SvgXml
-                    xml={svg.xml}
-                    width="100%"
-                    height="100%"
-                    onError={() => setSvgUnparseable(true)}
-                  />
-                )
-              ) : (
-                <Image
-                  key={rasterAttempt}
-                  source={{ uri: url }}
-                  style={styles.fill}
-                  contentFit="contain"
-                  cachePolicy="memory-disk"
-                  onLoad={() => setRasterStatus('loaded')}
-                  onError={() => setRasterStatus('error')}
-                />
-              )}
-            </Animated.View>
-          </GestureDetector>
+          renderMap()
         )}
 
         {status === 'loading' && (
@@ -220,6 +233,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     overflow: 'hidden',
   },
+  // Full-bleed: in landscape the map's 2:1 ratio nearly matches the screen, so
+  // any inset is wasted map.
   canvas: {
     width: '100%',
     height: '100%',

@@ -2,6 +2,22 @@ import { normalizeSvgXml } from '../../utils/svgCompat';
 
 // Shapes copied from the backend's September 2026 mind-map generator output.
 describe('normalizeSvgXml', () => {
+  // Regression: CoreImage filter rendering on the main thread froze the lesson
+  // screen for seconds per draw (profiled on the simulator, 2026-09-14).
+  it('drops filter definitions and every reference to them', () => {
+    const xml =
+      '<svg><defs><filter id="shadow" x="-10%" y="-20%"><feDropShadow dx="0" dy="3" stdDeviation="4"/></filter></defs>' +
+      '<rect x="1" filter="url(#shadow)" fill="#fff"/><circle r="4" filter=\'url(#shadow)\'/></svg>';
+    expect(normalizeSvgXml(xml)).toBe(
+      '<svg><defs></defs><rect x="1" fill="#fff"/><circle r="4"/></svg>',
+    );
+  });
+
+  it('drops a self-closing filter and leaves look-alike attributes alone', () => {
+    const xml = '<svg><filter id="f"/><mask filterUnits="userSpaceOnUse"/></svg>';
+    expect(normalizeSvgXml(xml)).toBe('<svg><mask filterUnits="userSpaceOnUse"/></svg>');
+  });
+
   it('drops the embedded-font style block, which react-native-svg cannot use', () => {
     const xml =
       '<svg><defs><style>@font-face{font-family:"Cairo";src:url(data:font/ttf;base64,AAAA)}</style></defs><rect/></svg>';

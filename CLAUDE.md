@@ -63,17 +63,20 @@ src/
 `Lesson.mindMapUrl` is **either** an AI-generated SVG **or** an editor-uploaded raster, and
 `Lesson.mindMapMimeType` is the only way to tell — `<Image>` renders *nothing* for an SVG, so
 picking the branch by file extension is a silent-blank bug (a generated map's storage URL need not
-end in `.svg`). Branch via `resolveMindMapKind()` (`src/utils/mindMap.ts`): exact
-`image/svg+xml` → `SvgXml` fed by `useRemoteSvg`, anything else with a URL → **raster** (the safe fallback for payloads
+end in `.svg`). Branch via `resolveMindMapKind()` (`src/utils/mindMap.ts`):
+`image/svg+xml` (trimmed, any case) → **`MindMapWebView`** fed by `useRemoteSvg`, anything else with a URL → **raster** via expo-image (the safe fallback for payloads
 cached before the field existed), no URL → `'none'` and the section is not rendered at all.
 - **Both fields must be selected by every query that can feed the reader** — `StudyChapters`,
   `MySavedPoints` and `BokiLessonById`. Miss one and that path silently falls back to the raster
   renderer, which draws nothing for a generated map.
 - UI: `src/components/study/LessonMindMap.tsx` is the inline preview; tapping it navigates to the
-  **`MindMapViewer` route** (`src/screens/study/MindMapViewerScreen.tsx`, pinch/pan/double-tap),
-  registered in `TabNavigator` as a `fullScreenModal` with `orientation: 'landscape'`. The viewer
-  keeps its own `GestureHandlerRootView` (an Android fullScreenModal is hosted outside the app's
-  root one) and is on the Boki FAB denylist.
+  **`MindMapViewer` route** (`src/screens/study/MindMapViewerScreen.tsx`), registered in
+  `TabNavigator` as a `fullScreenModal` with `orientation: 'landscape'` and on the Boki FAB
+  denylist. An SVG map renders in `src/components/study/MindMapWebView.tsx` in both places (zoom
+  locked in the preview; WebKit's own pinch-zoom up to 5× in the viewer, set by the viewport in
+  `src/utils/mindMapHtml.ts` — on iOS it has no double-tap zoom). A raster keeps expo-image, with
+  RNGH pinch/pan/double-tap in the viewer — which is why the viewer mounts its own
+  `GestureHandlerRootView`: the app has none at its root, and the viewer is its only RNGH user.
 - **Orientation is owned by react-native-screens, per screen.** Every stack navigator declares
   `orientation: 'portrait_up'` in its `screenOptions` (root, student, parent) and only
   `MindMapViewer` declares `landscape`, so the OS rotates when the viewer appears and back when it
@@ -86,22 +89,40 @@ cached before the field existed), no URL → `'none'` and the section is not ren
   `app.json > orientation` stays `"default"` — the plist must advertise landscape or the viewer
   cannot rotate.
 - **One download per map.** An SVG goes through `useRemoteSvg` (`src/hooks/useRemoteSvg.ts`):
-  cached per URL, cancelled on unmount and on lesson change, normalised by `normalizeSvgXml`
-  (`src/utils/svgCompat.ts`) before caching. The preview fills the cache and the viewer reads it.
-  Never `SvgUri` — it downloads per mounted instance and cannot be cancelled, so one visit used to
-  download and mount the map three times (preview, viewer, preview again on close). The reader
-  passes `active={contentReady}` so the download waits for the opening transition.
-- **`normalizeSvgXml` exists because the backend's newer generator (2026-09) emits SVG that
-  react-native-svg renders wrong**: a base64 `@font-face` `<style>` block (~360 KB; dropped),
-  undecoded `&apos;`/`&gt;` entities (decoded), and mixed-direction labels split into several
-  attribute-less `<tspan>`s that render as overlapping fragments (merged into one run). Positioned
-  spans are untouched. If the generator changes shape again, extend that function and its tests
-  first — and keep asking the backend for the older single-span, no-font format, which needs none
-  of this.
-- Analytics: `trackMindMapViewed` fires when the map is actually on screen, once per lesson per
-  session; `trackMindMapZoomed` when the viewer is opened. testIDs: `study-mindmap`,
-  `study-mindmap-retry`, `study-mindmap-viewer`, `study-mindmap-viewer-retry`,
-  `study-mindmap-viewer-close`.
+  cached per URL, cancelled on unmount and on lesson change, handed out **as downloaded**. The
+  preview fills the cache and the viewer reads it. Never `SvgUri` — it downloads per mounted
+  instance and cannot be cancelled, so one visit used to download and mount the map three times
+  (preview, viewer, preview again on close). The reader passes `active={contentReady}` so the
+  download waits for the opening transition.
+- **Why a WebView and never react-native-svg for the mind map.** react-native-svg draws on the
+  app's **main thread** and redraws the whole map on mount, every time it scrolls back into view and
+  on every rotation; the newer generator (2026-09) also puts a `feDropShadow` filter on 35
+  elements, which react-native-svg renders through **CoreImage on the CPU, per element, per draw**.
+  Profiling the lesson open-and-scroll on the simulator (`sample`, 25 s, 2026-09-14) put 7.6 s of main-thread
+  time in that drawing, 5.8 s of it CoreImage — the "freeze until the video loads". A WebView renders
+  in its own process: zero main-thread drawing, the embedded Cairo font, shadows and Arabic/number
+  direction render as designed, and zoom stays vector-sharp. `react-native-webview` (13.15.0, the
+  SDK 54 version) is a **native** dependency — adding or upgrading it needs a dev-client rebuild.
+  `MindMapWebView` runs with JavaScript off, refuses any http(s) navigation, and remounts itself if
+  the OS kills its content process (a blank white view on iOS; an app crash on Android if unhandled).
+- **`WebViewWarmup` (`src/components/WebViewWarmup.tsx`) must stay mounted at App's root.** The
+  first WebView navigation in an app session runs WebKit's single-sign-on check
+  (`SOAuthorizationCoordinator::tryAuthorize`) synchronously on the main thread — 0.43 s profiled
+  on the simulator, and it landed on the lesson as it opened, since the mind map was the first
+  WebView a student met. The warm-up loads an empty document in a hidden 1×1 WebView behind the
+  boot spinner (after it: 3 samples at lesson open). It sits at the same position in both of
+  App's render branches so the spinner → app switch does not cut it short, and unmounts itself
+  once loaded.
+- **`normalizeSvgXml` (`src/utils/svgCompat.ts`) is for react-native-svg consumers only** — quiz
+  images (`QuestionImage`). It drops filters (the CoreImage main-thread cost above), the base64
+  `@font-face` `<style>` block, decodes `&apos;`/`&gt;`, and merges attribute-less `<tspan>` runs
+  that react-native-svg would lay out on top of each other. Never feed its output to the WebView,
+  which renders all of these correctly. If the generator changes shape again, extend that function
+  and its tests first.
+- Analytics: `trackMindMapViewed` fires once the map has rendered (load-based, not viewport-based),
+  once per lesson per reader visit; `trackMindMapZoomed` on every viewer open. testIDs:
+  `study-mindmap`, `study-mindmap-retry`, `study-mindmap-viewer`, `study-mindmap-viewer-web`,
+  `study-mindmap-viewer-retry`, `study-mindmap-viewer-close`.
 - ✅ **Release gate cleared**: `mindMapMimeType` is now live on all three environments (re-checked
   2026-08-23 via `npm run check:release-fields`). The general rule stands — a query selecting an
   unknown field fails *entirely* — so run that script before any store build.
@@ -111,9 +132,10 @@ cached before the field existed), no URL → `'none'` and the section is not ren
 ### Lesson reader: keep the first frame cheap
 - `StudyLessonScreen` paints the header and summary first and mounts the video player, the mind
   map and the key-point list only once `useAfterInteractions()` (`src/hooks/useAfterInteractions.ts`)
-  flips, with skeletons until then. Everything used to land inside the `fullScreenModal` transition
-  and the first touches queued behind it — the freeze that was blamed on "the video loading". Use
-  the same hook for any screen that opens with a heavy tree.
+  flips, with skeletons until then, so the transition itself stays light. (The multi-second freeze
+  blamed on "the video loading" was the mind map's main-thread drawing — see the WebView bullet
+  above; the video's load is asynchronous.) Use the same hook for any screen that opens with a
+  heavy tree.
 - On open the reader refreshes bookmark/note state with **`MySavedPointFlags`**, not
   `MySavedPoints`: the latter carries the whole lesson once per saved point and is only for the
   bookmark deep-link (`fetchLessonDetails`). Every async response is checked against
@@ -200,7 +222,7 @@ Four **scoped** flows — student/parent × verify/reset. A code only works with
   token on reset. Do not reintroduce `updatePassword`.
 
 ## Quiz question types
-`Question.type` is one of six values: `mcq`, `true_false`, `what_happens`, `give_a_reason` (both AI-graded free text), `match`, `paragraph`. **`image` is NOT a type** — `imageUrl` is an attachment orthogonal to `type` and can appear on any question, including paragraph children (render it via `src/components/quiz/QuestionImage.tsx`, which routes **SVGs to `react-native-svg`'s `SvgUri`** — expo-image and RN `<Image>` can't decode them — and raster formats to **expo-image** for caching). Branch on `type` (guards in `src/utils/quizQuestionTypes.ts`), never on `answers.length`.
+`Question.type` is one of six values: `mcq`, `true_false`, `what_happens`, `give_a_reason` (both AI-graded free text), `match`, `paragraph`. **`image` is NOT a type** — `imageUrl` is an attachment orthogonal to `type` and can appear on any question, including paragraph children (render it via `src/components/quiz/QuestionImage.tsx`, which routes **SVGs to `react-native-svg`'s `SvgXml`** — downloaded once by `useRemoteSvg` and passed through `normalizeSvgXml`; expo-image and RN `<Image>` can't decode them — and raster formats to **expo-image** for caching). Branch on `type` (guards in `src/utils/quizQuestionTypes.ts`), never on `answers.length`.
 - **Scoring is unit-based, not question-based.** `score`/`totalQuestions` count *units*: mcq/tf/descriptive = 1, `match` = one per pair, `paragraph` = sum of its children. Never label `totalQuestions` "questions" in the UI — show it as a score (`formatScore()` in `src/lib/scoreUtils.ts` — `score` is a Float). `xp` is server-derived (10/correct unit) — never compute it client-side.
 - **Submit: exactly one entry per TOP-LEVEL question.** Paragraph children nest in `subAnswers`; match echoes the server's `leftId`/`rightId` verbatim; unanswered → `selectedAnswer: null`. This invariant lives in `buildSubmitPayload` (`src/utils/quizAnswers.ts`) — it iterates the question list, so don't hand-build the answers array. The taking screen holds a `QuizDraft` (discriminated union: `text` | `match` | `paragraph`), not the old flat `{[id]: string}`.
 - **Results `userAnswers` is FLAT, in units**: a paragraph parent has NO row (children carry `parent_question_id`); a match is one row with `match_results`. Regroup with `groupUserAnswers` (`src/utils/quizResultGroups.ts`) on the review screen. `answer_1` is **null** for match/paragraph — null-guard it. The correct match pairing is the index-aligned `matchColumns` (`left[i]` ↔ `right[i]`, unshuffled in results).
@@ -276,6 +298,7 @@ Profile → **About & Legal** (student) and Parent Settings (parent).
 
 ### E2E tests (Maestro)
 - Flows in `e2e/auth/` (numbered `01_...yaml`), shared subflows in `e2e/utils/` (`setup-environment.yaml` boots + self-heals to the Onboarding screen and switches env based on `TARGET_ENV`).
+- `e2e/study/01_lesson_mindmap.yaml` walks the lesson reader and mind map (Revision tab → Social Studies → first lesson → scroll → fullscreen viewer → close), starting from a signed-in student's Home. **Rotation gotcha:** Maestro judges visibility against the *device's* frame, so a screen that rotates only the app (the landscape `MindMapViewer`) reads as off-screen until the flow turns the device too — `setOrientation: LANDSCAPE_LEFT` after opening it, `PORTRAIT` after closing.
 - Credentials/env vars in `e2e/env.yaml`; runner `scripts/run_maestro.py` injects them and generates random mobile numbers for PRS/dev registration runs. **Never put real production passwords in `e2e/env.yaml`.**
 - **testID convention: kebab-case `{screen}-{element}`** — e.g. `login-mobile-input`, `register-submit-button`, `onboarding-get-started`, `tab-home`, `confirm-modal-ok`, `profile-completion-skip-button`. Every new interactive element gets one.
 - Prefer `extendedWaitUntil`/`assertVisible` with timeouts over fixed sleeps (`sleep.js`) — fixed sleeps make flows slow and flaky.

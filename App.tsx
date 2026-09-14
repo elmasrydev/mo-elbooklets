@@ -33,6 +33,7 @@ import { ForceUpdateProvider } from './src/context/ForceUpdateContext';
 import ForceUpdateModal from './src/components/ForceUpdateModal';
 import MaintenanceModal from './src/components/MaintenanceModal';
 import BokiFloatingButton from './src/components/boki/BokiFloatingButton';
+import WebViewWarmup from './src/components/WebViewWarmup';
 
 import * as Updates from 'expo-updates';
 
@@ -167,67 +168,79 @@ export default function App() {
   // Proceed on a font *error* too: useFonts never flips fontsLoaded when a face
   // fails to load, so gating on it alone leaves the app stuck on the boot spinner
   // forever. System fonts are a far better outcome than a dead launch.
+  //
+  // Both branches return a fragment whose second child is the WebView warm-up,
+  // so React keeps that one instance across the spinner → app switch and the
+  // warm-up is not cut short when boot finishes first.
   if ((!fontsLoaded && !fontError) || !appReady) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#1E40AF" />
-      </View>
+      <>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#1E40AF" />
+        </View>
+        <WebViewWarmup key="webview-warmup" />
+      </>
     );
   }
 
   return (
-    <SafeAreaProvider>
-      <AnalyticsProvider client={segmentClient}>
-        <ApolloProvider client={apolloClient}>
-          <ThemeProvider>
-            <ForceUpdateProvider>
-              <ModalProvider>
-                <LanguageProvider initialLanguage={initialLanguage}>
-                  <I18nextProvider i18n={i18n}>
-                    <AuthProvider>
-                      <TrialStatusProvider>
-                        <NavigationContainer
-                          ref={navigationRef}
-                          onReady={() => {
-                            const currentRouteName = navigationRef.current?.getCurrentRoute()?.name;
-                            routeNameRef.current = currentRouteName;
-                            if (currentRouteName) {
-                              crashlytics().log(`Screen viewed: ${currentRouteName}`);
-                              analytics.screen(currentRouteName);
-                            }
-                          }}
-                          onStateChange={async () => {
-                            const previousRouteName = routeNameRef.current;
-                            const currentRouteName = navigationRef.current?.getCurrentRoute()?.name;
+    <>
+      <SafeAreaProvider>
+        <AnalyticsProvider client={segmentClient}>
+          <ApolloProvider client={apolloClient}>
+            <ThemeProvider>
+              <ForceUpdateProvider>
+                <ModalProvider>
+                  <LanguageProvider initialLanguage={initialLanguage}>
+                    <I18nextProvider i18n={i18n}>
+                      <AuthProvider>
+                        <TrialStatusProvider>
+                          <NavigationContainer
+                            ref={navigationRef}
+                            onReady={() => {
+                              const currentRouteName =
+                                navigationRef.current?.getCurrentRoute()?.name;
+                              routeNameRef.current = currentRouteName;
+                              if (currentRouteName) {
+                                crashlytics().log(`Screen viewed: ${currentRouteName}`);
+                                analytics.screen(currentRouteName);
+                              }
+                            }}
+                            onStateChange={async () => {
+                              const previousRouteName = routeNameRef.current;
+                              const currentRouteName =
+                                navigationRef.current?.getCurrentRoute()?.name;
 
-                            if (previousRouteName !== currentRouteName && currentRouteName) {
-                              crashlytics().log(`Navigated to: ${currentRouteName}`);
-                              analytics.screen(currentRouteName);
-                            }
-                            routeNameRef.current = currentRouteName;
-                          }}
-                        >
-                          <ErrorBoundary>
-                            <AppNavigator />
-                            <NotificationHandler />
-                          </ErrorBoundary>
-                        </NavigationContainer>
-                        <BokiFloatingButton navigationRef={navigationRef} />
-                        <ForceUpdateModal />
-                        <MaintenanceModal />
-                        <GlobalModalHandler />
-                        <ApiDomainChecker />
-                      </TrialStatusProvider>
-                    </AuthProvider>
-                  </I18nextProvider>
-                </LanguageProvider>
-              </ModalProvider>
-            </ForceUpdateProvider>
-          </ThemeProvider>
-        </ApolloProvider>
-      </AnalyticsProvider>
-      <StatusBar style="auto" />
-    </SafeAreaProvider>
+                              if (previousRouteName !== currentRouteName && currentRouteName) {
+                                crashlytics().log(`Navigated to: ${currentRouteName}`);
+                                analytics.screen(currentRouteName);
+                              }
+                              routeNameRef.current = currentRouteName;
+                            }}
+                          >
+                            <ErrorBoundary>
+                              <AppNavigator />
+                              <NotificationHandler />
+                            </ErrorBoundary>
+                          </NavigationContainer>
+                          <BokiFloatingButton navigationRef={navigationRef} />
+                          <ForceUpdateModal />
+                          <MaintenanceModal />
+                          <GlobalModalHandler />
+                          <ApiDomainChecker />
+                        </TrialStatusProvider>
+                      </AuthProvider>
+                    </I18nextProvider>
+                  </LanguageProvider>
+                </ModalProvider>
+              </ForceUpdateProvider>
+            </ThemeProvider>
+          </ApolloProvider>
+        </AnalyticsProvider>
+        <StatusBar style="auto" />
+      </SafeAreaProvider>
+      <WebViewWarmup key="webview-warmup" />
+    </>
   );
 }
 

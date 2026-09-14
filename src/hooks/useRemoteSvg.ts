@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react';
-import { normalizeSvgXml } from '../utils/svgCompat';
 
 export type RemoteSvgStatus = 'idle' | 'loading' | 'loaded' | 'error';
 
@@ -7,14 +6,15 @@ export type RemoteSvgStatus = 'idle' | 'loading' | 'loaded' | 'error';
 export type LoadStatus = 'loading' | 'loaded' | 'error';
 
 /**
- * Collapses the hook's status and a render-time parse failure (react-native-svg
- * reports an unparseable file through `SvgXml`'s `onError`, after the download
- * succeeded) into what a skeleton / retry card needs. `idle` reads as loading:
- * a deferred download still shows the skeleton.
+ * What a skeleton / retry card needs, from the download and the render. The
+ * render can fail after the download succeeded — react-native-svg reporting a
+ * file it cannot parse, a WebView failing to load — so both count, and only
+ * both succeeding is "loaded". `idle` reads as loading: a deferred download
+ * still shows the skeleton.
  */
-export const svgLoadStatus = (status: RemoteSvgStatus, unparseable: boolean): LoadStatus => {
-  if (unparseable || status === 'error') return 'error';
-  return status === 'loaded' ? 'loaded' : 'loading';
+export const combinedLoadStatus = (download: RemoteSvgStatus, render: LoadStatus): LoadStatus => {
+  if (download === 'error' || render === 'error') return 'error';
+  return download === 'loaded' && render === 'loaded' ? 'loaded' : 'loading';
 };
 
 interface RemoteSvgState {
@@ -22,7 +22,7 @@ interface RemoteSvgState {
   status: RemoteSvgStatus;
 }
 
-/** Normalised SVG text by URL. Small: a normalised mind map is ~20 KB. */
+/** Raw SVG text by URL. A new-style mind map is ~380 KB, so a few megabytes at most. */
 const MAX_CACHED = 6;
 const cache = new Map<string, string>();
 
@@ -53,14 +53,14 @@ const stateFor = (url: string | null): RemoteSvgState => {
  * progress. The mind map is shown inline *and* in a fullscreen viewer, so with
  * `SvgUri` one visit downloaded and parsed the file two or three times.
  *
- * - Cached per URL, so the viewer opening after the preview is a hit and
- *   renders on the first frame.
+ * - Cached per URL, so the viewer opening after the preview is a hit.
  * - Cancelled on unmount and on URL change, and a late response for an old
  *   URL is ignored — the reader swaps lessons in place.
  * - A `null` URL means "not yet": the reader defers the download until the
  *   screen transition has finished.
- * - The text is normalised (`normalizeSvgXml`) before caching, which also drops
- *   the 360 KB font block the newer maps carry.
+ * - The text is returned as downloaded. A consumer that draws it with
+ *   react-native-svg normalises it first (`normalizeSvgXml`); the mind map's
+ *   WebView wants it untouched.
  */
 export const useRemoteSvg = (url: string | null) => {
   const [attempt, setAttempt] = useState(0);
@@ -77,8 +77,7 @@ export const useRemoteSvg = (url: string | null) => {
         if (!response.ok) throw new Error(`Fetching ${url} failed with status ${response.status}`);
         return response.text();
       })
-      .then((text) => {
-        const xml = normalizeSvgXml(text);
+      .then((xml) => {
         remember(url, xml);
         if (!controller.signal.aborted) setState({ xml, status: 'loaded' });
       })

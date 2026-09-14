@@ -1,9 +1,8 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native';
-import { clearRemoteSvgCache, useRemoteSvg } from '../../hooks/useRemoteSvg';
+import { clearRemoteSvgCache, combinedLoadStatus, useRemoteSvg } from '../../hooks/useRemoteSvg';
 
 const MAP_URL = 'https://cdn.example.com/storage/328/lesson-328-mindmap.svg';
-const RAW = '<svg><style>@font-face{}</style><text>it&apos;s</text></svg>';
-const NORMALISED = "<svg><text>it's</text></svg>";
+const MAP_XML = '<svg><style>@font-face{}</style><text>it&apos;s</text></svg>';
 
 type FetchMock = jest.Mock<Promise<{ ok: boolean; status: number; text: () => Promise<string> }>>;
 
@@ -15,20 +14,21 @@ describe('useRemoteSvg', () => {
 
   beforeEach(() => {
     clearRemoteSvgCache();
-    fetchMock = respondWith(RAW);
+    fetchMock = respondWith(MAP_XML);
     global.fetch = fetchMock as unknown as typeof fetch;
   });
 
-  it('downloads once, normalises the text, and serves the next consumer from cache', async () => {
+  it('downloads once, hands out the text untouched, and serves the next consumer from cache', async () => {
     const first = renderHook(() => useRemoteSvg(MAP_URL));
     expect(first.result.current.status).toBe('loading');
 
     await waitFor(() => expect(first.result.current.status).toBe('loaded'));
-    expect(first.result.current.xml).toBe(NORMALISED);
+    // Untouched: the mind map's WebView renders fonts and entities itself.
+    expect(first.result.current.xml).toBe(MAP_XML);
 
     // The viewer mounting after the preview: no second request, loaded at once.
     const second = renderHook(() => useRemoteSvg(MAP_URL));
-    expect(second.result.current).toMatchObject({ status: 'loaded', xml: NORMALISED });
+    expect(second.result.current).toMatchObject({ status: 'loaded', xml: MAP_XML });
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
@@ -46,7 +46,7 @@ describe('useRemoteSvg', () => {
     global.fetch = fetchMock as unknown as typeof fetch;
     act(() => result.current.retry());
     await waitFor(() => expect(result.current.status).toBe('loaded'));
-    expect(result.current.xml).toBe(NORMALISED);
+    expect(result.current.xml).toBe(MAP_XML);
   });
 
   it('cancels the request when the URL changes, so a slow old map cannot overwrite the new one', async () => {
@@ -79,5 +79,18 @@ describe('useRemoteSvg', () => {
     resolveOld('<svg>old</svg>');
     await act(async () => {});
     expect(result.current.xml).toBe('<svg>new</svg>');
+  });
+});
+
+describe('combinedLoadStatus', () => {
+  it.each([
+    ['idle', 'loading', 'loading'],
+    ['loading', 'loaded', 'loading'],
+    ['loaded', 'loading', 'loading'],
+    ['loaded', 'loaded', 'loaded'],
+    ['error', 'loaded', 'error'],
+    ['loaded', 'error', 'error'],
+  ] as const)('download %s + render %s → %s', (download, render, expected) => {
+    expect(combinedLoadStatus(download, render)).toBe(expected);
   });
 });

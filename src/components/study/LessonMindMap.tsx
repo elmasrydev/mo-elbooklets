@@ -1,15 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Image } from 'expo-image';
-import { SvgXml } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '../../context/ThemeContext';
 import { useTypography } from '../../hooks/useTypography';
-import { LoadStatus, svgLoadStatus, useRemoteSvg } from '../../hooks/useRemoteSvg';
+import { combinedLoadStatus, LoadStatus, useRemoteSvg } from '../../hooks/useRemoteSvg';
 import { resolveMindMapKind } from '../../utils/mindMap';
+import { svgDocument } from '../../utils/mindMapHtml';
+import MindMapWebView from './MindMapWebView';
 
 /**
  * Lesson mind map — the inline preview (BKLT-174).
@@ -19,11 +20,11 @@ import { resolveMindMapKind } from '../../utils/mindMap';
  * nothing at all for an SVG, so the branch is not cosmetic. Detection lives in
  * `resolveMindMapKind`; this component only renders.
  *
- * Shown fitted in the lesson page (the generated canvas is 1800px wide with a
- * variable height, far wider than a phone). Tapping it opens `MindMapViewer`, a
- * landscape screen of its own, so this component never rotates anything and
- * never mounts a second copy of the map. An SVG is downloaded once through
- * `useRemoteSvg`; the viewer then reads the same cached text.
+ * An SVG is downloaded once through `useRemoteSvg` and drawn by
+ * `MindMapWebView` (its own process — no main-thread drawing, which is what
+ * froze the lesson screen); a raster goes through expo-image. Tapping opens
+ * `MindMapViewer`, a landscape screen of its own, which reads the same cached
+ * SVG text.
  *
  * `active` lets the reader defer the download until its opening transition is
  * over — the preview shows its skeleton meanwhile.
@@ -61,38 +62,42 @@ const LessonMindMap: React.FC<LessonMindMapProps> = ({
   const isSvg = kind === 'svg';
 
   const svg = useRemoteSvg(isSvg && active ? (url as string) : null);
-  // react-native-svg reports a file it cannot parse through `onError`, after
-  // the download itself succeeded — it counts as a failed load all the same.
-  const [svgUnparseable, setSvgUnparseable] = useState(false);
+  const html = useMemo(() => (svg.xml ? svgDocument(svg.xml, 'preview') : null), [svg.xml]);
+  // The WebView's own load: the map only counts as shown once it has rendered.
+  const [renderStatus, setRenderStatus] = useState<LoadStatus>('loading');
+  const [renderAttempt, setRenderAttempt] = useState(0);
 
-  // Rasters are driven by expo-image's own load events. Reset per URL: the
-  // reader swaps lessons in place, so a previous failure would otherwise stick
-  // to the next lesson's map.
+  // Rasters are driven by expo-image's load events.
   const [rasterStatus, setRasterStatus] = useState<LoadStatus>('loading');
   const [rasterAttempt, setRasterAttempt] = useState(0);
+
+  // Reset per URL: the reader swaps lessons in place, so a previous failure
+  // would otherwise stick to the next lesson's map.
   useEffect(() => {
+    setRenderStatus('loading');
     setRasterStatus('loading');
     setRasterAttempt(0);
-    setSvgUnparseable(false);
   }, [url]);
 
-  const status: LoadStatus = isSvg ? svgLoadStatus(svg.status, svgUnparseable) : rasterStatus;
+  const status: LoadStatus = isSvg ? combinedLoadStatus(svg.status, renderStatus) : rasterStatus;
 
   // "Viewed" means the map actually rendered — a failed load must not count.
   // NOTE: this is load-based, not viewport-based; a student who never scrolls
-  // down to the section still counts once the file arrives.
+  // down to the section still counts once the map renders.
   useEffect(() => {
     if (status === 'loaded') onViewed?.();
   }, [status, onViewed]);
 
   const retry = () => {
-    if (isSvg) {
-      setSvgUnparseable(false);
-      svg.retry();
-    } else {
+    if (!isSvg) {
       setRasterStatus('loading');
       setRasterAttempt((n) => n + 1);
+      return;
     }
+    setRenderStatus('loading');
+    // A failed download fetches again; a failed render remounts the WebView.
+    if (svg.status === 'error') svg.retry();
+    else setRenderAttempt((n) => n + 1);
   };
 
   const openViewer = () => {
@@ -139,15 +144,16 @@ const LessonMindMap: React.FC<LessonMindMapProps> = ({
         testID={testID}
       >
         {isSvg ? (
-          // pointerEvents="none" so the SVG's native views don't swallow the
-          // tap the parent needs to open the viewer.
-          svg.xml && (
+          // pointerEvents="none": the preview is a picture — the tap belongs
+          // to the card, and a drag to the lesson's scroll view.
+          html && (
             <View style={s.fill} pointerEvents="none">
-              <SvgXml
-                xml={svg.xml}
-                width="100%"
-                height="100%"
-                onError={() => setSvgUnparseable(true)}
+              <MindMapWebView
+                key={renderAttempt}
+                html={html}
+                mode="preview"
+                onLoad={() => setRenderStatus('loaded')}
+                onError={() => setRenderStatus('error')}
               />
             </View>
           )
