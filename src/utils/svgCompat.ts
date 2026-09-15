@@ -8,7 +8,7 @@
  * leans on four browser features they lack or draw too slowly. Each is handled
  * by a string rewrite that is a no-op on a file that does not use the
  * construct; rewrites that could hit the wrong thing are scoped to tags or to
- * text, never the whole file.
+ * text, never the whole file. Every scan is linear in the file's length.
  *
  * 0. Filters are dropped — definitions and every `filter="…"` attribute. This
  *    one is about the app freezing, not about looks. react-native-svg renders
@@ -38,20 +38,43 @@
  *    collapses to one space, as a browser renders it.
  */
 
-// Self-closing forms go first: `[^>]*` in a block pattern also accepts the `/`
-// of `<filter …/>`, and the lazy body would then run on to the next `</filter>`
-// in the file, deleting the drawing in between.
-const SELF_CLOSING_FILTER = /<filter\b[^>]*\/>/gi;
-const FILTER_BLOCK = /<filter\b[^>]*>[\s\S]*?<\/filter>/gi;
-const SELF_CLOSING_STYLE = /<style\b[^>]*\/>/gi;
-const STYLE_BLOCK = /<style\b[^>]*>[\s\S]*?<\/style>/gi;
-// A tag (whose quoted attribute values may themselves contain `>`) or a run of text.
-const TAG_OR_TEXT = /(<(?:[^>"']|"[^"]*"|'[^']*')*>)|([^<]+)/g;
+// The start tag of an element to drop; group 2 is the `/` of a self-closing one.
+const DROPPED_START_TAG = /<(filter|style)\b[^>]*?(\/?)>/gi;
+// A tag (whose quoted attribute values may themselves contain `>`) or a run of
+// text. `<` is excluded from the unquoted part so a stray `<` fails fast
+// instead of rescanning the rest of the file.
+const TAG_OR_TEXT = /(<(?:[^<>"']|"[^"]*"|'[^']*')*>)|([^<]+)/g;
 // `\s` before and `=` right after keep `filterUnits=` and the like untouched.
 const FILTER_ATTRIBUTE = /\sfilter\s*=\s*("[^"]*"|'[^']*')/gi;
 const APOSTROPHE_ENTITY = /&apos;|&#39;/g;
 const GREATER_THAN_ENTITY = /&gt;/g;
 const BARE_TSPAN_PAIR = /(<tspan>[^<]*)<\/tspan>(\s*)<tspan>/g;
+
+/**
+ * Drops every `<filter>` and `<style>` element in one pass: each start tag is
+ * found once, and a closing tag is searched for only from that point on. An
+ * element whose closing tag never comes is left alone.
+ */
+const dropFilterAndStyleElements = (xml: string): string => {
+  let kept = '';
+  let from = 0;
+  DROPPED_START_TAG.lastIndex = 0;
+  for (let start = DROPPED_START_TAG.exec(xml); start; start = DROPPED_START_TAG.exec(xml)) {
+    const [startTag, name, selfClosing] = start;
+    let end = start.index + startTag.length;
+    if (!selfClosing) {
+      const closingTag = new RegExp(`</${name}\\s*>`, 'gi');
+      closingTag.lastIndex = end;
+      const closing = closingTag.exec(xml);
+      if (!closing) continue;
+      end = closing.index + closing[0].length;
+    }
+    kept += xml.slice(from, start.index);
+    from = end;
+    DROPPED_START_TAG.lastIndex = end;
+  }
+  return kept + xml.slice(from);
+};
 
 const decodeText = (text: string): string =>
   text.replace(APOSTROPHE_ENTITY, "'").replace(GREATER_THAN_ENTITY, '>');
@@ -77,12 +100,4 @@ const mergeBareTspans = (xml: string): string => {
 };
 
 export const normalizeSvgXml = (xml: string): string =>
-  mergeBareTspans(
-    rewriteTagsAndText(
-      xml
-        .replace(SELF_CLOSING_FILTER, '')
-        .replace(FILTER_BLOCK, '')
-        .replace(SELF_CLOSING_STYLE, '')
-        .replace(STYLE_BLOCK, ''),
-    ),
-  );
+  mergeBareTspans(rewriteTagsAndText(dropFilterAndStyleElements(xml)));

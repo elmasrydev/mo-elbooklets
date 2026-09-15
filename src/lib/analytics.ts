@@ -1,6 +1,7 @@
 import type { UserTraits } from '@segment/analytics-react-native';
 
 import type { SafeUserTraits } from './safeUserTraits';
+import { clearFirebaseIdentity, setSignedInUser } from './firebaseIdentityPlugin';
 import { segmentClient } from './segmentClient';
 
 /**
@@ -46,6 +47,7 @@ export const analytics = {
     // Segment types traits as an open JsonMap; SafeUserTraits is deliberately
     // closed so the compiler rejects PII at the call site, so widen it here —
     // this cast is the only place the two shapes meet.
+    setSignedInUser(userId);
     segmentClient.identify(userId, traits as UserTraits | undefined);
   },
 
@@ -70,7 +72,9 @@ export const analytics = {
    */
   reset: () => {
     if (__DEV__) console.log('🔄 [Analytics] Reset');
+    setSignedInUser(null);
     segmentClient.reset();
+    clearFirebaseIdentity();
   },
 
   // --- Specialized Event Trackers ---

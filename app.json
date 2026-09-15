@@ -56,6 +56,12 @@
       "./plugins/withIosModularHeaders.js",
       "./plugins/withAndroidExtraStrings.js",
       "expo-secure-store",
+      [
+        "expo-screen-orientation",
+        {
+          "initialOrientation": "PORTRAIT_UP"
+        }
+      ],
       "@react-native-firebase/app",
       "@react-native-firebase/crashlytics",
       "@react-native-firebase/messaging",

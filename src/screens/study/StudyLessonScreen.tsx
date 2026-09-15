@@ -420,7 +420,7 @@ const StudyLessonScreen: React.FC = () => {
   useEffect(() => {
     currentLessonIdRef.current = currentLesson.id;
   }, [currentLesson.id]);
-  const isStale = (lessonId: string) => currentLessonIdRef.current !== lessonId;
+  const isStale = useCallback((lessonId: string) => currentLessonIdRef.current !== lessonId, []);
   const [toggleLessonInteraction] = useMutation(ToggleLessonInteractionDocument);
   const [recordKeyPointView] = useMutation(RecordKeyPointViewDocument);
   const [toggleSavedPointBookmark] = useMutation(ToggleSavedPointBookmarkDocument);
@@ -448,9 +448,6 @@ const StudyLessonScreen: React.FC = () => {
     async (type: 'LIKE' | 'DISLIKE') => {
       if (mutationInFlightRef.current) return;
       const lessonId = currentLesson.id;
-      // The student can tap Next before the reply lands; it then belongs to
-      // this lesson's cache entry only, never to the lesson now on screen.
-      const stillOnLesson = () => currentLessonIdRef.current === lessonId;
       try {
         mutationInFlightRef.current = true;
 
@@ -468,17 +465,19 @@ const StudyLessonScreen: React.FC = () => {
           ? ((payload.interactionType as 'LIKE' | 'DISLIKE' | null) ?? null)
           : previous;
         interactionCacheRef.current.set(lessonId, settled);
-        if (!stillOnLesson()) return;
+        // The student can tap Next before the reply lands; it then belongs to
+        // this lesson's cache entry only, never to the lesson now on screen.
+        if (isStale(lessonId)) return;
         confirmedInteractionRef.current = settled;
         setInteraction(settled);
       } catch (err) {
         console.error('Toggle interaction error:', err);
-        if (stillOnLesson()) setInteraction(confirmedInteractionRef.current);
+        if (!isStale(lessonId)) setInteraction(confirmedInteractionRef.current);
       } finally {
         mutationInFlightRef.current = false;
       }
     },
-    [currentLesson.id, toggleLessonInteraction],
+    [currentLesson.id, isStale, toggleLessonInteraction],
   );
 
   const currentIndex = allLessons.findIndex((l) => l.id === currentLesson.id);
@@ -547,6 +546,9 @@ const StudyLessonScreen: React.FC = () => {
   };
 
   const fetchDodProgress = async (lessonId: string) => {
+    // A call for a lesson the student has already left — a key-point view that
+    // settles after Next — must not touch the loading flag of the one on screen.
+    if (isStale(lessonId)) return;
     try {
       setLoadingDod(true);
       const { data } = await fetchDod({ variables: { lessonId } });
@@ -557,7 +559,7 @@ const StudyLessonScreen: React.FC = () => {
     } catch (err) {
       console.error('Fetch DOD error:', err);
     } finally {
-      setLoadingDod(false);
+      if (!isStale(lessonId)) setLoadingDod(false);
     }
   };
 
@@ -611,7 +613,7 @@ const StudyLessonScreen: React.FC = () => {
     } catch (err) {
       console.error('Fetch lesson details error:', err);
     } finally {
-      setFetchingDetails(false);
+      if (!isStale(lessonId)) setFetchingDetails(false);
     }
   };
 
@@ -1635,7 +1637,7 @@ const styles = (
     // Same footprint as the player, so nothing below shifts when it mounts.
     videoPlaceholder: {
       width: '100%',
-      aspectRatio: 16 / 9,
+      aspectRatio: VIDEO_ASPECT_RATIO,
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -1980,11 +1982,14 @@ const styles = (
   });
 };
 
+/** The player's frame; its placeholder keeps the same footprint, so nothing below shifts. */
+const VIDEO_ASPECT_RATIO = 16 / 9;
+
 const videoStyles = (theme: any, spacing: any, borderRadius: any, typography: any) =>
   StyleSheet.create({
     container: {
       width: '100%',
-      aspectRatio: 16 / 9,
+      aspectRatio: VIDEO_ASPECT_RATIO,
       backgroundColor: '#000',
       position: 'relative',
     },

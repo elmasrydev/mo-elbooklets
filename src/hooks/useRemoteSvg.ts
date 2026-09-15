@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { createFetchWithTimeout } from '../lib/fetchWithTimeout';
+
 export type RemoteSvgStatus = 'idle' | 'loading' | 'loaded' | 'error';
 
 /** The three states a loader UI distinguishes. */
@@ -29,15 +31,20 @@ interface Download {
   consumers: number;
 }
 
-/** Raw SVG text by URL. A new-style mind map is ~380 KB, so a few megabytes at most. */
-const MAX_CACHED = 6;
+/**
+ * Raw SVG text by URL, for the next consumer to mount — every consumer keeps
+ * its own copy of what it shows. Small on purpose: Hermes stores a map with
+ * Arabic labels as UTF-16, about 775 KB for a new-style one.
+ */
+const MAX_CACHED = 3;
 
 /**
- * React Native's fetch never times out on its own, so a stalled connection
- * would spin forever instead of reaching the retry card. Generous, because a
- * map is ~380 KB and students are often on slow mobile data.
+ * Generous, because a map is ~380 KB and students are often on slow mobile
+ * data — but finite, so a stalled connection ends in the retry card.
  */
 export const DOWNLOAD_TIMEOUT_MS = 30_000;
+
+const fetchSvg = createFetchWithTimeout(DOWNLOAD_TIMEOUT_MS);
 
 const cache = new Map<string, string>();
 /** Downloads in progress. A consumer that mounts mid-download joins the running one. */
@@ -71,11 +78,10 @@ const isSvgText = (text: string): boolean => /<svg[\s>]/i.test(text);
 
 const startDownload = (url: string): Download => {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), DOWNLOAD_TIMEOUT_MS);
   const download: Download = {
     controller,
     consumers: 0,
-    promise: fetch(url, { signal: controller.signal })
+    promise: fetchSvg(url, { signal: controller.signal })
       .then((response) => {
         if (!response.ok) throw new Error(`Fetching ${url} failed with status ${response.status}`);
         return response.text();
@@ -86,7 +92,6 @@ const startDownload = (url: string): Download => {
         return xml;
       })
       .finally(() => {
-        clearTimeout(timeout);
         if (inflight.get(url) === download) inflight.delete(url);
       }),
   };
@@ -122,6 +127,8 @@ const leave = (url: string, download: Download): void => {
  *
  * - Cached per URL and shared while in flight, so the viewer opening after —
  *   or during — the preview's download never fetches the map again.
+ * - Each consumer keeps its own copy of what it shows, so the cache can evict
+ *   an entry that is still on screen without turning it back into a spinner.
  * - Times out, and treats a body that is not an SVG as a failure.
  * - `retry` downloads again even after a load, so a file the renderer rejected
  *   is not simply re-read from the cache.
@@ -140,7 +147,16 @@ export const useRemoteSvg = (url: string | null) => {
   const current = state.url === url ? state : stateFor(url);
 
   useEffect(() => {
-    if (!url || cache.has(url)) return undefined;
+    if (!url) return undefined;
+    const cached = cache.get(url);
+    if (cached !== undefined) {
+      setState((previous) =>
+        previous.url === url && previous.xml === cached
+          ? previous
+          : { url, xml: cached, status: 'loaded' },
+      );
+      return undefined;
+    }
     let listening = true;
     const download = join(url);
     download.promise.then(

@@ -1,20 +1,18 @@
-import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useMemo } from 'react';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import { RouteProp, useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 
 import { COLORS } from '../../config/colors';
 import { spacing } from '../../config/spacing';
 import { useTheme } from '../../context/ThemeContext';
-import { useTypography } from '../../hooks/useTypography';
-import { combinedLoadStatus, LoadStatus, useRemoteSvg } from '../../hooks/useRemoteSvg';
-import { resolveMindMapKind } from '../../utils/mindMap';
-import { svgDocument } from '../../utils/mindMapHtml';
+import { useMindMapLoad } from '../../hooks/useMindMapLoad';
+import CloseButton from '../../components/navigation/CloseButton';
+import MindMapErrorCard from '../../components/study/MindMapErrorCard';
 import MindMapWebView from '../../components/study/MindMapWebView';
 
 /**
@@ -32,6 +30,7 @@ import MindMapWebView from '../../components/study/MindMapWebView';
  * double-tap-zoom this page), and whose drawing never touches the app's main
  * thread; its text comes from `useRemoteSvg`, which the inline preview already
  * filled. An editor-uploaded raster keeps expo-image with gesture zoom.
+ * Loading and retry come from `useMindMapLoad`, shared with the preview.
  */
 
 const MAX_SCALE = 5;
@@ -41,34 +40,11 @@ export type MindMapViewerParams = { url: string; mimeType?: string | null };
 type MindMapViewerRoute = RouteProp<{ MindMapViewer: MindMapViewerParams }, 'MindMapViewer'>;
 
 const MindMapViewerScreen: React.FC = () => {
-  const navigation = useNavigation();
   const { url, mimeType } = useRoute<MindMapViewerRoute>().params;
   const { t } = useTranslation();
   const { theme } = useTheme();
-  const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
-
-  const isSvg = resolveMindMapKind(url, mimeType) === 'svg';
-  const svg = useRemoteSvg(isSvg ? url : null);
-  const html = useMemo(() => (svg.xml ? svgDocument(svg.xml, 'viewer') : null), [svg.xml]);
-  const [renderStatus, setRenderStatus] = useState<LoadStatus>('loading');
-  const [renderAttempt, setRenderAttempt] = useState(0);
-  const [rasterStatus, setRasterStatus] = useState<LoadStatus>('loading');
-  const [rasterAttempt, setRasterAttempt] = useState(0);
-
-  const status: LoadStatus = isSvg ? combinedLoadStatus(svg.status, renderStatus) : rasterStatus;
-
-  const retry = () => {
-    if (!isSvg) {
-      setRasterStatus('loading');
-      setRasterAttempt((n) => n + 1);
-      return;
-    }
-    setRenderStatus('loading');
-    // A failed download fetches again; a failed render remounts the WebView.
-    if (svg.status === 'error') svg.retry();
-    else setRenderAttempt((n) => n + 1);
-  };
+  const map = useMindMapLoad(url, mimeType, 'viewer');
 
   // Gesture zoom for the raster branch; the WebView zooms natively.
   const scale = useSharedValue(1);
@@ -141,16 +117,16 @@ const MindMapViewerScreen: React.FC = () => {
   };
 
   const renderMap = () => {
-    if (isSvg) {
+    if (map.kind === 'svg') {
       return (
-        html && (
+        map.html && (
           <View style={styles.canvas}>
             <MindMapWebView
-              key={renderAttempt}
-              html={html}
+              key={map.attempt}
+              html={map.html}
               mode="viewer"
-              onLoad={() => setRenderStatus('loaded')}
-              onError={() => setRenderStatus('error')}
+              onLoad={map.onLoad}
+              onError={map.onError}
               testID="study-mindmap-viewer-web"
             />
           </View>
@@ -161,13 +137,13 @@ const MindMapViewerScreen: React.FC = () => {
       <GestureDetector gesture={zoomGesture}>
         <Animated.View style={[styles.canvas, zoomStyle]}>
           <Image
-            key={rasterAttempt}
+            key={map.attempt}
             source={{ uri: url }}
             style={styles.fill}
             contentFit="contain"
             cachePolicy="memory-disk"
-            onLoad={() => setRasterStatus('loaded')}
-            onError={() => setRasterStatus('error')}
+            onLoad={map.onLoad}
+            onError={map.onError}
           />
         </Animated.View>
       </GestureDetector>
@@ -180,45 +156,30 @@ const MindMapViewerScreen: React.FC = () => {
     // raster pinch/pan/double-tap bring their own.
     <GestureHandlerRootView style={styles.root}>
       <View style={styles.backdrop} testID="study-mindmap-viewer">
-        {status === 'error' ? (
-          <TouchableOpacity
-            style={styles.errorCard}
-            onPress={retry}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel={t('study_lesson.mind_map_error')}
+        {map.status === 'error' ? (
+          <MindMapErrorCard
+            variant="fullscreen"
+            onRetry={map.retry}
             testID="study-mindmap-viewer-retry"
-          >
-            <Ionicons name="git-network-outline" size={32} color={COLORS.textOnDark} />
-            <Text style={[typography('body'), styles.errorText]}>
-              {t('study_lesson.mind_map_error')}
-            </Text>
-            <View style={styles.retryRow}>
-              <Ionicons name="refresh" size={16} color={COLORS.textOnDark} />
-              <Text style={[typography('caption'), fontWeight('600'), styles.errorText]}>
-                {t('common.retry')}
-              </Text>
-            </View>
-          </TouchableOpacity>
+          />
         ) : (
           renderMap()
         )}
 
-        {status === 'loading' && (
+        {map.status === 'loading' && (
           <View style={styles.spinner} pointerEvents="none">
             <ActivityIndicator size="large" color={theme.colors.primary} />
           </View>
         )}
 
-        <TouchableOpacity
+        <CloseButton
+          variant="floating"
           style={[styles.close, closeStyle, { backgroundColor: theme.colors.primary }]}
-          onPress={() => navigation.goBack()}
-          accessibilityRole="button"
+          color={COLORS.textOnDark}
+          size={26}
           accessibilityLabel={t('common.close')}
           testID="study-mindmap-viewer-close"
-        >
-          <Ionicons name="close" size={26} color={COLORS.textOnDark} />
-        </TouchableOpacity>
+        />
       </View>
     </GestureHandlerRootView>
   );
@@ -252,33 +213,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  errorCard: {
-    alignItems: 'center',
-    gap: spacing.sectionGap,
-    padding: spacing.lg,
-  },
-  errorText: {
-    color: COLORS.textOnDark,
-    textAlign: 'center',
-  },
-  retryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
   close: {
     position: 'absolute',
-    zIndex: 10,
-    elevation: 10,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
   },
 });
 

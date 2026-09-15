@@ -4,7 +4,14 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import crashlytics from '@react-native-firebase/crashlytics';
 import { ApolloProvider } from '@apollo/client/react';
-import { View, ActivityIndicator, StyleSheet, I18nManager, NativeModules } from 'react-native';
+import {
+  View,
+  ActivityIndicator,
+  StyleSheet,
+  I18nManager,
+  NativeModules,
+  Platform,
+} from 'react-native';
 import { useFonts } from 'expo-font';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthProvider } from './src/context/AuthContext';
@@ -67,12 +74,16 @@ export default function App() {
   const [initialLanguage, setInitialLanguage] = useState<Language>('en');
 
   // The native manifests advertise landscape so the mind-map viewer can rotate
-  // (BKLT-174), so portrait has to be held at runtime rather than in app.json.
-  // Once the navigator mounts, react-native-screens owns orientation per screen
-  // (every stack declares `portrait_up`, MindMapViewer `landscape`); this lock
-  // only covers the splash window before that. Failure is non-fatal: worst case
-  // the splash can rotate.
+  // (BKLT-174), so portrait is held some other way until the navigator mounts;
+  // from then on react-native-screens owns orientation per screen (every stack
+  // declares `portrait_up`, MindMapViewer `landscape`). iOS takes portrait from
+  // its Info.plist default (`initialOrientation` of the expo-screen-orientation
+  // plugin in app.json), which applies from the first frame, before any JS.
+  // Android has no such key, so it locks here — a lock expo never re-applies,
+  // so it cannot fight react-native-screens later. Failure is non-fatal: worst
+  // case the splash can rotate.
   useEffect(() => {
+    if (Platform.OS !== 'android') return;
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
   }, []);
 
@@ -168,79 +179,68 @@ export default function App() {
   // Proceed on a font *error* too: useFonts never flips fontsLoaded when a face
   // fails to load, so gating on it alone leaves the app stuck on the boot spinner
   // forever. System fonts are a far better outcome than a dead launch.
-  //
-  // Both branches return a fragment whose second child is the WebView warm-up,
-  // so React keeps that one instance across the spinner → app switch and the
-  // warm-up is not cut short when boot finishes first.
   if ((!fontsLoaded && !fontError) || !appReady) {
     return (
-      <>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#1E40AF" />
-        </View>
-        <WebViewWarmup key="webview-warmup" />
-      </>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#1E40AF" />
+      </View>
     );
   }
 
   return (
-    <>
-      <SafeAreaProvider>
-        <AnalyticsProvider client={segmentClient}>
-          <ApolloProvider client={apolloClient}>
-            <ThemeProvider>
-              <ForceUpdateProvider>
-                <ModalProvider>
-                  <LanguageProvider initialLanguage={initialLanguage}>
-                    <I18nextProvider i18n={i18n}>
-                      <AuthProvider>
-                        <TrialStatusProvider>
-                          <NavigationContainer
-                            ref={navigationRef}
-                            onReady={() => {
-                              const currentRouteName =
-                                navigationRef.current?.getCurrentRoute()?.name;
-                              routeNameRef.current = currentRouteName;
-                              if (currentRouteName) {
-                                crashlytics().log(`Screen viewed: ${currentRouteName}`);
-                                analytics.screen(currentRouteName);
-                              }
-                            }}
-                            onStateChange={async () => {
-                              const previousRouteName = routeNameRef.current;
-                              const currentRouteName =
-                                navigationRef.current?.getCurrentRoute()?.name;
+    <SafeAreaProvider>
+      <AnalyticsProvider client={segmentClient}>
+        <ApolloProvider client={apolloClient}>
+          <ThemeProvider>
+            <ForceUpdateProvider>
+              <ModalProvider>
+                <LanguageProvider initialLanguage={initialLanguage}>
+                  <I18nextProvider i18n={i18n}>
+                    <AuthProvider>
+                      <TrialStatusProvider>
+                        <NavigationContainer
+                          ref={navigationRef}
+                          onReady={() => {
+                            const currentRouteName = navigationRef.current?.getCurrentRoute()?.name;
+                            routeNameRef.current = currentRouteName;
+                            if (currentRouteName) {
+                              crashlytics().log(`Screen viewed: ${currentRouteName}`);
+                              analytics.screen(currentRouteName);
+                            }
+                          }}
+                          onStateChange={async () => {
+                            const previousRouteName = routeNameRef.current;
+                            const currentRouteName = navigationRef.current?.getCurrentRoute()?.name;
 
-                              if (previousRouteName !== currentRouteName && currentRouteName) {
-                                crashlytics().log(`Navigated to: ${currentRouteName}`);
-                                analytics.screen(currentRouteName);
-                              }
-                              routeNameRef.current = currentRouteName;
-                            }}
-                          >
-                            <ErrorBoundary>
-                              <AppNavigator />
-                              <NotificationHandler />
-                            </ErrorBoundary>
-                          </NavigationContainer>
-                          <BokiFloatingButton navigationRef={navigationRef} />
-                          <ForceUpdateModal />
-                          <MaintenanceModal />
-                          <GlobalModalHandler />
-                          <ApiDomainChecker />
-                        </TrialStatusProvider>
-                      </AuthProvider>
-                    </I18nextProvider>
-                  </LanguageProvider>
-                </ModalProvider>
-              </ForceUpdateProvider>
-            </ThemeProvider>
-          </ApolloProvider>
-        </AnalyticsProvider>
-        <StatusBar style="auto" />
-      </SafeAreaProvider>
-      <WebViewWarmup key="webview-warmup" />
-    </>
+                            if (previousRouteName !== currentRouteName && currentRouteName) {
+                              crashlytics().log(`Navigated to: ${currentRouteName}`);
+                              analytics.screen(currentRouteName);
+                            }
+                            routeNameRef.current = currentRouteName;
+                          }}
+                        >
+                          <ErrorBoundary>
+                            <AppNavigator />
+                            <NotificationHandler />
+                          </ErrorBoundary>
+                        </NavigationContainer>
+                        <BokiFloatingButton navigationRef={navigationRef} />
+                        <WebViewWarmup />
+                        <ForceUpdateModal />
+                        <MaintenanceModal />
+                        <GlobalModalHandler />
+                        <ApiDomainChecker />
+                      </TrialStatusProvider>
+                    </AuthProvider>
+                  </I18nextProvider>
+                </LanguageProvider>
+              </ModalProvider>
+            </ForceUpdateProvider>
+          </ThemeProvider>
+        </ApolloProvider>
+      </AnalyticsProvider>
+      <StatusBar style="auto" />
+    </SafeAreaProvider>
   );
 }
 

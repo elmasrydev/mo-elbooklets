@@ -80,6 +80,8 @@ describe('normalizeSvgXml', () => {
       "<text font-family='Nunito&apos;s Sans'>A</text>",
     ],
     ['the word filter= inside a label', '<text>Set filter="none" first</text>'],
+    ['a stray < inside a label', '<svg><text>a < b</text></svg>'],
+    ['a style element whose closing tag never comes', '<svg><style>.a{}<rect/></svg>'],
     [
       'look-alike attributes such as filterUnits',
       '<svg><mask filterUnits="userSpaceOnUse"/></svg>',

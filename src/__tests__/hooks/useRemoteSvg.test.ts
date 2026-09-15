@@ -133,6 +133,28 @@ describe('useRemoteSvg', () => {
     ).not.toContain('loaded');
   });
 
+  // Regression (code review, 2026-09-15): a consumer shown straight from the cache kept no copy,
+  // so later downloads evicting that entry turned a map on screen back into an endless spinner.
+  it('keeps showing a map after later downloads evict it from the cache', async () => {
+    const earlier = renderHook(() => useRemoteSvg(MAP_URL));
+    await waitFor(() => expect(earlier.result.current.status).toBe('loaded'));
+    earlier.unmount();
+
+    // The reader's preview: held back (null) at first, then pointed at the cached map.
+    const preview = renderHook(({ url }: { url: string | null }) => useRemoteSvg(url), {
+      initialProps: { url: null as string | null },
+    });
+    preview.rerender({ url: MAP_URL });
+
+    for (let i = 0; i < 6; i += 1) {
+      const other = renderHook(() => useRemoteSvg(`https://cdn.example.com/other-${i}.svg`));
+      await waitFor(() => expect(other.result.current.status).toBe('loaded'));
+    }
+
+    preview.rerender({ url: MAP_URL });
+    expect(preview.result.current).toMatchObject({ status: 'loaded', xml: MAP_XML });
+  });
+
   it('cancels the request when the URL changes, so a slow old map cannot overwrite the new one', async () => {
     const signals: AbortSignal[] = [];
     let resolveOld: (body: string) => void = () => {};

@@ -1,26 +1,8 @@
-import {
-  createClient,
-  EventPlugin,
-  IdentifyEventType,
-  PluginType,
-} from '@segment/analytics-react-native';
+import { createClient } from '@segment/analytics-react-native';
 import { FirebasePlugin } from '@segment/analytics-react-native-plugin-firebase';
 
+import { FirebaseIdentityPlugin } from './firebaseIdentityPlugin';
 import { pickSafeTraits } from './safeUserTraits';
-
-/**
- * Hands Firebase only the allowed user traits (`pickSafeTraits`). Segment
- * merges every identify with the traits it has persisted on the device, and
- * builds up to v1.0.3 persisted a student's name, mobile and email — without
- * this, switching the destination on would upload them on the next launch.
- */
-class SafeTraitsPlugin extends EventPlugin {
-  type = PluginType.enrichment;
-
-  identify(event: IdentifyEventType) {
-    return { ...event, traits: pickSafeTraits(event.traits) };
-  }
-}
 
 const firebasePlugin = new FirebasePlugin();
 
@@ -62,6 +44,15 @@ export const segmentClient = createClient({
 // Add Local Destinations (Plugins)
 // This automatically forwards local events to Firebase Analytics natively
 segmentClient.add({ plugin: firebasePlugin });
-// Inside the Firebase destination only: what Firebase receives is filtered,
-// whatever Segment keeps on the device.
-firebasePlugin.add(new SafeTraitsPlugin());
+// Inside the Firebase destination: decides which identify Firebase receives,
+// and with which traits.
+firebasePlugin.add(new FirebaseIdentityPlugin());
+
+// And what Segment keeps on the device: builds up to v1.0.3 persisted a
+// student's name, mobile and email in its stored traits, and every identify
+// merges them back in. Once the stored state has loaded, cut it down to the
+// allowed set for good.
+segmentClient.isReady.onChange((ready) => {
+  if (!ready) return;
+  void segmentClient.userInfo.set((state) => ({ ...state, traits: pickSafeTraits(state.traits) }));
+});

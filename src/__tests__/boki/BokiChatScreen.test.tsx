@@ -248,15 +248,16 @@ describe('BokiChatScreen', () => {
     });
 
     it('ignores a second source tap while the first is still resolving', async () => {
+      // Fake timers hold the lookup in flight until the test lets time pass, so
+      // the second tap provably lands while the first is still resolving —
+      // however busy the machine (a real 20 ms delay raced a slow render).
+      jest.useFakeTimers();
       const lessonA = lessonPayload('162');
       const apolloMocks = [
         {
           request: { query: BokiLessonByIdDocument, variables: { id: '162' } },
           result: { data: { lesson: lessonA } },
-          // Long enough that the lookup is certainly still in flight when the
-          // second chip is tapped. 20 ms raced a slow render on a busy machine:
-          // the lookup finished first and re-enabled the chip.
-          delay: 500,
+          delay: 20,
         },
       ];
       mockedSend.mockResolvedValueOnce(
@@ -288,6 +289,7 @@ describe('BokiChatScreen', () => {
         subject: lessonA.chapter.subject,
         fromBoki: true,
       });
+      jest.useRealTimers();
     });
   });
 });

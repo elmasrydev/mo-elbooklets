@@ -33,7 +33,7 @@ src/
 ├── generated/     # codegen output (client-preset), DO NOT EDIT (npm run codegen, config: codegen.yml)
 ├── graphql/       # Domain .graphql operation files + schema.graphql (introspection snapshot — npm run schema:pull, do not hand-edit)
 ├── hooks/         # useXxx hooks (useOtpTimer, useNotifications, ...)
-├── i18n/          # i18next setup; translations in /locales/{ar,en}.json
+├── i18n/          # i18next setup; translations in src/i18n/locales/{ar,en}.json (root locales/ = native app name only)
 ├── lib/           # apollo.ts, session.ts, analytics, rtl, date/score utils
 ├── screens/       # XxxScreen.tsx (+ quiz/, study/ subfolders)
 ├── services/      # notificationService, ...
@@ -70,10 +70,13 @@ Crashlytics and Analytics report from **every** build — release or dev client,
   Segment cloud (the placeholder writeKey gets a 404), so `defaultSettings.integrations`, keyed by the
   plugin's own `key`, is the **only** thing that switches Firebase on. It was missing until 2026-09-14:
   no screen or event reached Firebase at all, only Firebase's automatic events. Segment's app-lifecycle
-  events are off — Firebase records opens and sessions itself. A `SafeTraitsPlugin` inside that
-  destination cuts every identify down to `pickSafeTraits` (`src/lib/safeUserTraits.ts`): Segment
-  merges each identify with the traits it persisted on the device, and builds up to v1.0.3 persisted
-  a student's name, mobile and email.
+  events are off — Firebase records opens and sessions itself. `FirebaseIdentityPlugin`
+  (`src/lib/firebaseIdentityPlugin.ts`), inside that destination, drops any identify that is not for
+  the signed-in account — Segment holds events until its settings load, so a sign-out in that window
+  used to replay the student's queued identify — and cuts the rest down to `pickSafeTraits`
+  (`src/lib/safeUserTraits.ts`): Segment merges each identify with the traits it persisted, and
+  builds up to v1.0.3 persisted a student's name, mobile and email. Those stored traits are also
+  rewritten to the safe set once Segment's store has loaded.
 - **Screen names come from the navigator.** `NavigationContainer`'s `onReady`/`onStateChange` in
   `App.tsx` call `analytics.screen(routeName)` (a Firebase `screen_view` whose screen name is the route
   name) and log a Crashlytics line (`Screen viewed:` / `Navigated to: <route>`). Firebase's automatic
@@ -84,7 +87,9 @@ Crashlytics and Analytics report from **every** build — release or dev client,
   `SafeUserTraits` is the whole trait set, enforced at the destination as above;
   `trackContactSupport` deliberately sends no subject. A forced sign-out (`handleSessionExpired`)
   resets analytics just like `logout`, so the next person on the device — often a parent — is not
-  tracked under the student's Firebase user id.
+  tracked under the student's Firebase user id. `analytics.reset()` also clears Firebase's user id
+  directly (`clearFirebaseIdentity`): Segment forwards a reset only to destinations it has already
+  added.
 
 ### Boki AI Assistant (BKLT-221)
 **Boki** (بوكي) is the student AI study assistant. Backend contract: `booki-graphql-api.md` (repo root, gitignored — keep local). Single request/response (`aiChat` mutation returns the full answer — **no streaming**).
@@ -114,6 +119,9 @@ cached before the field existed), no URL → `'none'` and the section is not ren
   `src/utils/mindMapHtml.ts` — on iOS it has no double-tap zoom). A raster keeps expo-image, with
   RNGH pinch/pan/double-tap in the viewer — which is why the viewer mounts its own
   `GestureHandlerRootView`: the app has none at its root, and the viewer is its only RNGH user.
+  Both surfaces load through `useMindMapLoad` (`src/hooks/useMindMapLoad.ts`: download + render
+  status, one retry that downloads again after a failed download and remounts after a failed render)
+  and share `MindMapErrorCard`.
 - **Orientation is owned by react-native-screens, per screen.** Every stack navigator declares
   `orientation: 'portrait_up'` in its `screenOptions` (root, student, parent) and only
   `MindMapViewer` declares `landscape`, so the OS rotates when the viewer appears and back when it
@@ -121,14 +129,20 @@ cached before the field existed), no URL → `'none'` and the section is not ren
   portrait "fullscreen" would letterbox to barely more than the inline preview. **Nothing calls
   `ScreenOrientation.lockAsync` for the viewer any more**: the old Modal-plus-lock design issued
   locks while the modal was still animating and raced a second orientation request from the
-  presentation machinery, which is why the app sometimes stayed sideways. The one remaining lock is
-  App.tsx's `PORTRAIT_UP`, which only covers the splash window before the navigator mounts.
+  presentation machinery, which is why the app sometimes stayed sideways. Before the navigator
+  mounts, iOS holds portrait through the Info.plist default (`initialOrientation: PORTRAIT_UP` of the
+  `expo-screen-orientation` plugin in app.json, applied from the first frame) and Android through
+  App.tsx's `lockAsync(PORTRAIT_UP)` — Android only, because on iOS that lock stays registered for
+  the whole process and expo re-applies it on every foreground.
   `app.json > orientation` stays `"default"` — the plist must advertise landscape or the viewer
   cannot rotate.
 - **One download per map.** An SVG goes through `useRemoteSvg` (`src/hooks/useRemoteSvg.ts`):
   cached per URL and **shared while in flight** (a viewer opened mid-download joins the preview's
-  request), handed out **as downloaded**, cancelled when its last consumer leaves. It times out
-  after 30 s and treats a body that is not an SVG as a failure, so a stalled network or a captive
+  request), handed out **as downloaded**, cancelled when its last consumer leaves. Every consumer
+  keeps its own copy of what it shows — the cache holds only 3 maps (~775 KB each on Hermes, which
+  stores Arabic text as UTF-16) — so an eviction never turns a map on screen back into a spinner.
+  It times out after 30 s (`createFetchWithTimeout`, `src/lib/fetchWithTimeout.ts`, shared with
+  Apollo) and treats a body that is not an SVG as a failure, so a stalled network or a captive
   portal ends in the retry card; `retry` re-downloads even after a load. Its state is derived per
   URL and `LessonMindMap` keys its preview by the map URL, so after an in-place lesson swap no
   render shows the previous map as loaded (that once fired "Mind Map Viewed" early). Never `SvgUri`
@@ -144,20 +158,21 @@ cached before the field existed), no URL → `'none'` and the section is not ren
   in its own process: zero main-thread drawing, the embedded Cairo font, shadows and Arabic/number
   direction render as designed, and zoom stays vector-sharp. `react-native-webview` (13.15.0, the
   SDK 54 version) is a **native** dependency — adding or upgrading it needs a dev-client rebuild.
-  `MindMapWebView` runs with JavaScript off, refuses any http(s) navigation, and remounts itself if
-  the OS kills its content process (which leaves a blank white view on iOS and an unusable one on
+  `MindMapWebView` runs with JavaScript off, refuses every navigation away from its own document (any
+  link inside the SVG), and remounts itself — twice at most, then the retry card — if the OS kills
+  its content process (which leaves a blank white view on iOS and an unusable one on
   Android).
-- **`WebViewWarmup` (`src/components/WebViewWarmup.tsx`) must stay mounted at App's root.** The
-  first WebView navigation in an app session runs WebKit's single-sign-on check
+- **`WebViewWarmup` (`src/components/WebViewWarmup.tsx`) stays mounted at App's root, inside the
+  providers.** The first WebView navigation in an app session runs WebKit's single-sign-on check
   (`SOAuthorizationCoordinator::tryAuthorize`) synchronously on the main thread — 0.43 s profiled
   on the simulator, and it landed on the lesson as it opened, since the mind map was the first
-  WebView a student met. The warm-up loads an empty document in a hidden 1×1 WebView behind the
-  boot spinner (after it: 3 samples at lesson open). It sits at the same position in both of
-  App's render branches so the spinner → app switch does not cut it short, and unmounts itself
-  once loaded. **iOS only**: Android has no such check, and a WebView built at launch crashes the
-  app outright on a phone whose system WebView is being updated or is disabled
+  WebView a student met. The warm-up loads an empty document in a hidden 1×1 WebView once a
+  signed-in student is known — for a returning student while the splash still shows (after it: 3
+  samples at lesson open) — and unmounts itself once loaded. Parents and signed-out users never meet
+  a WebView, so they don't pay for one. **iOS only**: Android has no such check, and a WebView built
+  early crashes the app outright on a phone whose system WebView is being updated or is disabled
   (react-native-webview does not guard the constructor) — a risk for the lesson that shows a map,
-  not for every launch.
+  not for app start.
 - **`normalizeSvgXml` (`src/utils/svgCompat.ts`) is for react-native-svg consumers only** — quiz
   images (`QuestionImage`). It drops filters (the CoreImage main-thread cost above), the base64
   `@font-face` `<style>` block, decodes `&apos;`/`&gt;` in text only (a
@@ -188,8 +203,9 @@ cached before the field existed), no URL → `'none'` and the section is not ren
   `MySavedPoints`: the latter carries the whole lesson once per saved point, so in the reader it is
   only for the bookmark deep-link (`fetchLessonDetails`); Bookmarks/Notes still lists from it. Every
   lesson-scoped fetch and the like/dislike reply are checked against `currentLessonIdRef`
-  (`isStale()`) before they touch the screen — the reader swaps lessons in place, so a slow reply for
-  the previous lesson must not land on the next one. Bookmark/note replies are keyed by point id, so
+  (`isStale()`) before they touch the screen, loading flags included — the reader swaps lessons in
+  place, so a slow reply for the previous lesson must not land on the next one or switch off its
+  spinner. Bookmark/note replies are keyed by point id, so
   a late one cannot touch the next lesson's rows.
 - No `LayoutAnimation` on the lesson swap (Next/Previous): animating the whole content tree
   re-laid out the video, the map and every card at once.
@@ -272,7 +288,7 @@ Four **scoped** flows — student/parent × verify/reset. A code only works with
   token on reset. Do not reintroduce `updatePassword`.
 
 ## Quiz question types
-`Question.type` is one of six values: `mcq`, `true_false`, `what_happens`, `give_a_reason` (both AI-graded free text), `match`, `paragraph`. **`image` is NOT a type** — `imageUrl` is an attachment orthogonal to `type` and can appear on any question, including paragraph children (render it via `src/components/quiz/QuestionImage.tsx`, which routes **SVGs to `react-native-svg`'s `SvgXml`** — downloaded once by `useRemoteSvg` and passed through `normalizeSvgXml`; expo-image and RN `<Image>` can't decode them — and raster formats to **expo-image** for caching). Branch on `type` (guards in `src/utils/quizQuestionTypes.ts`), never on `answers.length`.
+`Question.type` is one of six values: `mcq`, `true_false`, `what_happens`, `give_a_reason` (both AI-graded free text), `match`, `paragraph`. **`image` is NOT a type** — `imageUrl` is an attachment orthogonal to `type` and can appear on any question, including paragraph children (render it via `src/components/quiz/QuestionImage.tsx`, which routes **SVGs to `react-native-svg`'s `SvgAst`** — downloaded once by `useRemoteSvg`, passed through `normalizeSvgXml` and parsed once in the component (a file the parser rejects shows the retry card; `SvgXml` would report it from inside its own render); expo-image and RN `<Image>` can't decode them — and raster formats to **expo-image** for caching). Branch on `type` (guards in `src/utils/quizQuestionTypes.ts`), never on `answers.length`.
 - **Scoring is unit-based, not question-based.** `score`/`totalQuestions` count *units*: mcq/tf/descriptive = 1, `match` = one per pair, `paragraph` = sum of its children. Never label `totalQuestions` "questions" in the UI — show it as a score (`formatScore()` in `src/lib/scoreUtils.ts` — `score` is a Float). `xp` is server-derived (10/correct unit) — never compute it client-side.
 - **Submit: exactly one entry per TOP-LEVEL question.** Paragraph children nest in `subAnswers`; match echoes the server's `leftId`/`rightId` verbatim; unanswered → `selectedAnswer: null`. This invariant lives in `buildSubmitPayload` (`src/utils/quizAnswers.ts`) — it iterates the question list, so don't hand-build the answers array. The taking screen holds a `QuizDraft` (discriminated union: `text` | `match` | `paragraph`), not the old flat `{[id]: string}`.
 - **Results `userAnswers` is FLAT, in units**: a paragraph parent has NO row (children carry `parent_question_id`); a match is one row with `match_results`. Regroup with `groupUserAnswers` (`src/utils/quizResultGroups.ts`) on the review screen. `answer_1` is **null** for match/paragraph — null-guard it. The correct match pairing is the index-aligned `matchColumns` (`left[i]` ↔ `right[i]`, unshuffled in results).
@@ -382,5 +398,5 @@ There is **no automatic git hook**; the developer runs this gate **manually** be
 - ❌ Suppress logs globally (`LogBox.ignoreAllLogs`) or commit screenshots / `test.log` to the repo root
 - ❌ Use fixed sleeps in Maestro flows when a visibility wait works
 - ❌ Use Redux, NativeWind/Tailwind, or class components
-- ❌ Hardcode user-facing strings — use `t()` with keys in `locales/ar.json` + `locales/en.json`
+- ❌ Hardcode user-facing strings — use `t()` with keys in `src/i18n/locales/ar.json` + `en.json`
 - ❌ Mix Prettier-only reformatting into feature/test commits

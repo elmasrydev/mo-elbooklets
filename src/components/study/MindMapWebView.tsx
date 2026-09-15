@@ -16,6 +16,13 @@ type MindMapWebViewProps = {
 };
 
 /**
+ * How often a map may bring its WebView back after the OS killed the content
+ * process. A map that kills it on every load gets the retry card instead of an
+ * endless blank-and-reload loop.
+ */
+const MAX_PROCESS_RESTARTS = 2;
+
+/**
  * Renders a lesson's SVG mind map in a WebView (BKLT-174).
  *
  * Why not react-native-svg, which the rest of the app uses for SVG: it draws on
@@ -29,14 +36,17 @@ type MindMapWebViewProps = {
  * zoom in the viewer.
  *
  * JavaScript is off (the document is static markup from our own backend) and
- * any navigation away from it is refused.
+ * any navigation away from it — web, mail, phone or other links — is refused.
  */
 const MindMapWebView: React.FC<MindMapWebViewProps> = ({ html, mode, onLoad, onError, testID }) => {
   // The OS can kill a WebView's content process under memory pressure, which
   // leaves a blank white view on iOS and an unusable one on Android.
   // Remounting brings the map back.
   const [processGeneration, setProcessGeneration] = useState(0);
-  const restart = () => setProcessGeneration((n) => n + 1);
+  const restart = () => {
+    if (processGeneration >= MAX_PROCESS_RESTARTS) onError();
+    else setProcessGeneration((n) => n + 1);
+  };
   const zoomable = mode === 'viewer';
 
   return (
@@ -46,8 +56,9 @@ const MindMapWebView: React.FC<MindMapWebViewProps> = ({ html, mode, onLoad, onE
       source={{ html }}
       originWhitelist={['*']}
       javaScriptEnabled={false}
-      // A link inside the SVG must not navigate the map away.
-      onShouldStartLoadWithRequest={(request) => !/^https?:/i.test(request.url)}
+      // Only the map's own document (loaded as about:blank) may load; a link
+      // inside the SVG must not navigate the map away.
+      onShouldStartLoadWithRequest={(request) => request.url.startsWith('about:')}
       scrollEnabled={zoomable}
       bounces={false}
       showsHorizontalScrollIndicator={false}
