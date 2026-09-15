@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { StyleSheet } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { Platform, StyleSheet } from 'react-native';
 import { WebView } from 'react-native-webview';
 
 import { COLORS } from '../../config/colors';
+import { useAppForeground } from '../../hooks/useAppForeground';
 import { MindMapViewMode } from '../../utils/mindMapHtml';
 
 type MindMapWebViewProps = {
@@ -17,8 +18,13 @@ type MindMapWebViewProps = {
 
 /**
  * How often a map may bring its WebView back after the OS killed the content
- * process. A map that kills it on every load gets the retry card instead of an
- * endless blank-and-reload loop.
+ * process, per spell in the foreground. A map that kills it on every load gets
+ * the retry card instead of an endless blank-and-reload loop. On iOS a kill
+ * while the app is in the background does not count: iOS reclaims a
+ * backgrounded app's WebView processes as a matter of course, and would only
+ * reclaim a new one too, so the map comes back when the app does. Android
+ * restarts at once — it requires a WebView whose renderer is gone to be
+ * replaced straight away.
  */
 const MAX_PROCESS_RESTARTS = 2;
 
@@ -43,9 +49,27 @@ const MindMapWebView: React.FC<MindMapWebViewProps> = ({ html, mode, onLoad, onE
   // leaves a blank white view on iOS and an unusable one on Android.
   // Remounting brings the map back.
   const [processGeneration, setProcessGeneration] = useState(0);
+  const restartsLeft = useRef(MAX_PROCESS_RESTARTS);
+  const restartOnReturn = useRef(false);
+  const remount = () => setProcessGeneration((n) => n + 1);
+  const isAway = useAppForeground(() => {
+    restartsLeft.current = MAX_PROCESS_RESTARTS;
+    if (restartOnReturn.current) {
+      restartOnReturn.current = false;
+      remount();
+    }
+  });
   const restart = () => {
-    if (processGeneration >= MAX_PROCESS_RESTARTS) onError();
-    else setProcessGeneration((n) => n + 1);
+    if (Platform.OS === 'ios' && isAway()) {
+      restartOnReturn.current = true;
+      return;
+    }
+    if (restartsLeft.current === 0) {
+      onError();
+      return;
+    }
+    restartsLeft.current -= 1;
+    remount();
   };
   const zoomable = mode === 'viewer';
 

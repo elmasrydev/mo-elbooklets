@@ -33,10 +33,11 @@ export class FirebaseIdentityPlugin extends EventPlugin {
 }
 
 /**
- * Clears Firebase's user id and analytics data directly. Segment forwards a
- * reset only to destinations it has already added, and until its settings load
- * the Firebase one is not — a sign-out then would leave Firebase tracking under
- * the student's id.
+ * Clears Firebase's user id and analytics data directly, on every sign-out.
+ * Segment's own reset is not enough: it reaches only destinations it has added
+ * (once its settings load), its Firebase destination resets analytics data but
+ * never the user id, and a failed Segment reset is logged only in development.
+ * When Segment's reset does reach Firebase the data is reset twice — harmless.
  */
 export const clearFirebaseIdentity = (): void => {
   const firebase = getAnalytics();

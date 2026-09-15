@@ -47,4 +47,68 @@ describe('useMindMapLoad', () => {
     await waitFor(() => expect(result.current.html).not.toBeNull());
     expect(result.current.attempt).toBe(0);
   });
+
+  // Regression (code review, 2026-09-15): the image renderer's verdict on an SVG carried over
+  // once the full lesson revealed the MIME type — a needless retry card, or an early "loaded".
+  it('starts over when a lesson cached without its MIME type turns out to be an SVG', async () => {
+    global.fetch = respondWith('<svg></svg>') as unknown as typeof fetch;
+    const { result, rerender } = renderHook(
+      ({ mimeType }: { mimeType: string | null }) => useMindMapLoad(MAP_URL, mimeType, 'preview'),
+      { initialProps: { mimeType: null as string | null } },
+    );
+    expect(result.current.kind).toBe('raster');
+    // expo-image cannot decode an SVG.
+    act(() => result.current.onError());
+    expect(result.current.status).toBe('error');
+
+    rerender({ mimeType: SVG });
+    expect(result.current).toMatchObject({ kind: 'svg', status: 'loading' });
+    await waitFor(() => expect(result.current.html).not.toBeNull());
+    // Downloaded, but the WebView has not drawn it yet.
+    expect(result.current.status).toBe('loading');
+  });
+
+  // Regression (code review, 2026-09-15): a late callback from the replaced image view
+  // overwrote the WebView's result, leaving the skeleton up for good.
+  it('ignores a late callback from the view it replaced', async () => {
+    global.fetch = respondWith('<svg></svg>') as unknown as typeof fetch;
+    const { result, rerender } = renderHook(
+      ({ mimeType }: { mimeType: string | null }) => useMindMapLoad(MAP_URL, mimeType, 'preview'),
+      { initialProps: { mimeType: null as string | null } },
+    );
+    const rasterOnError = result.current.onError;
+
+    rerender({ mimeType: SVG });
+    await waitFor(() => expect(result.current.html).not.toBeNull());
+    act(() => result.current.onLoad());
+    act(() => rasterOnError());
+    expect(result.current.status).toBe('loaded');
+  });
+
+  // Regression (code review, 2026-09-16): a lesson re-fed without its MIME type returned to an
+  // earlier key, and the hook served that view's old failure straight back.
+  it('does not serve an earlier verdict when the map kind returns to a previous one', () => {
+    const { result, rerender } = renderHook(
+      ({ mimeType }: { mimeType: string | null }) => useMindMapLoad(MAP_URL, mimeType, 'preview'),
+      { initialProps: { mimeType: null as string | null } },
+    );
+    act(() => result.current.onError());
+    expect(result.current.status).toBe('error');
+
+    rerender({ mimeType: SVG });
+    rerender({ mimeType: null });
+    expect(result.current).toMatchObject({ kind: 'raster', status: 'loading' });
+  });
+
+  // Regression (code review, 2026-09-16): a late callback from the attempt a retry replaced
+  // brought the retry card straight back while the new attempt was loading.
+  it('ignores a late callback from the attempt a retry replaced', () => {
+    const { result } = renderHook(() => useMindMapLoad(MAP_URL, null, 'preview'));
+    act(() => result.current.onError());
+    const failedAttemptOnError = result.current.onError;
+
+    act(() => result.current.retry());
+    act(() => failedAttemptOnError());
+    expect(result.current).toMatchObject({ status: 'loading', attempt: 1 });
+  });
 });

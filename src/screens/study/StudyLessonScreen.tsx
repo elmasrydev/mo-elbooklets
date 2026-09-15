@@ -583,7 +583,13 @@ const StudyLessonScreen: React.FC = () => {
     }
   };
 
+  // Only the latest details request may switch the spinner off: not a stale
+  // one, and not an earlier one for the same lesson after A → B → A.
+  const detailsRequestRef = useRef(0);
+
   const fetchLessonDetails = async (lessonId: string) => {
+    detailsRequestRef.current += 1;
+    const request = detailsRequestRef.current;
     try {
       setFetchingDetails(true);
       // We use mySavedPoints because it's guaranteed to return the lesson object
@@ -613,7 +619,7 @@ const StudyLessonScreen: React.FC = () => {
     } catch (err) {
       console.error('Fetch lesson details error:', err);
     } finally {
-      if (!isStale(lessonId)) setFetchingDetails(false);
+      if (request === detailsRequestRef.current) setFetchingDetails(false);
     }
   };
 
@@ -744,9 +750,13 @@ const StudyLessonScreen: React.FC = () => {
     fetchDodProgress(currentLesson.id);
     fetchLessonMetadata(currentLesson.id);
 
-    // If lesson points are missing, fetch them
+    // If lesson points are missing, fetch them. Otherwise switch the spinner
+    // off: a fetch still running for the lesson just left would hold it on
+    // until it returns.
     if (!currentLesson.lessonPoints || currentLesson.lessonPoints.length === 0) {
       fetchLessonDetails(currentLesson.id);
+    } else {
+      setFetchingDetails(false);
     }
     analytics.trackLessonStarted({
       lesson_id: currentLesson.id,

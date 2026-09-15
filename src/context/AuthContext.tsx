@@ -2,6 +2,7 @@ import React, {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   useCallback,
   ReactNode,
@@ -138,6 +139,70 @@ interface AuthContextType {
   onAuthStateChange?: (isAuthenticated: boolean) => void;
 }
 
+/**
+ * A signed-in session, compared by identity. `accountId` is whose it is —
+ * known at sign-in, and on restore once the stored profile has been read.
+ */
+interface Session {
+  accountId: string | null;
+}
+
+/**
+ * Writes `profile` and says whether `session` is still the live one. A
+ * sign-out that lands while the write is in flight wins: the write is undone,
+ * but only while nobody is signed in, since a new session may already have
+ * stored its own profile under the same key.
+ */
+const writeProfileForSession = async (
+  sessionRef: { current: Session | null },
+  session: Session,
+  key: 'user_data' | 'parent_data',
+  profile: { id: string },
+): Promise<boolean> => {
+  const serialized = JSON.stringify(profile);
+  await SecureStore.setItemAsync(key, serialized);
+  if (sessionRef.current === session) return true;
+  const stored = await SecureStore.getItemAsync(key);
+  if (sessionRef.current === null && stored === serialized) {
+    await SecureStore.deleteItemAsync(key);
+  }
+  return false;
+};
+
+/**
+ * Stores a profile for `session` and says whether it did. It refuses when the
+ * session is no longer live, and when the profile is another account's than
+ * the session's — a screen can still hold a save from before a sign-out and
+ * someone else's sign-in.
+ */
+const storeProfileIfSessionLive = async (
+  sessionRef: { current: Session | null },
+  session: Session | null,
+  key: 'user_data' | 'parent_data',
+  profile: { id: string },
+): Promise<boolean> => {
+  if (session === null || sessionRef.current !== session) return false;
+  if (session.accountId !== null && session.accountId !== profile.id) return false;
+  return writeProfileForSession(sessionRef, session, key, profile);
+};
+
+/**
+ * Stores a profile the server returned for the session's own token. The token
+ * is the authority on whose session it is, so a stored reply also settles
+ * `accountId` — correcting a stored profile that named another account.
+ */
+const storeServerProfile = async (
+  sessionRef: { current: Session | null },
+  session: Session | null,
+  key: 'user_data' | 'parent_data',
+  profile: { id: string },
+): Promise<boolean> => {
+  if (session === null || sessionRef.current !== session) return false;
+  const stored = await writeProfileForSession(sessionRef, session, key, profile);
+  if (stored) session.accountId = profile.id;
+  return stored;
+};
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {
@@ -153,6 +218,44 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [otpWasAutoSent, setOtpWasAutoSent] = useState(false);
   const [otpShouldAutoRequest, setOtpShouldAutoRequest] = useState(false);
   const [showRegistrationSuccess, setShowRegistrationSuccess] = useState(false);
+  // The live session, or null while signed out. Signing in or restoring opens
+  // one; a sign-out or forced sign-out closes it before doing anything else. A
+  // profile write goes through `storeProfileIfSessionLive` and a server refresh
+  // through `storeServerProfile`, so a reply landing after sign-out — or after
+  // someone else's sign-in — can neither restore the account nor re-identify it
+  // in analytics under the next person.
+  const sessionRef = useRef<Session | null>(null);
+
+  // Per-account flags, reset on every sign-out, forced or not. Left set, they
+  // leak into the next account signed in without an app restart:
+  // - a skipped OTP gate stays skipped, and another unverified account walks
+  //   past it (code-review);
+  // - the post-registration celebration goes to whoever signs in next — and
+  //   checkAuthStatus re-reads its AsyncStorage keys with no ownership check,
+  //   so it would re-arm on their next cold start too;
+  // - `otpWasAutoSent` (both roles) makes the next sign-in jump to the code
+  //   step and lock resend for 60s for a code that was never sent.
+  const resetSessionFlags = useCallback(async () => {
+    setIsVerificationSkipped(false);
+    setOtpShouldAutoRequest(false);
+    setOtpWasAutoSent(false);
+    setShowRegistrationSuccess(false);
+    try {
+      await AsyncStorage.multiRemove([
+        'just_registered_pending_success',
+        'has_seen_success_screen',
+      ]);
+    } catch (error) {
+      // Logged, not rethrown: the sign-out cleanup after it — credentials,
+      // Apollo cache, push token — matters more than this flag.
+      logError('Session flag cleanup failed', error);
+    }
+  }, []);
+  // Held in a ref so the mount effect below can keep an empty dependency list:
+  // it restores the stored session, opens `sessionRef`, registers the device
+  // token and schedules the notification prompt — run-exactly-once work.
+  const resetSessionFlagsRef = useRef(resetSessionFlags);
+  resetSessionFlagsRef.current = resetSessionFlags;
 
   // Check if user is already logged in on app start
   useEffect(() => {
@@ -162,6 +265,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Callers invoke this without awaiting, so nothing observes a rejection here —
     // it has to contain its own failures or they surface as unhandled rejections.
     const handleSessionExpired = async (authToken?: string) => {
+      sessionRef.current = null;
       try {
         logInfo('Session expired - logging out');
         // Drop the session first so the app redirects to login straight away. The
@@ -171,8 +275,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setParentUser(null);
         setUserRole(null);
         // The next person on this device — often a parent — must not be tracked
-        // under this student's Firebase user id; `logout` resets the same way.
+        // under this student's Firebase user id, nor inherit the student's
+        // flags; `logout` resets the same way.
         analytics.reset();
+        await resetSessionFlagsRef.current();
         // Clear persisted credentials too — otherwise the stale token/role are
         // restored on next launch and the app re-authenticates into a session the
         // server already rejected, looping back into 401s.
@@ -205,11 +311,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const role = (await SecureStore.getItemAsync('user_role')) as 'student' | 'parent' | null;
 
       if (token && role) {
+        // Whose session it is comes from the stored profile, read below.
+        const session: Session = { accountId: null };
+        sessionRef.current = session;
         setUserRole(role);
         if (role === 'student') {
           const userData = await SecureStore.getItemAsync('user_data');
           if (userData) {
             const parsedUser = JSON.parse(userData);
+            session.accountId = parsedUser.id;
             setUser(parsedUser);
             configureCrashlyticsStudent(parsedUser);
             analytics.identify(parsedUser.id, {
@@ -235,6 +345,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const parentData = await SecureStore.getItemAsync('parent_data');
           if (parentData) {
             const parsedParent = JSON.parse(parentData);
+            session.accountId = parsedParent.id;
             setParentUser(parsedParent);
             configureCrashlyticsParent(parsedParent);
 
@@ -279,6 +390,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           await SecureStore.setItemAsync('auth_token', authPayload.access_token);
           await SecureStore.setItemAsync('user_data', JSON.stringify(authPayload.user));
           await SecureStore.setItemAsync('user_role', 'student');
+          // Opened once the credentials are stored: a sign-in that fails half-way
+          // must not leave a session open with nobody signed in.
+          sessionRef.current = { accountId: authPayload.user.id };
           setUser(authPayload.user);
           setUserRole('student');
           configureCrashlyticsStudent(authPayload.user);
@@ -322,6 +436,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           await SecureStore.setItemAsync('auth_token', authPayload.access_token);
           await SecureStore.setItemAsync('user_data', JSON.stringify(authPayload.user));
           await SecureStore.setItemAsync('user_role', 'student');
+          sessionRef.current = { accountId: authPayload.user.id };
           setUser(authPayload.user);
           setUserRole('student');
           configureCrashlyticsStudent(authPayload.user);
@@ -387,6 +502,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           await SecureStore.setItemAsync('auth_token', authPayload.access_token);
           await SecureStore.setItemAsync('parent_data', JSON.stringify(authPayload.parent));
           await SecureStore.setItemAsync('user_role', 'parent');
+          sessionRef.current = { accountId: authPayload.parent.id };
           setParentUser(authPayload.parent);
           setUserRole('parent');
           configureCrashlyticsParent(authPayload.parent);
@@ -432,6 +548,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           await SecureStore.setItemAsync('auth_token', authPayload.access_token);
           await SecureStore.setItemAsync('parent_data', JSON.stringify(authPayload.parent));
           await SecureStore.setItemAsync('user_role', 'parent');
+          sessionRef.current = { accountId: authPayload.parent.id };
           setParentUser(authPayload.parent);
           setUserRole('parent');
           configureCrashlyticsParent(authPayload.parent);
@@ -483,6 +600,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   );
 
   const logout = useCallback(async () => {
+    sessionRef.current = null;
     try {
       // Capture the credential before anything clears it. The unregister mutation
       // is authenticated, and Apollo's auth link otherwise falls back to reading
@@ -503,24 +621,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(null);
       setParentUser(null);
       setUserRole(null);
-      // Reset session-scoped verification flags so they can't leak into the next
-      // account signed in without an app restart (e.g. a skipped unverified user
-      // logging out, then another unverified user logging in would otherwise
-      // bypass the OTP screen). (code-review)
-      setIsVerificationSkipped(false);
-      setOtpShouldAutoRequest(false);
-      // The post-registration success flag is per-account. Left set, a student
-      // who registers, abandons at the OTP gate and logs out hands the
-      // celebration screen to whoever signs in next on this device — and
-      // checkAuthStatus re-reads the AsyncStorage keys with no ownership check,
-      // so it would re-arm on their next cold start too.
-      setShowRegistrationSuccess(false);
-      await AsyncStorage.removeItem('just_registered_pending_success');
-      await AsyncStorage.removeItem('has_seen_success_screen');
-      // Load-bearing for both roles since the parent gate landed: left set, the
-      // next sign-in jumps straight to the code step and locks resend for 60s
-      // for a code that was never sent.
-      setOtpWasAutoSent(false);
+      await resetSessionFlags();
       configureCrashlyticsGuest();
       analytics.trackLogout();
 
@@ -532,13 +633,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       logError('Logout error', error);
     }
-  }, []);
+  }, [resetSessionFlags]);
 
   const updateUser = useCallback(
     async (userData: User) => {
       try {
         const updatedUser = { ...user, ...userData };
-        await SecureStore.setItemAsync('user_data', JSON.stringify(updatedUser));
+        // Callers have usually just awaited a request of their own; a sign-out
+        // during it has already closed the session — or opened another
+        // account's, which this profile does not match — and nothing is written.
+        const stored = await storeProfileIfSessionLive(
+          sessionRef,
+          sessionRef.current,
+          'user_data',
+          updatedUser,
+        );
+        if (!stored) return;
         setUser(updatedUser);
         configureCrashlyticsStudent(updatedUser);
         analytics.identify(updatedUser.id, {
@@ -554,8 +664,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const updateParentUser = useCallback(
     async (data: Partial<Parent>) => {
       const updatedParent = { ...parentUser, ...data } as Parent;
-      await SecureStore.setItemAsync('parent_data', JSON.stringify(updatedParent));
-      setParentUser(updatedParent);
+      const stored = await storeProfileIfSessionLive(
+        sessionRef,
+        sessionRef.current,
+        'parent_data',
+        updatedParent,
+      );
+      if (stored) setParentUser(updatedParent);
     },
     [parentUser],
   );
@@ -589,13 +704,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    * and the field arrives on the next login.
    */
   const refreshParentFromServer = async () => {
+    const session = sessionRef.current;
     try {
       const result = await apolloClient.query({
         query: ParentMeDocument,
         fetchPolicy: 'network-only',
       });
-      if (result.data?.parentMe) {
-        await SecureStore.setItemAsync('parent_data', JSON.stringify(result.data.parentMe));
+      if (
+        result.data?.parentMe &&
+        (await storeServerProfile(sessionRef, session, 'parent_data', result.data.parentMe))
+      ) {
         setParentUser(result.data.parentMe);
       }
     } catch (error) {
@@ -604,6 +722,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const refreshUser = useCallback(async () => {
+    const session = sessionRef.current;
     try {
       const token = await SecureStore.getItemAsync('auth_token');
       const role = await SecureStore.getItemAsync('user_role');
@@ -614,8 +733,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           query: MeDocument,
           fetchPolicy: 'network-only',
         });
-        if (result.data?.me) {
-          await SecureStore.setItemAsync('user_data', JSON.stringify(result.data.me));
+        if (
+          result.data?.me &&
+          (await storeServerProfile(sessionRef, session, 'user_data', result.data.me))
+        ) {
           setUser(result.data.me);
           configureCrashlyticsStudent(result.data.me);
           analytics.identify(result.data.me.id, {
@@ -627,8 +748,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           query: ParentMeDocument,
           fetchPolicy: 'network-only',
         });
-        if (result.data?.parentMe) {
-          await SecureStore.setItemAsync('parent_data', JSON.stringify(result.data.parentMe));
+        if (
+          result.data?.parentMe &&
+          (await storeServerProfile(sessionRef, session, 'parent_data', result.data.parentMe))
+        ) {
           setParentUser(result.data.parentMe);
           configureCrashlyticsParent(result.data.parentMe);
         }

@@ -2,6 +2,8 @@ import React from 'react';
 import { renderHook, act, waitFor } from '@testing-library/react-native';
 import { AuthProvider, useAuth } from '../../context/AuthContext';
 import { apolloClient } from '../../lib/apollo';
+import { analytics } from '../../lib/analytics';
+import { revokeSession } from '../../lib/session';
 import { unregisterDeviceToken } from '../../services/notificationService';
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -412,6 +414,250 @@ describe('AuthContext & AuthProvider', () => {
       // account's push token stayed registered and the device kept receiving its
       // notifications.
       expect(unregisterDeviceToken).toHaveBeenCalledWith('student-token');
+    });
+
+    // Regression (code review, 2026-09-15): a profile refresh that settled after sign-out wrote
+    // the student back and re-identified them in analytics, so the next person on the device was
+    // tracked under the student's Firebase user id.
+    it('drops a profile refresh that lands after sign-out', async () => {
+      const studentUser = { id: '1', name: 'Ali', mobile: '01007867184' };
+      await SecureStore.setItemAsync('auth_token', 'student-token');
+      await SecureStore.setItemAsync('user_role', 'student');
+      await SecureStore.setItemAsync('user_data', JSON.stringify(studentUser));
+      let answerMe: (response: unknown) => void = () => {};
+      (apolloClient.query as jest.Mock).mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            answerMe = resolve;
+          }),
+      );
+      const identify = jest.spyOn(analytics, 'identify');
+
+      try {
+        const { result } = renderHook(() => useAuth(), { wrapper });
+        // Restoring the session starts a refresh, which is now waiting on the server.
+        await waitFor(() => expect(apolloClient.query).toHaveBeenCalled());
+        await act(async () => {
+          await result.current.logout();
+        });
+        identify.mockClear();
+
+        await act(async () => {
+          answerMe({ data: { me: studentUser } });
+        });
+
+        expect(result.current.user).toBeNull();
+        expect(identify).not.toHaveBeenCalled();
+        expect(await SecureStore.getItemAsync('user_data')).toBeNull();
+      } finally {
+        identify.mockRestore();
+      }
+    });
+
+    // Regression (code review, 2026-09-15): a profile save whose own request outlived a
+    // sign-out restored the signed-out student — the session it was checked against had simply
+    // moved on to a new number, which still read as live.
+    it('ignores a profile write made after sign-out', async () => {
+      const studentUser = { id: '1', name: 'Ali', mobile: '01007867184' };
+      await SecureStore.setItemAsync('auth_token', 'student-token');
+      await SecureStore.setItemAsync('user_role', 'student');
+      await SecureStore.setItemAsync('user_data', JSON.stringify(studentUser));
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+      await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+      // Held the way a screen holds it while its own request is in flight.
+      const { updateUser } = result.current;
+      await act(async () => {
+        await result.current.logout();
+      });
+
+      await act(async () => {
+        await updateUser({ ...studentUser, name: 'Ali Hassan' });
+      });
+
+      expect(result.current.isAuthenticated).toBe(false);
+      expect(await SecureStore.getItemAsync('user_data')).toBeNull();
+    });
+
+    // Regression (code review, 2026-09-16): a save held from before a sign-out landed on the
+    // next account to sign in — its session was live, just not the saving account's.
+    it("does not land a held profile save on the next account's session", async () => {
+      const studentA = { id: '1', name: 'Ali', mobile: '01007867184' };
+      const studentB = {
+        id: '2',
+        name: 'Omar',
+        mobile: '01007867185',
+        mobile_verified_at: '2026-01-01',
+      };
+      await SecureStore.setItemAsync('auth_token', 'token-a');
+      await SecureStore.setItemAsync('user_role', 'student');
+      await SecureStore.setItemAsync('user_data', JSON.stringify(studentA));
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+      await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+      const { updateUser } = result.current;
+      await act(async () => {
+        await result.current.logout();
+      });
+      (apolloClient.mutate as jest.Mock).mockResolvedValueOnce({
+        data: { login: { access_token: 'token-b', user: studentB } },
+      });
+      await act(async () => {
+        await result.current.login({ mobile: studentB.mobile, password: 'Password1!' });
+      });
+
+      await act(async () => {
+        await updateUser({ ...studentA, name: 'Ali Hassan' });
+      });
+
+      expect(result.current.user).toEqual(studentB);
+      expect(await SecureStore.getItemAsync('user_data')).toBe(JSON.stringify(studentB));
+    });
+
+    it('undoes a profile write that reached the device after sign-out', async () => {
+      const studentUser = { id: '1', name: 'Ali', mobile: '01007867184' };
+      await SecureStore.setItemAsync('auth_token', 'student-token');
+      await SecureStore.setItemAsync('user_role', 'student');
+      await SecureStore.setItemAsync('user_data', JSON.stringify(studentUser));
+      const { result } = renderHook(() => useAuth(), { wrapper });
+      await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+
+      // Hold the profile write in flight until the sign-out has run.
+      const setItem = SecureStore.setItemAsync as jest.Mock;
+      const storeWrite = setItem.getMockImplementation() as (
+        key: string,
+        value: string,
+      ) => Promise<void>;
+      let releaseWrite: () => void = () => {};
+      setItem.mockImplementationOnce(
+        (key: string, value: string) =>
+          new Promise<void>((resolve) => {
+            releaseWrite = () => resolve(storeWrite(key, value));
+          }),
+      );
+      let saving: Promise<void> = Promise.resolve();
+      act(() => {
+        saving = result.current.updateUser({ ...studentUser, name: 'Ali Hassan' });
+      });
+      await act(async () => {
+        await result.current.logout();
+      });
+
+      await act(async () => {
+        releaseWrite();
+        await saving;
+      });
+
+      expect(result.current.isAuthenticated).toBe(false);
+      expect(await SecureStore.getItemAsync('user_data')).toBeNull();
+    });
+
+    it('ignores a parent profile write made after sign-out', async () => {
+      const parent = {
+        id: '2',
+        name: 'Nasser',
+        mobile: '01007867181',
+        mobile_verified_at: '2026-01-01',
+      };
+      await SecureStore.setItemAsync('auth_token', 'parent-token');
+      await SecureStore.setItemAsync('user_role', 'parent');
+      await SecureStore.setItemAsync('parent_data', JSON.stringify(parent));
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+      await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+      const { updateParentUser } = result.current;
+      await act(async () => {
+        await result.current.logout();
+      });
+
+      await act(async () => {
+        await updateParentUser({ mobile_verified_at: '2026-09-16' });
+      });
+
+      expect(result.current.isAuthenticated).toBe(false);
+      expect(await SecureStore.getItemAsync('parent_data')).toBeNull();
+    });
+
+    // Regression (code review, 2026-09-16): the session took its account from the stored
+    // profile, so a device holding another account's profile refused every server refresh.
+    it("lets the server's reply correct a stored profile that names another account", async () => {
+      const storedProfile = { id: '1', name: 'Ali', mobile: '01007867184' };
+      const tokenOwner = { id: '2', name: 'Omar', mobile: '01007867185' };
+      await SecureStore.setItemAsync('auth_token', 'token-of-2');
+      await SecureStore.setItemAsync('user_role', 'student');
+      await SecureStore.setItemAsync('user_data', JSON.stringify(storedProfile));
+      (apolloClient.query as jest.Mock).mockResolvedValueOnce({ data: { me: tokenOwner } });
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      await waitFor(() => expect(result.current.user).toEqual(tokenOwner));
+      expect(await SecureStore.getItemAsync('user_data')).toBe(JSON.stringify(tokenOwner));
+    });
+
+    it('drops a server refresh for the previous account that lands after someone else signs in', async () => {
+      const studentA = { id: '1', name: 'Ali', mobile: '01007867184' };
+      const studentB = {
+        id: '2',
+        name: 'Omar',
+        mobile: '01007867185',
+        mobile_verified_at: '2026-01-01',
+      };
+      await SecureStore.setItemAsync('auth_token', 'token-a');
+      await SecureStore.setItemAsync('user_role', 'student');
+      await SecureStore.setItemAsync('user_data', JSON.stringify(studentA));
+      let answerMe: (response: unknown) => void = () => {};
+      (apolloClient.query as jest.Mock).mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            answerMe = resolve;
+          }),
+      );
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+      // Restoring A's session starts a refresh, which is now waiting on the server.
+      await waitFor(() => expect(apolloClient.query).toHaveBeenCalled());
+      await act(async () => {
+        await result.current.logout();
+      });
+      (apolloClient.mutate as jest.Mock).mockResolvedValueOnce({
+        data: { login: { access_token: 'token-b', user: studentB } },
+      });
+      await act(async () => {
+        await result.current.login({ mobile: studentB.mobile, password: 'Password1!' });
+      });
+
+      await act(async () => {
+        answerMe({ data: { me: studentA } });
+      });
+
+      expect(result.current.user).toEqual(studentB);
+      expect(await SecureStore.getItemAsync('user_data')).toBe(JSON.stringify(studentB));
+    });
+
+    // Regression (code review, 2026-09-16): a forced sign-out kept the OTP skip, so the next
+    // unverified account signed in without a restart walked past the OTP gate.
+    it('clears the per-account flags on a forced sign-out, as logout does', async () => {
+      const studentUser = { id: '1', name: 'Ali', mobile: '01007867184', mobile_verified_at: null };
+      await SecureStore.setItemAsync('auth_token', 'student-token');
+      await SecureStore.setItemAsync('user_role', 'student');
+      await SecureStore.setItemAsync('user_data', JSON.stringify(studentUser));
+      const { result } = renderHook(() => useAuth(), { wrapper });
+      await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+      act(() => {
+        result.current.skipVerification();
+        result.current.markOtpAutoSent();
+      });
+      await AsyncStorage.setItem('just_registered_pending_success', 'true');
+      expect(result.current.isVerificationSkipped).toBe(true);
+
+      await act(async () => {
+        await revokeSession();
+      });
+
+      await waitFor(() => expect(result.current.isAuthenticated).toBe(false));
+      expect(result.current.isVerificationSkipped).toBe(false);
+      expect(result.current.otpWasAutoSent).toBe(false);
+      expect(await AsyncStorage.getItem('just_registered_pending_success')).toBeNull();
     });
 
     it('should invoke forgot password mutation for student', async () => {

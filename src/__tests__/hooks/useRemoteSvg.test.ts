@@ -3,12 +3,17 @@ import {
   clearRemoteSvgCache,
   combinedLoadStatus,
   DOWNLOAD_TIMEOUT_MS,
+  MAX_CACHED_CHARS,
   useRemoteSvg,
 } from '../../hooks/useRemoteSvg';
 
 const MAP_URL = 'https://cdn.example.com/storage/328/lesson-328-mindmap.svg';
 const NEXT_URL = 'https://cdn.example.com/storage/329/lesson-329-mindmap.svg';
 const MAP_XML = '<svg><style>@font-face{}</style><text>it&apos;s</text></svg>';
+/** Over half the cache's budget, so no two of them fit together. */
+const BIG_MAP = `<svg>${' '.repeat(MAX_CACHED_CHARS / 2)}</svg>`;
+/** Two fit in the cache, a third does not. */
+const PART_MAP = `<svg>${' '.repeat(Math.floor(MAX_CACHED_CHARS * 0.4))}</svg>`;
 
 type FetchMock = jest.Mock<Promise<{ ok: boolean; status: number; text: () => Promise<string> }>>;
 
@@ -115,7 +120,7 @@ describe('useRemoteSvg', () => {
   // Regression (code review, 2026-09-14): the first render after Next still reported the
   // previous lesson's map as loaded, and the reader counted the new map as viewed.
   it('never reports the previous map as loaded for the next URL, not even for one render', async () => {
-    const seen: Array<{ url: string; status: string }> = [];
+    const seen: { url: string; status: string }[] = [];
     const { result, rerender } = renderHook(
       ({ url }: { url: string }) => {
         const svg = useRemoteSvg(url);
@@ -146,13 +151,78 @@ describe('useRemoteSvg', () => {
     });
     preview.rerender({ url: MAP_URL });
 
-    for (let i = 0; i < 6; i += 1) {
+    global.fetch = respondWith(BIG_MAP) as unknown as typeof fetch;
+    for (let i = 0; i < 3; i += 1) {
       const other = renderHook(() => useRemoteSvg(`https://cdn.example.com/other-${i}.svg`));
       await waitFor(() => expect(other.result.current.status).toBe('loaded'));
     }
 
     preview.rerender({ url: MAP_URL });
     expect(preview.result.current).toMatchObject({ status: 'loaded', xml: MAP_XML });
+
+    // Evicted for real: a newcomer has to download it again.
+    const newcomer = renderHook(() => useRemoteSvg(MAP_URL));
+    expect(newcomer.result.current.status).toBe('loading');
+    await waitFor(() => expect(newcomer.result.current.status).toBe('loaded'));
+  });
+
+  // Regression (code review, 2026-09-15): the cache counted files, three of them, so a quiz with
+  // more than three SVG images downloaded the early ones again on the way back.
+  it("keeps a whole quiz's images, because the cache is budgeted by size, not by file", async () => {
+    const images = Array.from({ length: 10 }, (_, i) => `https://cdn.example.com/q-${i}.svg`);
+    for (const image of images) {
+      const { result, unmount } = renderHook(() => useRemoteSvg(image));
+      await waitFor(() => expect(result.current.status).toBe('loaded'));
+      unmount();
+    }
+
+    const backToFirst = renderHook(() => useRemoteSvg(images[0]));
+    // Loaded on its first render: served from the cache, not downloaded again.
+    expect(backToFirst.result.current.status).toBe('loaded');
+  });
+
+  // Regression (code review, 2026-09-15): eviction went by download order, so a lesson map the
+  // student kept reopening was pushed out by newer files and downloaded again.
+  it('evicts the least recently used map, not the oldest download', async () => {
+    global.fetch = respondWith(PART_MAP) as unknown as typeof fetch;
+    const [first, second, third] = [1, 2, 3].map((n) => `https://cdn.example.com/map-${n}.svg`);
+    const open = async (url: string) => {
+      const { result, unmount } = renderHook(() => useRemoteSvg(url));
+      await waitFor(() => expect(result.current.status).toBe('loaded'));
+      unmount();
+    };
+    await open(first);
+    await open(second);
+    await open(first); // reopened from the cache
+    await open(third); // over budget: the second goes, not the first
+
+    expect(renderHook(() => useRemoteSvg(first)).result.current.status).toBe('loaded');
+    const evicted = renderHook(() => useRemoteSvg(second));
+    expect(evicted.result.current.status).toBe('loading');
+    evicted.unmount();
+  });
+
+  // Regression (code review, 2026-09-16): a file over the whole budget was dropped instead of
+  // cached, so the viewer downloaded again what the preview had just fetched.
+  it('keeps a file bigger than the whole budget on its own, rather than downloading it twice', async () => {
+    const hugeUrl = 'https://cdn.example.com/huge.svg';
+    const lesson = renderHook(() => useRemoteSvg(MAP_URL));
+    await waitFor(() => expect(lesson.result.current.status).toBe('loaded'));
+    lesson.unmount();
+
+    global.fetch = respondWith(
+      `<svg>${' '.repeat(MAX_CACHED_CHARS)}</svg>`,
+    ) as unknown as typeof fetch;
+    const preview = renderHook(() => useRemoteSvg(hugeUrl));
+    await waitFor(() => expect(preview.result.current.status).toBe('loaded'));
+    preview.unmount();
+
+    // The viewer opening the same map: straight from the cache.
+    expect(renderHook(() => useRemoteSvg(hugeUrl)).result.current.status).toBe('loaded');
+    // Over budget on its own, so it did push the smaller map out.
+    const evicted = renderHook(() => useRemoteSvg(MAP_URL));
+    expect(evicted.result.current.status).toBe('loading');
+    evicted.unmount();
   });
 
   it('cancels the request when the URL changes, so a slow old map cannot overwrite the new one', async () => {

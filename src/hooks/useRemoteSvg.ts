@@ -32,11 +32,14 @@ interface Download {
 }
 
 /**
- * Raw SVG text by URL, for the next consumer to mount — every consumer keeps
- * its own copy of what it shows. Small on purpose: Hermes stores a map with
- * Arabic labels as UTF-16, about 775 KB for a new-style one.
+ * How much raw SVG text the cache keeps for the next consumer to mount — every
+ * consumer keeps its own copy of what it shows. Budgeted in characters, not
+ * files, because the two users differ by orders of magnitude: a new-style mind
+ * map is ~390 K characters (~775 KB on Hermes, which stores Arabic text as
+ * UTF-16), a quiz image far less. Three maps fit with room for bigger ones
+ * (~3.2 MB on Hermes at most), or a whole quiz's images.
  */
-const MAX_CACHED = 3;
+export const MAX_CACHED_CHARS = 1_600_000;
 
 /**
  * Generous, because a map is ~380 KB and students are often on slow mobile
@@ -47,20 +50,48 @@ export const DOWNLOAD_TIMEOUT_MS = 30_000;
 const fetchSvg = createFetchWithTimeout(DOWNLOAD_TIMEOUT_MS);
 
 const cache = new Map<string, string>();
+let cachedChars = 0;
 /** Downloads in progress. A consumer that mounts mid-download joins the running one. */
 const inflight = new Map<string, Download>();
 
-const remember = (url: string, xml: string) => {
+const forget = (url: string) => {
+  const xml = cache.get(url);
+  if (xml === undefined) return;
   cache.delete(url);
+  cachedChars -= xml.length;
+};
+
+/**
+ * Least recently used out first until the text fits; the map's insertion order
+ * is the use order (`recall` re-inserts). A file bigger than the whole budget
+ * is kept on its own rather than dropped: one download per map matters more
+ * than the ceiling, and dropping it would send the viewer back to the network
+ * for a map the preview had already downloaded.
+ */
+const remember = (url: string, xml: string) => {
+  forget(url);
   cache.set(url, xml);
-  if (cache.size > MAX_CACHED) {
-    cache.delete(cache.keys().next().value as string);
+  cachedChars += xml.length;
+  for (const leastRecent of cache.keys()) {
+    if (cachedChars <= MAX_CACHED_CHARS || leastRecent === url) break;
+    forget(leastRecent);
   }
+};
+
+/** A cache hit, which also makes the entry the most recently used. */
+const recall = (url: string): string | undefined => {
+  const xml = cache.get(url);
+  if (xml !== undefined) {
+    cache.delete(url);
+    cache.set(url, xml);
+  }
+  return xml;
 };
 
 /** Test seam. */
 export const clearRemoteSvgCache = (): void => {
   cache.clear();
+  cachedChars = 0;
   inflight.clear();
 };
 
@@ -148,7 +179,7 @@ export const useRemoteSvg = (url: string | null) => {
 
   useEffect(() => {
     if (!url) return undefined;
-    const cached = cache.get(url);
+    const cached = recall(url);
     if (cached !== undefined) {
       setState((previous) =>
         previous.url === url && previous.xml === cached
@@ -175,7 +206,7 @@ export const useRemoteSvg = (url: string | null) => {
 
   const retry = useCallback(() => {
     if (!url) return;
-    cache.delete(url);
+    forget(url);
     setState(stateFor(url));
     setAttempt((n) => n + 1);
   }, [url]);

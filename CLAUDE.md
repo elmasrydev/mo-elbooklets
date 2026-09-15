@@ -86,10 +86,18 @@ Crashlytics and Analytics report from **every** build — release or dev client,
   (subject/lesson/quiz titles) and counts, never free text a user typed or anything identifying.
   `SafeUserTraits` is the whole trait set, enforced at the destination as above;
   `trackContactSupport` deliberately sends no subject. A forced sign-out (`handleSessionExpired`)
-  resets analytics just like `logout`, so the next person on the device — often a parent — is not
-  tracked under the student's Firebase user id. `analytics.reset()` also clears Firebase's user id
-  directly (`clearFirebaseIdentity`): Segment forwards a reset only to destinations it has already
-  added.
+  resets analytics and the per-account flags (`resetSessionFlags`) just like `logout`, so the next
+  person on the device — often a parent — is not tracked under the student's Firebase user id, nor
+  handed the student's OTP skip or pending registration screen. `analytics.reset()` clears
+  Firebase's user id and analytics data itself (`clearFirebaseIdentity`) on every sign-out:
+  Segment's reset reaches only destinations it has added (once its settings load), its Firebase
+  destination never clears the user id, and a failed Segment reset is silent in release builds —
+  Segment resetting the data a second time is harmless. `AuthContext` tracks the live session and
+  whose it is (`sessionRef`, closed first thing on sign-out; a server refresh settles whose it is,
+  `storeServerProfile`): a profile refresh or profile write whose session has closed, or that
+  belongs to another account than the live session's, is dropped — and undone while nobody is
+  signed in if its write already reached the device — so a late reply cannot restore the account or
+  re-identify the student, even after someone else has signed in.
 
 ### Boki AI Assistant (BKLT-221)
 **Boki** (بوكي) is the student AI study assistant. Backend contract: `booki-graphql-api.md` (repo root, gitignored — keep local). Single request/response (`aiChat` mutation returns the full answer — **no streaming**).
@@ -120,8 +128,10 @@ cached before the field existed), no URL → `'none'` and the section is not ren
   RNGH pinch/pan/double-tap in the viewer — which is why the viewer mounts its own
   `GestureHandlerRootView`: the app has none at its root, and the viewer is its only RNGH user.
   Both surfaces load through `useMindMapLoad` (`src/hooks/useMindMapLoad.ts`: download + render
-  status, one retry that downloads again after a failed download and remounts after a failed render)
-  and share `MindMapErrorCard`.
+  status, one retry that downloads again after a failed download and remounts after a failed render;
+  a render result belongs to one map, kind and attempt, so a lesson that moves from the raster
+  fallback to SVG once its MIME type arrives starts over, and a late callback from a replaced view or
+  an earlier attempt is ignored) and share `MindMapErrorCard`.
 - **Orientation is owned by react-native-screens, per screen.** Every stack navigator declares
   `orientation: 'portrait_up'` in its `screenOptions` (root, student, parent) and only
   `MindMapViewer` declares `landscape`, so the OS rotates when the viewer appears and back when it
@@ -139,8 +149,11 @@ cached before the field existed), no URL → `'none'` and the section is not ren
 - **One download per map.** An SVG goes through `useRemoteSvg` (`src/hooks/useRemoteSvg.ts`):
   cached per URL and **shared while in flight** (a viewer opened mid-download joins the preview's
   request), handed out **as downloaded**, cancelled when its last consumer leaves. Every consumer
-  keeps its own copy of what it shows — the cache holds only 3 maps (~775 KB each on Hermes, which
-  stores Arabic text as UTF-16) — so an eviction never turns a map on screen back into a spinner.
+  keeps its own copy of what it shows — the cache is budgeted by size, least recently used out first
+  (`MAX_CACHED_CHARS`: three maps at ~775 KB each on Hermes, which stores Arabic text as UTF-16, with
+  room for bigger ones, or a whole quiz's images, which share it) — so an eviction never turns a map
+  on screen back into a spinner. A file bigger than the whole budget (no map comes close) is kept on
+  its own instead of being dropped, so it is still downloaded only once.
   It times out after 30 s (`createFetchWithTimeout`, `src/lib/fetchWithTimeout.ts`, shared with
   Apollo) and treats a body that is not an SVG as a failure, so a stalled network or a captive
   portal ends in the retry card; `retry` re-downloads even after a load. Its state is derived per
@@ -159,16 +172,21 @@ cached before the field existed), no URL → `'none'` and the section is not ren
   direction render as designed, and zoom stays vector-sharp. `react-native-webview` (13.15.0, the
   SDK 54 version) is a **native** dependency — adding or upgrading it needs a dev-client rebuild.
   `MindMapWebView` runs with JavaScript off, refuses every navigation away from its own document (any
-  link inside the SVG), and remounts itself — twice at most, then the retry card — if the OS kills
-  its content process (which leaves a blank white view on iOS and an unusable one on
-  Android).
+  link inside the SVG), and remounts itself if the OS kills its content process (which leaves a
+  blank white view on iOS and an unusable one on Android) — twice per spell in the foreground, then
+  the retry card. On iOS a kill while the app is away (in the background, or on its way back) waits
+  for its return and does not count — iOS reclaims a backgrounded app's WebView processes as a
+  matter of course; Android restarts at once, since it requires a WebView whose renderer is gone to
+  be replaced straight away.
 - **`WebViewWarmup` (`src/components/WebViewWarmup.tsx`) stays mounted at App's root, inside the
   providers.** The first WebView navigation in an app session runs WebKit's single-sign-on check
   (`SOAuthorizationCoordinator::tryAuthorize`) synchronously on the main thread — 0.43 s profiled
   on the simulator, and it landed on the lesson as it opened, since the mind map was the first
-  WebView a student met. The warm-up loads an empty document in a hidden 1×1 WebView once a
-  signed-in student is known — for a returning student while the splash still shows (after it: 3
-  samples at lesson open) — and unmounts itself once loaded. Parents and signed-out users never meet
+  WebView a student met. The warm-up loads an empty document in a hidden 1×1 WebView for a
+  returning student only, decided once the stored session has been read, while the splash screen
+  still shows (after it: 3 samples at lesson open), and unmounts itself once loaded. A fresh sign-in
+  does not warm up — the stall would land on the move to Home or on typing the code — so the first
+  mind map after one pays the 0.43 s once. Parents and signed-out users never meet
   a WebView, so they don't pay for one. **iOS only**: Android has no such check, and a WebView built
   early crashes the app outright on a phone whose system WebView is being updated or is disabled
   (react-native-webview does not guard the constructor) — a risk for the lesson that shows a map,
@@ -205,8 +223,10 @@ cached before the field existed), no URL → `'none'` and the section is not ren
   lesson-scoped fetch and the like/dislike reply are checked against `currentLessonIdRef`
   (`isStale()`) before they touch the screen, loading flags included — the reader swaps lessons in
   place, so a slow reply for the previous lesson must not land on the next one or switch off its
-  spinner. Bookmark/note replies are keyed by point id, so
-  a late one cannot touch the next lesson's rows.
+  spinner. The key-points spinner follows the latest details request (`detailsRequestRef`), so
+  neither a stale fetch nor an earlier one for the same lesson (after A → B → A) switches it off
+  early, and a lesson that needs no fetch switches it off itself. Bookmark/note replies are keyed by
+  point id, so a late one cannot touch the next lesson's rows.
 - No `LayoutAnimation` on the lesson swap (Next/Previous): animating the whole content tree
   re-laid out the video, the map and every card at once.
 
