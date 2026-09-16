@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { AppState } from 'react-native';
 
 /**
@@ -15,8 +15,12 @@ import { AppState } from 'react-native';
  * and it emits it on the way back as well (`background → inactive → active`),
  * so neither "was inactive" nor "was background" identifies a return on its
  * own. Tracking whether the app actually reached the background does.
+ *
+ * Returns `isAway`: true from the moment the app reaches the background until
+ * it is back in front — iOS's `inactive` step on the way back included, which
+ * `AppState.currentState` alone cannot tell apart from a transient interruption.
  */
-export const useAppForeground = (onForeground: () => void): void => {
+export const useAppForeground = (onForeground: () => void): (() => boolean) => {
   const wasBackgrounded = useRef(AppState.currentState === 'background');
   // Kept in a ref so a caller passing an inline arrow does not re-subscribe on
   // every render.
@@ -36,4 +40,6 @@ export const useAppForeground = (onForeground: () => void): void => {
     });
     return () => subscription.remove();
   }, []);
+
+  return useCallback(() => wasBackgrounded.current, []);
 };

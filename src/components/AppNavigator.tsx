@@ -43,7 +43,10 @@ const AppNavigator: React.FC = () => {
 
   return (
     <>
-      <RootStack.Navigator screenOptions={{ headerShown: false }}>
+      {/* `orientation` on every stack: react-native-screens owns orientation per
+          screen, so the one landscape screen (MindMapViewer) rotates the app on
+          appear and back on pop with no JS lock involved. See CLAUDE.md. */}
+      <RootStack.Navigator screenOptions={{ headerShown: false, orientation: 'portrait_up' }}>
         {isAuthenticated ? (
           userRole === 'parent' ? (
             // `null` is the server saying "not verified"; `undefined` means the

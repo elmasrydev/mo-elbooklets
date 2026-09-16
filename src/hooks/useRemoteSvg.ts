@@ -1,0 +1,215 @@
+import { useCallback, useEffect, useState } from 'react';
+
+import { createFetchWithTimeout } from '../lib/fetchWithTimeout';
+
+export type RemoteSvgStatus = 'idle' | 'loading' | 'loaded' | 'error';
+
+/** The three states a loader UI distinguishes. */
+export type LoadStatus = 'loading' | 'loaded' | 'error';
+
+/**
+ * What a skeleton / retry card needs, from the download and the render. The
+ * render can fail after the download succeeded — react-native-svg reporting a
+ * file it cannot parse, a WebView failing to load — so both count, and only
+ * both succeeding is "loaded". `idle` reads as loading: a deferred download
+ * still shows the skeleton.
+ */
+export const combinedLoadStatus = (download: RemoteSvgStatus, render: LoadStatus): LoadStatus => {
+  if (download === 'error' || render === 'error') return 'error';
+  return download === 'loaded' && render === 'loaded' ? 'loaded' : 'loading';
+};
+
+interface RemoteSvgState {
+  url: string | null;
+  xml: string | null;
+  status: RemoteSvgStatus;
+}
+
+interface Download {
+  promise: Promise<string>;
+  controller: AbortController;
+  consumers: number;
+}
+
+/**
+ * How much raw SVG text the cache keeps for the next consumer to mount — every
+ * consumer keeps its own copy of what it shows. Budgeted in characters, not
+ * files, because the two users differ by orders of magnitude: a new-style mind
+ * map is ~390 K characters (~775 KB on Hermes, which stores Arabic text as
+ * UTF-16), a quiz image far less. Three maps fit with room for bigger ones
+ * (~3.2 MB on Hermes at most), or a whole quiz's images.
+ */
+export const MAX_CACHED_CHARS = 1_600_000;
+
+/**
+ * Generous, because a map is ~380 KB and students are often on slow mobile
+ * data — but finite, so a stalled connection ends in the retry card.
+ */
+export const DOWNLOAD_TIMEOUT_MS = 30_000;
+
+const fetchSvg = createFetchWithTimeout(DOWNLOAD_TIMEOUT_MS);
+
+const cache = new Map<string, string>();
+let cachedChars = 0;
+/** Downloads in progress. A consumer that mounts mid-download joins the running one. */
+const inflight = new Map<string, Download>();
+
+const forget = (url: string) => {
+  const xml = cache.get(url);
+  if (xml === undefined) return;
+  cache.delete(url);
+  cachedChars -= xml.length;
+};
+
+/**
+ * Least recently used out first until the text fits; the map's insertion order
+ * is the use order (`recall` re-inserts). A file bigger than the whole budget
+ * is kept on its own rather than dropped: one download per map matters more
+ * than the ceiling, and dropping it would send the viewer back to the network
+ * for a map the preview had already downloaded.
+ */
+const remember = (url: string, xml: string) => {
+  forget(url);
+  cache.set(url, xml);
+  cachedChars += xml.length;
+  for (const leastRecent of cache.keys()) {
+    if (cachedChars <= MAX_CACHED_CHARS || leastRecent === url) break;
+    forget(leastRecent);
+  }
+};
+
+/** A cache hit, which also makes the entry the most recently used. */
+const recall = (url: string): string | undefined => {
+  const xml = cache.get(url);
+  if (xml !== undefined) {
+    cache.delete(url);
+    cache.set(url, xml);
+  }
+  return xml;
+};
+
+/** Test seam. */
+export const clearRemoteSvgCache = (): void => {
+  cache.clear();
+  cachedChars = 0;
+  inflight.clear();
+};
+
+const stateFor = (url: string | null): RemoteSvgState => {
+  if (!url) return { url, xml: null, status: 'idle' };
+  const cached = cache.get(url);
+  return cached === undefined
+    ? { url, xml: null, status: 'loading' }
+    : { url, xml: cached, status: 'loaded' };
+};
+
+// A 2xx is no proof of a map: a captive portal answers with HTML and a
+// not-yet-written object with nothing — cached, either would fail every retry.
+const isSvgText = (text: string): boolean => /<svg[\s>]/i.test(text);
+
+const startDownload = (url: string): Download => {
+  const controller = new AbortController();
+  const download: Download = {
+    controller,
+    consumers: 0,
+    promise: fetchSvg(url, { signal: controller.signal })
+      .then((response) => {
+        if (!response.ok) throw new Error(`Fetching ${url} failed with status ${response.status}`);
+        return response.text();
+      })
+      .then((xml) => {
+        if (!isSvgText(xml)) throw new Error(`${url} did not return an SVG`);
+        remember(url, xml);
+        return xml;
+      })
+      .finally(() => {
+        if (inflight.get(url) === download) inflight.delete(url);
+      }),
+  };
+  // Every consumer attaches its own failure handler; this only stops a
+  // download that all of them have left from surfacing as unhandled.
+  download.promise.catch(() => undefined);
+  inflight.set(url, download);
+  return download;
+};
+
+const join = (url: string): Download => {
+  const running = inflight.get(url);
+  const download = running && !running.controller.signal.aborted ? running : startDownload(url);
+  download.consumers += 1;
+  return download;
+};
+
+/** The last consumer to leave cancels the request. */
+const leave = (url: string, download: Download): void => {
+  download.consumers -= 1;
+  if (download.consumers > 0) return;
+  download.controller.abort();
+  if (inflight.get(url) === download) inflight.delete(url);
+};
+
+/**
+ * Downloads an SVG once and hands the same text to every consumer.
+ *
+ * Why not react-native-svg's `SvgUri`: it downloads per mounted instance,
+ * cannot be cancelled, and gives no way to share the result or to show
+ * progress. The mind map is shown inline *and* in a fullscreen viewer, so with
+ * `SvgUri` one visit downloaded and parsed the file two or three times.
+ *
+ * - Cached per URL and shared while in flight, so the viewer opening after —
+ *   or during — the preview's download never fetches the map again.
+ * - Each consumer keeps its own copy of what it shows, so the cache can evict
+ *   an entry that is still on screen without turning it back into a spinner.
+ * - Times out, and treats a body that is not an SVG as a failure.
+ * - `retry` downloads again even after a load, so a file the renderer rejected
+ *   is not simply re-read from the cache.
+ * - State is derived per URL: after the reader swaps lessons in place, the very
+ *   first render already describes the new map — never the old one as loaded.
+ * - Cancelled when its last consumer unmounts or moves to another URL.
+ * - A `null` URL means "not yet": the reader defers the download until the
+ *   screen transition has finished.
+ * - The text is returned as downloaded. A consumer that draws it with
+ *   react-native-svg normalises it first (`normalizeSvgXml`); the mind map's
+ *   WebView wants it untouched.
+ */
+export const useRemoteSvg = (url: string | null) => {
+  const [attempt, setAttempt] = useState(0);
+  const [state, setState] = useState<RemoteSvgState>(() => stateFor(url));
+  const current = state.url === url ? state : stateFor(url);
+
+  useEffect(() => {
+    if (!url) return undefined;
+    const cached = recall(url);
+    if (cached !== undefined) {
+      setState((previous) =>
+        previous.url === url && previous.xml === cached
+          ? previous
+          : { url, xml: cached, status: 'loaded' },
+      );
+      return undefined;
+    }
+    let listening = true;
+    const download = join(url);
+    download.promise.then(
+      (xml) => {
+        if (listening) setState({ url, xml, status: 'loaded' });
+      },
+      () => {
+        if (listening) setState({ url, xml: null, status: 'error' });
+      },
+    );
+    return () => {
+      listening = false;
+      leave(url, download);
+    };
+  }, [url, attempt]);
+
+  const retry = useCallback(() => {
+    if (!url) return;
+    forget(url);
+    setState(stateFor(url));
+    setAttempt((n) => n + 1);
+  }, [url]);
+
+  return { xml: current.xml, status: current.status, retry };
+};

@@ -1,6 +1,11 @@
 import { createClient } from '@segment/analytics-react-native';
 import { FirebasePlugin } from '@segment/analytics-react-native-plugin-firebase';
 
+import { FirebaseIdentityPlugin } from './firebaseIdentityPlugin';
+import { pickSafeTraits } from './safeUserTraits';
+
+const firebasePlugin = new FirebasePlugin();
+
 /**
  * Segment Client Configuration (Local-Only Mode)
  * This client serves as a local event bus.
@@ -15,8 +20,17 @@ export const segmentClient = createClient({
   // Disable the default cloud destination
   autoAddSegmentDestination: false,
 
-  // Local event bus configuration
-  trackAppLifecycleEvents: true,
+  // Segment only runs a destination plugin whose key is in its settings, and
+  // settings normally come from Segment's CDN. This writeKey is a placeholder
+  // the CDN answers with a 404, so the SDK falls back to `defaultSettings` —
+  // without the Firebase entry here not one screen or event reached Firebase
+  // (verified on the simulator, 2026-09-14).
+  defaultSettings: { integrations: { [firebasePlugin.key]: {} } },
+
+  // Off: Firebase records app opens, sessions and updates itself, so Segment's
+  // "Application Opened/Backgrounded" events would only duplicate them in
+  // every Crashlytics breadcrumb trail.
+  trackAppLifecycleEvents: false,
   debug: __DEV__,
 
   // Simplified error handler since we aren't doing network requests to Segment anymore
@@ -29,4 +43,16 @@ export const segmentClient = createClient({
 
 // Add Local Destinations (Plugins)
 // This automatically forwards local events to Firebase Analytics natively
-segmentClient.add({ plugin: new FirebasePlugin() });
+segmentClient.add({ plugin: firebasePlugin });
+// Inside the Firebase destination: decides which identify Firebase receives,
+// and with which traits.
+firebasePlugin.add(new FirebaseIdentityPlugin());
+
+// And what Segment keeps on the device: builds up to v1.0.3 persisted a
+// student's name, mobile and email in its stored traits, and every identify
+// merges them back in. Once the stored state has loaded, cut it down to the
+// allowed set for good.
+segmentClient.isReady.onChange((ready) => {
+  if (!ready) return;
+  void segmentClient.userInfo.set((state) => ({ ...state, traits: pickSafeTraits(state.traits) }));
+});

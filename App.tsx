@@ -4,7 +4,14 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import crashlytics from '@react-native-firebase/crashlytics';
 import { ApolloProvider } from '@apollo/client/react';
-import { View, ActivityIndicator, StyleSheet, I18nManager, NativeModules } from 'react-native';
+import {
+  View,
+  ActivityIndicator,
+  StyleSheet,
+  I18nManager,
+  NativeModules,
+  Platform,
+} from 'react-native';
 import { useFonts } from 'expo-font';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthProvider } from './src/context/AuthContext';
@@ -33,6 +40,7 @@ import { ForceUpdateProvider } from './src/context/ForceUpdateContext';
 import ForceUpdateModal from './src/components/ForceUpdateModal';
 import MaintenanceModal from './src/components/MaintenanceModal';
 import BokiFloatingButton from './src/components/boki/BokiFloatingButton';
+import WebViewWarmup from './src/components/WebViewWarmup';
 
 import * as Updates from 'expo-updates';
 
@@ -66,9 +74,16 @@ export default function App() {
   const [initialLanguage, setInitialLanguage] = useState<Language>('en');
 
   // The native manifests advertise landscape so the mind-map viewer can rotate
-  // (BKLT-174) — everything else stays portrait, held here at runtime rather
-  // than in app.json. Failure is non-fatal: worst case a screen can rotate.
+  // (BKLT-174), so portrait is held some other way until the navigator mounts;
+  // from then on react-native-screens owns orientation per screen (every stack
+  // declares `portrait_up`, MindMapViewer `landscape`). iOS takes portrait from
+  // its Info.plist default (`initialOrientation` of the expo-screen-orientation
+  // plugin in app.json), which applies from the first frame, before any JS.
+  // Android has no such key, so it locks here — a lock expo never re-applies,
+  // so it cannot fight react-native-screens later. Failure is non-fatal: worst
+  // case the splash can rotate.
   useEffect(() => {
+    if (Platform.OS !== 'android') return;
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
   }, []);
 
@@ -210,6 +225,7 @@ export default function App() {
                           </ErrorBoundary>
                         </NavigationContainer>
                         <BokiFloatingButton navigationRef={navigationRef} />
+                        <WebViewWarmup />
                         <ForceUpdateModal />
                         <MaintenanceModal />
                         <GlobalModalHandler />

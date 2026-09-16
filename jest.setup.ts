@@ -3,7 +3,11 @@ import { NativeModules } from 'react-native';
 
 // Mock Segment Analytics at the very top to avoid loading order issues
 jest.mock('@segment/analytics-react-native', () => {
-  class MockDestinationPlugin {}
+  // segmentClient.ts adds its identity filter to the Firebase destination.
+  class MockDestinationPlugin {
+    add = jest.fn();
+  }
+  class MockEventPlugin {}
   return {
     __esModule: true,
     createClient: jest.fn(() => ({
@@ -12,11 +16,15 @@ jest.mock('@segment/analytics-react-native', () => {
       identify: jest.fn(),
       add: jest.fn(),
       reset: jest.fn(),
+      isReady: { onChange: jest.fn() },
+      userInfo: { set: jest.fn() },
     })),
     generateMapTransform: jest.fn(() => (val: any) => val),
     DestinationPlugin: MockDestinationPlugin,
+    EventPlugin: MockEventPlugin,
     PluginType: {
       destination: 'destination',
+      enrichment: 'enrichment',
       utility: 'utility',
     },
   };
@@ -181,6 +189,8 @@ jest.mock('@react-native-firebase/analytics', () => {
     __esModule: true,
     default: () => mockAnalytics,
     getAnalytics: jest.fn(() => mockAnalytics),
+    setUserId: jest.fn(() => Promise.resolve()),
+    resetAnalyticsData: jest.fn(() => Promise.resolve()),
   };
 });
 

@@ -34,6 +34,7 @@ import { layout } from '../../config/layout';
 import { AiChatSource, BokiTurn } from '../../types/boki';
 import { BokiLessonByIdDocument } from '../../generated/graphql';
 import { INPUT_TEXT_ALIGN } from '../../lib/rtl';
+import { KEYBOARD_AVOIDING_BEHAVIOR } from '../../lib/keyboard';
 
 /**
  * Boki chat thread (BKLT-221, Phases 1–3).
@@ -260,10 +261,7 @@ const BokiChatScreen: React.FC = () => {
   return (
     <View style={[common.container, { backgroundColor: theme.colors.background }]}>
       <UnifiedHeader title={t('boki.title')} showBackButton rightContent={headerActions} />
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+      <KeyboardAvoidingView style={styles.flex} behavior={KEYBOARD_AVOIDING_BEHAVIOR}>
         {renderBody()}
 
         <View

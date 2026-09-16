@@ -1,0 +1,86 @@
+# Lesson reader + mind map smoke flow.
+#
+# Starts from a signed-in student's Home screen and walks the path that froze
+# on production: Revision tab → Social Studies → first chapter → first lesson →
+# scroll straight away → open the mind map fullscreen → close it.
+#
+# Asserts only what a student sees: the lesson opens, it scrolls, the map
+# preview appears, the fullscreen viewer opens (landscape) and closes back to
+# the lesson in portrait. Timing is NOT measured here — Maestro's own
+# accessibility snapshots block the app's main thread while it looks for
+# elements, so profile with Instruments / `sample` instead.
+#
+# Run manually (CLAUDE.md: agents never run E2E as part of the gate):
+#   maestro test e2e/study/01_lesson_mindmap.yaml
+appId: com.elbooklets.app
+---
+- runFlow:
+    when:
+      visible:
+        id: "profile-completion-skip-button"
+    commands:
+      - tapOn:
+          id: "profile-completion-skip-button"
+
+- tapOn:
+    id: "tab-study"
+- extendedWaitUntil:
+    visible:
+      text: ".*دراسات إجتماعية.*"
+    timeout: 20000
+- tapOn:
+    text: ".*دراسات إجتماعية.*"
+
+# First chapter, then its first lesson.
+- extendedWaitUntil:
+    visible:
+      text: ".*الوحدة الأولى.*"
+    timeout: 20000
+- tapOn:
+    text: ".*الوحدة الأولى.*"
+- extendedWaitUntil:
+    visible:
+      text: ".*الدرس الأول.*"
+    timeout: 20000
+- tapOn:
+    text: ".*الدرس الأول.*"
+
+# The lesson must open and scroll at once — this is where it used to freeze.
+- extendedWaitUntil:
+    visible:
+      text: "Lesson Content"
+    timeout: 30000
+- swipe:
+    direction: UP
+    duration: 400
+- swipe:
+    direction: UP
+    duration: 400
+
+- scrollUntilVisible:
+    element:
+      id: "study-mindmap"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "study-mindmap"
+# The viewer rotates the app to landscape while the simulator itself stays
+# portrait, and Maestro judges visibility against the device's frame: the close
+# button, past the portrait width in landscape coordinates, reads as off-screen.
+# Turn the device the way a student turns the phone.
+- setOrientation: LANDSCAPE_LEFT
+- extendedWaitUntil:
+    visible:
+      id: "study-mindmap-viewer-close"
+    timeout: 30000
+- tapOn:
+    id: "study-mindmap-viewer-close"
+
+# Back on the lesson, in portrait, with the preview intact.
+- setOrientation: PORTRAIT
+- extendedWaitUntil:
+    visible:
+      id: "study-mindmap"
+    timeout: 30000
+- assertVisible:
+    text: "Lesson Content"

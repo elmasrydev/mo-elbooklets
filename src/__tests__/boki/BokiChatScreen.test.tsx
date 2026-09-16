@@ -248,43 +248,51 @@ describe('BokiChatScreen', () => {
     });
 
     it('ignores a second source tap while the first is still resolving', async () => {
-      const lessonA = lessonPayload('162');
-      const apolloMocks = [
-        {
-          request: { query: BokiLessonByIdDocument, variables: { id: '162' } },
-          result: { data: { lesson: lessonA } },
-          delay: 20,
-        },
-      ];
-      mockedSend.mockResolvedValueOnce(
-        answer('Here is your answer.', {
-          sources: [lessonSource('162', 'Lesson A'), lessonSource('163', 'Lesson B')],
-        }),
-      );
-      const clickSpy = jest.spyOn(analytics, 'trackBokiReferenceLinkClicked');
-      renderWithProviders(<BokiChatScreen />, { apolloMocks });
-      fireEvent.changeText(screen.getByTestId('boki-chat-input'), 'question');
-      await act(async () => {
-        fireEvent.press(screen.getByTestId('boki-send-button'));
-      });
-      const chips = await waitFor(() => screen.getAllByTestId('boki-source-link'));
-      expect(chips).toHaveLength(2);
+      // Fake timers hold the lookup in flight until the test lets time pass, so
+      // the second tap provably lands while the first is still resolving —
+      // however busy the machine (a real 20 ms delay raced a slow render).
+      jest.useFakeTimers();
+      try {
+        const lessonA = lessonPayload('162');
+        const apolloMocks = [
+          {
+            request: { query: BokiLessonByIdDocument, variables: { id: '162' } },
+            result: { data: { lesson: lessonA } },
+            delay: 20,
+          },
+        ];
+        mockedSend.mockResolvedValueOnce(
+          answer('Here is your answer.', {
+            sources: [lessonSource('162', 'Lesson A'), lessonSource('163', 'Lesson B')],
+          }),
+        );
+        const clickSpy = jest.spyOn(analytics, 'trackBokiReferenceLinkClicked');
+        renderWithProviders(<BokiChatScreen />, { apolloMocks });
+        fireEvent.changeText(screen.getByTestId('boki-chat-input'), 'question');
+        await act(async () => {
+          fireEvent.press(screen.getByTestId('boki-send-button'));
+        });
+        const chips = await waitFor(() => screen.getAllByTestId('boki-source-link'));
+        expect(chips).toHaveLength(2);
 
-      await act(async () => {
-        fireEvent.press(chips[0]);
-      });
-      // The second chip is disabled (not just internally no-op'd) — it must
-      // never even fire onPress, or the click would still be tracked despite
-      // producing no visible action.
-      fireEvent.press(chips[1]);
-      expect(clickSpy).toHaveBeenCalledTimes(1);
+        await act(async () => {
+          fireEvent.press(chips[0]);
+        });
+        // The second chip is disabled (not just internally no-op'd) — it must
+        // never even fire onPress, or the click would still be tracked despite
+        // producing no visible action.
+        fireEvent.press(chips[1]);
+        expect(clickSpy).toHaveBeenCalledTimes(1);
 
-      await waitFor(() => expect(mockNavigate).toHaveBeenCalledTimes(1));
-      expect(mockNavigate).toHaveBeenCalledWith('StudyLesson', {
-        lesson: lessonA,
-        subject: lessonA.chapter.subject,
-        fromBoki: true,
-      });
+        await waitFor(() => expect(mockNavigate).toHaveBeenCalledTimes(1));
+        expect(mockNavigate).toHaveBeenCalledWith('StudyLesson', {
+          lesson: lessonA,
+          subject: lessonA.chapter.subject,
+          fromBoki: true,
+        });
+      } finally {
+        jest.useRealTimers();
+      }
     });
   });
 });
