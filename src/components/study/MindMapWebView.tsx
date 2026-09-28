@@ -1,0 +1,108 @@
+import React, { useRef, useState } from 'react';
+import { Platform, StyleSheet } from 'react-native';
+import { WebView } from 'react-native-webview';
+
+import { COLORS } from '../../config/colors';
+import { useAppForeground } from '../../hooks/useAppForeground';
+import { MindMapViewMode } from '../../utils/mindMapHtml';
+
+type MindMapWebViewProps = {
+  /** A document from `svgDocument`. */
+  html: string;
+  mode: MindMapViewMode;
+  /** The map has rendered. */
+  onLoad: () => void;
+  onError: () => void;
+  testID?: string;
+};
+
+/**
+ * How often a map may bring its WebView back after the OS killed the content
+ * process, per spell in the foreground. A map that kills it on every load gets
+ * the retry card instead of an endless blank-and-reload loop. On iOS a kill
+ * while the app is in the background does not count: iOS reclaims a
+ * backgrounded app's WebView processes as a matter of course, and would only
+ * reclaim a new one too, so the map comes back when the app does. Android
+ * restarts at once — it requires a WebView whose renderer is gone to be
+ * replaced straight away.
+ */
+const MAX_PROCESS_RESTARTS = 2;
+
+/**
+ * Renders a lesson's SVG mind map in a WebView (BKLT-174).
+ *
+ * Why not react-native-svg, which the rest of the app uses for SVG: it draws on
+ * the app's main thread, and it redraws the whole map on mount, every time the
+ * map scrolls back into view and on every rotation — the generator's drop
+ * shadows through CoreImage on top. Profiling the lesson screen on the
+ * simulator put 7.6 s of a 25 s open-and-scroll window into that drawing: the
+ * "freeze until the video loads". A WebView renders in its own process, so the
+ * map costs the app's main thread nothing, and it renders exactly as designed —
+ * embedded font, shadows, Arabic/number direction — with native, vector-sharp
+ * zoom in the viewer.
+ *
+ * JavaScript is off (the document is static markup from our own backend) and
+ * any navigation away from it — web, mail, phone or other links — is refused.
+ */
+const MindMapWebView: React.FC<MindMapWebViewProps> = ({ html, mode, onLoad, onError, testID }) => {
+  // The OS can kill a WebView's content process under memory pressure, which
+  // leaves a blank white view on iOS and an unusable one on Android.
+  // Remounting brings the map back.
+  const [processGeneration, setProcessGeneration] = useState(0);
+  const restartsLeft = useRef(MAX_PROCESS_RESTARTS);
+  const restartOnReturn = useRef(false);
+  const remount = () => setProcessGeneration((n) => n + 1);
+  const isAway = useAppForeground(() => {
+    restartsLeft.current = MAX_PROCESS_RESTARTS;
+    if (restartOnReturn.current) {
+      restartOnReturn.current = false;
+      remount();
+    }
+  });
+  const restart = () => {
+    if (Platform.OS === 'ios' && isAway()) {
+      restartOnReturn.current = true;
+      return;
+    }
+    if (restartsLeft.current === 0) {
+      onError();
+      return;
+    }
+    restartsLeft.current -= 1;
+    remount();
+  };
+  const zoomable = mode === 'viewer';
+
+  return (
+    <WebView
+      key={processGeneration}
+      testID={testID}
+      source={{ html }}
+      originWhitelist={['*']}
+      javaScriptEnabled={false}
+      // Only the map's own document (loaded as about:blank) may load; a link
+      // inside the SVG must not navigate the map away.
+      onShouldStartLoadWithRequest={(request) => request.url.startsWith('about:')}
+      scrollEnabled={zoomable}
+      bounces={false}
+      showsHorizontalScrollIndicator={false}
+      showsVerticalScrollIndicator={false}
+      setBuiltInZoomControls={zoomable}
+      setDisplayZoomControls={false}
+      onLoad={onLoad}
+      onError={onError}
+      onContentProcessDidTerminate={restart}
+      onRenderProcessGone={restart}
+      style={styles.web}
+    />
+  );
+};
+
+const styles = StyleSheet.create({
+  web: {
+    flex: 1,
+    backgroundColor: COLORS.white,
+  },
+});
+
+export default MindMapWebView;

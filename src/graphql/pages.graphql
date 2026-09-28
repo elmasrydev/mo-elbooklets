@@ -1,0 +1,21 @@
+# CMS pages (BKLT-300): About Us and the legal pages Paymob requires.
+#
+# Public — `page(slug:)` answers without a token on all three environments
+# (checked 2026-09-12). The body is plain text in two per-language fields, not
+# HTML and not localized by the `lang` header, so the app picks the language
+# itself (src/utils/staticPage.ts). A slug the environment does not hold comes
+# back as `page: null`, not an error — demo lacks refund-policy and
+# shipping-policy.
+#
+# Titles are deliberately not selected: the menu and the screen header use
+# bundled labels (src/config/staticPages.ts), so they render before, and
+# without, a fetch.
+query StaticPage($slug: String!) {
+  page(slug: $slug) {
+    id
+    slug
+    is_active
+    content_en
+    content_ar
+  }
+}

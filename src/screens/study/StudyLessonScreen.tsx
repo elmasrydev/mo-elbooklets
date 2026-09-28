@@ -26,6 +26,7 @@ import { useLazyQuery, useMutation } from '@apollo/client/react';
 import {
   DeletePointNoteDocument,
   LessonDodProgressDocument,
+  MySavedPointFlagsDocument,
   MySavedPointsDocument,
   RecordKeyPointViewDocument,
   SavePointNoteDocument,
@@ -37,7 +38,9 @@ import LessonNavBar from '../../components/navigation/LessonNavBar';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import { useTypography } from '../../hooks/useTypography';
 import useAndroidBack from '../../hooks/useAndroidBack';
+import { useAfterTransition } from '../../hooks/useAfterTransition';
 import AppButton from '../../components/AppButton';
+import { GenericListSkeleton } from '../../components/SkeletonLoader';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import LessonMindMap from '../../components/study/LessonMindMap';
 import { resolveMindMapKind } from '../../utils/mindMap';
@@ -340,6 +343,10 @@ const StudyLessonScreen: React.FC = () => {
   const route = useRoute<any>();
   const { typography, fontWeight } = useTypography();
   const insets = useSafeAreaInsets();
+  // Header and summary paint first; the video player and the key-point list
+  // mount, and the mind map loads, once the opening transition is over —
+  // mounted with the shell they would all land inside the transition.
+  const contentReady = useAfterTransition();
 
   const [currentLesson, setCurrentLesson] = useState<Lesson>(route.params?.lesson);
   const [allLessons, setAllLessons] = useState<Lesson[]>(route.params?.allLessons || []);
@@ -398,7 +405,22 @@ const StudyLessonScreen: React.FC = () => {
   const [fetchSavedPoints] = useLazyQuery(MySavedPointsDocument, {
     fetchPolicy: 'network-only',
   });
+  // The light variant for the per-open refresh — MySavedPoints above carries
+  // the whole lesson per saved point and is only for the bookmark deep-link.
+  const [fetchSavedPointFlags] = useLazyQuery(MySavedPointFlagsDocument, {
+    fetchPolicy: 'network-only',
+  });
   const [fetchDod] = useLazyQuery(LessonDodProgressDocument, { fetchPolicy: 'network-only' });
+
+  // The reader swaps lessons in place, so every lesson-scoped fetch — and the
+  // like/dislike reply — is checked against this before it is applied: a slow
+  // reply for the previous lesson must not overwrite the next lesson's state.
+  // (Bookmark/note replies are keyed by point id and cannot touch its rows.)
+  const currentLessonIdRef = useRef(currentLesson.id);
+  useEffect(() => {
+    currentLessonIdRef.current = currentLesson.id;
+  }, [currentLesson.id]);
+  const isStale = useCallback((lessonId: string) => currentLessonIdRef.current !== lessonId, []);
   const [toggleLessonInteraction] = useMutation(ToggleLessonInteractionDocument);
   const [recordKeyPointView] = useMutation(RecordKeyPointViewDocument);
   const [toggleSavedPointBookmark] = useMutation(ToggleSavedPointBookmarkDocument);
@@ -425,6 +447,7 @@ const StudyLessonScreen: React.FC = () => {
   const handleVideoInteraction = useCallback(
     async (type: 'LIKE' | 'DISLIKE') => {
       if (mutationInFlightRef.current) return;
+      const lessonId = currentLesson.id;
       try {
         mutationInFlightRef.current = true;
 
@@ -433,31 +456,28 @@ const StudyLessonScreen: React.FC = () => {
         const optimistic: 'LIKE' | 'DISLIKE' | null = previous === type ? null : type;
         setInteraction(optimistic);
 
-        const result = await toggleLessonInteraction({
-          variables: { lessonId: currentLesson.id, type },
-        });
+        const result = await toggleLessonInteraction({ variables: { lessonId, type } });
 
         const payload = result.data?.toggleLessonInteraction;
-        if (payload?.success) {
-          // Server tells us the new interactionType ("LIKE", "DISLIKE", or null)
-          const confirmed = (payload.interactionType as 'LIKE' | 'DISLIKE' | null) ?? null;
-          confirmedInteractionRef.current = confirmed;
-          interactionCacheRef.current.set(currentLesson.id, confirmed);
-          setInteraction(confirmed);
-        } else {
-          // Roll back to last confirmed state
-          confirmedInteractionRef.current = previous;
-          interactionCacheRef.current.set(currentLesson.id, previous);
-          setInteraction(previous);
-        }
+        // Server tells us the new interactionType ("LIKE", "DISLIKE", or null);
+        // on failure, roll back to the last confirmed state.
+        const settled = payload?.success
+          ? ((payload.interactionType as 'LIKE' | 'DISLIKE' | null) ?? null)
+          : previous;
+        interactionCacheRef.current.set(lessonId, settled);
+        // The student can tap Next before the reply lands; it then belongs to
+        // this lesson's cache entry only, never to the lesson now on screen.
+        if (isStale(lessonId)) return;
+        confirmedInteractionRef.current = settled;
+        setInteraction(settled);
       } catch (err) {
         console.error('Toggle interaction error:', err);
-        setInteraction(confirmedInteractionRef.current);
+        if (!isStale(lessonId)) setInteraction(confirmedInteractionRef.current);
       } finally {
         mutationInFlightRef.current = false;
       }
     },
-    [currentLesson.id, toggleLessonInteraction],
+    [currentLesson.id, isStale, toggleLessonInteraction],
   );
 
   const currentIndex = allLessons.findIndex((l) => l.id === currentLesson.id);
@@ -526,16 +546,20 @@ const StudyLessonScreen: React.FC = () => {
   };
 
   const fetchDodProgress = async (lessonId: string) => {
+    // A call for a lesson the student has already left — a key-point view that
+    // settles after Next — must not touch the loading flag of the one on screen.
+    if (isStale(lessonId)) return;
     try {
       setLoadingDod(true);
       const { data } = await fetchDod({ variables: { lessonId } });
+      if (isStale(lessonId)) return;
       if (data?.lessonDODProgress) {
         setDodProgress(data.lessonDODProgress);
       }
     } catch (err) {
       console.error('Fetch DOD error:', err);
     } finally {
-      setLoadingDod(false);
+      if (!isStale(lessonId)) setLoadingDod(false);
     }
   };
 
@@ -559,12 +583,19 @@ const StudyLessonScreen: React.FC = () => {
     }
   };
 
+  // Only the latest details request may switch the spinner off: not a stale
+  // one, and not an earlier one for the same lesson after A → B → A.
+  const detailsRequestRef = useRef(0);
+
   const fetchLessonDetails = async (lessonId: string) => {
+    detailsRequestRef.current += 1;
+    const request = detailsRequestRef.current;
     try {
       setFetchingDetails(true);
       // We use mySavedPoints because it's guaranteed to return the lesson object
       // if we're navigating from a bookmark.
       const { data } = await fetchSavedPoints({ variables: { lessonId } });
+      if (isStale(lessonId)) return;
 
       if (data?.mySavedPoints?.[0]?.lesson) {
         const fullLesson = data.mySavedPoints[0].lesson;
@@ -588,13 +619,14 @@ const StudyLessonScreen: React.FC = () => {
     } catch (err) {
       console.error('Fetch lesson details error:', err);
     } finally {
-      setFetchingDetails(false);
+      if (request === detailsRequestRef.current) setFetchingDetails(false);
     }
   };
 
   const fetchLessonMetadata = async (lessonId: string) => {
     try {
-      const { data } = await fetchSavedPoints({ variables: { lessonId } });
+      const { data } = await fetchSavedPointFlags({ variables: { lessonId } });
+      if (isStale(lessonId)) return;
 
       if (data?.mySavedPoints) {
         const pointsMap = new Map<string, UserSavedPoint>();
@@ -718,9 +750,13 @@ const StudyLessonScreen: React.FC = () => {
     fetchDodProgress(currentLesson.id);
     fetchLessonMetadata(currentLesson.id);
 
-    // If lesson points are missing, fetch them
+    // If lesson points are missing, fetch them. Otherwise switch the spinner
+    // off: a fetch still running for the lesson just left would hold it on
+    // until it returns.
     if (!currentLesson.lessonPoints || currentLesson.lessonPoints.length === 0) {
       fetchLessonDetails(currentLesson.id);
+    } else {
+      setFetchingDetails(false);
     }
     analytics.trackLessonStarted({
       lesson_id: currentLesson.id,
@@ -732,8 +768,10 @@ const StudyLessonScreen: React.FC = () => {
     });
   }, [currentLesson.id]);
 
+  // Waits for `contentReady`: the points only mount then, and the scroll below
+  // needs their layout.
   useEffect(() => {
-    if (route.params?.initialPointId && currentLesson.lessonPoints?.length) {
+    if (contentReady && route.params?.initialPointId && currentLesson.lessonPoints?.length) {
       const pointId = route.params.initialPointId;
 
       // Ensure the point is expanded
@@ -757,13 +795,13 @@ const StudyLessonScreen: React.FC = () => {
         clearTimeout(highlightTimer);
       };
     }
-  }, [route.params?.initialPointId, currentLesson.lessonPoints]);
+  }, [contentReady, route.params?.initialPointId, currentLesson.lessonPoints]);
 
   const mindMapKind = resolveMindMapKind(currentLesson.mindMapUrl, currentLesson.mindMapMimeType);
 
-  // BKLT-174 AC 5. "Viewed" fires when the map is actually on screen, once per
-  // lesson per session — the reader keeps one component mounted and swaps
-  // lessons through it, so without the ref every re-render would re-report.
+  // BKLT-174 AC 5. "Viewed" fires once the map has rendered, once per lesson
+  // per reader visit — the preview remounts for every map, so without the ref
+  // paging back to a lesson would report it again.
   const viewedMindMapsRef = React.useRef<Set<string>>(new Set());
   const mindMapParams = React.useCallback(
     () => ({
@@ -829,7 +867,9 @@ const StudyLessonScreen: React.FC = () => {
     // Persist the current lesson's checks before leaving it.
     viewedCacheRef.current.set(currentLesson.id, viewedPoints);
 
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    // No LayoutAnimation here: animating the whole content swap re-laid out the
+    // video, the map and every card at once, which is what made Next/Previous
+    // stutter. The swap is instant and scrolls to the top.
     setCurrentLesson(lesson);
     setExpandedPoints(new Set());
     setHighlightedPointId(null);
@@ -928,13 +968,19 @@ const StudyLessonScreen: React.FC = () => {
         {currentLesson.videoUrl && (
           <>
             <View style={currentStyles.videoSection}>
-              <LessonVideoPlayer
-                url={currentLesson.videoUrl as string}
-                theme={theme}
-                spacing={spacing}
-                borderRadius={borderRadius}
-                typography={typography}
-              />
+              {contentReady ? (
+                <LessonVideoPlayer
+                  url={currentLesson.videoUrl as string}
+                  theme={theme}
+                  spacing={spacing}
+                  borderRadius={borderRadius}
+                  typography={typography}
+                />
+              ) : (
+                <View style={currentStyles.videoPlaceholder} testID="study-video-placeholder">
+                  <ActivityIndicator color={theme.colors.textOnDark} />
+                </View>
+              )}
             </View>
             {/* Like / Dislike */}
             <View style={currentStyles.interactionRow}>
@@ -1082,6 +1128,7 @@ const StudyLessonScreen: React.FC = () => {
                   mimeType={currentLesson.mindMapMimeType}
                   onViewed={reportMindMapViewed}
                   onZoomed={reportMindMapZoomed}
+                  active={contentReady}
                 />
               </View>
             )}
@@ -1111,7 +1158,9 @@ const StudyLessonScreen: React.FC = () => {
                 )}
               </View>
 
-              {hasNewPoints ? (
+              {!contentReady ? (
+                <GenericListSkeleton numItems={3} />
+              ) : hasNewPoints ? (
                 <View style={currentStyles.pointsList}>
                   {currentLesson.lessonPoints!.map((point, idx) => {
                     const isExpanded = expandedPoints.has(point.id);
@@ -1595,6 +1644,13 @@ const styles = (
       backgroundColor: '#000',
       ...layout.shadow,
     },
+    // Same footprint as the player, so nothing below shifts when it mounts.
+    videoPlaceholder: {
+      width: '100%',
+      aspectRatio: VIDEO_ASPECT_RATIO,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
     interactionRow: {
       flexDirection: 'row',
       gap: 8,
@@ -1936,11 +1992,14 @@ const styles = (
   });
 };
 
+/** The player's frame; its placeholder keeps the same footprint, so nothing below shifts. */
+const VIDEO_ASPECT_RATIO = 16 / 9;
+
 const videoStyles = (theme: any, spacing: any, borderRadius: any, typography: any) =>
   StyleSheet.create({
     container: {
       width: '100%',
-      aspectRatio: 16 / 9,
+      aspectRatio: VIDEO_ASPECT_RATIO,
       backgroundColor: '#000',
       position: 'relative',
     },

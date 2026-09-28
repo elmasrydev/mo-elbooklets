@@ -12,6 +12,7 @@ import ParentDashboardScreen from '../screens/ParentDashboardScreen';
 import ParentRequestsScreen from '../screens/ParentRequestsScreen';
 import ParentSettingsScreen from '../screens/ParentSettingsScreen';
 import ChildDetailsScreen from '../screens/ChildDetailsScreen';
+import StaticPageScreen from '../screens/StaticPageScreen';
 import {
   ParentDashboardProvider,
   useParentDashboardContext,
@@ -147,7 +148,7 @@ const ParentTabScreens: React.FC = () => {
 const ParentTabNavigator: React.FC = () => {
   return (
     <ParentDashboardProvider>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator screenOptions={{ headerShown: false, orientation: 'portrait_up' }}>
         <Stack.Screen name="ParentMainTabs" component={ParentTabScreens} />
         <Stack.Screen name="ChildDetailsScreen" component={ChildDetailsScreen} />
         <Stack.Screen
@@ -160,6 +161,7 @@ const ParentTabNavigator: React.FC = () => {
         />
         <Stack.Screen name="FAQs" component={require('../screens/FAQScreen').default} />
         <Stack.Screen name="ContactUs" component={require('../screens/ContactUsScreen').default} />
+        <Stack.Screen name="StaticPage" component={StaticPageScreen} />
       </Stack.Navigator>
       <AddChildModal />
     </ParentDashboardProvider>

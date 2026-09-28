@@ -207,3 +207,19 @@ mutation DeletePointNote($lessonPointId: ID!) {
     }
   }
 }
+
+# The reader's per-open refresh of bookmark/note state. Deliberately NOT
+# `MySavedPoints`: that document carries the whole lesson — summary, points,
+# every key point — once per saved point, because the bookmark deep-link needs
+# it. The reader was parsing all of that on every lesson open just to learn
+# which points are bookmarked or noted.
+query MySavedPointFlags($lessonId: ID) {
+  mySavedPoints(lessonId: $lessonId) {
+    id
+    is_bookmarked
+    note_content
+    lessonPoint {
+      id
+    }
+  }
+}

@@ -36,6 +36,7 @@ import {
   ParentDeleteAccountMutationVariables,
 } from '../generated/graphql';
 import { isDebugMode } from '../config/debug';
+import { STATIC_PAGES } from '../config/staticPages';
 import { parentVerificationState } from '../utils/parentVerification';
 import { logError } from '../utils/logger';
 import crashlytics from '@react-native-firebase/crashlytics';
@@ -387,6 +388,31 @@ const ParentSettingsScreen: React.FC = () => {
               />
             </TouchableOpacity>
           )}
+
+          {/* About & legal — CMS pages, including the ones Paymob requires (BKLT-300) */}
+          <View style={currentStyles.sectionHeader}>
+            <Text style={currentStyles.sectionHeaderText}>{t('profile_screen.legal_section')}</Text>
+          </View>
+          {STATIC_PAGES.map((page) => (
+            <TouchableOpacity
+              key={page.slug}
+              testID={`parent-settings-page-${page.slug}`}
+              style={currentStyles.settingItem}
+              onPress={() => navigation.navigate('StaticPage', { slug: page.slug })}
+            >
+              <View style={currentStyles.settingIconBox}>
+                <Ionicons name={page.icon} size={22} color={theme.colors.primary} />
+              </View>
+              <View style={currentStyles.settingContent}>
+                <Text style={currentStyles.settingTitle}>{t(page.labelKey)}</Text>
+              </View>
+              <Ionicons
+                name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                size={20}
+                color={theme.colors.textTertiary}
+              />
+            </TouchableOpacity>
+          ))}
 
           {/* Notifications Control Section */}
           <View style={currentStyles.sectionHeader}>

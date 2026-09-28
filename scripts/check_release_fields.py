@@ -28,6 +28,9 @@ PROD_URL = "https://elbooklets.com/graphql"
 REQUIRED_FIELDS = {
     "User": ["is_subscribed"],
     "Lesson": ["isLocked", "mindMapUrl", "mindMapMimeType"],
+    # StaticPage (BKLT-300): About Us and the legal pages Paymob requires.
+    "Query": ["page"],
+    "Page": ["is_active", "content_en", "content_ar"],
 }
 
 # Fields the app selects in an *isolated* query built to tolerate their absence

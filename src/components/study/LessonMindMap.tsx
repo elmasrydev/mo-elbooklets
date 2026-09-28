@@ -1,270 +1,89 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useMemo } from 'react';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Image } from 'expo-image';
-import { SvgUri } from 'react-native-svg';
-import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
-import * as ScreenOrientation from 'expo-screen-orientation';
 
 import { useTheme } from '../../context/ThemeContext';
 import { useTypography } from '../../hooks/useTypography';
-import { resolveMindMapKind } from '../../utils/mindMap';
+import { useMindMapLoad } from '../../hooks/useMindMapLoad';
+import type { MindMapViewerParams } from '../../screens/study/MindMapViewerScreen';
+import MindMapErrorCard from './MindMapErrorCard';
+import MindMapWebView from './MindMapWebView';
 
 /**
- * Lesson mind map (BKLT-174).
+ * Lesson mind map — the inline preview (BKLT-174).
  *
  * The URL behind `mindMapUrl` is either an AI-generated SVG or an editor's
  * raster upload, and `mindMapMimeType` decides which — `<Image>` renders
  * nothing at all for an SVG, so the branch is not cosmetic. Detection lives in
- * `resolveMindMapKind`; this component only renders.
+ * `resolveMindMapKind`; loading state in `useMindMapLoad`, which the viewer
+ * shares; this component only renders.
  *
- * Shown fitted in the lesson page (the generated canvas is 1800px wide with a
- * variable height, far wider than a phone) with a tap-to-zoom fullscreen view.
- * SVG stays sharp at any scale, which is the whole reason the backend switched
- * to it, so the viewer allows a genuinely useful zoom rather than a blurry one.
+ * An SVG is downloaded once through `useRemoteSvg` and drawn by
+ * `MindMapWebView` (its own process — no main-thread drawing, which is what
+ * froze the lesson screen); a raster goes through expo-image. Tapping opens
+ * `MindMapViewer`, a landscape screen of its own, which reads the same cached
+ * SVG text.
+ *
+ * `active` lets the reader hold the map back until its opening transition is
+ * over — SVG download and raster load alike; the preview shows its skeleton
+ * meanwhile.
  *
  * Renders `null` when there is no map, so the lesson page never shows an empty
  * or broken mind-map section (BKLT-174 AC 4).
  */
 
-const MAX_SCALE = 5;
-const MIN_SCALE = 1;
-
 type LessonMindMapProps = {
   url?: string | null;
   mimeType?: string | null;
-  /** Fired once the map is actually on screen — drives "Mind Map Viewed". */
+  /** Fired once the map has rendered (not when it scrolls into view) — drives "Mind Map Viewed". */
   onViewed?: () => void;
   /** Fired when the student opens the zoomable fullscreen view. */
   onZoomed?: () => void;
+  /** `false` holds the map back (skeleton shown); default `true`. */
+  active?: boolean;
   testID?: string;
 };
 
-const LessonMindMap: React.FC<LessonMindMapProps> = ({
+type ViewerNavigation = NativeStackNavigationProp<{ MindMapViewer: MindMapViewerParams }>;
+
+const MindMapPreview: React.FC<LessonMindMapProps> = ({
   url,
   mimeType,
   onViewed,
   onZoomed,
+  active = true,
   testID = 'study-mindmap',
 }) => {
   const { t } = useTranslation();
   const { theme, spacing, borderRadius } = useTheme();
-  const { typography, fontWeight } = useTypography();
-
-  const kind = resolveMindMapKind(url, mimeType);
-  const isSvg = kind === 'svg';
-
-  // Both kinds start 'loading' and are driven by real load events. SvgUri does
-  // call onLoad once its fetch resolves (react-native-svg xml.tsx), so seeding
-  // SVGs as already-loaded — as QuestionImage does — would emit "Mind Map
-  // Viewed" at mount: before the file is fetched, while the section is still
-  // below the fold, and even for a map that then 404s.
-  const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
-  const [viewerOpen, setViewerOpen] = useState(false);
-  // Bumped to force a re-request of the same URL after a failure.
-  const [attempt, setAttempt] = useState(0);
-
-  const scale = useSharedValue(1);
-  const savedScale = useSharedValue(1);
-  const translateX = useSharedValue(0);
-  const translateY = useSharedValue(0);
-  const savedX = useSharedValue(0);
-  const savedY = useSharedValue(0);
-
-  // The reader swaps lessons in place, so reset per URL or a previous failure
-  // would stick to the next lesson's map.
-  useEffect(() => {
-    setStatus('loading');
-    setAttempt(0);
-    setViewerOpen(false);
-  }, [url]);
+  const { typography } = useTypography();
+  const navigation = useNavigation<ViewerNavigation>();
+  const map = useMindMapLoad(url, mimeType, 'preview', active);
 
   // "Viewed" means the map actually rendered — a failed load must not count.
   // NOTE: this is load-based, not viewport-based; a student who never scrolls
-  // down to the section still counts once the file arrives. Real visibility
-  // tracking would need onLayout + scroll offset, which the reader has no
-  // infrastructure for today.
+  // down to the section still counts once the map renders.
   useEffect(() => {
-    if (status === 'loaded') onViewed?.();
-  }, [status, onViewed]);
-
-  const resetZoom = useCallback(() => {
-    scale.value = 1;
-    savedScale.value = 1;
-    translateX.value = 0;
-    translateY.value = 0;
-    savedX.value = 0;
-    savedY.value = 0;
-  }, [scale, savedScale, translateX, translateY, savedX, savedY]);
-
-  /**
-   * Orientation follows `viewerOpen` **declaratively**, and must stay that way.
-   *
-   * The generated canvas is 1800 wide against a height of ~900 — roughly 2:1.
-   * Fitted into a portrait phone that letterboxes down to a strip barely taller
-   * than the inline preview, defeating the point of a "full" view. Landscape
-   * gives the map the long edge of the screen before any pinch-zoom.
-   *
-   * Driving this from the open/close *handlers* instead leaks: the viewer is
-   * also dismissed by Android's hardware back (via `onRequestClose`) and by the
-   * lesson-swap effect above, neither of which runs `closeViewer` — and a
-   * missed unlock strands the entire app sideways. Keying on state covers every
-   * path, and the cleanup covers unmount.
-   */
-  useEffect(() => {
-    const lock = viewerOpen
-      ? ScreenOrientation.OrientationLock.LANDSCAPE
-      : ScreenOrientation.OrientationLock.PORTRAIT_UP;
-    // Orientation is a nicety — a device that refuses to rotate (iPad
-    // multitasking, accessibility rotation lock) still gets the zoomable viewer.
-    ScreenOrientation.lockAsync(lock).catch(() => {});
-
-    return () => {
-      if (viewerOpen) {
-        ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
-      }
-    };
-  }, [viewerOpen]);
+    if (map.status === 'loaded') onViewed?.();
+  }, [map.status, onViewed]);
 
   const openViewer = () => {
-    resetZoom();
-    setViewerOpen(true);
     onZoomed?.();
+    // A URL is certain here: without one, `kind` is 'none' and nothing renders.
+    navigation.navigate('MindMapViewer', { url: url as string, mimeType });
   };
-
-  const closeViewer = () => {
-    setViewerOpen(false);
-    resetZoom();
-  };
-
-  const handleLoad = useCallback(() => setStatus('loaded'), []);
-  const handleError = useCallback(() => setStatus('error'), []);
-
-  const retry = () => {
-    setStatus('loading');
-    setAttempt((n) => n + 1);
-  };
-
-  // A load failure replaces the whole component with the retry card, which
-  // unmounts the Modal. Closing the viewer state too is what releases the
-  // landscape lock — otherwise the app is stranded sideways with no close
-  // button, and tapping retry would pop the viewer open unbidden.
-  useEffect(() => {
-    if (status === 'error') setViewerOpen(false);
-  }, [status]);
-
-  const pinch = Gesture.Pinch()
-    .onUpdate((e) => {
-      scale.value = Math.min(Math.max(savedScale.value * e.scale, MIN_SCALE), MAX_SCALE);
-    })
-    .onEnd(() => {
-      savedScale.value = scale.value;
-      // Snapping back to centre at 1x keeps the map from drifting off screen.
-      if (scale.value <= MIN_SCALE) {
-        translateX.value = withTiming(0);
-        translateY.value = withTiming(0);
-        savedX.value = 0;
-        savedY.value = 0;
-      }
-    });
-
-  const pan = Gesture.Pan()
-    .onUpdate((e) => {
-      // Panning only makes sense once zoomed in.
-      if (scale.value <= MIN_SCALE) return;
-      translateX.value = savedX.value + e.translationX;
-      translateY.value = savedY.value + e.translationY;
-    })
-    .onEnd(() => {
-      savedX.value = translateX.value;
-      savedY.value = translateY.value;
-    });
-
-  const doubleTap = Gesture.Tap()
-    .numberOfTaps(2)
-    .onEnd(() => {
-      const next = scale.value > MIN_SCALE ? MIN_SCALE : 2.5;
-      scale.value = withTiming(next);
-      savedScale.value = next;
-      if (next === MIN_SCALE) {
-        translateX.value = withTiming(0);
-        translateY.value = withTiming(0);
-        savedX.value = 0;
-        savedY.value = 0;
-      }
-    });
-
-  // Memoised: RNGH re-attaches handlers when the gesture object identity
-  // changes, and this component re-renders with its parent screen.
-  const composed = useMemo(
-    () => Gesture.Simultaneous(pinch, pan, doubleTap),
-    [pinch, pan, doubleTap],
-  );
-
-  const zoomStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: translateX.value },
-      { translateY: translateY.value },
-      { scale: scale.value },
-    ],
-  }));
 
   const s = useMemo(() => styles(theme, spacing, borderRadius), [theme, spacing, borderRadius]);
 
-  if (kind === 'none') return null;
+  if (map.kind === 'none') return null;
 
-  if (status === 'error') {
-    return (
-      <TouchableOpacity
-        style={s.fallback}
-        onPress={retry}
-        activeOpacity={0.8}
-        accessibilityRole="button"
-        accessibilityLabel={t('study_lesson.mind_map_error')}
-        testID={`${testID}-retry`}
-      >
-        <Ionicons name="git-network-outline" size={28} color={theme.colors.textTertiary} />
-        <Text style={[typography('caption'), { color: theme.colors.textSecondary }]}>
-          {t('study_lesson.mind_map_error')}
-        </Text>
-        <View style={s.retryRow}>
-          <Ionicons name="refresh" size={14} color={theme.colors.primary} />
-          <Text style={[typography('caption'), fontWeight('600'), { color: theme.colors.primary }]}>
-            {t('common.retry')}
-          </Text>
-        </View>
-      </TouchableOpacity>
-    );
+  if (map.status === 'error') {
+    return <MindMapErrorCard variant="inline" onRetry={map.retry} testID={`${testID}-retry`} />;
   }
-
-  const renderMap = (fit: 'preview' | 'viewer') =>
-    isSvg ? (
-      // pointerEvents="none" so the SVG's native views don't swallow the tap the
-      // parent needs to open the viewer.
-      <View style={s.fill} pointerEvents="none">
-        <SvgUri
-          key={attempt}
-          uri={url as string}
-          width="100%"
-          height="100%"
-          onLoad={handleLoad}
-          onError={handleError}
-        />
-      </View>
-    ) : (
-      <Image
-        key={attempt}
-        source={{ uri: url as string }}
-        style={s.fill}
-        contentFit="contain"
-        cachePolicy="memory-disk"
-        transition={fit === 'preview' ? 150 : 0}
-        onLoad={handleLoad}
-        onError={handleError}
-      />
-    );
 
   return (
     <>
@@ -276,8 +95,33 @@ const LessonMindMap: React.FC<LessonMindMapProps> = ({
         accessibilityLabel={t('study_lesson.mind_map_hint')}
         testID={testID}
       >
-        {!viewerOpen && renderMap('preview')}
-        {status === 'loading' && (
+        {map.kind === 'svg'
+          ? // pointerEvents="none": the preview is a picture — the tap belongs
+            // to the card, and a drag to the lesson's scroll view.
+            map.html && (
+              <View style={s.fill} pointerEvents="none">
+                <MindMapWebView
+                  key={map.attempt}
+                  html={map.html}
+                  mode="preview"
+                  onLoad={map.onLoad}
+                  onError={map.onError}
+                />
+              </View>
+            )
+          : active && (
+              <Image
+                key={map.attempt}
+                source={{ uri: url as string }}
+                style={s.fill}
+                contentFit="contain"
+                cachePolicy="memory-disk"
+                transition={150}
+                onLoad={map.onLoad}
+                onError={map.onError}
+              />
+            )}
+        {map.status === 'loading' && (
           <View style={[s.skeleton, { backgroundColor: theme.colors.background }]}>
             <ActivityIndicator color={theme.colors.primary} />
           </View>
@@ -289,39 +133,19 @@ const LessonMindMap: React.FC<LessonMindMapProps> = ({
       <Text style={[typography('caption'), s.hint, { color: theme.colors.textTertiary }]}>
         {t('study_lesson.mind_map_hint')}
       </Text>
-
-      <Modal
-        visible={viewerOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={closeViewer}
-        supportedOrientations={['portrait', 'landscape']}
-      >
-        {/* The reader's Modal sits outside the app's root gesture handler, so
-            the viewer needs its own for pinch/pan to receive touches. */}
-        <GestureHandlerRootView style={s.viewerRoot}>
-          <View style={s.viewerBackdrop} testID={`${testID}-viewer`}>
-            <GestureDetector gesture={composed}>
-              <Animated.View style={[s.viewerCanvas, zoomStyle]}>
-                {renderMap('viewer')}
-              </Animated.View>
-            </GestureDetector>
-
-            <TouchableOpacity
-              style={[s.viewerClose, { backgroundColor: theme.colors.primary }]}
-              onPress={closeViewer}
-              accessibilityRole="button"
-              accessibilityLabel={t('common.close')}
-              testID={`${testID}-viewer-close`}
-            >
-              <Ionicons name="close" size={26} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
-        </GestureHandlerRootView>
-      </Modal>
     </>
   );
 };
+
+/**
+ * Keyed by the map's URL: the reader swaps lessons in place, and all load
+ * state — "loaded" included, which is what reports "Mind Map Viewed" — belongs
+ * to one map. Unkeyed, the first render after Next still read the previous
+ * map's "loaded" and counted the next lesson's map as viewed before it loaded.
+ */
+const LessonMindMap: React.FC<LessonMindMapProps> = (props) => (
+  <MindMapPreview key={props.url ?? 'none'} {...props} />
+);
 
 const styles = (theme: any, spacing: any, borderRadius: any) =>
   StyleSheet.create({
@@ -361,57 +185,6 @@ const styles = (theme: any, spacing: any, borderRadius: any) =>
     hint: {
       marginTop: spacing.xs,
       textAlign: 'left',
-    },
-    fallback: {
-      width: '100%',
-      height: 140,
-      borderRadius: borderRadius.lg,
-      borderWidth: 1.5,
-      borderColor: theme.colors.border,
-      borderStyle: 'dashed',
-      backgroundColor: theme.colors.background,
-      justifyContent: 'center',
-      alignItems: 'center',
-      gap: 8,
-    },
-    retryRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 5,
-    },
-    viewerRoot: {
-      flex: 1,
-    },
-    viewerBackdrop: {
-      flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.92)',
-      justifyContent: 'center',
-      alignItems: 'center',
-      overflow: 'hidden',
-    },
-    viewerCanvas: {
-      // Full-bleed: in landscape the map's 2:1 ratio nearly matches the screen,
-      // so any inset is wasted map. Rounded corners/padding would only shrink it.
-      width: '100%',
-      height: '100%',
-      backgroundColor: '#FFFFFF',
-      overflow: 'hidden',
-    },
-    viewerClose: {
-      position: 'absolute',
-      top: 56,
-      right: 20,
-      zIndex: 10,
-      elevation: 10,
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      justifyContent: 'center',
-      alignItems: 'center',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.3,
-      shadowRadius: 4,
     },
   });
 

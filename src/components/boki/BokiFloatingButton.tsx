@@ -33,6 +33,7 @@ const BOKI_HIDDEN_ROUTES = new Set<string>([
   'ParentSettings',
   'InternalSettings',
   'StudyLesson',
+  'MindMapViewer',
   'QuizTaking',
   'QuizResults',
   'QuizReview',

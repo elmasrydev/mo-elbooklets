@@ -43,9 +43,12 @@ const RecentActivityCard: React.FC<ActivityCardProps> = ({ activity, onPress }) 
         <Text style={s.title} numberOfLines={1}>
           {activity.name || activity.subject?.name || 'Quiz'}
         </Text>
-        <Text style={s.subtitle}>
-          {activity.isPassed ? t('home_screen.completed') : t('common.completed')}
-        </Text>
+        {/* One subtitle for both outcomes (BKLT-394). The passed branch used to
+            read `home_screen.completed`, whose value was "AVG Score" /
+            "متوسط الدرجات" — a stray average-score label under a single quiz,
+            which is not an average of anything. Pass/fail is already carried by
+            the score badge's colour, so the row just says what happened. */}
+        <Text style={s.subtitle}>{t('common.completed')}</Text>
       </View>
 
       {/* Time and Score */}

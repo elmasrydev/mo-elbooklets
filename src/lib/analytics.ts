@@ -1,5 +1,7 @@
 import type { UserTraits } from '@segment/analytics-react-native';
 
+import type { SafeUserTraits } from './safeUserTraits';
+import { clearFirebaseIdentity, setSignedInUser } from './firebaseIdentityPlugin';
 import { segmentClient } from './segmentClient';
 
 /**
@@ -35,23 +37,6 @@ export interface QuizAnalyticsParams {
  * NOTE: This service currently uses Segment SDK as a local router
  * to send events natively to Firebase and other local plugins.
  */
-/**
- * The only user traits allowed to leave the device.
- *
- * PRIVACY RULE — this app's users are minors. Traits become Firebase *user
- * properties*, which are readable by anyone with console access and which
- * Google's own terms forbid from carrying PII. `userId` is the account id, a
- * pseudonymous key that already ties every session to the account, so nothing
- * identifying needs to travel alongside it.
- *
- * NEVER widen this type with name, email, mobile, school, gender or address.
- */
-export interface SafeUserTraits {
-  grade?: string;
-  educational_system?: string;
-  is_subscribed?: boolean;
-}
-
 export const analytics = {
   /**
    * Identify a user by account id, with strictly non-identifying traits.
@@ -62,6 +47,7 @@ export const analytics = {
     // Segment types traits as an open JsonMap; SafeUserTraits is deliberately
     // closed so the compiler rejects PII at the call site, so widen it here —
     // this cast is the only place the two shapes meet.
+    setSignedInUser(userId);
     segmentClient.identify(userId, traits as UserTraits | undefined);
   },
 
@@ -86,7 +72,9 @@ export const analytics = {
    */
   reset: () => {
     if (__DEV__) console.log('🔄 [Analytics] Reset');
+    setSignedInUser(null);
     segmentClient.reset();
+    clearFirebaseIdentity();
   },
 
   // --- Specialized Event Trackers ---
@@ -126,8 +114,8 @@ export const analytics = {
   },
 
   /**
-   * BKLT-174 AC 5. Fired when the mind map is actually on screen (not merely
-   * present on the lesson), at most once per lesson per session. `map_type`
+   * BKLT-174 AC 5. Fired once the mind map has rendered — load-based, not when
+   * it scrolls into view — at most once per lesson per reader visit. `map_type`
    * distinguishes AI-generated SVGs from editor-uploaded rasters.
    */
   trackMindMapViewed: (params: LessonAnalyticsParams & { map_type?: string }) => {
@@ -155,8 +143,13 @@ export const analytics = {
     analytics.track('Leaderboard Filter Changed', params);
   },
 
-  trackContactSupport: (subject?: string) => {
-    analytics.track('Contact Support', { subject });
+  /**
+   * Deliberately carries no subject: the contact form's subject is free text a
+   * student types, and an event parameter must never hold anything that could
+   * identify them (the same rule as {@link SafeUserTraits}).
+   */
+  trackContactSupport: () => {
+    analytics.track('Contact Support');
   },
 
   trackLanguageChanged: (language: 'ar' | 'en') => {
