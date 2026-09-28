@@ -9,6 +9,7 @@ import { spacing, borderRadius } from '../../config/spacing';
 import { AiChatSource, BokiErrorKind, BokiTurn } from '../../types/boki';
 import BokiTypingIndicator from './BokiTypingIndicator';
 import BokiSourceLink from './BokiSourceLink';
+import MathText from '../math/MathText';
 
 interface BokiMessageBubbleProps {
   turn: BokiTurn;
@@ -112,7 +113,7 @@ const BokiMessageBubble: React.FC<BokiMessageBubbleProps> = ({
 
           {turn.status === 'complete' && turn.answer !== null && (
             <View>
-              <Text
+              <MathText
                 style={[
                   typography('body', undefined, isArabicText(turn.answer)),
                   styles.text,
@@ -120,7 +121,7 @@ const BokiMessageBubble: React.FC<BokiMessageBubbleProps> = ({
                 ]}
               >
                 {turn.answer}
-              </Text>
+              </MathText>
               {turn.sources.length > 0 && (
                 <View style={styles.sources}>
                   {turn.sources.map((source) => (

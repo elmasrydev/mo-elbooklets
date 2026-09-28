@@ -1,9 +1,22 @@
 import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTypography } from '../../hooks/useTypography';
 import { QUIZ_COLORS } from '../../config/colors';
 import { isArabicText } from '../../config/fonts';
+import MathText from '../math/MathText';
+import { splitMath } from '../../utils/mathSegments';
+
+/**
+ * The title/subtitle lines of an answer — kept whole when a formula spans a
+ * line break (a multi-line `$$…$$`), which the split would cut into two
+ * unclosed halves shown as raw TeX.
+ */
+const splitTitle = (answer: string): string[] =>
+  answer.includes('\n') &&
+  splitMath(answer).some((segment) => segment.kind === 'math' && segment.tex.includes('\n'))
+    ? [answer]
+    : answer.split('\n');
 
 /**
  * The pick-one option list for `mcq` / `true_false` questions — extracted
@@ -60,7 +73,7 @@ const ChoiceOptions: React.FC<ChoiceOptionsProps> = ({
     <View style={styles.container}>
       {options.map((answer, index) => {
         const isSelected = selectedAnswer === answer;
-        const parts = answer.split('\n');
+        const parts = splitTitle(answer);
         const hasSubtitle = parts.length > 1;
 
         return (
@@ -79,7 +92,9 @@ const ChoiceOptions: React.FC<ChoiceOptionsProps> = ({
               </View>
             </View>
             <View style={styles.textContainer}>
-              <Text
+              {/* MathText only draws the label: selection and submit still use
+                  the raw `answer`, which is what the server matches. */}
+              <MathText
                 style={[
                   styles.title,
                   isSelected && styles.titleSelected,
@@ -92,9 +107,9 @@ const ChoiceOptions: React.FC<ChoiceOptionsProps> = ({
                 ]}
               >
                 {labelFor(parts[0])}
-              </Text>
+              </MathText>
               {hasSubtitle && (
-                <Text
+                <MathText
                   style={[
                     styles.subtitle,
                     isSelected && styles.subtitleSelected,
@@ -102,7 +117,7 @@ const ChoiceOptions: React.FC<ChoiceOptionsProps> = ({
                   ]}
                 >
                   {parts.slice(1).join('\n')}
-                </Text>
+                </MathText>
               )}
             </View>
           </TouchableOpacity>

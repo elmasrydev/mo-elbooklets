@@ -6,6 +6,7 @@ import { useTypography } from '../../hooks/useTypography';
 import { isArabicText } from '../../config/fonts';
 import { QUIZ_COLORS } from '../../config/colors';
 import QuizBottomSheet from './QuizBottomSheet';
+import MathText from '../math/MathText';
 import type { MatchItem } from './MatchBoard';
 
 /**
@@ -100,14 +101,14 @@ const MatchSlotList: React.FC<MatchSlotListProps> = ({
                   {i + 1}
                 </Text>
               </View>
-              <Text
+              <MathText
                 style={[
                   styles.promptText,
                   typography('bodySmall', '700', isArabicText(prompt.text)),
                 ]}
               >
                 {prompt.text}
-              </Text>
+              </MathText>
             </View>
 
             <Pressable
@@ -134,7 +135,7 @@ const MatchSlotList: React.FC<MatchSlotListProps> = ({
                       {letterForRight[chosenRight.id]}
                     </Text>
                   </View>
-                  <Text
+                  <MathText
                     style={[
                       styles.slotText,
                       typography('bodySmall', '700', isArabicText(chosenRight.text)),
@@ -142,7 +143,7 @@ const MatchSlotList: React.FC<MatchSlotListProps> = ({
                     numberOfLines={2}
                   >
                     {chosenRight.text}
-                  </Text>
+                  </MathText>
                   <Pressable
                     onPress={() => clearSlot(prompt.id)}
                     hitSlop={8}
@@ -194,7 +195,11 @@ const MatchSlotList: React.FC<MatchSlotListProps> = ({
           <>
             <Text style={[styles.sheetTitle, typography('bodySmall'), { textAlign: contentAlign }]}>
               {t('quiz_taking.match_sheet_title', 'Choose the answer for:')}{' '}
-              <Text style={fontWeight('800')}>{activePrompt.text}</Text>
+              {/* The title's own style again: nested text would inherit it, the
+                  formulas cannot — they take their size and colour from it. */}
+              <MathText inline style={[typography('bodySmall'), fontWeight('800')]}>
+                {activePrompt.text}
+              </MathText>
             </Text>
             {right.map((answer) => {
               const usedByLeftId = Object.keys(pairs).find((lid) => pairs[lid] === answer.id);
@@ -214,14 +219,14 @@ const MatchSlotList: React.FC<MatchSlotListProps> = ({
                       {letterForRight[answer.id]}
                     </Text>
                   </View>
-                  <Text
+                  <MathText
                     style={[
                       styles.sheetOptionText,
                       typography('bodySmall', '700', isArabicText(answer.text)),
                     ]}
                   >
                     {answer.text}
-                  </Text>
+                  </MathText>
                   {usedByNumber != null && (
                     <View style={[styles.usedBadge, { backgroundColor: color }]}>
                       <Text style={[typography('label', '800'), styles.usedBadgeText]}>

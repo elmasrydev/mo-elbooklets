@@ -1,0 +1,73 @@
+# Lesson math smoke flow (BKLT-399).
+#
+# Starts from a signed-in student's Home: Revision tab → Math → first unit →
+# first lesson, then checks that no raw LaTeX is on screen — in the summary and
+# in the first key point's explanation. Formulas are drawn as SVGs (MathText),
+# so a `$`, `\(` or `\[` left in the visible text means one was not. (Not
+# `\frac`: a drawn formula's accessibility label is its TeX, without delimiters,
+# and on Android Maestro matches labels too.)
+#
+# Only meaningful once the PRS Math lesson carries LaTeX: on 2026-09-28 the
+# Preparatory 2 Math lessons had none, so today this passes trivially. Ask the
+# content team for a LaTeX sample in Unit 1 → Lesson 1-1 (inline, display and
+# an Arabic sentence) to make it a real check.
+#
+# Run manually (CLAUDE.md: agents never run E2E as part of the gate):
+#   maestro test e2e/study/02_lesson_math.yaml
+appId: com.elbooklets.app
+---
+- runFlow:
+    when:
+      visible:
+        id: "profile-completion-skip-button"
+    commands:
+      - tapOn:
+          id: "profile-completion-skip-button"
+
+- tapOn:
+    id: "tab-study"
+- extendedWaitUntil:
+    visible:
+      text: ".*Math.*"
+    timeout: 20000
+- tapOn:
+    text: ".*Math.*"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*Unit 1.*"
+    timeout: 20000
+- tapOn:
+    text: ".*Unit 1.*"
+- extendedWaitUntil:
+    visible:
+      text: ".*Lesson 1-1.*"
+    timeout: 20000
+- tapOn:
+    text: ".*Lesson 1-1.*"
+- extendedWaitUntil:
+    visible:
+      text: "Lesson Content"
+    timeout: 30000
+
+# Summary: nothing on screen may still read as TeX. (Single-quoted YAML keeps
+# the backslashes literal: the regex matches `$`, `\(` or `\[`.)
+- assertNotVisible:
+    text: '.*(\$|\\\(|\\\[).*'
+
+# First key point, expanded.
+- scrollUntilVisible:
+    element:
+      id: "study-keypoint-0"
+    direction: DOWN
+    timeout: 20000
+    optional: true
+- runFlow:
+    when:
+      visible:
+        id: "study-keypoint-0"
+    commands:
+      - tapOn:
+          id: "study-keypoint-0"
+      - assertNotVisible:
+          text: '.*(\$|\\\(|\\\[).*'

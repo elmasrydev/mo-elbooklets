@@ -11,6 +11,7 @@ import {
   type ReviewUserAnswer,
 } from '../../utils/quizResultGroups';
 import ScoreStrip from './ScoreStrip';
+import MathText from '../math/MathText';
 
 /**
  * The body of a match result (from the mockup): a score strip, a "you swapped
@@ -40,7 +41,7 @@ const Chip: React.FC<{ text: string | null; correct: boolean; contentAlign: 'lef
         { borderColor: correct ? QUIZ_COLORS.okBorder : QUIZ_COLORS.badBorder },
       ]}
     >
-      <Text
+      <MathText
         style={[
           styles.chipText,
           typography('label', '700', isArabicText(text ?? '')),
@@ -49,7 +50,7 @@ const Chip: React.FC<{ text: string | null; correct: boolean; contentAlign: 'lef
         numberOfLines={2}
       >
         {text ?? t('quiz_review.no_answer', 'No answer')}
-      </Text>
+      </MathText>
     </View>
   );
 };
@@ -118,7 +119,12 @@ const MatchReviewCard: React.FC<MatchReviewCardProps> = ({ row, contentAlign }) 
                 ]}
               >
                 <Text style={styles.promptNum}>{index + 1}. </Text>
-                {pair.leftText}
+                {/* Nested, so the text inherits the prompt's style; it is passed
+                    again only because the formulas cannot inherit — they take
+                    their size and colour from it. */}
+                <MathText inline style={typography('caption', '700', isArabicText(pair.leftText))}>
+                  {pair.leftText}
+                </MathText>
               </Text>
             </View>
             <View style={styles.answers}>

@@ -29,6 +29,7 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { GenericListSkeleton } from '../components/SkeletonLoader';
 import RetryView from '../components/RetryView';
+import MathText from '../components/math/MathText';
 import { loadFailureMessage } from '../utils/queryError';
 import { INPUT_TEXT_ALIGN } from '../lib/rtl';
 import { useSubscriptionGate } from '../hooks/useSubscriptionGate';
@@ -309,11 +310,11 @@ const BookmarksNotesScreen: React.FC = () => {
       </View>
 
       <View style={currentStyles.pointContainer}>
-        <Text style={currentStyles.pointTitle}>{item.lessonPoint.title}</Text>
+        <MathText style={currentStyles.pointTitle}>{item.lessonPoint.title}</MathText>
         {item.lessonPoint.explanation && (
-          <Text style={currentStyles.pointExplanation} numberOfLines={2}>
+          <MathText style={currentStyles.pointExplanation} numberOfLines={2}>
             {item.lessonPoint.explanation}
-          </Text>
+          </MathText>
         )}
       </View>
 

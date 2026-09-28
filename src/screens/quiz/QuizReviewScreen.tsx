@@ -32,6 +32,7 @@ import UnifiedHeader from '../../components/UnifiedHeader';
 import MatchReviewCard from '../../components/quiz/MatchReviewCard';
 import ParagraphReviewGroup from '../../components/quiz/ParagraphReviewGroup';
 import QuestionImage from '../../components/quiz/QuestionImage';
+import MathText from '../../components/math/MathText';
 import { groupUserAnswers } from '../../utils/quizResultGroups';
 import { isMatchType, isDescriptiveType, QUESTION_TYPES } from '../../utils/quizQuestionTypes';
 import { formatScore } from '../../lib/scoreUtils';
@@ -434,9 +435,9 @@ const QuizReviewScreen: React.FC = () => {
                     onPress={toggleExpand}
                     style={currentStyles.collapsedContent}
                   >
-                    <Text numberOfLines={1} style={currentStyles.collapsedQuestionText}>
+                    <MathText numberOfLines={1} style={currentStyles.collapsedQuestionText}>
                       {ua.question.question}
-                    </Text>
+                    </MathText>
                     {isMatch ? (
                       // Match has no single answer_1 — summarise correct pairs.
                       <Text
@@ -453,17 +454,24 @@ const QuizReviewScreen: React.FC = () => {
                         })}
                       </Text>
                     ) : isCorrect ? (
-                      <Text numberOfLines={1} style={currentStyles.collapsedCorrectAnswer}>
-                        ✓ {ua.question.answer_1}
-                      </Text>
+                      <MathText numberOfLines={1} style={currentStyles.collapsedCorrectAnswer}>
+                        {`✓ ${ua.question.answer_1 ?? ''}`}
+                      </MathText>
                     ) : (
                       <View style={currentStyles.collapsedAnswerRow}>
-                        <Text numberOfLines={1} style={currentStyles.collapsedWrongAnswer}>
-                          ✗ {ua.selected_answer || t('quiz_review.no_answer', 'No answer')}
-                        </Text>
-                        <Text numberOfLines={1} style={currentStyles.collapsedCorrectAnswer}>
-                          ✓ {ua.question.answer_1}
-                        </Text>
+                        {isDescriptive ? (
+                          // The student typed this one: plain text, never read as TeX.
+                          <Text numberOfLines={1} style={currentStyles.collapsedWrongAnswer}>
+                            ✗ {ua.selected_answer || t('quiz_review.no_answer', 'No answer')}
+                          </Text>
+                        ) : (
+                          <MathText numberOfLines={1} style={currentStyles.collapsedWrongAnswer}>
+                            {`✗ ${ua.selected_answer || t('quiz_review.no_answer', 'No answer')}`}
+                          </MathText>
+                        )}
+                        <MathText numberOfLines={1} style={currentStyles.collapsedCorrectAnswer}>
+                          {`✓ ${ua.question.answer_1 ?? ''}`}
+                        </MathText>
                       </View>
                     )}
                   </TouchableOpacity>
@@ -480,7 +488,7 @@ const QuizReviewScreen: React.FC = () => {
                         testID={`review-question-image-${ua.question.id}`}
                       />
                     )}
-                    <Text
+                    <MathText
                       style={[
                         currentStyles.questionText,
                         { textAlign: contentAlign },
@@ -488,7 +496,7 @@ const QuizReviewScreen: React.FC = () => {
                       ]}
                     >
                       {ua.question.question}
-                    </Text>
+                    </MathText>
 
                     {/* Report button */}
                     <TouchableOpacity
@@ -588,7 +596,7 @@ const QuizReviewScreen: React.FC = () => {
                                   {t('quiz_review.model_answer', 'Model Answer')}
                                 </Text>
                               </View>
-                              <Text
+                              <MathText
                                 style={{
                                   ...typography('bodySmall'),
                                   color: theme.colors.text,
@@ -597,7 +605,7 @@ const QuizReviewScreen: React.FC = () => {
                                 }}
                               >
                                 {ua.question.answer_1}
-                              </Text>
+                              </MathText>
                             </View>
                           </View>
                         </View>
@@ -669,7 +677,7 @@ const QuizReviewScreen: React.FC = () => {
                                         >
                                           {t('quiz_review.covered_concepts', 'Covered')}
                                         </Text>
-                                        <Text
+                                        <MathText
                                           style={{
                                             ...typography('bodySmall'),
                                             color: '#065F46',
@@ -678,7 +686,7 @@ const QuizReviewScreen: React.FC = () => {
                                           }}
                                         >
                                           {concept}
-                                        </Text>
+                                        </MathText>
                                       </View>
                                     </View>
                                   ),
@@ -713,7 +721,7 @@ const QuizReviewScreen: React.FC = () => {
                                         >
                                           {t('quiz_review.partially_covered', 'Partially Covered')}
                                         </Text>
-                                        <Text
+                                        <MathText
                                           style={{
                                             ...typography('bodySmall'),
                                             color: '#92400E',
@@ -722,7 +730,7 @@ const QuizReviewScreen: React.FC = () => {
                                           }}
                                         >
                                           {concept}
-                                        </Text>
+                                        </MathText>
                                       </View>
                                     </View>
                                   ),
@@ -757,7 +765,7 @@ const QuizReviewScreen: React.FC = () => {
                                         >
                                           {t('quiz_review.missing_concepts', 'Missing')}
                                         </Text>
-                                        <Text
+                                        <MathText
                                           style={{
                                             ...typography('bodySmall'),
                                             color: '#991B1B',
@@ -766,7 +774,7 @@ const QuizReviewScreen: React.FC = () => {
                                           }}
                                         >
                                           {concept}
-                                        </Text>
+                                        </MathText>
                                       </View>
                                     </View>
                                   ),
@@ -789,7 +797,7 @@ const QuizReviewScreen: React.FC = () => {
                                         color="#DC2626"
                                         style={{ marginTop: 1 }}
                                       />
-                                      <Text
+                                      <MathText
                                         style={{
                                           ...typography('bodySmall'),
                                           color: '#7F1D1D',
@@ -799,7 +807,7 @@ const QuizReviewScreen: React.FC = () => {
                                         }}
                                       >
                                         {item}
-                                      </Text>
+                                      </MathText>
                                     </View>
                                   ),
                                 )}
@@ -847,7 +855,7 @@ const QuizReviewScreen: React.FC = () => {
                                 {t('quiz_review.feedback', 'Feedback')}
                               </Text>
                             </View>
-                            <Text
+                            <MathText
                               style={{
                                 ...typography('bodySmall'),
                                 color: '#1E3A5F',
@@ -856,7 +864,7 @@ const QuizReviewScreen: React.FC = () => {
                               }}
                             >
                               {ua.descriptive_feedback.feedback}
-                            </Text>
+                            </MathText>
                           </View>
                         )}
                       </View>
@@ -892,7 +900,7 @@ const QuizReviewScreen: React.FC = () => {
                                   {String.fromCharCode(65 + optIndex)}
                                 </Text>
                               </View>
-                              <Text
+                              <MathText
                                 style={[
                                   currentStyles.optionText,
                                   textStyle,
@@ -908,7 +916,7 @@ const QuizReviewScreen: React.FC = () => {
                                   : isTrueFalse && opt.toLowerCase() === 'false'
                                     ? t('common.false')
                                     : opt}
-                              </Text>
+                              </MathText>
                               <View style={currentStyles.dotIconContainer}>
                                 {isAnswerCorrect ? (
                                   <Ionicons name="checkmark-circle" size={24} color="#10B981" />
@@ -938,9 +946,9 @@ const QuizReviewScreen: React.FC = () => {
                             {t('quiz_results.explanation')}
                           </Text>
                         </View>
-                        <Text style={currentStyles.explanationText}>
+                        <MathText style={currentStyles.explanationText}>
                           {ua.question.explanation || ua.explanation}
-                        </Text>
+                        </MathText>
                       </View>
                     )}
                   </View>

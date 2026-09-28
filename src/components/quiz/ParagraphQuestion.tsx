@@ -8,6 +8,7 @@ import { isArabicText } from '../../config/fonts';
 import { QUIZ_COLORS } from '../../config/colors';
 import ChoiceOptions from './ChoiceOptions';
 import QuestionImage from './QuestionImage';
+import MathText from '../math/MathText';
 
 /**
  * The `paragraph` solve view from the reading mockup: a collapsible passage card
@@ -99,7 +100,7 @@ const ParagraphQuestion: React.FC<ParagraphQuestionProps> = ({
           </View>
         </Pressable>
         {!collapsed && (
-          <Text
+          <MathText
             style={[
               styles.passageBody,
               typography('bodySmall', '600', isArabicText(passage)),
@@ -107,7 +108,7 @@ const ParagraphQuestion: React.FC<ParagraphQuestionProps> = ({
             ]}
           >
             {passage}
-          </Text>
+          </MathText>
         )}
       </View>
 
@@ -162,7 +163,7 @@ const ParagraphQuestion: React.FC<ParagraphQuestionProps> = ({
                     </Text>
                   )}
                 </View>
-                <Text
+                <MathText
                   style={[
                     styles.childText,
                     typography('bodySmall', '700', isArabicText(child.question)),
@@ -170,7 +171,7 @@ const ParagraphQuestion: React.FC<ParagraphQuestionProps> = ({
                   ]}
                 >
                   {child.question}
-                </Text>
+                </MathText>
               </View>
 
               {child.imageUrl && (

@@ -13,6 +13,7 @@ import { isArabicText } from '../../config/fonts';
 import { QUIZ_COLORS } from '../../config/colors';
 import type { MatchPending, MatchSide } from '../../utils/matchInteraction';
 import MatchWireOverlay, { type CardRect } from './MatchWireOverlay';
+import MathText from '../math/MathText';
 
 /**
  * The "short content" match view from the mockup: two columns of cards with an
@@ -100,13 +101,13 @@ const MatchCard: React.FC<MatchCardProps> = ({
             {chipLabel}
           </Text>
         </View>
-        <Text
+        <MathText
           style={[styles.cardText, typography('bodySmall', '700', isArabicText(item.text))]}
           // side kept for future per-column tweaks; text aligns to its own script.
           numberOfLines={4}
         >
           {item.text}
-        </Text>
+        </MathText>
       </Pressable>
     </Animated.View>
   );

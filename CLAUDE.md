@@ -101,7 +101,7 @@ Crashlytics and Analytics report from **every** build — release or dev client,
 
 ### Boki AI Assistant (BKLT-221)
 **Boki** (بوكي) is the student AI study assistant. Backend contract: `booki-graphql-api.md` (repo root, gitignored — keep local). Single request/response (`aiChat` mutation returns the full answer — **no streaming**).
-- **Data layer is isolated** in `src/services/bokiApi.ts` (wraps `tryFetchWithFallback`) + raw ops in `src/graphql/boki.ts` + hand-written types in `src/types/boki.ts`. A contract change touches only these. Pure helpers: `src/utils/bokiErrors.ts` (`classifyBokiError` → `offline`/`rateLimit`/`backend`, `BokiApiError`) and `src/utils/bokiMessages.ts` (turn transforms) — unit-tested directly.
+- **Data layer is isolated** in `src/services/bokiApi.ts` (runs the generated documents through `apolloClient.query/mutate`) + ops in `src/graphql/boki.graphql` + hand-written types in `src/types/boki.ts`. A contract change touches only these. Pure helpers: `src/utils/bokiErrors.ts` (`classifyBokiError` → `offline`/`rateLimit`/`backend`, `BokiApiError`) and `src/utils/bokiMessages.ts` (turn transforms) — unit-tested directly.
 - **Global FAB** `src/components/boki/BokiFloatingButton.tsx` is mounted once in `App.tsx` (outside `NavigationContainer`), shown only for `isAuthenticated && userRole === 'student'`, route-aware via `navigationRef` with a hidden-routes denylist. The route-name state — and its `sync()` fallback on every nav-state change — both default unknown routes to `'Splash'` (a denylisted route) rather than `undefined`: `RootStack.Navigator` stays unmounted for the whole splash window (`AppNavigator`'s early return), so `getCurrentRoute()` has nothing to report and an unknown route must fail closed, or the FAB shows over the splash screen for a returning, already-authenticated student (BKLT-221 regression — fixing only the initial state was insufficient, since `sync()` re-fires as soon as `NavigationContainer` itself mounts, before `RootStack.Navigator` does, and would otherwise overwrite the safe default with `undefined` again). Exactly two screens — `BokiChat` + `BokiConversations` — are registered in `TabNavigator`'s inner stack; the message list is an **inverted FlatList** (turns stored newest-first, older pages via `onEndReached`). `useBokiChat()` owns turns/send/retry/history/feedback; selecting a conversation from history calls `navigation.popTo('BokiChat', { conversationId })` (go **back** to the single chat screen, never push a new one), and a route-param effect calls `loadConversation` to refill it; "new conversation" clears the thread in place and resets the param.
 - **Connectivity**: `@react-native-community/netinfo` via `src/hooks/useNetworkStatus.ts` distinguishes offline from backend errors (NetInfo is a native module → dev-client rebuild needed). Rate limit is 10 req/min → 429.
 - **Report + feedback** (Phase 3): each answer bubble has like/dislike (optimistic `aiChatFeedback`, toggles to NONE) + a Report button opening `BokiReportSheet` (fixed reason set `incorrect/irrelevant/offensive/other` — no backend reasons query — + optional notes → `aiChatReport`, confirmation via `ModalContext`).
@@ -307,6 +307,57 @@ Four **scoped** flows — student/parent × verify/reset. A code only works with
   password change goes through the code and **ends signed out**, because the server revokes every
   token on reset. Do not reintroduce `updatePassword`.
 
+## Math content (BKLT-399)
+Math arrives as **LaTeX inside ordinary text fields** — there is no format field. The spec is the
+admin panel's preview: KaTeX 0.16.9 auto-render with `$$…$$` / `\[…\]` (display) and `\(…\)` /
+`$…$` (inline), on all three environments (checked 2026-09-28). The app mirrors it in
+`src/config/math.ts`; change both together.
+- **Render server content through `MathText`** (`src/components/math/MathText.tsx`), a drop-in for
+  `<Text>`: text without a formula renders as the same `<Text>`. It is on every question, answer,
+  explanation, feedback, passage and match surface of quiz taking and review, the lesson summary,
+  key points (title + explanation) and legacy points, the chapter-list summary, Bookmarks/Notes and
+  Boki answers. Student-typed text (notes, chat input, the expanded descriptive "your answer") stays
+  plain `<Text>`.
+- **Only the display changes.** An MCQ answer is still matched and submitted as the raw string —
+  never feed the rendered/stripped text into `selectedAnswer`, `buildSubmitPayload` or the review's
+  correct/incorrect comparisons.
+- **Pipeline:** `splitMath` (`src/utils/mathSegments.ts`, a port of KaTeX auto-render's
+  `splitAtDelimiters` — unclosed delimiters stay text, `$` inside braces does not close) →
+  `renderMath` (`src/lib/mathRenderer.ts`: MathJax 3 TeX → SVG, glyphs as paths, drawn by
+  react-native-svg's `SvgAst`; cached, LRU). Pure JS, no native module — OTA-safe. MathJax (~1.6 MB
+  minified, mostly glyph data) is `require`d on the first formula, so a session without math never loads it;
+  measured on the iOS simulator (debug build, 2026-09-28): 127 ms to load once, 1–17 ms per formula.
+- **Parity with KaTeX:** only the TeX packages KaTeX understands are loaded (`TEX_PACKAGES`), and an
+  unknown macro or a parse error shows the formula's TeX source (without its delimiters, whether or
+  not another formula drew beside it), like the admin's `throwOnError: false`. Never add
+  `noundefined`/`noerrors` — they would draw red error boxes instead. A `\newcommand`/`\def`/`\let`
+  or `\label` lasts for its own formula only, as in KaTeX: MathJax would keep it for every later
+  one, so `renderMath` clears them after each conversion.
+- **Layout:** inline formulas sit on the text baseline (the view is shifted down by the formula's
+  depth) at `MATH_SCALE` (1.21em, KaTeX's size) and follow the system font size like the text; a
+  paragraph's lines only open up by as much as a formula overflows the text's own extent. Display
+  math gets a centred row that scrolls sideways; margins, padding, borders and background stay on
+  the block around it. With `numberOfLines` (or `inline`, for a `MathText` nested in another
+  `Text`) everything is drawn inline so truncation still works. Colour follows the text's `color`,
+  so dark mode works — a nested `inline` one cannot inherit it, so pass it the parent's style.
+- **testIDs:** `math-inline` (unit tests only — iOS folds a Text's inline views into one
+  accessibility element, so Maestro cannot see it) and `math-display`; the lesson reader's key
+  point rows are `study-keypoint-{index}`.
+- **Real content (production, Primary 5 Math, checked 2026-09-28):** every quiz question uses
+  `\(…\)` only — options like `\(6.75\)`, and explanations that wrap **whole sentences** in one
+  formula: `\( \text{A thousandth is one part of 1,000 equal pieces…} \)`. A formula is one SVG and
+  cannot wrap, so `splitTextRuns` (`mathSegments.ts`) turns each top-level `\text{…}` of an inline
+  formula into ordinary text (which wraps, and shapes Arabic properly) and keeps the math between
+  the groups as math. A `\text` that is a script argument (`x_\text{max}`) or holds a command or
+  `$…$` stays math; if a math run cannot render alone (`\left( \text{a} \right)`, an environment),
+  `MathText` draws the whole formula instead; `spacedAgainstText` keeps an edge operator's spacing
+  against the text beside it. Lessons and Boki answers carried no LaTeX there, and PRS (Preparatory 2) had
+  none at all — so `e2e/study/02_lesson_math.yaml` only becomes a real check once lessons have some.
+- **Known gaps:** Arabic letters and digits written *as math* (`$س = ٣$`, not inside `\text`) come
+  out as unjoined, left-to-right SVG glyphs; the first formula of a session loads MathJax during
+  that render (not deferred past the lesson's opening transition); a formula's accessibility label
+  is its TeX source.
+
 ## Quiz question types
 `Question.type` is one of six values: `mcq`, `true_false`, `what_happens`, `give_a_reason` (both AI-graded free text), `match`, `paragraph`. **`image` is NOT a type** — `imageUrl` is an attachment orthogonal to `type` and can appear on any question, including paragraph children (render it via `src/components/quiz/QuestionImage.tsx`, which routes **SVGs to `react-native-svg`'s `SvgAst`** — downloaded once by `useRemoteSvg`, passed through `normalizeSvgXml` and parsed once in the component (a file the parser rejects shows the retry card; `SvgXml` would report it from inside its own render); expo-image and RN `<Image>` can't decode them — and raster formats to **expo-image** for caching). Branch on `type` (guards in `src/utils/quizQuestionTypes.ts`), never on `answers.length`.
 - **Scoring is unit-based, not question-based.** `score`/`totalQuestions` count *units*: mcq/tf/descriptive = 1, `match` = one per pair, `paragraph` = sum of its children. Never label `totalQuestions` "questions" in the UI — show it as a score (`formatScore()` in `src/lib/scoreUtils.ts` — `score` is a Float). `xp` is server-derived (10/correct unit) — never compute it client-side.
@@ -384,13 +435,14 @@ Profile → **About & Legal** (student) and Parent Settings (parent).
 
 ### E2E tests (Maestro)
 - Flows in `e2e/auth/` (numbered `01_...yaml`), shared subflows in `e2e/utils/` (`setup-environment.yaml` boots + self-heals to the Onboarding screen and switches env based on `TARGET_ENV`).
+- `e2e/study/02_lesson_math.yaml` opens the first Math lesson and checks no raw LaTeX delimiter is on screen (summary and key points), starting from a signed-in student's Home.
 - `e2e/study/01_lesson_mindmap.yaml` walks the lesson reader and mind map (Revision tab → Social Studies → first lesson → scroll → fullscreen viewer → close), starting from a signed-in student's Home. **Rotation gotcha:** Maestro judges visibility against the *device's* frame, so a screen that rotates only the app (the landscape `MindMapViewer`) reads as off-screen until the flow turns the device too — `setOrientation: LANDSCAPE_LEFT` after opening it, `PORTRAIT` after closing.
 - Credentials/env vars in `e2e/env.yaml`; runner `scripts/run_maestro.py` injects them and generates random mobile numbers for PRS/dev registration runs. **Never put real production passwords in `e2e/env.yaml`.**
 - **testID convention: kebab-case `{screen}-{element}`** — e.g. `login-mobile-input`, `register-submit-button`, `onboarding-get-started`, `tab-home`, `confirm-modal-ok`, `profile-completion-skip-button`. Every new interactive element gets one.
 - Prefer `extendedWaitUntil`/`assertVisible` with timeouts over fixed sleeps (`sleep.js`) — fixed sleeps make flows slow and flaky.
 - Known popups a flow must tolerate (use conditional `runFlow when: visible:`): iOS "Not Now" system dialog, rate-limit/warning `confirm-modal-ok`, profile-completion prompt (`profile-completion-skip-button`), register disclaimer (`register-disclaimer-continue-button`), OTP screens (skip via `otp-skip-debug` / `otp-skip-debug-2`).
 - Registration E2E runs on **all** envs (student `01` + parent `04` register on prod too). PRS/dev get random mobiles from `run_maestro.py`; prod uses the controlled `PROD_*` numbers in `env.yaml` and the universal test OTP `123456`. **Prod runs create real throwaway accounts — delete them afterwards.**
-- **Password policy: registration requires minimum 8 characters, nothing else required** (no mandatory uppercase/digit/special — `PASSWORD_REGEX` in `src/utils/validators.ts`, used by `RegisterScreen`/`ParentRegisterScreen` and the new-password step of `ForgotPasswordScreen`; BKLT-297, supersedes the earlier 6-char BKLT-284 rule). Matches the backend, which rejects passwords shorter than 8 at registration. Login screens keep a looser 6-char soft-gate (they don't re-validate policy; the backend is the authority). The register hint key is `auth.password_min_8`; login still uses `auth.password_min_6`. The E2E password (`DemoPass1!`) still satisfies it. On a **prod build** the password fields default to secure (`showPassword = isDebugMode()` → false) and Maestro drops special chars in iOS secure fields, so prod flows first tap the show-password toggle (`*-password-toggle`) — guarded by `TARGET_ENV == 'prod'` since debug builds render them visible already.
+- **Password policy: registration requires minimum 8 characters, nothing else required** (no mandatory uppercase/digit/special — `PASSWORD_REGEX` in `src/utils/validators.ts`, used by `RegisterScreen`/`ParentRegisterScreen` and the new-password step of `ForgotPasswordScreen`; BKLT-297, supersedes the earlier 6-char BKLT-284 rule). Matches the backend, which rejects passwords shorter than 8 at registration. Login screens keep a looser 6-char soft-gate (they don't re-validate policy; the backend is the authority). The register hint key is `auth.password_min_8`; login still uses `auth.password_min_6`. The E2E passwords in `e2e/env.yaml` (`DemoPass1!`; `1234@Abc` for the PRS student) satisfy it. On a **prod build** the password fields default to secure (`showPassword = isDebugMode()` → false) and Maestro drops special chars in iOS secure fields, so prod flows first tap the show-password toggle (`*-password-toggle`) — guarded by `TARGET_ENV == 'prod'` since debug builds render them visible already.
 - **Name policy (BKLT-318)** — `src/utils/validators.ts` is the single source of truth for both person and place names; never re-inline a character-class copy. Two policies, differing only in digits: `isValidPersonName`/`sanitizePersonName` (min 3, **no digits**) for the registration name field, and `isValidPlaceName` (min 2, **digits allowed**) for user-suggested cities/schools — `6th of October City` / `مدينة ٦ أكتوبر` are real cities. Both allow Latin + Arabic letters, tashkeel, and `space - ' .` (not at an edge, never doubled); max 60. Use explicit `\uXXXX` ranges, **not** `\p{L}` — an unsupported property escape is a bundle-load parse error on Hermes, and the hyphen must stay last in an assembled class or it reads as a range. The picker search box is deliberately **unfiltered** so existing entries stay findable; the gate is the add row (`shouldOfferAddNew`) plus `addCity`/`addSchool`. This is a UX/data-quality guard, **not** a security boundary — the backend still owes its own validation.
 
 ## Documentation policy (keep docs lean + true)
@@ -401,7 +453,11 @@ Profile → **About & Legal** (student) and Parent Settings (parent).
 ## Review gate — run before every commit
 There is **no automatic git hook**; the developer runs this gate **manually** before each commit:
 1. **`npm run guardme`** (codegen drift check + lint + `tsc --noEmit` + jest + docs-link check) — must pass. **Agents must run this on what they change** — never hand back a tree that fails it.
-2. **`/code-review`** on the changes — address its findings before committing. This is a built-in only the *developer* can trigger; the model cannot invoke it, so an agent must say plainly that this step is still outstanding rather than implying the diff has been reviewed.
+2. **`/code-review`** on the changes — address its findings before committing. **Agents run it
+   themselves** (invoke the `code-review` skill, e.g. `xhigh --fix`) and fix the findings, then
+   re-run `guardme`. It reviews only the git diff: brand-new files are invisible until they are
+   staged (`git add -N <file>` or `git add`), so stage them first. To review commits that already
+   exist, use the `review-last` skill.
 3. Run the relevant guard skill on what changed and fix its findings:
    - **clean-code-guard** → changed production code
    - **test-guard** → changed test files

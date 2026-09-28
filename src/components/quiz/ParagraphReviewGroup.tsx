@@ -9,6 +9,7 @@ import { QUIZ_COLORS } from '../../config/colors';
 import type { ReviewUserAnswer } from '../../utils/quizResultGroups';
 import ScoreStrip from './ScoreStrip';
 import QuizBottomSheet from './QuizBottomSheet';
+import MathText from '../math/MathText';
 
 /**
  * Groups a paragraph's sub-question result rows under their passage (the review
@@ -95,7 +96,7 @@ const ParagraphReviewGroup: React.FC<ParagraphReviewGroupProps> = ({
         chipLabel={t('quiz_taking.passage', 'Reading passage')}
         testID="paragraph-review-passage-sheet"
       >
-        <Text
+        <MathText
           style={[
             styles.passageText,
             typography('bodySmall', '600', isArabicText(passage)),
@@ -103,7 +104,7 @@ const ParagraphReviewGroup: React.FC<ParagraphReviewGroupProps> = ({
           ]}
         >
           {passage}
-        </Text>
+        </MathText>
       </QuizBottomSheet>
     </View>
   );

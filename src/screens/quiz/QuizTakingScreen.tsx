@@ -32,6 +32,7 @@ import { analytics } from '../../lib/analytics';
 import ReportQuestionModal from '../../components/ReportQuestionModal';
 import ChoiceOptions from '../../components/quiz/ChoiceOptions';
 import QuestionImage from '../../components/quiz/QuestionImage';
+import MathText from '../../components/math/MathText';
 import MatchQuestion from '../../components/quiz/MatchQuestion';
 import ParagraphQuestion from '../../components/quiz/ParagraphQuestion';
 import QuizBottomSheet from '../../components/quiz/QuizBottomSheet';
@@ -526,14 +527,14 @@ const QuizTakingScreen: React.FC = () => {
 
             {/* Paragraph renders its own passage card, so skip the top prompt. */}
             {!isParagraph && (
-              <Text
+              <MathText
                 style={[
                   currentStyles.questionText,
                   typography('h1', 'bold', isArabicText(currentQuestion.question)),
                 ]}
               >
                 {currentQuestion.question}
-              </Text>
+              </MathText>
             )}
 
             {/* Report button */}
@@ -652,7 +653,7 @@ const QuizTakingScreen: React.FC = () => {
             chipLabel={t('quiz_taking.passage', 'Reading passage')}
             testID="paragraph-passage-sheet"
           >
-            <Text
+            <MathText
               style={[
                 currentStyles.passageSheetText,
                 typography('bodySmall', '600', isArabicText(currentQuestion.question)),
@@ -660,7 +661,7 @@ const QuizTakingScreen: React.FC = () => {
               ]}
             >
               {currentQuestion.question}
-            </Text>
+            </MathText>
           </QuizBottomSheet>
         )}
 
