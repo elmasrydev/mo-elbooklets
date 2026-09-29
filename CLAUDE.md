@@ -333,13 +333,24 @@ admin panel's preview: KaTeX 0.16.9 auto-render with `$$…$$` / `\[…\]` (disp
   `noundefined`/`noerrors` — they would draw red error boxes instead. A `\newcommand`/`\def`/`\let`
   or `\label` lasts for its own formula only, as in KaTeX: MathJax would keep it for every later
   one, so `renderMath` clears them after each conversion.
-- **Layout:** inline formulas sit on the text baseline (the view is shifted down by the formula's
-  depth) at `MATH_SCALE` (1.21em, KaTeX's size) and follow the system font size like the text; a
-  paragraph's lines only open up by as much as a formula overflows the text's own extent. Display
-  math gets a centred row that scrolls sideways; margins, padding, borders and background stay on
-  the block around it. With `numberOfLines` (or `inline`, for a `MathText` nested in another
-  `Text`) everything is drawn inline so truncation still works. Colour follows the text's `color`,
-  so dark mode works — a nested `inline` one cannot inherit it, so pass it the parent's style.
+- **Layout:** inline formulas sit on the text baseline at `MATH_SCALE` (1.21em, KaTeX's size) and
+  follow the system font size like the text. RN gives **every line of a paragraph the same
+  height**, so a formula must not grow the line: its view is at most a text line's ascent tall and
+  the SVG hangs from it, ink spilling into the leading — roots and fractions fit there. Only a
+  formula taller than that (a nested fraction) raises the paragraph's `lineHeight`, by the
+  overshoot. (Growing it for every `\sqrt` spaced out the whole Boki answer, 2026-09-29.)
+- **Wrapping:** a formula is one SVG and cannot wrap. An inline formula wider than
+  `BREAKABLE_WIDTH_EM` is drawn in pieces split after each top-level relation or binary operator
+  (`splitAtBreaks` — where TeX/KaTeX break inline math; never inside braces, `\left…\right`,
+  environments or after a unary sign; a top-level switch or infix fraction — `\color`,
+  `\displaystyle`, `\over` — keeps the formula whole), joined by a zero-width space so the line
+  breaks between them and bracketed by left-to-right marks so an Arabic paragraph does not reverse
+  their order. A piece still wider than its paragraph (a long fraction) is scaled down to the
+  paragraph's measured width inside its padding. A word joiner keeps closing punctuation after a formula on its line. Display math
+  gets a centred row that scrolls sideways; margins, padding, borders and background stay on the
+  block around it. With `numberOfLines` (or `inline`, for a `MathText` nested in another `Text`)
+  everything is drawn inline so truncation still works. Colour follows the text's `color`, so dark
+  mode works — a nested `inline` one cannot inherit it, so pass it the parent's style.
 - **testIDs:** `math-inline` (unit tests only — iOS folds a Text's inline views into one
   accessibility element, so Maestro cannot see it) and `math-display`; the lesson reader's key
   point rows are `study-keypoint-{index}`.

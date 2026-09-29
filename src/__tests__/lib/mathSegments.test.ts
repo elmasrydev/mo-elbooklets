@@ -1,4 +1,9 @@
-import { spacedAgainstText, splitMath, splitTextRuns } from '../../utils/mathSegments';
+import {
+  spacedAgainstText,
+  splitAtBreaks,
+  splitMath,
+  splitTextRuns,
+} from '../../utils/mathSegments';
 
 // Expected splits follow KaTeX auto-render's splitAtDelimiters — the admin
 // panel's preview — for the four delimiters it is configured with.
@@ -115,5 +120,42 @@ describe('spacedAgainstText', () => {
     expect(spacedAgainstText('-5', false, true)).toBe('-5');
     expect(spacedAgainstText('6.75', true, true)).toBe('6.75');
     expect(spacedAgainstText('\\timesx', true, false)).toBe('\\timesx');
+  });
+});
+
+// Where TeX lets a line break inside inline math: after a top-level relation or
+// binary operator. The first case is Boki's production square-root answer.
+describe('splitAtBreaks', () => {
+  it.each([
+    [
+      '\\sqrt{2} \\sqrt{8} = \\sqrt{(2 \\times 8)} = \\sqrt{16} = 4',
+      ['\\sqrt{2} \\sqrt{8} =', '\\sqrt{(2 \\times 8)} =', '\\sqrt{16} =', '4'],
+    ],
+    ['x^2 + 5x - 36 = 0', ['x^2 +', '5x -', '36 =', '0']],
+    ['a \\leq b \\neq c', ['a \\leq', 'b \\neq', 'c']],
+  ])('breaks %s after each top-level operator', (tex, chunks) => {
+    expect(splitAtBreaks(tex)).toEqual(chunks);
+  });
+
+  it.each([
+    ['a unary sign', 'x = -3', ['x =', '-3']],
+    ['a script argument', 'x^-1 + 2', ['x^-1 +', '2']],
+    ['\\left…\\right', '\\left( a + b \\right) = c', ['\\left( a + b \\right) =', 'c']],
+    ['an environment', '\\begin{cases} x = 1 \\end{cases}', ['\\begin{cases} x = 1 \\end{cases}']],
+    ['a \\right delimiter', '\\left< a \\right> = b', ['\\left< a \\right> =', 'b']],
+  ])('never breaks after %s', (_case, tex, chunks) => {
+    expect(splitAtBreaks(tex)).toEqual(chunks);
+  });
+
+  it.each([
+    ['an infix fraction', 'a + b \\over c + d'],
+    ['a style switch', '\\displaystyle \\frac{1}{2} = \\frac{2}{4}'],
+    ['a colour switch', '\\color{red} x + 1 = 2'],
+  ])('keeps a formula with %s whole', (_case, tex) => {
+    expect(splitAtBreaks(tex)).toEqual([tex]);
+  });
+
+  it('still breaks around a switch scoped by braces', () => {
+    expect(splitAtBreaks('{\\color{red} x} + 1 = 2')).toEqual(['{\\color{red} x} +', '1 =', '2']);
   });
 });

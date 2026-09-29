@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import MathText from '../../components/math/MathText';
 
@@ -55,6 +56,66 @@ describe('MathText', () => {
       '\\left( \\text{cost} \\right)',
     );
     expect(screen.queryByText(/\\left/)).toBeNull();
+  });
+
+  it('keeps a short formula whole', () => {
+    render(<MathText>{'So $x = 2$ here'}</MathText>);
+
+    expect(screen.getAllByTestId('math-inline')).toHaveLength(1);
+  });
+
+  it('keeps the full stop after a formula on its line', () => {
+    render(<MathText>{'Hence $x = 2$.'}</MathText>);
+
+    // A word joiner ahead of the stop forbids a line break between the two.
+    expect(screen.getByText('Hence \u2060.', { normalizer: (text: string) => text })).toBeTruthy();
+  });
+
+  it('shrinks a formula wider than its paragraph to fit', () => {
+    render(<MathText>{'$\\frac{1234567890123456789}{2}$'}</MathText>);
+    const formula = () => screen.getByTestId('math-inline');
+    expect(formula().props.style.width).toBeGreaterThan(100);
+
+    fireEvent(screen.getByText(''), 'layout', { nativeEvent: { layout: { width: 100 } } });
+
+    expect(formula().props.style.width).toBeCloseTo(100);
+  });
+
+  it('shrinks a formula to the width inside the paragraph padding', () => {
+    render(
+      <MathText style={{ paddingHorizontal: 15 }}>{'$\\frac{1234567890123456789}{2}$'}</MathText>,
+    );
+
+    fireEvent(screen.getByText(''), 'layout', { nativeEvent: { layout: { width: 130 } } });
+
+    expect(screen.getByTestId('math-inline').props.style.width).toBeCloseTo(100);
+  });
+
+  it('keeps the full stop after a split formula on its line', () => {
+    render(<MathText>{'So $\\sqrt{18} / \\sqrt{2} = \\sqrt{9} = 3$.'}</MathText>);
+
+    expect(screen.getAllByTestId('math-inline').length).toBeGreaterThan(1);
+    expect(screen.getByText(/⁠\./)).toBeTruthy();
+  });
+
+  it('keeps the style line height for a root, which fits in the leading', () => {
+    render(
+      <MathText style={{ fontSize: 16, lineHeight: 24 }}>{'Since $\\sqrt{16} = 4$ we'}</MathText>,
+    );
+
+    expect(screen.getByText(/Since/)).toHaveStyle({ lineHeight: 24 });
+  });
+
+  it('opens the lines for a formula too tall for the leading', () => {
+    render(
+      <MathText style={{ fontSize: 16, lineHeight: 24 }}>
+        {'Since $\\frac{\\frac{1}{2}}{\\frac{3}{4}}$ we'}
+      </MathText>,
+    );
+
+    expect(StyleSheet.flatten(screen.getByText(/Since/).props.style).lineHeight).toBeGreaterThan(
+      24,
+    );
   });
 
   it('draws display math inline when the text is truncated', () => {

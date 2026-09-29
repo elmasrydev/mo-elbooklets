@@ -129,6 +129,81 @@ export const spacedAgainstText = (tex: string, textBefore: boolean, textAfter: b
     textAfter && TRAILING_OPERATOR.test(tex) ? '{}' : ''
   }`;
 
+/**
+ * `\left`/`\begin` open a group that only parses whole; `\right`/`\end` close
+ * it. A `\left`/`\right` takes its delimiter along: `\right>` closes a group,
+ * it is not a relation to break after.
+ */
+const GROUP = /\\(left|right)(?![a-zA-Z])\s*(?:\\[a-zA-Z]+|\\.|.)?|\\(begin|end)(?![a-zA-Z])/y;
+const OPERATOR_AT = new RegExp(OPERATOR, 'y');
+const COMMAND = /\\(?:[a-zA-Z]+|.)/y;
+/**
+ * Commands that act on the rest of the formula — style, size, font and colour
+ * switches, and the infix fraction commands (`a+b \over c` is one fraction).
+ * Split, the pieces after the cut would lose them.
+ */
+const SCOPED_COMMAND =
+  /^\\(?:over|atop|above|choose|brace|brack|displaystyle|textstyle|scriptstyle|scriptscriptstyle|color|bf|rm|it|sf|tt|cal|tiny|scriptsize|footnotesize|small|normalsize|large|Large|LARGE|huge|Huge)$/;
+
+/** The match of a sticky `pattern` at `index` of `text`, if any. */
+const matchAt = (pattern: RegExp, text: string, index: number): RegExpExecArray | null => {
+  pattern.lastIndex = index;
+  return pattern.exec(text);
+};
+
+/**
+ * Splits an inline formula after each top-level relation or binary operator —
+ * where TeX, and KaTeX in the admin preview, let a line break inside inline
+ * math. Drawn as one SVG, `\sqrt{(18/2)} = \sqrt{18}/\sqrt{2} = \sqrt{9} = 3`
+ * cannot wrap and runs past a narrow Boki bubble; drawn as one SVG per piece,
+ * the line breaks between them.
+ *
+ * Never splits inside `{…}`, `\left…\right` or `\begin…\end` (those only parse
+ * whole), nor after a unary sign (`= -3`, `x^-1`): an operator only breaks
+ * when something it can act on comes before it. A formula with a top-level
+ * switch or infix fraction (`\color`, `\displaystyle`, `\over`) stays whole.
+ */
+export const splitAtBreaks = (tex: string): string[] => {
+  const chunks: string[] = [];
+  let depth = 0;
+  let chunkStart = 0;
+  let afterOperand = false;
+  for (let index = 0; index < tex.length; index++) {
+    const group = matchAt(GROUP, tex, index);
+    const operator = group ? null : matchAt(OPERATOR_AT, tex, index);
+    const character = tex[index];
+    if (group) {
+      depth += group[1] === 'left' || group[2] === 'begin' ? 1 : -1;
+      index += group[0].length - 1;
+      afterOperand = true;
+    } else if (operator) {
+      index += operator[0].length - 1;
+      if (depth === 0 && afterOperand) {
+        chunks.push(tex.slice(chunkStart, index + 1));
+        chunkStart = index + 1;
+      }
+      afterOperand = false;
+    } else if (character === '\\') {
+      const command = matchAt(COMMAND, tex, index)![0];
+      if (depth === 0 && SCOPED_COMMAND.test(command)) return [tex.trim()];
+      index += command.length - 1;
+      afterOperand = true;
+    } else if (character === '{') {
+      depth++;
+    } else if (character === '}') {
+      depth--;
+      afterOperand = true;
+    } else if (character === '^' || character === '_') {
+      // A bare script argument (`x^-1`) is not an operator.
+      afterOperand = false;
+    } else if (!/\s/.test(character)) {
+      afterOperand = true;
+    }
+  }
+  chunks.push(tex.slice(chunkStart));
+  return chunks.map((chunk) => chunk.trim()).filter(Boolean);
+};
+
 /** Cheap pre-check: false means the text certainly holds no formula. */
 export const mayContainMath = (text: string): boolean => OPENING.test(text);
 

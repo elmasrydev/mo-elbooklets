@@ -1,10 +1,11 @@
-import React, { memo, useMemo } from 'react';
+import React, { memo, useMemo, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
   Text,
   View,
   useWindowDimensions,
+  type LayoutChangeEvent,
   type StyleProp,
   type TextProps,
   type TextStyle,
@@ -17,6 +18,7 @@ import { renderMath, type RenderedMath } from '../../lib/mathRenderer';
 import {
   mayContainMath,
   spacedAgainstText,
+  splitAtBreaks,
   splitMath,
   splitTextRuns,
 } from '../../utils/mathSegments';
@@ -57,6 +59,23 @@ const DEFAULT_LINE_HEIGHT = 1.5;
 /** How far a UI font's own glyphs reach above and below the baseline, in font sizes. */
 const TEXT_ASCENT = 0.8;
 const TEXT_DESCENT = 0.25;
+/**
+ * An inline formula wider than this (in em of the formula) is drawn in pieces
+ * the line can break between (`splitAtBreaks`); a shorter one stays whole.
+ */
+const BREAKABLE_WIDTH_EM = 5;
+/** Lets the line break between two pieces of one formula. */
+const ZERO_WIDTH_SPACE = '\u200B';
+/**
+ * Brackets a split formula's pieces. Each piece is an inline view, which bidi
+ * treats as a neutral character: in an Arabic (right-to-left) paragraph a run
+ * of them would take the paragraph's direction and the equation would read
+ * backwards. Strong left-to-right marks on both sides keep the run in order.
+ */
+const LEFT_TO_RIGHT_MARK = '\u200e';
+/** Keeps a full stop or comma on the line of the formula before it. */
+const WORD_JOINER = '\u2060';
+const CLOSING_PUNCTUATION = /^[.,;:!?)\]}%،؛؟]/;
 
 /**
  * Style keys that shape the whole block — its box — rather than the text: a
@@ -131,7 +150,44 @@ const toBlocks = (source: string, inlineOnly: boolean): Block[] | string => {
   // indent the text next to it ("…is $$x$$ Which" → "…is" / "Which").
   const pushText = (text: string) => {
     const value = blocks[blocks.length - 1]?.kind === 'display' ? text.trimStart() : text;
-    if (value) paragraph().push(value);
+    if (!value) return;
+    const pieces = paragraph();
+    const previous = pieces[pieces.length - 1];
+    const gluesToFormula =
+      previous !== undefined && (typeof previous !== 'string' || previous === LEFT_TO_RIGHT_MARK);
+    pieces.push(gluesToFormula && CLOSING_PUNCTUATION.test(value) ? WORD_JOINER + value : value);
+  };
+  /**
+   * A long inline formula goes in as pieces the line can break between; each
+   * keeps the spacing its trailing operator had against the next piece
+   * (`spacedAgainstText`), while a sign that opens a piece stays unary
+   * (`x = -3` → `x =`, `-3`). If a piece does not render alone, the formula
+   * goes in whole.
+   */
+  const pushFormula = (
+    tex: string,
+    math: RenderedMath,
+    textBefore: boolean,
+    textAfter: boolean,
+  ) => {
+    const chunks = math.widthEm > BREAKABLE_WIDTH_EM ? splitAtBreaks(tex) : [tex];
+    const drawnChunks = chunks.map((chunk, index) =>
+      renderMath(
+        spacedAgainstText(chunk, index === 0 && textBefore, textAfter || index < chunks.length - 1),
+        false,
+      ),
+    );
+    const pieces = paragraph();
+    if (chunks.length < 2 || drawnChunks.some((chunk) => !chunk)) {
+      pieces.push({ tex, math });
+      return;
+    }
+    pieces.push(LEFT_TO_RIGHT_MARK);
+    drawnChunks.forEach((chunk, index) => {
+      if (index > 0) pieces.push(ZERO_WIDTH_SPACE);
+      pieces.push({ tex: chunks[index], math: chunk! });
+    });
+    pieces.push(LEFT_TO_RIGHT_MARK);
   };
   const pushDisplay = (tex: string, math: RenderedMath) => {
     const last = blocks[blocks.length - 1];
@@ -171,14 +227,14 @@ const toBlocks = (source: string, inlineOnly: boolean): Block[] | string => {
     if (runs.length > 1 && runs.some((run, index) => run.kind === 'math' && !drawn[index])) {
       const whole = renderMath(segment.tex, false);
       if (whole) {
-        paragraph().push({ tex: segment.tex, math: whole });
+        pushFormula(segment.tex, whole, false, false);
         continue;
       }
     }
     runs.forEach((run, index) => {
       const math = drawn[index];
       if (run.kind === 'text') pushText(run.text);
-      else if (math) paragraph().push({ tex: run.tex, math });
+      else if (math) pushFormula(run.tex, math, index > 0, index < runs.length - 1);
       else pushText(run.tex);
     });
   }
@@ -197,38 +253,136 @@ const svgSize = (math: RenderedMath, em: number) => ({
 
 /**
  * The line height a paragraph needs for its inline formulas, or `undefined`
- * when they all fit the text's own extent (`x^2`, `a < b`). A fraction reaches
- * higher and lower than the text around it, and the lines open by just that
- * much — otherwise it would overlap the lines next to it.
+ * for the style's own. RN gives every line of a paragraph the same height, so
+ * raising it for one formula spaces out every line (the gaps on Boki's
+ * square-root answer). A formula therefore takes only a text line's room
+ * (`InlineFormula`) and its ink may use the line's leading — a root or a
+ * fraction fits there. Only one that reaches past it (a nested fraction) still
+ * opens the lines, by the overshoot.
  */
 const lineHeightFor = (pieces: Piece[], em: number, textStyle: TextStyle, fontSize: number) => {
-  let above = 0;
-  let below = 0;
+  const lineHeight = textStyle.lineHeight ?? fontSize * DEFAULT_LINE_HEIGHT;
+  const leading = Math.max(0, (lineHeight - (TEXT_ASCENT + TEXT_DESCENT) * fontSize) / 2);
+  // Above, the ink may also cross into the previous line's descender zone,
+  // which holds only the odd descender; below, only into the leading.
+  const roomAbove = (TEXT_ASCENT + TEXT_DESCENT) * fontSize + leading;
+  const roomBelow = TEXT_DESCENT * fontSize + leading;
+  let overshoot = 0;
   for (const piece of pieces) {
     if (typeof piece === 'string') continue;
-    above = Math.max(above, (piece.math.heightEm - piece.math.depthEm) * em);
-    below = Math.max(below, piece.math.depthEm * em);
+    const above = (piece.math.heightEm - piece.math.depthEm) * em;
+    const below = piece.math.depthEm * em;
+    overshoot = Math.max(
+      overshoot,
+      Math.max(0, above - roomAbove) + Math.max(0, below - roomBelow),
+    );
   }
-  const extra =
-    Math.max(0, above - TEXT_ASCENT * fontSize) + Math.max(0, below - TEXT_DESCENT * fontSize);
-  if (extra <= 0) return undefined;
-  return (textStyle.lineHeight ?? fontSize * DEFAULT_LINE_HEIGHT) + extra;
+  return overshoot > 0 ? lineHeight + overshoot : undefined;
 };
 
 type FormulaProps = { tex: string; math: RenderedMath; em: number; color?: string };
 
-const InlineFormula: React.FC<FormulaProps> = ({ tex, math, em, color }) => (
-  <View
-    testID="math-inline"
-    accessible
-    accessibilityLabel={tex}
-    // An inline view sits with its bottom on the baseline; move it down by the
-    // formula's depth so the formula's own baseline lines up with the text's.
-    style={[svgSize(math, em), { transform: [{ translateY: math.depthEm * em }] }]}
-  >
-    <SvgAst ast={math.ast} override={{ ...svgSize(math, em), color }} />
-  </View>
-);
+/**
+ * An inline view sits with its bottom on the baseline, and its height is what
+ * the line makes room for. So the view is at most a text line's ascent tall
+ * (`lineAscent`) and the SVG hangs from it: its baseline on the text's, the
+ * ink above and below spilling into the leading instead of growing the line.
+ */
+const InlineFormula: React.FC<FormulaProps & { lineAscent: number }> = ({
+  tex,
+  math,
+  em,
+  color,
+  lineAscent,
+}) => {
+  const size = svgSize(math, em);
+  const depth = math.depthEm * em;
+  return (
+    <View
+      testID="math-inline"
+      accessible
+      accessibilityLabel={tex}
+      style={{ width: size.width, height: Math.min(size.height - depth, lineAscent) }}
+    >
+      <View style={[styles.hanging, size, { bottom: -depth }]}>
+        <SvgAst ast={math.ast} override={{ ...size, color }} />
+      </View>
+    </View>
+  );
+};
+
+const lengthOf = (...values: unknown[]): number => {
+  const value = values.find((candidate) => candidate !== undefined);
+  return typeof value === 'number' ? value : 0;
+};
+
+/** What padding and borders take from a laid-out width, leaving the text's own. */
+const horizontalInset = (style: StyleProp<TextStyle>): number => {
+  const flat = StyleSheet.flatten(style) ?? {};
+  return (
+    lengthOf(flat.paddingLeft, flat.paddingStart, flat.paddingHorizontal, flat.padding) +
+    lengthOf(flat.paddingRight, flat.paddingEnd, flat.paddingHorizontal, flat.padding) +
+    lengthOf(flat.borderLeftWidth, flat.borderStartWidth, flat.borderWidth) +
+    lengthOf(flat.borderRightWidth, flat.borderEndWidth, flat.borderWidth)
+  );
+};
+
+type ParagraphProps = {
+  pieces: Piece[];
+  style: StyleProp<TextStyle>;
+  numberOfLines?: number;
+  textProps?: TextProps;
+  em: number;
+  lineAscent: number;
+  color?: string;
+};
+
+/**
+ * One paragraph of text and inline formulas. A single piece wider than the
+ * paragraph (a long fraction, which cannot break) is scaled down to fit once
+ * the paragraph's width is known, rather than running past its edge.
+ */
+const MathParagraph: React.FC<ParagraphProps> = ({
+  pieces,
+  style,
+  numberOfLines,
+  textProps,
+  em,
+  lineAscent,
+  color,
+}) => {
+  // The width a formula has to fit, kept only while one is wider than it: a
+  // paragraph whose formulas all fit never re-renders on layout.
+  const [width, setWidth] = useState<number>();
+  const onLayout = (event: LayoutChangeEvent) => {
+    const available = event.nativeEvent.layout.width - horizontalInset(style);
+    const widest = pieces.reduce(
+      (max, piece) => (typeof piece === 'string' ? max : Math.max(max, piece.math.widthEm * em)),
+      0,
+    );
+    setWidth(widest > available ? available : undefined);
+    textProps?.onLayout?.(event);
+  };
+  return (
+    <Text {...textProps} style={style} numberOfLines={numberOfLines} onLayout={onLayout}>
+      {pieces.map((piece, index) => {
+        if (typeof piece === 'string') return piece;
+        const natural = piece.math.widthEm * em;
+        const fit = width !== undefined && natural > width ? width / natural : 1;
+        return (
+          <InlineFormula
+            key={index}
+            tex={piece.tex}
+            math={piece.math}
+            em={em * fit}
+            color={color}
+            lineAscent={lineAscent}
+          />
+        );
+      })}
+    </Text>
+  );
+};
 
 const DisplayFormula: React.FC<FormulaProps> = ({ tex, math, em, color }) => (
   <ScrollView
@@ -274,23 +428,21 @@ const MathText: React.FC<MathTextProps> = ({
   const em = styleEm * fontScaleFor(textProps, fontScale);
   const color = typeof flat.color === 'string' ? flat.color : undefined;
 
+  const lineAscent = TEXT_ASCENT * fontSize * (em / styleEm);
+
   const renderParagraph = (pieces: Piece[], key: number, paragraphStyle: StyleProp<TextStyle>) => {
     const lineHeight = lineHeightFor(pieces, styleEm, flat, fontSize);
     return (
-      <Text
+      <MathParagraph
         key={key}
+        pieces={pieces}
         style={[paragraphStyle, lineHeight !== undefined && { lineHeight }]}
         numberOfLines={numberOfLines}
-        {...(blocks.length === 1 ? textProps : undefined)}
-      >
-        {pieces.map((piece, index) =>
-          typeof piece === 'string' ? (
-            piece
-          ) : (
-            <InlineFormula key={index} tex={piece.tex} math={piece.math} em={em} color={color} />
-          ),
-        )}
-      </Text>
+        textProps={blocks.length === 1 ? textProps : undefined}
+        em={em}
+        lineAscent={lineAscent}
+        color={color}
+      />
     );
   };
 
@@ -312,6 +464,10 @@ const MathText: React.FC<MathTextProps> = ({
 };
 
 const styles = StyleSheet.create({
+  hanging: {
+    position: 'absolute',
+    left: 0,
+  },
   displayRow: {
     flexGrow: 1,
     justifyContent: 'center',
