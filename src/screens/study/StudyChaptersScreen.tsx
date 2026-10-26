@@ -23,6 +23,7 @@ import UnifiedHeader from '../../components/UnifiedHeader';
 import AppButton from '../../components/AppButton';
 import { GenericListSkeleton } from '../../components/SkeletonLoader';
 import RetryView from '../../components/RetryView';
+import MathText from '../../components/math/MathText';
 import { useSubscriptionGate } from '../../hooks/useSubscriptionGate';
 import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
 
@@ -213,10 +214,9 @@ const StudyChaptersScreen: React.FC = () => {
                       {lesson.name}{' '}
                     </Text>
                     {lesson.summary && !lesson.isLocked && (
-                      <Text style={currentStyles.lessonSummary} numberOfLines={1}>
-                        {' '}
-                        {lesson.summary}{' '}
-                      </Text>
+                      <MathText style={currentStyles.lessonSummary} numberOfLines={1}>
+                        {` ${lesson.summary} `}
+                      </MathText>
                     )}
                     {lesson.isLocked && (
                       <Text

@@ -43,6 +43,7 @@ import AppButton from '../../components/AppButton';
 import { GenericListSkeleton } from '../../components/SkeletonLoader';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import LessonMindMap from '../../components/study/LessonMindMap';
+import MathText from '../../components/math/MathText';
 import { resolveMindMapKind } from '../../utils/mindMap';
 import { useSubjectTextAlign } from '../../hooks/useSubjectTextAlign';
 import { isRTL, textAlign, INPUT_TEXT_ALIGN } from '../../lib/rtl';
@@ -1096,7 +1097,7 @@ const StudyLessonScreen: React.FC = () => {
                 </Text>
               </View>
               {currentLesson.summary ? (
-                <Text style={currentStyles.summaryText}>{currentLesson.summary}</Text>
+                <MathText style={currentStyles.summaryText}>{currentLesson.summary}</MathText>
               ) : (
                 <Text style={currentStyles.noContentText}>{t('study_lesson.no_summary')}</Text>
               )}
@@ -1181,6 +1182,7 @@ const StudyLessonScreen: React.FC = () => {
                         ]}
                         onPress={() => point.explanation && togglePoint(point.id)}
                         activeOpacity={point.explanation ? 0.7 : 1}
+                        testID={`study-keypoint-${idx}`}
                       >
                         <View style={currentStyles.kpTop}>
                           <TouchableOpacity
@@ -1191,11 +1193,11 @@ const StudyLessonScreen: React.FC = () => {
                           >
                             {isViewed && <Ionicons name="checkmark" size={14} color="#fff" />}
                           </TouchableOpacity>
-                          <Text
+                          <MathText
                             style={[currentStyles.kpText, isViewed && currentStyles.kpTextDone]}
                           >
                             {point.title}
-                          </Text>
+                          </MathText>
                           {point.explanation && (
                             <Ionicons
                               name={isExpanded ? 'chevron-up' : 'chevron-down'}
@@ -1208,7 +1210,9 @@ const StudyLessonScreen: React.FC = () => {
 
                         {isExpanded && point.explanation && (
                           <View style={currentStyles.explanationContainer}>
-                            <Text style={currentStyles.explanationText}>{point.explanation}</Text>
+                            <MathText style={currentStyles.explanationText}>
+                              {point.explanation}
+                            </MathText>
                           </View>
                         )}
 
@@ -1298,7 +1302,7 @@ const StudyLessonScreen: React.FC = () => {
                         >
                           <Ionicons name="bookmark" size={12} color={theme.colors.textOnDark} />
                         </View>
-                        <Text style={currentStyles.pointText}>{point}</Text>
+                        <MathText style={currentStyles.pointText}>{point}</MathText>
                       </View>
                     </View>
                   ))}
@@ -1443,9 +1447,9 @@ const StudyLessonScreen: React.FC = () => {
                     setNoteModalVisible(true);
                   }}
                 >
-                  <Text style={currentStyles.noteCardTitle} numberOfLines={3}>
+                  <MathText style={currentStyles.noteCardTitle} numberOfLines={3}>
                     {point.title}
-                  </Text>
+                  </MathText>
                   <View style={currentStyles.noteCardBubble}>
                     <Ionicons name="pencil" size={13} color={theme.colors.primary} />
                     <Text style={currentStyles.noteCardText}>
