@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
+import { useCurriculum } from '../context/CurriculumContext';
 import { useModal } from '../context/ModalContext';
 
 import { useTheme } from '../context/ThemeContext';
@@ -59,6 +60,7 @@ const VERIFY_CHEVRON = '#16a34a';
 const ProfileScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { user, logout, refreshUser, requestVerification } = useAuth();
+  const { speciality, electiveSubjects } = useCurriculum();
   const { showConfirm } = useModal();
   const { theme, spacing, borderRadius } = useTheme();
   const common = useCommonStyles();
@@ -415,6 +417,19 @@ const ProfileScreen: React.FC = () => {
             onPress: () => navigation.navigate('EditProfile'),
             first: true,
           })}
+          {/* Baccalaureate track + electives — only a student who has them
+              (PRS-only fields; see CurriculumContext). Opens the same picker
+              as the gate, pre-filled. */}
+          {(speciality || electiveSubjects.length > 0) &&
+            renderRow({
+              testID: 'profile-curriculum-item',
+              icon: 'git-branch-outline',
+              title: t('profile_screen.track'),
+              subtitle: [speciality?.name, ...electiveSubjects.map((subject) => subject.name)]
+                .filter(Boolean)
+                .join(' · '),
+              onPress: () => navigation.navigate('CurriculumSetup', { fromProfile: true }),
+            })}
           {renderRow({
             icon: 'language-outline',
             title: t('profile_screen.change_language'),

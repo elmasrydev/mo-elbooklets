@@ -27,6 +27,18 @@ import { useNavigation } from '@react-navigation/native';
 import { analytics } from '../lib/analytics';
 import { INPUT_TEXT_ALIGN } from '../lib/rtl';
 import { authFailureText } from '../utils/authErrors';
+import { isDocumentRejection } from '../utils/graphqlErrors';
+import {
+  CurriculumSelection,
+  EMPTY_SELECTION,
+  findGrade,
+  GradeCurriculum,
+  gradeHasChoices,
+  isSelectionComplete,
+  missingPicks,
+  pruneSelection,
+  toCurriculumInput,
+} from '../utils/curriculum';
 import { digitsOnly } from '../utils/digits';
 import { isDebugMode } from '../config/debug';
 import {
@@ -37,15 +49,19 @@ import {
 } from '../utils/validators';
 import { useQuery } from '@apollo/client/react';
 import {
+  CurriculumOptionsDocument,
   GetAppConfigDocument,
   GetEduSystemsDocument,
   GetGradesDocument,
+  GetGradesQuery,
 } from '../generated/graphql';
 import { useMobileAvailability } from '../hooks/useMobileAvailability';
 import MobileAvailabilityHint from '../components/MobileAvailabilityHint';
 
 import BackButton from '../components/navigation/BackButton';
 import AppButton from '../components/AppButton';
+import ChoiceChips, { ChoiceChipOption } from '../components/ChoiceChips';
+import CurriculumPicker from '../components/curriculum/CurriculumPicker';
 
 const RegisterScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -59,6 +75,12 @@ const RegisterScreen: React.FC = () => {
   const [selectedGrade, setSelectedGrade] = useState<any>(null);
   const [selectedEduSystem, setSelectedEduSystem] = useState<any>(null);
   const [promoCode, setPromoCode] = useState('');
+  // Track + electives for a grade that has them (contract §3): reset with the
+  // grade, pruned with the system, and neither rendered nor sent otherwise.
+  const [curriculum, setCurriculum] = useState<CurriculumSelection>(EMPTY_SELECTION);
+  // Not auto-reset like the border flags: the message sits a scroll away from
+  // the submit button and clears itself as each pick is made.
+  const [showCurriculumErrors, setShowCurriculumErrors] = useState(false);
 
   // Refs for Focus Chaining
   const confirmPasswordRef = useRef<TextInput>(null);
@@ -89,8 +111,30 @@ const RegisterScreen: React.FC = () => {
   const { data: gradesData } = useQuery(GetGradesDocument);
   const { data: eduSystemsData } = useQuery(GetEduSystemsDocument);
   const { data: appConfigData } = useQuery(GetAppConfigDocument);
+  // `errorPolicy: 'all'`: demo and production have no `curriculumOptions` yet
+  // and reject the document — that must read as "no grade has tracks", never
+  // as an error (curriculum.graphql).
+  const curriculumQuery = useQuery(CurriculumOptionsDocument, { errorPolicy: 'all' });
   const eduSystems = eduSystemsData?.educationalSystems ?? [];
   const campaignFreeAccess = appConfigData?.appConfig?.campaignFreeAccess ?? false;
+  const curriculumGrade = findGrade(curriculumQuery.data?.curriculumOptions, selectedGrade);
+  // The system is chosen before the electives — it filters them (contract §3).
+  const curriculumActive =
+    !!curriculumGrade && !!selectedEduSystem && gradeHasChoices(curriculumGrade, selectedEduSystem);
+  const curriculumMissing =
+    curriculumGrade && curriculumActive
+      ? missingPicks(curriculumGrade, selectedEduSystem, curriculum)
+      : null;
+
+  const chooseGrade = (gradeId: string) => {
+    setSelectedGrade(gradeId);
+    setCurriculum(EMPTY_SELECTION);
+    setShowCurriculumErrors(false);
+  };
+  const chooseEduSystem = (systemId: string) => {
+    setSelectedEduSystem(systemId);
+    if (curriculumGrade) setCurriculum((prev) => pruneSelection(prev, curriculumGrade, systemId));
+  };
 
   const messages = {
     no_referral: t(
@@ -143,7 +187,12 @@ const RegisterScreen: React.FC = () => {
         return true;
       }
       case 2:
-        if (!selectedGrade || !selectedEduSystem) {
+        if (
+          !selectedGrade ||
+          !selectedEduSystem ||
+          (curriculumMissing && !isSelectionComplete(curriculumMissing))
+        ) {
+          setShowCurriculumErrors(true);
           showConfirm({
             title: t('common.error'),
             message: t('auth.fill_all_fields', 'Please check highlighted fields'),
@@ -231,6 +280,9 @@ const RegisterScreen: React.FC = () => {
         grade_id: selectedGrade,
         educational_system_id: selectedEduSystem,
         promo_code: promoCode || undefined,
+        ...(curriculumGrade && curriculumActive
+          ? toCurriculumInput(curriculumGrade, selectedEduSystem, curriculum)
+          : {}),
       });
       if (result.success && result.user) {
         analytics.trackSignUp('phone');
@@ -242,6 +294,12 @@ const RegisterScreen: React.FC = () => {
         // routed — could never appear.
         await setRegistrationSuccessPending(true);
       } else if (!result.success) {
+        // "Please choose your speciality" with no picker on screen means the
+        // options never loaded: fetch them again so the next attempt can pick.
+        // A backend that rejects the document (demo/prod) is not asked twice.
+        if (!curriculumQuery.data && !isDocumentRejection(curriculumQuery.error)) {
+          curriculumQuery.refetch().catch(() => undefined);
+        }
         showConfirm({
           title: t('auth.registration_failed'),
           message: authFailureText(result, t, 'auth.registration_error'),
@@ -368,9 +426,9 @@ const RegisterScreen: React.FC = () => {
               {currentStep === 2 && (
                 <StepTwo
                   selectedGrade={selectedGrade}
-                  setSelectedGrade={setSelectedGrade}
+                  setSelectedGrade={chooseGrade}
                   selectedEduSystem={selectedEduSystem}
-                  setSelectedEduSystem={setSelectedEduSystem}
+                  setSelectedEduSystem={chooseEduSystem}
                   gradesData={gradesData}
                   eduSystems={eduSystems}
                   promoCode={promoCode}
@@ -383,6 +441,10 @@ const RegisterScreen: React.FC = () => {
                   currentStyles={currentStyles}
                   campaignFreeAccess={campaignFreeAccess}
                   spacing={spacing}
+                  curriculumGrade={curriculumActive ? curriculumGrade : undefined}
+                  curriculum={curriculum}
+                  setCurriculum={setCurriculum}
+                  showCurriculumErrors={showCurriculumErrors}
                 />
               )}
 
@@ -708,6 +770,30 @@ const StepOne = ({
   );
 };
 
+interface StepTwoProps {
+  selectedGrade: string | null;
+  setSelectedGrade: (gradeId: string) => void;
+  selectedEduSystem: string | null;
+  setSelectedEduSystem: (systemId: string) => void;
+  gradesData: GetGradesQuery | undefined;
+  eduSystems: readonly ChoiceChipOption[];
+  promoCode: string;
+  setPromoCode: (code: string) => void;
+  promoCodeRef: React.RefObject<TextInput | null>;
+  handleNext: () => void;
+  isLoading: boolean;
+  theme: ReturnType<typeof useTheme>['theme'];
+  t: TFunction;
+  currentStyles: ReturnType<typeof styles>;
+  campaignFreeAccess: boolean;
+  spacing: ReturnType<typeof useTheme>['spacing'];
+  /** Set only when the chosen grade asks for a track/electives and a system is chosen. */
+  curriculumGrade: GradeCurriculum | undefined;
+  curriculum: CurriculumSelection;
+  setCurriculum: (next: CurriculumSelection) => void;
+  showCurriculumErrors: boolean;
+}
+
 const StepTwo = ({
   selectedGrade,
   setSelectedGrade,
@@ -725,62 +811,46 @@ const StepTwo = ({
   currentStyles,
   campaignFreeAccess,
   spacing,
-}: any) => {
+  curriculumGrade,
+  curriculum,
+  setCurriculum,
+  showCurriculumErrors,
+}: StepTwoProps) => {
   return (
     <>
       <Text style={[currentStyles.sectionLabel, { marginBottom: spacing.sm }]}>
         {t('auth.select_grade_title', 'Select Your Grade')}
       </Text>
-      <View style={currentStyles.gridContainer}>
-        {gradesData?.grades?.map((grade: any) => (
-          <TouchableOpacity
-            testID={`register-grade-${grade.id}`}
-            key={grade.id}
-            style={[
-              currentStyles.gridItem,
-              selectedGrade === grade.id && currentStyles.gridItemActive,
-            ]}
-            onPress={() => setSelectedGrade(grade.id)}
-          >
-            <Text
-              style={[
-                currentStyles.gridItemText,
-                selectedGrade === grade.id && currentStyles.gridItemTextActive,
-              ]}
-            >
-              {grade.name}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <ChoiceChips
+        options={gradesData?.grades ?? []}
+        selectedId={selectedGrade}
+        onSelect={setSelectedGrade}
+        testIDPrefix="register-grade"
+      />
 
       <Text
         style={[currentStyles.sectionLabel, { marginTop: spacing.md, marginBottom: spacing.sm }]}
       >
         {t('auth.select_edu_system', 'Select Educational System')}
       </Text>
-      <View style={currentStyles.gridContainer}>
-        {eduSystems.map((sys: any) => (
-          <TouchableOpacity
-            testID={`register-edu-${sys.id}`}
-            key={sys.id}
-            style={[
-              currentStyles.gridItem,
-              selectedEduSystem === sys.id && currentStyles.gridItemActive,
-            ]}
-            onPress={() => setSelectedEduSystem(sys.id)}
-          >
-            <Text
-              style={[
-                currentStyles.gridItemText,
-                selectedEduSystem === sys.id && currentStyles.gridItemTextActive,
-              ]}
-            >
-              {sys.name}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <ChoiceChips
+        options={eduSystems}
+        selectedId={selectedEduSystem}
+        onSelect={setSelectedEduSystem}
+        testIDPrefix="register-edu"
+      />
+
+      {/* Baccalaureate track + electives — only for a grade that has them,
+          and only once the system that filters them is chosen. */}
+      {curriculumGrade && (
+        <CurriculumPicker
+          grade={curriculumGrade}
+          systemId={selectedEduSystem}
+          value={curriculum}
+          onChange={setCurriculum}
+          showErrors={showCurriculumErrors}
+        />
+      )}
 
       {campaignFreeAccess ? (
         <View style={currentStyles.campaignBanner}>
@@ -1079,53 +1149,6 @@ const styles = (config: any) => {
       fontSize: 12,
       ...fontWeight('600'),
       color: theme.colors.textSecondary,
-    },
-    gridContainer: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: spacing.xs,
-      marginBottom: spacing.md,
-      justifyContent: 'center',
-    },
-    gridItem: {
-      minWidth: '31%',
-      backgroundColor: '#f2f3fd',
-      borderWidth: 1,
-      borderColor: 'rgba(193, 198, 213, 0.4)',
-      borderRadius: 12,
-      height: 50,
-      paddingHorizontal: spacing.sm,
-      alignItems: 'center',
-      justifyContent: 'center',
-      ...Platform.select({
-        ios: {
-          shadowColor: '#01174B',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.05,
-          shadowRadius: 4,
-        },
-        android: {
-          elevation: 2,
-        },
-      }),
-    },
-    gridItemActive: {
-      borderColor: '#005ab4',
-      backgroundColor: '#005ab40d',
-      ...Platform.select({
-        ios: { shadowOpacity: 0 },
-        android: { elevation: 0 },
-      }),
-    },
-    gridItemText: {
-      // Use the typography base so the Arabic font-family is applied on iOS too;
-      // grade labels previously fell back to the system font and looked
-      // inconsistent. (BKLT-255)
-      ...typography('label', '700'),
-      color: '#444653',
-    },
-    gridItemTextActive: {
-      color: '#005ab4',
     },
     sectionTitle: {
       ...typography('h3'),

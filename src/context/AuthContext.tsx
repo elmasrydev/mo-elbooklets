@@ -107,6 +107,9 @@ interface RegisterInput {
   password: string;
   grade_id: string;
   educational_system_id?: string;
+  /** Baccalaureate tracks (curriculum.graphql) — sent only when the picker rendered. */
+  speciality_id?: string;
+  elective_subject_ids?: string[];
   promo_code?: string;
 }
 

@@ -34,6 +34,8 @@ const BOKI_HIDDEN_ROUTES = new Set<string>([
   'InternalSettings',
   'StudyLesson',
   'MindMapViewer',
+  // The blocking track picker renders before the tabs (AppNavigator).
+  'CurriculumSetup',
   'QuizTaking',
   'QuizResults',
   'QuizReview',

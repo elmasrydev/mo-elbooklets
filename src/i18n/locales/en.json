@@ -738,6 +738,7 @@
     "no_booklets_subtitle": "Booklets will appear here once they are added to the system"
   },
   "profile_screen": {
+    "track": "Track",
     "app_notifications": "App Notifications",
     "app_notifications_desc": "Receive app updates and announcements",
     "badges": "Badges",
@@ -911,6 +912,14 @@
     "start_typing_to_search": "Start typing to search...",
     "update_success": "Profile updated successfully",
     "confirm_new_password": "Confirm New Password"
+  },
+  "curriculum": {
+    "track_title": "Your Track",
+    "choose_track": "Please choose your track",
+    "choose_one_per_group": "Choose one subject from each group",
+    "setup_title": "Complete your curriculum",
+    "setup_subtitle": "Your grade has tracks. Pick yours so we show the right subjects.",
+    "nothing_to_choose": "There is nothing to choose for your grade right now. Please try again later."
   },
   "notifications_center": {
     "delete_all_confirm": "Clear all notifications?",

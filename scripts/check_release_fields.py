@@ -44,7 +44,16 @@ DEGRADING_FIELDS = {
         "trial_days_remaining",
         "daily_quiz_limit",
         "remaining_quizzes_today",
+        # Baccalaureate tracks (`curriculum.graphql`): PRS-only as of 2026-10-26.
+        "speciality_id",
+        "speciality",
+        "elective_subjects",
     ],
+    "Query": ["curriculumOptions"],
+    "ProfileCompleteness": ["needsCurriculum"],
+    # Only fields on types every environment already has: `__type` on a type
+    # that is missing outright (GradeCurriculum, Speciality) or an input type
+    # (`inputFields`, not `fields`) makes this script exit 2, not warn.
 }
 
 INTROSPECTION = 'query ($name: String!) { __type(name: $name) { fields { name } } }'

@@ -276,6 +276,51 @@ hardcode 7 or 2**), then either subscribed or locked out.
   not. The server's own refusal text is logged rather than shown, so support can still tell which
   limit was hit.
 
+## Baccalaureate tracks & electives (contract: `mobile-baccalaureate-tracks-and-electives.md` — local-only)
+Some grades split students into a **track** (`speciality`, المسار) plus **one elective subject per group**
+(a core `first_foreign_language` group for the grade, a `speciality_choice` group per track). The server
+filters every subject/lesson/quiz list by those picks; a student who has not answered sees only the core
+subjects. Which grades have tracks, the track names, the groups and the subjects all come from
+`curriculumOptions` — **nothing is hardcoded** (PRS today: only grade 9 "Baccalaureate 2").
+- **PRS-only fields → isolated documents.** `Query.curriculumOptions`, `RegisterInput`/`UpdateProfileInput`
+  `.speciality_id` + `.elective_subject_ids`, `User.speciality`/`speciality_id`/`elective_subjects` and
+  `ProfileCompleteness.needsCurriculum` exist on **PRS only** (checked 2026-10-26). They live in
+  `src/graphql/curriculum.graphql` (`CurriculumOptions`, `MyCurriculum`, `SaveCurriculum`) and are
+  **never** added to `Register`/`Login`/`Me`/`UpdateProfile`/`ProfileCompleteness` — selecting an unknown
+  field fails the whole operation, and an unknown input key is rejected. `CurriculumProvider`
+  (`src/context/CurriculumContext.tsx`, the `TrialStatusProvider` pattern) latches a document rejection
+  and exposes `needsCurriculum: null` = unknown → **fail open, no gate**. The two input keys are only ever
+  sent when the picker actually rendered (`toCurriculumInput`); `check:release-fields` lists all of this
+  under `DEGRADING_FIELDS` (fields on types prod already has — a missing *type* makes that script exit 2).
+- **Rules are pure** in `src/utils/curriculum.ts`: system filter (keep a subject only if its
+  `educational_system_ids` has the student's system; hide a group left empty — a no-op on PRS data today,
+  where every subject lists both systems), the reset table (grade change clears all, track change keeps
+  the core picks, system change prunes unoffered picks), `missingPicks` for the inline messages,
+  `toCurriculumInput` (omit `speciality_id` for a grade without tracks, omit `elective_subject_ids` when
+  no groups were shown), `fromServer` for pre-filling. Group keys and ids are compared as strings.
+- **UI**: `src/components/curriculum/CurriculumPicker.tsx` (controlled; track chips, then one
+  `ChoiceChips` per visible group under its API `label`). `src/components/ChoiceChips.tsx` is the
+  registration chip grid (palette `CHOICE_CHIP_COLORS`), extracted with the same look — except that each
+  label's font now follows its own script — and it also draws the grade/system chips. In
+  `RegisterScreen` the picker sits in step 2 after the system chips, only once **both** grade and system
+  are chosen (the system filters the electives); `validateStep(2)` blocks on `missingPicks`. A failed
+  register with no picker on screen refetches the options (unless the document was rejected).
+- **Existing students**: `needsCurriculum === true` makes `AppNavigator` render `CurriculumSetupScreen`
+  instead of `MainTabs` (after OTP and RegistrationSuccess) — **blocking, no skip**, and the
+  profile-completion prompt is suppressed while it shows. The gate waits for a known educational system
+  (it filters the electives): a student without one gets the completion prompt's system step first.
+  `null` renders the tabs, so a student who owes picks sees Home for the first fetch's round trip. The same screen is `CurriculumSetup` in
+  `TabNavigator` (`{ fromProfile: true }`, back button, pops on save), opened from Profile's "Track" row
+  (shown only when the student has a track or electives). `save()` sends track + the **full** elective
+  list, then evicts `subjectsForUserGrade`/`lessonsForSubject`/`todaySchedule`/`wheelOfSuccess`/
+  `profileCompleteness` so every list re-asks the server; the mutation result mirrors `MyCurriculum`, so the cache write flips the gate — no refetch.
+  The provider refreshes on foreground and whenever the same account's `grade_id` or
+  `educational_system.id` changes (contract §6: a system change can drop an elective and re-flag).
+- testIDs: `register-grade-{id}`, `register-edu-{id}`, `curriculum-picker`, `curriculum-track-{id}`,
+  `curriculum-{group}-{subjectId}`, `curriculum-track-error`, `curriculum-{group}-error`,
+  `curriculum-save-button`, `curriculum-server-error`, `profile-curriculum-item`. Boki FAB denylist
+  includes `CurriculumSetup`.
+
 ## Auth error messages
 Login/register failures show the **server's** message verbatim: the backend localizes by our `lang`
 header on all three environments ("The provided credentials are incorrect." / "بيانات الدخول مش
@@ -384,6 +429,7 @@ Profile → **About & Legal** (student) and Parent Settings (parent).
 
 ### E2E tests (Maestro)
 - Flows in `e2e/auth/` (numbered `01_...yaml`), shared subflows in `e2e/utils/` (`setup-environment.yaml` boots + self-heals to the Onboarding screen and switches env based on `TARGET_ENV`).
+- `e2e/auth/11_student-register-bacc.yaml` registers a Baccalaureate 2 student on **PRS only** (grade 9 → Languages → Business → English + Accounting; `run_maestro.py` adds it for `prs` and hands it `BACC_STUDENT_MOBILE`, a second random number) — demo/prod have no tracks.
 - `e2e/study/01_lesson_mindmap.yaml` walks the lesson reader and mind map (Revision tab → Social Studies → first lesson → scroll → fullscreen viewer → close), starting from a signed-in student's Home. **Rotation gotcha:** Maestro judges visibility against the *device's* frame, so a screen that rotates only the app (the landscape `MindMapViewer`) reads as off-screen until the flow turns the device too — `setOrientation: LANDSCAPE_LEFT` after opening it, `PORTRAIT` after closing.
 - Credentials/env vars in `e2e/env.yaml`; runner `scripts/run_maestro.py` injects them and generates random mobile numbers for PRS/dev registration runs. **Never put real production passwords in `e2e/env.yaml`.**
 - **testID convention: kebab-case `{screen}-{element}`** — e.g. `login-mobile-input`, `register-submit-button`, `onboarding-get-started`, `tab-home`, `confirm-modal-ok`, `profile-completion-skip-button`. Every new interactive element gets one.
