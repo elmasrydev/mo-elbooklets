@@ -106,6 +106,30 @@ describe('BokiChatScreen', () => {
     expect(responseSpy).toHaveBeenCalled();
   });
 
+  it('draws the math in an answer instead of its LaTeX, in pieces a narrow bubble can wrap (BKLT-399)', async () => {
+    // A production answer (2026-09-29): its last example ran past the bubble
+    // on Android when drawn as one formula.
+    mockedSend.mockResolvedValueOnce(
+      answer('For example, \\(\\sqrt{(18 / 2)} = \\sqrt{18} / \\sqrt{2} = \\sqrt{9} = 3\\).'),
+    );
+
+    renderWithProviders(<BokiChatScreen />);
+    fireEvent.changeText(
+      screen.getByTestId('boki-chat-input'),
+      'Explain square roots with example',
+    );
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('boki-send-button'));
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getAllByTestId('math-inline').map((formula) => formula.props.accessibilityLabel),
+      ).toEqual(['\\sqrt{(18 / 2)} =', '\\sqrt{18} / \\sqrt{2} =', '\\sqrt{9} =', '3']),
+    );
+    expect(screen.queryByText(/\\\(|\\sqrt/)).toBeNull();
+  });
+
   it('shows a connection error without calling the backend when offline', async () => {
     mockedNetwork.mockReturnValue({ isConnected: false });
     const connSpy = jest.spyOn(analytics, 'trackBokiConnectionError');
