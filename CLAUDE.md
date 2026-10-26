@@ -292,6 +292,12 @@ subjects. Which grades have tracks, the track names, the groups and the subjects
   and exposes `needsCurriculum: null` = unknown → **fail open, no gate**. The two input keys are only ever
   sent when the picker actually rendered (`toCurriculumInput`); `check:release-fields` lists all of this
   under `DEGRADING_FIELDS` (fields on types prod already has — a missing *type* makes that script exit 2).
+- ⚠️ **Never select `profileCompleteness` under `me` / `updateProfile` (any `User`).** On PRS that nested
+  field crashes the server for every subfield ("Internal server error", checked 2026-10-26 — the contract
+  claims it works), and being non-null it blanks the whole `me`. `needsCurriculum` is read from the
+  **root** `profileCompleteness`. Two documents read different fields of that id-less singleton, so
+  `ProfileCompleteness` has `merge: true` in `src/lib/apollo.ts`'s type policies — without it each write
+  would drop the other's fields and the two watchers would refetch each other.
 - **Rules are pure** in `src/utils/curriculum.ts`: system filter (keep a subject only if its
   `educational_system_ids` has the student's system; hide a group left empty — a no-op on PRS data today,
   where every subject lists both systems), the reset table (grade change clears all, track change keeps
@@ -313,7 +319,8 @@ subjects. Which grades have tracks, the track names, the groups and the subjects
   `TabNavigator` (`{ fromProfile: true }`, back button, pops on save), opened from Profile's "Track" row
   (shown only when the student has a track or electives). `save()` sends track + the **full** elective
   list, then evicts `subjectsForUserGrade`/`lessonsForSubject`/`todaySchedule`/`wheelOfSuccess`/
-  `profileCompleteness` so every list re-asks the server; the mutation result mirrors `MyCurriculum`, so the cache write flips the gate — no refetch.
+  `profileCompleteness` so every list re-asks the server, and resolves only once `MyCurriculum` has been
+  re-read — that is what flips the gate.
   The provider refreshes on foreground and whenever the same account's `grade_id` or
   `educational_system.id` changes (contract §6: a system change can drop an elective and re-flag).
 - testIDs: `register-grade-{id}`, `register-edu-{id}`, `curriculum-picker`, `curriculum-track-{id}`,

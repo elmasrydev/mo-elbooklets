@@ -33,8 +33,8 @@ type CurriculumSetupParams = {
  * Track + elective picker for a signed-in student (contract §5).
  *
  * Two homes, one screen: the **gate** `AppNavigator` renders instead of the
- * tabs while `needsCurriculum` is true — no back button, no skip; saving
- * flips the flag in the cache and the navigator swaps to the tabs — and the
+ * tabs while `needsCurriculum` is true — no back button, no skip; once a
+ * save's re-read clears the flag the navigator swaps to the tabs — and the
  * **editor** Profile opens (`fromProfile`), pre-filled, which pops on save.
  */
 const CurriculumSetupScreen: React.FC = () => {

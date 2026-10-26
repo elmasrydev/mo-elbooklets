@@ -88,8 +88,8 @@ const AppNavigator: React.FC = () => {
             </RootStack.Group>
           ) : curriculumGate ? (
             // A Baccalaureate student the server still wants a track and
-            // electives from (contract §5): blocking, no skip — saving flips
-            // the flag in the cache and this swaps to the tabs. `null`
+            // electives from (contract §5): blocking, no skip — once a save's
+            // re-read clears the flag this swaps to the tabs. `null`
             // (unknown, or a backend without the fields) never gates.
             <RootStack.Group>
               <RootStack.Screen name="CurriculumSetup" component={CurriculumSetupScreen} />

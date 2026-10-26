@@ -219,7 +219,8 @@ describe('RegisterScreen Integration Tests', () => {
       });
       await waitFor(() => expect(screen.getByTestId(`register-grade-${gradeId}`)).toBeDefined());
       fireEvent.press(screen.getByTestId(`register-grade-${gradeId}`));
-      fireEvent.press(screen.getByTestId('register-edu-sys_2'));
+      // Grades and systems are separate queries; either may answer first.
+      fireEvent.press(await screen.findByTestId('register-edu-sys_2'));
       // A promo code skips the no-referral disclaimer modal.
       fireEvent.changeText(screen.getByTestId('register-promo-input'), 'ELB2026');
     };

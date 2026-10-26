@@ -11,18 +11,24 @@ import { MyCurriculumDocument, SaveCurriculumDocument } from '../../generated/gr
 const mockAuth = { user: { id: '1', grade_id: '9' } as any, userRole: 'student' as string | null };
 jest.mock('../../context/AuthContext', () => ({ useAuth: () => mockAuth }));
 
-const myCurriculum = (needsCurriculum: boolean) => ({
+const BUSINESS = { __typename: 'Speciality', id: '3', name: 'Business' };
+const PICKS = [
+  { __typename: 'Subject', id: '47', name: 'English' },
+  { __typename: 'Subject', id: '53', name: 'Accounting' },
+];
+// `needsCurriculum` is the ROOT profileCompleteness (the nested one crashes on PRS).
+const myCurriculum = (needsCurriculum: boolean, saved = false) => ({
   request: { query: MyCurriculumDocument },
   result: {
     data: {
       me: {
         __typename: 'User',
         id: '1',
-        speciality_id: null,
-        speciality: null,
-        elective_subjects: [],
-        profileCompleteness: { __typename: 'ProfileCompleteness', needsCurriculum },
+        speciality_id: saved ? '3' : null,
+        speciality: saved ? BUSINESS : null,
+        elective_subjects: saved ? PICKS : [],
       },
+      profileCompleteness: { __typename: 'ProfileCompleteness', needsCurriculum },
     },
   },
 });
@@ -36,12 +42,8 @@ const saveCurriculum: MockedResponse = {
         __typename: 'User',
         id: '1',
         speciality_id: '3',
-        speciality: { __typename: 'Speciality', id: '3', name: 'Business' },
-        elective_subjects: [
-          { __typename: 'Subject', id: '47', name: 'English' },
-          { __typename: 'Subject', id: '53', name: 'Accounting' },
-        ],
-        profileCompleteness: { __typename: 'ProfileCompleteness', needsCurriculum: false },
+        speciality: BUSINESS,
+        elective_subjects: PICKS,
       },
     },
   },
@@ -93,18 +95,22 @@ describe('CurriculumProvider', () => {
     expect(result.current.needsCurriculum).toBeNull();
   });
 
-  it('save flips the gate from the cache write and drops the pick-filtered lists', async () => {
+  it('save re-reads the gate and drops the pick-filtered lists', async () => {
     const cache = new InMemoryCache();
     cache.writeQuery({
       query: SUBJECTS,
       data: { subjectsForUserGrade: [{ __typename: 'Subject', id: '10' }] },
     });
-    const { result } = renderCurriculum([myCurriculum(true), saveCurriculum], cache);
+    const { result } = renderCurriculum(
+      [myCurriculum(true), saveCurriculum, myCurriculum(false, true)],
+      cache,
+    );
     await waitFor(() => expect(result.current.needsCurriculum).toBe(true));
 
     await act(() => result.current.save(input));
 
-    await waitFor(() => expect(result.current.needsCurriculum).toBe(false));
+    // save() resolves only once the re-read landed — no waiting needed.
+    expect(result.current.needsCurriculum).toBe(false);
     expect(result.current.speciality?.name).toBe('Business');
     expect(result.current.electiveSubjects.map((s) => s.id)).toEqual(['47', '53']);
     expect(cache.readQuery({ query: SUBJECTS })).toBeNull();

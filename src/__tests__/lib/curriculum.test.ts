@@ -68,11 +68,16 @@ const prep: GradeCurriculum = {
 };
 const options = [prep, bacc];
 
-describe('findGrade / gradeHasChoices', () => {
-  it('matches a stored numeric grade id as a string and reports whether anything is asked', () => {
+describe('findGrade', () => {
+  it('finds a grade stored as a number by an older build, and nothing without one', () => {
     expect(findGrade(options, 9)).toBe(bacc);
     expect(findGrade(options, null)).toBeUndefined();
     expect(findGrade(undefined, '9')).toBeUndefined();
+  });
+});
+
+describe('gradeHasChoices', () => {
+  it('asks nothing extra of a grade without tracks or elective groups', () => {
     expect(gradeHasChoices(bacc, '2')).toBe(true);
     expect(gradeHasChoices(prep, '2')).toBe(false);
   });

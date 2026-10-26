@@ -574,8 +574,8 @@ export type MyCurriculumQuery = {
     speciality_id: string | null;
     speciality: { id: string; name: string } | null;
     elective_subjects: Array<{ id: string; name: string }>;
-    profileCompleteness: { needsCurriculum: boolean };
   } | null;
+  profileCompleteness: { needsCurriculum: boolean };
 };
 
 export type SaveCurriculumMutationVariables = Exact<{
@@ -588,7 +588,6 @@ export type SaveCurriculumMutation = {
     speciality_id: string | null;
     speciality: { id: string; name: string } | null;
     elective_subjects: Array<{ id: string; name: string }>;
-    profileCompleteness: { needsCurriculum: boolean };
   };
 };
 
@@ -3639,17 +3638,15 @@ export const MyCurriculumDocument = {
                     ],
                   },
                 },
-                {
-                  kind: 'Field',
-                  name: { kind: 'Name', value: 'profileCompleteness' },
-                  selectionSet: {
-                    kind: 'SelectionSet',
-                    selections: [
-                      { kind: 'Field', name: { kind: 'Name', value: 'needsCurriculum' } },
-                    ],
-                  },
-                },
               ],
+            },
+          },
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'profileCompleteness' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [{ kind: 'Field', name: { kind: 'Name', value: 'needsCurriculum' } }],
             },
           },
         ],
@@ -3711,16 +3708,6 @@ export const SaveCurriculumDocument = {
                     selections: [
                       { kind: 'Field', name: { kind: 'Name', value: 'id' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'name' } },
-                    ],
-                  },
-                },
-                {
-                  kind: 'Field',
-                  name: { kind: 'Name', value: 'profileCompleteness' },
-                  selectionSet: {
-                    kind: 'SelectionSet',
-                    selections: [
-                      { kind: 'Field', name: { kind: 'Name', value: 'needsCurriculum' } },
                     ],
                   },
                 },

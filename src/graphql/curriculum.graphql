@@ -44,6 +44,12 @@ query CurriculumOptions {
 
 # The signed-in student's picks and whether the server still wants them.
 # `grade_id` / `educational_system_id` are already on `user` via `Me`.
+#
+# `needsCurriculum` comes from the ROOT `profileCompleteness`, never from
+# `me { profileCompleteness }`: on PRS the nested User field crashes the server
+# for any subfield ("Internal server error", checked 2026-10-26), and since it
+# is non-null the crash blanks the whole `me`. The contract says the nested
+# form works; it does not.
 query MyCurriculum {
   me {
     id
@@ -56,16 +62,16 @@ query MyCurriculum {
       id
       name
     }
-    profileCompleteness {
-      needsCurriculum
-    }
+  }
+  profileCompleteness {
+    needsCurriculum
   }
 }
 
 # Track + the FULL elective list, always together (contract §5): the list
-# replaces the student's picks, so a partial send fails validation. The
-# selection mirrors `MyCurriculum` so the cache write flips `needsCurriculum`
-# for the gate without a refetch.
+# replaces the student's picks, so a partial send fails validation. No
+# `profileCompleteness` here (the nested field crashes, see above):
+# CurriculumContext re-reads `MyCurriculum` after saving.
 mutation SaveCurriculum($input: UpdateProfileInput!) {
   updateProfile(input: $input) {
     id
@@ -77,9 +83,6 @@ mutation SaveCurriculum($input: UpdateProfileInput!) {
     elective_subjects {
       id
       name
-    }
-    profileCompleteness {
-      needsCurriculum
     }
   }
 }

@@ -117,21 +117,24 @@ export const CurriculumProvider: React.FC<{ children: ReactNode }> = ({ children
 
   const save = useCallback(
     async (input: CurriculumInput) => {
-      // The result mirrors MyCurriculum's selection, so the cache write flips
-      // `needsCurriculum` (and the gate) the moment this resolves — no refetch.
       await client.mutate({ mutation: SaveCurriculumDocument, variables: { input } });
       for (const fieldName of STALE_AFTER_SAVE) {
         client.cache.evict({ id: 'ROOT_QUERY', fieldName });
       }
       client.cache.gc();
+      // `needsCurriculum` cannot ride on the mutation's result (see
+      // curriculum.graphql), so re-read it: the gate flips once this lands,
+      // and save() resolves only then, so the Save button stays busy until it does.
+      await refresh();
     },
-    [client],
+    [client, refresh],
   );
 
   const me = data?.me;
+  const completeness = data?.profileCompleteness;
   const value = useMemo<CurriculumContextValue>(
     () => ({
-      needsCurriculum: me ? me.profileCompleteness.needsCurriculum : null,
+      needsCurriculum: completeness ? completeness.needsCurriculum : null,
       specialityId: me?.speciality_id ?? null,
       speciality: me?.speciality ?? null,
       electiveSubjects: me?.elective_subjects ?? [],
@@ -139,7 +142,7 @@ export const CurriculumProvider: React.FC<{ children: ReactNode }> = ({ children
       refresh,
       save,
     }),
-    [me, loading, refresh, save],
+    [me, completeness, loading, refresh, save],
   );
 
   return <CurriculumContext.Provider value={value}>{children}</CurriculumContext.Provider>;
