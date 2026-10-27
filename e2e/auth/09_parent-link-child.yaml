@@ -29,6 +29,10 @@ appId: com.elbooklets.app
 - inputText: ${PARENT_MOBILE}
 - tapOn:
     point: 50%,10%
+# Password fields start hidden, and Maestro drops special chars typed into iOS secure
+# fields — reveal first so the password (incl. its symbol) types reliably.
+- tapOn:
+    id: "parent-login-toggle-password"
 - tapOn:
     id: "parent-login-password"
 - inputText: ${PARENT_PASSWORD}
@@ -93,6 +97,10 @@ appId: com.elbooklets.app
 - inputText: ${STUDENT_MOBILE}
 - tapOn:
     point: 50%,10%
+# Password fields start hidden, and Maestro drops special chars typed into iOS secure
+# fields — reveal first so the password (incl. its symbol) types reliably.
+- tapOn:
+    id: "login-toggle-password"
 - tapOn:
     id: "login-password-input"
 - inputText: ${STUDENT_PASSWORD}
@@ -197,6 +205,10 @@ appId: com.elbooklets.app
 - inputText: ${PARENT_MOBILE}
 - tapOn:
     point: 50%,10%
+# Password fields start hidden, and Maestro drops special chars typed into iOS secure
+# fields — reveal first so the password (incl. its symbol) types reliably.
+- tapOn:
+    id: "parent-login-toggle-password"
 - tapOn:
     id: "parent-login-password"
 - inputText: ${PARENT_PASSWORD}

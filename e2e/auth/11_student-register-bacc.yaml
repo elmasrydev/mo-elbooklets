@@ -27,6 +27,10 @@ appId: com.elbooklets.app
 - inputText: ${BACC_STUDENT_MOBILE}
 - tapOn:
     point: 50%,10%
+# Password fields start hidden, and Maestro drops special chars typed into iOS secure
+# fields — reveal first so the password (incl. its symbol) types reliably.
+- tapOn:
+    id: "register-password-toggle"
 - tapOn:
     id: "register-password-input"
 - inputText: ${STUDENT_PASSWORD}

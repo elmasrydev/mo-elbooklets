@@ -40,7 +40,6 @@ import {
   toCurriculumInput,
 } from '../utils/curriculum';
 import { digitsOnly } from '../utils/digits';
-import { isDebugMode } from '../config/debug';
 import {
   EGYPT_MOBILE_REGEX as MOBILE_REGEX,
   PASSWORD_REGEX,
@@ -93,7 +92,7 @@ const RegisterScreen: React.FC = () => {
   const [touchedConfirm, setTouchedConfirm] = useAutoReset(false);
 
   const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(isDebugMode());
+  const [showPassword, setShowPassword] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
 

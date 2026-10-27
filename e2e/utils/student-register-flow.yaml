@@ -20,17 +20,11 @@ appId: com.elbooklets.app
 - inputText: ${STUDENT_MOBILE}
 - tapOn:
     point: 50%,10%
-# On a production build the password field defaults to secure (showPassword=false on
-# non-debug builds) and Maestro can drop special characters typed into iOS secure
-# fields, leaving a non-strong value. Reveal it first so the strong password (incl.
-# its symbol) is entered reliably. Debug builds (prs/dev) render it visible already,
-# so this reveal is prod-only. One toggle reveals both password + confirm (shared state).
-- runFlow:
-    when:
-      true: ${TARGET_ENV == 'prod'}
-    commands:
-      - tapOn:
-          id: "register-password-toggle"
+# Password fields start hidden, and Maestro drops special chars typed into iOS secure
+# fields — reveal first so the password (incl. its symbol) types reliably.
+# One toggle reveals both password + confirm (shared state).
+- tapOn:
+    id: "register-password-toggle"
 - tapOn:
     id: "register-password-input"
 - inputText: ${STUDENT_PASSWORD}
