@@ -27,13 +27,12 @@ import { INPUT_TEXT_ALIGN } from '../lib/rtl';
 import { authFailureText } from '../utils/authErrors';
 import { digitsOnly } from '../utils/digits';
 import { EGYPT_MOBILE_REGEX } from '../utils/validators';
-import { isDebugMode } from '../config/debug';
 
 const LoginScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(isDebugMode());
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const [touchedMobile, setTouchedMobile] = useAutoReset(false);
@@ -233,6 +232,7 @@ const LoginScreen: React.FC = () => {
                   placeholderTextColor={theme.colors.textTertiary}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
+                  autoCorrect={false}
                   editable={!isLoading}
                   textAlign={INPUT_TEXT_ALIGN}
                   returnKeyType="done"

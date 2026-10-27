@@ -45,6 +45,8 @@ export type RegisterInput = {
   avatar_id?: string | null | undefined;
   country_code?: string | null | undefined;
   educational_system_id?: string | null | undefined;
+  /** Exactly one subject id per elective group of the grade and chosen track. */
+  elective_subject_ids?: Array<string> | null | undefined;
   email?: string | null | undefined;
   gender?: string | null | undefined;
   grade_id: string;
@@ -57,6 +59,8 @@ export type RegisterInput = {
   password: string;
   promo_code?: string | null | undefined;
   school_name?: string | null | undefined;
+  /** Required when the chosen grade has specialities; rejected otherwise. */
+  speciality_id?: string | null | undefined;
 };
 
 /** Input for saving study schedule entries */
@@ -84,6 +88,7 @@ export type UpdateProfileInput = {
   city?: string | null | undefined;
   city_id?: string | null | undefined;
   educational_system_id?: string | null | undefined;
+  elective_subject_ids?: Array<string> | null | undefined;
   email?: string | null | undefined;
   gender?: string | null | undefined;
   governorate_id?: string | null | undefined;
@@ -95,6 +100,8 @@ export type UpdateProfileInput = {
   parent_mobile_2?: string | null | undefined;
   school_id?: string | null | undefined;
   school_name?: string | null | undefined;
+  /** Change of track. Sending it re-validates the electives alongside it. */
+  speciality_id?: string | null | undefined;
 };
 
 export type LoginMutationVariables = Exact<{
@@ -532,6 +539,56 @@ export type SaveStudyScheduleMutation = {
     notes: string | null;
     subject: { id: string; name: string };
   }>;
+};
+
+export type CurriculumOptionsQueryVariables = Exact<{ [key: string]: never }>;
+
+export type CurriculumOptionsQuery = {
+  curriculumOptions: Array<{
+    id: string;
+    name: string;
+    has_specialities: boolean;
+    core_electives: Array<{
+      group: string;
+      label: string;
+      subjects: Array<{ id: string; name: string; educational_system_ids: Array<string> }>;
+    }>;
+    specialities: Array<{
+      id: string;
+      name: string;
+      description: string | null;
+      electives: Array<{
+        group: string;
+        label: string;
+        subjects: Array<{ id: string; name: string; educational_system_ids: Array<string> }>;
+      }>;
+    }>;
+  }>;
+};
+
+export type MyCurriculumQueryVariables = Exact<{ [key: string]: never }>;
+
+export type MyCurriculumQuery = {
+  me: {
+    id: string;
+    speciality_id: string | null;
+    speciality: { id: string; name: string } | null;
+    elective_subjects: Array<{ id: string; name: string }>;
+  } | null;
+  profileCompleteness: { needsCurriculum: boolean };
+};
+
+export type SaveCurriculumMutationVariables = Exact<{
+  input: UpdateProfileInput;
+}>;
+
+export type SaveCurriculumMutation = {
+  updateProfile: {
+    id: string;
+    speciality_id: string | null;
+    speciality: { id: string; name: string } | null;
+    elective_subjects: Array<{ id: string; name: string }>;
+  };
 };
 
 export type HomeDataQueryVariables = Exact<{ [key: string]: never }>;
@@ -3450,6 +3507,218 @@ export const SaveStudyScheduleDocument = {
     },
   ],
 } as unknown as DocumentNode<SaveStudyScheduleMutation, SaveStudyScheduleMutationVariables>;
+export const CurriculumOptionsDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'CurriculumOptions' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'curriculumOptions' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'has_specialities' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'core_electives' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'group' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'subjects' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                            {
+                              kind: 'Field',
+                              name: { kind: 'Name', value: 'educational_system_ids' },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'specialities' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'electives' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'group' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                            {
+                              kind: 'Field',
+                              name: { kind: 'Name', value: 'subjects' },
+                              selectionSet: {
+                                kind: 'SelectionSet',
+                                selections: [
+                                  { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                                  { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                  {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'educational_system_ids' },
+                                  },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<CurriculumOptionsQuery, CurriculumOptionsQueryVariables>;
+export const MyCurriculumDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'MyCurriculum' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'me' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'speciality_id' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'speciality' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                    ],
+                  },
+                },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'elective_subjects' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'profileCompleteness' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [{ kind: 'Field', name: { kind: 'Name', value: 'needsCurriculum' } }],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<MyCurriculumQuery, MyCurriculumQueryVariables>;
+export const SaveCurriculumDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'SaveCurriculum' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'UpdateProfileInput' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'updateProfile' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'speciality_id' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'speciality' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                    ],
+                  },
+                },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'elective_subjects' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<SaveCurriculumMutation, SaveCurriculumMutationVariables>;
 export const HomeDataDocument = {
   kind: 'Document',
   definitions: [

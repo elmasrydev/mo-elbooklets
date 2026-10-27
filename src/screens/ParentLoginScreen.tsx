@@ -21,7 +21,6 @@ import { useAutoReset } from '../hooks/useAutoReset';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { isDebugMode } from '../config/debug';
 import { EGYPT_MOBILE_REGEX } from '../utils/validators';
 import { INPUT_TEXT_ALIGN } from '../lib/rtl';
 import { authFailureText } from '../utils/authErrors';
@@ -31,7 +30,7 @@ const ParentLoginScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(isDebugMode());
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   // Validation States
@@ -219,6 +218,8 @@ const ParentLoginScreen: React.FC = () => {
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
                   placeholder={t('auth.password_placeholder')}
                   placeholderTextColor={theme.colors.textTertiary}
                   editable={!isLoading}

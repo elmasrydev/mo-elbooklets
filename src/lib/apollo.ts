@@ -137,6 +137,11 @@ const client = new ApolloClient({
       // Trade-off: `isFollowing` no longer propagates by normalization —
       // useFollowToggle patches these fields explicitly.
       LeaderboardEntry: { keyFields: false },
+      // A singleton with no id, read by two documents that select different
+      // fields of it (ProfileCompleteness, MyCurriculum). Without merging, each
+      // write replaces the object and drops the other's fields, so the two
+      // active watchers would refetch each other in turn.
+      ProfileCompleteness: { merge: true },
     },
   }),
   defaultOptions: {

@@ -32,7 +32,6 @@ import {
 import { useOtpTimer, DEFAULT_OTP_EXPIRY_SECONDS } from '../hooks/useOtpTimer';
 import OtpCodeInput, { OTP_LENGTH } from '../components/OtpCodeInput';
 import { digitsOnly } from '../utils/digits';
-import { isDebugMode } from '../config/debug';
 
 type ResetAudience = 'student' | 'parent';
 
@@ -81,7 +80,7 @@ const ForgotPasswordScreen: React.FC = () => {
   const [otpCode, setOtpCode] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(isDebugMode());
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [touchedEmail, setTouchedEmail] = useAutoReset(false);

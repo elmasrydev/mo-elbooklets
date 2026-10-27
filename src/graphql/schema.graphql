@@ -65,7 +65,37 @@ type AiChatSource {
 
 """Application configuration type"""
 type AppConfig {
+  """
+  The discount campaign currently running. `active` is false when none does.
+  """
+  campaign: Campaign!
   campaignFreeAccess: Boolean!
+}
+
+"""
+Arabic curriculum lesson type. Null on Lesson for every non-Arabic lesson.
+"""
+enum ArabicLessonType {
+  """القواعد النحوية — standard lesson"""
+  GRAMMAR
+
+  """نص استماع — audio player + shown text"""
+  LISTENING
+
+  """نص شعري — shown text, verses as verse lines"""
+  POETRY
+
+  """نص قراءة — shown text (with glossary)"""
+  READING
+
+  """التحدث — assignment page, no quiz"""
+  SPEAKING
+
+  """القواعد الإملائية — standard lesson"""
+  SPELLING
+
+  """التعبير الكتابي — standard lesson"""
+  WRITING
 }
 
 """Authentication payload"""
@@ -148,6 +178,24 @@ type BadgeRule {
   timeframe: String
   value: Float!
   valueEnd: Float
+}
+
+"""A site-wide discount campaign. Applied to every plan at runtime."""
+type Campaign {
+  """True only when a campaign is switched on AND its discount is above 0%."""
+  active: Boolean!
+
+  """
+  Percentage taken off every plan's list price, 0-100. Always 0 when `active` is false.
+  """
+  discountPercent: Float!
+
+  """
+  Localized campaign name, per the request's `lang` header. Null when no campaign runs.
+  """
+  name: String
+  nameAr: String
+  nameEn: String
 }
 
 """Chapter type"""
@@ -292,6 +340,25 @@ type EducationalSystem {
   updated_at: DateTime!
 }
 
+"""One choice: pick exactly one of `subjects`."""
+type ElectiveGroup {
+  """Stable key, e.g. "first_foreign_language" or "speciality_choice"."""
+  group: String!
+
+  """Localised heading for the picker."""
+  label: String!
+  subjects: [ElectiveSubject!]!
+}
+
+type ElectiveSubject {
+  """
+  Educational systems this subject is taught in. Offer it only to students of one of these systems.
+  """
+  educational_system_ids: [ID!]!
+  id: ID!
+  name: String!
+}
+
 """An extracted concept from a model answer"""
 type ExtractedConcept {
   id: ID!
@@ -324,6 +391,20 @@ type Grade {
   updated_at: DateTime!
 }
 
+"""A grade plus whatever it asks after being selected."""
+type GradeCurriculum {
+  """Choices every student in the grade answers, whatever their track."""
+  core_electives: [ElectiveGroup!]!
+
+  """
+  False for every grade that does not stream students — then ignore the rest.
+  """
+  has_specialities: Boolean!
+  id: ID!
+  name: String!
+  specialities: [Speciality!]!
+}
+
 """Input for descriptive answer grading"""
 input GradeDescriptiveInput {
   questionId: ID!
@@ -351,10 +432,32 @@ type LeaderboardResult {
 
 """Lesson type"""
 type Lesson {
+  """
+  Arabic curriculum lesson type. Null for every non-Arabic lesson — when
+  null, render the lesson exactly as before. See
+  docs/mobile-arabic-lesson-types.md for the per-type behavior.
+  """
+  arabicLessonType: ArabicLessonType
+
+  """
+  Preformatted duration of audioUrl (e.g. "03:41"). Null when audioUrl is null or the duration is unknown.
+  """
+  audioDuration: String
+
+  """
+  Lesson audio stream URL (generated TTS or editor upload). LISTENING lessons; null while none exists.
+  """
+  audioUrl: String
   chapter: Chapter
   chapter_id: ID!
   created_at: DateTime!
   description: String
+
+  """
+  False when `videoUrl` is the "not available yet" placeholder clip. Clients
+  should then skip like/dislike and video watch tracking.
+  """
+  hasVideo: Boolean!
   id: ID!
   isLocked: Boolean!
 
@@ -365,9 +468,17 @@ type Lesson {
   lessonPoints: [LessonPoint!]!
 
   """
-  Media type of `mindMapUrl` — `image/svg+xml` for a generated map, an image
-  type for one uploaded by an editor. Null whenever `mindMapUrl` is null.
-  Clients must branch on this: an SVG will not render in a bitmap image view.
+  The lesson's canonical نص, fully diacritized, paragraphs separated by
+  blank lines. Non-null only for LISTENING, READING, POETRY and SPEAKING
+  lessons. Render RTL, preserve line breaks, never strip the تشكيل.
+  """
+  lessonText: String
+
+  """
+  Media type of `mindMapUrl` — `image/png` for a generated map (older ones
+  may still be `image/svg+xml` until redrawn), an image type for one uploaded
+  by an editor. Null whenever `mindMapUrl` is null. Clients must branch on
+  this: an SVG will not render in a bitmap image view.
   """
   mindMapMimeType: String
   mindMapUrl: String
@@ -379,6 +490,11 @@ type Lesson {
   summary: String
   updated_at: DateTime!
   videoDuration: String
+
+  """
+  The lesson video. When the lesson has none yet, a short placeholder clip
+  saying the video is being produced — check `hasVideo` to tell them apart.
+  """
   videoUrl: String
 }
 
@@ -689,6 +805,14 @@ type Mutation {
   """Toggle bookmark on a lesson point (creates or removes)"""
   toggleSavedPointBookmark(lessonId: ID!, lessonPointId: ID!): SavedPointResult!
 
+  """
+  Quiz funnel: report that question `question` (1-based) of quiz `quizId` is on
+  screen. Call it each time the student moves to a question, from the first one
+  on, on every quiz. The student's latest attempt is recorded and only forward
+  progress within it counts, so it is safe to call every time. Returns true.
+  """
+  trackLastQuizStep(question: Int!, quizId: ID!): Boolean!
+
   """Unregister an FCM device token (student)"""
   unregisterDeviceToken(token: String!): Boolean!
 
@@ -865,11 +989,16 @@ type ParentLinkRequest {
 type ParentLinkedChild {
   avatar: String @deprecated(reason: "Use selectedAvatar instead. This field only contains the Google OAuth URL.")
   educational_system: EducationalSystem
+
+  """The student's own elective picks, one per group."""
+  elective_subjects: [Subject!]!
   grade: Grade
   id: ID!
   mobile: String
   name: String!
   selectedAvatar: Avatar
+  speciality: Speciality
+  speciality_id: ID
 }
 
 """Parent login input"""
@@ -981,6 +1110,11 @@ type ProfileCompleteness {
   isComplete: Boolean!
   missingFields: [String!]!
   needsCity: Boolean!
+
+  """
+  True while a student in a streamed grade still owes a track or an elective pick — ask for them via updateProfile.
+  """
+  needsCurriculum: Boolean!
   needsEmail: Boolean!
   needsGender: Boolean!
   needsGovernorate: Boolean!
@@ -1030,6 +1164,19 @@ type Query {
 
   """Get paginated list of AI chat conversations for the authenticated user"""
   conversations(page: Int, perPage: Int): ConversationPage!
+
+  """
+  Grades with the questions each one asks after it is picked — its
+  specialities and the elective groups inside them. Empty for every grade
+  that does not stream its students, so a client can render the same
+  cascade for all grades and simply show nothing extra.
+  """
+  curriculumOptions(
+    """
+    Only offer the subjects taught in this educational system. Send the system the student picked: a track subject can exist once per system.
+    """
+    educational_system_id: ID
+  ): [GradeCurriculum!]!
 
   """Get all educational systems"""
   educationalSystems: [EducationalSystem!]!
@@ -1382,6 +1529,11 @@ input RegisterInput {
   avatar_id: ID
   country_code: String
   educational_system_id: ID
+
+  """
+  Exactly one subject id per elective group of the grade and chosen track.
+  """
+  elective_subject_ids: [ID!]
   email: String
   gender: String
   grade_id: ID!
@@ -1394,6 +1546,9 @@ input RegisterInput {
   password: String!
   promo_code: String
   school_name: String
+
+  """Required when the chosen grade has specialities; rejected otherwise."""
+  speciality_id: ID
 }
 
 """Result of interaction with saved points"""
@@ -1438,6 +1593,18 @@ enum SortOrder {
 
   """Sort records in descending order."""
   DESC
+}
+
+"""A track inside a grade — the Bacaloria "مسار"."""
+type Speciality {
+  description: String
+
+  """The choices this track asks the student to make."""
+  electives: [ElectiveGroup!]!
+  id: ID!
+  name: String!
+  name_ar: String
+  name_en: String
 }
 
 """Streak freeze rules and the authenticated user's current freeze count"""
@@ -1549,8 +1716,15 @@ type SubscriptionPlanOption {
   """
   allowedSubjectsCount: Int
 
-  """Price before any promo code, in `currency`."""
+  """
+  What the student pays before any promo code, in `currency`. Already includes the running campaign discount.
+  """
   cost: Float!
+
+  """
+  List price before the current discount. Present only when higher than `cost` — display it struck through next to `cost`.
+  """
+  costBefore: Float
 
   """Currency of `cost`, e.g. "EGP"."""
   currency: String!
@@ -1597,6 +1771,11 @@ grade + educational system, and the surrounding state (what they already own,
 whether an order is still being processed).
 """
 type SubscriptionPlansResult {
+  """
+  The discount campaign currently running, if any. When `active`, every plan's `costBefore` is its list price and `cost` is the campaign price.
+  """
+  campaign: Campaign!
+
   """Currency all `cost` values are in, e.g. "EGP"."""
   currency: String!
 
@@ -1740,6 +1919,7 @@ input UpdateProfileInput {
   city: String
   city_id: ID
   educational_system_id: ID
+  elective_subject_ids: [ID!]
   email: String
   gender: String
   governorate_id: ID
@@ -1751,6 +1931,9 @@ input UpdateProfileInput {
   parent_mobile_2: String
   school_id: ID
   school_name: String
+
+  """Change of track. Sending it re-validates the electives alongside it."""
+  speciality_id: ID
 }
 
 """User type"""
@@ -1768,6 +1951,9 @@ type User {
   daily_quiz_limit: Int
   educational_system: EducationalSystem
   educational_system_id: ID
+
+  """The student's own elective picks, one per group."""
+  elective_subjects: [Subject!]!
   email: String
   email_verified_at: DateTime
   gender: String
@@ -1793,6 +1979,12 @@ type User {
   school_id: ID
   school_name: String
   selectedAvatar: Avatar
+  speciality: Speciality
+
+  """
+  The track this student picked inside their grade. Null outside the Bacaloria.
+  """
+  speciality_id: ID
   streak_freezes: Int!
 
   """Whole days left on the trial; 0 once it has ended."""

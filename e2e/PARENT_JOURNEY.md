@@ -73,8 +73,10 @@ All three were fixed when flows 04/05/08 were wired up and verified green on PRS
 
 ## Other notes for flow writing
 
-- Parent password rule: `isDebugMode()` relaxes the strong-password check in debug builds
-  (`ParentRegisterScreen.tsx`); the old `|| password === 'demopass'` prod bypass was removed.
+- Parent password rule: the same 8-char `PASSWORD_REGEX` on every build, debug included; the old
+  `|| password === 'demopass'` prod bypass was removed. Both fields start hidden with separate
+  toggles — tap `parent-register-password-toggle` and `parent-register-confirm-toggle` (and
+  `parent-login-toggle-password` on login) before typing, or iOS drops the password's symbol.
 - All error popups go through the global ConfirmModal → dismiss with `confirm-modal-ok`.
 - The add-child modal is a native `<Modal>` — fine for Maestro (same as ProfileCompletionPrompt).
 - ⚠️ `e2e/env.yaml` PRS student + parent mobiles are FIXED accounts used by login flows (02/03/06).

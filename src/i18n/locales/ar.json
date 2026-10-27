@@ -742,6 +742,7 @@
     "no_booklets_subtitle": "ستظهر الكتيّبات هنا بمجرد إضافتها للنظام"
   },
   "profile_screen": {
+    "track": "المسار",
     "app_notifications": "إشعارات التطبيق",
     "app_notifications_desc": "استلام تحديثات وإعلانات التطبيق",
     "badges": "الشارات",
@@ -915,6 +916,14 @@
     "start_typing_to_search": "ابدأ الكتابة للبحث...",
     "update_success": "تم تحديث الملف الشخصي بنجاح",
     "confirm_new_password": "تأكيد كلمة المرور الجديدة"
+  },
+  "curriculum": {
+    "track_title": "مسارك",
+    "choose_track": "من فضلك اختر المسار",
+    "choose_one_per_group": "اختر مادة واحدة من كل مجموعة",
+    "setup_title": "أكمل بيانات منهجك",
+    "setup_subtitle": "سنتك الدراسية بها مسارات. اختر مسارك لنعرض لك المواد الصحيحة.",
+    "nothing_to_choose": "لا يوجد ما تختاره لسنتك الدراسية الآن. من فضلك حاول لاحقًا."
   },
   "notifications_center": {
     "delete_all_confirm": "مسح جميع التنبيهات؟",

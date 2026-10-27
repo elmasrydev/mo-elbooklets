@@ -1,0 +1,139 @@
+appId: com.elbooklets.app
+---
+# Baccalaureate 2 registration — PRS ONLY. Demo and production have no
+# `curriculumOptions` yet (checked 2026-10-26), so there the picker never renders
+# and `01_student-register.yaml` is the whole story. The ids below are PRS data:
+# grade 9 (Baccalaureate 2), system 2 (Languages), track 3 (Business),
+# English 47, Accounting 53. `BACC_STUDENT_MOBILE` is a second random number
+# from run_maestro.py so this account never collides with 01's.
+- launchApp
+
+- runFlow:
+    file: ../utils/setup-environment.yaml
+
+- assertVisible:
+    id: "onboarding-student-tab"
+- tapOn:
+    id: "onboarding-get-started"
+- assertVisible:
+    id: "register-name-input"
+- tapOn:
+    id: "register-name-input"
+- inputText: "Maestro Bacc"
+- tapOn:
+    point: 50%,10%
+- tapOn:
+    id: "register-mobile-input"
+- inputText: ${BACC_STUDENT_MOBILE}
+- tapOn:
+    point: 50%,10%
+# Password fields start hidden, and Maestro drops special chars typed into iOS secure
+# fields — reveal first so the password (incl. its symbol) types reliably.
+- tapOn:
+    id: "register-password-toggle"
+- tapOn:
+    id: "register-password-input"
+- inputText: ${STUDENT_PASSWORD}
+- tapOn:
+    point: 50%,10%
+- tapOn:
+    id: "register-confirm-input"
+- inputText: ${STUDENT_PASSWORD}
+- tapOn:
+    point: 50%,10%
+- tapOn:
+    id: "register-submit-button"
+
+# Step 2: a grade with tracks reveals the picker once the system is chosen
+- extendedWaitUntil:
+    visible:
+      id: "register-grade-9"
+    timeout: 10000
+- tapOn:
+    id: "register-grade-9"
+- tapOn:
+    id: "register-edu-2"
+- extendedWaitUntil:
+    visible:
+      id: "curriculum-track-3"
+    timeout: 10000
+
+# Submitting without a track is refused: inline message + the usual modal
+- scrollUntilVisible:
+    element:
+      id: "register-submit-button"
+    direction: DOWN
+- tapOn:
+    id: "register-submit-button"
+- runFlow:
+    when:
+      visible:
+        id: "confirm-modal-ok"
+    commands:
+      - tapOn:
+          id: "confirm-modal-ok"
+- scrollUntilVisible:
+    element:
+      id: "curriculum-track-error"
+    direction: UP
+- assertVisible:
+    id: "curriculum-track-error"
+
+# Pick the track, the language and the track subject
+- tapOn:
+    id: "curriculum-track-3"
+- scrollUntilVisible:
+    element:
+      id: "curriculum-first_foreign_language-47"
+    direction: DOWN
+- tapOn:
+    id: "curriculum-first_foreign_language-47"
+- scrollUntilVisible:
+    element:
+      id: "curriculum-speciality_choice-53"
+    direction: DOWN
+- tapOn:
+    id: "curriculum-speciality_choice-53"
+- scrollUntilVisible:
+    element:
+      id: "register-submit-button"
+    direction: DOWN
+- tapOn:
+    id: "register-submit-button"
+
+# Handle disclaimer modal if it appears
+- runFlow:
+    when:
+      visible:
+        id: "register-disclaimer-continue-button"
+    commands:
+      - tapOn:
+          id: "register-disclaimer-continue-button"
+
+- extendedWaitUntil:
+    optional: true
+    visible:
+      id: "otp-send-button"
+    timeout: 10000
+- runFlow:
+    file: ../utils/otp-handle.yaml
+
+# The picks were saved at registration, so no curriculum gate — straight to Home
+# (after the profile-completion prompt, if it auto-shows).
+- extendedWaitUntil:
+    optional: true
+    visible:
+      id: "profile-completion-skip-button"
+    timeout: 6000
+- runFlow:
+    when:
+      visible:
+        id: "profile-completion-skip-button"
+    commands:
+      - tapOn:
+          id: "profile-completion-skip-button"
+- assertVisible:
+    id: "tab-home"
+- assertNotVisible:
+    id: "curriculum-save-button"
+- takeScreenshot: e2e/screenshots/student-register-bacc-result

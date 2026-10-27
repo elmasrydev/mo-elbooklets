@@ -6,7 +6,7 @@
       "ar": "./locales/ar.json"
     },
     "slug": "mobile-elbooklets",
-    "version": "1.0.6",
+    "version": "1.0.8",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -23,13 +23,13 @@
         "ITSAppUsesNonExemptEncryption": false
       },
       "bundleIdentifier": "com.elbooklets.app",
-      "buildNumber": "104",
+      "buildNumber": "110",
       "appleTeamId": "XJAN9FLEYZ",
       "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "package": "com.elbooklets.app",
-      "versionCode": 12,
+      "versionCode": 15,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#F3F5FB"

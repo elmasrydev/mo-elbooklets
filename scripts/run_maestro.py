@@ -62,6 +62,8 @@ def main():
         rand_suffix = "".join(random.choices("0123456789", k=8))
         student_mobile = "010" + "".join(random.choices("0123456789", k=8))
         parent_mobile = "010" + "".join(random.choices("0123456789", k=8))
+        # A second student for the Baccalaureate flow (11), so it never collides with 01's.
+        bacc_student_mobile = "010" + "".join(random.choices("0123456789", k=8))
         # Unique parent email per run so re-runs don't collide on a uniqueness check
         parent_email = f"maestro.parent.{rand_suffix}@example.com"
         print(f"Generated dynamic test numbers for E2E: Student={student_mobile}, Parent={parent_mobile}")
@@ -70,13 +72,15 @@ def main():
         student_mobile = env_vars.get(f"{prefix}_STUDENT_MOBILE", "")
         parent_mobile = env_vars.get(f"{prefix}_PARENT_MOBILE", "")
         parent_email = env_vars.get(f"{prefix}_PARENT_EMAIL", "")
+        bacc_student_mobile = ""
 
     base_args.extend([
         "-e", f"STUDENT_MOBILE={student_mobile}",
         "-e", f"STUDENT_PASSWORD={student_password}",
         "-e", f"PARENT_MOBILE={parent_mobile}",
         "-e", f"PARENT_PASSWORD={parent_password}",
-        "-e", f"PARENT_EMAIL={parent_email}"
+        "-e", f"PARENT_EMAIL={parent_email}",
+        "-e", f"BACC_STUDENT_MOBILE={bacc_student_mobile}"
     ])
     
     # Add all parsed environment variables as -e arguments
@@ -105,6 +109,11 @@ def main():
     # run, so it must run last and only where those registrations happen (non-prod).
     if target_env != 'prod':
         test_files.append("e2e/auth/09_parent-link-child.yaml")
+
+    # Baccalaureate tracks exist on PRS only (demo/prod have no curriculumOptions,
+    # checked 2026-10-26); the flow taps PRS ids.
+    if target_env == 'prs':
+        test_files.append("e2e/auth/11_student-register-bacc.yaml")
 
     print(f"Running Maestro tests sequentially for target environment: {target_env}\n")
 

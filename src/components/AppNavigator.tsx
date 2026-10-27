@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
+import { useCurriculum } from '../context/CurriculumContext';
 import SplashScreen from '../screens/SplashScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
@@ -16,6 +17,7 @@ import OTPVerificationScreen from '../screens/OTPVerificationScreen';
 import ProfileCompletionPrompt from './ProfileCompletionPrompt';
 import RegistrationSuccessScreen from '../screens/RegistrationSuccessScreen';
 import ContactUsScreen from '../screens/ContactUsScreen';
+import CurriculumSetupScreen from '../screens/CurriculumSetupScreen';
 import { parentVerificationState } from '../utils/parentVerification';
 
 const RootStack = createNativeStackNavigator();
@@ -30,6 +32,12 @@ const AppNavigator: React.FC = () => {
     isVerificationSkipped,
     showRegistrationSuccess,
   } = useAuth();
+  const { needsCurriculum } = useCurriculum();
+  // The track picker needs the student's educational system — it filters the
+  // electives (contract §2). Without one, the profile-completion prompt asks
+  // for it first; once saved, CurriculumContext re-asks and the gate engages.
+  const curriculumGate =
+    needsCurriculum === true && !!(user?.educational_system?.id ?? user?.educational_system_id);
   const [showSplash, setShowSplash] = useState(true);
 
   const handleSplashFinish = (authenticated: boolean) => {
@@ -78,6 +86,14 @@ const AppNavigator: React.FC = () => {
             <RootStack.Group>
               <RootStack.Screen name="RegistrationSuccess" component={RegistrationSuccessScreen} />
             </RootStack.Group>
+          ) : curriculumGate ? (
+            // A Baccalaureate student the server still wants a track and
+            // electives from (contract §5): blocking, no skip — once a save's
+            // re-read clears the flag this swaps to the tabs. `null`
+            // (unknown, or a backend without the fields) never gates.
+            <RootStack.Group>
+              <RootStack.Screen name="CurriculumSetup" component={CurriculumSetupScreen} />
+            </RootStack.Group>
           ) : (
             <RootStack.Group>
               <RootStack.Screen name="MainTabs" component={TabNavigator} />
@@ -123,9 +139,11 @@ const AppNavigator: React.FC = () => {
         )}
       </RootStack.Navigator>
 
-      {/* Global one-time check for profile completion — only after mobile is verified */}
+      {/* Global one-time check for profile completion — only after mobile is
+          verified, and never over the curriculum gate (it would pop 5 s in). */}
       {isAuthenticated &&
         userRole !== 'parent' &&
+        !curriculumGate &&
         (user?.mobile_verified_at || isVerificationSkipped) && (
           <ProfileCompletionPrompt oneTimeAutoShow={true} />
         )}

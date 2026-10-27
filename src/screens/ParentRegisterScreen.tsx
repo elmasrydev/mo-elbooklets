@@ -21,7 +21,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAutoReset } from '../hooks/useAutoReset';
-import { isDebugMode } from '../config/debug';
 import {
   EGYPT_MOBILE_REGEX,
   EMAIL_REGEX,
@@ -43,8 +42,8 @@ const ParentRegisterScreen: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(isDebugMode());
-  const [showConfirmPassword, setShowConfirmPassword] = useState(isDebugMode());
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   // Touch States for Inline Validation
@@ -362,6 +361,8 @@ const ParentRegisterScreen: React.FC = () => {
                   placeholder={t('auth.password_placeholder')}
                   placeholderTextColor={theme.colors.textTertiary}
                   secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
                   editable={!isLoading}
                   returnKeyType="next"
                   onBlur={() => setTouchedPassword(true)}
@@ -410,6 +411,8 @@ const ParentRegisterScreen: React.FC = () => {
                   placeholder={t('auth.confirm_password_placeholder')}
                   placeholderTextColor={theme.colors.textTertiary}
                   secureTextEntry={!showConfirmPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
                   editable={!isLoading}
                   returnKeyType="done"
                   onBlur={() => setTouchedConfirm(true)}

@@ -126,3 +126,17 @@ export const COLOR_THEME_DISPLAY_COLORS: Record<ColorTheme, string> = {
 };
 
 export const DEFAULT_COLOR_THEME: ColorTheme = 'blue';
+
+/**
+ * The pick-one chips (`ChoiceChips`): the registration form's grade and system
+ * chips, and the Baccalaureate track/elective pickers. Light-only, like the
+ * registration screen they were drawn for.
+ */
+export const CHOICE_CHIP_COLORS = {
+  bg: '#f2f3fd',
+  border: 'rgba(193, 198, 213, 0.4)',
+  shadow: '#01174B',
+  text: '#444653',
+  active: COLORS.primaryBlue,
+  activeBg: `${COLORS.primaryBlue}0d`,
+} as const;
